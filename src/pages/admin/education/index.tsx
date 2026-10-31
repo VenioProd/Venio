@@ -64,6 +64,8 @@ import {
   type EducationAssignmentStatus,
   type EducationTemplate,
 } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
+import { intlLocale, translate } from '../../../i18n'
 import { DashboardView } from './DashboardView'
 import { SessionLiveMode } from './SessionLiveMode'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
@@ -141,6 +143,7 @@ function loadContext(): WorkspaceContext {
 }
 
 export default function EducationWorkspace() {
+  const { t } = useI18n()
   const dashboardRequest = useRef(0)
   const dashboardScope = useRef<string | null>(null)
   const mainRef = useRef<HTMLElement>(null)
@@ -188,9 +191,9 @@ export default function EducationWorkspace() {
       setDashboardError(null)
     } catch (err) {
       if (request === dashboardRequest.current)
-        setDashboardError(err instanceof Error ? err.message : 'Impossible de charger le cockpit')
+        setDashboardError(err instanceof Error ? err.message : t('eduD.workspace.loadDashboardError'))
     }
-  }, [school])
+  }, [school, t])
 
   const refreshClasses = useCallback(async () => {
     try {
@@ -199,9 +202,9 @@ export default function EducationWorkspace() {
       setClassesLoaded(true)
       setClassesError(null)
     } catch (err) {
-      setClassesError(err instanceof Error ? err.message : 'Impossible de charger les classes')
+      setClassesError(err instanceof Error ? err.message : t('eduD.workspace.loadClassesError'))
     }
-  }, [])
+  }, [t])
 
   const refreshTemplates = useCallback(async () => {
     try {
@@ -257,7 +260,7 @@ export default function EducationWorkspace() {
       const result = await getStudent(alert.student._id)
       setProfileState({ student: result.student, followUpAlert: alert })
     } catch (err) {
-      setDashboardError(err instanceof Error ? err.message : 'Impossible d’ouvrir la fiche étudiant')
+      setDashboardError(err instanceof Error ? err.message : t('eduD.workspace.openStudentError'))
     }
   }
 
@@ -272,13 +275,18 @@ export default function EducationWorkspace() {
             setSidebarCollapsed(false)
             setSidebarOpen((v) => !v)
           }}
-          aria-label="Ouvrir la navigation"
+          aria-label={t('eduD.workspace.openNav')}
           aria-expanded={sidebarOpen}
         >
-          <Menu size={16} /> Menu
+          <Menu size={16} /> {t('eduD.workspace.menu')}
         </button>
-        <div className="edu-mobile-bar-title">Espace pédagogique</div>
-        <button type="button" className="edu-mobile-burger" onClick={() => setSearchOpen(true)} aria-label="Rechercher">
+        <div className="edu-mobile-bar-title">{t('eduD.workspace.title')}</div>
+        <button
+          type="button"
+          className="edu-mobile-burger"
+          onClick={() => setSearchOpen(true)}
+          aria-label={t('common.search')}
+        >
           <Search size={16} />
         </button>
       </div>
@@ -292,13 +300,13 @@ export default function EducationWorkspace() {
 
       <aside className={`edu-sidebar ${sidebarOpen ? 'is-open' : ''} ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
         <div className="edu-sidebar-title-row">
-          <h3>Espace pédagogique</h3>
+          <h3>{t('eduD.workspace.title')}</h3>
           <button
             type="button"
             className="edu-sidebar-collapse-btn"
             onClick={() => setSidebarCollapsed((v) => !v)}
-            aria-label={sidebarCollapsed ? 'Déplier le panneau pédagogique' : 'Rétracter le panneau pédagogique'}
-            title={sidebarCollapsed ? 'Déplier' : 'Rétracter'}
+            aria-label={sidebarCollapsed ? t('eduD.workspace.expandPanel') : t('eduD.workspace.collapsePanel')}
+            title={sidebarCollapsed ? t('eduD.workspace.expand') : t('eduD.workspace.collapse')}
           >
             {sidebarCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
           </button>
@@ -307,63 +315,63 @@ export default function EducationWorkspace() {
           className={`edu-side-item ${view === 'dashboard' ? 'active' : ''}`}
           onClick={() => selectView('dashboard')}
         >
-          <GraduationCap size={15} /> Cockpit
+          <GraduationCap size={15} /> {t('eduD.workspace.navCockpit')}
         </button>
         <button className={`edu-side-item ${view === 'classes' ? 'active' : ''}`} onClick={() => selectView('classes')}>
-          <BookOpen size={15} /> Classes
+          <BookOpen size={15} /> {t('eduD.workspace.navClasses')}
           <span className="edu-side-badge">{classes.filter((c) => c.status === 'ACTIVE').length}</span>
         </button>
         <button
           className={`edu-side-item ${view === 'sessions' ? 'active' : ''}`}
           onClick={() => selectView('sessions')}
         >
-          <CalIcon size={15} /> Séances
+          <CalIcon size={15} /> {t('eduD.workspace.navSessions')}
         </button>
         <button
           className={`edu-side-item ${view === 'calendar' ? 'active' : ''}`}
           onClick={() => selectView('calendar')}
         >
-          <CalendarDays size={15} /> Calendrier Apple
+          <CalendarDays size={15} /> {t('eduD.workspace.navCalendar')}
         </button>
         <button
           className={`edu-side-item ${view === 'assignments' ? 'active' : ''}`}
           onClick={() => selectView('assignments')}
         >
-          <ClipboardList size={15} /> Devoirs & projets
+          <ClipboardList size={15} /> {t('eduD.workspace.navAssignments')}
           {dashboard && dashboard.counters.toGrade > 0 && (
             <span className="edu-side-badge">{dashboard.counters.toGrade}</span>
           )}
         </button>
         <button className={`edu-side-item ${view === 'notes' ? 'active' : ''}`} onClick={() => selectView('notes')}>
-          <FileText size={15} /> Notes
+          <FileText size={15} /> {t('eduD.workspace.navNotes')}
         </button>
         <button
           className={`edu-side-item ${view === 'documents' ? 'active' : ''}`}
           onClick={() => selectView('documents')}
         >
-          <FolderOpen size={15} /> Documents
+          <FolderOpen size={15} /> {t('eduD.workspace.navDocuments')}
         </button>
         <button
           className={`edu-side-item ${view === 'templates' ? 'active' : ''}`}
           onClick={() => selectView('templates')}
         >
-          <Sparkles size={15} /> Templates
+          <Sparkles size={15} /> {t('eduD.workspace.navTemplates')}
           {templates.length > 0 && <span className="edu-side-badge">{templates.length}</span>}
         </button>
         <button className={`edu-side-item ${view === 'schools' ? 'active' : ''}`} onClick={() => selectView('schools')}>
-          <Building2 size={15} /> Écoles
+          <Building2 size={15} /> {t('eduD.workspace.navSchools')}
         </button>
         <button
           className={`edu-side-item ${view === 'advanced-search' ? 'active' : ''}`}
           onClick={() => selectView('advanced-search')}
         >
-          <FileSearch size={15} /> Recherche avancée
+          <FileSearch size={15} /> {t('eduD.workspace.navAdvancedSearch')}
         </button>
         <button
           className={`edu-side-item ${view === 'notion-import' ? 'active' : ''}`}
           onClick={() => selectView('notion-import')}
         >
-          <Download size={15} /> Import Notion
+          <Download size={15} /> {t('eduD.workspace.navNotionImport')}
         </button>
         <button
           className="edu-side-item"
@@ -372,7 +380,7 @@ export default function EducationWorkspace() {
             setSidebarOpen(false)
           }}
         >
-          <Search size={15} /> Quickfind
+          <Search size={15} /> {t('eduD.workspace.navQuickfind')}
           <span className="edu-side-badge">⌘K</span>
         </button>
 
@@ -404,7 +412,7 @@ export default function EducationWorkspace() {
               <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
                 {classesError}
                 <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={refreshClasses}>
-                  Réessayer
+                  {t('eduD.common.retry')}
                 </button>
               </div>
             )}
@@ -547,7 +555,7 @@ export default function EducationWorkspace() {
               setProfileState({ student: result.student, followUpAlert: null })
               setSearchOpen(false)
             } catch (err) {
-              setDashboardError(err instanceof Error ? err.message : 'Impossible d’ouvrir la fiche étudiant')
+              setDashboardError(err instanceof Error ? err.message : t('eduD.workspace.openStudentError'))
             }
           }}
           onPickNote={(id) => {
@@ -617,18 +625,19 @@ export default function EducationWorkspace() {
    n'en ont pas), on trie les écoles A→Z avec « Sans école » en fin et on
    affiche un compteur par groupe pour la lecture rapide.                    */
 function ClassesSidebar({ classes, onPickClass }: { classes: EducationClass[]; onPickClass: (id: string) => void }) {
+  const { t } = useI18n()
   const groups = groupClassesBySchool(classes)
   return (
     <>
-      <h3>Mes classes</h3>
-      {groups.length === 0 && <div className="edu-side-classes-empty">Aucune classe à afficher.</div>}
+      <h3>{t('eduD.workspace.myClasses')}</h3>
+      {groups.length === 0 && <div className="edu-side-classes-empty">{t('eduD.workspace.noClasses')}</div>}
       {groups.map((group) => (
         <div key={group.key} className="edu-side-school-group">
           <div className="edu-side-school-head">
             <span>{group.label}</span>
             <span
               className="edu-side-school-count"
-              aria-label={`${group.classes.length} classe${group.classes.length > 1 ? 's' : ''}`}
+              aria-label={t('eduD.workspace.classCount', { count: group.classes.length })}
             >
               {group.classes.length}
             </span>
@@ -657,7 +666,7 @@ function groupClassesBySchool(
   for (const c of classes) {
     const trimmed = (c.school || '').trim()
     const key = trimmed.toLowerCase() || '__no_school__'
-    const label = trimmed || 'Sans école'
+    const label = trimmed || translate('eduD.workspace.noSchool')
     if (!buckets.has(key)) buckets.set(key, { key, label, classes: [] })
     buckets.get(key)!.classes.push(c)
   }
@@ -667,14 +676,14 @@ function groupClassesBySchool(
       const aActive = a.status === 'ACTIVE' ? 0 : 1
       const bActive = b.status === 'ACTIVE' ? 0 : 1
       if (aActive !== bActive) return aActive - bActive
-      return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' })
+      return a.name.localeCompare(b.name, intlLocale(), { sensitivity: 'base' })
     })
   }
   const arr = Array.from(buckets.values())
   arr.sort((a, b) => {
     if (a.key === '__no_school__') return 1
     if (b.key === '__no_school__') return -1
-    return a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' })
+    return a.label.localeCompare(b.label, intlLocale(), { sensitivity: 'base' })
   })
   return arr
 }

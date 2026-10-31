@@ -16,21 +16,24 @@ import {
   type EducationStudent,
   type EducationStudentImportResult,
 } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
+import type { MessageKey } from '../../../i18n'
 import { StudentProfileDrawer } from './StudentProfileDrawer'
 
 export type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
 export type ClassTab = 'overview' | 'students' | 'sessions' | 'assignments' | 'notes'
 
-const STUDENT_STATUS_LABEL: Record<EducationStudent['status'], string> = {
-  ACTIVE: 'Actif',
-  PAUSE: 'En pause',
-  ABANDON: 'Abandon',
-  TERMINE: 'Terminé',
-}
+const STUDENT_STATUS_LABEL_KEYS = {
+  ACTIVE: 'eduD.studentStatus.active',
+  PAUSE: 'eduD.studentStatus.pause',
+  ABANDON: 'eduD.studentStatus.dropped',
+  TERMINE: 'eduD.studentStatus.ended',
+} as const satisfies Record<EducationStudent['status'], MessageKey>
 
 const STUDENTS_PAGE_SIZE = 25
 
 export function StudentsTab({ classId, onChanged }: { classId: string; onChanged: () => void }) {
+  const { t } = useI18n()
   const [students, setStudents] = useState<EducationStudent[]>([])
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
@@ -55,9 +58,9 @@ export function StudentsTab({ classId, onChanged }: { classId: string; onChanged
       if (page > 0 && r.students.length === 0 && r.total > 0)
         setPage(Math.max(0, Math.ceil(r.total / STUDENTS_PAGE_SIZE) - 1))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de charger les étudiants')
+      setError(err instanceof Error ? err.message : t('eduD.students.loadError'))
     }
-  }, [classId, page, search])
+  }, [classId, page, search, t])
 
   useEffect(() => {
     // Pagination and search are server-side; refresh when their request parameters change.
@@ -68,15 +71,13 @@ export function StudentsTab({ classId, onChanged }: { classId: string; onChanged
   return (
     <div>
       <div className="edu-row between" style={{ marginBottom: 12 }}>
-        <strong>
-          {total} étudiant{total > 1 ? 's' : ''}
-        </strong>
+        <strong>{t('eduD.students.count', { count: total })}</strong>
         <div className="edu-row" style={{ gap: 6 }}>
           <button className="edu-btn ghost" onClick={() => setShowImport(true)}>
-            <Upload size={14} /> Import CSV
+            <Upload size={14} /> {t('eduD.students.importCsv')}
           </button>
           <button className="edu-btn" onClick={() => setShowAdd(true)}>
-            <Plus size={14} /> Ajouter
+            <Plus size={14} /> {t('common.add')}
           </button>
         </div>
       </div>
@@ -86,13 +87,13 @@ export function StudentsTab({ classId, onChanged }: { classId: string; onChanged
           <Search size={14} aria-hidden="true" />
           <input
             className="edu-input"
-            aria-label="Rechercher un étudiant"
+            aria-label={t('eduD.students.searchLabel')}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value)
               setPage(0)
             }}
-            placeholder="Rechercher par nom ou email…"
+            placeholder={t('eduD.students.searchPlaceholder')}
           />
         </label>
       </div>
@@ -103,16 +104,16 @@ export function StudentsTab({ classId, onChanged }: { classId: string; onChanged
       )}
 
       {!error && students.length === 0 ? (
-        <div className="edu-empty">Aucun étudiant. Ajoute-en un ou importe ta liste en CSV.</div>
+        <div className="edu-empty">{t('eduD.students.empty')}</div>
       ) : (
         <table className="edu-table">
           <thead>
             <tr>
-              <th>Nom</th>
-              <th>Email</th>
-              <th>Présence</th>
-              <th>Moy.</th>
-              <th>Statut</th>
+              <th>{t('eduD.common.name')}</th>
+              <th>{t('eduD.common.email')}</th>
+              <th>{t('eduD.students.colAttendance')}</th>
+              <th>{t('eduD.students.colAverage')}</th>
+              <th>{t('eduD.common.status')}</th>
               <th></th>
             </tr>
           </thead>
@@ -129,7 +130,7 @@ export function StudentsTab({ classId, onChanged }: { classId: string; onChanged
                 }}
                 tabIndex={0}
                 role="button"
-                aria-label={`Ouvrir la fiche de ${studentDisplayName(s)}`}
+                aria-label={t('eduD.students.openProfile', { name: studentDisplayName(s) })}
                 style={{ cursor: 'pointer' }}
               >
                 <td>{studentDisplayName(s)}</td>
@@ -143,22 +144,22 @@ export function StudentsTab({ classId, onChanged }: { classId: string; onChanged
                 </td>
                 <td>{s.averageGrade != null ? s.averageGrade.toFixed(1) : '—'}</td>
                 <td>
-                  <span className="edu-pill">{STUDENT_STATUS_LABEL[s.status]}</span>
+                  <span className="edu-pill">{t(STUDENT_STATUS_LABEL_KEYS[s.status])}</span>
                 </td>
                 <td>
                   <button
                     className="edu-btn-icon"
-                    title="Supprimer"
-                    aria-label={`Supprimer ${studentDisplayName(s)}`}
+                    title={t('common.delete')}
+                    aria-label={t('eduD.students.deleteAria', { name: studentDisplayName(s) })}
                     onClick={async (e) => {
                       e.stopPropagation()
-                      if (!confirm(`Supprimer ${studentDisplayName(s)} ?`)) return
+                      if (!confirm(t('eduD.students.deleteConfirm', { name: studentDisplayName(s) }))) return
                       try {
                         await deleteStudent(s._id)
                         await refresh()
                         onChanged()
                       } catch (err) {
-                        setError(err instanceof Error ? err.message : 'Suppression impossible')
+                        setError(err instanceof Error ? err.message : t('eduD.students.deleteFailed'))
                       }
                     }}
                   >
@@ -172,19 +173,19 @@ export function StudentsTab({ classId, onChanged }: { classId: string; onChanged
       )}
 
       {total > STUDENTS_PAGE_SIZE && (
-        <div className="edu-row between" style={{ marginTop: 12 }} aria-label="Pagination des étudiants">
+        <div className="edu-row between" style={{ marginTop: 12 }} aria-label={t('eduD.students.pagination')}>
           <button className="edu-btn ghost" disabled={page === 0} onClick={() => setPage((current) => current - 1)}>
-            Précédent
+            {t('common.previous')}
           </button>
           <span className="edu-sub">
-            Page {page + 1} sur {Math.ceil(total / STUDENTS_PAGE_SIZE)}
+            {t('eduD.students.pageOf', { page: page + 1, total: Math.ceil(total / STUDENTS_PAGE_SIZE) })}
           </span>
           <button
             className="edu-btn ghost"
             disabled={(page + 1) * STUDENTS_PAGE_SIZE >= total}
             onClick={() => setPage((current) => current + 1)}
           >
-            Suivant
+            {t('common.next')}
           </button>
         </div>
       )}
@@ -234,6 +235,7 @@ export function QuickAddStudent({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useI18n()
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -249,16 +251,16 @@ export function QuickAddStudent({
       >
         <div className="edu-drawer-head">
           <h2 id="quick-add-student-title" className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-            Nouvel étudiant
+            {t('eduD.students.newTitle')}
           </h2>
-          <button className="edu-btn-icon" onClick={onClose} aria-label="Fermer le formulaire étudiant">
+          <button className="edu-btn-icon" onClick={onClose} aria-label={t('eduD.students.closeForm')}>
             <X size={18} />
           </button>
         </div>
         <div className="edu-drawer-body">
           <div className="edu-grid-2">
             <div className="edu-form-group">
-              <label>Prénom</label>
+              <label>{t('eduD.students.firstName')}</label>
               <input
                 className="edu-input"
                 autoFocus
@@ -267,7 +269,7 @@ export function QuickAddStudent({
               />
             </div>
             <div className="edu-form-group">
-              <label>Nom</label>
+              <label>{t('eduD.common.name')}</label>
               <input
                 className="edu-input"
                 value={form.lastName}
@@ -276,7 +278,7 @@ export function QuickAddStudent({
             </div>
           </div>
           <div className="edu-form-group">
-            <label>Email</label>
+            <label>{t('eduD.common.email')}</label>
             <input
               className="edu-input"
               type="email"
@@ -288,7 +290,7 @@ export function QuickAddStudent({
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
-            Annuler
+            {t('common.cancel')}
           </button>
           <button
             className="edu-btn"
@@ -300,13 +302,13 @@ export function QuickAddStudent({
                 await createStudent({ classId, ...form })
                 onSaved()
               } catch (err) {
-                setError(err instanceof Error ? err.message : 'Erreur')
+                setError(err instanceof Error ? err.message : t('common.error'))
               } finally {
                 setSaving(false)
               }
             }}
           >
-            {saving ? 'Ajout…' : 'Ajouter'}
+            {saving ? t('eduD.students.adding') : t('common.add')}
           </button>
         </div>
       </div>
@@ -323,6 +325,7 @@ export function CsvImport({
   onClose: () => void
   onImported: () => void
 }) {
+  const { t } = useI18n()
   const [csv, setCsv] = useState('prenom,nom,email\n')
   const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -339,16 +342,15 @@ export function CsvImport({
         setPreview(response)
       } else {
         setResult(
-          `${response.inserted || 0} étudiant${response.inserted === 1 ? '' : 's'} importé${response.inserted === 1 ? '' : 's'}` +
-            (response.skipped
-              ? `, ${response.skipped} ligne${response.skipped > 1 ? 's' : ''} ignorée${response.skipped > 1 ? 's' : ''}.`
-              : '.'),
+          response.skipped
+            ? t('eduD.students.csvImportedSkipped', { inserted: response.inserted || 0, skipped: response.skipped })
+            : t('eduD.students.csvImported', { inserted: response.inserted || 0 }),
         )
         setPreview(null)
         setTimeout(onImported, 600)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('common.error'))
     } finally {
       setImporting(false)
     }
@@ -366,16 +368,17 @@ export function CsvImport({
       >
         <div className="edu-drawer-head">
           <h2 id="csv-import-title" className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-            Importer un CSV
+            {t('eduD.students.csvTitle')}
           </h2>
-          <button className="edu-btn-icon" onClick={onClose} aria-label="Fermer l’import CSV">
+          <button className="edu-btn-icon" onClick={onClose} aria-label={t('eduD.students.csvClose')}>
             <X size={18} />
           </button>
         </div>
         <div className="edu-drawer-body">
           <p className="edu-sub" style={{ marginTop: 0 }}>
-            Première ligne = en-têtes. Colonnes reconnues : <code>prenom</code>, <code>nom</code>, <code>email</code>,{' '}
-            <code>telephone</code>, <code>id</code>. Séparateur : <code>,</code> <code>;</code> ou tabulation.
+            {t('eduD.students.csvHelpColumns')} <code>prenom</code>, <code>nom</code>, <code>email</code>,{' '}
+            <code>telephone</code>, <code>id</code>. {t('eduD.students.csvHelpSeparator')} <code>,</code> <code>;</code>{' '}
+            {t('eduD.students.csvHelpOrTab')}
           </p>
           <textarea
             className="edu-textarea"
@@ -386,24 +389,21 @@ export function CsvImport({
               setPreview(null)
               setResult(null)
             }}
-            aria-label="Contenu CSV à importer"
+            aria-label={t('eduD.students.csvAria')}
           />
           {error && <div style={{ color: '#EF4444', fontSize: 13, marginTop: 8 }}>{error}</div>}
           {result && <div style={{ color: '#22C55E', fontSize: 13, marginTop: 8 }}>{result}</div>}
           {preview && (
             <div className="edu-empty" style={{ marginTop: 10 }}>
-              <strong>
-                {preview.valid || 0} ligne{preview.valid === 1 ? '' : 's'} prête{preview.valid === 1 ? '' : 's'}
-              </strong>
+              <strong>{t('eduD.students.csvReady', { count: preview.valid || 0 })}</strong>
               <div className="edu-sub">
-                {preview.totalRows || 0} ligne{preview.totalRows === 1 ? '' : 's'} analysée
-                {preview.totalRows === 1 ? '' : 's'} · {preview.skipped} ignorée{preview.skipped > 1 ? 's' : ''}
+                {t('eduD.students.csvStats', { total: preview.totalRows || 0, skipped: preview.skipped })}
               </div>
               {preview.errors.length > 0 && (
                 <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
                   {preview.errors.slice(0, 8).map((rowError) => (
                     <li key={`${rowError.row}-${rowError.error}`}>
-                      Ligne {rowError.row} : {rowError.error}
+                      {t('eduD.students.csvRowError', { row: rowError.row, error: rowError.error })}
                     </li>
                   ))}
                 </ul>
@@ -413,13 +413,13 @@ export function CsvImport({
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
-            Fermer
+            {t('common.close')}
           </button>
           <button className="edu-btn ghost" disabled={importing} onClick={() => runImport(true)}>
-            {importing ? 'Analyse…' : 'Prévisualiser'}
+            {importing ? t('eduD.students.analyzing') : t('eduD.students.preview')}
           </button>
           <button className="edu-btn" disabled={importing || !preview?.valid} onClick={() => runImport(false)}>
-            {importing ? 'Import…' : `Importer ${preview?.valid || 0}`}
+            {importing ? t('eduD.students.importing') : t('eduD.students.importCount', { count: preview?.valid || 0 })}
           </button>
         </div>
       </div>

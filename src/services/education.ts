@@ -1,5 +1,7 @@
 import { apiDownload, apiFetch, apiUpload } from '../lib/api'
 import { SENSITIVE_ACTIONS, sensitiveActionHeaders } from '../lib/sensitiveActions'
+import { translate, type MessageKey } from '../i18n'
+import { formatDate as formatIntlDate, formatDateTime as formatIntlDateTime } from '../i18n/format'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -11,11 +13,7 @@ export type EducationAssignmentStatus = 'DRAFT' | 'OUVERT' | 'EN_CORRECTION' | '
 export type EducationAssignmentKind = 'DEVOIR' | 'PROJET' | 'EXPOSE' | 'QCM' | 'EXAMEN' | 'AUTRE'
 export type EducationSubmissionStatus = 'NON_RENDU' | 'EN_RETARD' | 'RENDU' | 'EN_CORRECTION' | 'CORRIGE' | 'NON_VALIDE'
 export type EducationAiMode =
-  | 'session_plan'
-  | 'session_synthesis'
-  | 'assignment_feedback'
-  | 'class_council_prep'
-  | 'checklist_action_plan'
+  'session_plan' | 'session_synthesis' | 'assignment_feedback' | 'class_council_prep' | 'checklist_action_plan'
 export type EducationFollowUpType = 'ABSENCES_REPETEES' | 'RETARDS_REPETES' | 'DEVOIRS_NON_RENDUS'
 
 export interface EducationFollowUpAcknowledgement {
@@ -63,13 +61,7 @@ export interface EducationClassProperty {
 export type NoteLinkType = 'class' | 'session' | 'assignment' | 'student'
 
 export type EducationDocumentParentType =
-  | 'class'
-  | 'session'
-  | 'assignment'
-  | 'submission'
-  | 'student'
-  | 'note'
-  | 'standalone'
+  'class' | 'session' | 'assignment' | 'submission' | 'student' | 'note' | 'standalone'
 
 export interface EducationClass {
   _id: string
@@ -414,27 +406,39 @@ export interface EducationCouncilPreparation {
 
 // ─── Labels & couleurs ──────────────────────────────────────────────────────
 
-export const CLASS_STATUS_LABEL: Record<EducationClassStatus, string> = {
-  ACTIVE: 'En cours',
-  PAUSE: 'En pause',
-  TERMINE: 'Terminée',
-  ARCHIVE: 'Archivée',
+/**
+ * Table valeur métier → libellé traduit. Chaque entrée est un accesseur qui lit la langue active au
+ * moment de l'accès : les constantes exportées restent des `Record<K, string>` utilisables telles quelles.
+ */
+function labelMap<K extends string>(keys: Record<K, MessageKey>): Record<K, string> {
+  const labels = {} as Record<K, string>
+  for (const value of Object.keys(keys) as K[]) {
+    Object.defineProperty(labels, value, { enumerable: true, get: () => translate(keys[value]) })
+  }
+  return labels
 }
 
-export const SESSION_STATUS_LABEL: Record<EducationSessionStatus, string> = {
-  PLANIFIEE: 'Planifiée',
-  EN_COURS: 'En cours',
-  TERMINEE: 'Terminée',
-  ANNULEE: 'Annulée',
-}
+export const CLASS_STATUS_LABEL: Record<EducationClassStatus, string> = labelMap({
+  ACTIVE: 'eduD.classStatus.active',
+  PAUSE: 'eduD.classStatus.pause',
+  TERMINE: 'eduD.classStatus.ended',
+  ARCHIVE: 'eduD.classStatus.archived',
+})
 
-export const ATTENDANCE_LABEL: Record<AttendanceState, string> = {
-  PRESENT: 'Présent',
-  ABSENT: 'Absent',
-  RETARD: 'En retard',
-  EXCUSE: 'Excusé',
-  NON_RENSEIGNE: '—',
-}
+export const SESSION_STATUS_LABEL: Record<EducationSessionStatus, string> = labelMap({
+  PLANIFIEE: 'eduD.sessionStatus.planned',
+  EN_COURS: 'eduD.sessionStatus.inProgress',
+  TERMINEE: 'eduD.sessionStatus.done',
+  ANNULEE: 'eduD.sessionStatus.cancelled',
+})
+
+export const ATTENDANCE_LABEL: Record<AttendanceState, string> = labelMap({
+  PRESENT: 'eduD.attendance.present',
+  ABSENT: 'eduD.attendance.absent',
+  RETARD: 'eduD.attendance.late',
+  EXCUSE: 'eduD.attendance.excused',
+  NON_RENSEIGNE: 'eduD.attendance.unset',
+})
 
 export const ATTENDANCE_COLOR: Record<AttendanceState, string> = {
   PRESENT: '#22C55E',
@@ -444,13 +448,13 @@ export const ATTENDANCE_COLOR: Record<AttendanceState, string> = {
   NON_RENSEIGNE: '#94A3B8',
 }
 
-export const ASSIGNMENT_STATUS_LABEL: Record<EducationAssignmentStatus, string> = {
-  DRAFT: 'Brouillon',
-  OUVERT: 'Ouvert',
-  EN_CORRECTION: 'En correction',
-  CLOS: 'Clos',
-  ARCHIVE: 'Archivé',
-}
+export const ASSIGNMENT_STATUS_LABEL: Record<EducationAssignmentStatus, string> = labelMap({
+  DRAFT: 'eduD.assignmentStatus.draft',
+  OUVERT: 'eduD.assignmentStatus.open',
+  EN_CORRECTION: 'eduD.assignmentStatus.grading',
+  CLOS: 'eduD.assignmentStatus.closed',
+  ARCHIVE: 'eduD.assignmentStatus.archived',
+})
 
 export const ASSIGNMENT_STATUS_COLOR: Record<EducationAssignmentStatus, string> = {
   DRAFT: '#64748B',
@@ -460,23 +464,23 @@ export const ASSIGNMENT_STATUS_COLOR: Record<EducationAssignmentStatus, string> 
   ARCHIVE: '#475569',
 }
 
-export const ASSIGNMENT_KIND_LABEL: Record<EducationAssignmentKind, string> = {
-  DEVOIR: 'Devoir',
-  PROJET: 'Projet',
-  EXPOSE: 'Exposé',
-  QCM: 'QCM',
-  EXAMEN: 'Examen',
-  AUTRE: 'Autre',
-}
+export const ASSIGNMENT_KIND_LABEL: Record<EducationAssignmentKind, string> = labelMap({
+  DEVOIR: 'eduD.assignmentKind.assignment',
+  PROJET: 'eduD.assignmentKind.project',
+  EXPOSE: 'eduD.assignmentKind.presentation',
+  QCM: 'eduD.assignmentKind.quiz',
+  EXAMEN: 'eduD.assignmentKind.exam',
+  AUTRE: 'eduD.assignmentKind.other',
+})
 
-export const SUBMISSION_STATUS_LABEL: Record<EducationSubmissionStatus, string> = {
-  NON_RENDU: 'Non rendu',
-  EN_RETARD: 'En retard',
-  RENDU: 'Rendu',
-  EN_CORRECTION: 'En correction',
-  CORRIGE: 'Corrigé',
-  NON_VALIDE: 'Non validé',
-}
+export const SUBMISSION_STATUS_LABEL: Record<EducationSubmissionStatus, string> = labelMap({
+  NON_RENDU: 'eduD.submissionStatus.notSubmitted',
+  EN_RETARD: 'eduD.submissionStatus.late',
+  RENDU: 'eduD.submissionStatus.submitted',
+  EN_CORRECTION: 'eduD.submissionStatus.grading',
+  CORRIGE: 'eduD.submissionStatus.graded',
+  NON_VALIDE: 'eduD.submissionStatus.notValidated',
+})
 
 export const CLASS_COLOR_PALETTE = [
   '#22C55E',
@@ -839,12 +843,12 @@ export async function deleteNote(id: string): Promise<{ success: true }> {
 }
 
 // Templates
-export const TEMPLATE_KIND_LABEL: Record<EducationTemplateKind, string> = {
-  session: 'Séance',
-  assignment: 'Devoir / projet',
-  note: 'Note',
-  class: 'Classe',
-}
+export const TEMPLATE_KIND_LABEL: Record<EducationTemplateKind, string> = labelMap({
+  session: 'eduD.templateKind.session',
+  assignment: 'eduD.templateKind.assignment',
+  note: 'eduD.templateKind.note',
+  class: 'eduD.templateKind.class',
+})
 
 export async function listTemplates(
   params: { kind?: EducationTemplateKind } = {},
@@ -1053,42 +1057,42 @@ export function formatRelative(date: string | null | undefined): string {
   const d = new Date(date)
   const diff = Date.now() - d.getTime()
   const min = Math.floor(diff / 60_000)
-  if (min < 1) return "à l'instant"
-  if (min < 60) return `il y a ${min} min`
+  if (min < 1) return translate('eduD.relative.now')
+  if (min < 60) return translate('eduD.relative.minutes', { n: min })
   const h = Math.floor(min / 60)
-  if (h < 24) return `il y a ${h} h`
+  if (h < 24) return translate('eduD.relative.hours', { n: h })
   const days = Math.floor(h / 24)
-  if (days < 7) return `il y a ${days} j`
-  return d.toLocaleDateString('fr-FR')
+  if (days < 7) return translate('eduD.relative.days', { n: days })
+  return formatIntlDate(d, { day: 'numeric', month: 'numeric', year: 'numeric' })
 }
 
 export function formatDate(date: string | null | undefined, withTime = false): string {
   if (!date) return '—'
   const d = new Date(date)
   if (withTime) {
-    return d.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+    return formatIntlDateTime(d, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
   }
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+  return formatIntlDate(d, { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 // ─── VENIO-46 — Documents (BDD documentaire) ───────────────────────────────
 
-export const DOCUMENT_CATEGORY_LABEL: Record<EducationDocumentCategory, string> = {
-  school_document: 'Document école',
-  student_submission: 'Rendu étudiant',
-  assignment_submission: 'Rendu devoir',
-  exam_subject: "Sujet d'examen",
-  assignment_correction: 'Correction',
-  teaching_resource: 'Ressource pédagogique',
-  administrative: 'Administratif',
-  other: 'Autre',
-}
+export const DOCUMENT_CATEGORY_LABEL: Record<EducationDocumentCategory, string> = labelMap({
+  school_document: 'eduD.documentCategory.schoolDocument',
+  student_submission: 'eduD.documentCategory.studentSubmission',
+  assignment_submission: 'eduD.documentCategory.assignmentSubmission',
+  exam_subject: 'eduD.documentCategory.examSubject',
+  assignment_correction: 'eduD.documentCategory.assignmentCorrection',
+  teaching_resource: 'eduD.documentCategory.teachingResource',
+  administrative: 'eduD.documentCategory.administrative',
+  other: 'eduD.documentCategory.other',
+})
 
-export const DOCUMENT_STATUS_LABEL: Record<EducationDocumentStatus, string> = {
-  DRAFT: 'Brouillon',
-  PUBLISHED: 'Publié',
-  ARCHIVED: 'Archivé',
-}
+export const DOCUMENT_STATUS_LABEL: Record<EducationDocumentStatus, string> = labelMap({
+  DRAFT: 'eduD.documentStatus.draft',
+  PUBLISHED: 'eduD.documentStatus.published',
+  ARCHIVED: 'eduD.documentStatus.archived',
+})
 
 export interface ListDocumentsParams {
   parentId?: string

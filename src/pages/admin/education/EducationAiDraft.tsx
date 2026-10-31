@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
+import { useI18n } from '../../../context/I18nContext'
+import { translate, type MessageKey } from '../../../i18n'
 import {
   generateEducationAiDraft,
   reviewEducationAiDraft,
@@ -7,31 +9,31 @@ import {
   type EducationAiMode,
 } from '../../../services/education'
 
-const COPY: Record<EducationAiMode, { title: string; label: string; placeholder: string }> = {
+const COPY_KEYS: Record<EducationAiMode, { title: MessageKey; label: MessageKey; placeholder: MessageKey }> = {
   session_plan: {
-    title: 'Préparer une séance',
-    label: 'Sujet, niveau et objectifs',
-    placeholder: 'Sujet : …\nNiveau : …\nObjectifs : un par ligne',
+    title: 'eduD.ai.sessionPlanTitle',
+    label: 'eduD.ai.sessionPlanLabel',
+    placeholder: 'eduD.ai.sessionPlanPlaceholder',
   },
   session_synthesis: {
-    title: 'Synthétiser les notes de séance',
-    label: 'Notes de l’intervenant',
-    placeholder: 'Notes prises pendant ou après la séance…',
+    title: 'eduD.ai.sessionSynthesisTitle',
+    label: 'eduD.ai.sessionSynthesisLabel',
+    placeholder: 'eduD.ai.sessionSynthesisPlaceholder',
   },
   assignment_feedback: {
-    title: 'Proposer un feedback',
-    label: 'Commentaires pour l’étudiant',
-    placeholder: 'Points observés, axes de progrès…',
+    title: 'eduD.ai.assignmentFeedbackTitle',
+    label: 'eduD.ai.assignmentFeedbackLabel',
+    placeholder: 'eduD.ai.assignmentFeedbackPlaceholder',
   },
   class_council_prep: {
-    title: 'Préparer le conseil de classe',
-    label: 'Contexte complémentaire de l’intervenant',
-    placeholder: 'Ex. progrès observés, points à aborder, décisions à préparer…',
+    title: 'eduD.ai.councilTitle',
+    label: 'eduD.ai.councilLabel',
+    placeholder: 'eduD.ai.councilPlaceholder',
   },
   checklist_action_plan: {
-    title: 'Créer une checklist',
-    label: 'Contexte et résultat attendu',
-    placeholder: 'Ex. Préparer la séance suivante sur…',
+    title: 'eduD.ai.checklistTitle',
+    label: 'eduD.ai.checklistLabel',
+    placeholder: 'eduD.ai.checklistPlaceholder',
   },
 }
 
@@ -40,15 +42,18 @@ function planInput(raw: string): Record<string, unknown> {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
-  const valueAfter = (prefix: string) =>
-    lines
-      .find((line) => line.toLowerCase().startsWith(prefix))
-      ?.slice(prefix.length)
-      .trim() || ''
-  const topic = valueAfter('sujet:') || lines[0] || ''
-  const level = valueAfter('niveau:') || 'À préciser'
+  // Le gabarit proposé suit la langue de l'interface : on reconnaît les libellés français et anglais.
+  const valueAfter = (...prefixes: string[]) => {
+    for (const prefix of prefixes) {
+      const found = lines.find((line) => line.toLowerCase().startsWith(prefix))
+      if (found) return found.slice(prefix.length).trim()
+    }
+    return ''
+  }
+  const topic = valueAfter('sujet:', 'topic:') || lines[0] || ''
+  const level = valueAfter('niveau:', 'level:') || translate('eduD.ai.levelDefault')
   const objectives = lines
-    .filter((line) => !/^(sujet|niveau|objectifs?):/i.test(line))
+    .filter((line) => !/^(sujet|topic|niveau|level|objectifs?|objectives?):/i.test(line))
     .slice(topic === lines[0] ? 1 : 0)
     .map((line) => line.replace(/^[-•]\s*/, ''))
   return { topic, level, objectives: objectives.length ? objectives : [topic], durationMin: 120 }
@@ -67,11 +72,12 @@ export function EducationAiDraftPanel({
   councilSummary?: { className: string; summary: string }
   onApply: (draft: EducationAiDraft) => void
 }) {
+  const { t } = useI18n()
   const [input, setInput] = useState(initialText)
   const [result, setResult] = useState<{ generationId: string; draft: EducationAiDraft; engine: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const copy = COPY[mode]
+  const copy = COPY_KEYS[mode]
 
   async function generate() {
     setBusy(true)
@@ -90,7 +96,7 @@ export function EducationAiDraftPanel({
       const response = await generateEducationAiDraft(mode, payload)
       setResult({ generationId: response.generation.id, draft: response.draft, engine: response.generation.engine })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de proposer un brouillon')
+      setError(err instanceof Error ? err.message : t('eduD.ai.generateError'))
     } finally {
       setBusy(false)
     }
@@ -115,26 +121,26 @@ export function EducationAiDraftPanel({
       onApply({ ...result.draft, fields })
       setResult(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'La confirmation de relecture a échoué')
+      setError(err instanceof Error ? err.message : t('eduD.ai.reviewError'))
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <section className="edu-ai-draft" aria-label={copy.title}>
+    <section className="edu-ai-draft" aria-label={t(copy.title)}>
       <div className="edu-ai-draft-head">
         <Sparkles size={15} />
-        <strong>{copy.title}</strong>
+        <strong>{t(copy.title)}</strong>
       </div>
-      <p>Aucune donnée n’est envoyée à un tiers, publiée ou enregistrée automatiquement. Relecture obligatoire.</p>
+      <p>{t('eduD.ai.disclaimer')}</p>
       <label>
-        {copy.label}
+        {t(copy.label)}
         <textarea
           className="edu-textarea"
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder={copy.placeholder}
+          placeholder={t(copy.placeholder)}
         />
       </label>
       {error && (
@@ -149,12 +155,12 @@ export function EducationAiDraftPanel({
           disabled={busy || !input.trim()}
           onClick={() => void generate()}
         >
-          <Sparkles size={14} /> {busy ? 'Préparation…' : 'Proposer un brouillon'}
+          <Sparkles size={14} /> {busy ? t('eduD.ai.preparing') : t('eduD.ai.propose')}
         </button>
       ) : (
         <div className="edu-ai-draft-result">
           <label>
-            Brouillon éditable
+            {t('eduD.ai.editableDraft')}
             <textarea
               className="edu-textarea"
               value={result.draft.text}
@@ -165,9 +171,9 @@ export function EducationAiDraftPanel({
               }
             />
           </label>
-          <small>Provenance : {result.engine} · brouillon non appliqué · relecture humaine requise.</small>
+          <small>{t('eduD.ai.provenance', { engine: result.engine })}</small>
           <button className="edu-btn" type="button" disabled={busy} onClick={() => void reviewAndApply()}>
-            J’ai relu — utiliser comme brouillon éditable
+            {t('eduD.ai.reviewed')}
           </button>
         </div>
       )}
