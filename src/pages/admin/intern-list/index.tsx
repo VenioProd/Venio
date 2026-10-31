@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { apiFetch } from '../../../lib/api'
 import InternDocuments from '../../../components/admin/InternDocuments'
@@ -21,6 +22,7 @@ type TabId = 'dashboard' | 'stagiaires' | 'rapports' | 'kpis' | 'documents' | 'm
 
 const InternList = () => {
   const { user } = useAuth()
+  const { t } = useI18n()
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN'
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
   const { confirm, ConfirmDialog } = useConfirm()
@@ -115,18 +117,18 @@ const InternList = () => {
   if (loading) {
     return (
       <div className="portal-container" style={{ padding: '60px 20px', textAlign: 'center', color: '#fff' }}>
-        Chargement...
+        {t('intern.list.loading')}
       </div>
     )
   }
 
   const tabs = [
-    { key: 'dashboard', label: 'Tableau de bord', count: dashboard.length },
-    { key: 'stagiaires', label: 'Équipe', count: interns.length },
-    { key: 'rapports', label: 'Tous les rapports', count: reports.length },
-    { key: 'kpis', label: 'KPIs', count: null as number | null },
-    { key: 'documents', label: 'Documents', count: null as number | null },
-    ...(isSuperAdmin ? [{ key: 'parametres', label: 'Paramètres', count: null as number | null }] : []),
+    { key: 'dashboard', label: t('intern.list.tabDashboard'), count: dashboard.length },
+    { key: 'stagiaires', label: t('intern.list.tabTeam'), count: interns.length },
+    { key: 'rapports', label: t('intern.list.tabReports'), count: reports.length },
+    { key: 'kpis', label: t('intern.list.tabKpis'), count: null as number | null },
+    { key: 'documents', label: t('intern.list.tabDocuments'), count: null as number | null },
+    ...(isSuperAdmin ? [{ key: 'parametres', label: t('intern.list.tabSettings'), count: null as number | null }] : []),
   ]
 
   return (
@@ -156,9 +158,9 @@ const InternList = () => {
             >
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Retour au dashboard
+            {t('intern.list.backToDashboard')}
           </Link>
-          <h1 className="ticket-hero-title">Gestion de l'équipe</h1>
+          <h1 className="ticket-hero-title">{t('intern.list.title')}</h1>
         </div>
         <button
           className="ticket-new-btn"
@@ -169,7 +171,7 @@ const InternList = () => {
             setActiveTab('stagiaires')
           }}
         >
-          + Nouveau membre
+          {t('intern.list.newMember')}
         </button>
       </div>
 
