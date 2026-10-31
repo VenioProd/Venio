@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useI18n } from '../context/I18nContext'
 
 interface BreadcrumbItem {
   label: string
@@ -11,8 +12,9 @@ interface BreadcrumbProps {
 }
 
 const Breadcrumb = ({ items, className = 'admin-breadcrumb' }: BreadcrumbProps) => {
+  const { t } = useI18n()
   return (
-    <nav className={className} aria-label="Fil d'Ariane">
+    <nav className={className} aria-label={t('shell.breadcrumb.ariaLabel')}>
       {items.map((item, index) => (
         <span key={index}>
           {index > 0 && <span>/</span>}

@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  getExternalSource,
-  listExternalTransactions,
-} from '../../../../services/accounting'
-import type {
-  IExternalSource,
-  IExternalTransaction,
-} from '../../../../types/accounting'
+import { getExternalSource, listExternalTransactions } from '../../../../services/accounting'
+import type { IExternalSource, IExternalTransaction } from '../../../../types/accounting'
 import type { InfoForm, TxFilters } from './types'
+import { useI18n } from '../../../../context/I18nContext'
 
 interface UseExternalSourceReturn {
   source: IExternalSource | null
@@ -37,6 +32,7 @@ const DEFAULT_TX_FILTERS: TxFilters = {
 }
 
 export function useExternalSource(id: string | undefined): UseExternalSourceReturn {
+  const { t } = useI18n()
   const [source, setSource] = useState<IExternalSource | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -66,11 +62,11 @@ export function useExternalSource(id: string | undefined): UseExternalSourceRetu
         defaultBankAccount: s.defaultBankAccount || '',
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, t])
 
   useEffect(() => {
     reload()
@@ -92,11 +88,11 @@ export function useExternalSource(id: string | undefined): UseExternalSourceRetu
       setTransactions(r.transactions || [])
       setTxTotal(r.total || 0)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setTxLoading(false)
     }
-  }, [source, txFilters])
+  }, [source, txFilters, t])
 
   return {
     source,

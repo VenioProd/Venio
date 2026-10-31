@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import type { IExternalSource } from '../../../../types/accounting'
+import { useI18n } from '../../../../context/I18nContext'
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]+$/
 
@@ -27,6 +28,7 @@ interface CreateIntegrationModalProps {
 }
 
 export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: CreateIntegrationModalProps) {
+  const { t } = useI18n()
   const [slug, setSlug] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -60,7 +62,7 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
   }
 
   return (
-    <ModalShell title="Nouvelle intégration externe" onClose={onCancel}>
+    <ModalShell title={t('accVat.modal.createTitle')} onClose={onCancel}>
       <form onSubmit={handleSubmit}>
         <div className="accounting-form-field" style={{ marginBottom: 14 }}>
           <label>
@@ -82,16 +84,16 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
             }}
           >
             {slugTaken
-              ? '⚠️ Ce slug est déjà utilisé par une autre intégration.'
+              ? t('accVat.modal.slugTaken')
               : slugProblem
-                ? '⚠️ Minuscules, chiffres et tirets uniquement (≥ 2 caractères, doit commencer par lettre ou chiffre).'
-                : 'Identifiant unique en minuscules. Ex : stripe, shopify, ecom-bcg.'}
+                ? t('accVat.modal.slugInvalid')
+                : t('accVat.modal.slugHint')}
           </div>
         </div>
 
         <div className="accounting-form-field" style={{ marginBottom: 14 }}>
           <label>
-            Nom affiché <span style={{ color: '#f87171' }}>*</span>
+            {t('accVat.modal.displayName')} <span style={{ color: '#f87171' }}>*</span>
           </label>
           <input
             className="portal-input"
@@ -103,13 +105,13 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
         </div>
 
         <div className="accounting-form-field" style={{ marginBottom: 14 }}>
-          <label>Description (optionnel)</label>
+          <label>{t('accVat.modal.description')}</label>
           <textarea
             className="portal-input"
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Pousse les charges Stripe (frais, remboursements)…"
+            placeholder={t('accVat.modal.descriptionPlaceholder')}
           />
         </div>
 
@@ -134,7 +136,7 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
             style={{ marginTop: 3 }}
           />
           <span>
-            <strong style={{ color: '#fde68a' }}>Auto-validation</strong>
+            <strong style={{ color: '#fde68a' }}>{t('accVat.modal.autoValidate')}</strong>
             <div
               style={{
                 marginTop: 2,
@@ -142,8 +144,8 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
                 color: 'rgba(255,255,255,0.6)',
               }}
             >
-              Si coché, les écritures sont créées directement en <code>VALIDATED</code>. À n'activer que pour les
-              sources de confiance maximale.
+              {t('accVat.modal.autoValidateBefore')} <code>VALIDATED</code>
+              {t('accVat.modal.autoValidateAfter')}
             </div>
           </span>
         </label>
@@ -173,10 +175,10 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
           }}
         >
           <button type="button" className="portal-button secondary" onClick={onCancel} disabled={submitting}>
-            Annuler
+            {t('common.cancel')}
           </button>
           <button type="submit" className="portal-button" disabled={!canSubmit}>
-            {submitting ? '⏳ Création…' : "Créer l'intégration"}
+            {submitting ? t('accVat.modal.creating') : t('accVat.modal.createButton')}
           </button>
         </div>
       </form>
@@ -193,6 +195,7 @@ interface RevokeIntegrationModalProps {
 }
 
 export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIntegrationModalProps) {
+  const { t } = useI18n()
   const [confirmation, setConfirmation] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
@@ -211,7 +214,7 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
   }
 
   return (
-    <ModalShell title="Révoquer cette intégration ?" onClose={onCancel}>
+    <ModalShell title={t('accVat.modal.revokeTitle')} onClose={onCancel}>
       <div
         style={{
           padding: '12px 14px',
@@ -223,7 +226,8 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
           lineHeight: 1.55,
         }}
       >
-        ⚠️ Cette action est <strong>irréversible</strong>. L'intégration{' '}
+        ⚠️ {t('accVat.modal.revokeWarnA')} <strong>{t('accVat.modal.revokeWarnB')}</strong>
+        {t('accVat.modal.revokeWarnC')}{' '}
         <code
           style={{
             background: 'rgba(15,15,20,0.6)',
@@ -233,12 +237,12 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
         >
           {source.slug}
         </code>{' '}
-        sera supprimée et sa clé API immédiatement invalidée. Les écritures déjà reçues sont conservées.
+        {t('accVat.modal.revokeWarnD')}
       </div>
 
       <div className="accounting-form-field" style={{ marginTop: 18 }}>
         <label>
-          Pour confirmer, tapez le slug{' '}
+          {t('accVat.modal.confirmSlugA')}{' '}
           <code
             style={{
               background: 'rgba(15,15,20,0.6)',
@@ -249,7 +253,7 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
           >
             {source.slug}
           </code>{' '}
-          ci-dessous :
+          {t('accVat.modal.confirmSlugB')}
         </label>
         <input
           className="portal-input"
@@ -285,7 +289,7 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
         }}
       >
         <button type="button" className="portal-button secondary" onClick={onCancel} disabled={submitting}>
-          Annuler
+          {t('common.cancel')}
         </button>
         <button
           type="button"
@@ -298,7 +302,7 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
             color: '#fff',
           }}
         >
-          {submitting ? '⏳ Révocation…' : 'Révoquer définitivement'}
+          {submitting ? t('accVat.modal.revoking') : t('accVat.modal.revokeButton')}
         </button>
       </div>
     </ModalShell>
@@ -315,6 +319,7 @@ interface CredentialsModalProps {
 }
 
 export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: CredentialsModalProps) {
+  const { t } = useI18n()
   const ingestUrl = `https://venio.paris/api/external/${credentials.sourceSlug}/entries`
   const envBlock = [
     `VENIO_API_KEY=${credentials.apiKey}`,
@@ -325,8 +330,8 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
 
   const title =
     credentials.context === 'rotated'
-      ? `🔄 Nouvelles clés pour ${credentials.sourceName}`
-      : `🎉 Intégration ${credentials.sourceName} créée`
+      ? t('accVat.modal.newKeysTitle', { name: credentials.sourceName })
+      : t('accVat.modal.createdTitle', { name: credentials.sourceName })
 
   return (
     <ModalShell title={title} onClose={onClose} closeOnBackdrop={false} wide>
@@ -338,7 +343,7 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
           marginBottom: 14,
         }}
       >
-        Slug&nbsp;:{' '}
+        {t('accVat.integ.slugLabel')}{' '}
         <code
           style={{
             fontFamily: "'SF Mono', Menlo, Consolas, monospace",
@@ -362,9 +367,10 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
           lineHeight: 1.5,
         }}
       >
-        ⚠️ Ces valeurs ne s'afficheront <strong>PLUS JAMAIS</strong>.
+        ⚠️ {t('accVat.modal.neverShownA')} <strong>{t('accVat.modal.neverShownB')}</strong>
+        {t('accVat.modal.neverShownC')}
         <br />
-        Stocke-les immédiatement dans un gestionnaire de secrets sécurisé.
+        {t('accVat.modal.storeThem')}
         {credentials.warning && (
           <div style={{ marginTop: 8, fontSize: '0.82rem', opacity: 0.85 }}>{credentials.warning}</div>
         )}
@@ -413,14 +419,14 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
             alignItems: 'center',
           }}
         >
-          <span>Variables à coller dans le .env du service</span>
+          <span>{t('accVat.modal.envVars')}</span>
           <button
             type="button"
             className="portal-button secondary"
             style={{ fontSize: '0.72rem', padding: '4px 10px' }}
             onClick={() => onCopy(envBlock, 'envBlock')}
           >
-            {copiedField === 'envBlock' ? '✓ Copié' : '📋 Tout copier'}
+            {copiedField === 'envBlock' ? t('accVat.modal.copied') : t('accVat.modal.copyAll')}
           </button>
         </div>
         <pre
@@ -450,7 +456,7 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
         }}
       >
         <button type="button" className="portal-button" onClick={onClose}>
-          ✅ J'ai bien noté les credentials → Fermer
+          ✅ {t('accVat.modal.noted')}
         </button>
       </div>
     </ModalShell>
@@ -468,6 +474,7 @@ interface SecretFieldProps {
 }
 
 export function SecretField({ label, value, color, borderColor, fieldKey, copiedField, onCopy }: SecretFieldProps) {
+  const { t } = useI18n()
   return (
     <div style={{ marginTop: 18 }}>
       <div
@@ -512,7 +519,7 @@ export function SecretField({ label, value, color, borderColor, fieldKey, copied
           onClick={() => onCopy(value, fieldKey)}
           style={{ whiteSpace: 'nowrap' }}
         >
-          {copiedField === fieldKey ? '✓ Copié' : '📋 Copier'}
+          {copiedField === fieldKey ? t('accVat.modal.copied') : t('accVat.modal.copy')}
         </button>
       </div>
     </div>

@@ -7,44 +7,46 @@ import type {
   BetaSeverity,
   BetaVerdict,
 } from '../../../services/beta'
+import { translate, type MessageKey } from '../../../i18n'
+import { formatDate } from '../../../i18n/format'
 
 export type Tone = 'ok' | 'warn' | 'fail' | 'retest' | 'blocked' | 'neutral'
 
-export const SCENARIO_STATUS_LABEL: Record<BetaScenarioStatus, string> = {
-  NOT_TESTED: 'Non testée',
-  OK: 'Fonctionne',
-  KO: 'Ne fonctionne pas',
-  TO_OPTIMIZE: 'À optimiser',
-  TO_RETEST: 'À revalider',
-  BLOCKED: 'Personne n’a pu la dérouler',
-}
+export const SCENARIO_STATUS_LABEL_KEY = {
+  NOT_TESTED: 'beta.scenarios.statusNotTested',
+  OK: 'beta.scenarios.statusOk',
+  KO: 'beta.scenarios.statusKo',
+  TO_OPTIMIZE: 'beta.scenarios.statusToOptimize',
+  TO_RETEST: 'beta.scenarios.statusToRetest',
+  BLOCKED: 'beta.scenarios.statusBlocked',
+} as const satisfies Record<BetaScenarioStatus, MessageKey>
 
-export const VERDICT_LABEL: Record<BetaVerdict, string> = {
-  WORKS: 'Fonctionne',
-  BROKEN: 'Ne fonctionne pas',
-  TO_OPTIMIZE: 'À optimiser',
-  BLOCKED: 'N’a pas pu être testée',
-}
+export const VERDICT_LABEL_KEY = {
+  WORKS: 'beta.verdict.works',
+  BROKEN: 'beta.verdict.broken',
+  TO_OPTIMIZE: 'beta.verdict.toOptimize',
+  BLOCKED: 'beta.verdict.blocked',
+} as const satisfies Record<BetaVerdict, MessageKey>
 
-export const SEVERITY_LABEL: Record<BetaSeverity, string> = {
-  BLOCKER: 'Bloquant',
-  MAJOR: 'Majeur',
-  MINOR: 'Mineur',
-  COSMETIC: 'Cosmétique',
-}
+export const SEVERITY_LABEL_KEY = {
+  BLOCKER: 'beta.severity.blocker',
+  MAJOR: 'beta.severity.major',
+  MINOR: 'beta.severity.minor',
+  COSMETIC: 'beta.severity.cosmetic',
+} as const satisfies Record<BetaSeverity, MessageKey>
 
-export const REPRODUCIBILITY_LABEL: Record<string, string> = {
-  ALWAYS: 'Systématique',
-  SOMETIMES: 'Aléatoire',
-  ONCE: 'Vu une fois',
-}
+export const REPRODUCIBILITY_LABEL_KEY = {
+  ALWAYS: 'beta.repro.always',
+  SOMETIMES: 'beta.repro.sometimes',
+  ONCE: 'beta.repro.once',
+} as const satisfies Record<string, MessageKey>
 
-export const RUN_STATUS_LABEL: Record<BetaRunStatus, string> = {
-  OPEN: 'À traiter',
-  ACKNOWLEDGED: 'Pris en compte',
-  FIXED: 'Corrigé',
-  REJECTED: 'Sans suite',
-}
+export const RUN_STATUS_LABEL_KEY = {
+  OPEN: 'beta.runStatus.open',
+  ACKNOWLEDGED: 'beta.shared.acknowledged',
+  FIXED: 'beta.runStatus.fixed',
+  REJECTED: 'beta.runStatus.rejected',
+} as const satisfies Record<BetaRunStatus, MessageKey>
 
 const SCENARIO_TONES: Record<BetaScenarioStatus, Tone> = {
   OK: 'ok',
@@ -99,7 +101,7 @@ export function describeContext(run: Pick<BetaRun, 'context'>): string {
   if (!context) return ''
 
   const parts: string[] = []
-  if (context.isMobile != null) parts.push(context.isMobile ? 'Mobile' : 'Ordinateur')
+  if (context.isMobile != null) parts.push(translate(context.isMobile ? 'beta.context.mobile' : 'beta.context.desktop'))
   if (context.viewportWidth && context.viewportHeight) {
     parts.push(`${context.viewportWidth}×${context.viewportHeight}`)
   }
@@ -113,9 +115,9 @@ export function formatRelative(date: string | null | undefined): string {
   const minute = 60_000
   const hour = 60 * minute
   const day = 24 * hour
-  if (diff < minute) return "à l'instant"
-  if (diff < hour) return `il y a ${Math.floor(diff / minute)} min`
-  if (diff < day) return `il y a ${Math.floor(diff / hour)} h`
-  if (diff < 7 * day) return `il y a ${Math.floor(diff / day)} j`
-  return value.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+  if (diff < minute) return translate('beta.relative.now')
+  if (diff < hour) return translate('beta.relative.minutes', { count: Math.floor(diff / minute) })
+  if (diff < day) return translate('beta.relative.hours', { count: Math.floor(diff / hour) })
+  if (diff < 7 * day) return translate('beta.relative.days', { count: Math.floor(diff / day) })
+  return formatDate(value, { day: '2-digit', month: 'short' })
 }

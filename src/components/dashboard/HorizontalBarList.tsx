@@ -1,3 +1,5 @@
+import { useI18n } from '../../context/I18nContext'
+
 export interface HorizontalBarItem {
   key: string
   label: string
@@ -15,10 +17,11 @@ interface Props {
  * longueur de la barre, valeur en bout de barre (jamais la couleur seule).
  */
 const HorizontalBarList = ({ items, color }: Props) => {
+  const { t } = useI18n()
   const max = Math.max(1, ...items.map((i) => i.value))
 
   if (items.length === 0) {
-    return <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Aucune donnée</p>
+    return <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('shared.dash.noData')}</p>
   }
 
   return (

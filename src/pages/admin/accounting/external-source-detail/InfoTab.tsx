@@ -1,6 +1,8 @@
 import type { IExternalSource } from '../../../../types/accounting'
 import type { InfoForm } from './types'
 import { formatDateTime } from './helpers'
+import { useI18n } from '../../../../context/I18nContext'
+import { formatNumber } from '../../../../i18n/format'
 
 interface InfoTabProps {
   source: IExternalSource
@@ -11,27 +13,28 @@ interface InfoTabProps {
 }
 
 export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving }: InfoTabProps) {
+  const { t } = useI18n()
   return (
     <>
       <div className="accounting-kpi-grid">
         <div className="accounting-kpi">
-          <div className="label">Total reçu</div>
-          <div className="value">{Number(source.totalIngested || 0).toLocaleString('fr-FR')}</div>
+          <div className="label">{t('accVat.esd.totalReceived')}</div>
+          <div className="value">{formatNumber(Number(source.totalIngested || 0))}</div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">Rejetées</div>
+          <div className="label">{t('accVat.integ.rejected')}</div>
           <div className="value" style={{ color: source.totalRejected ? '#f87171' : undefined }}>
-            {Number(source.totalRejected || 0).toLocaleString('fr-FR')}
+            {formatNumber(Number(source.totalRejected || 0))}
           </div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">Doublons</div>
+          <div className="label">{t('accVat.integ.duplicates')}</div>
           <div className="value" style={{ color: source.totalDuplicates ? '#fbbf24' : undefined }}>
-            {Number(source.totalDuplicates || 0).toLocaleString('fr-FR')}
+            {formatNumber(Number(source.totalDuplicates || 0))}
           </div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">Dernière activité</div>
+          <div className="label">{t('accVat.src.colLastActivity')}</div>
           <div className="value" style={{ fontSize: '0.95rem' }}>
             {formatDateTime(source.lastSeenAt)}
           </div>
@@ -39,11 +42,11 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
       </div>
 
       <section className="accounting-card" style={{ marginBottom: 16 }}>
-        <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Informations & mappings</h2>
+        <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>{t('accVat.esd.infoHeading')}</h2>
 
         <div className="accounting-form">
           <div className="accounting-form-field full">
-            <label>Description</label>
+            <label>{t('accVat.src.description')}</label>
             <textarea
               className="portal-input"
               rows={2}
@@ -65,7 +68,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
                 onChange={(e) => setInfoForm({ ...infoForm, autoValidateAll: e.target.checked })}
                 style={{ marginRight: 8 }}
               />
-              Auto-valider toutes les écritures de cette source
+              {t('accVat.src.autoValidateLabel')}
             </label>
             <span
               style={{
@@ -74,11 +77,11 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
                 marginTop: 2,
               }}
             >
-              ⚠ Si activé, toutes les écritures arrivent validées sans revue manuelle.
+              ⚠ {t('accVat.esd.autoValidateWarning')}
             </span>
           </div>
           <div className="accounting-form-field">
-            <label>Rate limit (req/min)</label>
+            <label>{t('accVat.src.rateLimit')}</label>
             <input
               type="number"
               min="1"
@@ -88,7 +91,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             />
           </div>
           <div className="accounting-form-field">
-            <label>Journal par défaut</label>
+            <label>{t('accVat.src.defaultJournal')}</label>
             <input
               className="portal-input"
               value={infoForm.defaultJournalCode}
@@ -96,7 +99,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             />
           </div>
           <div className="accounting-form-field">
-            <label>Compte client</label>
+            <label>{t('accVat.src.customerAccount')}</label>
             <input
               className="portal-input"
               value={infoForm.defaultCustomerAccount}
@@ -104,7 +107,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             />
           </div>
           <div className="accounting-form-field">
-            <label>Compte produit</label>
+            <label>{t('accVat.src.revenueAccount')}</label>
             <input
               className="portal-input"
               value={infoForm.defaultRevenueAccount}
@@ -112,7 +115,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             />
           </div>
           <div className="accounting-form-field">
-            <label>Compte charge</label>
+            <label>{t('accVat.src.expenseAccount')}</label>
             <input
               className="portal-input"
               value={infoForm.defaultExpenseAccount}
@@ -120,7 +123,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             />
           </div>
           <div className="accounting-form-field">
-            <label>Compte banque</label>
+            <label>{t('accVat.src.bankAccount')}</label>
             <input
               className="portal-input"
               value={infoForm.defaultBankAccount}
@@ -131,13 +134,13 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
 
         <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
           <button className="portal-button" onClick={onSave} disabled={saving}>
-            {saving ? 'Enregistrement…' : '✓ Enregistrer'}
+            {saving ? t('accVat.settings.saving') : t('accVat.esd.save')}
           </button>
         </div>
       </section>
 
       <section className="accounting-card" style={{ marginBottom: 16 }}>
-        <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Endpoints API</h2>
+        <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>{t('accVat.esd.endpoints')}</h2>
         <p
           style={{
             color: 'rgba(255,255,255,0.65)',
@@ -145,7 +148,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             marginTop: 0,
           }}
         >
-          Le site tiers doit utiliser le slug <span className="code">{source.slug}</span> dans toutes les URL.
+          {t('accVat.esd.slugUseA')} <span className="code">{source.slug}</span> {t('accVat.esd.slugUseB')}
         </p>
 
         <div
@@ -187,31 +190,31 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             color: 'rgba(14, 165, 233, 0.85)',
           }}
         >
-          Headers requis
+          {t('accVat.esd.headersHeading')}
         </h3>
         <table className="accounting-table">
           <thead>
             <tr>
-              <th>Header</th>
-              <th>Description</th>
+              <th>{t('accVat.esd.colHeader')}</th>
+              <th>{t('accVat.esd.colDescription')}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td className="code">X-Api-Key</td>
-              <td>Clé API de la source (préfixe actuel : {source.apiKeyPrefix || '—'}…)</td>
+              <td>{t('accVat.esd.hdrApiKey', { prefix: source.apiKeyPrefix || '—' })}</td>
             </tr>
             <tr>
               <td className="code">X-Venio-Signature</td>
-              <td>HMAC-SHA256 du body brut, signé avec le secret webhook</td>
+              <td>{t('accVat.esd.hdrSignature')}</td>
             </tr>
             <tr>
               <td className="code">X-Venio-Timestamp</td>
-              <td>Timestamp Unix (s) inclus dans le calcul de la signature (anti-replay)</td>
+              <td>{t('accVat.esd.hdrTimestamp')}</td>
             </tr>
             <tr>
               <td className="code">Idempotency-Key</td>
-              <td>Identifiant unique de la requête côté tiers (anti-doublon)</td>
+              <td>{t('accVat.esd.hdrIdempotency')}</td>
             </tr>
           </tbody>
         </table>
@@ -224,7 +227,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
               color: 'rgba(255,255,255,0.5)',
             }}
           >
-            Dernière rotation de clé : {formatDateTime(source.rotatedAt)}
+            {t('accVat.esd.lastRotation', { date: formatDateTime(source.rotatedAt) })}
           </p>
         )}
       </section>

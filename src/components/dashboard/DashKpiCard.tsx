@@ -1,6 +1,8 @@
 import { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import Sparkline from './Sparkline'
+import { useI18n } from '../../context/I18nContext'
+import { formatNumber } from '../../i18n/format'
 
 export interface KpiDelta {
   value: number
@@ -39,6 +41,7 @@ const DashKpiCard = ({
   sparkline,
   hint,
 }: DashKpiCardProps) => {
+  const { t } = useI18n()
   const arrow = delta ? (delta.direction === 'up' ? '▲' : delta.direction === 'down' ? '▼' : '=') : ''
   const sign = delta && delta.value > 0 ? '+' : ''
   const deltaClass =
@@ -71,8 +74,12 @@ const DashKpiCard = ({
       )}
       {objective && (
         <div className="dash-kpi__objective">
-          {objective.label ?? 'Objectif'} : {objPct}% ({objective.current.toLocaleString('fr-FR')} /{' '}
-          {objective.target.toLocaleString('fr-FR')})
+          {t('shared.dash.objective', {
+            label: objective.label ?? t('shared.dash.objectiveDefault'),
+            pct: objPct,
+            current: formatNumber(objective.current),
+            target: formatNumber(objective.target),
+          })}
           <div className="dash-kpi__objective-bar">
             <div className="dash-kpi__objective-bar__fill" style={{ width: `${objPct}%` }} />
           </div>

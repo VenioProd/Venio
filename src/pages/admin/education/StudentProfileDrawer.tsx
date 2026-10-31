@@ -14,6 +14,8 @@ import {
   type EducationStudentStatus,
   type EducationStudentOverview,
 } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
+import type { MessageKey } from '../../../i18n'
 import { Kpi } from './class-parts'
 
 /**
@@ -21,12 +23,12 @@ import { Kpi } from './class-parts'
  * historique de présence et notes libres. Ouverte depuis StudentsTab.
  */
 
-const STUDENT_STATUS_LABEL: Record<EducationStudentStatus, string> = {
-  ACTIVE: 'Actif',
-  PAUSE: 'En pause',
-  ABANDON: 'Abandon',
-  TERMINE: 'Terminé',
-}
+const STUDENT_STATUS_LABEL_KEYS = {
+  ACTIVE: 'eduD.studentStatus.active',
+  PAUSE: 'eduD.studentStatus.pause',
+  ABANDON: 'eduD.studentStatus.dropped',
+  TERMINE: 'eduD.studentStatus.ended',
+} as const satisfies Record<EducationStudentStatus, MessageKey>
 
 const MAX_SESSIONS_SHOWN = 30
 const MAX_ASSIGNMENTS = 20
@@ -45,6 +47,7 @@ export function StudentProfileDrawer({
   onChanged: () => void
   followUpAlert?: EducationDashboardAlert | null
 }) {
+  const { t } = useI18n()
   const [status, setStatus] = useState<EducationStudentStatus>(student.status)
   const [notes, setNotes] = useState(student.notes || '')
   const [notesSaved, setNotesSaved] = useState(false)
@@ -72,11 +75,11 @@ export function StudentProfileDrawer({
       setGradeRows(overview.grades)
       setAssignmentsTotal(overview.assignmentsTotal)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Impossible de charger la fiche étudiant'
+      const message = err instanceof Error ? err.message : t('eduD.profile.loadError')
       setAttendanceError(message)
       setGradesError(message)
     }
-  }, [student._id])
+  }, [student._id, t])
 
   useEffect(() => {
     // The drawer must refresh when its student changes; state updates happen after the request settles.
@@ -93,7 +96,7 @@ export function StudentProfileDrawer({
       onChanged()
     } catch (err) {
       setStatus(prev)
-      setHeadError(err instanceof Error ? err.message : 'Erreur de sauvegarde du statut')
+      setHeadError(err instanceof Error ? err.message : t('eduD.profile.saveStatusError'))
     }
   }
 
@@ -106,7 +109,7 @@ export function StudentProfileDrawer({
       setTimeout(() => setNotesSaved(false), 1500)
       onChanged()
     } catch (err) {
-      setHeadError(err instanceof Error ? err.message : 'Erreur de sauvegarde des notes')
+      setHeadError(err instanceof Error ? err.message : t('eduD.profile.saveNotesError'))
     }
   }
 
@@ -119,7 +122,7 @@ export function StudentProfileDrawer({
       setFollowUpAcknowledged(true)
       onChanged()
     } catch (err) {
-      setHeadError(err instanceof Error ? err.message : 'Erreur de mise à jour du suivi')
+      setHeadError(err instanceof Error ? err.message : t('eduD.profile.followUpError'))
     } finally {
       setAcknowledgingFollowUp(false)
     }
@@ -150,15 +153,15 @@ export function StudentProfileDrawer({
               style={{ width: 'auto' }}
               value={status}
               onChange={(e) => saveStatus(e.target.value as EducationStudentStatus)}
-              aria-label="Statut de l'étudiant"
+              aria-label={t('eduD.profile.statusAria')}
             >
-              {Object.entries(STUDENT_STATUS_LABEL).map(([k, v]) => (
+              {(Object.keys(STUDENT_STATUS_LABEL_KEYS) as EducationStudentStatus[]).map((k) => (
                 <option key={k} value={k}>
-                  {v}
+                  {t(STUDENT_STATUS_LABEL_KEYS[k])}
                 </option>
               ))}
             </select>
-            <button className="edu-btn-icon" onClick={onClose} aria-label="Fermer la fiche étudiant">
+            <button className="edu-btn-icon" onClick={onClose} aria-label={t('eduD.profile.closeAria')}>
               <X size={18} />
             </button>
           </div>
@@ -172,38 +175,41 @@ export function StudentProfileDrawer({
           )}
 
           <div className="edu-kpi-grid">
-            <Kpi label="Présences" value={student.attendanceCount} />
-            <Kpi label="Absences" value={student.absenceCount} />
-            <Kpi label="Retards" value={student.lateCount} />
-            <Kpi label="Moyenne" value={student.averageGrade != null ? student.averageGrade.toFixed(1) : '—'} />
+            <Kpi label={t('eduD.profile.kpiAttendance')} value={student.attendanceCount} />
+            <Kpi label={t('eduD.profile.kpiAbsences')} value={student.absenceCount} />
+            <Kpi label={t('eduD.profile.kpiLates')} value={student.lateCount} />
+            <Kpi
+              label={t('eduD.profile.kpiAverage')}
+              value={student.averageGrade != null ? student.averageGrade.toFixed(1) : '—'}
+            />
           </div>
 
           {followUpAlert && (
             <section className="edu-student-follow-up" aria-labelledby="student-follow-up-title">
               <h2 id="student-follow-up-title" className="edu-h2">
-                Point d’attention
+                {t('eduD.profile.attention')}
               </h2>
               <p className="edu-sub" style={{ marginBottom: 10 }}>
                 {followUpAlert.message}
               </p>
               {followUpAcknowledged ? (
                 <p className="edu-student-follow-up-done" role="status">
-                  Suivi marqué comme traité. Il réapparaîtra si la situation évolue.
+                  {t('eduD.profile.followUpDone')}
                 </p>
               ) : (
                 <button className="edu-btn ghost" onClick={acknowledgeFollowUp} disabled={acknowledgingFollowUp}>
-                  {acknowledgingFollowUp ? 'Mise à jour…' : 'Marquer comme traité'}
+                  {acknowledgingFollowUp ? t('eduD.profile.updating') : t('eduD.profile.markDone')}
                 </button>
               )}
             </section>
           )}
 
           <h2 className="edu-h2">
-            Notes par devoir
+            {t('eduD.profile.gradesHeading')}
             {assignmentsTotal > MAX_ASSIGNMENTS && (
               <span style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}>
                 {' '}
-                ({MAX_ASSIGNMENTS} plus récents)
+                {t('eduD.profile.mostRecentMasc', { count: MAX_ASSIGNMENTS })}
               </span>
             )}
           </h2>
@@ -211,21 +217,21 @@ export function StudentProfileDrawer({
             <div className="edu-banner-error" role="alert">
               {gradesError}
               <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={loadOverview}>
-                Réessayer
+                {t('eduD.common.retry')}
               </button>
             </div>
           ) : gradeRows === null ? (
-            <p className="edu-sub">Chargement…</p>
+            <p className="edu-sub">{t('eduD.common.loading')}</p>
           ) : gradeRows.length === 0 ? (
-            <div className="edu-empty">Aucun devoir noté.</div>
+            <div className="edu-empty">{t('eduD.profile.noGraded')}</div>
           ) : (
             <table className="edu-table">
               <thead>
                 <tr>
-                  <th>Devoir</th>
-                  <th>Statut</th>
-                  <th>Note</th>
-                  <th>Feedback</th>
+                  <th>{t('eduD.profile.colAssignment')}</th>
+                  <th>{t('eduD.common.status')}</th>
+                  <th>{t('eduD.profile.colGrade')}</th>
+                  <th>{t('eduD.profile.colFeedback')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -257,11 +263,11 @@ export function StudentProfileDrawer({
           )}
 
           <h2 className="edu-h2">
-            Historique de présence
+            {t('eduD.profile.attendanceHeading')}
             {attendanceTotal > MAX_SESSIONS_SHOWN && (
               <span style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}>
                 {' '}
-                ({MAX_SESSIONS_SHOWN} plus récentes)
+                {t('eduD.profile.mostRecentFem', { count: MAX_SESSIONS_SHOWN })}
               </span>
             )}
           </h2>
@@ -269,20 +275,20 @@ export function StudentProfileDrawer({
             <div className="edu-banner-error" role="alert">
               {attendanceError}
               <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={loadOverview}>
-                Réessayer
+                {t('eduD.common.retry')}
               </button>
             </div>
           ) : attendanceRows === null ? (
-            <p className="edu-sub">Chargement…</p>
+            <p className="edu-sub">{t('eduD.common.loading')}</p>
           ) : attendanceRows.length === 0 ? (
-            <div className="edu-empty">Aucune séance.</div>
+            <div className="edu-empty">{t('eduD.profile.noSessions')}</div>
           ) : (
             <table className="edu-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Séance</th>
-                  <th>État</th>
+                  <th>{t('eduD.profile.colDate')}</th>
+                  <th>{t('eduD.profile.colSession')}</th>
+                  <th>{t('eduD.profile.colState')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -302,9 +308,11 @@ export function StudentProfileDrawer({
           )}
 
           <h2 className="edu-h2">
-            Notes libres
+            {t('eduD.profile.freeNotes')}
             {notesSaved && (
-              <span style={{ fontSize: 11.5, fontWeight: 400, color: '#22C55E', marginLeft: 8 }}>Sauvegardé</span>
+              <span style={{ fontSize: 11.5, fontWeight: 400, color: '#22C55E', marginLeft: 8 }}>
+                {t('eduD.profile.saved')}
+              </span>
             )}
           </h2>
           <textarea
@@ -312,15 +320,15 @@ export function StudentProfileDrawer({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             onBlur={saveNotes}
-            placeholder="Observations, suivi individuel, points d'attention…"
+            placeholder={t('eduD.profile.notesPlaceholder')}
             style={{ minHeight: 120 }}
-            aria-label="Notes libres sur l'étudiant"
+            aria-label={t('eduD.profile.notesAria')}
           />
         </div>
 
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
-            Fermer
+            {t('common.close')}
           </button>
         </div>
       </div>

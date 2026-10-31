@@ -9,6 +9,8 @@ import type { ClassificationRulePayload } from '../../../../services/accounting'
 import type { IClassificationRule } from '../../../../types/accounting'
 import type { RuleForm } from './types'
 import { formatDateTime, RULE_TYPE_OPTIONS, EMPTY_RULE, parseTagsInput, tagsToInput } from './helpers'
+import { useI18n } from '../../../../context/I18nContext'
+import { formatNumber } from '../../../../i18n/format'
 
 interface RulesTabProps {
   sourceId: string
@@ -16,6 +18,7 @@ interface RulesTabProps {
 }
 
 export default function RulesTab({ sourceId, onError }: RulesTabProps) {
+  const { t } = useI18n()
   const [rules, setRules] = useState<IClassificationRule[]>([])
   const [rulesLoading, setRulesLoading] = useState(false)
   const [editingRule, setEditingRule] = useState<RuleForm | null>(null)
@@ -32,11 +35,11 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
       const list = await listClassificationRules(sourceId)
       setRules(list || [])
     } catch (err) {
-      onError(err instanceof Error ? err.message : 'Erreur')
+      onError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setRulesLoading(false)
     }
-  }, [sourceId, onError])
+  }, [sourceId, onError, t])
 
   useEffect(() => {
     reloadRules()
@@ -84,7 +87,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
   async function handleSaveRule() {
     if (!editingRule) return
     if (!editingRule.name || !editingRule.name.trim()) {
-      setRuleError('Le nom de la règle est obligatoire.')
+      setRuleError(t('accVat.rules.nameRequired'))
       return
     }
     setRuleSaving(true)
@@ -123,7 +126,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
       setEditingRule(null)
       await reloadRules()
     } catch (err) {
-      setRuleError(err instanceof Error ? err.message : 'Erreur')
+      setRuleError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setRuleSaving(false)
     }
@@ -134,17 +137,17 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
       await updateClassificationRule(sourceId, rule._id, { enabled: !rule.enabled })
       await reloadRules()
     } catch (err) {
-      onError(err instanceof Error ? err.message : 'Erreur')
+      onError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
   async function handleDeleteRule(rule: IClassificationRule) {
-    if (!confirm(`Supprimer la règle « ${rule.name} » ?`)) return
+    if (!confirm(t('accVat.rules.confirmDelete', { name: rule.name }))) return
     try {
       await deleteClassificationRule(sourceId, rule._id)
       await reloadRules()
     } catch (err) {
-      onError(err instanceof Error ? err.message : 'Erreur')
+      onError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
@@ -164,7 +167,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
       >
         <div>
           <h2 style={{ margin: 0, fontSize: '1.05rem' }}>
-            Règles de classification
+            {t('accVat.rules.heading')}
             <span
               style={{
                 marginLeft: 10,
@@ -183,11 +186,11 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
               color: 'rgba(255,255,255,0.55)',
             }}
           >
-            Les règles sont évaluées par priorité décroissante. La première qui matche s'applique.
+            {t('accVat.rules.help')}
           </p>
         </div>
         <button className="portal-button" onClick={openNewRule}>
-          ✚ Nouvelle règle
+          {t('accVat.rules.new')}
         </button>
       </div>
 
@@ -199,20 +202,22 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
             marginBottom: 16,
           }}
         >
-          <h3 style={{ marginTop: 0, fontSize: '1rem' }}>{editingRule._id ? 'Modifier la règle' : 'Nouvelle règle'}</h3>
+          <h3 style={{ marginTop: 0, fontSize: '1rem' }}>
+            {editingRule._id ? t('accVat.rules.editTitle') : t('accVat.rules.newTitle')}
+          </h3>
 
           <div className="accounting-form">
             <div className="accounting-form-field">
-              <label>Nom *</label>
+              <label>{t('accVat.rules.nameField')}</label>
               <input
                 className="portal-input"
-                placeholder="Ex: Ventes Arrow standard"
+                placeholder={t('accVat.rules.namePlaceholder')}
                 value={editingRule.name}
                 onChange={(e) => setEditingRule({ ...editingRule, name: e.target.value })}
               />
             </div>
             <div className="accounting-form-field">
-              <label>Priorité</label>
+              <label>{t('accVat.rules.priority')}</label>
               <input
                 type="number"
                 className="portal-input"
@@ -228,7 +233,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   onChange={(e) => setEditingRule({ ...editingRule, enabled: e.target.checked })}
                   style={{ marginRight: 8 }}
                 />
-                Règle active
+                {t('accVat.rules.active')}
               </label>
             </div>
           </div>
@@ -249,12 +254,12 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                 fontWeight: 600,
               }}
             >
-              {expandedSections.conditions ? '▼' : '▶'} Conditions
+              {expandedSections.conditions ? '▼' : '▶'} {t('accVat.rules.conditions')}
             </button>
             {expandedSections.conditions && (
               <div className="accounting-form" style={{ marginTop: 12 }}>
                 <div className="accounting-form-field">
-                  <label>Type</label>
+                  <label>{t('accVat.rules.type')}</label>
                   <select
                     className="portal-input"
                     value={editingRule.conditions.type}
@@ -267,13 +272,13 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   >
                     {RULE_TYPE_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
-                        {o.label}
+                        {t(o.labelKey)}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div className="accounting-form-field">
-                  <label>Catégorie (regex)</label>
+                  <label>{t('accVat.rules.category')}</label>
                   <input
                     className="portal-input"
                     placeholder="^(rental|sale)$"
@@ -290,7 +295,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                 </div>
                 <div className="accounting-form-field">
-                  <label>Description (regex)</label>
+                  <label>{t('accVat.rules.description')}</label>
                   <input
                     className="portal-input"
                     placeholder="commission|fees"
@@ -307,7 +312,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                 </div>
                 <div className="accounting-form-field">
-                  <label>Montant min</label>
+                  <label>{t('accVat.rules.amountMin')}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -325,7 +330,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                 </div>
                 <div className="accounting-form-field">
-                  <label>Montant max</label>
+                  <label>{t('accVat.rules.amountMax')}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -343,7 +348,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                 </div>
                 <div className="accounting-form-field">
-                  <label>Devise</label>
+                  <label>{t('accVat.rules.currency')}</label>
                   <input
                     className="portal-input"
                     placeholder="EUR"
@@ -361,7 +366,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                 </div>
                 <div className="accounting-form-field">
-                  <label>Tags requis (tous)</label>
+                  <label>{t('accVat.rules.tagsAll')}</label>
                   <input
                     className="portal-input"
                     placeholder="foo, bar"
@@ -376,10 +381,12 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                       })
                     }
                   />
-                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>Séparés par des virgules</span>
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
+                    {t('accVat.rules.commaSeparated')}
+                  </span>
                 </div>
                 <div className="accounting-form-field">
-                  <label>Tags requis (un seul suffit)</label>
+                  <label>{t('accVat.rules.tagsAny')}</label>
                   <input
                     className="portal-input"
                     placeholder="paid, completed"
@@ -394,7 +401,9 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                       })
                     }
                   />
-                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>Séparés par des virgules</span>
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
+                    {t('accVat.rules.commaSeparated')}
+                  </span>
                 </div>
               </div>
             )}
@@ -416,12 +425,12 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                 fontWeight: 600,
               }}
             >
-              {expandedSections.mapping ? '▼' : '▶'} Mapping comptable
+              {expandedSections.mapping ? '▼' : '▶'} {t('accVat.rules.mapping')}
             </button>
             {expandedSections.mapping && (
               <div className="accounting-form" style={{ marginTop: 12 }}>
                 <div className="accounting-form-field">
-                  <label>Code journal</label>
+                  <label>{t('accVat.rules.journalCode')}</label>
                   <input
                     className="portal-input"
                     placeholder="VE"
@@ -438,7 +447,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                 </div>
                 <div className="accounting-form-field">
-                  <label>Compte débit</label>
+                  <label>{t('accVat.rules.debitAccount')}</label>
                   <input
                     className="portal-input"
                     placeholder="411000"
@@ -455,7 +464,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                 </div>
                 <div className="accounting-form-field">
-                  <label>Compte crédit</label>
+                  <label>{t('accVat.rules.creditAccount')}</label>
                   <input
                     className="portal-input"
                     placeholder="706000"
@@ -472,7 +481,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                 </div>
                 <div className="accounting-form-field">
-                  <label>Taux de TVA forcé (%)</label>
+                  <label>{t('accVat.rules.forcedVat')}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -506,14 +515,14 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                       }
                       style={{ marginRight: 8 }}
                     />
-                    Utiliser le taux de TVA du payload (sinon utilise le taux ci-dessus)
+                    {t('accVat.rules.useVatPayload')}
                   </label>
                 </div>
                 <div className="accounting-form-field full">
-                  <label>Modèle de libellé</label>
+                  <label>{t('accVat.rules.labelTemplate')}</label>
                   <input
                     className="portal-input"
-                    placeholder="Vente Arrow {description}"
+                    placeholder={t('accVat.rules.labelPlaceholder')}
                     value={editingRule.mapping.labelTemplate}
                     onChange={(e) =>
                       setEditingRule({
@@ -526,7 +535,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                     }
                   />
                   <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
-                    Variables disponibles : <span className="code">{'{description}'}</span>{' '}
+                    {t('accVat.rules.variables')} <span className="code">{'{description}'}</span>{' '}
                     <span className="code">{'{externalId}'}</span> <span className="code">{'{date}'}</span>
                   </span>
                 </div>
@@ -546,7 +555,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                       }
                       style={{ marginRight: 8 }}
                     />
-                    Auto-valider l'écriture
+                    {t('accVat.rules.autoValidate')}
                   </label>
                 </div>
                 <div className="accounting-form-field">
@@ -565,7 +574,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                       }
                       style={{ marginRight: 8 }}
                     />
-                    Affecter au compte auxiliaire
+                    {t('accVat.rules.assignAux')}
                   </label>
                 </div>
               </div>
@@ -580,34 +589,38 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
 
           <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
             <button className="portal-button" onClick={handleSaveRule} disabled={ruleSaving}>
-              {ruleSaving ? 'Enregistrement…' : editingRule._id ? '✓ Mettre à jour' : '✚ Créer'}
+              {ruleSaving
+                ? t('accVat.settings.saving')
+                : editingRule._id
+                  ? t('accVat.rules.update')
+                  : t('accVat.src.create')}
             </button>
             <button className="portal-button secondary" onClick={() => setEditingRule(null)}>
-              Annuler
+              {t('common.cancel')}
             </button>
           </div>
         </div>
       )}
 
       {rulesLoading ? (
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
       ) : sortedRules.length === 0 ? (
         <div className="accounting-empty">
-          Aucune règle de classification.
-          <div className="hint">Sans règle, les écritures utilisent les mappings par défaut de la source.</div>
+          {t('accVat.rules.empty')}
+          <div className="hint">{t('accVat.rules.emptyHint')}</div>
         </div>
       ) : (
         <table className="accounting-table">
           <thead>
             <tr>
-              <th>Priorité</th>
-              <th>Nom</th>
-              <th>Type</th>
-              <th>Mapping</th>
-              <th className="amount">Matches</th>
-              <th>Dernier match</th>
-              <th>État</th>
-              <th>Actions</th>
+              <th>{t('accVat.rules.colPriority')}</th>
+              <th>{t('accVat.rules.colName')}</th>
+              <th>{t('accVat.rules.type')}</th>
+              <th>{t('accVat.rules.colMapping')}</th>
+              <th className="amount">{t('accVat.rules.colMatches')}</th>
+              <th>{t('accVat.rules.colLastMatch')}</th>
+              <th>{t('accVat.rules.colState')}</th>
+              <th>{t('accVat.src.colActions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -620,42 +633,42 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   {r.mapping?.journalCode && <span className="code">{r.mapping.journalCode}</span>}{' '}
                   {r.mapping?.debitAccount && (
                     <>
-                      <span style={{ color: 'rgba(255,255,255,0.5)' }}>Db</span>{' '}
+                      <span style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.rules.debitShort')}</span>{' '}
                       <span className="code">{r.mapping.debitAccount}</span>{' '}
                     </>
                   )}
                   {r.mapping?.creditAccount && (
                     <>
-                      <span style={{ color: 'rgba(255,255,255,0.5)' }}>Cr</span>{' '}
+                      <span style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.rules.creditShort')}</span>{' '}
                       <span className="code">{r.mapping.creditAccount}</span>
                     </>
                   )}
                 </td>
-                <td className="amount">{Number(r.matchCount || 0).toLocaleString('fr-FR')}</td>
+                <td className="amount">{formatNumber(Number(r.matchCount || 0))}</td>
                 <td style={{ fontSize: '0.82rem' }}>{formatDateTime(r.lastMatchedAt)}</td>
                 <td>
                   <span className={`accounting-badge ${r.enabled ? 'validated' : 'locked'}`}>
-                    {r.enabled ? 'Active' : 'Désactivée'}
+                    {r.enabled ? t('accVat.integ.statusActive') : t('accVat.integ.statusDisabled')}
                   </span>
                 </td>
                 <td>
                   <div className="accounting-row-actions">
                     <button type="button" onClick={() => openEditRule(r)}>
-                      Éditer
+                      {t('accVat.rules.edit')}
                     </button>
                     <button type="button" onClick={() => handleToggleRule(r)}>
-                      {r.enabled ? 'Désactiver' : 'Activer'}
+                      {r.enabled ? t('accVat.rules.disable') : t('accVat.rules.enable')}
                     </button>
                     <button
                       type="button"
                       disabled
-                      title="Bientôt disponible"
+                      title={t('accVat.rules.testSoon')}
                       style={{ opacity: 0.5, cursor: 'not-allowed' }}
                     >
-                      Tester
+                      {t('accVat.rules.test')}
                     </button>
                     <button type="button" className="danger" onClick={() => handleDeleteRule(r)}>
-                      Supprimer
+                      {t('accVat.list.delete')}
                     </button>
                   </div>
                 </td>

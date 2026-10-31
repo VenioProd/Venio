@@ -1,5 +1,8 @@
 import { useState, useMemo, useCallback } from 'react'
 import type { Task } from '../../types/task.types'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate } from '../../i18n/format'
+import type { MessageKey } from '../../i18n'
 
 const PRIORITY_COLORS: Record<string, string> = {
   BASSE: '#64748b',
@@ -8,14 +11,14 @@ const PRIORITY_COLORS: Record<string, string> = {
   URGENTE: '#ef4444',
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  A_FAIRE: 'A faire',
-  EN_COURS: 'En cours',
-  EN_REVIEW: 'En review',
-  TERMINE: 'Termine',
-  VALIDE: 'Valide',
-  NON_VALIDE: 'Non valide',
-  A_MODIFIER: 'A modifier',
+const STATUS_LABEL_KEYS: Record<string, MessageKey> = {
+  A_FAIRE: 'compA.taskStatus.todo',
+  EN_COURS: 'compA.taskStatus.inProgress',
+  EN_REVIEW: 'compA.taskStatus.inReview',
+  TERMINE: 'compA.taskStatus.done',
+  VALIDE: 'compA.taskStatus.valid',
+  NON_VALIDE: 'compA.taskStatus.invalid',
+  A_MODIFIER: 'compA.taskStatus.toEdit',
 }
 
 type ViewMode = 'day' | 'week' | 'month'
@@ -39,7 +42,7 @@ function diffDays(a: Date, b: Date): number {
 }
 
 function formatDateShort(d: Date): string {
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+  return formatDate(d, { day: '2-digit', month: 'short' })
 }
 
 function startOfDay(d: Date): Date {
@@ -61,6 +64,7 @@ function startOfMonth(d: Date): Date {
 }
 
 export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, readOnly }: Props) {
+  const { t, locale } = useI18n()
   const [viewMode, setViewMode] = useState<ViewMode>('week')
   const [currentDate, setCurrentDate] = useState<Date>(startOfDay(new Date()))
   const [dragState, setDragState] = useState<{
@@ -84,7 +88,7 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
       for (let h = 8; h <= 20; h++) {
         const d = new Date(rStart)
         d.setHours(h)
-        cols.push({ date: d, label: `${h}h` })
+        cols.push({ date: d, label: t('compA.gantt.hour', { h }) })
       }
       return {
         rangeStart: rStart,
@@ -92,7 +96,7 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
         totalDays: 1,
         colWidth: cw,
         columns: cols,
-        rangeLabel: rStart.toLocaleDateString('fr-FR', {
+        rangeLabel: formatDate(rStart, {
           weekday: 'long',
           day: 'numeric',
           month: 'long',
@@ -103,7 +107,15 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
       rStart = startOfWeek(currentDate)
       rEnd = addDays(rStart, 7)
       cw = 120
-      const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+      const dayNames = [
+        t('compA.gantt.dayMon'),
+        t('compA.gantt.dayTue'),
+        t('compA.gantt.dayWed'),
+        t('compA.gantt.dayThu'),
+        t('compA.gantt.dayFri'),
+        t('compA.gantt.daySat'),
+        t('compA.gantt.daySun'),
+      ]
       for (let i = 0; i < 7; i++) {
         const d = addDays(rStart, i)
         cols.push({ date: d, label: dayNames[i], sub: d.getDate().toString() })
@@ -132,10 +144,11 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
         totalDays: daysInMonth,
         colWidth: cw,
         columns: cols,
-        rangeLabel: rStart.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+        rangeLabel: formatDate(rStart, { month: 'long', year: 'numeric' }),
       }
     }
-  }, [viewMode, currentDate])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, currentDate, locale])
 
   // Navigate
   const navigate = (dir: -1 | 1) => {
@@ -240,7 +253,7 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
 
   const today = startOfDay(new Date())
 
-  if (loading) return <div className="gestion-loading">Chargement...</div>
+  if (loading) return <div className="gestion-loading">{t('common.loading')}</div>
 
   return (
     <div className="gestion-gantt-wrap">
@@ -248,16 +261,16 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
       <div className="gestion-gantt-controls">
         <div className="gantt-mode-group">
           {[
-            { mode: 'day' as ViewMode, label: 'Jour' },
-            { mode: 'week' as ViewMode, label: 'Semaine' },
-            { mode: 'month' as ViewMode, label: 'Mois' },
-          ].map(({ mode, label }) => (
+            { mode: 'day' as ViewMode, labelKey: 'compA.gantt.modeDay' as MessageKey },
+            { mode: 'week' as ViewMode, labelKey: 'compA.gantt.modeWeek' as MessageKey },
+            { mode: 'month' as ViewMode, labelKey: 'compA.gantt.modeMonth' as MessageKey },
+          ].map(({ mode, labelKey }) => (
             <button
               key={mode}
               className={`gestion-gantt-mode-btn ${viewMode === mode ? 'active' : ''}`}
               onClick={() => setViewMode(mode)}
             >
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
@@ -266,7 +279,7 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
             ←
           </button>
           <button className="gantt-nav-today" onClick={goToday}>
-            Aujourd'hui
+            {t('compA.gantt.today')}
           </button>
           <button className="gantt-nav-btn" onClick={() => navigate(1)}>
             →
@@ -277,15 +290,15 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
 
       {ganttTasks.length === 0 ? (
         <div className="gestion-empty-state" style={{ padding: '40px 0' }}>
-          <p>Aucune tache visible sur cette periode.</p>
+          <p>{t('compA.gantt.empty')}</p>
         </div>
       ) : (
         <div className="gantt-container" onMouseUp={handleMouseUp} onMouseLeave={() => setDragState(null)}>
           {/* Left panel: task list */}
           <div className="gantt-list">
             <div className="gantt-list-header" style={{ height: 52 }}>
-              <span>Tache</span>
-              <span>Dates</span>
+              <span>{t('compA.gantt.colTask')}</span>
+              <span>{t('compA.gantt.colDates')}</span>
             </div>
             {ganttTasks.map((task) => (
               <div key={task._id} className="gantt-list-row" style={{ height: rowHeight }}>
@@ -366,7 +379,7 @@ export default function GestionGantt({ tasks, loading, onUpdate, getProjectId, r
                       onMouseDown={
                         readOnly ? undefined : (e) => handleMouseDown(e, task._id, 'move', task._start, task._end)
                       }
-                      title={`${task.title}\n${formatDateShort(task._start)} → ${formatDateShort(task._end)}\n${STATUS_LABELS[task.status]} — ${task.progress}%`}
+                      title={`${task.title}\n${formatDateShort(task._start)} → ${formatDateShort(task._end)}\n${STATUS_LABEL_KEYS[task.status] ? t(STATUS_LABEL_KEYS[task.status]) : undefined} — ${task.progress}%`}
                     >
                       <div className="gantt-bar-track" style={{ background: `${color}25`, borderColor: `${color}50` }}>
                         <div

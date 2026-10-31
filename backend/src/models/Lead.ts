@@ -51,6 +51,8 @@ const leadSchema = new mongoose.Schema<ILead>(
           at: { type: Date, required: true },
           to: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
           by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+          // Notes telles que l'externe les a laissées : seules celles-ci lui restent visibles.
+          repNotes: { type: String, default: '' },
         },
         { _id: false },
       ),

@@ -50,9 +50,9 @@ export interface TxFilters {
 }
 
 export const TABS = [
-  { id: 'info', label: 'Informations & mappings' },
-  { id: 'rules', label: 'Règles de classification' },
-  { id: 'tx', label: 'Historique des transactions' },
+  { id: 'info', labelKey: 'accVat.esd.tabInfo' },
+  { id: 'rules', labelKey: 'accVat.esd.tabRules' },
+  { id: 'tx', labelKey: 'accVat.esd.tabTx' },
 ] as const
 
 export type TabId = (typeof TABS)[number]['id']

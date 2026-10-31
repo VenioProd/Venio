@@ -1,11 +1,19 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import CustomSelect from '../../../components/admin/CustomSelect'
+import { useI18n } from '../../../context/I18nContext'
 import InteractionTimeline from '../../../components/admin/InteractionTimeline'
 import RevenueChain from '../../../components/admin/RevenueChain'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
-import { CRM_STATUSES, CRM_TEMPERATURES, PROJECT_MAP, TEMPERATURE_MAP } from './constants'
+import {
+  CRM_STATUSES,
+  CRM_TEMPERATURES,
+  PROJECT_MAP,
+  SERVICE_TYPE_LABEL_KEYS,
+  TEMPERATURE_MAP,
+  labelOfValue,
+} from './constants'
 
 interface LeadDetailModalProps {
   lead: Lead
@@ -28,11 +36,12 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   onUpdateLead,
   onConvertToClient,
 }) => {
+  const { t } = useI18n()
   return (
     <div className="crm-modal-overlay" onClick={onClose}>
       <div className="crm-modal crm-modal-wide" onClick={(e) => e.stopPropagation()}>
         <div className="crm-modal-header">
-          <h2>Notes d'interactions - {lead.company}</h2>
+          <h2>{t('crm.detail.title', { company: lead.company })}</h2>
           <button className="crm-modal-close" onClick={onClose}>
             <svg
               viewBox="0 0 24 24"
@@ -50,19 +59,20 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
         <div className="crm-modal-body">
           <div className="crm-modal-info">
             <p>
-              <strong>Contact :</strong> {lead.contactName || '—'}
+              <strong>{t('crm.detail.contact')}</strong> {lead.contactName || '—'}
             </p>
             <p>
-              <strong>Email :</strong> {lead.contactEmail || '—'}
+              <strong>{t('crm.detail.email')}</strong> {lead.contactEmail || '—'}
             </p>
             <p>
-              <strong>Téléphone :</strong> {lead.contactPhone || '—'}
+              <strong>{t('crm.detail.phone')}</strong> {lead.contactPhone || '—'}
             </p>
             <p>
-              <strong>Service :</strong> {lead.serviceType || '—'}
+              <strong>{t('crm.detail.service')}</strong>{' '}
+              {labelOfValue(t, SERVICE_TYPE_LABEL_KEYS, lead.serviceType) || '—'}
             </p>
             <p>
-              <strong>Projet :</strong>{' '}
+              <strong>{t('crm.detail.project')}</strong>{' '}
               {PROJECT_MAP[lead.project || ''] ? (
                 <span
                   style={{
@@ -76,20 +86,23 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     border: `1px solid ${PROJECT_MAP[lead.project || ''].color}55`,
                   }}
                 >
-                  {PROJECT_MAP[lead.project || ''].label}
+                  {t(PROJECT_MAP[lead.project || ''].labelKey)}
                 </span>
               ) : (
                 '—'
               )}
             </p>
             <p>
-              <strong>Chaleur :</strong> {TEMPERATURE_MAP[lead.leadTemperature || '']?.label || lead.leadTemperature}
+              <strong>{t('crm.detail.temperature')}</strong>{' '}
+              {TEMPERATURE_MAP[lead.leadTemperature || '']
+                ? t(TEMPERATURE_MAP[lead.leadTemperature || ''].labelKey)
+                : lead.leadTemperature}
             </p>
           </div>
 
           {/* Actions rapides : contact */}
           <div className="crm-modal-quick-actions">
-            <span className="crm-modal-quick-label">Contact rapide</span>
+            <span className="crm-modal-quick-label">{t('crm.detail.quickContact')}</span>
             <div className="crm-modal-quick-btns">
               {lead.contactEmail && (
                 <a
@@ -98,7 +111,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  ✉️ Envoyer un email
+                  {t('crm.detail.sendEmail')}
                 </a>
               )}
               {lead.contactPhone && (
@@ -106,7 +119,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   href={`tel:${lead.contactPhone.replace(/\s/g, '')}`}
                   className="portal-button secondary crm-modal-quick-btn"
                 >
-                  📞 Appeler
+                  {t('crm.detail.call')}
                 </a>
               )}
               <button
@@ -114,19 +127,19 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 className="portal-button secondary crm-modal-quick-btn"
                 onClick={() => {
                   const text = [
-                    lead.contactName && `Contact: ${lead.contactName}`,
-                    lead.contactEmail && `Email: ${lead.contactEmail}`,
-                    lead.contactPhone && `Tél: ${lead.contactPhone}`,
-                    lead.company && `Société: ${lead.company}`,
+                    lead.contactName && `${t('crm.detail.copyContact')} ${lead.contactName}`,
+                    lead.contactEmail && `${t('crm.detail.copyEmail')} ${lead.contactEmail}`,
+                    lead.contactPhone && `${t('crm.detail.copyPhone')} ${lead.contactPhone}`,
+                    lead.company && `${t('crm.detail.copyCompany')} ${lead.company}`,
                   ]
                     .filter(Boolean)
                     .join('\n')
                   if (text) {
-                    navigator.clipboard.writeText(text).then(() => alert('Infos contact copiées'))
+                    navigator.clipboard.writeText(text).then(() => alert(t('crm.detail.copied')))
                   }
                 }}
               >
-                📋 Copier les infos
+                {t('crm.detail.copyInfo')}
               </button>
             </div>
           </div>
@@ -134,10 +147,10 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
           {/* Actions rapides : statut, chaleur, assignation, prochaine action */}
           {canManageCrm && (
             <div className="crm-modal-quick-actions crm-modal-quick-fields">
-              <span className="crm-modal-quick-label">Modifier le lead</span>
+              <span className="crm-modal-quick-label">{t('crm.detail.editLead')}</span>
               <div className="crm-modal-quick-grid">
                 <div className="crm-modal-quick-field">
-                  <label>Statut</label>
+                  <label>{t('crm.detail.status')}</label>
                   <CustomSelect
                     className="portal-input"
                     value={lead.status || 'LEAD'}
@@ -145,11 +158,11 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                       onLeadChange((prev) => (prev ? { ...prev, status: v } : prev))
                       onUpdateLead(lead._id, { status: v })
                     }}
-                    options={CRM_STATUSES.map((s) => ({ value: s.key, label: s.label }))}
+                    options={CRM_STATUSES.map((s) => ({ value: s.key, label: t(s.labelKey) }))}
                   />
                 </div>
                 <div className="crm-modal-quick-field">
-                  <label>Chaleur</label>
+                  <label>{t('crm.col.temperature')}</label>
                   <CustomSelect
                     className="portal-input"
                     value={lead.leadTemperature || 'TIEDE'}
@@ -157,11 +170,11 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                       onLeadChange((prev) => (prev ? { ...prev, leadTemperature: v } : prev))
                       onUpdateLead(lead._id, { leadTemperature: v })
                     }}
-                    options={CRM_TEMPERATURES.map((t) => ({ value: t.key, label: t.label }))}
+                    options={CRM_TEMPERATURES.map((tp) => ({ value: tp.key, label: t(tp.labelKey) }))}
                   />
                 </div>
                 <div className="crm-modal-quick-field">
-                  <label>Assigné à</label>
+                  <label>{t('crm.detail.assignedTo')}</label>
                   <CustomSelect
                     className="portal-input"
                     value={lead.assignedTo || ''}
@@ -171,7 +184,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                       onUpdateLead(lead._id, { assignedTo: val })
                     }}
                     options={[
-                      { value: '', label: 'Non assigné' },
+                      { value: '', label: t('crm.common.unassigned') },
                       ...admins
                         .filter((a) => ['SUPER_ADMIN', 'ADMIN'].includes(a.role))
                         .map((admin) => ({ value: admin._id, label: admin.name })),
@@ -179,7 +192,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   />
                 </div>
                 <div className="crm-modal-quick-field">
-                  <label>Prochaine action</label>
+                  <label>{t('crm.col.nextAction')}</label>
                   <input
                     type="datetime-local"
                     className="portal-input"
@@ -215,7 +228,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     })
                   }}
                 >
-                  ✓ Marquer comme contacté aujourd'hui
+                  {t('crm.detail.markContacted')}
                 </button>
               </div>
             </div>
@@ -231,7 +244,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' }}
                   onClick={onClose}
                 >
-                  👤 Voir le compte client
+                  {t('crm.detail.viewClient')}
                 </Link>
               ) : (
                 <button
@@ -244,7 +257,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     onClose()
                   }}
                 >
-                  {converting === lead._id ? 'Conversion...' : '✓ Convertir en client'}
+                  {converting === lead._id ? t('crm.common.converting') : t('crm.detail.convert')}
                 </button>
               )}
             </div>
@@ -254,12 +267,12 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               échanges. Son contenu déjà saisi reste affiché en tête de
               timeline pour ne pas disparaître de l'écran. */}
           <div className="crm-modal-notes">
-            <label className="crm-modal-label">Chaîne commerciale</label>
+            <label className="crm-modal-label">{t('crm.detail.revenueChain')}</label>
             <RevenueChain leadId={lead._id} canManage={canManageCrm} />
           </div>
 
           <div className="crm-modal-notes">
-            <label className="crm-modal-label">Journal des échanges</label>
+            <label className="crm-modal-label">{t('crm.detail.interactionLog')}</label>
             <InteractionTimeline
               subjectType="LEAD"
               subjectId={lead._id}
@@ -269,7 +282,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
           </div>
           <div className="crm-modal-actions">
             <button className="portal-button secondary" onClick={onClose}>
-              Fermer
+              {t('common.close')}
             </button>
           </div>
         </div>

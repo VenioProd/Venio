@@ -8,7 +8,7 @@ import Project from '../../models/Project.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import QuoteTemplate from '../../models/QuoteTemplate.js'
 import Lead from '../../models/Lead.js'
-import { canReadLead, leadScopeFilter, readsWholeCrm } from '../../lib/crmScope.js'
+import { canReadLead, readableProposalFilter } from '../../lib/crmScope.js'
 import { loadQuotePortfolio } from '../../lib/quotePortfolio.js'
 import type { IQuoteProposal } from '../../types/models/index.js'
 import { buildBillingDocumentForProposal } from '../../lib/quoteSignature.js'
@@ -143,12 +143,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const ids = await readableProjectIds(req.user!)
-      const leadOnly = readsWholeCrm(req)
-        ? { project: null }
-        : { project: null, leadId: { $in: await Lead.distinct('_id', leadScopeFilter(req)) } }
-      const filter: Record<string, unknown> = {
-        $and: [{ $or: [ids === null ? { project: { $ne: null } } : { project: { $in: ids } }, leadOnly] }],
-      }
+      const filter: Record<string, unknown> = { $and: [await readableProposalFilter(req, ids)] }
       if (req.query.project) filter.project = String(req.query.project)
       if (req.query.lead) filter.leadId = String(req.query.lead)
       const proposals = await QuoteProposal.find(filter).sort({ createdAt: -1 }).lean()

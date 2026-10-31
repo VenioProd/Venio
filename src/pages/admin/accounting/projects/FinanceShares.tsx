@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import { formatMoney, formatPercent } from './money'
 import { ACCOUNTING, ActionForm, dateLabel, Field, Table, text, today, write } from './shared'
 import RulesEditor, { ruleDrafts, rulesPayload, type RuleDraft } from './RulesEditor'
@@ -21,21 +22,28 @@ export default function FinanceShares({
   canManage: boolean
   onSaved: () => Promise<void>
 }) {
+  const { t } = useI18n()
   const [rows, setRows] = useState<RuleDraft[]>(() => ruleDrafts(data.ruleVersion?.rules || []))
   const [creating, setCreating] = useState(false)
   const nameFor = (id: string | null) =>
-    id ? beneficiaries.find((item) => item._id === id)?.displayName || 'Bénéficiaire indisponible' : 'Société'
+    id
+      ? beneficiaries.find((item) => item._id === id)?.displayName || t('accProjects.shares.beneficiaryUnavailable')
+      : t('accProjects.shares.company')
   return (
     <section className="accounting-card">
-      <h2>Répartition</h2>
+      <h2>{t('accProjects.shares.title')}</h2>
       <p>
-        Version en vigueur :{' '}
-        {data.ruleVersion
-          ? `v${data.ruleVersion.version}, depuis le ${dateLabel(data.ruleVersion.effectiveFrom)}`
-          : 'Aucune. La société conserve les encaissements sans règle applicable.'}
+        {t('accProjects.shares.currentVersion', {
+          value: data.ruleVersion
+            ? t('accProjects.shares.versionSince', {
+                version: data.ruleVersion.version,
+                date: dateLabel(data.ruleVersion.effectiveFrom),
+              })
+            : t('accProjects.shares.noVersion'),
+        })}
       </p>
       {data.ruleVersion && (
-        <Table headers={['Bénéficiaire', 'Part']}>
+        <Table headers={[t('accProjects.cols.beneficiary'), t('accProjects.cols.share')]}>
           {data.ruleVersion.rules.map((rule) => (
             <tr key={rule.beneficiary}>
               <td>{nameFor(rule.beneficiary)}</td>
@@ -46,11 +54,20 @@ export default function FinanceShares({
       )}
       {data.ruleVersion && (
         <p>
-          Part de la société : {formatPercent(10000 - data.ruleVersion.rules.reduce((sum, rule) => sum + rule.bp, 0))}
+          {t('accProjects.shares.companyShare', {
+            value: formatPercent(10000 - data.ruleVersion.rules.reduce((sum, rule) => sum + rule.bp, 0)),
+          })}
         </p>
       )}
-      <h3>Parts sur ce projet</h3>
-      <Table headers={['Bénéficiaire', 'Dû HT', 'Versé HT', 'Restant HT']}>
+      <h3>{t('accProjects.shares.projectShares')}</h3>
+      <Table
+        headers={[
+          t('accProjects.cols.beneficiary'),
+          t('accProjects.cols.dueHt'),
+          t('accProjects.cols.paidHt'),
+          t('accProjects.cols.remainingHt'),
+        ]}
+      >
         {data.summary.beneficiaries.map((row) => (
           <tr key={row.beneficiary || 'societe'}>
             <td>{nameFor(row.beneficiary)}</td>
@@ -60,16 +77,16 @@ export default function FinanceShares({
           </tr>
         ))}
       </Table>
-      <p className="pf-status">Les versements sans projet sont déduits uniquement du restant global du bénéficiaire.</p>
+      <p className="pf-status">{t('accProjects.shares.unattachedNote')}</p>
       <details>
-        <summary>Historique des versions ({versions.length})</summary>
+        <summary>{t('accProjects.shares.history', { count: versions.length })}</summary>
         {versions.map((version) => (
           <div className="pf-record" key={version._id}>
             <h3>
-              Version {version.version} · {dateLabel(version.effectiveFrom)}
+              {t('accProjects.shares.versionN', { version: version.version })} · {dateLabel(version.effectiveFrom)}
             </h3>
-            <p>{version.reason || 'Aucun motif renseigné'}</p>
-            <Table headers={['Bénéficiaire', 'Part']}>
+            <p>{version.reason || t('accProjects.shares.noReason')}</p>
+            <Table headers={[t('accProjects.cols.beneficiary'), t('accProjects.cols.share')]}>
               {version.rules.map((rule) => (
                 <tr key={rule.beneficiary}>
                   <td>{nameFor(rule.beneficiary)}</td>
@@ -89,12 +106,12 @@ export default function FinanceShares({
               setCreating(!creating)
             }}
           >
-            {creating ? 'Fermer le formulaire' : 'Nouvelle version'}
+            {creating ? t('accProjects.shares.closeForm') : t('accProjects.shares.newVersion')}
           </button>
           {creating && (
             <ActionForm
               retryable={false}
-              label="Créer la version de répartition"
+              label={t('accProjects.shares.createVersion')}
               onSaved={async () => {
                 setCreating(false)
                 await onSaved()
@@ -112,7 +129,7 @@ export default function FinanceShares({
                 )
               }
             >
-              <Field label="Préremplir depuis un modèle">
+              <Field label={t('accProjects.shares.prefill')}>
                 <select
                   defaultValue=""
                   onChange={(event) => {
@@ -120,7 +137,7 @@ export default function FinanceShares({
                     if (template) setRows(ruleDrafts(template.rules))
                   }}
                 >
-                  <option value="">Choisir un modèle</option>
+                  <option value="">{t('accProjects.shares.chooseTemplate')}</option>
                   {templates.map((template) => (
                     <option key={template._id} value={template._id}>
                       {template.name}
@@ -129,10 +146,10 @@ export default function FinanceShares({
                 </select>
               </Field>
               <div className="pf-grid">
-                <Field label="Date d’effet">
+                <Field label={t('accProjects.shares.effectiveDate')}>
                   <input name="effectiveFrom" type="date" required defaultValue={today()} />
                 </Field>
-                <Field label="Motif">
+                <Field label={t('accProjects.cols.reason')}>
                   <input name="reason" required />
                 </Field>
               </div>

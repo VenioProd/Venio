@@ -8,16 +8,18 @@ import TrustLine from '../components/conversion/TrustLine'
 import NeedStart from '../components/qualification/NeedStart'
 import { FormulaThumb, InstrumentRings, useSpotlight, type FormulaKind } from '../components/graphics'
 import { SITES_FAQ } from '../content/faq'
+import { useI18n } from '../context/I18nContext'
+import type { MessageKey } from '../i18n'
 import { useReveal } from '../hooks/useReveal'
 import '../styles/monolithe-pages.css'
 import '../styles/refonte-pages.css'
 
 interface Formula {
   kind: FormulaKind
-  label: string
-  title: string
-  text: string
-  included: string[]
+  label: MessageKey
+  title: MessageKey
+  text: MessageKey
+  included: MessageKey[]
   to: string
 }
 
@@ -25,56 +27,57 @@ interface Formula {
 const FORMULAS: Formula[] = [
   {
     kind: 'vitrine',
-    label: '01 · Vitrine',
-    title: 'Se faire connaître.',
-    text: "Vous voulez qu'on vous trouve, et que ça fasse sérieux.",
-    included: ['Design sur mesure', 'Parfait sur mobile', 'Visible sur Google'],
+    label: 'pubHome.sites.formula1Label',
+    title: 'pubHome.sites.formula1Title',
+    text: 'pubHome.sites.formula1Text',
+    included: ['pubHome.sites.formula1Incl1', 'pubHome.sites.formula1Incl2', 'pubHome.sites.formula1Incl3'],
     to: '/contact?besoin=site&formule=vitrine',
   },
   {
     kind: 'essentiel',
-    label: '02 · Essentiel',
-    title: 'Publier soi-même.',
-    text: 'Vous voulez ajouter et modifier vos pages vous-même.',
-    included: ['Design sur mesure', 'Mieux placé sur Google', 'Blog et actualités'],
+    label: 'pubHome.sites.formula2Label',
+    title: 'pubHome.sites.formula2Title',
+    text: 'pubHome.sites.formula2Text',
+    included: ['pubHome.sites.formula2Incl1', 'pubHome.sites.formula2Incl2', 'pubHome.sites.formula2Incl3'],
     to: '/contact?besoin=site&formule=essentiel',
   },
   {
     kind: 'business',
-    label: '03 · Business',
-    title: 'Vendre et suivre ses clients.',
-    text: 'Vous vendez, ou vous suivez vos clients en ligne.',
-    included: ['Mieux placé sur Google', 'Espace pour vos clients', 'Paiement en ligne'],
+    label: 'pubHome.sites.formula3Label',
+    title: 'pubHome.sites.formula3Title',
+    text: 'pubHome.sites.formula3Text',
+    included: ['pubHome.sites.formula3Incl1', 'pubHome.sites.formula3Incl2', 'pubHome.sites.formula3Incl3'],
     to: '/contact?besoin=site&formule=business',
   },
   {
     kind: 'boutique',
-    label: '04 · Boutique en ligne',
-    title: 'Vendre en grand.',
-    text: 'Votre boutique en ligne, c’est votre métier.',
-    included: ['Catalogue sans limite', 'Plusieurs moyens de paiement', 'Suivi des stocks'],
+    label: 'pubHome.sites.formula4Label',
+    title: 'pubHome.sites.formula4Title',
+    text: 'pubHome.sites.formula4Text',
+    included: ['pubHome.sites.formula4Incl1', 'pubHome.sites.formula4Incl2', 'pubHome.sites.formula4Incl3'],
     to: '/contact?besoin=site&formule=boutique',
   },
   {
     kind: 'mesure',
-    label: '05 · Sur mesure',
-    title: 'Un outil rien qu’à vous.',
-    text: 'L’outil dont vous avez besoin n’existe pas encore.',
-    included: ['Conçu rien que pour vous', 'Connecté à vos outils', 'Plusieurs comptes et accès'],
+    label: 'pubHome.sites.formula5Label',
+    title: 'pubHome.sites.formula5Title',
+    text: 'pubHome.sites.formula5Text',
+    included: ['pubHome.sites.formula5Incl1', 'pubHome.sites.formula5Incl2', 'pubHome.sites.formula5Incl3'],
     to: '/contact?besoin=outil&formule=mesure',
   },
 ]
 
 const ServicesSites: React.FC = () => {
+  const { t } = useI18n()
   useReveal('.mp-page .mp-reveal', 'mp-visible')
   const tiersRef = useSpotlight<HTMLDivElement>()
 
   return (
     <div className="mp-page">
       <SEO
-        title="Création de site web sur mesure, sans template"
-        description="Création de sites web sur mesure à Paris : 5 formules, de la vitrine à la boutique en ligne. Un site fait pour vous, qui dure dans le temps."
-        keywords="site web sur mesure, création site web Paris, site web code propriétaire, webmastering, hébergement site web"
+        title={t('pubHome.sites.seoTitle')}
+        description={t('pubHome.sites.seoDescription')}
+        keywords={t('pubHome.sites.seoKeywords')}
       />
       <StructuredData type="service-sites" />
 
@@ -83,21 +86,18 @@ const ServicesSites: React.FC = () => {
         <div className="mp-container">
           <p className="rp-mono rp-eb">
             <i aria-hidden="true" />
-            Sites web · création sur mesure
+            {t('pubHome.sites.heroEyebrow')}
           </p>
           <h1 className="rp-h1">
-            Pas de templates. Pas de WordPress <span className="rp-acc vn-shine">qui casse dans six mois.</span>
+            {t('pubHome.sites.title')} <span className="rp-acc vn-shine">{t('pubHome.sites.titleAccent')}</span>
           </h1>
-          <p className="rp-lede">
-            Chaque site est écrit de zéro, à partir de ce que vous avez à dire et de ce que le site doit faire. Cinq
-            formules pour se repérer, un devis écrit pour décider.
-          </p>
+          <p className="rp-lede">{t('pubHome.sites.lede')}</p>
           <div className="rp-ctas vn-fx">
             <Link to="/contact?besoin=site" className="mc-btn mc-btn--primary" data-analytics-cta="sites_hero_besoin">
-              Décrire mon besoin
+              {t('pubHome.cta.describeNeed')}
             </Link>
             <a href="#formules" className="mc-btn mc-btn--ghost">
-              Comparer les formules
+              {t('pubHome.sites.ctaCompare')}
             </a>
           </div>
           <div className="rp-trust">
@@ -110,16 +110,16 @@ const ServicesSites: React.FC = () => {
         <div className="mp-container mp-reveal">
           <p className="rp-mono rp-eb">
             <i aria-hidden="true" />
-            Pourquoi pas un modèle
+            {t('pubHome.sites.versusEyebrow')}
           </p>
           <div className="rp-versus">
             <div className="rp-vs-col rp-vs-no">
-              <span className="rp-mono">Un modèle acheté</span>
-              <h3>Conçu pour tout le monde. Donc pour personne.</h3>
+              <span className="rp-mono">{t('pubHome.sites.vsNoLabel')}</span>
+              <h3>{t('pubHome.sites.vsNoTitle')}</h3>
               <ul>
-                <li>Les extensions s’empilent, une mise à jour casse quelque chose.</li>
-                <li>Vos textes entrent dans des cases prévues pour d’autres.</li>
-                <li>Le jour où vous voulez évoluer, il faut tout refaire.</li>
+                <li>{t('pubHome.sites.vsNo1')}</li>
+                <li>{t('pubHome.sites.vsNo2')}</li>
+                <li>{t('pubHome.sites.vsNo3')}</li>
               </ul>
             </div>
             <div className="rp-vs-mid" aria-hidden="true">
@@ -127,11 +127,11 @@ const ServicesSites: React.FC = () => {
             </div>
             <div className="rp-vs-col rp-vs-yes">
               <span className="rp-mono rp-acc">Venio</span>
-              <h3>Chaque site écrit de zéro.</h3>
+              <h3>{t('pubHome.sites.vsYesTitle')}</h3>
               <ul>
-                <li>L’architecture correspond à votre besoin réel.</li>
-                <li>Le code est documenté et vous appartient.</li>
-                <li>N’importe quel développeur peut reprendre après nous.</li>
+                <li>{t('pubHome.sites.vsYes1')}</li>
+                <li>{t('pubHome.sites.vsYes2')}</li>
+                <li>{t('pubHome.sites.vsYes3')}</li>
               </ul>
             </div>
           </div>
@@ -142,37 +142,31 @@ const ServicesSites: React.FC = () => {
         <div className="mp-container mp-reveal">
           <p className="rp-mono rp-eb">
             <i aria-hidden="true" />
-            Cinq formules
+            {t('pubHome.sites.formulasEyebrow')}
           </p>
           <h2>
-            Choisissez votre point de départ <span className="rp-acc">selon ce que le site doit faire.</span>
+            {t('pubHome.sites.formulasTitle')} <span className="rp-acc">{t('pubHome.sites.formulasTitleAccent')}</span>
           </h2>
-          <p className="rp-sub">
-            On chiffre après avoir compris le besoin. Le devis pose le périmètre, les livrables, le calendrier et le
-            prix.
-          </p>
+          <p className="rp-sub">{t('pubHome.sites.formulasSub')}</p>
           <div className="rp-tiers" ref={tiersRef}>
             {FORMULAS.map((f) => (
               <article key={f.kind} className="rp-tier vn-spot">
                 <FormulaThumb kind={f.kind} />
-                <span className="rp-mono">{f.label}</span>
-                <h3>{f.title}</h3>
-                <p>{f.text}</p>
+                <span className="rp-mono">{t(f.label)}</span>
+                <h3>{t(f.title)}</h3>
+                <p>{t(f.text)}</p>
                 <ul>
                   {f.included.map((item) => (
-                    <li key={item}>{item}</li>
+                    <li key={item}>{t(item)}</li>
                   ))}
                 </ul>
                 <Link to={f.to} className="rp-go" data-analytics-cta={`sites_formule_${f.kind}`}>
-                  Cette formule →
+                  {t('pubHome.sites.formulaGo')}
                 </Link>
               </article>
             ))}
           </div>
-          <p className="rp-tier-note">
-            Chaque formule peut être complétée par le webmastering : hébergement, entretien et support, pour que votre
-            site reste vivant sans que vous ayez à y toucher. Dans tous les cas, le code reste le vôtre.
-          </p>
+          <p className="rp-tier-note">{t('pubHome.sites.tierNote')}</p>
         </div>
       </section>
 

@@ -1,6 +1,18 @@
 import { useState } from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import { formatMoney, formatPercent } from './money'
-import { ACCOUNTING, ActionForm, dateInput, dateLabel, Field, InvoiceLink, labels, Table, text, write } from './shared'
+import {
+  ACCOUNTING,
+  ActionForm,
+  dateInput,
+  dateLabel,
+  Field,
+  InvoiceLink,
+  labelFor,
+  Table,
+  text,
+  write,
+} from './shared'
 import type { FinanceResponse } from './types'
 
 export default function FinanceSchedule({
@@ -14,30 +26,31 @@ export default function FinanceSchedule({
   canManage: boolean
   onSaved: () => Promise<void>
 }) {
+  const { t } = useI18n()
   const [warning, setWarning] = useState('')
   const finance = data.finance
   if (!finance) return null
   const payerLabel = (id: string) => {
     const payer = finance.payers.find((payer) => payer._id === id)
     if (payer?.billingContact?.name) return payer.billingContact.name
-    if (payer?.kind === 'CLIENT') return 'Client du projet'
-    return payer?.isPrincipal ? 'Payeur principal' : 'Payeur'
+    if (payer?.kind === 'CLIENT') return t('accProjects.schedule.projectClient')
+    return payer?.isPrincipal ? t('accProjects.schedule.principalPayer') : t('accProjects.schedule.payer')
   }
   if (finance.mode === 'ABONNEMENT')
     return (
       <section className="accounting-card">
-        <h2>Périodes d’abonnement</h2>
+        <h2>{t('accProjects.schedule.subscriptionPeriods')}</h2>
         {warning && <p role="status">{warning}</p>}
         <p>
-          Prochaine période :{' '}
-          {data.subscriptionState?.nextPeriodStart
-            ? dateLabel(data.subscriptionState.nextPeriodStart)
-            : 'Abonnement terminé'}
-          .
+          {t('accProjects.schedule.nextPeriod', {
+            value: data.subscriptionState?.nextPeriodStart
+              ? dateLabel(data.subscriptionState.nextPeriodStart)
+              : t('accProjects.schedule.subscriptionEnded'),
+          })}
         </p>
         {canManage && data.subscriptionState?.nextPeriodStart && (
           <ActionForm
-            label="Générer les factures des périodes échues"
+            label={t('accProjects.schedule.generateDue')}
             submit={async (_, key) => {
               const result = await write<{ warning?: string }>(
                 `${ACCOUNTING}/projects/${projectId}/subscription/invoices`,
@@ -50,27 +63,37 @@ export default function FinanceSchedule({
             onSaved={onSaved}
           />
         )}
-        {!data.subscriptionState?.periods.length && <p>Aucune période générée.</p>}
+        {!data.subscriptionState?.periods.length && <p>{t('accProjects.schedule.noPeriod')}</p>}
         {data.subscriptionState?.periods.map((period) => (
           <div className="pf-record" key={period.periodStart}>
             <h3>
-              Du {dateLabel(period.periodStart)} au {dateLabel(period.periodEnd)}
+              {t('accProjects.schedule.periodRange', {
+                start: dateLabel(period.periodStart),
+                end: dateLabel(period.periodEnd),
+              })}
             </h3>
-            <Table headers={['Payeur', 'Facture', 'État', 'Montant TTC']}>
+            <Table
+              headers={[
+                t('accProjects.cols.payer'),
+                t('accProjects.cols.invoice'),
+                t('accProjects.cols.status'),
+                t('accProjects.cols.amountTtc'),
+              ]}
+            >
               {period.invoices.map((invoice) => (
                 <tr key={invoice._id}>
                   <td>{payerLabel(invoice.payer?.payerId || '')}</td>
                   <td>
                     <InvoiceLink id={invoice._id} number={invoice.number} projectId={projectId} />
                   </td>
-                  <td>{labels[invoice.status] || invoice.status}</td>
+                  <td>{labelFor(t, invoice.status)}</td>
                   <td className="amount">{formatMoney(Math.round(invoice.total * 100))}</td>
                 </tr>
               ))}
             </Table>
             {canManage && period.invoices.every((invoice) => invoice.status === 'CANCELLED') && (
               <ActionForm
-                label="Régénérer cette période annulée"
+                label={t('accProjects.schedule.regenerate')}
                 submit={(_, key) =>
                   write(
                     `${ACCOUNTING}/projects/${projectId}/subscription/periods/${dateInput(period.periodStart)}/invoices`,
@@ -86,9 +109,9 @@ export default function FinanceSchedule({
         ))}
         {canManage && (
           <details>
-            <summary>Générer une période précise</summary>
+            <summary>{t('accProjects.schedule.generateSpecific')}</summary>
             <ActionForm
-              label="Générer les factures de cette période"
+              label={t('accProjects.schedule.generateThisPeriod')}
               submit={(values, key) =>
                 write(
                   `${ACCOUNTING}/projects/${projectId}/subscription/periods/${text(values, 'periodStart')}/invoices`,
@@ -99,11 +122,8 @@ export default function FinanceSchedule({
               }
               onSaved={onSaved}
             >
-              <p>
-                Choisissez la date de début exacte d’une période de l’abonnement. Le serveur vérifie le calendrier et
-                les factures existantes.
-              </p>
-              <Field label="Début de période">
+              <p>{t('accProjects.schedule.specificHelp')}</p>
+              <Field label={t('accProjects.schedule.periodStart')}>
                 <input name="periodStart" type="date" required />
               </Field>
             </ActionForm>
@@ -113,17 +133,27 @@ export default function FinanceSchedule({
     )
   return (
     <section className="accounting-card">
-      <h2>Échéancier</h2>
+      <h2>{labelFor(t, 'ECHEANCIER')}</h2>
       {data.schedule.map((item) => (
         <div className="pf-record" key={item._id}>
           <h3>
-            {item.label} · {formatPercent(item.percentBp)} · {labels[item.status] || item.status}
+            {item.label} · {formatPercent(item.percentBp)} · {labelFor(t, item.status)}
           </h3>
           <p>
-            {formatMoney(item.htCents)} HT ·{' '}
-            {item.trigger.kind === 'DATE' ? dateLabel(item.trigger.dueDate) : `Jalon : ${item.trigger.phase}`}
+            {t('accProjects.common.ht', { amount: formatMoney(item.htCents) })} ·{' '}
+            {item.trigger.kind === 'DATE'
+              ? dateLabel(item.trigger.dueDate)
+              : t('accProjects.schedule.milestone', { phase: item.trigger.phase ?? '' })}
           </p>
-          <Table headers={['Payeur', 'HT', 'TVA', 'TTC', 'Facture']}>
+          <Table
+            headers={[
+              t('accProjects.cols.payer'),
+              t('accProjects.cols.ht'),
+              t('accProjects.cols.vat'),
+              t('accProjects.cols.ttc'),
+              t('accProjects.cols.invoice'),
+            ]}
+          >
             {item.payers.map((payer) => {
               const invoice = item.invoices.find((invoice) => invoice.payer?.payerId === payer.payerId)
               return (
@@ -136,10 +166,10 @@ export default function FinanceSchedule({
                     {invoice ? (
                       <>
                         <InvoiceLink id={invoice._id} number={invoice.number} projectId={projectId} /> ·{' '}
-                        {labels[invoice.status] || invoice.status}
+                        {labelFor(t, invoice.status)}
                       </>
                     ) : (
-                      'À générer'
+                      t('accProjects.schedule.toGenerate')
                     )}
                   </td>
                 </tr>
@@ -148,7 +178,7 @@ export default function FinanceSchedule({
           </Table>
           {canManage && item.status !== 'FACTUREE' && (
             <ActionForm
-              label="Générer les factures"
+              label={t('accProjects.schedule.generateInvoices')}
               submit={(_, key) =>
                 write(`${ACCOUNTING}/projects/${projectId}/installments/${item._id}/invoices`, 'POST', {}, key)
               }

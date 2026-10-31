@@ -1,0 +1,278 @@
+const fr = {
+  // Questionnaire public
+  'pubForms.questionnaire.notFound': 'Questionnaire introuvable',
+  'pubForms.questionnaire.loading': 'Chargement...',
+  'pubForms.questionnaire.thanksTitle': 'Merci pour votre retour !',
+  'pubForms.questionnaire.thanksText': 'Votre reponse a bien ete enregistree.',
+  'pubForms.questionnaire.infoHeading': 'Vos informations',
+  'pubForms.questionnaire.fullNameLabel': 'Nom complet *',
+  'pubForms.questionnaire.fullNamePlaceholder': 'Votre nom et prenom',
+  'pubForms.questionnaire.emailLabel': 'Email *',
+  'pubForms.questionnaire.emailPlaceholder': 'votre@email.com',
+  'pubForms.questionnaire.trainingLabel': 'Formation concernee',
+  'pubForms.questionnaire.trainingPlaceholder': 'Nom de la formation',
+  'pubForms.questionnaire.questionsHeading': 'Questions',
+  'pubForms.questionnaire.answerPlaceholder': 'Votre reponse...',
+  'pubForms.questionnaire.submitting': 'Envoi en cours...',
+  'pubForms.questionnaire.submit': 'Envoyer mes reponses',
+
+  // Création de questionnaire
+  'pubForms.builder.typeRating': 'Notation / etoiles',
+  'pubForms.builder.typeText': 'Texte libre',
+  'pubForms.builder.typeChoice': 'Choix multiples',
+  'pubForms.builder.linkInvalid': 'Ce lien de creation est invalide ou desactive.',
+  'pubForms.builder.connectionError': 'Erreur de connexion au serveur.',
+  'pubForms.builder.unexpectedError': 'Erreur inattendue',
+  'pubForms.builder.checking': 'Verification du lien...',
+  'pubForms.builder.invalidTitle': 'Lien invalide',
+  'pubForms.builder.createdTitle': 'Questionnaire cree !',
+  'pubForms.builder.createdText': 'Votre questionnaire est maintenant disponible.',
+  'pubForms.builder.publicLinkHeading': 'Lien public du questionnaire',
+  'pubForms.builder.copyLink': 'Copier le lien',
+  'pubForms.builder.title': 'Creer un questionnaire',
+  'pubForms.builder.subtitle': 'Configurez votre questionnaire de satisfaction',
+  'pubForms.builder.generalHeading': 'Informations generales',
+  'pubForms.builder.titleLabel': 'Titre *',
+  'pubForms.builder.titlePlaceholder': 'Ex: Satisfaction formation React',
+  'pubForms.builder.descriptionLabel': 'Description (optionnel)',
+  'pubForms.builder.descriptionPlaceholder': 'Decrivez le questionnaire...',
+  'pubForms.builder.questionsHeading': 'Questions',
+  'pubForms.builder.required': 'Obligatoire',
+  'pubForms.builder.questionLabelPlaceholder': 'Intitule de la question...',
+  'pubForms.builder.optionPlaceholder': 'Option {n}',
+  'pubForms.builder.addOption': '+ Ajouter une option',
+  'pubForms.builder.ratingPreview': 'Notation de 1 a 5',
+  'pubForms.builder.addQuestion': 'Ajouter une question',
+  'pubForms.builder.creating': 'Creation en cours...',
+  'pubForms.builder.create': 'Creer le questionnaire',
+
+  // Page de paiement
+  'pubForms.payment.pageTitle': 'Paiement de facture · Venio',
+  'pubForms.payment.unavailable': 'Le paiement est indisponible.',
+  'pubForms.payment.sentTitle': 'Paiement transmis',
+  'pubForms.payment.sentText': 'La confirmation de votre paiement est en cours. Vous pouvez fermer cette page.',
+  'pubForms.payment.cancelledTitle': 'Paiement interrompu',
+  'pubForms.payment.cancelledText':
+    'Vous pouvez revenir à la facture pour consulter son solde et reprendre le paiement.',
+  'pubForms.payment.backToInvoice': 'Revenir à la facture',
+  'pubForms.payment.payTitle': 'Régler votre facture',
+  'pubForms.payment.loadingInvoice': 'Chargement de la facture…',
+  'pubForms.payment.remaining': 'Montant restant à payer TTC',
+  'pubForms.payment.opening': 'Ouverture du paiement…',
+  'pubForms.payment.payByCard': 'Payer par carte',
+
+  // Page contact
+  'pubForms.contact.seoTitle': 'Contact — décrivez votre besoin',
+  'pubForms.contact.seoDescription':
+    "Cinq questions courtes, trois minutes. On répond sous 48 h ouvrées avec une première lecture de votre besoin, et on vous dit aussi quand ce n'est pas pour nous.",
+  'pubForms.contact.seoKeywords': 'contact Venio, devis site web Paris, décrire mon besoin, projet web',
+  'pubForms.contact.eyebrow': 'Venio · Contact',
+  'pubForms.contact.titleLead': 'Dites-nous ce que vous voulez',
+  'pubForms.contact.titleAccent': 'construire.',
+  'pubForms.contact.lede':
+    "Cinq questions courtes, trois minutes. On répond sous 48 h ouvrées avec une première lecture de votre besoin. Si ce n'est pas pour nous, on vous le dit aussi.",
+  'pubForms.contact.directLead': 'Vous préférez écrire directement ?',
+  'pubForms.contact.directData': "Vos données ne servent qu'à vous répondre, voir la",
+  'pubForms.contact.privacyLink': 'politique de confidentialité',
+
+  // Vérification anti-robot
+  'pubForms.captcha.wrongAnswer': 'Réponse incorrecte',
+  'pubForms.captcha.prompt': 'Etes-vous un bot ou un humain, vérifions !',
+  'pubForms.captcha.newQuestion': 'Nouvelle question',
+  'pubForms.captcha.answerAria': 'Réponse au calcul de vérification',
+  'pubForms.captcha.answerPlaceholder': 'Réponse',
+
+  // Formulaire de qualification : étapes et relevé
+  'pubForms.qualification.stepNameNeed': 'Besoin',
+  'pubForms.qualification.stepNameDetails': 'Précisions',
+  'pubForms.qualification.stepNameCompany': 'Entreprise',
+  'pubForms.qualification.stepNameFrame': 'Cadre',
+  'pubForms.qualification.stepNameContact': 'Coordonnées',
+  'pubForms.qualification.stepTitleNeed': 'De quoi avez-vous besoin ?',
+  'pubForms.qualification.stepTitleDetails': 'Précisons un peu.',
+  'pubForms.qualification.stepTitleCompany': 'Votre entreprise.',
+  'pubForms.qualification.stepTitleFrame': 'Le cadre.',
+  'pubForms.qualification.stepTitleContact': 'Où vous répondre ?',
+  'pubForms.qualification.relTimeline': 'Échéance',
+  'pubForms.qualification.relBudget': 'Budget',
+  'pubForms.qualification.relDecision': 'Décision',
+  'pubForms.qualification.relContact': 'Contact',
+
+  // Besoins : libellés courts du relevé
+  'pubForms.qualification.needLabelSite': 'Un nouveau site',
+  'pubForms.qualification.needLabelRedo': 'Refaire le site',
+  'pubForms.qualification.needLabelCom': 'Mieux communiquer',
+  'pubForms.qualification.needLabelBrand': 'Une marque',
+  'pubForms.qualification.needLabelTool': 'Un outil métier',
+  'pubForms.qualification.needLabelUndefined': 'À définir',
+
+  // Formules
+  'pubForms.qualification.planShowcase': 'Vitrine',
+  'pubForms.qualification.planEssential': 'Essentiel',
+  'pubForms.qualification.planBusiness': 'Business',
+  'pubForms.qualification.planShop': 'Boutique en ligne',
+  'pubForms.qualification.planCustom': 'Sur mesure',
+
+  // Tailles, échéances, budgets, décideurs, marque : libellés du relevé
+  'pubForms.qualification.sizeLabel1': 'Seul',
+  'pubForms.qualification.sizeLabel2': '2 à 10 personnes',
+  'pubForms.qualification.sizeLabel3': '11 à 50 personnes',
+  'pubForms.qualification.sizeLabel4': 'Plus de 50 personnes',
+  'pubForms.qualification.whenUrgent': "Moins d'un mois",
+  'pubForms.qualification.when3m': "D'ici 3 mois",
+  'pubForms.qualification.when6m': "D'ici 6 mois",
+  'pubForms.qualification.whenFree': 'Pas de date',
+  'pubForms.qualification.budget1': 'Moins de 3 000 €',
+  'pubForms.qualification.budget2': '3 000 à 8 000 €',
+  'pubForms.qualification.budget3': '8 000 à 20 000 €',
+  'pubForms.qualification.budget4': 'Plus de 20 000 €',
+  'pubForms.qualification.budgetLabel0': 'À conseiller',
+  'pubForms.qualification.decideLabelMe': 'Vous',
+  'pubForms.qualification.decideLabelPartners': 'Vous et vos associés',
+  'pubForms.qualification.decideLabelBoard': 'Un comité',
+  'pubForms.qualification.brandLabelNone': 'pas de nom',
+  'pubForms.qualification.brandLabelName': "un nom, pas d'identité",
+  'pubForms.qualification.brandLabelRedo': 'identité à refaire',
+
+  // Cartes de besoin
+  'pubForms.qualification.cardSite': 'Un nouveau site',
+  'pubForms.qualification.cardSiteHint': 'Vitrine, boutique, espace client',
+  'pubForms.qualification.cardRedo': 'Refaire mon site',
+  'pubForms.qualification.cardRedoHint': 'Il existe, il ne fait pas le travail',
+  'pubForms.qualification.cardCom': 'Mieux communiquer',
+  'pubForms.qualification.cardComHint': 'Message, réseaux, acquisition',
+  'pubForms.qualification.cardBrand': 'Une marque',
+  'pubForms.qualification.cardBrandHint': 'Nom, voix, identité',
+  'pubForms.qualification.cardTool': 'Un outil métier',
+  'pubForms.qualification.cardToolHint': 'Ce que le tableur ne fait plus',
+  'pubForms.qualification.cardUndefined': 'Je ne sais pas encore',
+  'pubForms.qualification.cardUndefinedHint': 'Quelque chose bloque, à définir',
+  'pubForms.needStart.startHere': 'Commencer par là →',
+
+  // Puces de réponse
+  'pubForms.qualification.planChoiceShowcase': 'Me faire connaître',
+  'pubForms.qualification.planChoiceEssential': 'Publier moi-même',
+  'pubForms.qualification.planChoiceBusiness': 'Vendre, suivre mes clients',
+  'pubForms.qualification.planChoiceShop': "Vendre en ligne, c'est mon métier",
+  'pubForms.qualification.planChoiceCustom': "Un outil qui n'existe pas",
+  'pubForms.qualification.painUnclear': 'On ne comprend pas ce qu’on fait',
+  'pubForms.qualification.painSocial': 'Les réseaux prennent du temps, sans résultat',
+  'pubForms.qualification.painLeads': 'Pas assez de demandes',
+  'pubForms.qualification.painAds': 'Un budget pub sans retour mesurable',
+  'pubForms.qualification.painConsistency': 'Chacun présente l’entreprise à sa façon',
+  'pubForms.qualification.brandChoiceNone': 'Pas encore de nom',
+  'pubForms.qualification.brandChoiceName': "Un nom, pas d'identité",
+  'pubForms.qualification.brandChoiceRedo': 'Une identité à refaire',
+  'pubForms.qualification.toolNowSheets': 'Des tableurs partagés',
+  'pubForms.qualification.toolNowSoftware': 'Plusieurs logiciels mal reliés',
+  'pubForms.qualification.toolNowPaper': 'Du papier et des e-mails',
+  'pubForms.qualification.sizeChoice1': 'Seul',
+  'pubForms.qualification.sizeChoice2': '2 à 10',
+  'pubForms.qualification.sizeChoice3': '11 à 50',
+  'pubForms.qualification.sizeChoice4': 'Plus de 50',
+  'pubForms.qualification.budgetChoice0': 'Je ne sais pas, conseillez-moi',
+  'pubForms.qualification.decideChoiceMe': 'Moi',
+  'pubForms.qualification.decideChoicePartners': 'Moi et mes associés',
+  'pubForms.qualification.decideChoiceBoard': 'Un comité ou une direction',
+  'pubForms.qualification.replyWritten': 'Par écrit',
+  'pubForms.qualification.replyCall': 'Un appel de 30 minutes',
+
+  // Pistes proposées
+  'pubForms.qualification.recoSitePlan': 'Site · formule {plan}',
+  'pubForms.qualification.recoRedo': 'Refonte du site',
+  'pubForms.qualification.recoSite': 'Site web',
+  'pubForms.qualification.recoDiagnostic': 'Diagnostic de communication',
+  'pubForms.qualification.recoPositioning': 'Positionnement et messages',
+  'pubForms.qualification.recoPlan': 'Plan de communication',
+  'pubForms.qualification.recoAcquisition': 'Acquisition et mesure',
+  'pubForms.qualification.recoBrand': 'Marque : nom, voix, système',
+  'pubForms.qualification.recoCustom': 'Développement sur mesure',
+  'pubForms.qualification.recoAdvice': 'Conseil : un état des lieux écrit',
+
+  // Remarques franches
+  'pubForms.qualification.noteSmallBudgetTool':
+    "Pour ce budget, un outil du marché sera souvent plus adapté. On vous le dira franchement pendant l'échange, avec des noms.",
+  'pubForms.qualification.noteSmallBudgetAds':
+    "Avec ce budget, on commence par le diagnostic : inutile d'acheter plus de publicité avant de savoir ce qui rapporte.",
+  'pubForms.qualification.noteUrgent':
+    "Moins d'un mois : on vous dira pendant l'échange ce qui est tenable, et ce qui ne l'est pas.",
+  'pubForms.qualification.noteUnknownBudget':
+    'Pas de souci : le devis écrit vous donnera un prix ferme, et on vous dira ce qui peut attendre.',
+
+  // Relevé
+  'pubForms.qualification.relPlan': 'Site : {plan}',
+  'pubForms.qualification.relPain': '{count, plural, one {# point de blocage} other {# points de blocage}}',
+  'pubForms.qualification.relBrand': 'Marque : {brand}',
+  'pubForms.qualification.relTools': 'Remplace : {count, plural, one {# outil} other {# outils}}',
+
+  // Validation
+  'pubForms.qualification.errNeed':
+    'Choisissez au moins une réponse. Si rien ne correspond, prenez « Je ne sais pas encore ».',
+  'pubForms.qualification.errFirstName': "Indiquez votre prénom, pour qu'on sache à qui répondre.",
+  'pubForms.qualification.errEmail': "Cette adresse e-mail semble incomplète. Vérifiez-la, c'est là qu'on vous répond.",
+  'pubForms.qualification.errConsent': "Cochez la case pour qu'on puisse utiliser ces informations pour vous répondre.",
+  'pubForms.qualification.errUrl':
+    "Cette adresse de site semble incomplète. Corrigez-la, ou laissez le champ vide si vous n'en avez pas.",
+  'pubForms.qualification.errSend':
+    "Une erreur est survenue lors de l'envoi. Veuillez réessayer ou nous écrire directement à contact@venio.paris",
+
+  // Objet du lead (toujours en français : lu par l'équipe dans l'admin)
+  'pubForms.qualification.leadSubject': 'Qualification : {needs}',
+
+  // Formulaire
+  'pubForms.qualification.formAria': 'Formulaire de qualification',
+  'pubForms.qualification.progressAria': 'Progression',
+  'pubForms.qualification.backToStepAria': "Revenir à l'étape {n} : {name}",
+  'pubForms.qualification.doneTitle': "C'est noté.",
+  'pubForms.qualification.doneTitleName': "C'est noté, {name}.",
+  'pubForms.qualification.doneTextWritten':
+    "On relit votre relevé et on vous répond sous 48 h ouvrées, par écrit. Si votre projet n'est pas pour nous, on vous le dit, et on vous oriente ailleurs.",
+  'pubForms.qualification.doneTextCall':
+    "On relit votre relevé et on vous répond sous 48 h ouvrées, pour convenir d'un appel de 30 minutes. Si votre projet n'est pas pour nous, on vous le dit, et on vous oriente ailleurs.",
+  'pubForms.qualification.multiHint': 'Plusieurs réponses possibles.',
+  'pubForms.qualification.qSiteDoes': 'Que doit faire le site ?',
+  'pubForms.qualification.qCurrentSite': "L'adresse du site actuel",
+  'pubForms.qualification.qPain': "Qu'est-ce qui coince aujourd'hui ?",
+  'pubForms.qualification.qBrand': 'Où en est votre marque ?',
+  'pubForms.qualification.qToolNow': "Aujourd'hui, ça tourne sur…",
+  'pubForms.qualification.qUndefined': 'Racontez ce qui vous bloque, en deux lignes.',
+  'pubForms.qualification.undefinedPlaceholder':
+    'Ex. : on a un site, des réseaux, un peu de pub, mais les demandes ne viennent pas.',
+  'pubForms.qualification.qActivity': 'Votre activité, en quelques mots',
+  'pubForms.qualification.activityPlaceholder': "Ex. : cabinet d'avocats en droit social, 3 associés",
+  'pubForms.qualification.qSize': 'Combien êtes-vous ?',
+  'pubForms.qualification.qExistingSite': "Votre site actuel, s'il existe",
+  'pubForms.qualification.qWhen': 'Pour quand ?',
+  'pubForms.qualification.qBudget': 'Quel budget envisagez-vous ?',
+  'pubForms.qualification.qDecide': 'Qui décide ?',
+  'pubForms.qualification.firstName': 'Prénom',
+  'pubForms.qualification.lastName': 'Nom',
+  'pubForms.qualification.email': 'E-mail',
+  'pubForms.qualification.phone': 'Téléphone',
+  'pubForms.qualification.optional': '(facultatif)',
+  'pubForms.qualification.qReply': "Comment préférez-vous qu'on revienne vers vous ?",
+  'pubForms.qualification.qMessage': 'Autre chose à ajouter ?',
+  'pubForms.qualification.honeypot': 'Site web',
+  'pubForms.qualification.consent':
+    "J'accepte que Venio utilise ces informations pour me répondre. Rien d'autre. Voir la",
+  'pubForms.qualification.privacyLink': 'politique de confidentialité',
+  'pubForms.qualification.back': '← Retour',
+  'pubForms.qualification.stepCount': 'Étape {current} sur {total}',
+  'pubForms.qualification.sending': 'Envoi…',
+  'pubForms.qualification.send': 'Envoyer ma demande →',
+  'pubForms.qualification.continue': 'Continuer →',
+  'pubForms.qualification.sideTitle': 'Relevé de votre besoin',
+  'pubForms.qualification.live': 'En direct',
+  'pubForms.qualification.recoLabel': "Ce qu'on vous proposerait sans doute",
+  'pubForms.qualification.recoEmpty': 'Répondez à la première question.',
+
+  // Bloc d'entrée de bas de page
+  'pubForms.needStart.eyebrow': 'Prochaine étape',
+  'pubForms.needStart.titleLead': 'Parlez-nous de',
+  'pubForms.needStart.titleAccent': 'votre besoin.',
+  'pubForms.needStart.sub':
+    "Cinq questions, trois minutes. On vous répond sous 48 h ouvrées avec une première lecture, et on vous dit aussi quand ce n'est pas pour nous.",
+  'pubForms.needStart.trust': 'Sans engagement · Réponse sous 48 h ouvrées · Devis écrit',
+} as const
+
+export default fr

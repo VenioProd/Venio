@@ -5,15 +5,27 @@ import { listJournals, createJournal, updateJournal } from '../../../services/ac
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import type { IJournal, JournalType } from '../../../types/accounting'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import type { MessageKey } from '../../../i18n'
 
-const TYPES: { value: JournalType; label: string }[] = [
-  { value: 'VENTE', label: 'Ventes' },
-  { value: 'ACHAT', label: 'Achats' },
-  { value: 'BANQUE', label: 'Banque' },
-  { value: 'CAISSE', label: 'Caisse' },
-  { value: 'OD', label: 'Opérations diverses' },
-  { value: 'AN', label: 'À-nouveaux' },
+const TYPES: { value: JournalType; labelKey: MessageKey }[] = [
+  { value: 'VENTE', labelKey: 'accAccounts.journalOption.VENTE' },
+  { value: 'ACHAT', labelKey: 'accAccounts.journalOption.ACHAT' },
+  { value: 'BANQUE', labelKey: 'accAccounts.journalOption.BANQUE' },
+  { value: 'CAISSE', labelKey: 'accAccounts.journalOption.CAISSE' },
+  { value: 'OD', labelKey: 'accAccounts.journalOption.OD' },
+  { value: 'AN', labelKey: 'accAccounts.journalOption.AN' },
 ]
+
+const TYPE_LABEL_KEYS: Record<JournalType, MessageKey> = {
+  VENTE: 'accAccounts.journalType.VENTE',
+  ACHAT: 'accAccounts.journalType.ACHAT',
+  BANQUE: 'accAccounts.journalType.BANQUE',
+  CAISSE: 'accAccounts.journalType.CAISSE',
+  OD: 'accAccounts.journalType.OD',
+  AN: 'accAccounts.journalType.AN',
+}
 
 interface JournalForm {
   code: string
@@ -34,6 +46,7 @@ const EMPTY: JournalForm = {
 }
 
 const Journals = () => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_ACCOUNTING)
 
@@ -49,7 +62,7 @@ const Journals = () => {
     try {
       setJournals(await listJournals())
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     } finally {
       setLoading(false)
     }
@@ -73,7 +86,7 @@ const Journals = () => {
       setShowForm(false)
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
@@ -92,8 +105,8 @@ const Journals = () => {
 
   return (
     <AccountingLayout
-      title="Journaux"
-      subtitle="Journaux comptables (VE, AC, BQ, OD, AN…)"
+      title={t('accAccounts.nav.journals')}
+      subtitle={t('accAccounts.journals.subtitle')}
       actions={
         canManage && (
           <button
@@ -104,7 +117,7 @@ const Journals = () => {
               setShowForm(!showForm)
             }}
           >
-            {showForm ? 'Fermer' : '✚ Nouveau journal'}
+            {showForm ? t('common.close') : t('accAccounts.journals.newJournal')}
           </button>
         )
       }
@@ -113,10 +126,10 @@ const Journals = () => {
 
       {showForm && canManage && (
         <form className="accounting-card" onSubmit={handleSubmit}>
-          <h2>{editId ? 'Modifier le journal' : 'Nouveau journal'}</h2>
+          <h2>{editId ? t('accAccounts.journals.editTitle') : t('accAccounts.journals.newTitle')}</h2>
           <div className="accounting-form">
             <div className="accounting-form-field">
-              <label>Code</label>
+              <label>{t('accAccounts.col.code')}</label>
               <input
                 className="portal-input"
                 value={form.code}
@@ -128,7 +141,7 @@ const Journals = () => {
               />
             </div>
             <div className="accounting-form-field" style={{ gridColumn: 'span 2' }}>
-              <label>Libellé</label>
+              <label>{t('accAccounts.col.label')}</label>
               <input
                 className="portal-input"
                 value={form.label}
@@ -137,21 +150,21 @@ const Journals = () => {
               />
             </div>
             <div className="accounting-form-field">
-              <label>Type</label>
+              <label>{t('accAccounts.accounts.type')}</label>
               <select
                 className="portal-input"
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as JournalType })}
               >
-                {TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
+                {TYPES.map((ty) => (
+                  <option key={ty.value} value={ty.value}>
+                    {t(ty.labelKey)}
                   </option>
                 ))}
               </select>
             </div>
             <div className="accounting-form-field">
-              <label>Compte de contrepartie (BQ/CA)</label>
+              <label>{t('accAccounts.journals.counterAccountLabel')}</label>
               <input
                 className="portal-input"
                 value={form.counterAccount}
@@ -160,7 +173,7 @@ const Journals = () => {
               />
             </div>
             <div className="accounting-form-field full">
-              <label>Description</label>
+              <label>{t('accAccounts.col.description')}</label>
               <input
                 className="portal-input"
                 value={form.description}
@@ -178,10 +191,10 @@ const Journals = () => {
                 setForm(EMPTY)
               }}
             >
-              Annuler
+              {t('common.cancel')}
             </button>
             <button type="submit" className="portal-button">
-              {editId ? 'Enregistrer' : 'Créer'}
+              {editId ? t('common.save') : t('accAccounts.accounts.create')}
             </button>
           </div>
         </form>
@@ -189,21 +202,21 @@ const Journals = () => {
 
       <section className="accounting-card">
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
         ) : journals.length === 0 ? (
           <div className="accounting-empty">
-            Aucun journal défini.
-            <div className="hint">Allez dans Paramètres pour initialiser les journaux par défaut.</div>
+            {t('accAccounts.journals.empty')}
+            <div className="hint">{t('accAccounts.journals.emptyHint')}</div>
           </div>
         ) : (
           <table className="accounting-table">
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Libellé</th>
-                <th>Type</th>
-                <th>Contrepartie</th>
-                <th>Statut</th>
+                <th>{t('accAccounts.col.code')}</th>
+                <th>{t('accAccounts.col.label')}</th>
+                <th>{t('accAccounts.accounts.type')}</th>
+                <th>{t('accAccounts.journals.counterAccount')}</th>
+                <th>{t('accAccounts.col.status')}</th>
                 {canManage && <th></th>}
               </tr>
             </thead>
@@ -212,17 +225,17 @@ const Journals = () => {
                 <tr key={j._id}>
                   <td className="code">{j.code}</td>
                   <td>{j.label}</td>
-                  <td>{j.type}</td>
+                  <td>{TYPE_LABEL_KEYS[j.type] ? t(TYPE_LABEL_KEYS[j.type]) : j.type}</td>
                   <td className="code">{j.counterAccount || '—'}</td>
                   <td>
                     <span className={`accounting-badge ${j.isActive ? 'validated' : 'locked'}`}>
-                      {j.isActive ? 'Actif' : 'Inactif'}
+                      {j.isActive ? t('accAccounts.accounts.active') : t('accAccounts.accounts.inactive')}
                     </span>
                   </td>
                   {canManage && (
                     <td>
                       <div className="accounting-row-actions">
-                        <button onClick={() => startEdit(j)}>Modifier</button>
+                        <button onClick={() => startEdit(j)}>{t('common.edit')}</button>
                       </div>
                     </td>
                   )}

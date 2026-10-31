@@ -129,6 +129,7 @@ async function ensureClientForWonLead(
       onboardingStatus: 'A_FAIRE',
       healthStatus: 'BON',
       ownerAdminId: lead.assignedTo || actorId || null,
+      originLead: lead._id,
     })
     didCreateClient = true
 

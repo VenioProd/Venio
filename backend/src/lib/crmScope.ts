@@ -1,4 +1,5 @@
 import type { Request } from 'express'
+import Lead from '../models/Lead.js'
 
 /**
  * Périmètre CRM. En lecture, le super-admin et le commercial voient tout le
@@ -32,4 +33,20 @@ export function isLeadOutOfScope(req: ScopedRequest, lead: ScopedLead): boolean 
   if (req.user!.role === 'SUPER_ADMIN') return false
   const userId = req.user!.id
   return lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId
+}
+
+/**
+ * Devis lisibles : ceux des projets lisibles (`null` : tous), et ceux portés
+ * par un lead seul, à condition que le lead soit dans le périmètre CRM. Servi
+ * au web comme à la synchro de l'app native.
+ */
+export async function readableProposalFilter(
+  req: ScopedRequest,
+  readableProjectIds: string[] | null,
+): Promise<Record<string, unknown>> {
+  const onProject = readableProjectIds === null ? { project: { $ne: null } } : { project: { $in: readableProjectIds } }
+  const onLead = readsWholeCrm(req)
+    ? { project: null }
+    : { project: null, leadId: { $in: await Lead.distinct('_id', leadScopeFilter(req)) } }
+  return { $or: [onProject, onLead] }
 }

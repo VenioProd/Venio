@@ -47,6 +47,9 @@ const userSchema = new mongoose.Schema<IUser>(
       default: 'AUTRE',
     },
     ownerAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    // Lead dont la conversion a créé ce compte client. Posé à la création
+    // seulement : un lead rattaché après coup (doublon, même email) n'en hérite pas.
+    originLead: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', default: null },
     status: {
       type: String,
       enum: ['PROSPECT', 'ACTIF', 'EN_PAUSE', 'CLOS', 'ARCHIVE'],
@@ -128,6 +131,7 @@ const userSchema = new mongoose.Schema<IUser>(
 
 userSchema.index({ role: 1, status: 1 })
 userSchema.index({ ownerAdminId: 1, updatedAt: -1 })
+userSchema.index({ originLead: 1 }, { partialFilterExpression: { originLead: { $type: 'objectId' } } })
 userSchema.index({ name: 'text', companyName: 'text', email: 'text' })
 
 export default mongoose.model<IUser>('User', userSchema)

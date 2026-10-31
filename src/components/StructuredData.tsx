@@ -1,6 +1,8 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
+import type { MessageKey } from '../i18n'
+import { useI18n } from '../context/I18nContext'
 import { APROPOS_FAQ, HOME_FAQ, METHODE_FAQ, SITES_FAQ, type FaqItem } from '../content/faq'
 
 /** Une page balisée sans FAQ visible serait un faux signal : la table suit
@@ -14,6 +16,7 @@ const FAQ_BY_TYPE: Record<string, FaqItem[]> = {
 
 const StructuredData = ({ type = 'home' }) => {
   const location = useLocation()
+  const { t } = useI18n()
   const siteUrl = 'https://venio.paris'
   const currentUrl = `${siteUrl}${location.pathname}`
 
@@ -53,27 +56,18 @@ const StructuredData = ({ type = 'home' }) => {
             '@context': 'https://schema.org',
             '@type': 'ItemList',
             itemListElement: [
-              [
-                'Diagnostic marketing et communication',
-                'État des lieux écrit : ce qui marche, ce qui coûte pour rien, les décisions à prendre.',
-              ],
-              [
-                'Positionnement et messages',
-                'Positionnement, messages, preuves et ton, présentés de la même façon partout.',
-              ],
-              [
-                'Plan de communication',
-                'Canaux, rythme et budget tenables par votre équipe, et liste de ce qu’on arrête.',
-              ],
-              ['Contenus et réseaux sociaux', 'Ligne éditoriale, formats, gabarits et calendrier.'],
-              ['Acquisition et mesure', 'Référencement, campagnes et tableau de suivi mensuel.'],
+              ['pubHome.schema.advice1Type', 'pubHome.schema.advice1Desc'],
+              ['pubHome.schema.advice2Type', 'pubHome.schema.advice2Desc'],
+              ['pubHome.schema.advice3Type', 'pubHome.schema.advice3Desc'],
+              ['pubHome.schema.advice4Type', 'pubHome.schema.advice4Desc'],
+              ['pubHome.schema.advice5Type', 'pubHome.schema.advice5Desc'],
             ].map(([serviceType, description], index) => ({
               '@type': 'Service',
               position: index + 1,
-              serviceType,
+              serviceType: t(serviceType as MessageKey),
               provider: baseOrganization,
               areaServed: 'FR',
-              description,
+              description: t(description as MessageKey),
             })),
           },
         ]
@@ -84,11 +78,10 @@ const StructuredData = ({ type = 'home' }) => {
           {
             '@context': 'https://schema.org',
             '@type': 'Service',
-            serviceType: 'Communication & Branding',
+            serviceType: t('pubHome.schema.communicationType'),
             provider: baseOrganization,
             areaServed: 'FR',
-            description:
-              'Identités visuelles cohérentes, stratégies éditoriales structurées, contenus premium et storytelling.',
+            description: t('pubHome.schema.communicationDesc'),
           },
         ]
 
@@ -98,10 +91,10 @@ const StructuredData = ({ type = 'home' }) => {
           {
             '@context': 'https://schema.org',
             '@type': 'Service',
-            serviceType: 'Développement Web',
+            serviceType: t('pubHome.schema.developmentType'),
             provider: baseOrganization,
             areaServed: 'FR',
-            description: 'Sites web premium, plateformes métier complexes, SaaS scalables et outils sur mesure.',
+            description: t('pubHome.schema.developmentDesc'),
           },
         ]
 
@@ -111,10 +104,10 @@ const StructuredData = ({ type = 'home' }) => {
           {
             '@context': 'https://schema.org',
             '@type': 'Service',
-            serviceType: 'Conseil Stratégique',
+            serviceType: t('pubHome.schema.consultingType'),
             provider: baseOrganization,
             areaServed: 'FR',
-            description: 'Positionnement, vision, architecture digitale globale et priorités de décision.',
+            description: t('pubHome.schema.consultingDesc'),
           },
         ]
 
@@ -124,11 +117,10 @@ const StructuredData = ({ type = 'home' }) => {
           {
             '@context': 'https://schema.org',
             '@type': 'Service',
-            serviceType: 'Création de Sites Web',
+            serviceType: t('pubHome.schema.sitesType'),
             provider: baseOrganization,
             areaServed: 'FR',
-            description:
-              'Sites web sur mesure sans templates — vitrine, e-commerce, plateforme métier. Avec ou sans webmastering (hébergement + entretien mensuel inclus).',
+            description: t('pubHome.schema.sitesDesc'),
           },
         ]
 
@@ -143,7 +135,7 @@ const StructuredData = ({ type = 'home' }) => {
       {
         '@type': 'ListItem',
         position: 1,
-        name: 'Accueil',
+        name: t('nav.home'),
         item: siteUrl,
       },
     ]

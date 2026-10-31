@@ -4,19 +4,21 @@ import { apiFetch } from '../../lib/api'
 import { exportToCsv } from '../../lib/exportCsv'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import ConfirmModal from '../../components/ConfirmModal'
 import type { User } from '../../types/auth.types'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
-const roleLabels: Record<string, string> = {
-  SUPER_ADMIN: 'Super admin',
-  PDG: 'PDG',
-  ADMIN: 'Contributeur',
-  RH: 'RH',
-  COMMERCIAL: 'Commercial',
-  VIEWER: 'Lecture seule',
-  STAGIAIRE: 'Stagiaire',
+const ROLE_LABEL_KEYS: Record<string, MessageKey> = {
+  SUPER_ADMIN: 'adminAccess.admins.roleSuperAdmin',
+  PDG: 'adminAccess.admins.rolePdg',
+  ADMIN: 'adminAccess.admins.roleContributor',
+  RH: 'adminAccess.admins.roleHr',
+  COMMERCIAL: 'adminAccess.admins.roleSales',
+  VIEWER: 'adminAccess.admins.roleReadOnly',
+  STAGIAIRE: 'adminAccess.admins.roleIntern',
 }
 
 const ROLE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
@@ -42,6 +44,8 @@ const ROLE_AVATARS: Record<string, string> = {
 const AdminList = () => {
   const { user } = useAuth()
   const { showToast } = useToast()
+  const { t } = useI18n()
+  const roleLabel = (role: string) => (ROLE_LABEL_KEYS[role] ? t(ROLE_LABEL_KEYS[role]) : '')
   const [admins, setAdmins] = useState<User[]>([])
   const [error, setError] = useState<string>('')
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
@@ -55,7 +59,7 @@ const AdminList = () => {
         const data = await apiFetch<{ users?: User[] }>('/api/admin/admins')
         setAdmins(data.users || [])
       } catch (err: unknown) {
-        setError((err as Error).message || 'Erreur chargement admins')
+        setError((err as Error).message || t('adminAccess.admins.loadFailed'))
       }
     }
     load()
@@ -74,7 +78,7 @@ const AdminList = () => {
       const targetPath = data.user.role === 'CLIENT' ? '/espace-client' : '/admin'
       window.location.assign(targetPath)
     } catch (err: unknown) {
-      showToast((err as Error).message || 'Erreur', 'error')
+      showToast((err as Error).message || t('adminAccess.admins.genericError'), 'error')
     } finally {
       setImpersonating(null)
     }
@@ -87,14 +91,9 @@ const AdminList = () => {
         method: 'POST',
       })
       await navigator.clipboard.writeText(data.resetUrl)
-      showToast(
-        data.emailSent
-          ? 'Email envoye + lien copie dans le presse-papiers'
-          : 'Lien copie (email non envoye, verifier SMTP)',
-        'success',
-      )
+      showToast(data.emailSent ? t('adminAccess.admins.resetSent') : t('adminAccess.admins.resetCopiedOnly'), 'success')
     } catch (err: unknown) {
-      showToast((err as Error).message || 'Erreur', 'error')
+      showToast((err as Error).message || t('adminAccess.admins.genericError'), 'error')
     } finally {
       setResetting(null)
     }
@@ -104,9 +103,9 @@ const AdminList = () => {
     setResendingCredentials(adminId)
     try {
       await apiFetch(`/api/admin/admins/${adminId}/resend-credentials`, { method: 'POST' })
-      showToast('Nouveaux identifiants envoyes par email', 'success')
+      showToast(t('adminAccess.admins.credentialsSent'), 'success')
     } catch (err: unknown) {
-      showToast((err as Error).message || 'Erreur', 'error')
+      showToast((err as Error).message || t('adminAccess.admins.genericError'), 'error')
     } finally {
       setResendingCredentials(null)
     }
@@ -118,10 +117,10 @@ const AdminList = () => {
     try {
       await apiFetch(`/api/admin/admins/${deleteTarget}`, { method: 'DELETE' })
       setAdmins((prev) => prev.filter((admin) => admin._id !== deleteTarget))
-      showToast('Administrateur supprime', 'success')
+      showToast(t('adminAccess.admins.deleted'), 'success')
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression admin')
-      showToast('Erreur lors de la suppression', 'error')
+      setError((err as Error).message || t('adminAccess.admins.deleteFailed'))
+      showToast(t('adminAccess.admins.deleteFailedToast'), 'error')
     } finally {
       setDeleteTarget(null)
     }
@@ -133,21 +132,25 @@ const AdminList = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Comptes admin</span>
+          <span style={{ color: 'var(--text-primary)' }}>{t('adminAccess.admins.breadcrumb')}</span>
         </div>
         <div className="admin-header">
-          <h1>Comptes admin</h1>
+          <h1>{t('adminAccess.admins.breadcrumb')}</h1>
           <div className="admin-actions portal-actions-reveal">
             <button
               className="portal-button secondary portal-action-link"
               type="button"
-              title="Exporter CSV"
+              title={t('adminAccess.admins.exportCsv')}
               onClick={() => {
-                const headers = ['Nom', 'Email', 'Role']
+                const headers = [
+                  t('adminAccess.admins.csvName'),
+                  t('adminAccess.admins.csvEmail'),
+                  t('adminAccess.admins.csvRole'),
+                ]
                 const rows = admins.map((admin) => [
                   admin.name || '',
                   admin.email || '',
-                  roleLabels[admin.role] || admin.role || '',
+                  roleLabel(admin.role) || admin.role || '',
                 ])
                 exportToCsv('admins.csv', headers, rows)
               }}
@@ -166,12 +169,12 @@ const AdminList = () => {
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
               </span>
-              <span className="portal-action-label">Exporter CSV</span>
+              <span className="portal-action-label">{t('adminAccess.admins.exportCsv')}</span>
             </button>
             <Link
               className="portal-button portal-action-link"
               to="/admin/comptes-admin/nouveau"
-              title="Nouvel administrateur"
+              title={t('adminAccess.admins.newAdmin')}
             >
               <span className="portal-action-icon" aria-hidden>
                 <svg
@@ -188,7 +191,7 @@ const AdminList = () => {
                   <line x1="22" y1="11" x2="16" y2="11" />
                 </svg>
               </span>
-              <span className="portal-action-label">Nouvel administrateur</span>
+              <span className="portal-action-label">{t('adminAccess.admins.newAdmin')}</span>
             </Link>
           </div>
         </div>
@@ -205,7 +208,7 @@ const AdminList = () => {
           <div className="portal-card">
             <div className="admin-empty-state">
               <div className="admin-empty-state-icon">🛡️</div>
-              <p className="admin-empty-state-text">Aucun compte admin</p>
+              <p className="admin-empty-state-text">{t('adminAccess.admins.empty')}</p>
             </div>
           </div>
         ) : (
@@ -221,7 +224,7 @@ const AdminList = () => {
                     >
                       {(admin.name || '?').charAt(0).toUpperCase()}
                     </div>
-                    {user?._id === admin._id && <span className="admin-card-you">Vous</span>}
+                    {user?._id === admin._id && <span className="admin-card-you">{t('adminAccess.admins.you')}</span>}
                   </div>
                   <h3 className="client-card-name">{admin.name}</h3>
                   <p className="client-card-email">{admin.email}</p>
@@ -234,7 +237,7 @@ const AdminList = () => {
                         color: colors.text,
                       }}
                     >
-                      {admin.title || roleLabels[admin.role] || admin.role}
+                      {admin.title || roleLabel(admin.role) || admin.role}
                     </span>
                     {admin.tags?.includes('STAGIAIRE') && (
                       <span
@@ -245,7 +248,7 @@ const AdminList = () => {
                           color: 'var(--primary)',
                         }}
                       >
-                        Stagiaire
+                        {t('adminAccess.admins.internTag')}
                       </span>
                     )}
                   </div>
@@ -259,7 +262,9 @@ const AdminList = () => {
                           disabled={impersonating === admin._id}
                           style={{ flex: '1 1 100%' }}
                         >
-                          {impersonating === admin._id ? 'Connexion...' : 'Se connecter en tant que'}
+                          {impersonating === admin._id
+                            ? t('adminAccess.admins.signingIn')
+                            : t('adminAccess.admins.signInAs')}
                         </button>
                         <button
                           className="admin-card-btn admin-card-btn--edit"
@@ -268,7 +273,9 @@ const AdminList = () => {
                           disabled={resetting === admin._id}
                           style={{ flex: '1 1 100%' }}
                         >
-                          {resetting === admin._id ? 'Envoi...' : 'Envoyer lien reinitialisation'}
+                          {resetting === admin._id
+                            ? t('adminAccess.admins.sending')
+                            : t('adminAccess.admins.sendResetLink')}
                         </button>
                         <button
                           className="admin-card-btn admin-card-btn--edit"
@@ -277,12 +284,14 @@ const AdminList = () => {
                           disabled={resendingCredentials === admin._id}
                           style={{ flex: '1 1 100%' }}
                         >
-                          {resendingCredentials === admin._id ? 'Envoi...' : 'Renvoyer les identifiants'}
+                          {resendingCredentials === admin._id
+                            ? t('adminAccess.admins.sending')
+                            : t('adminAccess.admins.resendCredentials')}
                         </button>
                       </>
                     )}
                     <Link className="admin-card-btn admin-card-btn--edit" to={`/admin/comptes-admin/${admin._id}`}>
-                      Modifier
+                      {t('common.edit')}
                     </Link>
                     <button
                       className="admin-card-btn admin-card-btn--delete"
@@ -290,7 +299,7 @@ const AdminList = () => {
                       onClick={() => handleDelete(admin._id)}
                       disabled={user?._id === admin._id}
                     >
-                      Supprimer
+                      {t('common.delete')}
                     </button>
                   </div>
                 </div>
@@ -302,10 +311,10 @@ const AdminList = () => {
 
       <ConfirmModal
         isOpen={deleteTarget !== null}
-        title="Supprimer un administrateur"
-        message="Supprimer cet administrateur ? Cette action est irr\u00e9versible."
-        confirmLabel="Supprimer"
-        cancelLabel="Annuler"
+        title={t('adminAccess.admins.confirmTitle')}
+        message={t('adminAccess.admins.confirmMessage')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}

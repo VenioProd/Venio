@@ -25,7 +25,7 @@ export interface ILead extends Document {
   statusChangedAt: Date | null
   clientAccountId: Types.ObjectId | null
   externalRep: Types.ObjectId | null
-  closingHandoff: { at: Date; to: Types.ObjectId | null; by: Types.ObjectId } | null
+  closingHandoff: { at: Date; to: Types.ObjectId | null; by: Types.ObjectId; repNotes?: string } | null
   score: number | null
   lostReason: string
   lostComment: string

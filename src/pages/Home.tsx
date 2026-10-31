@@ -13,143 +13,87 @@ import TrustLine from '../components/conversion/TrustLine'
 import Faq from '../components/conversion/Faq'
 import NeedStart from '../components/qualification/NeedStart'
 import { HOME_FAQ } from '../content/faq'
+import { useI18n } from '../context/I18nContext'
+import type { MessageKey } from '../i18n'
 import '../styles/monolithe-home.css'
 
-const TIERS: HomeTier[] = [
-  {
-    num: '01',
-    name: 'Vitrine',
-    thumb: 'vitrine',
-    icon: 'vitrine',
-    tag: 'Se faire connaître.',
-    pourQui: "Vous voulez qu'on vous trouve, et que ça fasse sérieux.",
-    incl: ['Design sur mesure', 'Parfait sur mobile', 'Visible sur Google'],
-    featured: false,
-  },
-  {
-    num: '02',
-    name: 'Essentiel',
-    thumb: 'essentiel',
-    icon: 'essentiel',
-    tag: 'Publier soi-même.',
-    pourQui: 'Vous voulez ajouter et modifier vos pages vous-même.',
-    incl: ['Design sur mesure', 'Mieux placé sur Google', 'Blog & actualités'],
-    featured: false,
-  },
-  {
-    num: '03',
-    name: 'Business',
-    thumb: 'business',
-    icon: 'business',
-    tag: 'Vendre et suivre ses clients.',
-    pourQui: 'Vous vendez, ou vous suivez vos clients en ligne.',
-    incl: ['Mieux placé sur Google', 'Espace pour vos clients', 'Paiement en ligne'],
-    featured: true,
-  },
-  {
-    num: '04',
-    name: 'Boutique en ligne',
-    thumb: 'boutique',
-    icon: 'ecommerce',
-    tag: 'Vendre en grand.',
-    pourQui: "Votre boutique en ligne, c'est votre métier.",
-    incl: ['Catalogue sans limite', 'Plusieurs moyens de paiement', 'Suivi des stocks'],
-    featured: false,
-  },
-  {
-    num: '05',
-    name: 'Sur mesure',
-    thumb: 'mesure',
-    icon: 'plateforme',
-    tag: "Un outil rien qu'à vous.",
-    pourQui: "L'outil dont vous avez besoin n'existe pas encore.",
-    incl: ['Conçu rien que pour vous', 'Connecté à vos outils', 'Plusieurs comptes et accès'],
-    featured: false,
-  },
+type TierN = 1 | 2 | 3 | 4 | 5
+
+const TIER_DEFS: { n: TierN; num: string; thumb: HomeTier['thumb']; icon: HomeTier['icon']; featured: boolean }[] = [
+  { n: 1, num: '01', thumb: 'vitrine', icon: 'vitrine', featured: false },
+  { n: 2, num: '02', thumb: 'essentiel', icon: 'essentiel', featured: false },
+  { n: 3, num: '03', thumb: 'business', icon: 'business', featured: true },
+  { n: 4, num: '04', thumb: 'boutique', icon: 'ecommerce', featured: false },
+  { n: 5, num: '05', thumb: 'mesure', icon: 'plateforme', featured: false },
 ]
 
-const ARGUMENTS: { num: string; titre: string; texte: string }[] = [
-  {
-    num: '01',
-    titre: 'Un site clair, que vos clients comprennent tout de suite',
-    texte:
-      'On dessine vos pages à partir de ce que vous avez à dire. Pas un modèle tout fait dans lequel on glisse vos textes.',
-  },
-  {
-    num: '02',
-    titre: 'Votre site vous appartient vraiment',
-    texte:
-      "Si un jour vous travaillez avec quelqu'un d'autre, tout part avec vous. N'importe quel développeur peut reprendre le travail après nous. On ne vous enferme pas dans un outil que nous seuls savons utiliser.",
-  },
-  {
-    num: '03',
-    titre: 'Rien n’est impossible parce que « l’outil ne le permet pas »',
-    texte:
-      'On code votre site sur mesure. Ce que vous demandez, on peut le faire. On vous dira quand même si ça ne sert à rien.',
-  },
-]
+const ARGUMENTS = [
+  { num: '01', titre: 'pubHome.home.arg1Title', texte: 'pubHome.home.arg1Text' },
+  { num: '02', titre: 'pubHome.home.arg2Title', texte: 'pubHome.home.arg2Text' },
+  { num: '03', titre: 'pubHome.home.arg3Title', texte: 'pubHome.home.arg3Text' },
+] as const satisfies readonly { num: string; titre: MessageKey; texte: MessageKey }[]
 
 /* Quatre métiers hors formules. Le conseil marketing ouvre la liste : il a sa
    propre page. Les trois autres ouvrent le formulaire de contact avec le
    besoin déjà coché (?besoin=). */
-const METIERS: {
-  num: string
-  nom: string
-  to: string
-  icon: LineIconName
-  nouveau?: boolean
-  titre: string
-  texte: string
-  inutile: string
-}[] = [
+const METIERS = [
   {
     num: '01',
-    nom: 'Conseil marketing',
+    nom: 'pubHome.home.job1Name',
     to: '/conseil-communication',
     icon: 'megaphone',
     nouveau: true,
-    titre: 'Un plan de communication qui tient',
-    texte: 'Positionnement, messages, canaux, rythme, budget. Et la liste de ce qu’on arrête.',
-    inutile: 'Votre offre elle-même n’est pas arrêtée. On commence par là.',
+    titre: 'pubHome.home.job1Title',
+    texte: 'pubHome.home.job1Text',
+    inutile: 'pubHome.home.job1Nope',
   },
   {
     num: '02',
-    nom: 'Conseil',
+    nom: 'pubHome.home.job2Name',
     to: '/contact?besoin=flou',
     icon: 'doc',
-    titre: 'Un état des lieux écrit',
-    texte: 'Ce qui marche, ce qui coûte cher pour rien, et les décisions à prendre dans l’ordre.',
-    inutile: 'Vous savez déjà quoi faire et cherchez quelqu’un pour le valider.',
+    nouveau: false,
+    titre: 'pubHome.home.job2Title',
+    texte: 'pubHome.home.job2Text',
+    inutile: 'pubHome.home.job2Nope',
   },
   {
     num: '03',
-    nom: 'Marque',
+    nom: 'pubHome.home.job3Name',
     to: '/contact?besoin=marque',
     icon: 'glyph',
-    titre: 'Un nom, une voix, un système',
-    texte: 'De quoi écrire, décliner et tenir sans nous rappeler à chaque production.',
-    inutile: 'Votre problème est commercial. Une belle marque ne remplit pas un carnet vide.',
+    nouveau: false,
+    titre: 'pubHome.home.job3Title',
+    texte: 'pubHome.home.job3Text',
+    inutile: 'pubHome.home.job3Nope',
   },
   {
     num: '04',
-    nom: 'Développement',
+    nom: 'pubHome.home.job4Name',
     to: '/contact?besoin=outil',
     icon: 'code',
-    titre: 'L’outil que le tableur ne fait plus',
-    texte: 'Construit autour de votre façon de travailler, pas l’inverse.',
-    inutile: 'Un logiciel du marché couvre déjà l’essentiel. On vous dira lequel.',
+    nouveau: false,
+    titre: 'pubHome.home.job4Title',
+    texte: 'pubHome.home.job4Text',
+    inutile: 'pubHome.home.job4Nope',
   },
-]
+] as const satisfies readonly {
+  num: string
+  nom: MessageKey
+  to: string
+  icon: LineIconName
+  nouveau: boolean
+  titre: MessageKey
+  texte: MessageKey
+  inutile: MessageKey
+}[]
 
 /* Les trois temps d'un projet ; l'étape active avance toute seule. */
-const ETAPES: { num: string; titre: string; detail: string; pole: string }[] = [
-  { num: '01', titre: 'Le message', detail: 'Positionnement, ton, preuves', pole: 'Conseil' },
-  { num: '02', titre: 'Le site', detail: 'Dessiné et codé pour vous', pole: 'Web' },
-  { num: '03', titre: 'La diffusion', detail: 'Plan, contenus, mesure', pole: 'Communication' },
-]
-
-const TITRE = 'Sites web, plateformes et communication,'
-const TITRE_ACCENT = 'à Paris.'
+const ETAPES = [
+  { num: '01', titre: 'pubHome.home.step1Title', detail: 'pubHome.home.step1Detail', pole: 'pubHome.home.step1Pole' },
+  { num: '02', titre: 'pubHome.home.step2Title', detail: 'pubHome.home.step2Detail', pole: 'pubHome.home.step2Pole' },
+  { num: '03', titre: 'pubHome.home.step3Title', detail: 'pubHome.home.step3Detail', pole: 'pubHome.home.step3Pole' },
+] as const satisfies readonly { num: string; titre: MessageKey; detail: MessageKey; pole: MessageKey }[]
 
 /** Mots du titre : chacun monte de derrière un masque, au chargement. */
 const Mots = ({ texte, depart, accent = false }: { texte: string; depart: number; accent?: boolean }) => {
@@ -183,6 +127,7 @@ const Mots = ({ texte, depart, accent = false }: { texte: string; depart: number
    l'étape active passe de l'une à la suivante. Coupé si le visiteur demande
    moins de mouvement : l'étape du milieu reste alors allumée. */
 const ProjectPlate = () => {
+  const { t } = useI18n()
   const [live, setLive] = useState(1)
 
   useEffect(() => {
@@ -194,7 +139,7 @@ const ProjectPlate = () => {
   return (
     <div className="mh-pj vn-spot mh-intro" style={{ '--mh-i': 2 } as CSSProperties}>
       <div className="mh-pj-head">
-        <span className="mh-mono">Un projet Venio</span>
+        <span className="mh-mono">{t('pubHome.home.plateTitle')}</span>
         <span className="mh-mono">01 · 02 · 03</span>
       </div>
       <div className="mh-pj-body">
@@ -206,10 +151,10 @@ const ProjectPlate = () => {
             <li key={e.num} className={k === live ? 'mh-pj-row is-live' : 'mh-pj-row'}>
               <span className="mh-pj-node">{e.num}</span>
               <div>
-                <b>{e.titre}</b>
-                <p className="mh-mono">{e.detail}</p>
+                <b>{t(e.titre)}</b>
+                <p className="mh-mono">{t(e.detail)}</p>
               </div>
-              <span className="mh-mono">{e.pole}</span>
+              <span className="mh-mono">{t(e.pole)}</span>
             </li>
           ))}
         </ol>
@@ -219,6 +164,18 @@ const ProjectPlate = () => {
 }
 
 const Home = () => {
+  const { t } = useI18n()
+  const tiers: HomeTier[] = TIER_DEFS.map((d) => ({
+    num: d.num,
+    name: t(`pubHome.home.tier${d.n}Name`),
+    thumb: d.thumb,
+    icon: d.icon,
+    tag: t(`pubHome.home.tier${d.n}Tag`),
+    pourQui: t(`pubHome.home.tier${d.n}Who`),
+    incl: [t(`pubHome.home.tier${d.n}Incl1`), t(`pubHome.home.tier${d.n}Incl2`), t(`pubHome.home.tier${d.n}Incl3`)],
+    featured: d.featured,
+  }))
+  const titre = t('pubHome.home.titleMain')
   // Même observateur que les autres pages publiques. Le hero, lui, ne passe
   // pas par là : son entrée est une animation au chargement, jamais
   // conditionnée à un observateur qui pourrait ne pas se déclencher.
@@ -229,9 +186,9 @@ const Home = () => {
   return (
     <div className="mh-home" ref={rootRef}>
       <SEO
-        title="Site web, conseil marketing et communication à Paris"
-        description="Studio web et conseil à Paris : sites et plateformes sur mesure, conseil marketing et plan de communication. Votre site vous appartient, tout part avec vous."
-        keywords="site web sur mesure, conseil marketing, plan de communication, communication, plateforme métier, développement web, marque, studio digital, Paris"
+        title={t('pubHome.home.seoTitle')}
+        description={t('pubHome.home.seoDescription')}
+        keywords={t('pubHome.home.seoKeywords')}
       />
       <StructuredData type="home" />
 
@@ -242,14 +199,14 @@ const Home = () => {
         <div className="mh-container mh-releve-grid">
           <div className="mh-releve-text vn-fx">
             <p className="mh-eyebrow mh-mono mh-intro" style={{ '--mh-i': 0 } as CSSProperties}>
-              <i aria-hidden="true" /> Venio · studio web et conseil à Paris
+              <i aria-hidden="true" /> {t('pubHome.home.heroEyebrow')}
             </p>
             <h1 className="mh-releve-title">
-              <Mots texte={TITRE} depart={0} /> <Mots texte={TITRE_ACCENT} depart={TITRE.split(' ').length} accent />
+              <Mots texte={titre} depart={0} />{' '}
+              <Mots texte={t('pubHome.home.titleAccent')} depart={titre.split(' ').length} accent />
             </h1>
             <p className="mh-releve-sub mh-intro" style={{ '--mh-i': 2 } as CSSProperties}>
-              On clarifie ce que vous avez à dire, puis on le fait savoir : un site dessiné et codé pour vous, et une
-              communication qui sert à quelque chose.
+              {t('pubHome.home.heroSub')}
             </p>
 
             <div className="mh-intro" style={{ '--mh-i': 3 } as CSSProperties}>
@@ -267,24 +224,21 @@ const Home = () => {
         <div className="mh-container">
           <header className="mh-band-head mh-reveal">
             <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> Sites web
+              <i aria-hidden="true" /> {t('pubHome.home.paliersEyebrow')}
             </p>
             <h2>
-              Cinq formules. La vôtre dépend de <span className="vn-shine">ce que le site doit faire.</span>
+              {t('pubHome.home.paliersTitle')} <span className="vn-shine">{t('pubHome.home.paliersTitleAccent')}</span>
             </h2>
-            <p className="mh-band-note">
-              Pas de ce que vous voulez montrer. Cliquez sur celle qui vous ressemble. On chiffre après, une fois qu’on
-              a compris votre besoin.
-            </p>
+            <p className="mh-band-note">{t('pubHome.home.paliersNote')}</p>
           </header>
 
           <div className="mh-reveal">
-            <TierDial tiers={TIERS} />
+            <TierDial tiers={tiers} />
           </div>
 
           <p className="mh-band-foot mh-reveal">
             <Link className="mh-link" to="/services/sites">
-              Le détail des cinq formules <span aria-hidden="true">→</span>
+              {t('pubHome.home.paliersLink')} <span aria-hidden="true">→</span>
             </Link>
           </p>
         </div>
@@ -295,15 +249,12 @@ const Home = () => {
         <div className="mh-container">
           <header className="mh-band-head mh-reveal">
             <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> Au-delà du site
+              <i aria-hidden="true" /> {t('pubHome.home.metiersEyebrow')}
             </p>
             <h2>
-              On fait aussi <span className="vn-shine">quatre autres choses.</span>
+              {t('pubHome.home.metiersTitle')} <span className="vn-shine">{t('pubHome.home.metiersTitleAccent')}</span>
             </h2>
-            <p className="mh-band-note">
-              Elles ne se vendent pas en formules : ça dépend de ce qu’on trouve en ouvrant le capot. Pour chacune, on
-              vous dit aussi quand ce n’est pas la bonne porte.
-            </p>
+            <p className="mh-band-note">{t('pubHome.home.metiersNote')}</p>
           </header>
 
           <div className="mh-jobs">
@@ -316,19 +267,19 @@ const Home = () => {
               >
                 <span className="mh-job-head">
                   <LineIcon name={m.icon} delay={i * 80} />
-                  {m.nouveau && <span className="mh-tag">Nouveau</span>}
+                  {m.nouveau && <span className="mh-tag">{t('pubHome.home.jobNew')}</span>}
                 </span>
                 <span className="mh-mono mh-job-num">
-                  {m.num} · {m.nom}
+                  {m.num} · {t(m.nom)}
                 </span>
-                <h3>{m.titre}</h3>
-                <p>{m.texte}</p>
+                <h3>{t(m.titre)}</h3>
+                <p>{t(m.texte)}</p>
                 <div className="mh-job-nope">
-                  <span className="mh-mono">Inutile si</span>
-                  <p>{m.inutile}</p>
+                  <span className="mh-mono">{t('pubHome.cta.nope')}</span>
+                  <p>{t(m.inutile)}</p>
                 </div>
                 <span className="mh-job-go">
-                  En parler <span aria-hidden="true">→</span>
+                  {t('pubHome.home.jobGo')} <span aria-hidden="true">→</span>
                 </span>
               </Link>
             ))}
@@ -341,10 +292,10 @@ const Home = () => {
         <div className="mh-container">
           <header className="mh-band-head mh-reveal">
             <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> Nos réalisations
+              <i aria-hidden="true" /> {t('pubHome.home.preuveEyebrow')}
             </p>
             <h2>
-              Nos propres sites et logiciels <span className="vn-shine">tournent tous les jours.</span>
+              {t('pubHome.home.preuveTitle')} <span className="vn-shine">{t('pubHome.home.preuveTitleAccent')}</span>
             </h2>
           </header>
 
@@ -354,7 +305,7 @@ const Home = () => {
 
           <p className="mh-band-foot mh-reveal">
             <Link className="mh-link" to="/realisations">
-              Voir les réalisations <span aria-hidden="true">→</span>
+              {t('pubHome.home.preuveLink')} <span aria-hidden="true">→</span>
             </Link>
           </p>
         </div>
@@ -365,20 +316,20 @@ const Home = () => {
         <div className="mh-container">
           <header className="mh-band-head mh-reveal">
             <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> Ce qui change avec nous
+              <i aria-hidden="true" /> {t('pubHome.home.engEyebrow')}
             </p>
             <h2>
-              Trois choses qu’on vous garantit, <span className="vn-shine">et que vous pouvez vérifier.</span>
+              {t('pubHome.home.engTitle')} <span className="vn-shine">{t('pubHome.home.engTitleAccent')}</span>
             </h2>
-            <p className="mh-band-note">Elles figurent dans nos contrats, pas seulement sur cette page.</p>
+            <p className="mh-band-note">{t('pubHome.home.engNote')}</p>
           </header>
 
           <div className="mh-specs">
             {ARGUMENTS.map((a, i) => (
               <article key={a.num} className="mh-spec mh-reveal" style={{ '--mh-i': i } as CSSProperties}>
                 <span className="mh-mono mh-spec-num">{a.num}</span>
-                <h3>{a.titre}</h3>
-                <p>{a.texte}</p>
+                <h3>{t(a.titre)}</h3>
+                <p>{t(a.texte)}</p>
               </article>
             ))}
           </div>

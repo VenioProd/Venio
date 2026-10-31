@@ -32,7 +32,6 @@ import {
   getNote,
   createNote,
   deleteNote,
-  CLASS_STATUS_LABEL,
   CLASS_COLOR_PALETTE,
   type EducationClass,
   type EducationClassProperty,
@@ -48,6 +47,9 @@ import { StudentsTab } from './student-parts'
 import { SessionsTab } from './session-parts'
 import { AssignmentsTab } from './assignment-parts'
 import { CouncilPreparationPanel } from './CouncilPreparationPanel'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { CLASS_STATUS_KEYS } from './eduCLabels'
 
 type WorkspaceTab = 'page' | 'students' | 'sessions' | 'assignments' | 'council'
 
@@ -106,6 +108,7 @@ export function ClassWorkspace({
   templates?: EducationTemplate[]
   onTemplatesChanged?: () => void
 }) {
+  const { t } = useI18n()
   const [klass, setKlass] = useState<EducationClass | null>(null)
   const [stats, setStats] = useState<{
     studentCount: number
@@ -139,7 +142,7 @@ export function ClassWorkspace({
       setPageStack([restore('note', h.note._id, h.note)])
       setLoadError(null)
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Impossible de charger la classe')
+      setLoadError(err instanceof Error ? err.message : translate('eduC.workspace.loadError'))
     }
   }, [classId, restore])
 
@@ -183,7 +186,7 @@ export function ClassWorkspace({
     if (!currentPage || !(await flush())) return null
     try {
       const r = await createNote({
-        title: 'Sans titre',
+        title: translate('eduC.workspace.untitled'),
         parentNote: currentPage._id,
         links: currentPage.links,
         blocks: [
@@ -197,7 +200,7 @@ export function ClassWorkspace({
           },
         ],
       })
-      return { id: r.note._id, title: r.note.title || 'Sans titre', emoji: r.note.emoji }
+      return { id: r.note._id, title: r.note.title || translate('eduC.workspace.untitled'), emoji: r.note.emoji }
     } catch {
       return null
     }
@@ -210,7 +213,7 @@ export function ClassWorkspace({
         const r = await getNote(childId)
         setPageStack((s) => [...s, restore('note', r.note._id, r.note)])
       } catch {
-        alert('Cette sous-page est introuvable (peut-être supprimée).')
+        alert(translate('eduC.workspace.subpageMissing'))
       }
     },
     [flush, restore],
@@ -223,14 +226,14 @@ export function ClassWorkspace({
 
   async function deleteCurrentSubpage() {
     if (!currentPage || depth === 0) return
-    if (!confirm('Supprimer cette sous-page et son contenu ?')) return
+    if (!confirm(translate('eduC.workspace.deleteSubpageConfirm'))) return
     try {
       if (!(await flush())) return
       await deleteNote(currentPage._id)
       discard('note', currentPage._id)
       setPageStack((s) => s.slice(0, -1))
     } catch {
-      alert('Suppression impossible.')
+      alert(translate('eduC.workspace.deleteFailed'))
     }
   }
 
@@ -249,24 +252,23 @@ export function ClassWorkspace({
     return (
       <div>
         <button className="edu-btn ghost" onClick={onClose}>
-          <ArrowLeft size={14} /> Retour
+          <ArrowLeft size={14} /> {t('common.back')}
         </button>
         <div className="edu-banner-error" role="alert" style={{ marginTop: 16 }}>
           {loadError}
           <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={load}>
-            Réessayer
+            {t('eduC.workspace.retry')}
           </button>
         </div>
       </div>
     )
   }
   if (!klass) {
-    return <div className="edu-empty">Chargement de la classe…</div>
+    return <div className="edu-empty">{t('eduC.workspace.loading')}</div>
   }
 
   async function handleDelete() {
-    if (!confirm(`Supprimer la classe "${klass!.name}" ? Étudiants, séances et devoirs liés seront aussi archivés.`))
-      return
+    if (!confirm(t('eduC.workspace.deleteClassConfirm', { name: klass!.name }))) return
     if (!(await flush())) return
     await deleteClass(classId)
     discard('class', classId)
@@ -309,11 +311,11 @@ export function ClassWorkspace({
       {/* Barre d'actions */}
       <div className="edu-cw-topbar">
         <button className="edu-btn ghost" onClick={onClose}>
-          <ArrowLeft size={14} /> Classes
+          <ArrowLeft size={14} /> {t('eduC.shared.classes')}
         </button>
         {depth === 0 && (
           <div className="edu-row" style={{ gap: 6 }}>
-            <button className="edu-btn-icon" onClick={handleDelete} title="Supprimer la classe">
+            <button className="edu-btn-icon" onClick={handleDelete} title={t('eduC.workspace.deleteClassTitle')}>
               <Trash2 size={16} />
             </button>
           </div>
@@ -331,7 +333,7 @@ export function ClassWorkspace({
               <button className="edu-cw-crumb" onClick={() => goToCrumb(i)} disabled={i === depth}>
                 {i === 0
                   ? `${klass.emoji ? klass.emoji + ' ' : ''}${klass.name}`
-                  : `${p.emoji ? p.emoji + ' ' : ''}${p.title || 'Sans titre'}`}
+                  : `${p.emoji ? p.emoji + ' ' : ''}${p.title || t('eduC.workspace.untitled')}`}
               </button>
             </Fragment>
           ))}
@@ -344,7 +346,7 @@ export function ClassWorkspace({
           <div className="edu-cw-cover" style={coverStyle(klass.cover, klass.color)}>
             <div className="edu-cw-cover-actions">
               <button className="edu-cw-cover-btn" onClick={() => setShowCover((v) => !v)}>
-                <ImagePlus size={13} /> Couverture
+                <ImagePlus size={13} /> {t('eduC.workspace.cover')}
               </button>
             </div>
             {showCover && (
@@ -362,7 +364,11 @@ export function ClassWorkspace({
           {/* En-tête : emoji + titre */}
           <div className="edu-cw-header">
             <div className="edu-cw-emoji-wrap">
-              <button className="edu-cw-emoji" onClick={() => setShowEmoji((v) => !v)} title="Choisir un emoji">
+              <button
+                className="edu-cw-emoji"
+                onClick={() => setShowEmoji((v) => !v)}
+                title={t('eduC.workspace.chooseEmoji')}
+              >
                 {klass.emoji || <Smile size={28} strokeWidth={1.5} />}
               </button>
               {showEmoji && (
@@ -381,8 +387,8 @@ export function ClassWorkspace({
               value={klass.name}
               rows={1}
               onChange={(e) => patchClass({ name: e.target.value })}
-              placeholder="Nom de la classe"
-              aria-label="Nom de la classe"
+              placeholder={t('eduC.shared.className')}
+              aria-label={t('eduC.shared.className')}
             />
           </div>
 
@@ -391,31 +397,36 @@ export function ClassWorkspace({
 
           {/* Navigation de sections */}
           <div className="edu-cw-tabs">
-            <TabBtn icon={FileText} label="Page" active={tab === 'page'} onClick={() => selectTab('page')} />
+            <TabBtn
+              icon={FileText}
+              label={t('eduC.workspace.tabPage')}
+              active={tab === 'page'}
+              onClick={() => selectTab('page')}
+            />
             <TabBtn
               icon={Users}
-              label="Étudiants"
+              label={t('eduC.shared.students')}
               count={stats?.studentCount}
               active={tab === 'students'}
               onClick={() => selectTab('students')}
             />
             <TabBtn
               icon={CalIcon}
-              label="Séances"
+              label={t('eduC.shared.sessions')}
               count={stats?.sessionCount}
               active={tab === 'sessions'}
               onClick={() => selectTab('sessions')}
             />
             <TabBtn
               icon={ClipboardList}
-              label="Devoirs"
+              label={t('eduC.shared.assignments')}
               count={stats?.assignmentCount}
               active={tab === 'assignments'}
               onClick={() => selectTab('assignments')}
             />
             <TabBtn
               icon={FileText}
-              label="Bilan & conseil"
+              label={t('eduC.workspace.tabCouncil')}
               active={tab === 'council'}
               onClick={() => selectTab('council')}
             />
@@ -497,11 +508,17 @@ function PropertiesPanel({
   stats: { studentCount: number; sessionCount: number; assignmentCount: number; openAssignments: number } | null
   onPatch: (patch: Partial<EducationClass>) => void
 }) {
+  const { t } = useI18n()
   function setProp(id: string, patch: Partial<EducationClassProperty>) {
     onPatch({ properties: klass.properties.map((p) => (p.id === id ? { ...p, ...patch } : p)) })
   }
   function addProp() {
-    const np: EducationClassProperty = { id: `prop-${Date.now()}`, label: 'Propriété', type: 'text', value: '' }
+    const np: EducationClassProperty = {
+      id: `prop-${Date.now()}`,
+      label: t('eduC.workspace.propDefaultLabel'),
+      type: 'text',
+      value: '',
+    }
     onPatch({ properties: [...klass.properties, np] })
   }
   function removeProp(id: string) {
@@ -510,7 +527,7 @@ function PropertiesPanel({
 
   return (
     <div className="edu-cw-props">
-      <PropRow label="École">
+      <PropRow label={t('eduC.shared.school')}>
         <input
           className="edu-cw-prop-input"
           value={klass.school}
@@ -518,15 +535,15 @@ function PropertiesPanel({
           onChange={(e) => onPatch({ school: e.target.value })}
         />
       </PropRow>
-      <PropRow label="Niveau">
+      <PropRow label={t('eduC.shared.level')}>
         <input
           className="edu-cw-prop-input"
           value={klass.level}
-          placeholder="BAC+1, M1…"
+          placeholder={t('eduC.shared.levelPlaceholder')}
           onChange={(e) => onPatch({ level: e.target.value })}
         />
       </PropRow>
-      <PropRow label="Programme">
+      <PropRow label={t('eduC.workspace.propProgram')}>
         <input
           className="edu-cw-prop-input"
           value={klass.program}
@@ -534,20 +551,20 @@ function PropertiesPanel({
           onChange={(e) => onPatch({ program: e.target.value })}
         />
       </PropRow>
-      <PropRow label="Statut">
+      <PropRow label={t('eduC.shared.status')}>
         <select
           className="edu-cw-prop-input"
           value={klass.status}
           onChange={(e) => onPatch({ status: e.target.value as EducationClass['status'] })}
         >
-          {Object.entries(CLASS_STATUS_LABEL).map(([k, v]) => (
+          {Object.entries(CLASS_STATUS_KEYS).map(([k, v]) => (
             <option key={k} value={k}>
-              {v}
+              {t(v)}
             </option>
           ))}
         </select>
       </PropRow>
-      <PropRow label="Période">
+      <PropRow label={t('eduC.workspace.propPeriod')}>
         <div className="edu-row" style={{ gap: 6 }}>
           <input
             type="date"
@@ -564,7 +581,7 @@ function PropertiesPanel({
           />
         </div>
       </PropRow>
-      <PropRow label="Heures / sem.">
+      <PropRow label={t('eduC.workspace.propWeeklyHours')}>
         <input
           type="number"
           className="edu-cw-prop-input"
@@ -573,7 +590,7 @@ function PropertiesPanel({
           onChange={(e) => onPatch({ weeklyHours: e.target.value ? Number(e.target.value) : null })}
         />
       </PropRow>
-      <PropRow label="Couleur">
+      <PropRow label={t('eduC.shared.color')}>
         <div className="edu-row" style={{ gap: 5, flexWrap: 'wrap' }}>
           {CLASS_COLOR_PALETTE.map((c) => (
             <button
@@ -582,7 +599,7 @@ function PropertiesPanel({
               onClick={() => onPatch({ color: c })}
               className="edu-cw-color-dot"
               style={{ background: c, outline: c === klass.color ? '2px solid #fff' : '2px solid transparent' }}
-              aria-label={`Couleur ${c}`}
+              aria-label={t('eduC.shared.colorAria', { color: c })}
             />
           ))}
         </div>
@@ -594,7 +611,7 @@ function PropertiesPanel({
           <input
             className="edu-cw-prop-label"
             value={p.label}
-            placeholder="Libellé"
+            placeholder={t('eduC.workspace.propLabelPlaceholder')}
             onChange={(e) => setProp(p.id, { label: e.target.value })}
           />
           <select
@@ -602,38 +619,31 @@ function PropertiesPanel({
             value={p.type}
             onChange={(e) => setProp(p.id, { type: e.target.value as ClassPropertyType })}
           >
-            <option value="text">Texte</option>
-            <option value="number">Nombre</option>
-            <option value="date">Date</option>
-            <option value="url">Lien</option>
-            <option value="select">Étiquette</option>
-            <option value="checkbox">Case</option>
+            <option value="text">{t('eduC.workspace.propTypeText')}</option>
+            <option value="number">{t('eduC.workspace.propTypeNumber')}</option>
+            <option value="date">{t('eduC.workspace.propTypeDate')}</option>
+            <option value="url">{t('eduC.workspace.propTypeLink')}</option>
+            <option value="select">{t('eduC.workspace.propTypeTag')}</option>
+            <option value="checkbox">{t('eduC.workspace.propTypeCheckbox')}</option>
           </select>
           <PropValueInput prop={p} onChange={(value) => setProp(p.id, { value })} />
-          <button className="edu-btn-icon" onClick={() => removeProp(p.id)} title="Retirer">
+          <button className="edu-btn-icon" onClick={() => removeProp(p.id)} title={t('eduC.shared.remove')}>
             <X size={14} />
           </button>
         </div>
       ))}
 
       <button className="edu-cw-add-prop" onClick={addProp}>
-        <Plus size={13} /> Ajouter une propriété
+        <Plus size={13} /> {t('eduC.workspace.addProperty')}
       </button>
 
       {stats && (
         <div className="edu-cw-stats">
-          <span>
-            {stats.studentCount} étudiant{stats.studentCount > 1 ? 's' : ''}
-          </span>
+          <span>{t('eduC.workspace.statStudents', { count: stats.studentCount })}</span>
           <span>·</span>
-          <span>
-            {stats.sessionCount} séance{stats.sessionCount > 1 ? 's' : ''}
-          </span>
+          <span>{t('eduC.workspace.statSessions', { count: stats.sessionCount })}</span>
           <span>·</span>
-          <span>
-            {stats.openAssignments} devoir{stats.openAssignments > 1 ? 's' : ''} ouvert
-            {stats.openAssignments > 1 ? 's' : ''}
-          </span>
+          <span>{t('eduC.workspace.statOpenAssignments', { count: stats.openAssignments })}</span>
         </div>
       )}
     </div>
@@ -650,6 +660,7 @@ function PropRow({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function PropValueInput({ prop, onChange }: { prop: EducationClassProperty; onChange: (v: string) => void }) {
+  const { t } = useI18n()
   if (prop.type === 'checkbox') {
     return (
       <label className="edu-cw-prop-value edu-row" style={{ gap: 6 }}>
@@ -658,7 +669,9 @@ function PropValueInput({ prop, onChange }: { prop: EducationClassProperty; onCh
           checked={prop.value === 'true'}
           onChange={(e) => onChange(e.target.checked ? 'true' : 'false')}
         />
-        <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)' }}>{prop.value === 'true' ? 'Oui' : 'Non'}</span>
+        <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)' }}>
+          {prop.value === 'true' ? t('common.yes') : t('common.no')}
+        </span>
       </label>
     )
   }
@@ -668,7 +681,7 @@ function PropValueInput({ prop, onChange }: { prop: EducationClassProperty; onCh
       className="edu-cw-prop-value"
       type={type}
       value={prop.value}
-      placeholder="Valeur…"
+      placeholder={t('eduC.workspace.propValuePlaceholder')}
       onChange={(e) => onChange(e.target.value)}
     />
   )
@@ -685,6 +698,7 @@ function EmojiPicker({
   onPick: (e: string) => void
   onClose: () => void
 }) {
+  const { t } = useI18n()
   const [custom, setCustom] = useState('')
   return (
     <>
@@ -703,7 +717,7 @@ function EmojiPicker({
             style={{ flex: 1 }}
             maxLength={4}
             value={custom}
-            placeholder="Coller un emoji"
+            placeholder={t('eduC.workspace.pasteEmoji')}
             onChange={(e) => setCustom(e.target.value)}
           />
           <button className="edu-btn" disabled={!custom.trim()} onClick={() => onPick(custom.trim())}>
@@ -711,7 +725,7 @@ function EmojiPicker({
           </button>
           {current && (
             <button className="edu-btn ghost" onClick={() => onPick('')}>
-              Retirer
+              {t('eduC.shared.remove')}
             </button>
           )}
         </div>
@@ -729,6 +743,7 @@ function CoverPicker({
   onPick: (c: string) => void
   onClose: () => void
 }) {
+  const { t } = useI18n()
   const [url, setUrl] = useState(/^https?:\/\//.test(current) ? current : '')
   return (
     <>
@@ -741,7 +756,7 @@ function CoverPicker({
               className={`edu-cw-cover-opt ${current === c ? 'active' : ''}`}
               style={{ background: c }}
               onClick={() => onPick(c)}
-              aria-label="Couverture"
+              aria-label={t('eduC.workspace.cover')}
             />
           ))}
         </div>
@@ -750,7 +765,7 @@ function CoverPicker({
             className="edu-input"
             style={{ flex: 1 }}
             value={url}
-            placeholder="URL d'image…"
+            placeholder={t('eduC.workspace.imageUrlPlaceholder')}
             onChange={(e) => setUrl(e.target.value)}
           />
           <button className="edu-btn" disabled={!/^https?:\/\//.test(url)} onClick={() => onPick(url)}>
@@ -758,7 +773,7 @@ function CoverPicker({
           </button>
           {current && (
             <button className="edu-btn ghost" onClick={() => onPick('')}>
-              Retirer
+              {t('eduC.shared.remove')}
             </button>
           )}
         </div>

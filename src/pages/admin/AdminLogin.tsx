@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useI18n } from '../../context/I18nContext'
 import { apiFetch } from '../../lib/api'
 import { isAdminRole } from '../../lib/permissions'
 import '../espace-client/ClientPortal.css'
 
 const AdminLogin = () => {
   const { user, login, logout } = useAuth()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const resetToken = searchParams.get('reset')
@@ -54,12 +56,12 @@ const AdminLogin = () => {
       }
       if (!result.user || !isAdminRole(result.user.role)) {
         await logout()
-        setError('Accès réservé aux administrateurs')
+        setError(t('adminAccess.login.adminOnly'))
         return
       }
       navigate('/admin', { replace: true })
     } catch (err: unknown) {
-      setError((err as Error).message || 'Connexion impossible')
+      setError((err as Error).message || t('adminAccess.login.failed'))
     } finally {
       setLoading(false)
     }
@@ -68,9 +70,9 @@ const AdminLogin = () => {
   return (
     <div className="portal-container">
       <div className="portal-card" style={{ maxWidth: '480px', margin: '0 auto' }}>
-        <h1 style={{ marginBottom: '8px' }}>Connexion Admin</h1>
+        <h1 style={{ marginBottom: '8px' }}>{t('adminAccess.login.title')}</h1>
         <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
-          {needs2FA ? "Entrez le code de votre application d'authentification" : 'Accès réservé aux administrateurs'}
+          {needs2FA ? t('adminAccess.login.enterCode') : t('adminAccess.login.adminOnly')}
         </p>
         <form onSubmit={handleSubmit} className="portal-list">
           {!needs2FA ? (
@@ -78,7 +80,7 @@ const AdminLogin = () => {
               <input
                 className="portal-input"
                 type="email"
-                placeholder="Email"
+                placeholder={t('adminAccess.login.email')}
                 value={form.email}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                   setForm({ ...form, email: event.target.value })
@@ -89,7 +91,7 @@ const AdminLogin = () => {
                 <input
                   className="portal-input"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Mot de passe"
+                  placeholder={t('adminAccess.login.password')}
                   value={form.password}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                     setForm({ ...form, password: event.target.value })
@@ -113,7 +115,7 @@ const AdminLogin = () => {
                     padding: '4px',
                     lineHeight: 1,
                   }}
-                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  aria-label={showPassword ? t('adminAccess.login.hidePassword') : t('adminAccess.login.showPassword')}
                 >
                   {showPassword ? '🙈' : '👁'}
                 </button>
@@ -125,7 +127,7 @@ const AdminLogin = () => {
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="Code 2FA (6 chiffres)"
+              placeholder={t('adminAccess.login.codePlaceholder')}
               value={totpCode}
               onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                 setTotpCode(event.target.value.replace(/\D/g, '').slice(0, 6))
@@ -137,7 +139,11 @@ const AdminLogin = () => {
           )}
           {error && <div className="admin-error">{error}</div>}
           <button className="portal-button" type="submit" disabled={loading}>
-            {loading ? 'Connexion...' : needs2FA ? 'Vérifier' : 'Se connecter'}
+            {loading
+              ? t('adminAccess.login.signingIn')
+              : needs2FA
+                ? t('adminAccess.login.verify')
+                : t('adminAccess.login.signIn')}
           </button>
           {needs2FA && (
             <button
@@ -156,7 +162,7 @@ const AdminLogin = () => {
                 setError('')
               }}
             >
-              Retour
+              {t('adminAccess.login.back')}
             </button>
           )}
           {!needs2FA && !forgotMode && !resetMode && (
@@ -176,7 +182,7 @@ const AdminLogin = () => {
                   fontSize: '14px',
                 }}
               >
-                Mot de passe oublie ?
+                {t('adminAccess.login.forgotLink')}
               </button>
             </p>
           )}
@@ -197,7 +203,7 @@ const AdminLogin = () => {
                 })
                 setSuccess(data.message)
               } catch (err: unknown) {
-                setError((err as Error).message || 'Erreur')
+                setError((err as Error).message || t('adminAccess.login.genericError'))
               } finally {
                 setLoading(false)
               }
@@ -205,11 +211,13 @@ const AdminLogin = () => {
             className="portal-list"
             style={{ marginTop: 24 }}
           >
-            <h2 style={{ fontSize: 16, margin: 0, color: 'var(--text-primary)' }}>Mot de passe oublie</h2>
+            <h2 style={{ fontSize: 16, margin: 0, color: 'var(--text-primary)' }}>
+              {t('adminAccess.login.forgotTitle')}
+            </h2>
             <input
               className="portal-input"
               type="email"
-              placeholder="Votre email"
+              placeholder={t('adminAccess.login.yourEmail')}
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               required
@@ -217,7 +225,7 @@ const AdminLogin = () => {
             {error && <div className="admin-error">{error}</div>}
             {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
             <button className="portal-button" type="submit" disabled={loading}>
-              {loading ? 'Envoi...' : 'Envoyer le lien'}
+              {loading ? t('adminAccess.login.sending') : t('adminAccess.login.sendLink')}
             </button>
             <button
               type="button"
@@ -234,7 +242,7 @@ const AdminLogin = () => {
                 fontSize: '14px',
               }}
             >
-              Retour
+              {t('adminAccess.login.back')}
             </button>
           </form>
         )}
@@ -251,10 +259,10 @@ const AdminLogin = () => {
                   method: 'POST',
                   body: JSON.stringify({ token: resetToken, password: newPassword }),
                 })
-                setSuccess(data.message + ' Vous pouvez maintenant vous connecter.')
+                setSuccess(`${data.message} ${t('adminAccess.login.canSignInNow')}`)
                 setResetMode(false)
               } catch (err: unknown) {
-                setError((err as Error).message || 'Erreur')
+                setError((err as Error).message || t('adminAccess.login.genericError'))
               } finally {
                 setLoading(false)
               }
@@ -262,11 +270,13 @@ const AdminLogin = () => {
             className="portal-list"
             style={{ marginTop: 24 }}
           >
-            <h2 style={{ fontSize: 16, margin: 0, color: 'var(--text-primary)' }}>Nouveau mot de passe</h2>
+            <h2 style={{ fontSize: 16, margin: 0, color: 'var(--text-primary)' }}>
+              {t('adminAccess.login.newPasswordTitle')}
+            </h2>
             <input
               className="portal-input"
               type="password"
-              placeholder="Nouveau mot de passe (6 caracteres min.)"
+              placeholder={t('adminAccess.login.newPasswordPlaceholder')}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
@@ -275,7 +285,7 @@ const AdminLogin = () => {
             {error && <div className="admin-error">{error}</div>}
             {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
             <button className="portal-button" type="submit" disabled={loading}>
-              {loading ? 'Reinitialisation...' : 'Reinitialiser'}
+              {loading ? t('adminAccess.login.resetting') : t('adminAccess.login.reset')}
             </button>
           </form>
         )}

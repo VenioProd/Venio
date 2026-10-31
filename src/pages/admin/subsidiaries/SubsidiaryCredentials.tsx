@@ -3,7 +3,8 @@ import { Plus, X, Eye, EyeOff, Copy, Pencil, Trash2, KeyRound, ExternalLink, Loa
 import { apiFetch, ApiError } from '../../../lib/api'
 import { useToast } from '../../../context/ToastContext'
 import type { SubsidiaryCredential, SubsidiaryCredentialCategory } from '../../../types/subsidiary.types'
-import { CREDENTIAL_CATEGORY_LABELS } from '../../../types/subsidiary.types'
+import { CREDENTIAL_CATEGORY_LABEL_KEYS } from './labels'
+import { useI18n } from '../../../context/I18nContext'
 
 interface FormState {
   category: SubsidiaryCredentialCategory
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export default function SubsidiaryCredentials({ subsidiaryId, credentials, accent, onChange }: Props) {
+  const { t } = useI18n()
   const { showToast } = useToast()
   const [form, setForm] = useState<FormState | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -42,19 +44,19 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
     setForm({ category: c.category, label: c.label, username: c.username, secret: '', url: c.url, notes: c.notes })
   }
 
-  async function copy(text: string, msg = 'Copié') {
+  async function copy(text: string, msg = t('orgs.subsidiary.credentials.copied')) {
     try {
       await navigator.clipboard.writeText(text)
       showToast(msg, 'success')
     } catch {
-      showToast('Copie impossible', 'error')
+      showToast(t('orgs.subsidiary.credentials.copyFailed'), 'error')
     }
   }
 
   async function save() {
     if (!form) return
     if (!form.label.trim()) {
-      showToast('Le libellé est requis', 'error')
+      showToast(t('orgs.subsidiary.credentials.labelRequired'), 'error')
       return
     }
     setSaving(true)
@@ -72,16 +74,19 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
       onChange(res.credentials)
       setForm(null)
       setEditingId(null)
-      showToast(editingId ? 'Identifiant mis à jour' : 'Identifiant ajouté', 'success')
+      showToast(
+        editingId ? t('orgs.subsidiary.credentials.updated') : t('orgs.subsidiary.credentials.added'),
+        'success',
+      )
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Échec de l’enregistrement', 'error')
+      showToast(err instanceof ApiError ? err.message : t('orgs.subsidiary.credentials.saveFailed'), 'error')
     } finally {
       setSaving(false)
     }
   }
 
   async function remove(c: SubsidiaryCredential) {
-    if (!confirm(`Supprimer l’identifiant « ${c.label} » ?`)) return
+    if (!confirm(t('orgs.subsidiary.credentials.confirmDelete', { label: c.label }))) return
     setBusyId(c._id)
     try {
       const res = await apiFetch<{ credentials: SubsidiaryCredential[] }>(
@@ -90,7 +95,7 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
       )
       onChange(res.credentials)
     } catch {
-      showToast('Suppression impossible', 'error')
+      showToast(t('orgs.subsidiary.credentials.deleteFailed'), 'error')
     } finally {
       setBusyId(null)
     }
@@ -112,7 +117,7 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
       )
       setRevealed((r) => ({ ...r, [c._id]: res.secret }))
     } catch {
-      showToast('Impossible de révéler le secret', 'error')
+      showToast(t('orgs.subsidiary.credentials.revealFailed'), 'error')
     } finally {
       setBusyId(null)
     }
@@ -122,7 +127,7 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
     <div style={{ marginTop: 8 }}>
       {credentials.length === 0 && !form && (
         <p className="sub-dossier-empty" style={{ marginBottom: 12 }}>
-          Aucun identifiant. Ajoute les accès admin, comptes de service et clés API.
+          {t('orgs.subsidiary.credentials.empty')}
         </p>
       )}
 
@@ -138,7 +143,7 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="sub-cred__label">
                     {c.label}
-                    <span className="sub-cred__cat">{CREDENTIAL_CATEGORY_LABELS[c.category]}</span>
+                    <span className="sub-cred__cat">{t(CREDENTIAL_CATEGORY_LABEL_KEYS[c.category])}</span>
                   </div>
                   {c.url && (
                     <a href={c.url} target="_blank" rel="noreferrer" className="sub-cred__url">
@@ -147,10 +152,20 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <button type="button" className="sub-icon-btn" onClick={() => openEdit(c)} title="Modifier">
+                  <button
+                    type="button"
+                    className="sub-icon-btn"
+                    onClick={() => openEdit(c)}
+                    title={t('orgs.subsidiary.credentials.edit')}
+                  >
                     <Pencil size={13} />
                   </button>
-                  <button type="button" className="sub-icon-btn" onClick={() => remove(c)} title="Supprimer">
+                  <button
+                    type="button"
+                    className="sub-icon-btn"
+                    onClick={() => remove(c)}
+                    title={t('orgs.subsidiary.credentials.delete')}
+                  >
                     {busyId === c._id && !isRevealed ? (
                       <Loader2 size={13} className="sub-spin" />
                     ) : (
@@ -163,17 +178,26 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
               <div className="sub-cred__fields">
                 {c.username && (
                   <div className="sub-cred__field">
-                    <span className="sub-cred__field-label">Identifiant</span>
+                    <span className="sub-cred__field-label">{t('orgs.subsidiary.credentials.usernameField')}</span>
                     <code className="sub-cred__value">{c.username}</code>
-                    <button type="button" className="sub-icon-btn" onClick={() => copy(c.username)} title="Copier">
+                    <button
+                      type="button"
+                      className="sub-icon-btn"
+                      onClick={() => copy(c.username)}
+                      title={t('orgs.subsidiary.credentials.copy')}
+                    >
                       <Copy size={13} />
                     </button>
                   </div>
                 )}
                 <div className="sub-cred__field">
-                  <span className="sub-cred__field-label">Secret</span>
+                  <span className="sub-cred__field-label">{t('orgs.subsidiary.credentials.secretField')}</span>
                   <code className="sub-cred__value">
-                    {!c.hasSecret ? '—' : isRevealed ? revealed[c._id] || '(vide)' : '••••••••••'}
+                    {!c.hasSecret
+                      ? '—'
+                      : isRevealed
+                        ? revealed[c._id] || t('orgs.subsidiary.credentials.emptySecret')
+                        : '••••••••••'}
                   </code>
                   {c.hasSecret && (
                     <>
@@ -181,7 +205,9 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
                         type="button"
                         className="sub-icon-btn"
                         onClick={() => toggleReveal(c)}
-                        title={isRevealed ? 'Masquer' : 'Révéler'}
+                        title={
+                          isRevealed ? t('orgs.subsidiary.credentials.hide') : t('orgs.subsidiary.credentials.reveal')
+                        }
                       >
                         {busyId === c._id ? (
                           <Loader2 size={13} className="sub-spin" />
@@ -195,8 +221,8 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
                         <button
                           type="button"
                           className="sub-icon-btn"
-                          onClick={() => copy(revealed[c._id] || '', 'Secret copié')}
-                          title="Copier"
+                          onClick={() => copy(revealed[c._id] || '', t('orgs.subsidiary.credentials.secretCopied'))}
+                          title={t('orgs.subsidiary.credentials.copy')}
                         >
                           <Copy size={13} />
                         </button>
@@ -219,49 +245,53 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
               value={form.category}
               onChange={(e) => set('category', e.target.value as SubsidiaryCredentialCategory)}
             >
-              {Object.entries(CREDENTIAL_CATEGORY_LABELS).map(([v, l]) => (
+              {(Object.keys(CREDENTIAL_CATEGORY_LABEL_KEYS) as SubsidiaryCredentialCategory[]).map((v) => (
                 <option key={v} value={v}>
-                  {l}
+                  {t(CREDENTIAL_CATEGORY_LABEL_KEYS[v])}
                 </option>
               ))}
             </select>
             <input
               className="portal-input"
-              placeholder="Libellé (ex : Admin Vercel)"
+              placeholder={t('orgs.subsidiary.credentials.labelPlaceholder')}
               value={form.label}
               onChange={(e) => set('label', e.target.value)}
             />
             <input
               className="portal-input"
-              placeholder="Identifiant / email"
+              placeholder={t('orgs.subsidiary.credentials.usernamePlaceholder')}
               value={form.username}
               onChange={(e) => set('username', e.target.value)}
             />
             <input
               className="portal-input"
               type="text"
-              placeholder={editingId ? 'Secret (laisser vide = inchangé)' : 'Secret / mot de passe / clé'}
+              placeholder={
+                editingId
+                  ? t('orgs.subsidiary.credentials.secretKeepPlaceholder')
+                  : t('orgs.subsidiary.credentials.secretPlaceholder')
+              }
               value={form.secret}
               onChange={(e) => set('secret', e.target.value)}
             />
             <input
               className="portal-input"
               style={{ gridColumn: '1 / -1' }}
-              placeholder="URL de connexion (optionnel)"
+              placeholder={t('orgs.subsidiary.credentials.urlPlaceholder')}
               value={form.url}
               onChange={(e) => set('url', e.target.value)}
             />
             <input
               className="portal-input"
               style={{ gridColumn: '1 / -1' }}
-              placeholder="Notes (optionnel)"
+              placeholder={t('orgs.subsidiary.credentials.notesPlaceholder')}
               value={form.notes}
               onChange={(e) => set('notes', e.target.value)}
             />
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <button type="button" className="portal-button" onClick={save} disabled={saving}>
-              {saving ? 'Enregistrement...' : editingId ? 'Enregistrer' : 'Ajouter'}
+              {saving ? t('orgs.subsidiary.credentials.saving') : editingId ? t('common.save') : t('common.add')}
             </button>
             <button
               type="button"
@@ -272,7 +302,7 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
               }}
               disabled={saving}
             >
-              Annuler
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -283,7 +313,7 @@ export default function SubsidiaryCredentials({ subsidiaryId, credentials, accen
           style={{ marginTop: 12, ['--sub-accent' as string]: accent }}
           onClick={openAdd}
         >
-          <Plus size={14} /> Ajouter un identifiant
+          <Plus size={14} /> {t('orgs.subsidiary.credentials.addButton')}
         </button>
       )}
     </div>

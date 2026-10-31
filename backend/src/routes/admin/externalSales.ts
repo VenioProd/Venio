@@ -9,7 +9,6 @@ import LeadActivity from '../../models/LeadActivity.js'
 import User from '../../models/User.js'
 import SalesCommission from '../../models/SalesCommission.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
-import { logLeadActivity } from '../../lib/crmAutomations.js'
 import { recordAudit, buildActorFromReq } from '../../lib/audit/auditHelpers.js'
 import { COMMISSION_RATE_BP, EXTERNAL_SALES_ROLE, commissionTotals } from '../../lib/externalSales.js'
 
@@ -24,6 +23,9 @@ const router = express.Router()
 router.use(auth)
 router.use(requireAdmin)
 router.use(requirePermission(PERMISSIONS.MANAGE_EXTERNAL_SALES))
+
+// Borne d'une réattribution, y compris « toutes les fiches » d'un commercial.
+const MAX_REASSIGN = 1000
 
 function invalid(req: Request, res: Response): boolean {
   const errors = validationResult(req)
@@ -153,39 +155,51 @@ router.post(
       if (req.body.toRep && (!toRep || !toRep.isActive)) {
         return res.status(400).json({ error: 'Le destinataire doit être un commercial externe actif' })
       }
+      const target = (toRep?._id as Types.ObjectId | undefined) ?? null
       const filter: Record<string, unknown> = req.body.fromRep
         ? { externalRep: new mongoose.Types.ObjectId(String(req.body.fromRep)) }
-        : { _id: { $in: req.body.leadIds }, externalRep: { $ne: null } }
-      const leads = await Lead.find(filter)
-      let moved = 0
-      for (const lead of leads) {
-        const previous = lead.externalRep
-        if (String(previous) === String(toRep?._id ?? null)) continue
-        lead.externalRep = (toRep?._id as Types.ObjectId) ?? null
-        // L'assignation suit si elle désignait l'ancien titulaire ; celle d'un closer reste.
-        if (lead.assignedTo && String(lead.assignedTo) === String(previous)) {
-          lead.assignedTo = (toRep?._id as Types.ObjectId) ?? null
-        }
-        lead.$locals.assignmentActorId = req.user!.id
-        await lead.save()
-        await logLeadActivity(
-          lead._id,
-          'EXTERNAL_REP_CHANGED',
-          toRep ? `Fiche réattribuée à ${toRep.name}` : "Fiche rendue à l'équipe",
-          { from: previous ? String(previous) : null, to: toRep ? String(toRep._id) : null },
-          req.user!.id,
-        )
-        moved++
+        : { _id: { $in: req.body.leadIds.map((id: string) => new mongoose.Types.ObjectId(id)) } }
+      const leads = await Lead.find({
+        ...filter,
+        externalRep: target === null ? { $ne: null } : { $nin: [null, target] },
+      })
+        .select('externalRep')
+        .limit(MAX_REASSIGN + 1)
+        .lean()
+      if (leads.length > MAX_REASSIGN) {
+        return res.status(400).json({ error: `Plus de ${MAX_REASSIGN} fiches : réattribuez-les par lots` })
       }
+      // Une seule écriture, atomique fiche par fiche : l'assignation suit si elle
+      // désignait l'ancien titulaire ; celle d'un closer reste.
+      const ids = leads.map((lead) => lead._id)
+      await Lead.collection.updateMany({ _id: { $in: ids } }, [
+        {
+          $set: {
+            assignedTo: { $cond: [{ $eq: ['$assignedTo', '$externalRep'] }, target, '$assignedTo'] },
+            externalRep: target,
+            updatedAt: '$$NOW',
+          },
+        },
+      ])
+      await LeadActivity.insertMany(
+        leads.map((lead) => ({
+          leadId: lead._id,
+          type: 'EXTERNAL_REP_CHANGED',
+          label: toRep ? `Fiche réattribuée à ${toRep.name}` : "Fiche rendue à l'équipe",
+          payload: { from: String(lead.externalRep), to: target ? String(target) : null },
+          actorId: req.user!.id,
+        })),
+      )
+      const moved = leads.length
       await recordAudit({
         actor: buildActorFromReq(req),
         action: 'EXTERNAL_SALES_REASSIGN',
         entityType: 'Lead',
         summary: `${moved} fiche(s) réattribuée(s)`,
         extra: {
-          toRep: toRep ? String(toRep._id) : null,
+          toRep: target ? String(target) : null,
           fromRep: req.body.fromRep ?? null,
-          leadIds: req.body.leadIds,
+          movedLeadIds: ids.map(String),
         },
       })
       return res.json({ moved })

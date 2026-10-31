@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { apiDownload, apiFetch, apiUpload } from '../../../../lib/api'
+import { translate } from '../../../../i18n'
 import type { ProjectItem, ProjectSection } from '../../../../types/project.types'
 
 type SectionForm = { title: string; description: string; isVisible: boolean }
@@ -65,7 +66,7 @@ export function useProjectContent({
   }
 
   const handleEditItem = (item: ProjectItem) => {
-    if (!ensurePermission(canModifyItem(item), 'Document non modifiable.')) return
+    if (!ensurePermission(canModifyItem(item), translate('projects.content.err.notEditable'))) return
     setEditingItemId(item._id)
     setItemForm({
       section: typeof item.section === 'object' ? item.section?._id || '' : item.section || '',
@@ -79,7 +80,7 @@ export function useProjectContent({
   const handleAddSection = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canEditContent, translate('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/projects/${projectId}/sections`, {
         method: 'POST',
@@ -88,25 +89,31 @@ export function useProjectContent({
       setSectionForm(initialSectionForm)
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur ajout section')
+      setError((err as Error).message || translate('projects.content.err.addSection'))
     }
   }
 
   const handleDeleteSection = async (sectionId: string) => {
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
-    if (!(await confirm({ message: 'Supprimer cette section ?', title: 'Suppression' }))) return
+    if (!ensurePermission(canEditContent, translate('projects.detail.readOnly'))) return
+    if (
+      !(await confirm({
+        message: translate('projects.content.confirmDeleteSection'),
+        title: translate('projects.content.confirmDeleteTitle'),
+      }))
+    )
+      return
     setError('')
     try {
       await apiFetch(`/api/admin/projects/${projectId}/sections/${sectionId}`, { method: 'DELETE' })
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression section')
+      setError((err as Error).message || translate('projects.content.err.deleteSection'))
     }
   }
 
   const handleToggleSectionVisibility = async (section: ProjectSection) => {
     setError('')
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canEditContent, translate('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/projects/${projectId}/sections/${section._id}`, {
         method: 'PATCH',
@@ -114,16 +121,16 @@ export function useProjectContent({
       })
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur mise à jour section')
+      setError((err as Error).message || translate('projects.content.err.updateSection'))
     }
   }
 
   const handleAddItem = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
-    if (!ensurePermission(canEditContent || canUploadDocuments, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canEditContent || canUploadDocuments, translate('projects.detail.readOnly'))) return
     if (!canEditContent && !editingItemId && !selectedFile) {
-      setError('Choisissez un fichier.')
+      setError(translate('projects.content.err.chooseFile'))
       return
     }
     try {
@@ -145,27 +152,33 @@ export function useProjectContent({
       resetItemForm()
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur ajout item')
+      setError((err as Error).message || translate('projects.content.err.addItem'))
     }
   }
 
   const handleDeleteItem = async (itemId: string) => {
     const item = items.find((entry) => entry._id === itemId)
-    if (!ensurePermission(!!item && canModifyItem(item), 'Document non modifiable.')) return
-    if (!(await confirm({ message: 'Supprimer cet élément ?', title: 'Suppression' }))) return
+    if (!ensurePermission(!!item && canModifyItem(item), translate('projects.content.err.notEditable'))) return
+    if (
+      !(await confirm({
+        message: translate('projects.content.confirmDeleteItem'),
+        title: translate('projects.content.confirmDeleteTitle'),
+      }))
+    )
+      return
     setError('')
     try {
       await apiFetch(`/api/admin/projects/${projectId}/items/${itemId}`, { method: 'DELETE' })
       if (editingItemId === itemId) resetItemForm()
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression item')
+      setError((err as Error).message || translate('projects.content.err.deleteItem'))
     }
   }
 
   const handleToggleItemVisibility = async (item: ProjectItem) => {
     setError('')
-    if (!ensurePermission(canEditContent, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canEditContent, translate('projects.detail.readOnly'))) return
     try {
       await apiFetch(`/api/admin/projects/${projectId}/items/${item._id}`, {
         method: 'PATCH',
@@ -173,12 +186,12 @@ export function useProjectContent({
       })
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur mise à jour item')
+      setError((err as Error).message || translate('projects.content.err.updateItem'))
     }
   }
 
   const handleDownloadItem = async (itemId: string, fileName: string) => {
-    if (!ensurePermission(canViewContent, 'Accès en lecture seule.')) return
+    if (!ensurePermission(canViewContent, translate('projects.detail.readOnly'))) return
     try {
       const { blob, filename } = await apiDownload(`/api/admin/projects/${projectId}/items/${itemId}/download`)
       const url = window.URL.createObjectURL(blob)
@@ -190,7 +203,7 @@ export function useProjectContent({
       link.remove()
       window.URL.revokeObjectURL(url)
     } catch (err: unknown) {
-      setError((err as Error).message || 'Téléchargement impossible')
+      setError((err as Error).message || translate('projects.content.err.download'))
     }
   }
 

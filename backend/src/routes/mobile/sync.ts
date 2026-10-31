@@ -14,7 +14,7 @@ import QuoteProposal from '../../models/QuoteProposal.js'
 import User from '../../models/User.js'
 import { accessibleProjectIds, readableProjectIds } from '../../lib/adminProjectAccess.js'
 import SyncTombstone, { SYNC_ENTITY_TYPES, SYNC_RETENTION_MS, type SyncEntityType } from '../../models/SyncTombstone.js'
-import { leadScopeFilter } from '../../lib/crmScope.js'
+import { leadScopeFilter, readableProposalFilter } from '../../lib/crmScope.js'
 import { toTimelineEntry } from '../../lib/interactions.js'
 import { loadQuotePortfolio } from '../../lib/quotePortfolio.js'
 import { withClientNames } from '../../lib/mobileClientNames.js'
@@ -118,8 +118,7 @@ router.get('/:type', async (req: Request, res: Response, next: NextFunction) => 
       if (projectIds !== null) filter.$and = [{ [type === 'projects' ? '_id' : 'project']: { $in: projectIds } }]
     }
     if (type === 'quotes') {
-      const ids = await readableProjectIds(req.user!)
-      if (ids !== null) filter.$and = [{ $or: [{ project: null }, { project: { $in: ids } }] }]
+      filter.$and = [await readableProposalFilter(req, await readableProjectIds(req.user!))]
     }
     if (type === 'projectDocuments') filter['file.storagePath'] = { $exists: true, $ne: '' }
     const options = { sort: { [stamp]: 1, _id: 1 } as Record<string, 1>, limit: limit + 1 }

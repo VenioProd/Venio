@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
+import { formatDate, formatMoney } from '../../i18n/format'
 import { getProposal, saveAnswers, saveSelection, signProposal } from '../../services/quotes'
 import type { QuoteProposal, QuoteTotals } from '../../types/quote.types'
 import './ClientPortal.css'
 
 type Step = 'cadrage' | 'options' | 'recapitulatif' | 'signature'
 
-const STEPS: { key: Step; label: string }[] = [
-  { key: 'cadrage', label: 'Cadrage' },
-  { key: 'options', label: 'Options' },
-  { key: 'recapitulatif', label: 'Récapitulatif' },
-  { key: 'signature', label: 'Signature' },
+const STEPS: { key: Step; labelKey: MessageKey }[] = [
+  { key: 'cadrage', labelKey: 'client.quote.stepScoping' },
+  { key: 'options', labelKey: 'client.quote.stepOptions' },
+  { key: 'recapitulatif', labelKey: 'client.quote.stepSummary' },
+  { key: 'signature', labelKey: 'client.quote.stepSignature' },
 ]
 
-const euros = (value: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value)
-
 const ClientQuoteProposal = () => {
+  const { t } = useI18n()
   const { projectId = '', proposalId = '' } = useParams()
   const [proposal, setProposal] = useState<QuoteProposal | null>(null)
   const [totals, setTotals] = useState<QuoteTotals | null>(null)
@@ -33,8 +35,8 @@ const ClientQuoteProposal = () => {
         setTotals(loadedTotals)
         setAnswers(Object.fromEntries(loaded.answers.map((a) => [a.question, a.value])))
       })
-      .catch((err: Error) => setError(err.message || 'Proposition indisponible'))
-  }, [projectId, proposalId])
+      .catch((err: Error) => setError(err.message || t('client.quote.unavailable')))
+  }, [projectId, proposalId, t])
 
   const readOnly = proposal?.status !== 'SENT'
 
@@ -65,7 +67,7 @@ const ClientQuoteProposal = () => {
     setError('')
     if (next === 'signature' && missingRequired.length > 0) {
       setStep('cadrage')
-      setError('Répondez à chaque question obligatoire avant de signer.')
+      setError(t('client.quote.missingAnswers'))
       return
     }
     if (step === 'cadrage' && !readOnly) await persistAnswers().catch(() => {})
@@ -81,7 +83,7 @@ const ClientQuoteProposal = () => {
       setProposal(refreshed.proposal)
       setTotals(refreshed.totals)
     } catch (err) {
-      setError((err as Error).message || 'Signature impossible')
+      setError((err as Error).message || t('client.quote.signError'))
     }
   }
 
@@ -104,17 +106,19 @@ const ClientQuoteProposal = () => {
 
       {proposal.status === 'SIGNED' && (
         <p role="status">
-          Proposition signée par {proposal.signature.signerName} le{' '}
-          {proposal.signature.signedAt ? new Date(proposal.signature.signedAt).toLocaleDateString('fr-FR') : ''}
-          {signedNumber ? ` — devis ${signedNumber}` : ''}
+          {t('client.quote.signedBy', {
+            name: proposal.signature.signerName,
+            date: proposal.signature.signedAt ? formatDate(proposal.signature.signedAt) : '',
+          })}
+          {signedNumber ? ` — ${t('client.quote.quoteNumber', { number: signedNumber })}` : ''}
         </p>
       )}
-      {proposal.status === 'EXPIRED' && <p role="status">Cette proposition a expiré.</p>}
+      {proposal.status === 'EXPIRED' && <p role="status">{t('client.quote.expired')}</p>}
 
       <nav className="portal-list">
         {STEPS.map((entry) => (
           <button key={entry.key} type="button" onClick={() => goTo(entry.key)} aria-current={step === entry.key}>
-            {entry.label}
+            {t(entry.labelKey)}
           </button>
         ))}
       </nav>
@@ -136,13 +140,7 @@ const ClientQuoteProposal = () => {
               />
             </label>
           ))}
-          {missingRequired.length > 0 && (
-            <p>
-              {missingRequired.length === 1
-                ? 'Il reste 1 réponse à compléter.'
-                : `Il reste ${missingRequired.length} réponses à compléter.`}
-            </p>
-          )}
+          {missingRequired.length > 0 && <p>{t('client.quote.remainingAnswers', { count: missingRequired.length })}</p>}
         </section>
       )}
 
@@ -158,11 +156,14 @@ const ClientQuoteProposal = () => {
                     checked={proposal.selectedOptionalLineIds.includes(line._id)}
                     onChange={() => toggleOption(line._id)}
                   />
-                  {line.description} — {euros(line.unitPrice)}
+                  {t('client.quote.optionLine', { description: line.description, price: formatMoney(line.unitPrice) })}
                 </label>
               ) : (
                 <p>
-                  {line.description} — {euros(line.unitPrice)} (inclus)
+                  {t('client.quote.includedLine', {
+                    description: line.description,
+                    price: formatMoney(line.unitPrice),
+                  })}
                 </p>
               )}
             </div>
@@ -179,12 +180,12 @@ const ClientQuoteProposal = () => {
       {step === 'signature' && !readOnly && (
         <section>
           <label>
-            Nom du signataire
+            {t('client.quote.signerName')}
             <input className="portal-input" value={signerName} onChange={(e) => setSignerName(e.target.value)} />
           </label>
           <label>
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-            Je reconnais avoir pris connaissance du périmètre et du montant, et j’accepte cette proposition.
+            {t('client.quote.consent')}
           </label>
           <button
             className="portal-button"
@@ -192,12 +193,12 @@ const ClientQuoteProposal = () => {
             disabled={!consent || signerName.trim().length < 2}
             onClick={handleSign}
           >
-            Signer
+            {t('client.quote.sign')}
           </button>
         </section>
       )}
 
-      <p data-testid="quote-total">Total TTC : {totals ? euros(totals.total) : '—'}</p>
+      <p data-testid="quote-total">{t('client.quote.total', { amount: totals ? formatMoney(totals.total) : '—' })}</p>
     </div>
   )
 }

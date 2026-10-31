@@ -16,6 +16,9 @@ import {
   X,
 } from 'lucide-react'
 import { apiFetch } from '../../lib/api'
+import { useI18n } from '../../context/I18nContext'
+import { translate, type MessageKey } from '../../i18n'
+import { formatDate as formatLocaleDate, formatNumber, formatTime } from '../../i18n/format'
 import { useAuth } from '../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../lib/permissions'
 import { SkeletonRow } from '../../components/Skeleton'
@@ -85,17 +88,17 @@ interface DashboardData {
   }
 }
 
-const TASK_STATUS_LABELS: Record<string, string> = {
-  A_FAIRE: 'A faire',
-  EN_COURS: 'En cours',
-  EN_REVIEW: 'En review',
-  TERMINE: 'Termine',
+const TASK_STATUS_KEYS: Record<string, MessageKey> = {
+  A_FAIRE: 'adminAccess.dashboard.taskTodo',
+  EN_COURS: 'adminAccess.dashboard.taskInProgress',
+  EN_REVIEW: 'adminAccess.dashboard.taskInReview',
+  TERMINE: 'adminAccess.dashboard.done',
 }
 
-const PROJECT_STATUS_LABELS: Record<string, string> = {
-  EN_COURS: 'En cours',
-  EN_ATTENTE: 'En attente',
-  TERMINE: 'Termine',
+const PROJECT_STATUS_KEYS: Record<string, MessageKey> = {
+  EN_COURS: 'adminAccess.dashboard.taskInProgress',
+  EN_ATTENTE: 'adminAccess.dashboard.onHold',
+  TERMINE: 'adminAccess.dashboard.done',
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -134,16 +137,18 @@ function readDashboardPrefs(): DashboardPrefs {
 
 function formatDate(d: string | null | undefined) {
   if (!d) return ''
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+  return formatLocaleDate(d, { day: '2-digit', month: 'short' })
 }
 
 function formatMoney(value: number) {
-  return `${Math.round(value || 0).toLocaleString('fr-FR')} EUR`
+  return `${formatNumber(Math.round(value || 0))} EUR`
 }
 
 function formatFreshness(date: string | undefined) {
-  if (!date) return 'actualisation en cours'
-  return `mis à jour ${new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+  if (!date) return translate('adminAccess.dashboard.refreshing')
+  return translate('adminAccess.dashboard.updatedAt', {
+    time: formatTime(date, { hour: '2-digit', minute: '2-digit' }),
+  })
 }
 
 function isPast(date: string | null | undefined) {
@@ -196,11 +201,12 @@ function Signal({
   action: string
   generatedAt?: string
 }) {
+  const { t } = useI18n()
   return (
     <Link
       to={to}
       className={`admin-attention-signal ${tone}`}
-      aria-label={`${label}: ${count}. ${state}. Prochaine action : ${action}.`}
+      aria-label={t('adminAccess.dashboard.signalAria', { label, count, state, action })}
     >
       <span className="admin-attention-signal__body">
         <span>{label}</span>
@@ -232,6 +238,7 @@ function Kpi({
   owner: string
   generatedAt?: string
 }) {
+  const { t } = useI18n()
   const content = (
     <>
       <span>{label}</span>
@@ -239,7 +246,7 @@ function Kpi({
       <small>
         {source} · {owner} · {formatFreshness(generatedAt)}
       </small>
-      <em>À jour · recalcul à la demande</em>
+      <em>{t('adminAccess.dashboard.upToDate')}</em>
     </>
   )
   return to ? (
@@ -252,15 +259,17 @@ function Kpi({
 }
 
 function TaskLine({ task }: { task: Task & { project?: { _id: string; name: string } } }) {
+  const { t } = useI18n()
+  const statusKey = TASK_STATUS_KEYS[task.status]
   const color = PRIORITY_COLORS[task.priority] || '#38bdf8'
   return (
     <Link to={`/admin/projets/${task.project?._id || task.project}?tab=tasks`} className="admin-command-line">
       <span className="admin-command-dot" style={{ background: color }} />
       <span className="admin-command-line__main">
         <strong>{task.title}</strong>
-        <small>{task.project?.name || 'Projet non renseigne'}</small>
+        <small>{task.project?.name || t('adminAccess.dashboard.projectMissing')}</small>
       </span>
-      <span className="admin-command-pill">{TASK_STATUS_LABELS[task.status] || task.status}</span>
+      <span className="admin-command-pill">{statusKey ? t(statusKey) : task.status}</span>
       {task.dueDate && <time className={isPast(task.dueDate) ? 'danger' : ''}>{formatDate(task.dueDate)}</time>}
     </Link>
   )
@@ -285,6 +294,8 @@ function BriefLine({ brief }: { brief: DashBrief }) {
 }
 
 function ProjectLine({ project }: { project: Project & { client?: { _id: string; name: string } } }) {
+  const { t } = useI18n()
+  const statusKey = PROJECT_STATUS_KEYS[project.status]
   const color = PRIORITY_COLORS[project.priority || 'NORMALE'] || '#38bdf8'
   return (
     <Link to={`/admin/projets/${project._id}`} className="admin-command-line">
@@ -293,12 +304,14 @@ function ProjectLine({ project }: { project: Project & { client?: { _id: string;
         <strong>{project.name}</strong>
         <small>{project.client?.name || project.responsible || 'Venio'}</small>
       </span>
-      <span className="admin-command-pill">{PROJECT_STATUS_LABELS[project.status] || project.status}</span>
+      <span className="admin-command-pill">{statusKey ? t(statusKey) : project.status}</span>
     </Link>
   )
 }
 
 function InternalProjectLine({ project }: { project: InternalProjectSummary }) {
+  const { t } = useI18n()
+  const statusKey = PROJECT_STATUS_KEYS[project.status]
   const tone = project.status === 'EN_COURS' ? '#22c55e' : project.status === 'EN_ATTENTE' ? '#f59e0b' : '#64748b'
   return (
     <Link to={`/admin/projets-internes/${project._id}`} className="admin-command-line">
@@ -310,12 +323,13 @@ function InternalProjectLine({ project }: { project: InternalProjectSummary }) {
           {project.poles.length > 0 ? ` - ${project.poles.join(', ')}` : ''}
         </small>
       </span>
-      <span className="admin-command-pill">{PROJECT_STATUS_LABELS[project.status] || project.status}</span>
+      <span className="admin-command-pill">{statusKey ? t(statusKey) : project.status}</span>
     </Link>
   )
 }
 
 function MissionLine({ mission }: { mission: MissionSummary }) {
+  const { t } = useI18n()
   const done = mission.steps?.filter((step) => step.done).length || 0
   const total = mission.steps?.length || 0
   return (
@@ -327,8 +341,8 @@ function MissionLine({ mission }: { mission: MissionSummary }) {
       <span className="admin-command-line__main">
         <strong>{mission.title}</strong>
         <small>
-          {mission.internalProject?.name || 'Mission'}
-          {total > 0 ? ` - ${done}/${total} etapes` : ''}
+          {mission.internalProject?.name || t('adminAccess.dashboard.missionFallback')}
+          {total > 0 ? ` - ${t('adminAccess.dashboard.stepsProgress', { done, total })}` : ''}
         </small>
       </span>
       {mission.dueDate && (
@@ -340,6 +354,7 @@ function MissionLine({ mission }: { mission: MissionSummary }) {
 
 export default function AdminDashboard() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refresh, setRefresh] = useState(0)
@@ -415,87 +430,90 @@ export default function AdminDashboard() {
     const freshness = data.cockpitMeta?.generatedAt || data.generatedAt
     return [
       data.overdueTasks.length > 0 && {
-        label: 'Tâches en retard',
+        label: t('adminAccess.dashboard.overdueTasks'),
         count: data.overdueTasks.length,
         to: '/admin/gestion',
         tone: 'danger' as const,
-        source: 'Tâches',
-        owner: 'Équipe',
-        state: 'SLA dépassé',
-        action: 'Ouvrir et réattribuer',
+        source: t('adminAccess.dashboard.sourceTasks'),
+        owner: t('adminAccess.dashboard.ownerTeam'),
+        state: t('adminAccess.dashboard.slaExceeded'),
+        action: t('adminAccess.dashboard.actionReassign'),
         generatedAt: freshness,
       },
       p1Briefs > 0 && {
-        label: 'Briefs P1',
+        label: t('adminAccess.dashboard.p1Briefs'),
         count: p1Briefs,
         to: '/admin/gestion?view=briefs',
         tone: 'danger' as const,
-        source: 'Briefs',
-        owner: 'Équipe',
-        state: 'SLA dépassé',
-        action: 'Traiter le brief',
+        source: t('adminAccess.dashboard.sourceBriefs'),
+        owner: t('adminAccess.dashboard.ownerTeam'),
+        state: t('adminAccess.dashboard.slaExceeded'),
+        action: t('adminAccess.dashboard.actionHandleBrief'),
         generatedAt: freshness,
       },
       data.pendingDecisionCount > 0 && {
-        label: 'Décisions',
+        label: t('adminAccess.dashboard.decisions'),
         count: data.pendingDecisionCount,
         to: '/admin/decisions',
         tone: 'warning' as const,
-        source: 'Décisions',
-        owner: 'Direction',
-        state: 'En attente d’arbitrage',
-        action: 'Arbitrer',
+        source: t('adminAccess.dashboard.decisions'),
+        owner: t('adminAccess.dashboard.ownerManagement'),
+        state: t('adminAccess.dashboard.awaitingDecision'),
+        action: t('adminAccess.dashboard.actionDecide'),
         generatedAt: freshness,
       },
       data.hotLeads.length > 0 && {
-        label: 'Relances CRM',
+        label: t('adminAccess.dashboard.crmFollowUps'),
         count: data.hotLeads.length,
         to: '/admin/crm',
         tone: 'warning' as const,
         source: 'CRM',
-        owner: 'Commercial',
-        state: `Suivi sous ${data.cockpitMeta?.hotLeadFollowUpHours || 48} h`,
-        action: 'Planifier une relance',
+        owner: t('adminAccess.dashboard.ownerSales'),
+        state: t('adminAccess.dashboard.followUpWithin', { hours: data.cockpitMeta?.hotLeadFollowUpHours || 48 }),
+        action: t('adminAccess.dashboard.actionPlanFollowUp'),
         generatedAt: freshness,
       },
       data.staleProjectCount > 0 && {
-        label: 'Projets dormants',
+        label: t('adminAccess.dashboard.staleProjects'),
         count: data.staleProjectCount,
         to: '/admin/projets',
         tone: 'neutral' as const,
-        source: 'Projets',
-        owner: 'Équipe projet',
-        state: `Sans activité ${data.cockpitMeta?.staleProjectThresholdDays || 14} j+`,
-        action: 'Faire un point',
+        source: t('adminAccess.dashboard.sourceProjects'),
+        owner: t('adminAccess.dashboard.ownerProjectTeam'),
+        state: t('adminAccess.dashboard.noActivityFor', { days: data.cockpitMeta?.staleProjectThresholdDays || 14 }),
+        action: t('adminAccess.dashboard.actionReview'),
         generatedAt: freshness,
       },
     ].filter(Boolean) as Array<Parameters<typeof Signal>[0]>
-  }, [data])
+  }, [data, t])
 
   return (
     <div className={`portal-container admin-command-dashboard ${prefs.density === 'compact' ? 'compact' : ''}`}>
       <div className="admin-command-header">
         <div>
-          <span className="admin-command-eyebrow">Bureau Venio</span>
-          <h1>Pilotage Venio</h1>
+          <span className="admin-command-eyebrow">{t('adminAccess.dashboard.eyebrow')}</span>
+          <h1>{t('adminAccess.dashboard.title')}</h1>
           <p>
-            {user?.name || user?.email || 'Admin'} · source {data?.cockpitMeta?.source || 'api/admin/dashboard'} ·{' '}
-            {formatFreshness(data?.cockpitMeta?.generatedAt || data?.generatedAt)}
+            {t('adminAccess.dashboard.headerMeta', {
+              name: user?.name || user?.email || t('adminAccess.dashboard.adminFallback'),
+              source: data?.cockpitMeta?.source || 'api/admin/dashboard',
+              freshness: formatFreshness(data?.cockpitMeta?.generatedAt || data?.generatedAt),
+            })}
           </p>
         </div>
         <div className="admin-command-actions">
           <button className="portal-button secondary" onClick={() => setRefresh((r) => r + 1)} disabled={loading}>
             <RefreshCw size={14} />
-            Rafraichir
+            {t('adminAccess.dashboard.refresh')}
           </button>
           <button className="portal-button secondary" onClick={() => setCustomizeOpen(true)}>
             <Settings2 size={14} />
-            Personnaliser
+            {t('adminAccess.dashboard.customize')}
           </button>
           {canEditProjects && (
             <Link className="portal-button" to="/admin/projets/nouveau">
               <Plus size={14} />
-              Projet
+              {t('adminAccess.dashboard.newProject')}
             </Link>
           )}
         </div>
@@ -511,11 +529,13 @@ export default function AdminDashboard() {
         <>
           <div className={`admin-attention ${attention?.total ? 'active' : 'calm'}`}>
             <div>
-              <span className="admin-attention__label">{attention?.total ? 'Attention requise' : 'Mode calme'}</span>
+              <span className="admin-attention__label">
+                {attention?.total ? t('adminAccess.dashboard.attentionRequired') : t('adminAccess.dashboard.calmMode')}
+              </span>
               <strong>
                 {attention?.total
-                  ? `${attention.total} signal${attention.total > 1 ? 's' : ''} a traiter`
-                  : 'Aucun signal critique'}
+                  ? t('adminAccess.dashboard.signalsToHandle', { count: attention.total })
+                  : t('adminAccess.dashboard.noCriticalSignal')}
               </strong>
             </div>
             {exceptionSignals.length > 0 && (
@@ -530,49 +550,49 @@ export default function AdminDashboard() {
           <div className="admin-exec-grid">
             {isSuperAdmin && (
               <Kpi
-                label="CA facture"
+                label={t('adminAccess.dashboard.kpiRevenue')}
                 value={formatMoney(data.totalRevenue)}
                 to="/admin/comptabilite"
                 tone="green"
-                source="Facturation"
-                owner="Finance"
+                source={t('adminAccess.dashboard.sourceBilling')}
+                owner={t('adminAccess.dashboard.ownerFinance')}
                 generatedAt={data.generatedAt}
               />
             )}
             <Kpi
-              label="Pipeline"
+              label={t('adminAccess.dashboard.kpiPipeline')}
               value={formatMoney(data.pipelineValue)}
               to="/admin/crm"
               tone="orange"
               source="CRM"
-              owner="Commercial"
+              owner={t('adminAccess.dashboard.ownerSales')}
               generatedAt={data.generatedAt}
             />
             {canViewProjects && (
               <Kpi
-                label="Projets actifs"
+                label={t('adminAccess.dashboard.kpiActiveProjects')}
                 value={data.activeProjectCount}
                 to="/admin/projets"
                 tone="blue"
-                source="Projets"
-                owner="Équipe projet"
+                source={t('adminAccess.dashboard.sourceProjects')}
+                owner={t('adminAccess.dashboard.ownerProjectTeam')}
                 generatedAt={data.generatedAt}
               />
             )}
             <Kpi
-              label="Taches ouvertes"
+              label={t('adminAccess.dashboard.kpiOpenTasks')}
               value={data.myTasks.length}
               to="/admin/gestion"
               tone="pink"
-              source="Tâches"
-              owner="Moi"
+              source={t('adminAccess.dashboard.sourceTasks')}
+              owner={t('adminAccess.dashboard.ownerMe')}
               generatedAt={data.generatedAt}
             />
           </div>
 
           <div className="admin-command-layout">
             <div className="admin-command-main">
-              <Section title="Actions personnelles" icon={<CheckCircle2 size={16} />}>
+              <Section title={t('adminAccess.dashboard.sectionPersonal')} icon={<CheckCircle2 size={16} />}>
                 <div className="admin-command-stack">
                   {data.myTasks.slice(0, 6).map((task) => (
                     <TaskLine key={task._id} task={task} />
@@ -587,17 +607,17 @@ export default function AdminDashboard() {
                       <MissionLine key={mission._id} mission={mission} />
                     ))}
                   {data.myTasks.length === 0 && data.myBriefs.length === 0 && myMissions.length === 0 && (
-                    <p className="admin-command-empty">Rien d'assigne pour le moment.</p>
+                    <p className="admin-command-empty">{t('adminAccess.dashboard.nothingAssigned')}</p>
                   )}
                 </div>
               </Section>
 
               <Section
-                title="Portefeuille Venio"
+                title={t('adminAccess.dashboard.sectionPortfolio')}
                 icon={<FolderKanban size={16} />}
                 action={
                   <Link to="/admin/projets" className="admin-command-link">
-                    Tous les projets
+                    {t('adminAccess.dashboard.allProjects')}
                   </Link>
                 }
               >
@@ -609,7 +629,7 @@ export default function AdminDashboard() {
                     <ProjectLine key={project._id} project={project} />
                   ))}
                   {myInternalProjects.length === 0 && data.recentProjects.length === 0 && (
-                    <p className="admin-command-empty">Aucun projet recent.</p>
+                    <p className="admin-command-empty">{t('adminAccess.dashboard.noRecentProject')}</p>
                   )}
                 </div>
               </Section>
@@ -618,16 +638,16 @@ export default function AdminDashboard() {
             {(prefs.showContext || prefs.showShortcuts) && (
               <aside className="admin-command-context">
                 {prefs.showContext && (
-                  <Section title="Contexte du jour" icon={<Clock3 size={16} />}>
+                  <Section title={t('adminAccess.dashboard.sectionToday')} icon={<Clock3 size={16} />}>
                     <div className="admin-day-card">
                       <strong>
-                        {new Date().toLocaleDateString('fr-FR', {
+                        {formatLocaleDate(new Date(), {
                           weekday: 'long',
                           day: '2-digit',
                           month: 'long',
                         })}
                       </strong>
-                      <span>{new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>{formatTime(new Date(), { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                     <div className="admin-command-mini-list">
                       {nextMilestones.tasks.map((task) => (
@@ -637,25 +657,25 @@ export default function AdminDashboard() {
                         <MissionLine key={mission._id} mission={mission} />
                       ))}
                       {nextMilestones.tasks.length === 0 && nextMilestones.missions.length === 0 && (
-                        <p className="admin-command-empty">Aucun jalon imminent.</p>
+                        <p className="admin-command-empty">{t('adminAccess.dashboard.noMilestone')}</p>
                       )}
                     </div>
                   </Section>
                 )}
 
                 {prefs.showShortcuts && (
-                  <Section title="Raccourcis" icon={<Sparkles size={16} />}>
+                  <Section title={t('adminAccess.dashboard.sectionShortcuts')} icon={<Sparkles size={16} />}>
                     <div className="admin-shortcut-grid">
                       {canManageClients && (
                         <Link to="/admin/comptes-clients/nouveau">
                           <BriefcaseBusiness size={15} />
-                          Client
+                          {t('adminAccess.dashboard.shortcutClient')}
                         </Link>
                       )}
                       {canViewMessaging && (
                         <Link to="/admin/messages">
                           <MessageSquare size={15} />
-                          Messages
+                          {t('adminAccess.dashboard.shortcutMessages')}
                         </Link>
                       )}
                       <Link to="/admin/crm">
@@ -678,27 +698,27 @@ export default function AdminDashboard() {
               <aside className="admin-customize-panel" onClick={(e) => e.stopPropagation()}>
                 <div className="admin-customize-panel__header">
                   <div>
-                    <span className="admin-command-eyebrow">Dashboard</span>
-                    <h2>Personnalisation</h2>
+                    <span className="admin-command-eyebrow">{t('adminAccess.dashboard.customizeEyebrow')}</span>
+                    <h2>{t('adminAccess.dashboard.customizeTitle')}</h2>
                   </div>
-                  <button onClick={() => setCustomizeOpen(false)} aria-label="Fermer">
+                  <button onClick={() => setCustomizeOpen(false)} aria-label={t('adminAccess.dashboard.close')}>
                     <X size={16} />
                   </button>
                 </div>
                 <div className="admin-customize-group">
-                  <span className="admin-customize-label">Densite</span>
+                  <span className="admin-customize-label">{t('adminAccess.dashboard.density')}</span>
                   <div className="admin-segmented-control">
                     <button
                       className={prefs.density === 'comfortable' ? 'active' : ''}
                       onClick={() => setPrefs((p) => ({ ...p, density: 'comfortable' }))}
                     >
-                      Confort
+                      {t('adminAccess.dashboard.densityComfortable')}
                     </button>
                     <button
                       className={prefs.density === 'compact' ? 'active' : ''}
                       onClick={() => setPrefs((p) => ({ ...p, density: 'compact' }))}
                     >
-                      Compact
+                      {t('adminAccess.dashboard.densityCompact')}
                     </button>
                   </div>
                 </div>
@@ -708,7 +728,7 @@ export default function AdminDashboard() {
                     checked={prefs.showContext}
                     onChange={(e) => setPrefs((p) => ({ ...p, showContext: e.target.checked }))}
                   />
-                  <span>Contexte du jour</span>
+                  <span>{t('adminAccess.dashboard.sectionToday')}</span>
                 </label>
                 <label className="admin-toggle-row">
                   <input
@@ -716,7 +736,7 @@ export default function AdminDashboard() {
                     checked={prefs.showShortcuts}
                     onChange={(e) => setPrefs((p) => ({ ...p, showShortcuts: e.target.checked }))}
                   />
-                  <span>Raccourcis</span>
+                  <span>{t('adminAccess.dashboard.sectionShortcuts')}</span>
                 </label>
               </aside>
             </div>
@@ -725,7 +745,7 @@ export default function AdminDashboard() {
       ) : (
         <div className="admin-command-error">
           <AlertTriangle size={32} />
-          <p>Impossible de charger le dashboard.</p>
+          <p>{t('adminAccess.dashboard.loadError')}</p>
         </div>
       )}
     </div>

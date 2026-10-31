@@ -17,15 +17,17 @@ import {
   Rocket,
   FileText,
 } from 'lucide-react'
-import type {
-  DevIssueStatus,
-  DevIssuePriority,
-  DevIssueType,
-  UserRef,
-} from '../../../services/dev'
+import type { DevIssueStatus, DevIssuePriority, DevIssueType, UserRef } from '../../../services/dev'
 import { STATUS_COLOR, PRIORITY_COLOR } from '../../../services/dev'
+import { translate } from '../../../i18n'
+import { formatDate } from '../../../i18n/format'
 
-export type StatusIcon = React.ComponentType<{ size?: number | string; color?: string; strokeWidth?: number | string; className?: string }>
+export type StatusIcon = React.ComponentType<{
+  size?: number | string
+  color?: string
+  strokeWidth?: number | string
+  className?: string
+}>
 
 export const STATUS_ICON: Record<DevIssueStatus, StatusIcon> = {
   BACKLOG: CircleDashed,
@@ -50,13 +52,7 @@ export const TYPE_ICON: Record<DevIssueType, StatusIcon> = {
   DOC: FileText,
 }
 
-export function PriorityIcon({
-  priority,
-  size = 14,
-}: {
-  priority: DevIssuePriority
-  size?: number
-}) {
+export function PriorityIcon({ priority, size = 14 }: { priority: DevIssuePriority; size?: number }) {
   const color = PRIORITY_COLOR[priority]
   if (priority === 'URGENT') {
     return <AlertOctagon size={size} color={color} strokeWidth={2.4} />
@@ -111,14 +107,7 @@ export function StatusGlyph({ status, size = 14 }: { status: DevIssueStatus; siz
   const Icon = STATUS_ICON[status]
   const color = STATUS_COLOR[status]
   const spin = status === 'IN_PROGRESS'
-  return (
-    <Icon
-      size={size}
-      color={color}
-      strokeWidth={2}
-      className={spin ? 'dev-spin' : undefined}
-    />
-  )
+  return <Icon size={size} color={color} strokeWidth={2} className={spin ? 'dev-spin' : undefined} />
 }
 
 export function TypeBadge({ type, size = 12 }: { type: DevIssueType; size?: number }) {
@@ -134,11 +123,11 @@ export function formatRelative(date: string | null | undefined): string {
   const minute = 60_000
   const hour = 60 * minute
   const day = 24 * hour
-  if (diff < minute) return "à l'instant"
-  if (diff < hour) return `il y a ${Math.floor(diff / minute)} min`
-  if (diff < day) return `il y a ${Math.floor(diff / hour)} h`
-  if (diff < 7 * day) return `il y a ${Math.floor(diff / day)} j`
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+  if (diff < minute) return translate('devA.time.justNow')
+  if (diff < hour) return translate('devA.time.minutesAgo', { n: Math.floor(diff / minute) })
+  if (diff < day) return translate('devA.time.hoursAgo', { n: Math.floor(diff / hour) })
+  if (diff < 7 * day) return translate('devA.time.daysAgo', { n: Math.floor(diff / day) })
+  return formatDate(d, { day: '2-digit', month: 'short' })
 }
 
 export function userInitial(u: UserRef | null | undefined): string {
@@ -154,7 +143,7 @@ export function Avatar({ user, size = 22 }: { user: UserRef | null | undefined; 
     <span
       className={`dev-avatar${filled ? ' filled' : ''}`}
       style={{ width: size, height: size, fontSize: Math.max(9, size * 0.45) }}
-      title={user?.name || user?.email || 'Non assigné'}
+      title={user?.name || user?.email || translate('devA.shared.unassigned')}
     >
       {user ? userInitial(user) : '?'}
     </span>

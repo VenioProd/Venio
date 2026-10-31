@@ -2,16 +2,24 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { apiFetch, apiUpload } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
-const STATUS_LABELS: Record<string, string> = {
-  EN_COURS: 'En cours',
-  EN_ATTENTE: 'En attente',
-  TERMINE: 'Terminé',
-  ARCHIVE: 'Archivé',
+const STATUS_LABEL_KEYS: Record<string, MessageKey> = {
+  EN_COURS: 'projB.page.statusEnCours',
+  EN_ATTENTE: 'projB.page.statusEnAttente',
+  TERMINE: 'projB.page.statusTermine',
+  ARCHIVE: 'projB.page.statusArchive',
+}
+const PRIORITY_LABEL_KEYS: Record<string, MessageKey> = {
+  BASSE: 'projB.page.priorityBasse',
+  NORMALE: 'projB.page.priorityNormale',
+  HAUTE: 'projB.page.priorityHaute',
+  URGENTE: 'projB.page.priorityUrgente',
 }
 const STATUS_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   EN_COURS: { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.35)', text: '#6ee7b7' },
@@ -36,6 +44,7 @@ export default function InternalProjectDetail() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { showToast } = useToast()
+  const { t } = useI18n()
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
   const isAdminRole = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'RH'
 
@@ -92,7 +101,7 @@ export default function InternalProjectDetail() {
         setProject(d.project)
         setEditStatus(d.project.status)
       })
-      .catch(() => showToast('Projet introuvable', 'error'))
+      .catch(() => showToast(t('projB.page.notFoundToast'), 'error'))
       .finally(() => setLoading(false))
 
     apiFetch<{ missions: Mission[] }>(`/api/admin/internal-projects/${id}/missions`)
@@ -111,9 +120,9 @@ export default function InternalProjectDetail() {
       })
       setProject(data.project)
       setEditStatus(data.project.status)
-      showToast('Statut mis à jour', 'success')
+      showToast(t('projB.page.statusUpdated'), 'success')
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     } finally {
       setSavingStatus(false)
     }
@@ -123,21 +132,21 @@ export default function InternalProjectDetail() {
     if (!project) return
     try {
       await apiFetch(`/api/admin/internal-projects/${project._id}`, { method: 'DELETE' })
-      showToast('Projet supprimé', 'success')
+      showToast(t('projB.page.projectDeleted'), 'success')
       navigate('/admin/projets-internes')
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     }
   }
 
   const handleCreateMission = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!missionForm.title.trim()) {
-      showToast('Le titre est requis', 'error')
+      showToast(t('projB.page.titleRequired'), 'error')
       return
     }
     if (missionForm.assignedTo.length === 0) {
-      showToast('Assigne la mission à au moins une personne', 'error')
+      showToast(t('projB.page.assigneeRequired'), 'error')
       return
     }
     setSavingMission(true)
@@ -154,9 +163,9 @@ export default function InternalProjectDetail() {
       setMissions((m) => [data.mission, ...m])
       setShowMissionForm(false)
       setMissionForm({ title: '', description: '', assignedTo: [], dueDate: '' })
-      showToast('Mission créée', 'success')
+      showToast(t('projB.page.missionCreated'), 'success')
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     } finally {
       setSavingMission(false)
     }
@@ -170,7 +179,7 @@ export default function InternalProjectDetail() {
       })
       setMissions((m) => m.map((x) => (x._id === missionId ? { ...x, status: data.mission.status } : x)))
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     }
   }
 
@@ -179,9 +188,9 @@ export default function InternalProjectDetail() {
       await apiFetch(`/api/admin/internal-projects/${id}/missions/${missionId}`, { method: 'DELETE' })
       setMissions((m) => m.filter((x) => x._id !== missionId))
       if (selectedMission === missionId) setSelectedMission(null)
-      showToast('Mission supprimée', 'success')
+      showToast(t('projB.page.missionDeleted'), 'success')
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     }
   }
 
@@ -194,7 +203,7 @@ export default function InternalProjectDetail() {
       })
       setMissions((m) => m.map((x) => (x._id === missionId ? data.mission : x)))
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     }
   }
 
@@ -211,7 +220,7 @@ export default function InternalProjectDetail() {
       setStepInputs((s) => ({ ...s, [missionId]: '' }))
       setStepAssigneeInputs((s) => ({ ...s, [missionId]: '' }))
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     }
   }
 
@@ -224,7 +233,7 @@ export default function InternalProjectDetail() {
       })
       setMissions((m) => m.map((x) => (x._id === missionId ? data.mission : x)))
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     }
   }
 
@@ -251,9 +260,9 @@ export default function InternalProjectDetail() {
         },
       )
       setMissions((m) => m.map((x) => (x._id === missionId ? data.mission : x)))
-      showToast('Vérification demandée au Super Admin', 'success')
+      showToast(t('projB.page.reviewRequested'), 'success')
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     }
   }
 
@@ -267,9 +276,9 @@ export default function InternalProjectDetail() {
         },
       )
       setMissions((m) => m.map((x) => (x._id === missionId ? data.mission : x)))
-      showToast('Étape validée', 'success')
+      showToast(t('projB.page.stepValidated'), 'success')
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     }
   }
 
@@ -356,9 +365,9 @@ export default function InternalProjectDetail() {
       await apiUpload(`/api/admin/internal-projects/${id}/missions/${missionId}/files`, formData)
       const updated = await apiFetch<{ missions: Mission[] }>(`/api/admin/internal-projects/${id}/missions`)
       setMissions(updated.missions || [])
-      showToast('Fichier ajouté', 'success')
+      showToast(t('projB.page.fileAdded'), 'success')
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     } finally {
       setUploadingFile((u) => ({ ...u, [missionId]: false }))
     }
@@ -370,9 +379,9 @@ export default function InternalProjectDetail() {
       setMissions((m) =>
         m.map((x) => (x._id === missionId ? { ...x, files: x.files.filter((f) => f._id !== fileId) } : x)),
       )
-      showToast('Fichier supprimé', 'success')
+      showToast(t('projB.page.fileDeleted'), 'success')
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('projB.page.error'), 'error')
     }
   }
 
@@ -459,9 +468,9 @@ export default function InternalProjectDetail() {
     <div className="portal-container">
       <div className="portal-card">
         <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
+          <Link to="/admin">{t('projB.page.breadcrumbAdmin')}</Link>
           <span>/</span>
-          <Link to="/admin/projets-internes">Projets internes</Link>
+          <Link to="/admin/projets-internes">{t('projB.page.breadcrumbProjects')}</Link>
           <span>/</span>
           <span style={{ color: 'var(--text-primary)' }}>{project.name}</span>
         </div>
@@ -493,7 +502,7 @@ export default function InternalProjectDetail() {
                   color: sc.text,
                 }}
               >
-                {STATUS_LABELS[project.status] || project.status}
+                {STATUS_LABEL_KEYS[project.status] ? t(STATUS_LABEL_KEYS[project.status]) : project.status}
               </span>
               <span
                 style={{
@@ -502,7 +511,10 @@ export default function InternalProjectDetail() {
                   color: PRIORITY_COLORS[project.priority] || 'var(--text-secondary)',
                 }}
               >
-                ● {project.priority.charAt(0) + project.priority.slice(1).toLowerCase()}
+                ●{' '}
+                {PRIORITY_LABEL_KEYS[project.priority]
+                  ? t(PRIORITY_LABEL_KEYS[project.priority])
+                  : project.priority.charAt(0) + project.priority.slice(1).toLowerCase()}
               </span>
             </div>
             <h1 style={{ marginBottom: 6 }}>{project.name}</h1>
@@ -517,7 +529,7 @@ export default function InternalProjectDetail() {
               className="portal-button secondary portal-action-link"
               to={`/admin/projets-internes?edit=${project._id}`}
             >
-              <span className="portal-action-label">Modifier</span>
+              <span className="portal-action-label">{t('common.edit')}</span>
             </Link>
             {isSuperAdmin && (
               <button
@@ -526,7 +538,7 @@ export default function InternalProjectDetail() {
                 onClick={() => setDeleteOpen(true)}
                 style={{ color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
               >
-                <span className="portal-action-label">Supprimer</span>
+                <span className="portal-action-label">{t('common.delete')}</span>
               </button>
             )}
           </div>
@@ -538,7 +550,7 @@ export default function InternalProjectDetail() {
         <StatusSelector
           current={editStatus}
           saving={savingStatus}
-          statusLabels={STATUS_LABELS}
+          statusLabelKeys={STATUS_LABEL_KEYS}
           statusColors={STATUS_COLORS}
           onChange={handleStatusChange}
         />
@@ -560,7 +572,7 @@ export default function InternalProjectDetail() {
             transition: 'all .15s',
           }}
         >
-          Vue d'ensemble
+          {t('projB.page.tabOverview')}
         </button>
         <button
           onClick={() => setActiveTab('missions')}
@@ -593,7 +605,7 @@ export default function InternalProjectDetail() {
             <circle cx="12" cy="12" r="10" />
             <circle cx="12" cy="12" r="4" />
           </svg>
-          Missions internes
+          {t('projB.page.tabMissions')}
           {missions.length > 0 && (
             <span
               style={{
@@ -647,10 +659,10 @@ export default function InternalProjectDetail() {
 
       <ConfirmModal
         isOpen={deleteOpen}
-        title="Supprimer le projet"
-        message={`Supprimer "${project.name}" ? Cette action est irréversible.`}
-        confirmLabel="Supprimer"
-        cancelLabel="Annuler"
+        title={t('projB.page.deleteTitle')}
+        message={t('projB.page.deleteMessage', { name: project.name })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}

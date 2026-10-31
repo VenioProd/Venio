@@ -1,8 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate } from '../../../i18n/format'
 import type { Mission } from './types'
 import { useInternalProjectListCtx } from './Context'
+import { MISSION_STATUS_KEYS, labelFor } from './labels'
 
 export default function MissionsTab() {
+  const { t } = useI18n()
   const {
     missions,
     missionsLoading,
@@ -111,7 +115,7 @@ export default function MissionsTab() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                     <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                      {entry.done}/{entry.total} terminées
+                      {t('projA.missions.doneOfTotal', { done: entry.done, total: entry.total })}
                     </span>
                     <span
                       style={{
@@ -142,13 +146,13 @@ export default function MissionsTab() {
 
       {missionsLoading ? (
         <div className="portal-card">
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Chargement...</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t('common.loading')}</p>
         </div>
       ) : missions.length === 0 ? (
         <div className="portal-card">
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)', fontSize: 14 }}>
             <div style={{ fontSize: 32, marginBottom: 10, opacity: 0.4 }}>◎</div>
-            Aucune mission pour l'instant
+            {t('projA.missions.empty')}
           </div>
         </div>
       ) : (
@@ -157,13 +161,13 @@ export default function MissionsTab() {
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 {[
-                  'Projet',
-                  'Mission',
-                  ...(isSuperAdmin ? ['Assigné à'] : []),
-                  'Statut',
-                  'Progression',
-                  'Fichiers',
-                  'Deadline',
+                  t('projA.missions.colProject'),
+                  t('projA.missions.colMission'),
+                  ...(isSuperAdmin ? [t('projA.missions.colAssignedTo')] : []),
+                  t('projA.missions.colStatus'),
+                  t('projA.missions.colProgress'),
+                  t('projA.common.files'),
+                  t('projA.common.deadline'),
                   '',
                 ].map((h: any, i: number) => (
                   <th
@@ -199,11 +203,6 @@ export default function MissionsTab() {
                   A_FAIRE: '#fde047',
                   EN_COURS: 'var(--primary)',
                   TERMINE: '#6ee7b7',
-                }
-                const statusLabel: Record<string, string> = {
-                  A_FAIRE: 'À faire',
-                  EN_COURS: 'En cours',
-                  TERMINE: 'Terminée',
                 }
                 const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
                 const doneCount = m.steps?.filter((s) => s.done).length ?? 0
@@ -310,7 +309,7 @@ export default function MissionsTab() {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {statusLabel[m.status] || m.status}
+                            {labelFor(t, MISSION_STATUS_KEYS, m.status)}
                           </span>
                           {(['A_FAIRE', 'EN_COURS', 'TERMINE'] as const)
                             .filter((v) => v !== m.status)
@@ -330,7 +329,7 @@ export default function MissionsTab() {
                                   whiteSpace: 'nowrap',
                                 }}
                               >
-                                {statusLabel[v]}
+                                {t(MISSION_STATUS_KEYS[v])}
                               </button>
                             ))}
                         </div>
@@ -347,7 +346,7 @@ export default function MissionsTab() {
                           >
                             {totalSteps > 0 && (
                               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                                {doneCount}/{totalSteps} étapes
+                                {t('projA.missions.stepsCount', { done: doneCount, total: totalSteps })}
                               </span>
                             )}
                             <input
@@ -374,7 +373,7 @@ export default function MissionsTab() {
                                 cursor: 'text',
                                 marginLeft: 'auto',
                               }}
-                              title="Cliquer pour modifier la progression (%)"
+                              title={t('projA.missions.progressTitle')}
                             />
                             <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 2 }}>%</span>
                           </div>
@@ -436,7 +435,7 @@ export default function MissionsTab() {
                               fileInputRefs.current[`col_${m._id}`]?.click()
                             }}
                             disabled={uploadingMission === m._id}
-                            title="Joindre un fichier"
+                            title={t('projA.common.attachFile')}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -463,7 +462,7 @@ export default function MissionsTab() {
                               <polyline points="17 8 12 3 7 8" />
                               <line x1="12" y1="3" x2="12" y2="15" />
                             </svg>
-                            {uploadingMission === m._id ? '...' : '+ Fichier'}
+                            {uploadingMission === m._id ? '...' : t('projA.missions.addFile')}
                           </button>
                         </div>
                       </td>
@@ -476,7 +475,7 @@ export default function MissionsTab() {
                           }}
                         >
                           {isOverdue && '⚠ '}
-                          {m.dueDate ? new Date(m.dueDate).toLocaleDateString('fr-FR') : '—'}
+                          {m.dueDate ? formatDate(m.dueDate) : '—'}
                         </span>
                       </td>
                       <td style={{ padding: '11px 8px', textAlign: 'center' }}>

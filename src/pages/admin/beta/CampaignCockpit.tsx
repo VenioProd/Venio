@@ -9,6 +9,8 @@ import {
   type BetaRun,
   type CampaignDetail,
 } from '../../../services/beta'
+import { useI18n } from '../../../context/I18nContext'
+import { translate, type MessageKey } from '../../../i18n'
 import CoverageGrid from './CoverageGrid'
 import FindingsQueue from './FindingsQueue'
 import ScenarioPanel from './ScenarioPanel'
@@ -17,14 +19,15 @@ import './Beta.css'
 
 type Tab = 'coverage' | 'findings' | 'scenarios' | 'testers'
 
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: 'coverage', label: 'Couverture' },
-  { id: 'findings', label: 'Retours' },
-  { id: 'scenarios', label: 'Démarches' },
-  { id: 'testers', label: 'Testeurs' },
+const TABS: Array<{ id: Tab; labelKey: MessageKey }> = [
+  { id: 'coverage', labelKey: 'beta.cockpit.tabCoverage' },
+  { id: 'findings', labelKey: 'beta.cockpit.tabFindings' },
+  { id: 'scenarios', labelKey: 'beta.cockpit.tabScenarios' },
+  { id: 'testers', labelKey: 'beta.cockpit.tabTesters' },
 ]
 
 export default function CampaignCockpit() {
+  const { t } = useI18n()
   const { campaignId } = useParams<{ campaignId: string }>()
   const [detail, setDetail] = useState<CampaignDetail | null>(null)
   const [runs, setRuns] = useState<BetaRun[]>([])
@@ -46,7 +49,7 @@ export default function CampaignCockpit() {
       setDetail(detailResult)
       setRuns(runsResult.runs)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Chargement impossible')
+      setError(err instanceof Error ? err.message : translate('beta.admin.loadFailed'))
     } finally {
       loadedOnce.current = true
       setLoading(false)
@@ -64,7 +67,7 @@ export default function CampaignCockpit() {
     setDetail({ ...detail, campaign })
   }
 
-  if (loading) return <p className="beta-muted beta-workspace">Chargement…</p>
+  if (loading) return <p className="beta-muted beta-workspace">{t('beta.shared.loading')}</p>
   if (error) return <p className="beta-error beta-workspace">{error}</p>
   if (!detail) return null
 
@@ -77,7 +80,7 @@ export default function CampaignCockpit() {
     <div className="beta-workspace">
       <header className="beta-header">
         <div className="beta-header-title">
-          <Link to="/admin/beta" className="beta-back" aria-label="Retour aux campagnes">
+          <Link to="/admin/beta" className="beta-back" aria-label={t('beta.cockpit.backAria')}>
             <ArrowLeft size={16} aria-hidden />
           </Link>
           <div>
@@ -91,16 +94,16 @@ export default function CampaignCockpit() {
         </div>
         <div className="beta-header-actions">
           <a className="beta-btn" href={campaignReportUrl(campaign._id)}>
-            <FileDown size={14} aria-hidden /> Rapport
+            <FileDown size={14} aria-hidden /> {t('beta.cockpit.report')}
           </a>
           <button type="button" className="beta-btn beta-btn-primary" onClick={toggleStatus}>
             {campaign.status === 'RUNNING' ? (
               <>
-                <Square size={14} aria-hidden /> Clore la campagne
+                <Square size={14} aria-hidden /> {t('beta.cockpit.close')}
               </>
             ) : (
               <>
-                <Play size={14} aria-hidden /> Ouvrir aux testeurs
+                <Play size={14} aria-hidden /> {t('beta.cockpit.open')}
               </>
             )}
           </button>
@@ -109,13 +112,11 @@ export default function CampaignCockpit() {
 
       {campaign.status !== 'RUNNING' && (
         <p className="beta-banner">
-          {campaign.status === 'DRAFT'
-            ? 'Campagne en brouillon : les liens des testeurs ne fonctionnent pas encore.'
-            : 'Campagne close : les liens des testeurs ne fonctionnent plus.'}
+          {campaign.status === 'DRAFT' ? t('beta.cockpit.draftBanner') : t('beta.cockpit.closedBanner')}
         </p>
       )}
 
-      <nav className="beta-tabs" aria-label="Sections de la campagne">
+      <nav className="beta-tabs" aria-label={t('beta.cockpit.sectionsAria')}>
         {TABS.map((entry) => (
           <button
             key={entry.id}
@@ -124,7 +125,7 @@ export default function CampaignCockpit() {
             onClick={() => setTab(entry.id)}
             aria-pressed={tab === entry.id}
           >
-            {entry.label}
+            {t(entry.labelKey)}
             {entry.id === 'findings' && openFindings > 0 && <span className="beta-tab-count">{openFindings}</span>}
           </button>
         ))}

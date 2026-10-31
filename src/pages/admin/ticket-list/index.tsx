@@ -3,6 +3,7 @@ import { useConfirm } from '../../../hooks/useConfirm'
 import { Link } from 'react-router-dom'
 import { apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG } from './types'
 import type { Ticket, KpiData } from './types'
 import TicketCard from './TicketCard'
@@ -14,6 +15,7 @@ import '../AdminPortal.css'
 import DocPreviewModal from '../../../components/DocPreviewModal'
 
 const TicketList = () => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const isSuperAdmin = ['SUPER_ADMIN', 'PDG', 'ADMIN', 'MANAGER'].includes(user?.role || '')
   const { confirm, ConfirmDialog } = useConfirm()
@@ -148,7 +150,13 @@ const TicketList = () => {
   }
 
   const handleDelete = async (ticketId: string) => {
-    if (!(await confirm({ message: 'Supprimer definitivement ce ticket ?', title: 'Suppression' }))) return
+    if (
+      !(await confirm({
+        message: t('orgs.tickets.list.confirmDelete'),
+        title: t('orgs.tickets.list.confirmDeleteTitle'),
+      }))
+    )
+      return
     try {
       await apiFetch(`/api/admin/tickets/${ticketId}`, { method: 'DELETE' })
       await load()
@@ -161,16 +169,16 @@ const TicketList = () => {
   const removeFormFile = (idx: number) => setFormFiles((prev) => prev.filter((_, i) => i !== idx))
 
   const applyExtraFilters = (list: Ticket[]) => {
-    return list.filter((t) => {
-      if (filterCategory !== 'all' && t.category !== filterCategory) return false
-      if (filterPriority !== 'all' && t.priority !== filterPriority) return false
+    return list.filter((tk) => {
+      if (filterCategory !== 'all' && tk.category !== filterCategory) return false
+      if (filterPriority !== 'all' && tk.priority !== filterPriority) return false
       return true
     })
   }
-  const activeTickets = tickets.filter((t) => t.status === 'OUVERT' || t.status === 'EN_COURS')
-  const resolvedTickets = tickets.filter((t) => t.status === 'RESOLU' || t.status === 'FERME')
+  const activeTickets = tickets.filter((tk) => tk.status === 'OUVERT' || tk.status === 'EN_COURS')
+  const resolvedTickets = tickets.filter((tk) => tk.status === 'RESOLU' || tk.status === 'FERME')
   const filteredActive = applyExtraFilters(
-    filterStatus === 'all' ? activeTickets : activeTickets.filter((t) => t.status === filterStatus),
+    filterStatus === 'all' ? activeTickets : activeTickets.filter((tk) => tk.status === filterStatus),
   )
   const filteredResolved = applyExtraFilters(resolvedTickets)
 
@@ -220,20 +228,20 @@ const TicketList = () => {
               >
                 <polyline points="15 18 9 12 15 6" />
               </svg>
-              Retour au dashboard
+              {t('orgs.tickets.list.backToDashboard')}
             </Link>
-            <h1 className="ticket-hero-title">Mes demandes</h1>
-            <p className="ticket-hero-subtitle">Besoin d'aide ? Cliquez sur le + pour envoyer une demande</p>
+            <h1 className="ticket-hero-title">{t('orgs.tickets.list.myRequestsTitle')}</h1>
+            <p className="ticket-hero-subtitle">{t('orgs.tickets.list.myRequestsSubtitle')}</p>
           </div>
         </div>
 
         {/* Liste des tickets de l'utilisateur */}
         <div className="ticket-list" style={{ marginTop: 20 }}>
           {loading ? (
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>Chargement...</p>
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>{t('common.loading')}</p>
           ) : tickets.length === 0 ? (
             <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>
-              Aucune demande pour le moment — cliquez sur le + pour commencer
+              {t('orgs.tickets.list.myRequestsEmpty')}
             </p>
           ) : (
             tickets.map((ticket) => (
@@ -274,12 +282,10 @@ const TicketList = () => {
             >
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Retour au dashboard
+            {t('orgs.tickets.list.backToDashboard')}
           </Link>
-          <h1 className="ticket-hero-title">Tickets internes</h1>
-          <p className="ticket-hero-subtitle">
-            Posez vos questions, faites vos demandes — les super admins vous repondent
-          </p>
+          <h1 className="ticket-hero-title">{t('orgs.tickets.list.title')}</h1>
+          <p className="ticket-hero-subtitle">{t('orgs.tickets.list.subtitle')}</p>
         </div>
         {activeTab === 'tickets' && (
           <button className="ticket-new-btn" onClick={() => setShowForm(!showForm)}>
@@ -287,7 +293,7 @@ const TicketList = () => {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Nouveau ticket
+            {t('orgs.tickets.list.newTicket')}
           </button>
         )}
       </div>
@@ -298,25 +304,25 @@ const TicketList = () => {
           className={`ticket-tab ${activeTab === 'tickets' ? 'active' : ''}`}
           onClick={() => setActiveTab('tickets')}
         >
-          Tickets actifs
+          {t('orgs.tickets.list.tabActive')}
           {activeTickets.length > 0 && <span className="ticket-tab-badge">{activeTickets.length}</span>}
         </button>
         <button
           className={`ticket-tab ${activeTab === 'resolus' ? 'active' : ''}`}
           onClick={() => setActiveTab('resolus')}
         >
-          Resolus
+          {t('orgs.tickets.list.tabResolved')}
           {resolvedTickets.length > 0 && <span className="ticket-tab-badge-muted">{resolvedTickets.length}</span>}
         </button>
         <button
           className={`ticket-tab ${activeTab === 'archives' ? 'active' : ''}`}
           onClick={() => setActiveTab('archives')}
         >
-          Archives
+          {t('orgs.tickets.list.tabArchives')}
           {archivedTickets.length > 0 && <span className="ticket-tab-badge-muted">{archivedTickets.length}</span>}
         </button>
         <button className={`ticket-tab ${activeTab === 'kpi' ? 'active' : ''}`} onClick={() => setActiveTab('kpi')}>
-          KPI & Stats
+          {t('orgs.tickets.list.tabKpi')}
         </button>
       </div>
 
@@ -326,7 +332,7 @@ const TicketList = () => {
           <div className="ticket-stats">
             {(['OUVERT', 'EN_COURS'] as const).map((key) => {
               const cfg = STATUS_CONFIG[key]
-              const count = activeTickets.filter((t) => t.status === key).length
+              const count = activeTickets.filter((tk) => tk.status === key).length
               return (
                 <button
                   key={key}
@@ -337,7 +343,7 @@ const TicketList = () => {
                   <span className="ticket-stat-count" style={{ color: cfg.color }}>
                     {count}
                   </span>
-                  <span className="ticket-stat-label">{cfg.label}</span>
+                  <span className="ticket-stat-label">{t(cfg.labelKey)}</span>
                 </button>
               )
             })}
@@ -353,47 +359,47 @@ const TicketList = () => {
           {showForm && (
             <div className="portal-card" style={{ marginTop: 16 }}>
               <form onSubmit={handleCreate} className="ticket-form">
-                <h3 style={{ margin: '0 0 16px', color: 'var(--primary)' }}>Nouveau ticket</h3>
+                <h3 style={{ margin: '0 0 16px', color: 'var(--primary)' }}>{t('orgs.tickets.list.newTicket')}</h3>
                 <div className="ticket-form-row">
                   <div className="ticket-form-field">
-                    <label>Titre</label>
+                    <label>{t('orgs.tickets.list.fieldTitle')}</label>
                     <input
                       type="text"
                       value={form.title}
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
-                      placeholder="Resumez votre question ou demande..."
+                      placeholder={t('orgs.tickets.list.titlePlaceholder')}
                       required
                     />
                   </div>
                 </div>
                 <div className="ticket-form-row">
                   <div className="ticket-form-field">
-                    <label>Categorie</label>
+                    <label>{t('orgs.tickets.list.fieldCategory')}</label>
                     <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
                       {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
                         <option key={k} value={k}>
-                          {v.label}
+                          {t(v.labelKey)}
                         </option>
                       ))}
                     </select>
                   </div>
                   <div className="ticket-form-field">
-                    <label>Priorite</label>
+                    <label>{t('orgs.tickets.list.fieldPriority')}</label>
                     <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
                       {Object.entries(PRIORITY_CONFIG).map(([k, v]) => (
                         <option key={k} value={k}>
-                          {v.label}
+                          {t(v.labelKey)}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
                 <div className="ticket-form-field">
-                  <label>Message</label>
+                  <label>{t('orgs.tickets.list.fieldMessage')}</label>
                   <textarea
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    placeholder="Decrivez votre question ou demande en detail..."
+                    placeholder={t('orgs.tickets.list.messagePlaceholder')}
                     rows={4}
                     required
                   />
@@ -416,7 +422,7 @@ const TicketList = () => {
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                       </svg>
-                      Joindre des fichiers
+                      {t('orgs.tickets.list.attachFiles')}
                     </button>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
@@ -428,10 +434,10 @@ const TicketList = () => {
                         setFormFiles([])
                       }}
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </button>
                     <button type="submit" className="ticket-submit-btn" disabled={submitting}>
-                      {submitting ? 'Envoi...' : 'Envoyer le ticket'}
+                      {submitting ? t('orgs.tickets.list.sending') : t('orgs.tickets.list.send')}
                     </button>
                   </div>
                 </div>
@@ -441,7 +447,7 @@ const TicketList = () => {
 
           <div className="ticket-list" style={{ marginTop: 20 }}>
             {loading ? (
-              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>Chargement...</p>
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>{t('common.loading')}</p>
             ) : filteredActive.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
                 <svg
@@ -457,8 +463,8 @@ const TicketList = () => {
                 </svg>
                 <p style={{ margin: 0, fontSize: 14 }}>
                   {filterStatus !== 'all' || filterCategory !== 'all' || filterPriority !== 'all'
-                    ? 'Aucun ticket avec ces filtres'
-                    : 'Aucun ticket pour le moment'}
+                    ? t('orgs.tickets.list.emptyFiltered')
+                    : t('orgs.tickets.list.empty')}
                 </p>
               </div>
             ) : (
@@ -503,7 +509,7 @@ const TicketList = () => {
               >
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p style={{ margin: 0, fontSize: 14 }}>Aucun ticket résolu pour le moment</p>
+              <p style={{ margin: 0, fontSize: 14 }}>{t('orgs.tickets.list.emptyResolved')}</p>
             </div>
           ) : (
             filteredResolved.map((ticket) => (
@@ -546,7 +552,7 @@ const TicketList = () => {
               >
                 <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
               </svg>
-              <p style={{ margin: 0, fontSize: 14 }}>Aucun ticket archivé pour le moment</p>
+              <p style={{ margin: 0, fontSize: 14 }}>{t('orgs.tickets.list.emptyArchived')}</p>
             </div>
           ) : (
             archivedTickets.map((ticket) => (

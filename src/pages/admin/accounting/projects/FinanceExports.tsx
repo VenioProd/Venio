@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { apiDownload } from '../../../../lib/api'
+import { useI18n } from '../../../../context/I18nContext'
 import { ACCOUNTING, errorText, Field } from './shared'
 
 export default function FinanceExports({ projectId, statementPath }: { projectId?: string; statementPath?: string }) {
+  const { t } = useI18n()
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [pending, setPending] = useState(false)
@@ -31,20 +33,20 @@ export default function FinanceExports({ projectId, statementPath }: { projectId
     }
   }
   return (
-    <section className="accounting-card" aria-label="Exports comptables">
-      <h2>Exports</h2>
+    <section className="accounting-card" aria-label={t('accProjects.exports.ariaLabel')}>
+      <h2>{t('accProjects.exports.title')}</h2>
       <div className="pf-grid">
-        <Field label="Du (facultatif)">
+        <Field label={t('accProjects.exports.from')}>
           <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
         </Field>
-        <Field label="Au (facultatif)">
+        <Field label={t('accProjects.exports.to')}>
           <input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
         </Field>
       </div>
       <div className="pf-actions">
         {statementPath && (
           <button className="portal-button secondary" disabled={pending} onClick={() => void download(statementPath)}>
-            Relevé (PDF)
+            {t('accProjects.exports.statementPdf')}
           </button>
         )}
         {!statementPath && (
@@ -54,14 +56,14 @@ export default function FinanceExports({ projectId, statementPath }: { projectId
               disabled={pending}
               onClick={() => void download('payments.csv')}
             >
-              Exporter les encaissements (CSV)
+              {t('accProjects.exports.paymentsCsv')}
             </button>
             <button
               className="portal-button secondary"
               disabled={pending}
               onClick={() => void download('settlements-costs.csv')}
             >
-              Exporter les versements et coûts (CSV)
+              {t('accProjects.exports.settlementsCsv')}
             </button>
             {projectId && (
               <button
@@ -69,13 +71,13 @@ export default function FinanceExports({ projectId, statementPath }: { projectId
                 disabled={pending}
                 onClick={() => void download(`projects/${projectId}/sheet.pdf`)}
               >
-                Fiche projet (PDF)
+                {t('accProjects.exports.projectSheetPdf')}
               </button>
             )}
           </>
         )}
       </div>
-      {pending && <p role="status">Préparation du téléchargement…</p>}
+      {pending && <p role="status">{t('accProjects.exports.preparing')}</p>}
       {error && (
         <p className="admin-error" role="alert">
           {error}

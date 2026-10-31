@@ -3,20 +3,28 @@ import { Link } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
 import { listExternalSources, createExternalSource, updateExternalSource } from '../../../services/accounting'
 import type { ExternalSourceStatus, IExternalSource, IExternalSourceCreateResult } from '../../../types/accounting'
+import { useI18n } from '../../../context/I18nContext'
+import { formatDateTime as formatLocaleDateTime, formatNumber } from '../../../i18n/format'
+import type { MessageKey } from '../../../i18n'
 
 function formatDateTime(d: string | undefined | null): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleString('fr-FR')
-  } catch {
-    return '—'
-  }
+  return (
+    formatLocaleDateTime(d, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }) || '—'
+  )
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: 'Active',
-  PAUSED: 'En pause',
-  DISABLED: 'Désactivée',
+const STATUS_LABEL_KEYS: Record<string, MessageKey> = {
+  ACTIVE: 'accVat.integ.statusActive',
+  PAUSED: 'accVat.integ.statusPaused',
+  DISABLED: 'accVat.integ.statusDisabled',
 }
 
 function statusBadgeClass(status: ExternalSourceStatus): string {
@@ -54,6 +62,7 @@ const INITIAL_FORM: SourceForm = {
 }
 
 const ExternalSources = () => {
+  const { t } = useI18n()
   const [sources, setSources] = useState<IExternalSource[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -77,7 +86,7 @@ const ExternalSources = () => {
       const list = await listExternalSources()
       setSources(list || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setLoading(false)
     }
@@ -95,13 +104,11 @@ const ExternalSources = () => {
   async function handleCreate() {
     setFormError('')
     if (!form.slug || !SLUG_REGEX.test(form.slug)) {
-      setFormError(
-        'Le slug doit être en minuscules, commencer par une lettre ou un chiffre et ne contenir que des lettres, chiffres et tirets.',
-      )
+      setFormError(t('accVat.src.slugInvalid'))
       return
     }
     if (!form.name || !form.name.trim()) {
-      setFormError('Le nom est obligatoire.')
+      setFormError(t('accVat.src.nameRequired'))
       return
     }
     setCreating(true)
@@ -123,9 +130,9 @@ const ExternalSources = () => {
       setShowForm(false)
       resetForm()
       await reload()
-      setSuccess(`Source « ${result.source.name} » créée avec succès.`)
+      setSuccess(t('accVat.src.created', { name: result.source.name }))
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Erreur')
+      setFormError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setCreating(false)
     }
@@ -143,21 +150,21 @@ const ExternalSources = () => {
 
   async function togglePause(source: IExternalSource) {
     const nextStatus: ExternalSourceStatus = source.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
-    const verb = nextStatus === 'PAUSED' ? 'Mettre en pause' : 'Réactiver'
-    if (!confirm(`${verb} la source « ${source.name} » ?`)) return
+    const confirmKey = nextStatus === 'PAUSED' ? 'accVat.src.confirmPause' : 'accVat.src.confirmResume'
+    if (!confirm(t(confirmKey, { name: source.name }))) return
     setError('')
     try {
       await updateExternalSource(source._id, { status: nextStatus })
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
   return (
     <AccountingLayout
-      title="Sources externes"
-      subtitle="Sites tiers (Arrow, etc.) qui poussent leurs écritures via API"
+      title={t('accVat.src.title')}
+      subtitle={t('accVat.src.subtitle')}
       actions={
         <button
           className="portal-button"
@@ -166,7 +173,7 @@ const ExternalSources = () => {
             if (showForm) resetForm()
           }}
         >
-          {showForm ? '✕ Annuler' : '✚ Nouvelle source'}
+          {showForm ? t('accVat.src.cancel') : t('accVat.src.new')}
         </button>
       }
     >
@@ -175,11 +182,11 @@ const ExternalSources = () => {
 
       {showForm && (
         <section className="accounting-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Créer une source externe</h2>
+          <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>{t('accVat.src.createHeading')}</h2>
 
           <div className="accounting-form">
             <div className="accounting-form-field">
-              <label>Slug *</label>
+              <label>{t('accVat.src.slugField')}</label>
               <input
                 className="portal-input"
                 placeholder="arrow"
@@ -193,11 +200,11 @@ const ExternalSources = () => {
                   marginTop: 2,
                 }}
               >
-                Identifiant unique en minuscules (a-z, 0-9, tirets). Utilisé dans l'URL des endpoints API.
+                {t('accVat.src.slugHelp')}
               </span>
             </div>
             <div className="accounting-form-field">
-              <label>Nom *</label>
+              <label>{t('accVat.src.nameField')}</label>
               <input
                 className="portal-input"
                 placeholder="Arrow Productions"
@@ -206,11 +213,11 @@ const ExternalSources = () => {
               />
             </div>
             <div className="accounting-form-field full">
-              <label>Description</label>
+              <label>{t('accVat.src.description')}</label>
               <textarea
                 className="portal-input"
                 rows={2}
-                placeholder="Description interne de la source…"
+                placeholder={t('accVat.src.descriptionPlaceholder')}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
@@ -223,7 +230,7 @@ const ExternalSources = () => {
                   onChange={(e) => setForm({ ...form, autoValidateAll: e.target.checked })}
                   style={{ marginRight: 8 }}
                 />
-                Auto-valider toutes les écritures de cette source
+                {t('accVat.src.autoValidateLabel')}
               </label>
               <span
                 style={{
@@ -232,12 +239,11 @@ const ExternalSources = () => {
                   marginTop: 2,
                 }}
               >
-                ⚠ Si activé, toutes les écritures arrivent validées (à n'activer que pour les sources de confiance
-                maximale).
+                ⚠ {t('accVat.src.autoValidateWarning')}
               </span>
             </div>
             <div className="accounting-form-field">
-              <label>Rate limit (req/min)</label>
+              <label>{t('accVat.src.rateLimit')}</label>
               <input
                 type="number"
                 min="1"
@@ -257,12 +263,12 @@ const ExternalSources = () => {
               color: 'var(--primary)',
             }}
           >
-            Mappings par défaut
+            {t('accVat.src.mappings')}
           </h3>
 
           <div className="accounting-form">
             <div className="accounting-form-field">
-              <label>Journal par défaut</label>
+              <label>{t('accVat.src.defaultJournal')}</label>
               <input
                 className="portal-input"
                 value={form.defaultJournalCode}
@@ -270,7 +276,7 @@ const ExternalSources = () => {
               />
             </div>
             <div className="accounting-form-field">
-              <label>Compte client</label>
+              <label>{t('accVat.src.customerAccount')}</label>
               <input
                 className="portal-input"
                 value={form.defaultCustomerAccount}
@@ -278,7 +284,7 @@ const ExternalSources = () => {
               />
             </div>
             <div className="accounting-form-field">
-              <label>Compte produit</label>
+              <label>{t('accVat.src.revenueAccount')}</label>
               <input
                 className="portal-input"
                 value={form.defaultRevenueAccount}
@@ -286,7 +292,7 @@ const ExternalSources = () => {
               />
             </div>
             <div className="accounting-form-field">
-              <label>Compte charge</label>
+              <label>{t('accVat.src.expenseAccount')}</label>
               <input
                 className="portal-input"
                 value={form.defaultExpenseAccount}
@@ -294,7 +300,7 @@ const ExternalSources = () => {
               />
             </div>
             <div className="accounting-form-field">
-              <label>Compte banque</label>
+              <label>{t('accVat.src.bankAccount')}</label>
               <input
                 className="portal-input"
                 value={form.defaultBankAccount}
@@ -311,7 +317,7 @@ const ExternalSources = () => {
 
           <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
             <button className="portal-button" onClick={handleCreate} disabled={creating}>
-              {creating ? 'Création…' : '✚ Créer'}
+              {creating ? t('accVat.src.creating') : t('accVat.src.create')}
             </button>
             <button
               className="portal-button secondary"
@@ -320,7 +326,7 @@ const ExternalSources = () => {
                 resetForm()
               }}
             >
-              Annuler
+              {t('common.cancel')}
             </button>
           </div>
         </section>
@@ -351,7 +357,7 @@ const ExternalSources = () => {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Clé API et secret générés</h2>
+            <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>{t('accVat.src.credsHeading')}</h2>
 
             <div
               className="accounting-message"
@@ -361,8 +367,7 @@ const ExternalSources = () => {
                 color: '#fde68a',
               }}
             >
-              ⚠ Cette clé et ce secret ne seront PLUS jamais affichés. Stockez-les immédiatement de manière sécurisée
-              (gestionnaire de mots de passe, coffre-fort).
+              ⚠ {t('accVat.src.credsWarning')}
               {credentials.warning && (
                 <div style={{ marginTop: 6, fontSize: '0.82rem', opacity: 0.85 }}>{credentials.warning}</div>
               )}
@@ -378,7 +383,7 @@ const ExternalSources = () => {
                   marginBottom: 6,
                 }}
               >
-                Clé API (X-Api-Key)
+                {t('accVat.src.apiKeyHeading')}
               </div>
               <div
                 style={{
@@ -401,7 +406,7 @@ const ExternalSources = () => {
                 style={{ marginTop: 8 }}
                 onClick={() => copyToClipboard(credentials.apiKey, 'key')}
               >
-                {copyState.key ? '✓ Copié' : '📋 Copier la clé'}
+                {copyState.key ? t('accVat.modal.copied') : t('accVat.src.copyKey')}
               </button>
             </div>
 
@@ -415,7 +420,7 @@ const ExternalSources = () => {
                   marginBottom: 6,
                 }}
               >
-                Secret de signature webhook (X-Venio-Signature)
+                {t('accVat.src.secretHeading')}
               </div>
               <div
                 style={{
@@ -438,7 +443,7 @@ const ExternalSources = () => {
                 style={{ marginTop: 8 }}
                 onClick={() => copyToClipboard(credentials.webhookSecret, 'secret')}
               >
-                {copyState.secret ? '✓ Copié' : '📋 Copier le secret'}
+                {copyState.secret ? t('accVat.modal.copied') : t('accVat.src.copySecret')}
               </button>
             </div>
 
@@ -451,7 +456,7 @@ const ExternalSources = () => {
               }}
             >
               <button type="button" className="portal-button" onClick={() => setCredentials(null)}>
-                J'ai bien noté → Fermer
+                {t('accVat.src.noted')}
               </button>
             </div>
           </div>
@@ -460,27 +465,25 @@ const ExternalSources = () => {
 
       <section className="accounting-card">
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
         ) : sources.length === 0 ? (
           <div className="accounting-empty">
-            Aucune source externe configurée.
-            <div className="hint">
-              Cliquez sur « Nouvelle source » pour permettre à un site tiers d'envoyer ses écritures comptables.
-            </div>
+            {t('accVat.src.empty')}
+            <div className="hint">{t('accVat.src.emptyHint')}</div>
           </div>
         ) : (
           <table className="accounting-table">
             <thead>
               <tr>
-                <th>Slug</th>
-                <th>Nom</th>
-                <th>Statut</th>
-                <th>Préfixe clé</th>
-                <th>Dernière activité</th>
-                <th className="amount">Reçus</th>
-                <th className="amount">Rejetés</th>
-                <th className="amount">Doublons</th>
-                <th>Actions</th>
+                <th>{t('accVat.src.colSlug')}</th>
+                <th>{t('accVat.src.colName')}</th>
+                <th>{t('accVat.src.colStatus')}</th>
+                <th>{t('accVat.src.colKeyPrefix')}</th>
+                <th>{t('accVat.src.colLastActivity')}</th>
+                <th className="amount">{t('accVat.src.colReceived')}</th>
+                <th className="amount">{t('accVat.src.colRejected')}</th>
+                <th className="amount">{t('accVat.src.colDuplicates')}</th>
+                <th>{t('accVat.src.colActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -500,7 +503,7 @@ const ExternalSources = () => {
                     </Link>
                     {s.autoValidateAll && (
                       <span className="accounting-badge source-external" style={{ marginLeft: 8, fontSize: '0.66rem' }}>
-                        Auto-validation
+                        {t('accVat.src.autoValidation')}
                       </span>
                     )}
                   </td>
@@ -514,10 +517,12 @@ const ExternalSources = () => {
                         padding: 0,
                         cursor: 'pointer',
                       }}
-                      title={s.status === 'ACTIVE' ? 'Cliquer pour mettre en pause' : 'Cliquer pour réactiver'}
+                      title={
+                        s.status === 'ACTIVE' ? t('accVat.src.togglePauseTitle') : t('accVat.src.toggleResumeTitle')
+                      }
                     >
                       <span className={`accounting-badge ${statusBadgeClass(s.status)}`}>
-                        {STATUS_LABELS[s.status] || s.status}
+                        {STATUS_LABEL_KEYS[s.status] ? t(STATUS_LABEL_KEYS[s.status]) : s.status}
                       </span>
                     </button>
                   </td>
@@ -532,21 +537,21 @@ const ExternalSources = () => {
                           marginTop: 2,
                         }}
                       >
-                        Dernière erreur : {formatDateTime(s.lastErrorAt)}
+                        {t('accVat.src.lastError', { date: formatDateTime(s.lastErrorAt) })}
                       </div>
                     )}
                   </td>
-                  <td className="amount">{Number(s.totalIngested || 0).toLocaleString('fr-FR')}</td>
+                  <td className="amount">{formatNumber(Number(s.totalIngested || 0))}</td>
                   <td className="amount" style={{ color: s.totalRejected ? '#fca5a5' : undefined }}>
-                    {Number(s.totalRejected || 0).toLocaleString('fr-FR')}
+                    {formatNumber(Number(s.totalRejected || 0))}
                   </td>
                   <td className="amount" style={{ color: s.totalDuplicates ? '#fbbf24' : undefined }}>
-                    {Number(s.totalDuplicates || 0).toLocaleString('fr-FR')}
+                    {formatNumber(Number(s.totalDuplicates || 0))}
                   </td>
                   <td>
                     <div className="accounting-row-actions">
                       <Link to={`/admin/comptabilite/sources-externes/${s._id}`}>
-                        <button type="button">Détail</button>
+                        <button type="button">{t('accVat.src.detail')}</button>
                       </Link>
                     </div>
                   </td>

@@ -1,5 +1,6 @@
 import './Faq.css'
 import type { FaqItem } from '../../content/faq'
+import { useI18n } from '../../context/I18nContext'
 
 interface FaqProps {
   items: FaqItem[]
@@ -15,12 +16,13 @@ interface FaqProps {
  * Le contenu vient de `src/content/faq.ts`, qui alimente aussi le JSON-LD
  * `FAQPage`. Les questions sont des `h3` : une page publique n'a qu'un `h1`.
  */
-const Faq = ({ items, title = 'Les questions qu’on nous pose' }: FaqProps) => {
+const Faq = ({ items, title }: FaqProps) => {
+  const { t } = useI18n()
   return (
     <div className="mc-faq">
       <header className="mc-faq-head">
-        <p className="mc-eyebrow">Questions fréquentes</p>
-        <h2 className="mc-faq-title">{title}</h2>
+        <p className="mc-eyebrow">{t('pubHome.conversion.faqEyebrow')}</p>
+        <h2 className="mc-faq-title">{title ?? t('pubHome.conversion.faqTitle')}</h2>
       </header>
 
       <div className="mc-faq-list">

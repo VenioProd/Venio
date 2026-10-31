@@ -6,6 +6,7 @@ import {
   unsubscribePush,
   type PushStatus,
 } from '../services/pushNotifications'
+import { translate } from '../i18n'
 
 interface UsePushNotificationsState extends PushStatus {
   loading: boolean
@@ -45,7 +46,7 @@ export function usePushNotifications() {
     setState((prev) => ({ ...prev, loading: true, error: null }))
     const result = await subscribePush()
     if (!result.ok) {
-      setState((prev) => ({ ...prev, loading: false, error: result.reason || 'Erreur inconnue' }))
+      setState((prev) => ({ ...prev, loading: false, error: result.reason || translate('shell.push.unknownError') }))
       return result
     }
     await refresh()

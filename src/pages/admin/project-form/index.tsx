@@ -7,6 +7,7 @@ import type { User } from '../../../types/auth.types'
 import type { Project } from '../../../types/project.types'
 import type { ProjectTemplate } from '../../../types/template.types'
 import { fetchTemplates } from '../../../services/templates'
+import { useI18n } from '../../../context/I18nContext'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import type { ProjectFormData } from './types'
 import ProjectInfoSection from './ProjectInfoSection'
@@ -18,6 +19,7 @@ import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 
 const ProjectForm = () => {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [clients, setClients] = useState<User[]>([])
@@ -64,26 +66,26 @@ const ProjectForm = () => {
         setTemplates(templatesData)
         setAdmins(adminsData.users || [])
       } catch (err: unknown) {
-        setError((err as Error).message || 'Erreur chargement comptes')
+        setError((err as Error).message || t('projects.form.loadAccountsError'))
       }
     }
     load()
-  }, [])
+  }, [t])
 
   const applyTemplate = (templateId: string) => {
-    const t = templates.find((tpl) => tpl._id === templateId)
-    if (!t) return
+    const tpl = templates.find((x) => x._id === templateId)
+    if (!tpl) return
     // Mémorisé pour que le backend instancie defaultPhases à la création.
     setSelectedTemplateId(templateId)
     setForm((prev) => ({
       ...prev,
-      description: t.description || prev.description,
-      serviceTypes: t.serviceTypes.length > 0 ? t.serviceTypes : prev.serviceTypes,
-      deliverableTypes: t.deliverableTypes.length > 0 ? t.deliverableTypes : prev.deliverableTypes,
-      tags: t.tags.length > 0 ? t.tags : prev.tags,
-      priority: t.priority || prev.priority,
-      budget: t.budget?.amount
-        ? { amount: t.budget.amount, currency: t.budget.currency || 'EUR', note: '' }
+      description: tpl.description || prev.description,
+      serviceTypes: tpl.serviceTypes.length > 0 ? tpl.serviceTypes : prev.serviceTypes,
+      deliverableTypes: tpl.deliverableTypes.length > 0 ? tpl.deliverableTypes : prev.deliverableTypes,
+      tags: tpl.tags.length > 0 ? tpl.tags : prev.tags,
+      priority: tpl.priority || prev.priority,
+      budget: tpl.budget?.amount
+        ? { amount: tpl.budget.amount, currency: tpl.budget.currency || 'EUR', note: '' }
         : prev.budget,
     }))
   }
@@ -173,7 +175,7 @@ const ProjectForm = () => {
       })
       navigate(`/admin/projets/${data.project._id}`)
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur creation projet')
+      setError((err as Error).message || t('projects.form.createError'))
     }
   }
 
@@ -183,13 +185,13 @@ const ProjectForm = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Nouveau projet</span>
+          <span style={{ color: 'var(--text-primary)' }}>{t('projects.form.breadcrumbNew')}</span>
         </div>
         <div className="admin-header">
           <div>
-            <h1>Créer un nouveau projet</h1>
+            <h1>{t('projects.form.heading')}</h1>
             <p style={{ color: 'var(--text-muted)', margin: '8px 0 0 0', fontSize: '15px' }}>
-              Configurez tous les paramètres du projet pour une gestion optimale
+              {t('projects.form.headingText')}
             </p>
           </div>
         </div>
@@ -201,8 +203,8 @@ const ProjectForm = () => {
             <div className="project-form-section-header">
               <div className="project-form-section-icon">{'\u{1F4CB}'}</div>
               <div>
-                <h2 className="project-form-section-title">Template</h2>
-                <p className="project-form-section-subtitle">Pre-remplir a partir d'un modele existant</p>
+                <h2 className="project-form-section-title">{t('projects.form.template.title')}</h2>
+                <p className="project-form-section-subtitle">{t('projects.form.template.subtitle')}</p>
               </div>
             </div>
             <div className="portal-list">
@@ -213,8 +215,8 @@ const ProjectForm = () => {
                   if (v) applyTemplate(v)
                 }}
                 options={[
-                  { value: '', label: '-- Aucun template (formulaire vide) --' },
-                  ...templates.map((t) => ({ value: t._id, label: t.name })),
+                  { value: '', label: t('projects.form.template.none') },
+                  ...templates.map((tpl) => ({ value: tpl._id, label: tpl.name })),
                 ]}
               />
             </div>
@@ -261,14 +263,14 @@ const ProjectForm = () => {
               type="submit"
               style={{ minWidth: 200, fontSize: 16, padding: '14px 32px' }}
             >
-              ✨ Créer le projet
+              {t('projects.form.submit')}
             </button>
             <Link
               className="portal-button secondary"
               to="/admin"
               style={{ minWidth: 120, fontSize: 16, padding: '14px 32px' }}
             >
-              Annuler
+              {t('projects.form.cancel')}
             </Link>
           </div>
         </div>

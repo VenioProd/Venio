@@ -1,4 +1,5 @@
 import React from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import type { AdminUser, Lead, WorklistGroups, WorklistThresholds } from '../../../../types/crm.types'
 import WorklistRow from './WorklistRow'
 import { WORKLIST_GROUPS, type WorklistFollowUp } from './helpers'
@@ -30,8 +31,9 @@ const WorklistView: React.FC<WorklistViewProps> = ({
   onAddNote,
   onOpenDetail,
 }) => {
+  const { t } = useI18n()
   if (loading && !groups) {
-    return <div className="admin-loading">Chargement de votre file…</div>
+    return <div className="admin-loading">{t('crm.worklist.loading')}</div>
   }
 
   if (!groups) return null
@@ -41,11 +43,8 @@ const WorklistView: React.FC<WorklistViewProps> = ({
   if (filled.length === 0) {
     return (
       <div className="crm-worklist-empty">
-        <p className="crm-worklist-empty-title">Rien ne vous attend</p>
-        <p className="crm-worklist-empty-hint">
-          Aucune relance due, aucun lead en train de refroidir. Les leads sans prochaine action n'apparaissent pas ici —
-          retrouvez-les dans les vues Tableau et Kanban.
-        </p>
+        <p className="crm-worklist-empty-title">{t('crm.worklist.emptyTitle')}</p>
+        <p className="crm-worklist-empty-hint">{t('crm.worklist.emptyHint')}</p>
       </div>
     )
   }
@@ -56,10 +55,10 @@ const WorklistView: React.FC<WorklistViewProps> = ({
         <section key={group.key} className={`crm-worklist-group crm-worklist-group-${group.key}`}>
           <header className="crm-worklist-group-header">
             <h3>
-              {group.label}
+              {t(group.labelKey)}
               <span className="crm-worklist-group-count">{groups[group.key].length}</span>
             </h3>
-            <span className="crm-worklist-group-hint">{group.hint}</span>
+            <span className="crm-worklist-group-hint">{t(group.hintKey)}</span>
           </header>
           <ul className="crm-worklist-rows">
             {groups[group.key].map((lead) => (

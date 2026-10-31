@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
+import { useI18n } from '../../context/I18nContext'
 
 export interface AlertItem {
   label: string
@@ -15,6 +16,7 @@ interface Props {
 }
 
 const DashAlertBanner = ({ alerts, defaultOpen = true }: Props) => {
+  const { t } = useI18n()
   const nonZero = alerts.filter((a) => a.count > 0)
   const [open, setOpen] = useState(defaultOpen)
   if (nonZero.length === 0) return null
@@ -53,9 +55,7 @@ const DashAlertBanner = ({ alerts, defaultOpen = true }: Props) => {
         }}
       >
         <AlertTriangle size={18} color={borderColor} />
-        <span>
-          {total} alerte{total > 1 ? 's' : ''} à traiter
-        </span>
+        <span>{t('shared.dash.alertsToHandle', { count: total })}</span>
         <span style={{ marginLeft: 'auto', display: 'inline-flex' }}>
           {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </span>

@@ -4,6 +4,10 @@
  * Source de vérité des textes : docs/design/refonte-2026-maquette.html.
  */
 
+import { translate, formatMessage } from '../../i18n'
+import type { MessageKey } from '../../i18n'
+import fr from '../../i18n/fr/pubForms'
+
 export type NeedKey = 'site' | 'refonte' | 'com' | 'marque' | 'outil' | 'flou'
 export type FormuleKey = 'vitrine' | 'essentiel' | 'business' | 'boutique' | 'mesure'
 export type PainKey = 'clair' | 'reseaux' | 'demandes' | 'pub' | 'coherence'
@@ -18,115 +22,173 @@ export type ReponseKey = 'ecrit' | 'appel'
 export const LAST_STEP = 4
 export const STEP_COUNT = 5
 
-export const STEP_NAMES = ['Besoin', 'Précisions', 'Entreprise', 'Cadre', 'Coordonnées'] as const
-export const STEP_TITLES = [
-  'De quoi avez-vous besoin ?',
-  'Précisons un peu.',
-  'Votre entreprise.',
-  'Le cadre.',
-  'Où vous répondre ?',
-] as const
+export const STEP_NAME_KEYS = [
+  'pubForms.qualification.stepNameNeed',
+  'pubForms.qualification.stepNameDetails',
+  'pubForms.qualification.stepNameCompany',
+  'pubForms.qualification.stepNameFrame',
+  'pubForms.qualification.stepNameContact',
+] as const satisfies readonly MessageKey[]
+export const STEP_TITLE_KEYS = [
+  'pubForms.qualification.stepTitleNeed',
+  'pubForms.qualification.stepTitleDetails',
+  'pubForms.qualification.stepTitleCompany',
+  'pubForms.qualification.stepTitleFrame',
+  'pubForms.qualification.stepTitleContact',
+] as const satisfies readonly MessageKey[]
 
 export const NEED_KEYS = ['site', 'refonte', 'com', 'marque', 'outil', 'flou'] as const
 export const FORMULE_KEYS = ['vitrine', 'essentiel', 'business', 'boutique', 'mesure'] as const
 
-/** Libellés courts du relevé (colonne de droite) et de la réponse envoyée. */
-export const LBL = {
+/** Clés des libellés courts du relevé (colonne de droite) et de la réponse envoyée. */
+const LBL_KEYS = {
   need: {
-    site: 'Un nouveau site',
-    refonte: 'Refaire le site',
-    com: 'Mieux communiquer',
-    marque: 'Une marque',
-    outil: 'Un outil métier',
-    flou: 'À définir',
+    site: 'pubForms.qualification.needLabelSite',
+    refonte: 'pubForms.qualification.needLabelRedo',
+    com: 'pubForms.qualification.needLabelCom',
+    marque: 'pubForms.qualification.needLabelBrand',
+    outil: 'pubForms.qualification.needLabelTool',
+    flou: 'pubForms.qualification.needLabelUndefined',
   },
   formule: {
-    vitrine: 'Vitrine',
-    essentiel: 'Essentiel',
-    business: 'Business',
-    boutique: 'Boutique en ligne',
-    mesure: 'Sur mesure',
+    vitrine: 'pubForms.qualification.planShowcase',
+    essentiel: 'pubForms.qualification.planEssential',
+    business: 'pubForms.qualification.planBusiness',
+    boutique: 'pubForms.qualification.planShop',
+    mesure: 'pubForms.qualification.planCustom',
   },
-  taille: { '1': 'Seul', '2-10': '2 à 10 personnes', '11-50': '11 à 50 personnes', '50+': 'Plus de 50 personnes' },
-  quand: { urgent: "Moins d'un mois", '3m': "D'ici 3 mois", '6m': "D'ici 6 mois", libre: 'Pas de date' },
+  taille: {
+    '1': 'pubForms.qualification.sizeLabel1',
+    '2-10': 'pubForms.qualification.sizeLabel2',
+    '11-50': 'pubForms.qualification.sizeLabel3',
+    '50+': 'pubForms.qualification.sizeLabel4',
+  },
+  quand: {
+    urgent: 'pubForms.qualification.whenUrgent',
+    '3m': 'pubForms.qualification.when3m',
+    '6m': 'pubForms.qualification.when6m',
+    libre: 'pubForms.qualification.whenFree',
+  },
   budget: {
-    b1: 'Moins de 3 000 €',
-    b2: '3 000 à 8 000 €',
-    b3: '8 000 à 20 000 €',
-    b4: 'Plus de 20 000 €',
-    b0: 'À conseiller',
+    b1: 'pubForms.qualification.budget1',
+    b2: 'pubForms.qualification.budget2',
+    b3: 'pubForms.qualification.budget3',
+    b4: 'pubForms.qualification.budget4',
+    b0: 'pubForms.qualification.budgetLabel0',
   },
-  decide: { moi: 'Vous', associes: 'Vous et vos associés', comite: 'Un comité' },
-  marque: { rien: 'pas de nom', nom: "un nom, pas d'identité", refaire: 'identité à refaire' },
-} as const
+  decide: {
+    moi: 'pubForms.qualification.decideLabelMe',
+    associes: 'pubForms.qualification.decideLabelPartners',
+    comite: 'pubForms.qualification.decideLabelBoard',
+  },
+  marque: {
+    rien: 'pubForms.qualification.brandLabelNone',
+    nom: 'pubForms.qualification.brandLabelName',
+    refaire: 'pubForms.qualification.brandLabelRedo',
+  },
+} as const satisfies Record<string, Record<string, MessageKey>>
+
+/** Libellé affiché dans la langue active. */
+const lbl = <G extends keyof typeof LBL_KEYS>(group: G, key: keyof (typeof LBL_KEYS)[G]): string =>
+  translate(LBL_KEYS[group][key] as MessageKey)
 
 /** Cartes du premier écran et du bloc d'entrée de bas de page. */
 export type NeedIcon = 'doc' | 'code' | 'megaphone' | 'glyph' | 'calendar' | 'loupe'
 
-export const NEED_CARDS: readonly { key: NeedKey; title: string; hint: string; icon: NeedIcon }[] = [
-  { key: 'site', title: 'Un nouveau site', hint: 'Vitrine, boutique, espace client', icon: 'doc' },
-  { key: 'refonte', title: 'Refaire mon site', hint: 'Il existe, il ne fait pas le travail', icon: 'code' },
-  { key: 'com', title: 'Mieux communiquer', hint: 'Message, réseaux, acquisition', icon: 'megaphone' },
-  { key: 'marque', title: 'Une marque', hint: 'Nom, voix, identité', icon: 'glyph' },
-  { key: 'outil', title: 'Un outil métier', hint: 'Ce que le tableur ne fait plus', icon: 'calendar' },
-  { key: 'flou', title: 'Je ne sais pas encore', hint: 'Quelque chose bloque, à définir', icon: 'loupe' },
+export const NEED_CARDS: readonly { key: NeedKey; titleKey: MessageKey; hintKey: MessageKey; icon: NeedIcon }[] = [
+  {
+    key: 'site',
+    titleKey: 'pubForms.qualification.cardSite',
+    hintKey: 'pubForms.qualification.cardSiteHint',
+    icon: 'doc',
+  },
+  {
+    key: 'refonte',
+    titleKey: 'pubForms.qualification.cardRedo',
+    hintKey: 'pubForms.qualification.cardRedoHint',
+    icon: 'code',
+  },
+  {
+    key: 'com',
+    titleKey: 'pubForms.qualification.cardCom',
+    hintKey: 'pubForms.qualification.cardComHint',
+    icon: 'megaphone',
+  },
+  {
+    key: 'marque',
+    titleKey: 'pubForms.qualification.cardBrand',
+    hintKey: 'pubForms.qualification.cardBrandHint',
+    icon: 'glyph',
+  },
+  {
+    key: 'outil',
+    titleKey: 'pubForms.qualification.cardTool',
+    hintKey: 'pubForms.qualification.cardToolHint',
+    icon: 'calendar',
+  },
+  {
+    key: 'flou',
+    titleKey: 'pubForms.qualification.cardUndefined',
+    hintKey: 'pubForms.qualification.cardUndefinedHint',
+    icon: 'loupe',
+  },
 ]
 
-/** Puces de réponse par question (chips). */
+/** Puces de réponse par question (chips) : [valeur envoyée, clé du libellé]. */
 export const CHOICES = {
   formule: [
-    ['vitrine', 'Me faire connaître'],
-    ['essentiel', 'Publier moi-même'],
-    ['business', 'Vendre, suivre mes clients'],
-    ['boutique', "Vendre en ligne, c'est mon métier"],
-    ['mesure', "Un outil qui n'existe pas"],
+    ['vitrine', 'pubForms.qualification.planChoiceShowcase'],
+    ['essentiel', 'pubForms.qualification.planChoiceEssential'],
+    ['business', 'pubForms.qualification.planChoiceBusiness'],
+    ['boutique', 'pubForms.qualification.planChoiceShop'],
+    ['mesure', 'pubForms.qualification.planChoiceCustom'],
   ],
   pain: [
-    ['clair', 'On ne comprend pas ce qu’on fait'],
-    ['reseaux', 'Les réseaux prennent du temps, sans résultat'],
-    ['demandes', 'Pas assez de demandes'],
-    ['pub', 'Un budget pub sans retour mesurable'],
-    ['coherence', 'Chacun présente l’entreprise à sa façon'],
+    ['clair', 'pubForms.qualification.painUnclear'],
+    ['reseaux', 'pubForms.qualification.painSocial'],
+    ['demandes', 'pubForms.qualification.painLeads'],
+    ['pub', 'pubForms.qualification.painAds'],
+    ['coherence', 'pubForms.qualification.painConsistency'],
   ],
   marque: [
-    ['rien', 'Pas encore de nom'],
-    ['nom', "Un nom, pas d'identité"],
-    ['refaire', 'Une identité à refaire'],
+    ['rien', 'pubForms.qualification.brandChoiceNone'],
+    ['nom', 'pubForms.qualification.brandChoiceName'],
+    ['refaire', 'pubForms.qualification.brandChoiceRedo'],
   ],
   outilnow: [
-    ['tableurs', 'Des tableurs partagés'],
-    ['logiciels', 'Plusieurs logiciels mal reliés'],
-    ['papier', 'Du papier et des e-mails'],
+    ['tableurs', 'pubForms.qualification.toolNowSheets'],
+    ['logiciels', 'pubForms.qualification.toolNowSoftware'],
+    ['papier', 'pubForms.qualification.toolNowPaper'],
   ],
   taille: [
-    ['1', 'Seul'],
-    ['2-10', '2 à 10'],
-    ['11-50', '11 à 50'],
-    ['50+', 'Plus de 50'],
+    ['1', 'pubForms.qualification.sizeChoice1'],
+    ['2-10', 'pubForms.qualification.sizeChoice2'],
+    ['11-50', 'pubForms.qualification.sizeChoice3'],
+    ['50+', 'pubForms.qualification.sizeChoice4'],
   ],
   quand: [
-    ['urgent', "Moins d'un mois"],
-    ['3m', "D'ici 3 mois"],
-    ['6m', "D'ici 6 mois"],
-    ['libre', 'Pas de date'],
+    ['urgent', 'pubForms.qualification.whenUrgent'],
+    ['3m', 'pubForms.qualification.when3m'],
+    ['6m', 'pubForms.qualification.when6m'],
+    ['libre', 'pubForms.qualification.whenFree'],
   ],
   budget: [
-    ['b1', 'Moins de 3 000 €'],
-    ['b2', '3 000 à 8 000 €'],
-    ['b3', '8 000 à 20 000 €'],
-    ['b4', 'Plus de 20 000 €'],
-    ['b0', 'Je ne sais pas, conseillez-moi'],
+    ['b1', 'pubForms.qualification.budget1'],
+    ['b2', 'pubForms.qualification.budget2'],
+    ['b3', 'pubForms.qualification.budget3'],
+    ['b4', 'pubForms.qualification.budget4'],
+    ['b0', 'pubForms.qualification.budgetChoice0'],
   ],
   decide: [
-    ['moi', 'Moi'],
-    ['associes', 'Moi et mes associés'],
-    ['comite', 'Un comité ou une direction'],
+    ['moi', 'pubForms.qualification.decideChoiceMe'],
+    ['associes', 'pubForms.qualification.decideChoicePartners'],
+    ['comite', 'pubForms.qualification.decideChoiceBoard'],
   ],
   reponse: [
-    ['ecrit', 'Par écrit'],
-    ['appel', 'Un appel de 30 minutes'],
+    ['ecrit', 'pubForms.qualification.replyWritten'],
+    ['appel', 'pubForms.qualification.replyCall'],
   ],
-} as const
+} as const satisfies Record<string, readonly (readonly [string, MessageKey])[]>
 
 export interface QualificationState {
   need: NeedKey[]
@@ -183,59 +245,63 @@ export function reco(s: QualificationState): string[] {
   const r: string[] = []
   if (hasNeed(s, 'site') || hasNeed(s, 'refonte')) {
     r.push(
-      s.formule ? `Site · formule ${LBL.formule[s.formule]}` : hasNeed(s, 'refonte') ? 'Refonte du site' : 'Site web',
+      s.formule
+        ? translate('pubForms.qualification.recoSitePlan', { plan: lbl('formule', s.formule) })
+        : hasNeed(s, 'refonte')
+          ? translate('pubForms.qualification.recoRedo')
+          : translate('pubForms.qualification.recoSite'),
     )
   }
   if (hasNeed(s, 'com')) {
-    r.push('Diagnostic de communication')
-    if (s.pain.includes('clair') || s.pain.includes('coherence')) r.push('Positionnement et messages')
-    if (s.pain.includes('reseaux')) r.push('Plan de communication')
-    if (s.pain.includes('demandes') || s.pain.includes('pub')) r.push('Acquisition et mesure')
+    r.push(translate('pubForms.qualification.recoDiagnostic'))
+    if (s.pain.includes('clair') || s.pain.includes('coherence'))
+      r.push(translate('pubForms.qualification.recoPositioning'))
+    if (s.pain.includes('reseaux')) r.push(translate('pubForms.qualification.recoPlan'))
+    if (s.pain.includes('demandes') || s.pain.includes('pub'))
+      r.push(translate('pubForms.qualification.recoAcquisition'))
   }
-  if (hasNeed(s, 'marque')) r.push('Marque : nom, voix, système')
-  if (hasNeed(s, 'outil') || s.formule === 'mesure') r.push('Développement sur mesure')
-  if (hasNeed(s, 'flou')) r.push('Conseil : un état des lieux écrit')
+  if (hasNeed(s, 'marque')) r.push(translate('pubForms.qualification.recoBrand'))
+  if (hasNeed(s, 'outil') || s.formule === 'mesure') r.push(translate('pubForms.qualification.recoCustom'))
+  if (hasNeed(s, 'flou')) r.push(translate('pubForms.qualification.recoAdvice'))
   return r.filter((v, i) => r.indexOf(v) === i)
 }
 
 /** Remarque franche, ou chaîne vide. */
 export function note(s: QualificationState): string {
   const big = hasNeed(s, 'outil') || (s.formule !== null && ['business', 'boutique', 'mesure'].includes(s.formule))
-  if (s.budget === 'b1' && big) {
-    return "Pour ce budget, un outil du marché sera souvent plus adapté. On vous le dira franchement pendant l'échange, avec des noms."
-  }
+  if (s.budget === 'b1' && big) return translate('pubForms.qualification.noteSmallBudgetTool')
   if (s.budget === 'b1' && hasNeed(s, 'com') && s.pain.includes('pub')) {
-    return "Avec ce budget, on commence par le diagnostic : inutile d'acheter plus de publicité avant de savoir ce qui rapporte."
+    return translate('pubForms.qualification.noteSmallBudgetAds')
   }
-  if (s.quand === 'urgent') {
-    return "Moins d'un mois : on vous dira pendant l'échange ce qui est tenable, et ce qui ne l'est pas."
-  }
-  if (s.budget === 'b0') {
-    return 'Pas de souci : le devis écrit vous donnera un prix ferme, et on vous dira ce qui peut attendre.'
-  }
+  if (s.quand === 'urgent') return translate('pubForms.qualification.noteUrgent')
+  if (s.budget === 'b0') return translate('pubForms.qualification.noteUnknownBudget')
   return ''
 }
-
-const plural = (n: number, word: string): string => `${n} ${word}${n > 1 ? 's' : ''}`
 
 /** Lignes du relevé de droite ; `value` vide = ligne grisée « — ». */
 export function releve(s: QualificationState): { label: string; value: string }[] {
   const precisions = [
-    s.formule && `Site : ${LBL.formule[s.formule]}`,
-    s.pain.length > 0 && `${plural(s.pain.length, 'point')} de blocage`,
-    s.marque && `Marque : ${LBL.marque[s.marque]}`,
-    s.outilnow.length > 0 && `Remplace : ${plural(s.outilnow.length, 'outil')}`,
+    s.formule && translate('pubForms.qualification.relPlan', { plan: lbl('formule', s.formule) }),
+    s.pain.length > 0 && translate('pubForms.qualification.relPain', { count: s.pain.length }),
+    s.marque && translate('pubForms.qualification.relBrand', { brand: lbl('marque', s.marque) }),
+    s.outilnow.length > 0 && translate('pubForms.qualification.relTools', { count: s.outilnow.length }),
   ]
     .filter(Boolean)
     .join(' · ')
   return [
-    { label: 'Besoin', value: s.need.map((n) => LBL.need[n]).join(', ') },
-    { label: 'Précisions', value: precisions },
-    { label: 'Entreprise', value: [s.activite.trim(), s.taille && LBL.taille[s.taille]].filter(Boolean).join(' · ') },
-    { label: 'Échéance', value: s.quand ? LBL.quand[s.quand] : '' },
-    { label: 'Budget', value: s.budget ? LBL.budget[s.budget] : '' },
-    { label: 'Décision', value: s.decide ? LBL.decide[s.decide] : '' },
-    { label: 'Contact', value: [s.prenom.trim(), s.email.trim()].filter(Boolean).join(' · ') },
+    { label: translate('pubForms.qualification.stepNameNeed'), value: s.need.map((n) => lbl('need', n)).join(', ') },
+    { label: translate('pubForms.qualification.stepNameDetails'), value: precisions },
+    {
+      label: translate('pubForms.qualification.stepNameCompany'),
+      value: [s.activite.trim(), s.taille && lbl('taille', s.taille)].filter(Boolean).join(' · '),
+    },
+    { label: translate('pubForms.qualification.relTimeline'), value: s.quand ? lbl('quand', s.quand) : '' },
+    { label: translate('pubForms.qualification.relBudget'), value: s.budget ? lbl('budget', s.budget) : '' },
+    { label: translate('pubForms.qualification.relDecision'), value: s.decide ? lbl('decide', s.decide) : '' },
+    {
+      label: translate('pubForms.qualification.relContact'),
+      value: [s.prenom.trim(), s.email.trim()].filter(Boolean).join(' · '),
+    },
   ]
 }
 
@@ -267,13 +333,24 @@ export interface StepError {
   fields: FieldName[]
 }
 
+/** Messages de validation, résolus à la lecture dans la langue active. */
 export const MSG = {
-  need: 'Choisissez au moins une réponse. Si rien ne correspond, prenez « Je ne sais pas encore ».',
-  prenom: "Indiquez votre prénom, pour qu'on sache à qui répondre.",
-  email: "Cette adresse e-mail semble incomplète. Vérifiez-la, c'est là qu'on vous répond.",
-  consent: "Cochez la case pour qu'on puisse utiliser ces informations pour vous répondre.",
-  url: "Cette adresse de site semble incomplète. Corrigez-la, ou laissez le champ vide si vous n'en avez pas.",
-} as const
+  get need() {
+    return translate('pubForms.qualification.errNeed')
+  },
+  get prenom() {
+    return translate('pubForms.qualification.errFirstName')
+  },
+  get email() {
+    return translate('pubForms.qualification.errEmail')
+  },
+  get consent() {
+    return translate('pubForms.qualification.errConsent')
+  },
+  get url() {
+    return translate('pubForms.qualification.errUrl')
+  },
+}
 
 /** Validation d'une étape. `null` = l'étape est valide. */
 export function validateStep(step: number, s: QualificationState): StepError | null {
@@ -290,9 +367,13 @@ export function validateStep(step: number, s: QualificationState): StepError | n
   return null
 }
 
-/** Sujet lisible du lead pour les vues d'admin existantes. */
+/**
+ * Sujet lisible du lead pour les vues d'admin existantes. Toujours en français,
+ * quelle que soit la langue du visiteur : c'est l'équipe qui le lit.
+ */
 export function subjectOf(s: QualificationState): string {
-  return `Qualification : ${s.need.map((n) => LBL.need[n]).join(', ')}`.slice(0, 100)
+  const needs = s.need.map((n) => fr[LBL_KEYS.need[n]]).join(', ')
+  return formatMessage(fr['pubForms.qualification.leadSubject'], { needs }, 'fr').slice(0, 100)
 }
 
 /** Objet `qualification` du payload : uniquement les réponses encore pertinentes. */

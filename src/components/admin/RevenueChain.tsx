@@ -6,6 +6,9 @@ import {
   unlinkProjectFromLead,
 } from '../../services/pilotage'
 import type { LeadProject, LeadRevenueResponse } from '../../types/pilotage.types'
+import { useI18n } from '../../context/I18nContext'
+import { formatMoney } from '../../i18n/format'
+import type { MessageKey } from '../../i18n'
 import './RevenueChain.css'
 
 interface RevenueChainProps {
@@ -13,13 +16,12 @@ interface RevenueChainProps {
   canManage: boolean
 }
 
-const money = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-  maximumFractionDigits: 0,
-})
+const money = (value: number) => formatMoney(value, 'EUR', { maximumFractionDigits: 0 })
 
-const DOCUMENT_LABELS: Record<string, string> = { QUOTE: 'Devis', INVOICE: 'Facture' }
+const DOCUMENT_LABEL_KEYS: Record<string, MessageKey> = {
+  QUOTE: 'compB.revenue.docQuote',
+  INVOICE: 'compB.revenue.docInvoice',
+}
 
 /**
  * Ce que ce lead a réellement produit.
@@ -30,6 +32,7 @@ const DOCUMENT_LABELS: Record<string, string> = { QUOTE: 'Devis', INVOICE: 'Fact
  * entre ce qu'on espérait et ce qu'on a signé est l'information utile.
  */
 const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
+  const { t } = useI18n()
   const [data, setData] = useState<LeadRevenueResponse | null>(null)
   const [candidates, setCandidates] = useState<LeadProject[]>([])
   const [candidateReason, setCandidateReason] = useState<string | null>(null)
@@ -44,11 +47,11 @@ const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
       setData(await fetchLeadRevenue(leadId))
       setError('')
     } catch (err) {
-      setError((err as Error).message || 'Impossible de charger la chaîne commerciale')
+      setError((err as Error).message || t('compB.revenue.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [leadId])
+  }, [leadId, t])
 
   useEffect(() => {
     void load()
@@ -61,7 +64,7 @@ const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
       setCandidates(response.candidates)
       setCandidateReason(response.reason ?? null)
     } catch (err) {
-      setError((err as Error).message || 'Impossible de charger les projets')
+      setError((err as Error).message || t('compB.revenue.projectsError'))
     }
   }
 
@@ -76,13 +79,13 @@ const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
         setCandidates(response.candidates)
       }
     } catch (err) {
-      setError((err as Error).message || 'Action impossible')
+      setError((err as Error).message || t('compB.revenue.actionError'))
     } finally {
       setBusy(false)
     }
   }
 
-  if (loading && !data) return <div className="admin-loading">Chargement de la chaîne…</div>
+  if (loading && !data) return <div className="admin-loading">{t('compB.revenue.loading')}</div>
   if (!data) return error ? <div className="admin-error">{error}</div> : null
 
   const documentsByProject = (projectId: string) => data.documents.filter((document) => document.project === projectId)
@@ -91,27 +94,23 @@ const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
     <div className="revenue-chain">
       <div className="revenue-summary">
         <div className="revenue-summary-item">
-          <span className="revenue-summary-label">Budget annoncé</span>
-          <span className="revenue-summary-value is-muted">
-            {data.lead.budget ? money.format(data.lead.budget) : '—'}
-          </span>
+          <span className="revenue-summary-label">{t('compB.revenue.budget')}</span>
+          <span className="revenue-summary-value is-muted">{data.lead.budget ? money(data.lead.budget) : '—'}</span>
         </div>
         <div className="revenue-summary-item">
-          <span className="revenue-summary-label">Signé</span>
-          <span className="revenue-summary-value">{money.format(data.summary.signed)}</span>
+          <span className="revenue-summary-label">{t('compB.revenue.signed')}</span>
+          <span className="revenue-summary-value">{money(data.summary.signed)}</span>
         </div>
         <div className="revenue-summary-item">
-          <span className="revenue-summary-label">Encaissé</span>
-          <span className="revenue-summary-value">{money.format(data.summary.collected)}</span>
+          <span className="revenue-summary-label">{t('compB.revenue.collected')}</span>
+          <span className="revenue-summary-value">{money(data.summary.collected)}</span>
         </div>
       </div>
 
       {error && <div className="admin-error">{error}</div>}
 
       {data.projects.length === 0 ? (
-        <p className="revenue-empty">
-          Aucun projet rattaché à ce lead. Rien ne relie donc ses affaires à ce qui a été facturé.
-        </p>
+        <p className="revenue-empty">{t('compB.revenue.noProject')}</p>
       ) : (
         <ul className="revenue-projects">
           {data.projects.map((project) => (
@@ -126,21 +125,23 @@ const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
                     disabled={busy}
                     onClick={() => void run(() => unlinkProjectFromLead(leadId, project._id))}
                   >
-                    Détacher
+                    {t('compB.revenue.unlink')}
                   </button>
                 )}
               </div>
 
               {documentsByProject(project._id).length === 0 ? (
-                <p className="revenue-note">Aucun devis ni facture pour l'instant.</p>
+                <p className="revenue-note">{t('compB.revenue.noDocument')}</p>
               ) : (
                 <ul className="revenue-documents">
                   {documentsByProject(project._id).map((document) => (
                     <li key={document._id}>
-                      <span className="revenue-doc-type">{DOCUMENT_LABELS[document.type] ?? document.type}</span>
+                      <span className="revenue-doc-type">
+                        {DOCUMENT_LABEL_KEYS[document.type] ? t(DOCUMENT_LABEL_KEYS[document.type]) : document.type}
+                      </span>
                       <span className="revenue-doc-number">{document.number}</span>
                       <span className="revenue-doc-status">{document.status}</span>
-                      <span className="revenue-doc-total">{money.format(document.total)}</span>
+                      <span className="revenue-doc-total">{money(document.total)}</span>
                     </li>
                   ))}
                 </ul>
@@ -154,14 +155,12 @@ const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
         <div className="revenue-link">
           {!linkOpen ? (
             <button type="button" className="portal-button secondary" onClick={() => void openLink()}>
-              Rattacher un projet existant
+              {t('compB.revenue.linkExisting')}
             </button>
           ) : candidateReason === 'NO_CLIENT_ACCOUNT' ? (
-            <p className="revenue-note">
-              Ce lead n'a pas encore de compte client : convertissez-le d'abord pour pouvoir lui rattacher un projet.
-            </p>
+            <p className="revenue-note">{t('compB.revenue.noClientAccount')}</p>
           ) : candidates.length === 0 ? (
-            <p className="revenue-note">Aucun projet libre chez ce client.</p>
+            <p className="revenue-note">{t('compB.revenue.noFreeProject')}</p>
           ) : (
             <ul className="revenue-candidates">
               {candidates.map((project) => (
@@ -173,7 +172,7 @@ const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
                     disabled={busy}
                     onClick={() => void run(() => linkProjectToLead(leadId, project._id))}
                   >
-                    Rattacher
+                    {t('compB.revenue.link')}
                   </button>
                 </li>
               ))}

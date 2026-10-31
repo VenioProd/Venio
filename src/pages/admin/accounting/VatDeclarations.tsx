@@ -11,25 +11,19 @@ import type { CreateVatDeclarationPayload } from '../../../services/accounting'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import type { IVatDeclaration, IVatPreview, VatType } from '../../../types/accounting'
-
-const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-})
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate as formatLocaleDate, formatMoney } from '../../../i18n/format'
+import type { MessageKey } from '../../../i18n'
 
 function formatEur(n: unknown): string {
   const value = Number(n)
   if (!Number.isFinite(value)) return '—'
-  return EUR_FORMATTER.format(value)
+  return formatMoney(value)
 }
 
 function formatDate(d: string | undefined | null): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleDateString('fr-FR')
-  } catch {
-    return '—'
-  }
+  return formatLocaleDate(d) || '—'
 }
 
 function formatRate(rate: unknown): string {
@@ -38,14 +32,14 @@ function formatRate(rate: unknown): string {
   return `${value.toFixed(2).replace(/\.00$/, '')} %`
 }
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'Tous statuts' },
-  { value: 'DRAFT', label: 'Brouillon' },
-  { value: 'SUBMITTED', label: 'Soumise' },
+const STATUS_OPTIONS: { value: string; labelKey: MessageKey }[] = [
+  { value: '', labelKey: 'accVat.list.statusAll' },
+  { value: 'DRAFT', labelKey: 'accVat.list.statusDraft' },
+  { value: 'SUBMITTED', labelKey: 'accVat.list.statusSubmitted' },
 ]
 
-const TYPE_OPTIONS = [
-  { value: '', label: 'Tous types' },
+const TYPE_OPTIONS: { value: string; label?: string; labelKey?: MessageKey }[] = [
+  { value: '', labelKey: 'accVat.list.typeAll' },
   { value: 'CA3', label: 'CA3' },
   { value: 'CA12', label: 'CA12' },
 ]
@@ -64,6 +58,7 @@ interface NewDeclarationForm {
 }
 
 const VatDeclarations = () => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const navigate = useNavigate()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_VAT)
@@ -97,7 +92,7 @@ const VatDeclarations = () => {
       })
       setDeclarations(list || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setLoading(false)
     }
@@ -118,7 +113,7 @@ const VatDeclarations = () => {
     setPreviewError('')
     setPreview(null)
     if (!form.periodStart || !form.periodEnd) {
-      setPreviewError('Veuillez renseigner les dates de début et de fin.')
+      setPreviewError(t('accVat.list.datesRequired'))
       return
     }
     setPreviewLoading(true)
@@ -126,7 +121,7 @@ const VatDeclarations = () => {
       const r = await computeVat({ from: form.periodStart, to: form.periodEnd })
       setPreview(r)
     } catch (err) {
-      setPreviewError(err instanceof Error ? err.message : 'Erreur')
+      setPreviewError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setPreviewLoading(false)
     }
@@ -134,7 +129,7 @@ const VatDeclarations = () => {
 
   async function handleCreate() {
     if (!form.periodStart || !form.periodEnd) {
-      setPreviewError('Veuillez renseigner les dates de début et de fin.')
+      setPreviewError(t('accVat.list.datesRequired'))
       return
     }
     setCreating(true)
@@ -154,19 +149,19 @@ const VatDeclarations = () => {
       const created = await createVatDeclaration(payload)
       navigate(`/admin/comptabilite/tva/${created._id}`)
     } catch (err) {
-      setPreviewError(err instanceof Error ? err.message : 'Erreur')
+      setPreviewError(err instanceof Error ? err.message : t('accVat.common.error'))
     } finally {
       setCreating(false)
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Supprimer cette déclaration brouillon ?')) return
+    if (!confirm(t('accVat.list.confirmDelete'))) return
     try {
       await deleteVatDeclaration(id)
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('accVat.common.error'))
     }
   }
 
@@ -174,8 +169,8 @@ const VatDeclarations = () => {
 
   return (
     <AccountingLayout
-      title="Déclarations de TVA"
-      subtitle="Préparation, prévisualisation et suivi des déclarations CA3 / CA12"
+      title={t('accVat.list.title')}
+      subtitle={t('accVat.list.subtitle')}
       actions={
         canManage && (
           <button
@@ -185,7 +180,7 @@ const VatDeclarations = () => {
               if (showForm) resetForm()
             }}
           >
-            {showForm ? '✕ Annuler' : '✚ Nouvelle déclaration'}
+            {showForm ? t('accVat.list.cancel') : t('accVat.list.new')}
           </button>
         )
       }
@@ -194,22 +189,22 @@ const VatDeclarations = () => {
 
       {showForm && canManage && (
         <section className="accounting-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Nouvelle déclaration</h2>
+          <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>{t('accVat.list.newHeading')}</h2>
 
           <div className="accounting-form">
             <div className="accounting-form-field">
-              <label>Type</label>
+              <label>{t('accVat.list.typeLabel')}</label>
               <select
                 className="portal-input"
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as VatType })}
               >
-                <option value="CA3">CA3 — Mensuelle / trimestrielle</option>
-                <option value="CA12">CA12 — Annuelle (régime simplifié)</option>
+                <option value="CA3">{t('accVat.list.typeCa3')}</option>
+                <option value="CA12">{t('accVat.list.typeCa12')}</option>
               </select>
             </div>
             <div className="accounting-form-field">
-              <label>Période début</label>
+              <label>{t('accVat.list.periodStart')}</label>
               <input
                 type="date"
                 className="portal-input"
@@ -218,7 +213,7 @@ const VatDeclarations = () => {
               />
             </div>
             <div className="accounting-form-field">
-              <label>Période fin</label>
+              <label>{t('accVat.list.periodEnd')}</label>
               <input
                 type="date"
                 className="portal-input"
@@ -227,7 +222,7 @@ const VatDeclarations = () => {
               />
             </div>
             <div className="accounting-form-field">
-              <label>Crédit antérieur (€)</label>
+              <label>{t('accVat.list.previousCredit')}</label>
               <input
                 type="number"
                 step="0.01"
@@ -239,11 +234,11 @@ const VatDeclarations = () => {
               />
             </div>
             <div className="accounting-form-field full">
-              <label>Notes</label>
+              <label>{t('accVat.list.notes')}</label>
               <textarea
                 className="portal-input"
                 rows={3}
-                placeholder="Observations, commentaires internes…"
+                placeholder={t('accVat.list.notesPlaceholder')}
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
               />
@@ -252,10 +247,10 @@ const VatDeclarations = () => {
 
           <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
             <button className="portal-button secondary" onClick={handlePreview} disabled={previewLoading}>
-              {previewLoading ? 'Calcul…' : '⟳ Prévisualiser'}
+              {previewLoading ? t('accVat.list.computing') : t('accVat.list.preview')}
             </button>
             <button className="portal-button" onClick={handleCreate} disabled={creating}>
-              {creating ? 'Création…' : '✚ Créer la déclaration'}
+              {creating ? t('accVat.list.creating') : t('accVat.list.create')}
             </button>
           </div>
 
@@ -268,11 +263,11 @@ const VatDeclarations = () => {
           {preview && (
             <div style={{ marginTop: 20 }}>
               <div className="accounting-message info">
-                Prévisualisation sur la période{' '}
+                {t('accVat.list.previewIntro')}{' '}
                 <strong>
                   {formatDate(preview.periodStart)} → {formatDate(preview.periodEnd)}
                 </strong>{' '}
-                — calcul basé sur les écritures validées/verrouillées non encore archivées.
+                {t('accVat.list.previewOutro')}
               </div>
 
               <div
@@ -293,19 +288,19 @@ const VatDeclarations = () => {
                       color: '#4ade80',
                     }}
                   >
-                    TVA collectée
+                    {t('accVat.list.collected')}
                   </h3>
                   {(preview.collectedByRate || []).length === 0 ? (
                     <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.88rem' }}>
-                      Aucune TVA collectée sur la période.
+                      {t('accVat.list.collectedNone')}
                     </p>
                   ) : (
                     <table className="accounting-table">
                       <thead>
                         <tr>
-                          <th>Taux</th>
-                          <th className="amount">Base HT</th>
-                          <th className="amount">TVA</th>
+                          <th>{t('accVat.list.colRate')}</th>
+                          <th className="amount">{t('accVat.list.colBaseHt')}</th>
+                          <th className="amount">{t('accVat.list.colVat')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -331,19 +326,19 @@ const VatDeclarations = () => {
                       color: 'var(--primary)',
                     }}
                   >
-                    TVA déductible
+                    {t('accVat.list.deductible')}
                   </h3>
                   {(preview.deductibleByRate || []).length === 0 ? (
                     <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.88rem' }}>
-                      Aucune TVA déductible sur la période.
+                      {t('accVat.list.deductibleNone')}
                     </p>
                   ) : (
                     <table className="accounting-table">
                       <thead>
                         <tr>
-                          <th>Taux</th>
-                          <th className="amount">Base HT</th>
-                          <th className="amount">TVA</th>
+                          <th>{t('accVat.list.colRate')}</th>
+                          <th className="amount">{t('accVat.list.colBaseHt')}</th>
+                          <th className="amount">{t('accVat.list.colVat')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -371,15 +366,15 @@ const VatDeclarations = () => {
                       color: 'rgba(14, 165, 233, 0.85)',
                     }}
                   >
-                    Lignes CA3
+                    {t('accVat.list.ca3Lines')}
                   </h3>
                   <table className="accounting-table">
                     <thead>
                       <tr>
-                        <th>Code</th>
-                        <th>Libellé</th>
-                        <th className="amount">Base</th>
-                        <th className="amount">Montant</th>
+                        <th>{t('accVat.list.colCode')}</th>
+                        <th>{t('accVat.list.colLabel')}</th>
+                        <th className="amount">{t('accVat.list.colBase')}</th>
+                        <th className="amount">{t('accVat.list.colAmount')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -398,19 +393,19 @@ const VatDeclarations = () => {
 
               <div className="accounting-kpi-grid" style={{ marginTop: 20 }}>
                 <div className="accounting-kpi">
-                  <div className="label">Total collectée</div>
+                  <div className="label">{t('accVat.list.totalCollected')}</div>
                   <div className="value" style={{ color: '#4ade80' }}>
                     {formatEur(preview.totalCollected)}
                   </div>
                 </div>
                 <div className="accounting-kpi">
-                  <div className="label">Total déductible</div>
+                  <div className="label">{t('accVat.list.totalDeductible')}</div>
                   <div className="value" style={{ color: 'var(--primary)' }}>
                     {formatEur(preview.totalDeductible)}
                   </div>
                 </div>
                 <div className="accounting-kpi">
-                  <div className="label">À payer</div>
+                  <div className="label">{t('accVat.list.toPay')}</div>
                   <div
                     className="value"
                     style={{
@@ -435,7 +430,7 @@ const VatDeclarations = () => {
           >
             {STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.label}
+                {t(o.labelKey)}
               </option>
             ))}
           </select>
@@ -446,30 +441,30 @@ const VatDeclarations = () => {
           >
             {TYPE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.label}
+                {o.labelKey ? t(o.labelKey) : o.label}
               </option>
             ))}
           </select>
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
         ) : filteredDeclarations.length === 0 ? (
           <div className="accounting-empty">
-            Aucune déclaration de TVA pour ces filtres.
-            {canManage && <div className="hint">Cliquez sur « Nouvelle déclaration » pour en créer une.</div>}
+            {t('accVat.list.empty')}
+            {canManage && <div className="hint">{t('accVat.list.emptyHint')}</div>}
           </div>
         ) : (
           <table className="accounting-table">
             <thead>
               <tr>
-                <th>Période</th>
-                <th>Type</th>
-                <th className="amount">Total collectée</th>
-                <th className="amount">Total déductible</th>
-                <th className="amount">À payer</th>
-                <th>Statut</th>
-                <th>Actions</th>
+                <th>{t('accVat.list.colPeriod')}</th>
+                <th>{t('accVat.list.typeLabel')}</th>
+                <th className="amount">{t('accVat.list.totalCollected')}</th>
+                <th className="amount">{t('accVat.list.totalDeductible')}</th>
+                <th className="amount">{t('accVat.list.toPay')}</th>
+                <th>{t('accVat.list.colStatus')}</th>
+                <th>{t('accVat.list.colActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -496,17 +491,17 @@ const VatDeclarations = () => {
                     </td>
                     <td>
                       <span className={`accounting-badge ${d.status === 'SUBMITTED' ? 'validated' : 'draft'}`}>
-                        {d.status === 'SUBMITTED' ? 'Soumise' : 'Brouillon'}
+                        {d.status === 'SUBMITTED' ? t('accVat.list.statusSubmitted') : t('accVat.list.statusDraft')}
                       </span>
                     </td>
                     <td>
                       <div className="accounting-row-actions">
                         <Link to={`/admin/comptabilite/tva/${d._id}`}>
-                          <button type="button">Ouvrir</button>
+                          <button type="button">{t('accVat.list.open')}</button>
                         </Link>
                         {canManage && d.status === 'DRAFT' && (
                           <button type="button" className="danger" onClick={() => handleDelete(d._id)}>
-                            Supprimer
+                            {t('accVat.list.delete')}
                           </button>
                         )}
                       </div>

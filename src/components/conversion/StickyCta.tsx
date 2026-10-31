@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { isAdminRole } from '../../lib/permissions'
 import { Link, useLocation } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
 import './StickyCta.css'
 
 /**
@@ -36,6 +37,7 @@ const hasCookieChoice = (): boolean => {
  */
 const StickyCta = () => {
   const { user } = useAuth()
+  const { t } = useI18n()
   const { pathname } = useLocation()
   const barRef = useRef<HTMLDivElement>(null)
   const [scrolledPast, setScrolledPast] = useState(false)
@@ -92,11 +94,11 @@ const StickyCta = () => {
   if (!visible) return null
 
   return (
-    <div className="mc-sticky" ref={barRef} role="region" aria-label="Décrire mon besoin">
+    <div className="mc-sticky" ref={barRef} role="region" aria-label={t('pubHome.cta.describeNeed')}>
       <div className="mc-sticky-inner mc-container">
-        <p className="mc-sticky-label">Parlons de votre projet</p>
+        <p className="mc-sticky-label">{t('pubHome.conversion.stickyLabel')}</p>
         <Link to="/contact" className="mc-btn mc-btn--primary" data-analytics-cta="sticky_decrire_besoin">
-          Décrire mon besoin
+          {t('pubHome.cta.describeNeed')}
         </Link>
       </div>
     </div>

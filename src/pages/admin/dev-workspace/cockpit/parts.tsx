@@ -60,6 +60,8 @@ import {
   type DevLargeFilesSnapshot,
   type DevRepoQuality,
 } from '../../../../services/dev'
+import { useI18n } from '../../../../context/I18nContext'
+import { translate, type MessageKey } from '../../../../i18n'
 import { clamp01, formatBytes, formatNumber, formatRelative, formatShortDate, relativeFR, userInitial } from './helpers'
 
 export const GithubIcon = ({ size = 12 }: { size?: number }) => (
@@ -80,48 +82,51 @@ interface IssueRowProps {
   onOpen: (id: string) => void
 }
 
-export const IssueRow = ({ issue, onOpen }: IssueRowProps) => (
-  <button
-    type="button"
-    className="cockpit-issue-row"
-    onClick={() => onOpen(issue._id)}
-    style={{ ['--prio-color' as never]: PRIORITY_COLOR[issue.priority] }}
-  >
-    <span className="cockpit-issue-row-id">{issue.identifier}</span>
-    <span className="cockpit-issue-row-title">{issue.title}</span>
-    <span
-      className="cockpit-issue-row-status"
-      style={{ color: STATUS_COLOR[issue.status] }}
-      title={STATUS_LABEL[issue.status]}
+export const IssueRow = ({ issue, onOpen }: IssueRowProps) => {
+  useI18n() // re-render on language change (status labels are read lazily)
+  return (
+    <button
+      type="button"
+      className="cockpit-issue-row"
+      onClick={() => onOpen(issue._id)}
+      style={{ ['--prio-color' as never]: PRIORITY_COLOR[issue.priority] }}
     >
-      <span className="cockpit-status-dot" style={{ background: STATUS_COLOR[issue.status] }} />
-      {STATUS_LABEL[issue.status]}
-    </span>
-    {issue.assignee && (
-      <span className="cockpit-issue-row-assignee" title={issue.assignee.name || issue.assignee.email}>
-        {userInitial(issue.assignee)}
+      <span className="cockpit-issue-row-id">{issue.identifier}</span>
+      <span className="cockpit-issue-row-title">{issue.title}</span>
+      <span
+        className="cockpit-issue-row-status"
+        style={{ color: STATUS_COLOR[issue.status] }}
+        title={STATUS_LABEL[issue.status]}
+      >
+        <span className="cockpit-status-dot" style={{ background: STATUS_COLOR[issue.status] }} />
+        {STATUS_LABEL[issue.status]}
       </span>
-    )}
-    {issue.dueDate && (
-      <span className="cockpit-issue-row-due">
-        <CalendarClock size={11} />
-        {formatShortDate(issue.dueDate)}
-      </span>
-    )}
-  </button>
-)
+      {issue.assignee && (
+        <span className="cockpit-issue-row-assignee" title={issue.assignee.name || issue.assignee.email}>
+          {userInitial(issue.assignee)}
+        </span>
+      )}
+      {issue.dueDate && (
+        <span className="cockpit-issue-row-due">
+          <CalendarClock size={11} />
+          {formatShortDate(issue.dueDate)}
+        </span>
+      )}
+    </button>
+  )
+}
 
 interface ActivityRowProps {
   event: DevCockpitActivityEvent
   onOpen: (id: string) => void
 }
 
-const ACTIVITY_LABEL: Record<DevCockpitActivityEvent['type'], string> = {
-  issue_created: 'a créé',
-  issue_completed: 'a terminé',
-  issue_updated: 'a mis à jour',
-  comment: 'a commenté',
-}
+const ACTIVITY_LABEL = {
+  issue_created: 'devB.activity.issueCreated',
+  issue_completed: 'devB.activity.issueCompleted',
+  issue_updated: 'devB.activity.issueUpdated',
+  comment: 'devB.activity.comment',
+} as const satisfies Record<DevCockpitActivityEvent['type'], MessageKey>
 
 const ACTIVITY_ICON: Record<DevCockpitActivityEvent['type'], typeof Sparkles> = {
   issue_created: Plus,
@@ -131,14 +136,17 @@ const ACTIVITY_ICON: Record<DevCockpitActivityEvent['type'], typeof Sparkles> = 
 }
 
 export const ActivityRow = ({ event, onOpen }: ActivityRowProps) => {
+  const { t } = useI18n()
   const Icon = ACTIVITY_ICON[event.type]
   return (
     <div className={`cockpit-activity-row tone-${event.type}`}>
       <span className="cockpit-activity-icon">
         <Icon size={12} />
       </span>
-      <span className="cockpit-activity-actor">{event.actor?.name || event.actor?.email || 'Système'}</span>
-      <span className="cockpit-activity-action">{ACTIVITY_LABEL[event.type]}</span>
+      <span className="cockpit-activity-actor">
+        {event.actor?.name || event.actor?.email || t('devB.common.system')}
+      </span>
+      <span className="cockpit-activity-action">{t(ACTIVITY_LABEL[event.type])}</span>
       {event.issue && (
         <button type="button" className="cockpit-activity-issue" onClick={() => event.issue && onOpen(event.issue._id)}>
           {event.issue.identifier} <span className="cockpit-activity-issue-title">{event.issue.title}</span>
@@ -154,23 +162,23 @@ interface TimelineRowProps {
   onOpen: (id: string) => void
 }
 
-const TIMELINE_LABEL: Record<DevCockpitTimelineEvent['type'], string> = {
-  created: 'Issue créée',
-  status_changed: 'Statut modifié',
-  priority_changed: 'Priorité modifiée',
-  type_changed: 'Type modifié',
-  assigned: 'Assignation modifiée',
-  metadata_changed: 'Métadonnées modifiées',
-  commented: 'Commentaire',
-  comment: 'Commentaire',
-  github_linked: 'Lien GitHub',
-  ci_changed: 'CI',
-  agent_started: 'Agent démarré',
-  agent_blocked: 'Agent bloqué',
-  agent_done: 'Agent terminé',
-  deployed: 'Déploiement',
-  archived: 'Issue archivée',
-}
+const TIMELINE_LABEL = {
+  created: 'devB.timeline.created',
+  status_changed: 'devB.timeline.statusChanged',
+  priority_changed: 'devB.timeline.priorityChanged',
+  type_changed: 'devB.timeline.typeChanged',
+  assigned: 'devB.timeline.assigned',
+  metadata_changed: 'devB.timeline.metadataChanged',
+  commented: 'devB.timeline.comment',
+  comment: 'devB.timeline.comment',
+  github_linked: 'devB.timeline.githubLinked',
+  ci_changed: 'devB.timeline.ciChanged',
+  agent_started: 'devB.timeline.agentStarted',
+  agent_blocked: 'devB.timeline.agentBlocked',
+  agent_done: 'devB.timeline.agentDone',
+  deployed: 'devB.timeline.deployed',
+  archived: 'devB.timeline.archived',
+} as const satisfies Record<DevCockpitTimelineEvent['type'], MessageKey>
 
 const TIMELINE_ICON: Record<DevCockpitTimelineEvent['category'], typeof Sparkles> = {
   change: RefreshCw,
@@ -191,6 +199,7 @@ function githubMeta(metadata: Record<string, unknown>): { prUrl: string | null; 
 }
 
 export const TimelineRow = ({ event, onOpen }: TimelineRowProps) => {
+  const { t } = useI18n()
   const Icon = TIMELINE_ICON[event.category]
   const github = githubMeta(event.metadata)
   return (
@@ -200,8 +209,10 @@ export const TimelineRow = ({ event, onOpen }: TimelineRowProps) => {
       </span>
       <div className="cockpit-timeline-main">
         <div className="cockpit-timeline-topline">
-          <span className="cockpit-timeline-label">{TIMELINE_LABEL[event.type]}</span>
-          <span className="cockpit-timeline-actor">{event.actor?.name || event.actor?.email || 'Système'}</span>
+          <span className="cockpit-timeline-label">{t(TIMELINE_LABEL[event.type])}</span>
+          <span className="cockpit-timeline-actor">
+            {event.actor?.name || event.actor?.email || t('devB.common.system')}
+          </span>
           <span className="cockpit-timeline-date">{formatRelative(event.at)}</span>
         </div>
         <div className="cockpit-timeline-summary">{event.summary}</div>
@@ -232,28 +243,31 @@ interface ChartTooltipPayload {
 }
 
 export const VelocityTooltip = ({ active, payload }: { active?: boolean; payload?: ChartTooltipPayload[] }) => {
+  const { t } = useI18n()
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload || {}
   return (
     <div className="cockpit-chart-tooltip">
       <strong>{point.date}</strong>
       <span>
-        <CheckCircle2 size={10} style={{ color: '#10b981' }} /> Terminées : {point.completed ?? 0}
+        <CheckCircle2 size={10} style={{ color: '#10b981' }} />{' '}
+        {t('devB.tooltip.completed', { count: point.completed ?? 0 })}
       </span>
       <span>
-        <Plus size={10} style={{ color: '#7c5cff' }} /> Créées : {point.created ?? 0}
+        <Plus size={10} style={{ color: '#7c5cff' }} /> {t('devB.tooltip.created', { count: point.created ?? 0 })}
       </span>
     </div>
   )
 }
 
 export const PieTooltip = ({ active, payload }: { active?: boolean; payload?: ChartTooltipPayload[] }) => {
+  const { t } = useI18n()
   if (!active || !payload?.length) return null
   const p = payload[0]
   return (
     <div className="cockpit-chart-tooltip">
       <strong>{p.name}</strong>
-      <span>{p.value} issue(s)</span>
+      <span>{t('devB.tooltip.issues', { count: p.value ?? 0 })}</span>
     </div>
   )
 }
@@ -268,13 +282,13 @@ const CI_TONE: Record<DevCiStatus, 'ok' | 'warn' | 'fail' | 'neutral'> = {
   UNKNOWN: 'neutral',
 }
 
-const CI_LABEL: Record<DevCiStatus, string> = {
-  PENDING: 'En attente',
-  RUNNING: 'En cours',
-  SUCCESS: 'Succès',
-  FAILURE: 'Échec',
-  UNKNOWN: 'Inconnu',
-}
+const CI_LABEL = {
+  PENDING: 'devB.ci.pending',
+  RUNNING: 'devB.ci.running',
+  SUCCESS: 'devB.ci.success',
+  FAILURE: 'devB.ci.failure',
+  UNKNOWN: 'devB.ci.unknown',
+} as const satisfies Record<DevCiStatus, MessageKey>
 
 interface GithubPanelProps {
   github: DevProjectIntelligence['github']
@@ -301,6 +315,7 @@ export const GithubPanel = ({
   editing,
   onToggleEdit,
 }: GithubPanelProps) => {
+  const { t } = useI18n()
   const { links, pullRequests, configured, reason } = github
   return (
     <div className="cockpit-card cockpit-intel-card">
@@ -311,17 +326,18 @@ export const GithubPanel = ({
         <span className="cockpit-card-meta">
           {configured ? (
             <>
-              <GitPullRequest size={11} /> {pullRequests.counts.open} ouvertes · <GitMerge size={11} />{' '}
-              {pullRequests.counts.merged} mergées
+              <GitPullRequest size={11} /> {t('devB.gh.openCount', { count: pullRequests.counts.open })} ·{' '}
+              <GitMerge size={11} /> {t('devB.gh.mergedCount', { count: pullRequests.counts.merged })}
               {pullRequests.counts.failing > 0 && (
                 <>
                   {' '}
-                  · <XCircle size={11} style={{ color: '#fca5a5' }} /> {pullRequests.counts.failing} CI fail
+                  · <XCircle size={11} style={{ color: '#fca5a5' }} />{' '}
+                  {t('devB.gh.ciFailCount', { count: pullRequests.counts.failing })}
                 </>
               )}
             </>
           ) : (
-            <span style={{ color: 'var(--ink-dim)' }}>non configuré</span>
+            <span style={{ color: 'var(--ink-dim)' }}>{t('devB.common.notConfigured')}</span>
           )}
         </span>
       </div>
@@ -337,7 +353,7 @@ export const GithubPanel = ({
               )}
               {links.prsUrl && (
                 <a className="cockpit-gh-chip" href={links.prsUrl} target="_blank" rel="noopener noreferrer">
-                  <GitPullRequest size={12} /> PRs ouvertes
+                  <GitPullRequest size={12} /> {t('devB.gh.openPrs')}
                 </a>
               )}
               {links.commitsUrl && (
@@ -357,12 +373,12 @@ export const GithubPanel = ({
               )}
             </div>
           ) : (
-            <div className="cockpit-gh-empty">{reason || 'GitHub non configuré.'}</div>
+            <div className="cockpit-gh-empty">{reason || t('devB.gh.notConfiguredText')}</div>
           )}
 
           {pullRequests.open.length > 0 && (
             <div className="cockpit-gh-prs">
-              <div className="cockpit-gh-prs-header">Pull requests ouvertes</div>
+              <div className="cockpit-gh-prs-header">{t('devB.gh.openPrsHeader')}</div>
               {pullRequests.open.slice(0, 6).map((pr) => (
                 <PullRequestRow key={pr.issueId} pr={pr} />
               ))}
@@ -372,7 +388,7 @@ export const GithubPanel = ({
           {canManage && (
             <div className="cockpit-gh-actions">
               <button className="cockpit-btn subtle" onClick={() => onToggleEdit(true)}>
-                {configured ? 'Modifier la configuration GitHub' : 'Configurer GitHub'}
+                {configured ? t('devB.gh.editConfig') : t('devB.gh.configure')}
               </button>
             </div>
           )}
@@ -405,7 +421,7 @@ export const GithubPanel = ({
               />
             </label>
             <label>
-              <span>Branche</span>
+              <span>{t('devB.gh.branch')}</span>
               <input
                 value={configDraft?.defaultBranch ?? ''}
                 onChange={(e) => onChangeDraft({ defaultBranch: e.target.value })}
@@ -413,7 +429,7 @@ export const GithubPanel = ({
               />
             </label>
             <label>
-              <span>URL (alternatif)</span>
+              <span>{t('devB.gh.urlAlt')}</span>
               <input
                 value={configDraft?.htmlUrl ?? ''}
                 onChange={(e) => onChangeDraft({ htmlUrl: e.target.value })}
@@ -421,7 +437,7 @@ export const GithubPanel = ({
               />
             </label>
             <label className="cockpit-gh-form-wide">
-              <span>repoPath (chemin relatif sous DEV_REPO_ROOT côté serveur, pour scanner les LoC)</span>
+              <span>{t('devB.gh.repoPathLabel')}</span>
               <input
                 value={configDraft?.repoPath ?? ''}
                 onChange={(e) => onChangeDraft({ repoPath: e.target.value })}
@@ -432,10 +448,10 @@ export const GithubPanel = ({
           {saveError && <div className="cockpit-gh-form-error">{saveError}</div>}
           <div className="cockpit-gh-form-actions">
             <button type="button" className="cockpit-btn subtle" onClick={onCancel} disabled={saving}>
-              Annuler
+              {t('common.cancel')}
             </button>
             <button type="submit" className="cockpit-btn primary" disabled={saving}>
-              {saving ? 'Enregistrement…' : 'Enregistrer'}
+              {saving ? t('devB.gh.saving') : t('common.save')}
             </button>
           </div>
         </form>
@@ -445,6 +461,7 @@ export const GithubPanel = ({
 }
 
 export const PullRequestRow = ({ pr }: { pr: DevGithubPullRequestRef }) => {
+  const { t } = useI18n()
   const tone = pr.ciStatus ? CI_TONE[pr.ciStatus] : 'neutral'
   const merged = Boolean(pr.mergedAt)
   return (
@@ -474,7 +491,7 @@ export const PullRequestRow = ({ pr }: { pr: DevGithubPullRequestRef }) => {
           {tone === 'ok' && <CheckCircle2 size={10} />}
           {tone === 'fail' && <XCircle size={10} />}
           {tone === 'warn' && <Activity size={10} />}
-          {CI_LABEL[pr.ciStatus]}
+          {t(CI_LABEL[pr.ciStatus])}
         </span>
       )}
     </a>
@@ -482,30 +499,39 @@ export const PullRequestRow = ({ pr }: { pr: DevGithubPullRequestRef }) => {
 }
 
 export const TokensPanel = ({ tokens }: { tokens: DevProjectIntelligence['tokens'] }) => {
+  const { t } = useI18n()
   return (
     <div className="cockpit-card cockpit-intel-card">
       <div className="cockpit-card-header">
         <span className="cockpit-card-kicker">
           <Coins size={11} /> Tokens LLM
         </span>
-        <span className="cockpit-card-meta">{tokens.available ? 'mesuré' : 'non disponible'}</span>
+        <span className="cockpit-card-meta">
+          {tokens.available ? t('devB.tokens.measured') : t('devB.common.notAvailable')}
+        </span>
       </div>
       {tokens.available ? (
         <div className="cockpit-tokens-grid">
           <div className="cockpit-tokens-cell">
             <div className="cockpit-tokens-cell-label">Total</div>
-            <div className="cockpit-tokens-cell-value">{tokens.totalTokens?.toLocaleString('fr-FR')}</div>
+            <div className="cockpit-tokens-cell-value">
+              {tokens.totalTokens != null ? formatNumber(tokens.totalTokens) : undefined}
+            </div>
           </div>
           <div className="cockpit-tokens-cell">
-            <div className="cockpit-tokens-cell-label">Entrée</div>
-            <div className="cockpit-tokens-cell-value">{tokens.inputTokens?.toLocaleString('fr-FR') ?? '—'}</div>
+            <div className="cockpit-tokens-cell-label">{t('devB.tokens.input')}</div>
+            <div className="cockpit-tokens-cell-value">
+              {tokens.inputTokens != null ? formatNumber(tokens.inputTokens) : '—'}
+            </div>
           </div>
           <div className="cockpit-tokens-cell">
-            <div className="cockpit-tokens-cell-label">Sortie</div>
-            <div className="cockpit-tokens-cell-value">{tokens.outputTokens?.toLocaleString('fr-FR') ?? '—'}</div>
+            <div className="cockpit-tokens-cell-label">{t('devB.tokens.output')}</div>
+            <div className="cockpit-tokens-cell-value">
+              {tokens.outputTokens != null ? formatNumber(tokens.outputTokens) : '—'}
+            </div>
           </div>
           <div className="cockpit-tokens-cell">
-            <div className="cockpit-tokens-cell-label">Coût est.</div>
+            <div className="cockpit-tokens-cell-label">{t('devB.tokens.estCost')}</div>
             <div className="cockpit-tokens-cell-value">
               {tokens.estimatedCostUsd != null ? `$${tokens.estimatedCostUsd.toFixed(2)}` : '—'}
             </div>
@@ -516,7 +542,7 @@ export const TokensPanel = ({ tokens }: { tokens: DevProjectIntelligence['tokens
           <p>{tokens.reason}</p>
           {tokens.missing?.length > 0 && (
             <>
-              <div className="cockpit-tokens-missing-label">Pour activer la mesure :</div>
+              <div className="cockpit-tokens-missing-label">{t('devB.tokens.toEnable')}</div>
               <ul>
                 {tokens.missing.map((m) => (
                   <li key={m}>{m}</li>
@@ -531,6 +557,7 @@ export const TokensPanel = ({ tokens }: { tokens: DevProjectIntelligence['tokens
 }
 
 export const CodeMetricsPanel = ({ code }: { code: DevProjectIntelligence['code'] }) => {
+  const { t } = useI18n()
   const maxLines = code.byExtension.reduce((m, e) => Math.max(m, e.lines), 0)
   return (
     <div className="cockpit-card cockpit-intel-card">
@@ -541,11 +568,15 @@ export const CodeMetricsPanel = ({ code }: { code: DevProjectIntelligence['code'
         <span className="cockpit-card-meta">
           {code.available ? (
             <>
-              <Files size={11} /> {formatNumber(code.totals.files)} fichiers · {formatNumber(code.totals.lines)} lignes
-              · {formatBytes(code.totals.bytes)}
+              <Files size={11} />{' '}
+              {t('devB.code.totals', {
+                files: formatNumber(code.totals.files),
+                lines: formatNumber(code.totals.lines),
+                size: formatBytes(code.totals.bytes),
+              })}
             </>
           ) : (
-            <span style={{ color: 'var(--ink-dim)' }}>non disponible</span>
+            <span style={{ color: 'var(--ink-dim)' }}>{t('devB.common.notAvailable')}</span>
           )}
         </span>
       </div>
@@ -563,7 +594,7 @@ export const CodeMetricsPanel = ({ code }: { code: DevProjectIntelligence['code'
                       <span className="cockpit-code-lang-ext">{ext.ext || '—'}</span>
                     </span>
                     <span className="cockpit-code-lang-meta">
-                      {formatNumber(ext.files)} · {formatNumber(ext.lines)} l
+                      {t('devB.code.langMeta', { files: formatNumber(ext.files), lines: formatNumber(ext.lines) })}
                     </span>
                   </div>
                   <span className="cockpit-code-lang-bar">
@@ -575,13 +606,13 @@ export const CodeMetricsPanel = ({ code }: { code: DevProjectIntelligence['code'
           </ul>
           {code.topFilesGlobal.length > 0 && (
             <details className="cockpit-code-top">
-              <summary>Plus gros fichiers ({code.topFilesGlobal.length})</summary>
+              <summary>{t('devB.code.topFiles', { count: code.topFilesGlobal.length })}</summary>
               <ul>
                 {code.topFilesGlobal.map((f) => (
                   <li key={f.path}>
                     <span className="cockpit-code-top-path">{f.path}</span>
                     <span className="cockpit-code-top-meta">
-                      {formatNumber(f.lines)} lignes · {formatBytes(f.bytes)}
+                      {t('devB.code.topFileMeta', { lines: formatNumber(f.lines), size: formatBytes(f.bytes) })}
                     </span>
                   </li>
                 ))}
@@ -595,42 +626,45 @@ export const CodeMetricsPanel = ({ code }: { code: DevProjectIntelligence['code'
           )}
         </div>
       ) : (
-        <div className="cockpit-code-empty">{code.reason || 'Scan code non disponible.'}</div>
+        <div className="cockpit-code-empty">{code.reason || t('devB.code.scanUnavailable')}</div>
       )}
     </div>
   )
 }
 
 const QUALITY_STATUS_LABEL = {
-  ok: 'OK',
-  warn: 'À suivre',
-  critical: 'À traiter',
-  unavailable: 'Indisponible',
-} as const
+  ok: 'devB.quality.ok',
+  warn: 'devB.quality.warn',
+  critical: 'devB.quality.critical',
+  unavailable: 'devB.quality.unavailable',
+} as const satisfies Record<string, MessageKey>
 
 /** Compact, source-first view: unavailable signals never turn into green points. */
 export const RepoQualityPanel = ({ quality }: { quality: DevRepoQuality }) => {
+  const { t } = useI18n()
   const actionable = quality.signals.filter((signal) => signal.status === 'warn' || signal.status === 'critical')
   return (
     <div className="cockpit-card cockpit-intel-card cockpit-quality">
       <div className="cockpit-card-header">
         <span className="cockpit-card-kicker">
-          <Activity size={11} /> Qualité du repo
+          <Activity size={11} /> {t('devB.quality.title')}
         </span>
         <span className="cockpit-card-meta">
-          {quality.score === null ? 'score indisponible' : `score sur ${quality.scoredOutOf} pts observés`}
+          {quality.score === null
+            ? t('devB.quality.scoreUnavailable')
+            : t('devB.quality.scoreOutOf', { max: quality.scoredOutOf })}
         </span>
       </div>
       <div className="cockpit-quality-summary">
         <strong className={`cockpit-quality-score${quality.score === null ? ' unavailable' : ''}`}>
           {quality.score === null ? '—' : `${quality.score}/100`}
         </strong>
-        <span>{quality.score === null ? 'Aucune donnée fiable collectée.' : quality.formula}</span>
+        <span>{quality.score === null ? t('devB.quality.noReliableData') : quality.formula}</span>
       </div>
       <ul className="cockpit-quality-signals">
         {quality.signals.map((signal) => (
           <li key={signal.id} className={`tone-${signal.status}`}>
-            <span className="cockpit-quality-status">{QUALITY_STATUS_LABEL[signal.status]}</span>
+            <span className="cockpit-quality-status">{t(QUALITY_STATUS_LABEL[signal.status])}</span>
             <span className="cockpit-quality-main">
               <strong>{signal.label}</strong>
               <span>{signal.value}</span>
@@ -648,33 +682,25 @@ export const RepoQualityPanel = ({ quality }: { quality: DevRepoQuality }) => {
         ))}
       </ul>
       {actionable.length > 0 && (
-        <div className="cockpit-quality-action">{actionable.length} signal(aux) actionnable(s) ci-dessus.</div>
+        <div className="cockpit-quality-action">{t('devB.quality.actionable', { count: actionable.length })}</div>
       )}
     </div>
   )
 }
 
-const CI_STATUS_LABEL: Record<DevCiStatus, string> = {
-  PENDING: 'En attente',
-  RUNNING: 'En cours',
-  SUCCESS: 'Succès',
-  FAILURE: 'Échec',
-  UNKNOWN: 'Inconnu',
-}
+const DEPLOYMENT_STATUS_LABEL = {
+  success: 'devB.deploy.statusSuccess',
+  failed: 'devB.deploy.statusFailed',
+  running: 'devB.deploy.statusRunning',
+  unknown: 'devB.deploy.statusUnknown',
+} as const satisfies Record<DevDeploymentSummary['deployment']['status'], MessageKey>
 
-const DEPLOYMENT_STATUS_LABEL: Record<DevDeploymentSummary['deployment']['status'], string> = {
-  success: 'Réussi',
-  failed: 'Échec',
-  running: 'En cours',
-  unknown: 'Inconnu',
-}
-
-const HEALTHCHECK_STATUS_LABEL: Record<DevDeploymentSummary['healthcheck']['status'], string> = {
-  healthy: 'Sain',
-  degraded: 'Dégradé',
-  unhealthy: 'En échec',
-  unknown: 'Inconnu',
-}
+const HEALTHCHECK_STATUS_LABEL = {
+  healthy: 'devB.deploy.healthHealthy',
+  degraded: 'devB.deploy.healthDegraded',
+  unhealthy: 'devB.deploy.healthUnhealthy',
+  unknown: 'devB.deploy.healthUnknown',
+} as const satisfies Record<DevDeploymentSummary['healthcheck']['status'], MessageKey>
 
 function deploymentTone(status: string | null): 'ok' | 'warn' | 'fail' | 'neutral' {
   if (status === 'SUCCESS' || status === 'success' || status === 'healthy') return 'ok'
@@ -684,131 +710,132 @@ function deploymentTone(status: string | null): 'ok' | 'warn' | 'fail' | 'neutra
 }
 
 function deploymentSource(source: DevDeploymentSummary['ci']['source']): string {
-  if (source === 'timeline_deployment') return 'timeline de déploiement'
-  if (source === 'timeline_ci') return 'timeline CI'
-  if (source === 'issue_github') return 'métadonnées GitHub de l’issue'
-  return 'aucune donnée'
+  if (source === 'timeline_deployment') return translate('devB.deploy.sourceDeployTimeline')
+  if (source === 'timeline_ci') return translate('devB.deploy.sourceCiTimeline')
+  if (source === 'issue_github') return translate('devB.deploy.sourceIssueGithub')
+  return translate('devB.deploy.sourceNone')
 }
 
 /** A bounded, source-first summary: no client-supplied URL or live probe. */
-export const DeploymentPanel = ({ deployment }: { deployment: DevDeploymentSummary }) => (
-  <div className="cockpit-card cockpit-intel-card cockpit-deployment">
-    <div className="cockpit-card-header">
-      <span className="cockpit-card-kicker">
-        <Play size={11} /> Déploiement production
-      </span>
-      <span className={`cockpit-deployment-freshness tone-${deployment.freshness}`}>
-        {deployment.freshness === 'fresh'
-          ? 'données fraîches'
-          : deployment.freshness === 'stale'
-            ? 'données anciennes'
-            : 'fraîcheur inconnue'}
-      </span>
-    </div>
+export const DeploymentPanel = ({ deployment }: { deployment: DevDeploymentSummary }) => {
+  const { t } = useI18n()
+  return (
+    <div className="cockpit-card cockpit-intel-card cockpit-deployment">
+      <div className="cockpit-card-header">
+        <span className="cockpit-card-kicker">
+          <Play size={11} /> {t('devB.deploy.title')}
+        </span>
+        <span className={`cockpit-deployment-freshness tone-${deployment.freshness}`}>
+          {deployment.freshness === 'fresh'
+            ? t('devB.deploy.fresh')
+            : deployment.freshness === 'stale'
+              ? t('devB.deploy.stale')
+              : t('devB.deploy.freshnessUnknown')}
+        </span>
+      </div>
 
-    <dl className="cockpit-deployment-list">
-      <div>
-        <dt>
-          <GitCommit size={12} /> Commit en production
-        </dt>
-        <dd>
-          {deployment.productionCommit.sha ? (
-            deployment.productionCommit.url ? (
-              <a href={deployment.productionCommit.url} target="_blank" rel="noopener noreferrer">
-                {deployment.productionCommit.sha.slice(0, 12)} <ExternalLink size={10} />
-              </a>
+      <dl className="cockpit-deployment-list">
+        <div>
+          <dt>
+            <GitCommit size={12} /> {t('devB.deploy.productionCommit')}
+          </dt>
+          <dd>
+            {deployment.productionCommit.sha ? (
+              deployment.productionCommit.url ? (
+                <a href={deployment.productionCommit.url} target="_blank" rel="noopener noreferrer">
+                  {deployment.productionCommit.sha.slice(0, 12)} <ExternalLink size={10} />
+                </a>
+              ) : (
+                <code>{deployment.productionCommit.sha.slice(0, 12)}</code>
+              )
             ) : (
-              <code>{deployment.productionCommit.sha.slice(0, 12)}</code>
-            )
-          ) : (
-            'Inconnu'
-          )}
-          <small>
-            {deployment.productionCommit.observedAt
-              ? `observé ${formatRelative(deployment.productionCommit.observedAt)}`
-              : 'non enregistré'}
-          </small>
-        </dd>
-      </div>
-      <div>
-        <dt>
-          <GitPullRequest size={12} /> Dernier CI / build
-        </dt>
-        <dd>
-          <span className={`cockpit-deployment-status tone-${deploymentTone(deployment.ci.status)}`}>
-            {deployment.ci.status ? CI_STATUS_LABEL[deployment.ci.status] : 'Inconnu'}
-          </span>
-          {deployment.ci.runUrl && (
-            <a
-              href={deployment.ci.runUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="cockpit-deployment-link"
-            >
-              Run <ExternalLink size={10} />
-            </a>
-          )}
-          <small>
-            {deployment.ci.observedAt ? `observé ${formatRelative(deployment.ci.observedAt)}` : 'non enregistré'}
-          </small>
-        </dd>
-      </div>
-      <div>
-        <dt>
-          <Play size={12} /> Dernier déploiement
-        </dt>
-        <dd>
-          <span className={`cockpit-deployment-status tone-${deploymentTone(deployment.deployment.status)}`}>
-            {DEPLOYMENT_STATUS_LABEL[deployment.deployment.status]}
-          </span>
-          {deployment.deployment.logsUrl && (
-            <a
-              href={deployment.deployment.logsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="cockpit-deployment-link"
-            >
-              Logs <ExternalLink size={10} />
-            </a>
-          )}
-          <small>
-            {deployment.deployment.observedAt
-              ? `observé ${formatRelative(deployment.deployment.observedAt)}`
-              : 'non enregistré'}
-          </small>
-        </dd>
-      </div>
-      <div>
-        <dt>
-          <HeartPulse size={12} /> Healthcheck
-        </dt>
-        <dd>
-          <span className={`cockpit-deployment-status tone-${deploymentTone(deployment.healthcheck.status)}`}>
-            {HEALTHCHECK_STATUS_LABEL[deployment.healthcheck.status]}
-          </span>
-          <small>
-            {deployment.healthcheck.observedAt
-              ? `observé ${formatRelative(deployment.healthcheck.observedAt)}`
-              : 'non enregistré'}
-          </small>
-        </dd>
-      </div>
-    </dl>
+              t('devB.common.unknown')
+            )}
+            <small>
+              {deployment.productionCommit.observedAt
+                ? t('devB.deploy.observed', { when: formatRelative(deployment.productionCommit.observedAt) })
+                : t('devB.deploy.notRecorded')}
+            </small>
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <GitPullRequest size={12} /> {t('devB.deploy.lastCi')}
+          </dt>
+          <dd>
+            <span className={`cockpit-deployment-status tone-${deploymentTone(deployment.ci.status)}`}>
+              {deployment.ci.status ? t(CI_LABEL[deployment.ci.status]) : t('devB.common.unknown')}
+            </span>
+            {deployment.ci.runUrl && (
+              <a
+                href={deployment.ci.runUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cockpit-deployment-link"
+              >
+                Run <ExternalLink size={10} />
+              </a>
+            )}
+            <small>
+              {deployment.ci.observedAt
+                ? t('devB.deploy.observed', { when: formatRelative(deployment.ci.observedAt) })
+                : t('devB.deploy.notRecorded')}
+            </small>
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <Play size={12} /> {t('devB.deploy.lastDeploy')}
+          </dt>
+          <dd>
+            <span className={`cockpit-deployment-status tone-${deploymentTone(deployment.deployment.status)}`}>
+              {t(DEPLOYMENT_STATUS_LABEL[deployment.deployment.status])}
+            </span>
+            {deployment.deployment.logsUrl && (
+              <a
+                href={deployment.deployment.logsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cockpit-deployment-link"
+              >
+                Logs <ExternalLink size={10} />
+              </a>
+            )}
+            <small>
+              {deployment.deployment.observedAt
+                ? t('devB.deploy.observed', { when: formatRelative(deployment.deployment.observedAt) })
+                : t('devB.deploy.notRecorded')}
+            </small>
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <HeartPulse size={12} /> Healthcheck
+          </dt>
+          <dd>
+            <span className={`cockpit-deployment-status tone-${deploymentTone(deployment.healthcheck.status)}`}>
+              {t(HEALTHCHECK_STATUS_LABEL[deployment.healthcheck.status])}
+            </span>
+            <small>
+              {deployment.healthcheck.observedAt
+                ? t('devB.deploy.observed', { when: formatRelative(deployment.healthcheck.observedAt) })
+                : t('devB.deploy.notRecorded')}
+            </small>
+          </dd>
+        </div>
+      </dl>
 
-    <details className="cockpit-deployment-details">
-      <summary>Sources et limites</summary>
-      <p>
-        Sources : {deploymentSource(deployment.deployment.source)} et métadonnées GitHub déjà associées au projet. Les
-        liens sont construits côté serveur depuis le dépôt configuré.
-      </p>
-      <p>
-        Aucune sonde externe n’est exécutée par cette carte : sans événement de production ou healthcheck enregistré,
-        l’état reste « Inconnu ». Les données sont considérées anciennes après {deployment.freshnessThresholdHours} h.
-      </p>
-      {!deployment.configured && deployment.reason && <p className="cockpit-deployment-warning">{deployment.reason}</p>}
-    </details>
-  </div>
-)
+      <details className="cockpit-deployment-details">
+        <summary>{t('devB.deploy.sourcesAndLimits')}</summary>
+        <p>{t('devB.deploy.sourcesText', { source: deploymentSource(deployment.deployment.source) })}</p>
+        <p>{t('devB.deploy.noProbeText', { hours: deployment.freshnessThresholdHours })}</p>
+        {!deployment.configured && deployment.reason && (
+          <p className="cockpit-deployment-warning">{deployment.reason}</p>
+        )}
+      </details>
+    </div>
+  )
+}
 
 interface LargeFilesPanelProps {
   snapshot: DevLargeFilesSnapshot | null
@@ -819,6 +846,7 @@ interface LargeFilesPanelProps {
 }
 
 export const LargeFilesPanel = ({ snapshot, loading, onRefresh, github, nextRefreshIn }: LargeFilesPanelProps) => {
+  const { t } = useI18n()
   const repoBase = github.links.repoUrl
   const branch = github.defaultBranch || 'main'
 
@@ -826,41 +854,41 @@ export const LargeFilesPanel = ({ snapshot, loading, onRefresh, github, nextRefr
     <div className="cockpit-card cockpit-intel-card cockpit-large-files">
       <div className="cockpit-card-header">
         <span className="cockpit-card-kicker">
-          <FileWarning size={11} /> Fichiers à refactor
+          <FileWarning size={11} /> {t('devB.large.title')}
         </span>
         <span className="cockpit-card-meta">
           {snapshot?.available ? (
             <>
-              {snapshot.largeFiles.length} candidat(s)
+              {t('devB.large.candidates', { count: snapshot.largeFiles.length })}
               {snapshot.scannedAt && (
                 <>
                   {' '}
-                  · scanné <RelativeTime iso={snapshot.scannedAt} />
+                  · {t('devB.large.scanned')} <RelativeTime iso={snapshot.scannedAt} />
                 </>
               )}{' '}
-              · prochaine vérif {nextRefreshIn}s
+              · {t('devB.large.nextCheck', { seconds: nextRefreshIn })}
             </>
           ) : (
-            <span style={{ color: 'var(--ink-dim)' }}>non disponible</span>
+            <span style={{ color: 'var(--ink-dim)' }}>{t('devB.common.notAvailable')}</span>
           )}
           <button
             type="button"
             className="cockpit-icon-btn"
             onClick={onRefresh}
             disabled={loading}
-            title="Demander une nouvelle collecte en arrière-plan"
-            aria-label="Demander une nouvelle collecte"
+            title={t('devB.large.refreshTitle')}
+            aria-label={t('devB.large.refreshAria')}
           >
             <RefreshCw size={11} className={loading ? 'cockpit-spin' : undefined} />
           </button>
         </span>
       </div>
       {!snapshot ? (
-        <div className="cockpit-empty">Chargement…</div>
+        <div className="cockpit-empty">{t('devB.common.loadingEllipsis')}</div>
       ) : !snapshot.available ? (
-        <div className="cockpit-empty">{snapshot.reason || 'Scan indisponible.'}</div>
+        <div className="cockpit-empty">{snapshot.reason || t('devB.large.scanUnavailable')}</div>
       ) : snapshot.largeFiles.length === 0 ? (
-        <div className="cockpit-empty">Aucun fichier au-dessus des seuils.</div>
+        <div className="cockpit-empty">{t('devB.large.none')}</div>
       ) : (
         <ul className="cockpit-large-list">
           {snapshot.largeFiles.slice(0, 12).map((f) => {
@@ -879,10 +907,12 @@ export const LargeFilesPanel = ({ snapshot, loading, onRefresh, github, nextRefr
                   )}
                   <span className="cockpit-large-meta">
                     {f.language}
-                    {f.ext ? ` · ${f.ext}` : ''} · seuil {f.threshold}
+                    {f.ext ? ` · ${f.ext}` : ''} · {t('devB.large.threshold', { value: f.threshold })}
                   </span>
                 </span>
-                <span className="cockpit-large-lines">{formatNumber(f.lines)} l</span>
+                <span className="cockpit-large-lines">
+                  {t('devB.large.linesShort', { lines: formatNumber(f.lines) })}
+                </span>
                 <span className={`cockpit-large-score tone-${tone}`}>{f.score}</span>
               </li>
             )
@@ -894,6 +924,7 @@ export const LargeFilesPanel = ({ snapshot, loading, onRefresh, github, nextRefr
 }
 
 export const RelativeTime = ({ iso }: { iso: string }) => {
+  useI18n() // re-render on language change
   const [, setTick] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 15_000)

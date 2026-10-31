@@ -1,3 +1,7 @@
+import type { MessageKey } from '../../../i18n'
+import { translate } from '../../../i18n'
+import { formatDate as formatLocalDate, formatDateTime as formatLocalDateTime } from '../../../i18n/format'
+
 export interface InternUser {
   _id: string
   name: string
@@ -48,8 +52,19 @@ export interface InternFormData {
   joursPresence: string[]
 }
 
+// i18n-ignore: valeurs stockées en base (jours de présence), seul le libellé est traduit
 export const INTERN_DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
 const DEFAULT_INTERN_DAYS = INTERN_DAYS.slice(0, 5)
+
+export const INTERN_DAY_LABEL_KEYS: Record<string, MessageKey> = {
+  lundi: 'intern.day.monday',
+  mardi: 'intern.day.tuesday',
+  mercredi: 'intern.day.wednesday',
+  jeudi: 'intern.day.thursday',
+  vendredi: 'intern.day.friday',
+  samedi: 'intern.day.saturday',
+  dimanche: 'intern.day.sunday',
+}
 
 export function createEmptyInternForm(): InternFormData {
   return {
@@ -112,24 +127,24 @@ export interface ActivityReport {
   updatedAt: string
 }
 
-export const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  ACTIF: { label: 'Actif', color: '#22c55e' },
-  TERMINE: { label: 'Termine', color: '#64748b' },
-  ANNULE: { label: 'Annule', color: '#ef4444' },
+export const STATUS_CONFIG: Record<string, { labelKey: MessageKey; color: string }> = {
+  ACTIF: { labelKey: 'intern.status.active', color: '#22c55e' },
+  TERMINE: { labelKey: 'intern.status.finished', color: '#64748b' },
+  ANNULE: { labelKey: 'intern.status.cancelled', color: '#ef4444' },
 }
 
-export const REPORT_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  BROUILLON: { label: 'Brouillon', color: '#f59e0b' },
-  SOUMIS: { label: 'Soumis', color: '#0ea5e9' },
-  VALIDE: { label: 'Valide', color: '#22c55e' },
+export const REPORT_STATUS_CONFIG: Record<string, { labelKey: MessageKey; color: string }> = {
+  BROUILLON: { labelKey: 'intern.reportStatus.draft', color: '#f59e0b' },
+  SOUMIS: { labelKey: 'intern.reportStatus.submitted', color: '#0ea5e9' },
+  VALIDE: { labelKey: 'intern.reportStatus.validated', color: '#22c55e' },
 }
 
 export function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+  return formatLocalDate(d, { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 export function formatDateTime(d: string) {
-  return new Date(d).toLocaleDateString('fr-FR', {
+  return formatLocalDateTime(d, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -139,9 +154,9 @@ export function formatDateTime(d: string) {
 }
 
 export function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} o`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  if (bytes < 1024) return translate('intern.file.bytes', { value: bytes })
+  if (bytes < 1024 * 1024) return translate('intern.file.kilobytes', { value: (bytes / 1024).toFixed(0) })
+  return translate('intern.file.megabytes', { value: (bytes / (1024 * 1024)).toFixed(1) })
 }
 
 export function isImage(mime: string) {

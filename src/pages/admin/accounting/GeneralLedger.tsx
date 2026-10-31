@@ -3,21 +3,19 @@ import { Link } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
 import { getGeneralLedger, listAccounts, listFiscalYears, downloadReportCsv } from '../../../services/accounting'
 import type { IChartOfAccount, IFiscalYear, IGeneralLedgerData } from '../../../types/accounting'
-
-const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-})
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatDate as formatDateIntl, formatMoney } from '../../../i18n/format'
 
 function formatEur(n: unknown): string {
   const value = Number(n)
   if (!Number.isFinite(value)) return '—'
-  return EUR_FORMATTER.format(value)
+  return formatMoney(value)
 }
 
 function formatDate(d: string | undefined | null): string {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('fr-FR')
+  return formatDateIntl(d) || '—'
 }
 
 interface GLFilters {
@@ -29,6 +27,7 @@ interface GLFilters {
 }
 
 const GeneralLedger = () => {
+  const { t } = useI18n()
   const [accounts, setAccounts] = useState<IChartOfAccount[]>([])
   const [fiscalYears, setFiscalYears] = useState<IFiscalYear[]>([])
   const [data, setData] = useState<IGeneralLedgerData | null>(null)
@@ -52,7 +51,7 @@ const GeneralLedger = () => {
         setAccounts(a || [])
         setFiscalYears(f || [])
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Erreur')
+        if (!cancelled) setError(err instanceof Error ? err.message : translate('common.error'))
       }
     })()
     return () => {
@@ -62,7 +61,7 @@ const GeneralLedger = () => {
 
   async function runQuery() {
     if (!filters.accountCode) {
-      setError('Veuillez sélectionner un compte.')
+      setError(t('accAccounts.ledger.selectAccountError'))
       return
     }
     setLoading(true)
@@ -77,7 +76,7 @@ const GeneralLedger = () => {
       })
       setData(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
       setData(null)
     } finally {
       setLoading(false)
@@ -86,7 +85,7 @@ const GeneralLedger = () => {
 
   async function handleExport() {
     if (!filters.accountCode) {
-      setError("Sélectionnez un compte avant l'export.")
+      setError(t('accAccounts.ledger.selectAccountExport'))
       return
     }
     try {
@@ -98,7 +97,7 @@ const GeneralLedger = () => {
         includeOpening: filters.includeOpening,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
@@ -109,11 +108,11 @@ const GeneralLedger = () => {
 
   return (
     <AccountingLayout
-      title="Grand livre"
-      subtitle="Détail chronologique des mouvements par compte"
+      title={t('accAccounts.nav.generalLedger')}
+      subtitle={t('accAccounts.ledger.subtitle')}
       actions={
         <button className="portal-button secondary" onClick={handleExport} disabled={!filters.accountCode}>
-          ⬇ Export CSV
+          {t('accAccounts.common.exportCsv')}
         </button>
       }
     >
@@ -127,7 +126,7 @@ const GeneralLedger = () => {
             onChange={(e) => setFilters({ ...filters, accountCode: e.target.value })}
             style={{ minWidth: 280 }}
           >
-            <option value="">— Choisir un compte —</option>
+            <option value="">{t('accAccounts.ledger.chooseAccount')}</option>
             {accounts.map((a) => (
               <option key={a._id} value={a.code}>
                 {a.code} — {a.label}
@@ -140,14 +139,14 @@ const GeneralLedger = () => {
             className="portal-input"
             value={filters.from}
             onChange={(e) => setFilters({ ...filters, from: e.target.value })}
-            title="Date de début"
+            title={t('accAccounts.common.startDate')}
           />
           <input
             type="date"
             className="portal-input"
             value={filters.to}
             onChange={(e) => setFilters({ ...filters, to: e.target.value })}
-            title="Date de fin"
+            title={t('accAccounts.common.endDate')}
           />
 
           <select
@@ -155,7 +154,7 @@ const GeneralLedger = () => {
             value={filters.fiscalYear}
             onChange={(e) => setFilters({ ...filters, fiscalYear: e.target.value })}
           >
-            <option value="">Tous exercices</option>
+            <option value="">{t('accAccounts.common.allFiscalYears')}</option>
             {fiscalYears.map((fy) => (
               <option key={fy._id} value={fy._id}>
                 {fy.code || fy.label}
@@ -169,26 +168,26 @@ const GeneralLedger = () => {
               checked={filters.includeOpening}
               onChange={(e) => setFilters({ ...filters, includeOpening: e.target.checked })}
             />{' '}
-            Solde d'ouverture
+            {t('accAccounts.common.openingBalance')}
           </label>
 
           <button className="portal-button" onClick={runQuery}>
-            Filtrer
+            {t('accAccounts.common.filter')}
           </button>
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
         ) : !data ? (
           <div className="accounting-empty">
-            Sélectionnez un compte pour afficher le grand livre.
-            <div className="hint">Choisissez un compte ci-dessus puis cliquez sur « Filtrer ».</div>
+            {t('accAccounts.ledger.prompt')}
+            <div className="hint">{t('accAccounts.ledger.promptHint')}</div>
           </div>
         ) : (
           <>
             <div className="accounting-kpi-grid" style={{ marginBottom: 20 }}>
               <div className="accounting-kpi">
-                <div className="label">Compte</div>
+                <div className="label">{t('accAccounts.col.account')}</div>
                 <div className="value" style={{ fontSize: '1.1rem' }}>
                   <span className="code" style={{ color: 'rgba(14, 165, 233, 0.9)' }}>
                     {account?.code}
@@ -206,9 +205,9 @@ const GeneralLedger = () => {
                 </div>
               </div>
               <div className="accounting-kpi">
-                <div className="label">Classe / Type</div>
+                <div className="label">{t('accAccounts.ledger.classType')}</div>
                 <div className="value" style={{ fontSize: '1.1rem' }}>
-                  Classe {account?.class}
+                  {t('accAccounts.accounts.classN', { n: account?.class ?? '' })}
                   <div
                     style={{
                       fontSize: '0.85rem',
@@ -222,32 +221,32 @@ const GeneralLedger = () => {
                 </div>
               </div>
               <div className="accounting-kpi">
-                <div className="label">Lettrable</div>
-                <div className="value">{account?.isLettrable ? 'Oui' : 'Non'}</div>
+                <div className="label">{t('accAccounts.accounts.reconcilable')}</div>
+                <div className="value">{account?.isLettrable ? t('common.yes') : t('common.no')}</div>
               </div>
               {filters.includeOpening && (
                 <div className="accounting-kpi">
-                  <div className="label">Solde d'ouverture</div>
+                  <div className="label">{t('accAccounts.common.openingBalance')}</div>
                   <div className="value">{formatEur(opening || 0)}</div>
                 </div>
               )}
             </div>
 
             {movements.length === 0 ? (
-              <div className="accounting-empty">Aucun mouvement sur la période sélectionnée.</div>
+              <div className="accounting-empty">{t('accAccounts.ledger.noMovements')}</div>
             ) : (
               <table className="accounting-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Journal</th>
-                    <th>N° écriture</th>
-                    <th>Pièce</th>
-                    <th>Libellé</th>
-                    <th className="amount">Débit</th>
-                    <th className="amount">Crédit</th>
-                    <th className="amount">Solde</th>
-                    <th>Lettrage</th>
+                    <th>{t('accAccounts.col.date')}</th>
+                    <th>{t('accAccounts.col.journal')}</th>
+                    <th>{t('accAccounts.ledger.colEntryNumber')}</th>
+                    <th>{t('accAccounts.col.piece')}</th>
+                    <th>{t('accAccounts.col.label')}</th>
+                    <th className="amount">{t('accAccounts.col.debit')}</th>
+                    <th className="amount">{t('accAccounts.col.credit')}</th>
+                    <th className="amount">{t('accAccounts.col.balance')}</th>
+                    <th>{t('accAccounts.col.reconciliation')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -275,7 +274,7 @@ const GeneralLedger = () => {
                   <tfoot>
                     <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                       <td colSpan={5} style={{ textAlign: 'right', fontWeight: 600, padding: '14px' }}>
-                        Totaux
+                        {t('accAccounts.entry.totals')}
                       </td>
                       <td className="amount" style={{ fontWeight: 700 }}>
                         {formatEur(totals.debit)}

@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { INTERN_DAYS, type AdminUser, type Intern, type InternFormData } from './types'
+import { useI18n } from '../../../context/I18nContext'
+import { INTERN_DAYS, INTERN_DAY_LABEL_KEYS, type AdminUser, type Intern, type InternFormData } from './types'
 
 interface Props {
   admins: AdminUser[]
@@ -22,6 +23,7 @@ export default function InternForm({
   onUpdate,
   onCancel,
 }: Props) {
+  const { t } = useI18n()
   const update = <K extends keyof InternFormData>(key: K, value: InternFormData[K]) => {
     setForm((current) => ({ ...current, [key]: value }))
   }
@@ -39,11 +41,19 @@ export default function InternForm({
     <div className="portal-card" style={{ marginTop: 16, marginBottom: 20 }}>
       <div className="ticket-form">
         <h3 style={{ margin: '0 0 16px', color: 'var(--primary)' }}>
-          {editingIntern ? 'Modifier' : 'Nouveau'} {form.type === 'ALTERNANT' ? 'alternant' : 'stagiaire'}
+          {t(
+            editingIntern
+              ? form.type === 'ALTERNANT'
+                ? 'intern.form.titleEditApprentice'
+                : 'intern.form.titleEditIntern'
+              : form.type === 'ALTERNANT'
+                ? 'intern.form.titleNewApprentice'
+                : 'intern.form.titleNewIntern',
+          )}
         </h3>
         <div className="ticket-form-row">
           <div className="ticket-form-field">
-            <label>Type *</label>
+            <label>{t('intern.form.type')}</label>
             <select
               value={form.type}
               onChange={(event) => update('type', event.target.value as InternFormData['type'])}
@@ -57,24 +67,24 @@ export default function InternForm({
                 fontSize: 14,
               }}
             >
-              <option value="STAGIAIRE">Stagiaire</option>
-              <option value="ALTERNANT">Alternant</option>
+              <option value="STAGIAIRE">{t('intern.type.intern')}</option>
+              <option value="ALTERNANT">{t('intern.type.apprentice')}</option>
             </select>
           </div>
           <div className="ticket-form-field">
-            <label>Nom complet *</label>
+            <label>{t('intern.form.fullName')}</label>
             <input
-              placeholder="Nom complet"
+              placeholder={t('intern.form.fullNamePlaceholder')}
               value={form.name}
               onChange={(event) => update('name', event.target.value)}
               disabled={!!editingIntern}
             />
           </div>
           <div className="ticket-form-field">
-            <label>Email *</label>
+            <label>{t('intern.form.email')}</label>
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t('intern.form.emailPlaceholder')}
               value={form.email}
               onChange={(event) => update('email', event.target.value)}
               disabled={!!editingIntern}
@@ -83,9 +93,9 @@ export default function InternForm({
         </div>
         <div className="ticket-form-row">
           <div className="ticket-form-field">
-            <label>Telephone</label>
+            <label>{t('intern.form.phone')}</label>
             <input
-              placeholder="Telephone"
+              placeholder={t('intern.form.phone')}
               value={form.phone}
               onChange={(event) => update('phone', event.target.value)}
               disabled={!!editingIntern}
@@ -93,10 +103,10 @@ export default function InternForm({
           </div>
           {!editingIntern ? (
             <div className="ticket-form-field">
-              <label>Mot de passe</label>
+              <label>{t('intern.form.password')}</label>
               <input
                 type="password"
-                placeholder="Defaut: Stage2026!"
+                placeholder={t('intern.form.passwordPlaceholder')}
                 value={form.password}
                 onChange={(event) => update('password', event.target.value)}
               />
@@ -118,8 +128,16 @@ export default function InternForm({
           </div>
         )}
         <div className="ticket-form-row">
-          <DateField label="Date de debut *" value={form.dateDebut} onChange={(value) => update('dateDebut', value)} />
-          <DateField label="Date de fin *" value={form.dateFin} onChange={(value) => update('dateFin', value)} />
+          <DateField
+            label={t('intern.form.startDate')}
+            value={form.dateDebut}
+            onChange={(value) => update('dateDebut', value)}
+          />
+          <DateField
+            label={t('intern.form.endDate')}
+            value={form.dateFin}
+            onChange={(value) => update('dateFin', value)}
+          />
         </div>
         {!editingIntern && (
           <div className="ticket-form-row">
@@ -135,16 +153,16 @@ export default function InternForm({
         )}
         {!editingIntern && <TrainingField form={form} update={update} />}
         <div className="ticket-form-field">
-          <label>Notes internes</label>
+          <label>{t('intern.form.internalNotes')}</label>
           <textarea
-            placeholder="Notes internes"
+            placeholder={t('intern.form.internalNotes')}
             rows={3}
             value={form.notes}
             onChange={(event) => update('notes', event.target.value)}
           />
         </div>
         <div className="ticket-form-field">
-          <label>Jours de présence</label>
+          <label>{t('intern.form.presenceDays')}</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
             {INTERN_DAYS.map((day) => {
               const checked = form.joursPresence.includes(day)
@@ -171,7 +189,7 @@ export default function InternForm({
                     style={{ display: 'none' }}
                     onChange={() => togglePresenceDay(day)}
                   />
-                  {day.charAt(0).toUpperCase() + day.slice(1)}
+                  {t(INTERN_DAY_LABEL_KEYS[day])}
                 </label>
               )
             })}
@@ -179,10 +197,10 @@ export default function InternForm({
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
           <button className="ticket-new-btn" disabled={submitting} onClick={editingIntern ? onUpdate : onCreate}>
-            {submitting ? 'En cours...' : editingIntern ? 'Enregistrer' : 'Creer le stagiaire'}
+            {submitting ? t('intern.form.submitting') : editingIntern ? t('intern.form.save') : t('intern.form.create')}
           </button>
           <button className="ticket-back-btn" onClick={onCancel}>
-            Annuler
+            {t('intern.form.cancel')}
           </button>
         </div>
       </div>
@@ -197,11 +215,12 @@ interface FieldProps {
 }
 
 function MissionField({ form, update }: FieldProps) {
+  const { t } = useI18n()
   return (
     <div className="ticket-form-field">
-      <label>Poste / Mission *</label>
+      <label>{t('intern.form.mission')}</label>
       <input
-        placeholder="Poste / Mission"
+        placeholder={t('intern.form.missionPlaceholder')}
         value={form.poste}
         onChange={(event) => update('poste', event.target.value)}
       />
@@ -210,11 +229,12 @@ function MissionField({ form, update }: FieldProps) {
 }
 
 function DepartmentField({ form, update }: FieldProps) {
+  const { t } = useI18n()
   return (
     <div className="ticket-form-field">
-      <label>Departement</label>
+      <label>{t('intern.form.department')}</label>
       <input
-        placeholder="Departement"
+        placeholder={t('intern.form.department')}
         value={form.departement}
         onChange={(event) => update('departement', event.target.value)}
       />
@@ -223,11 +243,12 @@ function DepartmentField({ form, update }: FieldProps) {
 }
 
 function TutorField({ admins, form, update }: FieldProps & { admins: AdminUser[] }) {
+  const { t } = useI18n()
   return (
     <div className="ticket-form-field">
-      <label>Tuteur</label>
+      <label>{t('intern.form.tutor')}</label>
       <select value={form.tuteur} onChange={(event) => update('tuteur', event.target.value)}>
-        <option value="">-- Tuteur --</option>
+        <option value="">{t('intern.form.tutorOption')}</option>
         {admins.map((admin) => (
           <option key={admin._id} value={admin._id}>
             {admin.name}
@@ -239,11 +260,12 @@ function TutorField({ admins, form, update }: FieldProps & { admins: AdminUser[]
 }
 
 function SchoolField({ form, update }: FieldProps) {
+  const { t } = useI18n()
   return (
     <div className="ticket-form-field">
-      <label>Ecole / Universite</label>
+      <label>{t('intern.form.school')}</label>
       <input
-        placeholder="Ecole / Universite"
+        placeholder={t('intern.form.school')}
         value={form.ecole}
         onChange={(event) => update('ecole', event.target.value)}
       />
@@ -252,11 +274,12 @@ function SchoolField({ form, update }: FieldProps) {
 }
 
 function TrainingField({ form, update }: FieldProps) {
+  const { t } = useI18n()
   return (
     <div className="ticket-form-field">
-      <label>Formation</label>
+      <label>{t('intern.form.training')}</label>
       <input
-        placeholder="Formation"
+        placeholder={t('intern.form.training')}
         value={form.formation}
         onChange={(event) => update('formation', event.target.value)}
       />

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { fetchTemplates, createTemplate, deleteTemplate } from '../../services/templates'
 import type { ProjectTemplate } from '../../types/template.types'
 import { useToast } from '../../context/ToastContext'
+import { useI18n } from '../../context/I18nContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
@@ -15,19 +16,22 @@ export default function TemplateList() {
   const [description, setDescription] = useState('')
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const { showToast } = useToast()
+  const { t } = useI18n()
 
   const load = async () => {
     try {
       const data = await fetchTemplates()
       setTemplates(data)
     } catch {
-      showToast('Erreur chargement templates', 'error')
+      showToast(t('adminAccess.templates.loadFailed'), 'error')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,10 +41,10 @@ export default function TemplateList() {
       setName('')
       setDescription('')
       setShowForm(false)
-      showToast('Template cree', 'success')
+      showToast(t('adminAccess.templates.created'), 'success')
       await load()
     } catch {
-      showToast('Erreur creation template', 'error')
+      showToast(t('adminAccess.templates.createFailed'), 'error')
     }
   }
 
@@ -49,10 +53,10 @@ export default function TemplateList() {
     try {
       await deleteTemplate(deleteId)
       setDeleteId(null)
-      showToast('Template supprime', 'success')
+      showToast(t('adminAccess.templates.deleted'), 'success')
       await load()
     } catch {
-      showToast('Erreur suppression', 'error')
+      showToast(t('adminAccess.templates.deleteFailed'), 'error')
     }
   }
 
@@ -62,12 +66,12 @@ export default function TemplateList() {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Templates projet</span>
+          <span style={{ color: 'var(--text-primary)' }}>{t('adminAccess.templates.breadcrumb')}</span>
         </div>
         <div className="admin-header">
-          <h1>Templates de projet</h1>
+          <h1>{t('adminAccess.templates.title')}</h1>
           <button className="portal-button" onClick={() => setShowForm(!showForm)}>
-            {showForm ? 'Annuler' : '+ Nouveau template'}
+            {showForm ? t('common.cancel') : t('adminAccess.templates.newTemplate')}
           </button>
         </div>
       </div>
@@ -77,51 +81,70 @@ export default function TemplateList() {
           <form onSubmit={handleCreate} className="portal-list">
             <input
               className="portal-input"
-              placeholder="Nom du template"
+              placeholder={t('adminAccess.templates.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
             <textarea
               className="portal-input"
-              placeholder="Description (optionnel)"
+              placeholder={t('adminAccess.templates.descriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
               style={{ resize: 'vertical', fontFamily: 'inherit' }}
             />
-            <button className="portal-button" type="submit">Creer</button>
+            <button className="portal-button" type="submit">
+              {t('adminAccess.templates.create')}
+            </button>
           </form>
         </div>
       )}
 
       <div className="admin-form-section" style={{ marginTop: 24 }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Chargement...</div>
+          <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>{t('common.loading')}</div>
         ) : templates.length === 0 ? (
           <div className="admin-empty-state" style={{ padding: 48 }}>
-            <p className="admin-empty-state-text">Aucun template. Creez-en un pour accelerer la creation de projets.</p>
+            <p className="admin-empty-state-text">{t('adminAccess.templates.empty')}</p>
           </div>
         ) : (
           <div className="admin-list">
-            {templates.map((t) => (
-              <div key={t._id} className="admin-list-item">
+            {templates.map((tpl) => (
+              <div key={tpl._id} className="admin-list-item">
                 <div className="admin-list-item-content">
-                  <h4 className="admin-list-item-title">{t.name}</h4>
+                  <h4 className="admin-list-item-title">{tpl.name}</h4>
                   <p className="admin-list-item-subtitle">
-                    {t.serviceTypes.length > 0 && <span>{t.serviceTypes.length} services</span>}
-                    {t.defaultTasks.length > 0 && <span style={{ marginLeft: 8 }}>{t.defaultTasks.length} taches</span>}
-                    {t.defaultSections.length > 0 && <span style={{ marginLeft: 8 }}>{t.defaultSections.length} sections</span>}
-                    {!t.serviceTypes.length && !t.defaultTasks.length && !t.defaultSections.length && <span>Template vide</span>}
+                    {tpl.serviceTypes.length > 0 && (
+                      <span>{t('adminAccess.templates.serviceCount', { count: tpl.serviceTypes.length })}</span>
+                    )}
+                    {tpl.defaultTasks.length > 0 && (
+                      <span style={{ marginLeft: 8 }}>
+                        {t('adminAccess.templates.taskCount', { count: tpl.defaultTasks.length })}
+                      </span>
+                    )}
+                    {tpl.defaultSections.length > 0 && (
+                      <span style={{ marginLeft: 8 }}>
+                        {t('adminAccess.templates.sectionCount', { count: tpl.defaultSections.length })}
+                      </span>
+                    )}
+                    {!tpl.serviceTypes.length && !tpl.defaultTasks.length && !tpl.defaultSections.length && (
+                      <span>{t('adminAccess.templates.emptyTemplate')}</span>
+                    )}
                   </p>
                 </div>
                 <div className="admin-list-item-actions">
                   <button
                     className="portal-button secondary"
-                    onClick={() => setDeleteId(t._id)}
-                    style={{ fontSize: 12, padding: '8px 12px', background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                    onClick={() => setDeleteId(tpl._id)}
+                    style={{
+                      fontSize: 12,
+                      padding: '8px 12px',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      borderColor: 'rgba(239, 68, 68, 0.3)',
+                    }}
                   >
-                    Supprimer
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>
@@ -133,8 +156,8 @@ export default function TemplateList() {
       {deleteId && (
         <ConfirmModal
           isOpen={true}
-          title="Supprimer ce template ?"
-          message="Cette action est irreversible."
+          title={t('adminAccess.templates.confirmTitle')}
+          message={t('adminAccess.templates.confirmMessage')}
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
         />

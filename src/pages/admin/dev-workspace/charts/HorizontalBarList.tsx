@@ -1,3 +1,5 @@
+import { useI18n } from '../../../../context/I18nContext'
+
 export interface HorizontalBarRow {
   key: string
   label: string
@@ -12,8 +14,9 @@ interface HorizontalBarListProps {
 
 /** Barres horizontales (priorité / modèle créateur) — valeur affichée en bout de barre. */
 export const HorizontalBarList = ({ rows, ariaLabel }: HorizontalBarListProps) => {
+  const { t } = useI18n()
   if (rows.length === 0) {
-    return <div className="dev-viz-empty">Aucune donnée</div>
+    return <div className="dev-viz-empty">{t('devB.common.noData')}</div>
   }
   const max = Math.max(1, ...rows.map((r) => r.value))
   return (

@@ -287,3 +287,9 @@
     padding: 0;
   }
 }
+
+/* Sélecteur de langue de la barre du haut */
+.admin-shell-topbar .language-select {
+  align-self: center;
+  flex-shrink: 0;
+}

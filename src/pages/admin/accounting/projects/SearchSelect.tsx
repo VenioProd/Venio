@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import { Field } from './shared'
 
 interface Option {
@@ -30,21 +31,22 @@ export default function SearchSelect({
   disabled: boolean
   status?: string
 }) {
+  const { t } = useI18n()
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
   const list = useRef<HTMLUListElement>(null)
   const [search, setSearch] = useState<string | null>(null)
   const [active, setActive] = useState(-1)
   const selected = options.find((option) => option.value === value)
-  const selectedLabel = selected?.label || (value ? status || 'Référence introuvable' : '')
+  const selectedLabel = selected?.label || (value ? status || t('accProjects.search.notFound') : '')
   const open = search !== null && !disabled
   const filtered = options.filter((option) =>
     normalize(`${option.label} ${option.hint || ''}`).includes(normalize(search || '')),
   )
   useEffect(() => {
     // Le texte recherché ne constitue pas une référence sélectionnée.
-    input.current?.setCustomValidity(required && !value ? 'Choisissez une option dans la liste.' : '')
-  }, [required, value])
+    input.current?.setCustomValidity(required && !value ? t('accProjects.search.chooseOption') : '')
+  }, [required, value, t])
   useEffect(() => {
     if (open && active >= 0) list.current?.children[active]?.scrollIntoView?.({ block: 'nearest' })
   }, [active, open])
@@ -71,7 +73,7 @@ export default function SearchSelect({
           required={required}
           disabled={disabled}
           value={open ? search || '' : selectedLabel}
-          placeholder={selectedLabel || 'Rechercher…'}
+          placeholder={selectedLabel || t('accProjects.search.placeholder')}
           onFocus={() => setSearch('')}
           onClick={() => {
             if (!open) setSearch('')
@@ -122,7 +124,7 @@ export default function SearchSelect({
           ))}
           {!filtered.length && (
             <li className="pf-status" role="presentation">
-              {status || 'Aucun résultat'}
+              {status || t('accProjects.search.noResult')}
             </li>
           )}
         </ul>

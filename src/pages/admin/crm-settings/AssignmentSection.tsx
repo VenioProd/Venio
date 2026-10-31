@@ -1,50 +1,52 @@
 import React from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import type { SectionProps } from './types'
 import { AUTOMATION_CATEGORIES } from './constants'
 import CustomSelect from '../../../components/admin/CustomSelect'
 
-const AssignmentSection: React.FC<SectionProps> = ({ settings, canManage, updateSetting, admins = [] }) => (
-  <section className="crm-settings-section">
-    <div className="crm-settings-section-header">
-      {AUTOMATION_CATEGORIES.find((c) => c.id === 'assignment')?.icon}
-      <h2>Attribution automatique</h2>
-    </div>
+const AssignmentSection: React.FC<SectionProps> = ({ settings, canManage, updateSetting, admins = [] }) => {
+  const { t } = useI18n()
 
-    <div className="crm-settings-item">
-      <div className="crm-settings-item-info">
-        <h3>Round-robin</h3>
-        <p>Attribuer automatiquement les nouveaux leads aux commerciaux à tour de rôle</p>
+  return (
+    <section className="crm-settings-section">
+      <div className="crm-settings-section-header">
+        {AUTOMATION_CATEGORIES.find((c) => c.id === 'assignment')?.icon}
+        <h2>{t('crm.settings.cat.assignment')}</h2>
       </div>
-      <label className="crm-toggle">
-        <input
-          type="checkbox"
-          checked={settings.roundRobinEnabled}
-          onChange={(e) => updateSetting('roundRobinEnabled', e.target.checked)}
-          disabled={!canManage}
+
+      <div className="crm-settings-item">
+        <div className="crm-settings-item-info">
+          <h3>{t('crm.settings.assignment.roundRobin')}</h3>
+          <p>{t('crm.settings.assignment.roundRobinDesc')}</p>
+        </div>
+        <label className="crm-toggle">
+          <input
+            type="checkbox"
+            checked={settings.roundRobinEnabled}
+            onChange={(e) => updateSetting('roundRobinEnabled', e.target.checked)}
+            disabled={!canManage}
+          />
+          <span className="crm-toggle-slider" />
+        </label>
+      </div>
+
+      <div className="crm-settings-item">
+        <div className="crm-settings-item-info">
+          <h3>{t('crm.settings.assignment.defaultCloser')}</h3>
+          <p>{t('crm.settings.assignment.defaultCloserDesc')}</p>
+        </div>
+        <CustomSelect
+          className="crm-settings-select"
+          value={settings.defaultCloserId || ''}
+          onChange={(v) => updateSetting('defaultCloserId', v || null)}
+          options={[
+            { value: '', label: t('crm.settings.assignment.defaultCloserFallback') },
+            ...admins.map((a) => ({ value: a._id, label: `${a.name} (${a.email})` })),
+          ]}
         />
-        <span className="crm-toggle-slider" />
-      </label>
-    </div>
-
-    <div className="crm-settings-item">
-      <div className="crm-settings-item-info">
-        <h3>Closer par défaut</h3>
-        <p>
-          Reçoit les dossiers que les commerciaux externes marquent « prêts à closer ». Sans closer, ils vont aux
-          super-admins.
-        </p>
       </div>
-      <CustomSelect
-        className="crm-settings-select"
-        value={settings.defaultCloserId || ''}
-        onChange={(v) => updateSetting('defaultCloserId', v || null)}
-        options={[
-          { value: '', label: 'Super-admins' },
-          ...admins.map((a) => ({ value: a._id, label: `${a.name} (${a.email})` })),
-        ]}
-      />
-    </div>
-  </section>
-)
+    </section>
+  )
+}
 
 export default AssignmentSection

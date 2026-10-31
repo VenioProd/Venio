@@ -18,20 +18,23 @@ import {
 import ConfirmModal from '../ConfirmModal'
 import type { Task, TaskStatus, TaskPriority, TaskComment, TaskAttachment } from '../../types/task.types'
 import type { AdminUser } from '../../types/crm.types'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate as formatLocaleDate } from '../../i18n/format'
+import type { MessageKey } from '../../i18n'
 import '../../styles/task-board.css'
 
-const TASK_COLUMNS: { key: TaskStatus; label: string; color: string }[] = [
-  { key: 'A_FAIRE', label: 'A faire', color: '#0ea5e9' },
-  { key: 'EN_COURS', label: 'En cours', color: '#9b9b9b' },
-  { key: 'EN_REVIEW', label: 'En review', color: '#f59e0b' },
-  { key: 'TERMINE', label: 'Termine', color: '#22c55e' },
+const TASK_COLUMNS: { key: TaskStatus; labelKey: MessageKey; color: string }[] = [
+  { key: 'A_FAIRE', labelKey: 'compA.taskStatus.todo', color: '#0ea5e9' },
+  { key: 'EN_COURS', labelKey: 'compA.taskStatus.inProgress', color: '#9b9b9b' },
+  { key: 'EN_REVIEW', labelKey: 'compA.taskStatus.inReview', color: '#f59e0b' },
+  { key: 'TERMINE', labelKey: 'compA.taskStatus.done', color: '#22c55e' },
 ]
 
-const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string }> = {
-  BASSE: { label: 'Basse', color: '#64748b' },
-  NORMALE: { label: 'Normale', color: '#0ea5e9' },
-  HAUTE: { label: 'Haute', color: '#f59e0b' },
-  URGENTE: { label: 'Urgente', color: '#ef4444' },
+const PRIORITY_CONFIG: Record<TaskPriority, { labelKey: MessageKey; color: string }> = {
+  BASSE: { labelKey: 'compA.priority.low', color: '#64748b' },
+  NORMALE: { labelKey: 'compA.priority.normal', color: '#0ea5e9' },
+  HAUTE: { labelKey: 'compA.priority.high', color: '#f59e0b' },
+  URGENTE: { labelKey: 'compA.priority.urgent', color: '#ef4444' },
 }
 
 interface TaskBoardProps {
@@ -48,6 +51,7 @@ const emptyForm = {
 }
 
 const TaskBoard = ({ projectId }: TaskBoardProps) => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_TASKS)
   const [tasks, setTasks] = useState<Task[]>([])
@@ -79,7 +83,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       setTasks(taskList)
       setAdmins(adminRes.users || [])
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur chargement des taches')
+      setError((err as Error).message || t('compA.taskBoard.loadError'))
     } finally {
       setLoading(false)
     }
@@ -90,7 +94,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
   }, [load])
 
   const tasksByStatus = (status: TaskStatus): Task[] => {
-    return tasks.filter((t) => t.status === status).sort((a, b) => a.order - b.order)
+    return tasks.filter((task) => task.status === status).sort((a, b) => a.order - b.order)
   }
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
@@ -107,7 +111,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       await moveTask(projectId, taskId, status, order)
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur deplacement')
+      setError((err as Error).message || t('compA.taskBoard.moveError'))
     }
   }
 
@@ -160,7 +164,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       setEditingTask(null)
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur sauvegarde')
+      setError((err as Error).message || t('compA.taskBoard.saveError'))
     }
   }
 
@@ -170,7 +174,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       setDeleteConfirm(null)
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression')
+      setError((err as Error).message || t('compA.taskBoard.deleteError'))
     }
   }
 
@@ -189,7 +193,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       setComments((prev) => [...prev, newComment])
       setCommentText('')
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur ajout commentaire')
+      setError((err as Error).message || t('compA.taskBoard.addCommentError'))
     } finally {
       setCommentLoading(false)
     }
@@ -201,7 +205,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       await deleteComment(projectId, editingTask._id, commentId)
       setComments((prev) => prev.filter((c) => c._id !== commentId))
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression commentaire')
+      setError((err as Error).message || t('compA.taskBoard.deleteCommentError'))
     }
   }
 
@@ -213,9 +217,9 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
     try {
       const attachments = await uploadAttachment(projectId, editingTask._id, file)
       setEditingTask({ ...editingTask, attachments })
-      setTasks((prev) => prev.map((t) => (t._id === editingTask._id ? { ...t, attachments } : t)))
+      setTasks((prev) => prev.map((task) => (task._id === editingTask._id ? { ...task, attachments } : task)))
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur upload')
+      setError((err as Error).message || t('compA.taskBoard.uploadError'))
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -229,16 +233,16 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       await deleteAttachment(projectId, editingTask._id, attachmentId)
       const updated = (editingTask.attachments || []).filter((a) => a._id !== attachmentId)
       setEditingTask({ ...editingTask, attachments: updated })
-      setTasks((prev) => prev.map((t) => (t._id === editingTask._id ? { ...t, attachments: updated } : t)))
+      setTasks((prev) => prev.map((task) => (task._id === editingTask._id ? { ...task, attachments: updated } : task)))
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression fichier')
+      setError((err as Error).message || t('compA.taskBoard.deleteFileError'))
     }
   }
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} o`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+    if (bytes < 1024) return t('compA.gTable.sizeBytes', { n: bytes })
+    if (bytes < 1024 * 1024) return t('compA.gTable.sizeKb', { n: (bytes / 1024).toFixed(0) })
+    return t('compA.gTable.sizeMb', { n: (bytes / (1024 * 1024)).toFixed(1) })
   }
 
   const getFileIcon = (mimeType: string) => {
@@ -252,17 +256,17 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
   const formatTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime()
     const minutes = Math.floor(diff / 60000)
-    if (minutes < 1) return "a l'instant"
-    if (minutes < 60) return `il y a ${minutes}min`
+    if (minutes < 1) return t('compA.taskBoard.agoNow')
+    if (minutes < 60) return t('compA.taskBoard.agoMinutes', { n: minutes })
     const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `il y a ${hours}h`
+    if (hours < 24) return t('compA.taskBoard.agoHours', { n: hours })
     const days = Math.floor(hours / 24)
-    return `il y a ${days}j`
+    return t('compA.taskBoard.agoDays', { n: days })
   }
 
   const formatDate = (date: string | null) => {
     if (!date) return ''
-    return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+    return formatLocaleDate(date, { day: '2-digit', month: 'short' })
   }
 
   const isOverdue = (dueDate: string | null) => {
@@ -271,7 +275,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
   }
 
   if (loading) {
-    return <div className="task-board-loading">Chargement des taches...</div>
+    return <div className="task-board-loading">{t('compA.taskBoard.loading')}</div>
   }
 
   return (
@@ -290,13 +294,13 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
               style={{ '--column-color': column.color } as React.CSSProperties}
             >
               <div className="task-column-header">
-                <span className="task-column-title">{column.label}</span>
+                <span className="task-column-title">{t(column.labelKey)}</span>
                 <span className="task-column-count">{columnTasks.length}</span>
               </div>
 
               {canManage && (
                 <button className="task-add-btn" onClick={() => openCreateModal(column.key)}>
-                  + Ajouter
+                  {t('compA.taskBoard.add')}
                 </button>
               )}
 
@@ -333,7 +337,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                       className="task-priority-badge"
                       style={{ '--priority-color': PRIORITY_CONFIG[task.priority].color } as React.CSSProperties}
                     >
-                      {PRIORITY_CONFIG[task.priority].label}
+                      {t(PRIORITY_CONFIG[task.priority].labelKey)}
                     </span>
                     {task.assignee && <span className="task-assignee">{task.assignee.name}</span>}
                     {task.dueDate && (
@@ -355,11 +359,17 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       {showModal && (
         <div className="task-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="task-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{editingTask ? (canManage ? 'Modifier la tache' : 'Detail de la tache') : 'Nouvelle tache'}</h3>
+            <h3>
+              {editingTask
+                ? canManage
+                  ? t('compA.taskBoard.editTitle')
+                  : t('compA.taskBoard.detailTitle')
+                : t('compA.taskBoard.newTitle')}
+            </h3>
             {canManage ? (
               <form onSubmit={handleSubmit}>
                 <div className="task-form-group">
-                  <label>Titre *</label>
+                  <label>{t('compA.taskBoard.fTitleReq')}</label>
                   <input
                     type="text"
                     value={form.title}
@@ -369,7 +379,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                   />
                 </div>
                 <div className="task-form-group">
-                  <label>Description</label>
+                  <label>{t('compA.gTable.description')}</label>
                   <textarea
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -378,27 +388,27 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                 </div>
                 <div className="task-form-row">
                   <div className="task-form-group">
-                    <label>Statut</label>
+                    <label>{t('compA.gTable.thStatus')}</label>
                     <select
                       value={form.status}
                       onChange={(e) => setForm({ ...form, status: e.target.value as TaskStatus })}
                     >
                       {TASK_COLUMNS.map((c) => (
                         <option key={c.key} value={c.key}>
-                          {c.label}
+                          {t(c.labelKey)}
                         </option>
                       ))}
                     </select>
                   </div>
                   <div className="task-form-group">
-                    <label>Priorite</label>
+                    <label>{t('compA.gTable.thPriority')}</label>
                     <select
                       value={form.priority}
                       onChange={(e) => setForm({ ...form, priority: e.target.value as TaskPriority })}
                     >
                       {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
                         <option key={key} value={key}>
-                          {cfg.label}
+                          {t(cfg.labelKey)}
                         </option>
                       ))}
                     </select>
@@ -406,9 +416,9 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                 </div>
                 <div className="task-form-row">
                   <div className="task-form-group">
-                    <label>Assignee</label>
+                    <label>{t('compA.gTable.thAssignee')}</label>
                     <select value={form.assignee} onChange={(e) => setForm({ ...form, assignee: e.target.value })}>
-                      <option value="">Non assigne</option>
+                      <option value="">{t('compA.taskBoard.unassigned')}</option>
                       {admins.map((admin) => (
                         <option key={admin._id} value={admin._id}>
                           {admin.name}
@@ -417,7 +427,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                     </select>
                   </div>
                   <div className="task-form-group">
-                    <label>Echeance</label>
+                    <label>{t('compA.taskBoard.fDue')}</label>
                     <input
                       type="date"
                       value={form.dueDate}
@@ -427,10 +437,10 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                 </div>
                 <div className="task-form-actions">
                   <button type="button" className="portal-btn-secondary" onClick={() => setShowModal(false)}>
-                    Annuler
+                    {t('common.cancel')}
                   </button>
                   <button type="submit" className="portal-btn">
-                    {editingTask ? 'Enregistrer' : 'Creer'}
+                    {editingTask ? t('common.save') : t('compA.taskBoard.create')}
                   </button>
                 </div>
               </form>
@@ -438,42 +448,47 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
               editingTask && (
                 <div className="task-detail-readonly">
                   <div className="task-form-group">
-                    <label>Titre</label>
+                    <label>{t('compA.taskBoard.fTitle')}</label>
                     <p className="task-readonly-value">{editingTask.title}</p>
                   </div>
                   {editingTask.description && (
                     <div className="task-form-group">
-                      <label>Description</label>
+                      <label>{t('compA.gTable.description')}</label>
                       <p className="task-readonly-value">{editingTask.description}</p>
                     </div>
                   )}
                   <div className="task-form-row">
                     <div className="task-form-group">
-                      <label>Statut</label>
+                      <label>{t('compA.gTable.thStatus')}</label>
                       <p className="task-readonly-value">
-                        {TASK_COLUMNS.find((c) => c.key === editingTask.status)?.label}
+                        {(() => {
+                          const col = TASK_COLUMNS.find((c) => c.key === editingTask.status)
+                          return col ? t(col.labelKey) : undefined
+                        })()}
                       </p>
                     </div>
                     <div className="task-form-group">
-                      <label>Priorite</label>
-                      <p className="task-readonly-value">{PRIORITY_CONFIG[editingTask.priority].label}</p>
+                      <label>{t('compA.gTable.thPriority')}</label>
+                      <p className="task-readonly-value">{t(PRIORITY_CONFIG[editingTask.priority].labelKey)}</p>
                     </div>
                   </div>
                   <div className="task-form-row">
                     <div className="task-form-group">
-                      <label>Assignee</label>
-                      <p className="task-readonly-value">{editingTask.assignee?.name || 'Non assigne'}</p>
+                      <label>{t('compA.gTable.thAssignee')}</label>
+                      <p className="task-readonly-value">
+                        {editingTask.assignee?.name || t('compA.taskBoard.unassigned')}
+                      </p>
                     </div>
                     <div className="task-form-group">
-                      <label>Echeance</label>
+                      <label>{t('compA.taskBoard.fDue')}</label>
                       <p className="task-readonly-value">
-                        {editingTask.dueDate ? formatDate(editingTask.dueDate) : 'Aucune'}
+                        {editingTask.dueDate ? formatDate(editingTask.dueDate) : t('compA.taskBoard.noDue')}
                       </p>
                     </div>
                   </div>
                   <div className="task-form-actions">
                     <button type="button" className="portal-btn-secondary" onClick={() => setShowModal(false)}>
-                      Fermer
+                      {t('common.close')}
                     </button>
                   </div>
                 </div>
@@ -483,10 +498,12 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
             {/* Attachments — only in edit mode */}
             {editingTask && (
               <div className="task-attachments-section">
-                <h4 className="task-attachments-title">Pieces jointes ({editingTask.attachments?.length || 0})</h4>
+                <h4 className="task-attachments-title">
+                  {t('compA.taskBoard.attachments', { n: editingTask.attachments?.length || 0 })}
+                </h4>
                 <div className="task-attachments-list">
                   {(!editingTask.attachments || editingTask.attachments.length === 0) && (
-                    <p className="task-attachments-empty">Aucune piece jointe</p>
+                    <p className="task-attachments-empty">{t('compA.taskBoard.noAttachment')}</p>
                   )}
                   {editingTask.attachments?.map((att) => (
                     <div key={att._id} className="task-attachment-item">
@@ -499,11 +516,11 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                         className="task-attachment-download"
                         onClick={() =>
                           downloadAttachment(projectId, editingTask._id, att._id, att.originalName).catch(() =>
-                            setError('Erreur telechargement'),
+                            setError(t('compA.taskBoard.downloadError')),
                           )
                         }
                       >
-                        Telecharger
+                        {t('compA.taskBoard.download')}
                       </button>
                       {canManage && (
                         <button className="task-attachment-delete" onClick={() => handleDeleteAttachment(att._id)}>
@@ -527,7 +544,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading}
                     >
-                      {uploading ? 'Envoi en cours...' : '+ Ajouter un fichier'}
+                      {uploading ? t('compA.taskBoard.uploading') : t('compA.taskBoard.addFile')}
                     </button>
                   </div>
                 )}
@@ -537,9 +554,9 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
             {/* Comment thread — only in edit mode */}
             {editingTask && (
               <div className="task-comments-section">
-                <h4 className="task-comments-title">Commentaires ({comments.length})</h4>
+                <h4 className="task-comments-title">{t('compA.taskBoard.comments', { n: comments.length })}</h4>
                 <div className="task-comments-list">
-                  {comments.length === 0 && <p className="task-comments-empty">Aucun commentaire</p>}
+                  {comments.length === 0 && <p className="task-comments-empty">{t('compA.taskBoard.noComment')}</p>}
                   {comments.map((comment) => (
                     <div key={comment._id} className="task-comment">
                       <div className="task-comment-header">
@@ -569,7 +586,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                     <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      placeholder={`Ecrire un commentaire... (utilisez @nom pour mentionner)`}
+                      placeholder={t('compA.taskBoard.commentPlaceholder')}
                       rows={2}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -583,7 +600,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                       onClick={handleAddComment}
                       disabled={commentLoading || !commentText.trim()}
                     >
-                      Envoyer
+                      {t('compA.taskBoard.send')}
                     </button>
                   </div>
                 )}
@@ -597,8 +614,8 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
       {deleteConfirm && (
         <ConfirmModal
           isOpen={true}
-          title="Supprimer la tache"
-          message="Cette action est irreversible. Voulez-vous continuer ?"
+          title={t('compA.taskBoard.deleteTitle')}
+          message={t('compA.taskBoard.deleteMessage')}
           onConfirm={() => handleDelete(deleteConfirm)}
           onCancel={() => setDeleteConfirm(null)}
         />

@@ -1,4 +1,6 @@
 import { WorkspaceOverlayPortal } from '../../../components/WorkspaceOverlayPortal'
+import { useI18n } from '../../../context/I18nContext'
+import { intlLocale, translate } from '../../../i18n'
 import { useEducationAutosave } from './useEducationAutosave'
 import { AutosaveStatus } from './AutosaveStatus'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -10,13 +12,14 @@ import {
   type CalendarEventWorkspace,
 } from '../../../services/educationCalendar'
 import {
-  formatDate,
   type EducationClass,
   type SessionDuty,
   type SessionLink,
   type SessionReminder,
   type SessionRemark,
 } from '../../../services/education'
+import { formatShortDate } from './eduFormat'
+import { durationLabel, formatRange, monthName, weekdayLong } from './calendarFormat'
 import { DutiesSection, LinksSection, NotesSection, RemarksSection, RemindersSection } from './WorkspaceSections'
 
 /**
@@ -35,38 +38,6 @@ import { DutiesSection, LinksSection, NotesSection, RemarksSection, RemindersSec
  *
  * Autosave en debounce 800ms (identique à SessionDetailDrawer pour VENIO-43).
  */
-
-const DAY_NAMES_LONG = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
-const MONTH_NAMES = [
-  'Janvier',
-  'Février',
-  'Mars',
-  'Avril',
-  'Mai',
-  'Juin',
-  'Juillet',
-  'Août',
-  'Septembre',
-  'Octobre',
-  'Novembre',
-  'Décembre',
-]
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-}
-
-function durationLabel(min: number): string {
-  if (min < 60) return `${min} min`
-  const h = Math.floor(min / 60)
-  const m = min % 60
-  return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, '0')}`
-}
-
-function formatRange(start: string, end: string, allDay: boolean): string {
-  if (allDay) return 'Journée entière'
-  return `${formatTime(start)} – ${formatTime(end)}`
-}
 
 export interface CalendarEventWorkspaceDrawerProps {
   event: AppleCalendarEvent
@@ -87,6 +58,7 @@ export function CalendarEventWorkspaceDrawer({
   onChanged,
   onOpenClass,
 }: CalendarEventWorkspaceDrawerProps) {
+  const { t } = useI18n()
   const [workspace, setWorkspace] = useState<CalendarEventWorkspace | null>(null)
   const [notes, setNotes] = useState('')
   const [remarks, setRemarks] = useState<SessionRemark[]>([])
@@ -129,7 +101,7 @@ export function CalendarEventWorkspaceDrawer({
       setClassId(restored.classId)
       setLoaded(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de charger la fiche')
+      setError(err instanceof Error ? err.message : translate('eduB.event.loadFailed'))
     }
   }, [event.occurrenceId, defaultMatch?.classId, restore])
 
@@ -139,16 +111,21 @@ export function CalendarEventWorkspaceDrawer({
 
   const dayLabel = useMemo(() => {
     const start = new Date(event.start)
-    return `${DAY_NAMES_LONG[(start.getDay() + 6) % 7]} ${start.getDate()} ${MONTH_NAMES[start.getMonth()]} ${start.getFullYear()}`
-  }, [event.start])
+    return t('eduB.event.dayLabel', {
+      weekday: weekdayLong(start),
+      day: start.getDate(),
+      month: monthName(start),
+      year: start.getFullYear(),
+    })
+  }, [event.start, t])
 
   const classOptions = useMemo(() => {
     if (!classes) return []
-    return [...classes].filter((c) => c.status !== 'ARCHIVE').sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+    return [...classes].filter((c) => c.status !== 'ARCHIVE').sort((a, b) => a.name.localeCompare(b.name, intlLocale()))
   }, [classes])
 
   const linkedClass = classOptions.find((c) => c._id === classId) || null
-  const matchHint = defaultMatch && !workspace?.classId ? `Rattachement suggéré : ${defaultMatch.className}` : null
+  const suggestedClassName = defaultMatch && !workspace?.classId ? defaultMatch.className : null
 
   return (
     <WorkspaceOverlayPortal>
@@ -157,13 +134,13 @@ export function CalendarEventWorkspaceDrawer({
         <div className="edu-drawer-head">
           <div>
             <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-              {event.title || '(Sans titre)'}
+              {event.title || t('eduB.event.untitled')}
             </h2>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
               <Apple size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
               Apple Calendar
               {event.status && ` · ${event.status.toLowerCase()}`}
-              <span style={{ marginLeft: 8, color: 'rgba(255,255,255,0.4)' }}>(événement en lecture seule)</span>
+              <span style={{ marginLeft: 8, color: 'rgba(255,255,255,0.4)' }}>{t('eduB.event.readOnly')}</span>
             </div>
           </div>
           <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
@@ -175,10 +152,10 @@ export function CalendarEventWorkspaceDrawer({
                   if (await flush()) onCreateSession()
                 }}
               >
-                Créer la séance
+                {t('eduB.createSession.title')}
               </button>
             )}
-            <button className="edu-btn-icon" onClick={onClose} aria-label="Fermer">
+            <button className="edu-btn-icon" onClick={onClose} aria-label={t('common.close')}>
               <X size={18} />
             </button>
           </div>
@@ -196,7 +173,7 @@ export function CalendarEventWorkspaceDrawer({
                   load()
                 }}
               >
-                Recharger
+                {t('eduB.shared.reload')}
               </button>
             </div>
           )}
@@ -226,7 +203,7 @@ export function CalendarEventWorkspaceDrawer({
             )}
             {event.description && (
               <div className="edu-calevt-meta-block">
-                <div className="edu-calevt-meta-label">Description Apple</div>
+                <div className="edu-calevt-meta-label">{t('eduB.event.appleDescription')}</div>
                 <div style={{ whiteSpace: 'pre-wrap', fontSize: 13 }}>{event.description}</div>
               </div>
             )}
@@ -244,7 +221,7 @@ export function CalendarEventWorkspaceDrawer({
           <div className="edu-session-block">
             <div className="edu-collapse-toggle" aria-disabled style={{ cursor: 'default' }}>
               <BookOpen size={13} />
-              <span>Classe rattachée</span>
+              <span>{t('eduB.event.linkedClass')}</span>
               {linkedClass && <span className="edu-side-badge">{linkedClass.name}</span>}
             </div>
             <div className="edu-session-block-body">
@@ -258,9 +235,9 @@ export function CalendarEventWorkspaceDrawer({
                     change({ classId: value })
                   }}
                   style={{ minWidth: 220 }}
-                  aria-label="Rattacher à une classe"
+                  aria-label={t('eduB.event.linkToClass')}
                 >
-                  <option value="">— Aucune classe —</option>
+                  <option value="">{t('eduB.event.noClass')}</option>
                   {classOptions.map((c) => (
                     <option key={c._id} value={c._id}>
                       {c.name}
@@ -274,15 +251,15 @@ export function CalendarEventWorkspaceDrawer({
                     onClick={async () => {
                       if (await flush()) onOpenClass(linkedClass._id)
                     }}
-                    title="Ouvrir la classe"
+                    title={t('eduB.event.openClass')}
                   >
-                    <ExternalLink size={13} /> Ouvrir la classe
+                    <ExternalLink size={13} /> {t('eduB.event.openClass')}
                   </button>
                 )}
               </div>
-              {matchHint && (
+              {suggestedClassName && (
                 <p className="edu-sub" style={{ marginTop: 6 }}>
-                  {matchHint} — sélectionne dans la liste pour le confirmer.
+                  {t('eduB.event.matchHint', { name: suggestedClassName })}
                 </p>
               )}
             </div>
@@ -327,14 +304,14 @@ export function CalendarEventWorkspaceDrawer({
 
           {workspace?.updatedAt && (
             <p className="edu-sub" style={{ marginTop: 12, fontSize: 11.5, opacity: 0.55 }}>
-              Dernière sauvegarde locale : {formatDate(workspace.updatedAt, true)}
+              {t('eduB.event.lastLocalSave', { date: formatShortDate(workspace.updatedAt, true) })}
             </p>
           )}
         </div>
 
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
-            Fermer
+            {t('common.close')}
           </button>
         </div>
       </div>

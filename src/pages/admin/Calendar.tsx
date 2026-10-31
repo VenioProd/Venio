@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import './AdminPortal.css'
 import '../../styles/calendar.css'
 
@@ -17,35 +19,43 @@ interface CalendarEvent {
   }
 }
 
-const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-
-const MONTH_NAMES = [
-  'Janvier',
-  'Février',
-  'Mars',
-  'Avril',
-  'Mai',
-  'Juin',
-  'Juillet',
-  'Août',
-  'Septembre',
-  'Octobre',
-  'Novembre',
-  'Décembre',
+const DAY_NAME_KEYS: MessageKey[] = [
+  'adminOps.calendar.dayMon',
+  'adminOps.calendar.dayTue',
+  'adminOps.calendar.dayWed',
+  'adminOps.calendar.dayThu',
+  'adminOps.calendar.dayFri',
+  'adminOps.calendar.daySat',
+  'adminOps.calendar.daySun',
 ]
 
-const TYPE_LABELS: Record<string, string> = {
-  task: 'Tâche',
-  deadline: 'Deadline',
-  project_start: 'Début projet',
-  project_end: 'Fin projet',
+const MONTH_NAME_KEYS: MessageKey[] = [
+  'adminOps.calendar.month1',
+  'adminOps.calendar.month2',
+  'adminOps.calendar.month3',
+  'adminOps.calendar.month4',
+  'adminOps.calendar.month5',
+  'adminOps.calendar.month6',
+  'adminOps.calendar.month7',
+  'adminOps.calendar.month8',
+  'adminOps.calendar.month9',
+  'adminOps.calendar.month10',
+  'adminOps.calendar.month11',
+  'adminOps.calendar.month12',
+]
+
+const TYPE_LABEL_KEYS: Record<string, MessageKey> = {
+  task: 'adminOps.calendar.typeTask',
+  deadline: 'adminOps.calendar.typeDeadline',
+  project_start: 'adminOps.calendar.typeProjectStart',
+  project_end: 'adminOps.calendar.typeProjectEnd',
 }
 
-const LEGEND_ITEMS = [
-  { type: 'task', label: 'Tâches', color: '#0ea5e9' },
-  { type: 'deadline', label: 'Deadlines', color: '#ef4444' },
-  { type: 'project_start', label: 'Début projet', color: '#22c55e' },
-  { type: 'project_end', label: 'Fin projet', color: '#f97316' },
+const LEGEND_ITEMS: { type: string; labelKey: MessageKey; color: string }[] = [
+  { type: 'task', labelKey: 'adminOps.calendar.legendTasks', color: '#0ea5e9' },
+  { type: 'deadline', labelKey: 'adminOps.calendar.legendDeadlines', color: '#ef4444' },
+  { type: 'project_start', labelKey: 'adminOps.calendar.typeProjectStart', color: '#22c55e' },
+  { type: 'project_end', labelKey: 'adminOps.calendar.typeProjectEnd', color: '#f97316' },
 ]
 
 function formatDateKey(d: Date): string {
@@ -87,6 +97,7 @@ function getCalendarDays(year: number, month: number) {
 }
 
 export default function Calendar() {
+  const { t } = useI18n()
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
@@ -150,7 +161,7 @@ export default function Calendar() {
 
   const selectedDateObj = selectedDate ? new Date(selectedDate + 'T00:00:00') : null
   const selectedLabel = selectedDateObj
-    ? `${selectedDateObj.getDate()} ${MONTH_NAMES[selectedDateObj.getMonth()]} ${selectedDateObj.getFullYear()}`
+    ? `${selectedDateObj.getDate()} ${t(MONTH_NAME_KEYS[selectedDateObj.getMonth()])} ${selectedDateObj.getFullYear()}`
     : ''
 
   return (
@@ -159,10 +170,10 @@ export default function Calendar() {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Calendrier</span>
+          <span style={{ color: 'var(--text-primary)' }}>{t('adminOps.calendar.title')}</span>
         </div>
         <div className="admin-header">
-          <h1>Calendrier</h1>
+          <h1>{t('adminOps.calendar.title')}</h1>
         </div>
       </div>
 
@@ -170,32 +181,32 @@ export default function Calendar() {
         {/* Navigation */}
         <div className="calendar-header">
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button className="calendar-nav-btn" onClick={goToPrevMonth} title="Mois précédent">
+            <button className="calendar-nav-btn" onClick={goToPrevMonth} title={t('adminOps.calendar.prevMonth')}>
               &#8592;
             </button>
             <button className="calendar-today-btn" onClick={goToToday}>
-              Aujourd&apos;hui
+              {t('adminOps.calendar.today')}
             </button>
-            <button className="calendar-nav-btn" onClick={goToNextMonth} title="Mois suivant">
+            <button className="calendar-nav-btn" onClick={goToNextMonth} title={t('adminOps.calendar.nextMonth')}>
               &#8594;
             </button>
           </div>
           <h2>
-            {MONTH_NAMES[month]} {year}
+            {t(MONTH_NAME_KEYS[month])} {year}
           </h2>
           <div style={{ width: 120 }} />
         </div>
 
         {loading ? (
-          <div className="calendar-loading">Chargement...</div>
+          <div className="calendar-loading">{t('common.loading')}</div>
         ) : (
           <>
             {/* Calendar Grid */}
             <div className="calendar-grid">
               {/* Day Headers */}
-              {DAY_NAMES.map((day) => (
-                <div key={day} className="calendar-day-header">
-                  {day}
+              {DAY_NAME_KEYS.map((dayKey) => (
+                <div key={dayKey} className="calendar-day-header">
+                  {t(dayKey)}
                 </div>
               ))}
 
@@ -228,7 +239,9 @@ export default function Calendar() {
                           </div>
                         ))}
                         {dayEvents.length > 3 && (
-                          <span className="calendar-event-more">+{dayEvents.length - 3} de plus</span>
+                          <span className="calendar-event-more">
+                            {t('adminOps.calendar.more', { count: dayEvents.length - 3 })}
+                          </span>
                         )}
                       </div>
                     )}
@@ -242,7 +255,7 @@ export default function Calendar() {
               {LEGEND_ITEMS.map((item) => (
                 <div key={item.type} className="calendar-legend-item">
                   <span className="calendar-legend-dot" style={{ background: item.color }} />
-                  {item.label}
+                  {t(item.labelKey)}
                 </div>
               ))}
             </div>
@@ -253,11 +266,11 @@ export default function Calendar() {
                 <div className="calendar-detail-header">
                   <h3>{selectedLabel}</h3>
                   <button className="calendar-detail-close" onClick={() => setSelectedDate(null)}>
-                    Fermer
+                    {t('common.close')}
                   </button>
                 </div>
                 {selectedEvents.length === 0 ? (
-                  <div className="calendar-empty-state">Aucun événement ce jour</div>
+                  <div className="calendar-empty-state">{t('adminOps.calendar.noEvents')}</div>
                 ) : (
                   <div className="calendar-detail-list">
                     {selectedEvents.map((ev) => (
@@ -277,7 +290,7 @@ export default function Calendar() {
                           </div>
                         </div>
                         <span className={`calendar-detail-type type-${ev.type}`}>
-                          {TYPE_LABELS[ev.type] || ev.type}
+                          {TYPE_LABEL_KEYS[ev.type] ? t(TYPE_LABEL_KEYS[ev.type]) : ev.type}
                         </span>
                       </Link>
                     ))}

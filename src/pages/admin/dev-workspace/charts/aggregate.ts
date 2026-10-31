@@ -5,6 +5,8 @@
  * aucune valeur inventée : si la donnée source manque (ex. `completedAt` absent),
  * le jour correspondant reste à 0 plutôt que d'être extrapolé.
  */
+import { translate } from '../../../../i18n'
+import { formatDate } from '../../../../i18n/format'
 import type { DevIssue } from '../../../../services/dev'
 
 export interface VelocityPoint {
@@ -34,7 +36,7 @@ export function buildVelocitySeries(issues: DevIssue[], days = 14): VelocityPoin
     d.setDate(d.getDate() - i)
     const key = localDayKey(d)
     order.push(key)
-    labels.set(key, d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }))
+    labels.set(key, formatDate(d, { day: '2-digit', month: '2-digit' }))
     counts.set(key, 0)
   }
   for (const issue of issues) {
@@ -58,7 +60,7 @@ export interface ModelBreakdownRow {
 export function buildCreatorModelRows(issues: DevIssue[], topN = 6): ModelBreakdownRow[] {
   const counts = new Map<string, number>()
   for (const issue of issues) {
-    const label = issue.createdByModel?.trim() || 'Non renseigné'
+    const label = issue.createdByModel?.trim() || translate('devB.charts.unknownModel')
     counts.set(label, (counts.get(label) || 0) + 1)
   }
   const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1])
@@ -66,6 +68,7 @@ export function buildCreatorModelRows(issues: DevIssue[], topN = 6): ModelBreakd
   const rest = sorted.slice(topN)
   const restTotal = rest.reduce((sum, [, v]) => sum + v, 0)
   const rows: ModelBreakdownRow[] = top.map(([label, value]) => ({ key: label, label, value }))
-  if (restTotal > 0) rows.push({ key: '__others__', label: `Autres (${rest.length})`, value: restTotal })
+  if (restTotal > 0)
+    rows.push({ key: '__others__', label: translate('devB.charts.others', { count: rest.length }), value: restTotal })
   return rows
 }

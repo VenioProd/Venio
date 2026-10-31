@@ -1,14 +1,10 @@
 import type { FormEvent } from 'react'
+import { useI18n } from '../../../context/I18nContext'
+import { POLE_KEYS, PRIORITY_KEYS, PROJECT_FORM_STATUS_KEYS, labelFor } from './labels'
 import type { Member, Project } from './types'
 import { emptyForm } from './types'
 
 const ENTITIES = ['Venio', 'Creatio', 'Decisio', 'Formatio', 'Arrow']
-const STATUS_LABELS: Record<string, string> = {
-  EN_COURS: 'En cours',
-  PAUSE: 'En pause',
-  TERMINE: 'Terminé',
-  ARCHIVE: 'Archivé',
-}
 
 interface FormState {
   name: string
@@ -48,35 +44,36 @@ export default function ProjectFormDrawer({
   onClose,
   onSubmit,
 }: Props) {
+  const { t } = useI18n()
   return (
     <div className="portal-card" style={{ marginTop: 20 }}>
       <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
-        {editTarget ? 'Modifier le projet' : 'Nouveau projet interne'}
+        {editTarget ? t('projA.projectForm.editTitle') : t('projA.projectForm.newTitle')}
       </h2>
       <form onSubmit={onSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="portal-label">Nom du projet *</label>
+            <label className="portal-label">{t('projA.projectForm.nameLabel')}</label>
             <input
               className="portal-input"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Ex: Plateforme Arrow"
+              placeholder={t('projA.projectForm.namePlaceholder')}
             />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="portal-label">Description</label>
+            <label className="portal-label">{t('projA.common.description')}</label>
             <textarea
               className="portal-input"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               rows={3}
               style={{ resize: 'vertical' }}
-              placeholder="Objectif, contexte..."
+              placeholder={t('projA.projectForm.descriptionPlaceholder')}
             />
           </div>
           <div>
-            <label className="portal-label">Entité</label>
+            <label className="portal-label">{t('projA.projectForm.entityLabel')}</label>
             <select
               className="portal-input"
               value={form.entity}
@@ -90,44 +87,44 @@ export default function ProjectFormDrawer({
             </select>
           </div>
           <div>
-            <label className="portal-label">Statut</label>
+            <label className="portal-label">{t('projA.projectForm.statusLabel')}</label>
             <select
               className="portal-input"
               value={form.status}
               onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
             >
-              {Object.entries(STATUS_LABELS).map(([v, l]) => (
+              {Object.entries(PROJECT_FORM_STATUS_KEYS).map(([v, key]) => (
                 <option key={v} value={v}>
-                  {l}
+                  {t(key)}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label className="portal-label">Priorité</label>
+            <label className="portal-label">{t('projA.projectForm.priorityLabel')}</label>
             <select
               className="portal-input"
               value={form.priority}
               onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
             >
-              <option value="BASSE">Basse</option>
-              <option value="NORMALE">Normale</option>
-              <option value="HAUTE">Haute</option>
-              <option value="URGENTE">Urgente</option>
+              <option value="BASSE">{t(PRIORITY_KEYS.BASSE)}</option>
+              <option value="NORMALE">{t(PRIORITY_KEYS.NORMALE)}</option>
+              <option value="HAUTE">{t(PRIORITY_KEYS.HAUTE)}</option>
+              <option value="URGENTE">{t(PRIORITY_KEYS.URGENTE)}</option>
             </select>
           </div>
           <div>
-            <label className="portal-label">Tags (virgule)</label>
+            <label className="portal-label">{t('projA.projectForm.tagsLabel')}</label>
             <input
               className="portal-input"
               value={form.tags}
               onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-              placeholder="design, refonte, v2..."
+              placeholder={t('projA.projectForm.tagsPlaceholder')}
             />
           </div>
           {/* Poles */}
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="portal-label">Pôles concernés</label>
+            <label className="portal-label">{t('projA.projectForm.polesLabel')}</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
               {poles.map((pole: string) => (
                 <button
@@ -147,14 +144,14 @@ export default function ProjectFormDrawer({
                     transition: 'all .15s',
                   }}
                 >
-                  {pole}
+                  {labelFor(t, POLE_KEYS, pole)}
                 </button>
               ))}
             </div>
           </div>
           {/* Members */}
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="portal-label">Membres assignés</label>
+            <label className="portal-label">{t('projA.projectForm.membersLabel')}</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
               {admins.map((admin) => (
                 <button
@@ -182,7 +179,11 @@ export default function ProjectFormDrawer({
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
           <button className="portal-button" type="submit" disabled={saving}>
-            {saving ? 'Enregistrement...' : editTarget ? 'Mettre à jour' : 'Créer le projet'}
+            {saving
+              ? t('projA.common.saving')
+              : editTarget
+                ? t('projA.projectForm.update')
+                : t('projA.projectForm.create')}
           </button>
           <button
             className="portal-button secondary"
@@ -192,7 +193,7 @@ export default function ProjectFormDrawer({
               setForm(() => ({ ...emptyForm }))
             }}
           >
-            Annuler
+            {t('common.cancel')}
           </button>
         </div>
       </form>

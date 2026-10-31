@@ -2,6 +2,7 @@ import React from 'react'
 import { CRITERIA_COLORS, getProgress } from './types'
 import type { QualiopiCriterion } from './types'
 import IndicatorRow from './IndicatorRow'
+import { useI18n } from '../../../context/I18nContext'
 
 interface CriterionCardProps {
   criterion: QualiopiCriterion
@@ -64,6 +65,7 @@ const CriterionCard: React.FC<CriterionCardProps> = ({
   onConfirmDeleteCriterion,
   onConfirmDeleteSub,
 }) => {
+  const { t } = useI18n()
   const progress = getProgress(criterion.indicators)
   const color = CRITERIA_COLORS[ci % CRITERIA_COLORS.length]
 
@@ -76,30 +78,61 @@ const CriterionCard: React.FC<CriterionCardProps> = ({
         onClick={() => onToggleCriterion(criterion._id)}
       >
         <div className="qualiopi-criterion-title-row">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={color}
+            strokeWidth="2.5"
+            style={{
+              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s',
+              flexShrink: 0,
+            }}
+          >
             <polyline points="9 18 15 12 9 6" />
           </svg>
           <div className="qualiopi-criterion-info">
             {editingCriterion === criterion._id ? (
               <div className="qualiopi-criterion-edit" onClick={(e) => e.stopPropagation()}>
-                <span style={{ color, fontWeight: 700 }}>Critere {criterion.number} — </span>
+                <span style={{ color, fontWeight: 700 }}>
+                  {t('orgs.qualiopi.criterion.label', { number: criterion.number })} —{' '}
+                </span>
                 <input
                   className="qualiopi-criterion-edit-input"
                   value={editTitle}
                   onChange={(e) => onSetEditTitle(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') onSaveEditCriterion(criterion._id); if (e.key === 'Escape') onCancelEdit() }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') onSaveEditCriterion(criterion._id)
+                    if (e.key === 'Escape') onCancelEdit()
+                  }}
                   autoFocus
                 />
-                <button className="qualiopi-criterion-edit-save" onClick={() => onSaveEditCriterion(criterion._id)} title="Sauvegarder">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+                <button
+                  className="qualiopi-criterion-edit-save"
+                  onClick={() => onSaveEditCriterion(criterion._id)}
+                  title={t('orgs.qualiopi.criterion.save')}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </button>
-                <button className="qualiopi-criterion-edit-cancel" onClick={() => onCancelEdit()} title="Annuler">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                <button
+                  className="qualiopi-criterion-edit-cancel"
+                  onClick={() => onCancelEdit()}
+                  title={t('common.cancel')}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
             ) : (
               <div className="qualiopi-criterion-name">
-                <span style={{ color, fontWeight: 700 }}>Critere {criterion.number}</span>
+                <span style={{ color, fontWeight: 700 }}>
+                  {t('orgs.qualiopi.criterion.label', { number: criterion.number })}
+                </span>
                 <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}> — {criterion.title}</span>
               </div>
             )}
@@ -111,16 +144,25 @@ const CriterionCard: React.FC<CriterionCardProps> = ({
             <button
               className="qualiopi-criterion-action-btn"
               onClick={() => onStartEditCriterion(criterion)}
-              title="Modifier le titre"
+              title={t('orgs.qualiopi.criterion.editTitle')}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
             </button>
           </div>
-          <span className="qualiopi-criterion-count">{criterion.indicators.length} ind.</span>
+          <span className="qualiopi-criterion-count">
+            {t('orgs.qualiopi.criterion.indicatorCount', { count: criterion.indicators.length })}
+          </span>
           <div className="qualiopi-mini-bar">
             <div style={{ width: `${(progress.done / Math.max(progress.total, 1)) * 100}%`, background: '#22c55e' }} />
-            <div style={{ width: `${(progress.inProgress / Math.max(progress.total, 1)) * 100}%`, background: '#f59e0b' }} />
-            <div style={{ width: `${(progress.blocked / Math.max(progress.total, 1)) * 100}%`, background: '#ef4444' }} />
+            <div
+              style={{ width: `${(progress.inProgress / Math.max(progress.total, 1)) * 100}%`, background: '#f59e0b' }}
+            />
+            <div
+              style={{ width: `${(progress.blocked / Math.max(progress.total, 1)) * 100}%`, background: '#ef4444' }}
+            />
           </div>
           <span className="qualiopi-criterion-percent">{progress.percent}%</span>
         </div>

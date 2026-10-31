@@ -2,6 +2,8 @@ import React from 'react'
 import { loadJsPdf } from '../../../lib/loadPdf'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG } from './types'
 import type { KpiData } from './types'
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate } from '../../../i18n/format'
 
 interface TicketStatsProps {
   kpi: KpiData | null
@@ -10,23 +12,28 @@ interface TicketStatsProps {
 }
 
 const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod }) => {
+  const { t } = useI18n()
   const exportKpiPdf = async () => {
     if (!kpi) return
     const jsPDF = await loadJsPdf()
-    const periodLabels: Record<string, string> = { week: 'Cette semaine', month: 'Ce mois', all: 'Historique complet' }
+    const periodLabels: Record<string, string> = {
+      week: t('orgs.tickets.stats.periodWeek'),
+      month: t('orgs.tickets.stats.periodMonth'),
+      all: t('orgs.tickets.stats.periodAll'),
+    }
     const doc = new jsPDF()
-    const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+    const now = formatDate(new Date(), { day: '2-digit', month: 'long', year: 'numeric' })
     let y = 20
 
     // Header
     doc.setFontSize(20)
     doc.setFont('helvetica', 'bold')
-    doc.text('Rapport KPI — Tickets internes', 14, y)
+    doc.text(t('orgs.tickets.stats.pdfTitle'), 14, y)
     y += 10
     doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(100)
-    doc.text(`Periode : ${periodLabels[kpiPeriod] || kpiPeriod}  |  Genere le ${now}`, 14, y)
+    doc.text(t('orgs.tickets.stats.pdfPeriod', { period: periodLabels[kpiPeriod] || kpiPeriod, date: now }), 14, y)
     y += 14
 
     // Separator
@@ -39,19 +46,22 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
     doc.setTextColor(0)
     doc.setFontSize(13)
     doc.setFont('helvetica', 'bold')
-    doc.text('Indicateurs cles', 14, y)
+    doc.text(t('orgs.tickets.stats.pdfKeyIndicators'), 14, y)
     y += 9
 
     doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
     const kpis = [
-      ['Tickets crees', `${kpi.totalCreated}`],
-      ['Resolus / Fermes', `${kpi.resolved}`],
-      ['En attente', `${kpi.open + kpi.inProgress}`],
-      ['Reponses donnees', `${kpi.totalReplies}`],
-      ['Taux de resolution', `${kpi.resolutionRate}%`],
-      ['Temps moyen 1ere reponse', kpi.avgResponseTime !== null ? `${kpi.avgResponseTime}h` : 'N/A'],
-      ['Tickets archives', `${kpi.archived}`],
+      [t('orgs.tickets.stats.created'), `${kpi.totalCreated}`],
+      [t('orgs.tickets.stats.resolved'), `${kpi.resolved}`],
+      [t('orgs.tickets.stats.pending'), `${kpi.open + kpi.inProgress}`],
+      [t('orgs.tickets.stats.repliesGiven'), `${kpi.totalReplies}`],
+      [t('orgs.tickets.stats.resolutionRate'), `${kpi.resolutionRate}%`],
+      [
+        t('orgs.tickets.stats.avgFirstResponse'),
+        kpi.avgResponseTime !== null ? `${kpi.avgResponseTime}h` : t('orgs.tickets.stats.notAvailable'),
+      ],
+      [t('orgs.tickets.stats.archivedTickets'), `${kpi.archived}`],
     ]
     kpis.forEach(([label, val]) => {
       doc.setFont('helvetica', 'normal')
@@ -65,14 +75,14 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
     // By category
     doc.setFontSize(13)
     doc.setFont('helvetica', 'bold')
-    doc.text('Repartition par categorie', 14, y)
+    doc.text(t('orgs.tickets.stats.pdfByCategory'), 14, y)
     y += 9
     doc.setFontSize(11)
     Object.entries(CATEGORY_CONFIG).forEach(([key, cfg]) => {
       const count = kpi.byCategory[key] || 0
       const pct = kpi.totalCreated > 0 ? Math.round((count / kpi.totalCreated) * 100) : 0
       doc.setFont('helvetica', 'normal')
-      doc.text(`${cfg.label}`, 18, y)
+      doc.text(`${t(cfg.labelKey)}`, 18, y)
       doc.setFont('helvetica', 'bold')
       doc.text(`${count}  (${pct}%)`, 120, y)
       y += 7
@@ -82,14 +92,14 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
     // By priority
     doc.setFontSize(13)
     doc.setFont('helvetica', 'bold')
-    doc.text('Repartition par priorite', 14, y)
+    doc.text(t('orgs.tickets.stats.pdfByPriority'), 14, y)
     y += 9
     doc.setFontSize(11)
     Object.entries(PRIORITY_CONFIG).forEach(([key, cfg]) => {
       const count = kpi.byPriority[key] || 0
       const pct = kpi.totalCreated > 0 ? Math.round((count / kpi.totalCreated) * 100) : 0
       doc.setFont('helvetica', 'normal')
-      doc.text(`${cfg.label}`, 18, y)
+      doc.text(`${t(cfg.labelKey)}`, 18, y)
       doc.setFont('helvetica', 'bold')
       doc.text(`${count}  (${pct}%)`, 120, y)
       y += 7
@@ -100,14 +110,14 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
     if (kpi.topAuthors.length > 0) {
       doc.setFontSize(13)
       doc.setFont('helvetica', 'bold')
-      doc.text('Top demandeurs', 14, y)
+      doc.text(t('orgs.tickets.stats.topRequesters'), 14, y)
       y += 9
       doc.setFontSize(11)
       kpi.topAuthors.forEach((a) => {
         doc.setFont('helvetica', 'normal')
         doc.text(a.name, 18, y)
         doc.setFont('helvetica', 'bold')
-        doc.text(`${a.count} ticket${a.count > 1 ? 's' : ''}`, 120, y)
+        doc.text(t('orgs.tickets.stats.ticketCount', { count: a.count }), 120, y)
         y += 7
       })
     }
@@ -117,14 +127,14 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
     doc.setFontSize(8)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(150)
-    doc.text('Venio — Rapport genere automatiquement', 14, y)
+    doc.text(t('orgs.tickets.stats.pdfFooter'), 14, y)
     doc.text(now, 196, y, { align: 'right' })
 
     const periodFile = kpiPeriod === 'week' ? 'semaine' : kpiPeriod === 'month' ? 'mois' : 'complet'
     doc.save(`kpi-tickets-${periodFile}-${new Date().toISOString().slice(0, 10)}.pdf`)
   }
 
-  if (!kpi) return <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>Chargement...</p>
+  if (!kpi) return <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>{t('common.loading')}</p>
 
   return (
     <div className="ticket-kpi">
@@ -132,9 +142,9 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div className="ticket-kpi-period">
           {[
-            { value: 'week', label: 'Cette semaine' },
-            { value: 'month', label: 'Ce mois' },
-            { value: 'all', label: 'Tout' },
+            { value: 'week', label: t('orgs.tickets.stats.periodWeek') },
+            { value: 'month', label: t('orgs.tickets.stats.periodMonth') },
+            { value: 'all', label: t('orgs.tickets.stats.periodAllShort') },
           ].map((p) => (
             <button
               key={p.value}
@@ -151,7 +161,7 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          Telecharger PDF
+          {t('orgs.tickets.stats.downloadPdf')}
         </button>
       </div>
 
@@ -161,37 +171,37 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
           <span className="ticket-kpi-value" style={{ color: 'var(--primary)' }}>
             {kpi.totalCreated}
           </span>
-          <span className="ticket-kpi-label">Tickets crees</span>
+          <span className="ticket-kpi-label">{t('orgs.tickets.stats.created')}</span>
         </div>
         <div className="ticket-kpi-card">
           <span className="ticket-kpi-value" style={{ color: '#22c55e' }}>
             {kpi.resolved}
           </span>
-          <span className="ticket-kpi-label">Resolus / Fermes</span>
+          <span className="ticket-kpi-label">{t('orgs.tickets.stats.resolved')}</span>
         </div>
         <div className="ticket-kpi-card">
           <span className="ticket-kpi-value" style={{ color: '#f59e0b' }}>
             {kpi.open + kpi.inProgress}
           </span>
-          <span className="ticket-kpi-label">En attente</span>
+          <span className="ticket-kpi-label">{t('orgs.tickets.stats.pending')}</span>
         </div>
         <div className="ticket-kpi-card">
           <span className="ticket-kpi-value" style={{ color: '#ffffff' }}>
             {kpi.totalReplies}
           </span>
-          <span className="ticket-kpi-label">Reponses donnees</span>
+          <span className="ticket-kpi-label">{t('orgs.tickets.stats.repliesGiven')}</span>
         </div>
         <div className="ticket-kpi-card">
           <span className="ticket-kpi-value" style={{ color: '#0284c7' }}>
             {kpi.resolutionRate}%
           </span>
-          <span className="ticket-kpi-label">Taux de resolution</span>
+          <span className="ticket-kpi-label">{t('orgs.tickets.stats.resolutionRate')}</span>
         </div>
         <div className="ticket-kpi-card">
           <span className="ticket-kpi-value" style={{ color: '#9b9b9b' }}>
             {kpi.avgResponseTime !== null ? `${kpi.avgResponseTime}h` : '—'}
           </span>
-          <span className="ticket-kpi-label">Temps moyen 1ere reponse</span>
+          <span className="ticket-kpi-label">{t('orgs.tickets.stats.avgFirstResponse')}</span>
         </div>
       </div>
 
@@ -199,14 +209,14 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
       <div className="ticket-kpi-sections">
         {/* Par categorie */}
         <div className="ticket-kpi-section">
-          <h3>Par categorie</h3>
+          <h3>{t('orgs.tickets.stats.byCategory')}</h3>
           <div className="ticket-kpi-bars">
             {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => {
               const count = kpi.byCategory[key] || 0
               const pct = kpi.totalCreated > 0 ? (count / kpi.totalCreated) * 100 : 0
               return (
                 <div key={key} className="ticket-kpi-bar-row">
-                  <span className="ticket-kpi-bar-label">{cfg.label}</span>
+                  <span className="ticket-kpi-bar-label">{t(cfg.labelKey)}</span>
                   <div className="ticket-kpi-bar-track">
                     <div className="ticket-kpi-bar-fill" style={{ width: `${pct}%`, background: cfg.color }} />
                   </div>
@@ -219,14 +229,14 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
 
         {/* Par priorite */}
         <div className="ticket-kpi-section">
-          <h3>Par priorite</h3>
+          <h3>{t('orgs.tickets.stats.byPriority')}</h3>
           <div className="ticket-kpi-bars">
             {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => {
               const count = kpi.byPriority[key] || 0
               const pct = kpi.totalCreated > 0 ? (count / kpi.totalCreated) * 100 : 0
               return (
                 <div key={key} className="ticket-kpi-bar-row">
-                  <span className="ticket-kpi-bar-label">{cfg.label}</span>
+                  <span className="ticket-kpi-bar-label">{t(cfg.labelKey)}</span>
                   <div className="ticket-kpi-bar-track">
                     <div className="ticket-kpi-bar-fill" style={{ width: `${pct}%`, background: cfg.color }} />
                   </div>
@@ -240,7 +250,7 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
         {/* Top auteurs */}
         {kpi.topAuthors.length > 0 && (
           <div className="ticket-kpi-section">
-            <h3>Top demandeurs</h3>
+            <h3>{t('orgs.tickets.stats.topRequesters')}</h3>
             <div className="ticket-kpi-bars">
               {kpi.topAuthors.map((a) => {
                 const pct = kpi.totalCreated > 0 ? (a.count / kpi.totalCreated) * 100 : 0

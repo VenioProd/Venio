@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react'
+import { useI18n } from '../context/I18nContext'
 
 export interface ConfirmModalProps {
   isOpen: boolean
@@ -15,12 +16,13 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
   title,
   message,
-  confirmLabel = 'Confirmer',
-  cancelLabel = 'Annuler',
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   onCancel,
   variant = 'info',
 }) => {
+  const { t } = useI18n()
   const confirmButtonRef = useRef<HTMLButtonElement>(null)
   const cancelButtonRef = useRef<HTMLButtonElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -52,33 +54,30 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   }, [isOpen, onCancel])
 
   // Focus trap
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key !== 'Tab') return
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Tab') return
 
-      const focusableElements = modalRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      )
+    const focusableElements = modalRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )
 
-      if (!focusableElements || focusableElements.length === 0) return
+    if (!focusableElements || focusableElements.length === 0) return
 
-      const firstElement = focusableElements[0]
-      const lastElement = focusableElements[focusableElements.length - 1]
+    const firstElement = focusableElements[0]
+    const lastElement = focusableElements[focusableElements.length - 1]
 
-      if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
-          e.preventDefault()
-          lastElement.focus()
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          e.preventDefault()
-          firstElement.focus()
-        }
+    if (e.shiftKey) {
+      if (document.activeElement === firstElement) {
+        e.preventDefault()
+        lastElement.focus()
       }
-    },
-    []
-  )
+    } else {
+      if (document.activeElement === lastElement) {
+        e.preventDefault()
+        firstElement.focus()
+      }
+    }
+  }, [])
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -108,12 +107,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <h2 id="confirm-modal-title" className="confirm-modal__title">
             {title}
           </h2>
-          <button
-            className="confirm-modal__close"
-            onClick={onCancel}
-            aria-label="Fermer"
-            type="button"
-          >
+          <button className="confirm-modal__close" onClick={onCancel} aria-label={t('common.close')} type="button">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -139,7 +133,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             onClick={onCancel}
             type="button"
           >
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </button>
           <button
             ref={confirmButtonRef}
@@ -147,7 +141,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             onClick={onConfirm}
             type="button"
           >
-            {confirmLabel}
+            {confirmLabel ?? t('common.confirm')}
           </button>
         </div>
       </div>

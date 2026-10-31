@@ -1,8 +1,11 @@
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
 import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
+import { useI18n } from '../../../context/I18nContext'
+import type { MessageKey } from '../../../i18n'
+import { formatDate } from '../../../i18n/format'
 import MissionForm from './MissionForm'
-import { MSC, MSBg, MSBo, MSL, type Mission, type MissionFormState, type Project } from './types'
+import { MSC, MSBg, MSBo, MSL_KEYS, type Mission, type MissionFormState, type Project } from './types'
 
 type MissionView = 'cards' | 'table'
 type SortKey = 'title' | 'status' | 'progress' | 'dueDate' | 'steps' | 'assignee'
@@ -58,6 +61,7 @@ export default function MissionsTab({
   setSelectedMission,
   renderMissionDetail,
 }: MissionsTabProps) {
+  const { t } = useI18n()
   return (
     <div className="portal-card" style={{ marginTop: 16 }}>
       <div
@@ -71,7 +75,7 @@ export default function MissionsTab({
         }}
       >
         <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-          Missions ({missions.length})
+          {t('projB.tab.title', { count: missions.length })}
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {/* Toggle vue Tableau / Cartes */}
@@ -85,10 +89,10 @@ export default function MissionsTab({
           >
             {(
               [
-                ['table', 'Tableau'],
-                ['cards', 'Cartes'],
-              ] as const
-            ).map(([v, label]) => (
+                ['table', 'projB.tab.viewTable'],
+                ['cards', 'projB.tab.viewCards'],
+              ] as const satisfies readonly (readonly [MissionView, MessageKey])[]
+            ).map(([v, labelKey]) => (
               <button
                 key={v}
                 type="button"
@@ -122,7 +126,7 @@ export default function MissionsTab({
                     <rect x="14" y="14" width="7" height="7" rx="1" />
                   </svg>
                 )}
-                {label}
+                {t(labelKey)}
               </button>
             ))}
           </div>
@@ -148,7 +152,7 @@ export default function MissionsTab({
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Nouvelle mission
+              {t('projB.tab.newMission')}
             </button>
           )}
         </div>
@@ -166,11 +170,11 @@ export default function MissionsTab({
       )}
 
       {missionsLoading ? (
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Chargement...</p>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('common.loading')}</p>
       ) : missions.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)', fontSize: 14 }}>
           <div style={{ fontSize: 32, marginBottom: 10, opacity: 0.4 }}>◎</div>
-          Aucune mission pour l'instant
+          {t('projB.tab.empty')}
         </div>
       ) : (
         <div>
@@ -179,12 +183,12 @@ export default function MissionsTab({
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               {(
                 [
-                  ['ALL', 'Toutes'],
-                  ['A_FAIRE', 'À faire'],
-                  ['EN_COURS', 'En cours'],
-                  ['TERMINE', 'Terminées'],
-                ] as const
-              ).map(([v, label]) => {
+                  ['ALL', 'projB.tab.filterAll'],
+                  ['A_FAIRE', 'projB.mission.statusTodo'],
+                  ['EN_COURS', 'projB.mission.statusInProgress'],
+                  ['TERMINE', 'projB.tab.filterDone'],
+                ] as const satisfies readonly (readonly [string, MessageKey])[]
+              ).map(([v, labelKey]) => {
                 const active = filterStatus === v
                 const col = v === 'ALL' ? '#a5b4cf' : MSC[v]
                 return (
@@ -204,7 +208,7 @@ export default function MissionsTab({
                       transition: 'all .15s',
                     }}
                   >
-                    {label}
+                    {t(labelKey)}
                   </button>
                 )
               })}
@@ -222,7 +226,7 @@ export default function MissionsTab({
                 cursor: 'pointer',
               }}
             >
-              <option value="ALL">Tous les membres</option>
+              <option value="ALL">{t('projB.tab.allMembers')}</option>
               {project.members.map((mem) => (
                 <option key={mem._id} value={mem._id}>
                   {mem.name}
@@ -230,13 +234,13 @@ export default function MissionsTab({
               ))}
             </select>
             <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 'auto' }}>
-              {displayMissions.length} / {missions.length} mission{missions.length > 1 ? 's' : ''}
+              {t('projB.tab.shownCount', { shown: displayMissions.length, count: missions.length })}
             </span>
           </div>
 
           {displayMissions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-secondary)', fontSize: 13 }}>
-              Aucune mission ne correspond aux filtres
+              {t('projB.tab.noMatch')}
             </div>
           ) : missionView === 'table' ? (
             /* ─── Vue tableau (façon Monday) ─── */
@@ -246,13 +250,13 @@ export default function MissionsTab({
                   <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
                     {(
                       [
-                        ['title', 'Mission'],
-                        ['status', 'Statut'],
-                        ['assignee', 'Assignés'],
-                        ['progress', 'Progression'],
-                        ['steps', 'Étapes'],
-                      ] as const
-                    ).map(([key, label]) => (
+                        ['title', 'projB.tab.colMission'],
+                        ['status', 'projB.tab.colStatus'],
+                        ['assignee', 'projB.tab.colAssignees'],
+                        ['progress', 'projB.tab.colProgress'],
+                        ['steps', 'projB.tab.colSteps'],
+                      ] as const satisfies readonly (readonly [SortKey, MessageKey])[]
+                    ).map(([key, labelKey]) => (
                       <th
                         key={key}
                         onClick={() => toggleSort(key)}
@@ -270,7 +274,7 @@ export default function MissionsTab({
                           borderBottom: '1px solid rgba(255,255,255,0.08)',
                         }}
                       >
-                        {label}
+                        {t(labelKey)}
                         {sortArrow(key)}
                       </th>
                     ))}
@@ -287,7 +291,7 @@ export default function MissionsTab({
                         borderBottom: '1px solid rgba(255,255,255,0.08)',
                       }}
                     >
-                      Livrables
+                      {t('projB.tab.colDeliverables')}
                     </th>
                     <th
                       onClick={() => toggleSort('dueDate')}
@@ -305,7 +309,8 @@ export default function MissionsTab({
                         borderBottom: '1px solid rgba(255,255,255,0.08)',
                       }}
                     >
-                      Deadline{sortArrow('dueDate')}
+                      {t('projB.tab.colDeadline')}
+                      {sortArrow('dueDate')}
                     </th>
                     <th style={{ width: 28, borderBottom: '1px solid rgba(255,255,255,0.08)' }}></th>
                   </tr>
@@ -374,7 +379,7 @@ export default function MissionsTab({
                                   color: '#fde047',
                                 }}
                               >
-                                🔍 {reviewingSteps} en review
+                                {t('projB.mission.inReview', { count: reviewingSteps })}
                               </span>
                             )}
                           </td>
@@ -390,7 +395,7 @@ export default function MissionsTab({
                                 border: `1px solid ${MSBo[m.status]}`,
                               }}
                             >
-                              {MSL[m.status]}
+                              {t(MSL_KEYS[m.status])}
                             </span>
                           </td>
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
@@ -494,7 +499,7 @@ export default function MissionsTab({
                             {m.dueDate ? (
                               <>
                                 {isOverdue && '⚠ '}
-                                {new Date(m.dueDate).toLocaleDateString('fr-FR')}
+                                {formatDate(m.dueDate)}
                               </>
                             ) : (
                               '—'
@@ -592,7 +597,7 @@ export default function MissionsTab({
                               border: `1px solid ${MSBo[m.status]}`,
                             }}
                           >
-                            {MSL[m.status]}
+                            {t(MSL_KEYS[m.status])}
                           </span>
                           {isOverdue && (
                             <span
@@ -605,7 +610,7 @@ export default function MissionsTab({
                                 color: '#f87171',
                               }}
                             >
-                              ⚠ En retard
+                              {t('projB.mission.late')}
                             </span>
                           )}
                           {reviewingSteps > 0 && (
@@ -619,12 +624,12 @@ export default function MissionsTab({
                                 color: '#fde047',
                               }}
                             >
-                              🔍 {reviewingSteps} en review
+                              {t('projB.mission.inReview', { count: reviewingSteps })}
                             </span>
                           )}
                           {m.dueDate && (
                             <span style={{ fontSize: 11, color: isOverdue ? '#f87171' : 'var(--text-secondary)' }}>
-                              · {new Date(m.dueDate).toLocaleDateString('fr-FR')}
+                              · {formatDate(m.dueDate)}
                             </span>
                           )}
                         </div>
@@ -709,7 +714,7 @@ export default function MissionsTab({
                         </div>
                         {totalSteps > 0 && (
                           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                            {doneSteps}/{totalSteps} étapes
+                            {t('projB.mission.stepsCount', { done: doneSteps, total: totalSteps })}
                           </span>
                         )}
                         <span
@@ -740,7 +745,7 @@ export default function MissionsTab({
               to="/admin/gestion?view=missions"
               style={{ fontSize: 12, color: 'var(--primary)', textDecoration: 'none' }}
             >
-              Voir toutes les missions dans Gestion →
+              {t('projB.tab.seeAll')}
             </Link>
           </div>
         </div>

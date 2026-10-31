@@ -1,3 +1,5 @@
+import { translate, type MessageKey } from '../i18n'
+
 export type PortfolioFilter = 'site' | 'product' | 'b2b'
 
 export type PortfolioCategory = 'site' | 'produit'
@@ -29,13 +31,20 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     slug: 'venio',
     category: 'site',
     title: 'Venio',
-    eyebrow: 'Studio digital · B2B',
-    description:
-      'Un site-manifeste brutaliste qui transforme une posture de conseil en expérience éditoriale claire, frontale et immédiatement reconnaissable.',
-    tags: ['Direction artistique', 'Design éditorial', 'Développement'],
+    get eyebrow() {
+      return translate('pubHome.portfolio.venioEyebrow')
+    },
+    get description() {
+      return translate('pubHome.portfolio.venioDescription')
+    },
+    get tags() {
+      return [1, 2, 3].map((n) => translate(`pubHome.portfolio.venioTag${n}` as MessageKey))
+    },
     filters: ['site', 'b2b'],
     url: 'https://venio.paris/',
-    linkLabel: 'Voir le site',
+    get linkLabel() {
+      return translate('pubHome.portfolio.linkSite')
+    },
     desktopImage: shot('venio-desktop'),
     mobileImage: shot('venio-mobile'),
     layout: 'wide',
@@ -44,13 +53,20 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     slug: 'formatio',
     category: 'site',
     title: 'Formatio',
-    eyebrow: 'Formation professionnelle',
-    description:
-      'Une présence premium et rassurante pour présenter l’expertise, la méthode et les parcours sans tomber dans les codes froids de la formation.',
-    tags: ['Branding', 'UX', 'Site vitrine'],
+    get eyebrow() {
+      return translate('pubHome.portfolio.formatioEyebrow')
+    },
+    get description() {
+      return translate('pubHome.portfolio.formatioDescription')
+    },
+    get tags() {
+      return [1, 2, 3].map((n) => translate(`pubHome.portfolio.formatioTag${n}` as MessageKey))
+    },
     filters: ['site', 'b2b'],
     url: 'https://formatio.paris/',
-    linkLabel: 'Voir le site',
+    get linkLabel() {
+      return translate('pubHome.portfolio.linkSite')
+    },
     desktopImage: shot('formatio-desktop'),
     mobileImage: shot('formatio-mobile'),
     layout: 'standard',
@@ -59,13 +75,20 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     slug: 'absys',
     category: 'site',
     title: 'Absys',
-    eyebrow: 'École · Enseignement supérieur',
-    description:
-      'Une identité élégante, lumineuse et institutionnelle pour installer une jeune école dans un univers de confiance et d’exigence.',
-    tags: ['Identité', 'Web design', 'Acquisition'],
+    get eyebrow() {
+      return translate('pubHome.portfolio.absysEyebrow')
+    },
+    get description() {
+      return translate('pubHome.portfolio.absysDescription')
+    },
+    get tags() {
+      return [1, 2, 3].map((n) => translate(`pubHome.portfolio.absysTag${n}` as MessageKey))
+    },
     filters: ['site'],
     url: 'https://absys.school/',
-    linkLabel: 'Voir le site',
+    get linkLabel() {
+      return translate('pubHome.portfolio.linkSite')
+    },
     desktopImage: shot('absys-desktop'),
     mobileImage: shot('absys-mobile'),
     layout: 'standard',
@@ -74,13 +97,20 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     slug: 'cauchemar',
     category: 'site',
     title: 'Cauchemar',
-    eyebrow: 'Agence créative',
-    description:
-      'Une marque qui assume son contraste : inquiétante au premier regard, rassurante dans le fond. Un territoire visuel conçu pour ne pas se faire oublier.',
-    tags: ['Concept de marque', 'Art direction', 'Copywriting'],
+    get eyebrow() {
+      return translate('pubHome.portfolio.cauchemarEyebrow')
+    },
+    get description() {
+      return translate('pubHome.portfolio.cauchemarDescription')
+    },
+    get tags() {
+      return [1, 2, 3].map((n) => translate(`pubHome.portfolio.cauchemarTag${n}` as MessageKey))
+    },
     filters: ['site'],
     url: 'https://cauchemar.me/',
-    linkLabel: 'Voir le site',
+    get linkLabel() {
+      return translate('pubHome.portfolio.linkSite')
+    },
     desktopImage: shot('cauchemar-desktop'),
     mobileImage: shot('cauchemar-mobile'),
     layout: 'wide',
@@ -89,13 +119,20 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     slug: 'yumi',
     category: 'produit',
     title: 'Yumi',
-    eyebrow: 'Produit RH · SaaS',
-    description:
-      'Un créateur de CV pensé à la fois pour les humains et les ATS, porté par une landing produit lisible, internationale et orientée conversion.',
-    tags: ['Product design', 'SaaS', 'Conversion'],
+    get eyebrow() {
+      return translate('pubHome.portfolio.yumiEyebrow')
+    },
+    get description() {
+      return translate('pubHome.portfolio.yumiDescription')
+    },
+    get tags() {
+      return [1, 2, 3].map((n) => translate(`pubHome.portfolio.yumiTag${n}` as MessageKey))
+    },
     filters: ['product'],
     url: 'https://yumicv.com/',
-    linkLabel: 'Voir le produit',
+    get linkLabel() {
+      return translate('pubHome.portfolio.linkProduct')
+    },
     desktopImage: shot('yumi-desktop'),
     mobileImage: shot('yumi-mobile'),
     layout: 'wide',
@@ -104,13 +141,20 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     slug: 'jiraya',
     category: 'produit',
     title: 'Jiraya',
-    eyebrow: 'EdTech · Simulation',
-    description:
-      'Une plateforme de business games compétitifs qui rend immédiatement visible la promesse : décider, mesurer et affronter les autres en temps réel.',
-    tags: ['Plateforme', 'Temps réel', 'Gamification'],
+    get eyebrow() {
+      return translate('pubHome.portfolio.jirayaEyebrow')
+    },
+    get description() {
+      return translate('pubHome.portfolio.jirayaDescription')
+    },
+    get tags() {
+      return [1, 2, 3].map((n) => translate(`pubHome.portfolio.jirayaTag${n}` as MessageKey))
+    },
     filters: ['product', 'b2b'],
     url: 'https://game.susanoo.app/',
-    linkLabel: 'Voir le produit',
+    get linkLabel() {
+      return translate('pubHome.portfolio.linkProduct')
+    },
     desktopImage: shot('jiraya-desktop'),
     mobileImage: shot('jiraya-mobile'),
     layout: 'standard',
@@ -119,13 +163,20 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     slug: 'hanami',
     category: 'produit',
     title: 'Hanami',
-    eyebrow: 'Expérience éditoriale',
-    description:
-      'Une exploration produit autour de la découverte d’anime : curation par humeur, identité saisonnière et navigation conçue comme un magazine vivant.',
-    tags: ['Concept produit', 'UI design', 'Prototype'],
+    get eyebrow() {
+      return translate('pubHome.portfolio.hanamiEyebrow')
+    },
+    get description() {
+      return translate('pubHome.portfolio.hanamiDescription')
+    },
+    get tags() {
+      return [1, 2, 3].map((n) => translate(`pubHome.portfolio.hanamiTag${n}` as MessageKey))
+    },
     filters: ['product'],
     url: 'https://temporary.susanoo.app/hanami/',
-    linkLabel: 'Voir l’expérience',
+    get linkLabel() {
+      return translate('pubHome.portfolio.linkExperience')
+    },
     desktopImage: shot('hanami-desktop'),
     mobileImage: shot('hanami-mobile'),
     layout: 'standard',
@@ -134,13 +185,20 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     slug: 'decisio',
     category: 'site',
     title: 'Decisio',
-    eyebrow: 'Communication juridique · B2B',
-    description:
-      'Une présence digitale dédiée aux professionnels du droit, conçue pour rendre l’offre, le conseil et la communication juridique immédiatement lisibles.',
-    tags: ['Positionnement', 'Communication juridique', 'Site web'],
+    get eyebrow() {
+      return translate('pubHome.portfolio.decisioEyebrow')
+    },
+    get description() {
+      return translate('pubHome.portfolio.decisioDescription')
+    },
+    get tags() {
+      return [1, 2, 3].map((n) => translate(`pubHome.portfolio.decisioTag${n}` as MessageKey))
+    },
     filters: ['site', 'b2b'],
     url: 'https://decisio.paris/',
-    linkLabel: 'Voir le site',
+    get linkLabel() {
+      return translate('pubHome.portfolio.linkSite')
+    },
     desktopImage: shot('decisio-desktop'),
     mobileImage: shot('decisio-mobile'),
     layout: 'wide',
@@ -149,13 +207,20 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     slug: 'absys-simulator',
     category: 'produit',
     title: 'Absys Simulator',
-    eyebrow: 'EdTech · Simulation',
-    description:
-      'Une plateforme de simulation pédagogique qui donne aux étudiants et aux instructeurs un espace concret pour décider, suivre et analyser.',
-    tags: ['Produit EdTech', 'Simulation', 'UX applicative'],
+    get eyebrow() {
+      return translate('pubHome.portfolio.absysSimulatorEyebrow')
+    },
+    get description() {
+      return translate('pubHome.portfolio.absysSimulatorDescription')
+    },
+    get tags() {
+      return [1, 2, 3].map((n) => translate(`pubHome.portfolio.absysSimulatorTag${n}` as MessageKey))
+    },
     filters: ['product', 'b2b'],
     url: 'https://simulator.absys.school/',
-    linkLabel: 'Voir le simulateur',
+    get linkLabel() {
+      return translate('pubHome.portfolio.linkSimulator')
+    },
     desktopImage: shot('absys-simulator-desktop'),
     mobileImage: shot('absys-simulator-mobile'),
     layout: 'standard',

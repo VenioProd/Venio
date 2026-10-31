@@ -1,35 +1,33 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import AccountingLayout from './AccountingLayout'
 import { getBalanceSheet, listFiscalYears, downloadReportCsv } from '../../../services/accounting'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import type { MessageKey } from '../../../i18n'
+import { formatDate as formatDateIntl, formatMoney } from '../../../i18n/format'
 import type { IBalanceSheetData, IBalanceSheetLine, IFiscalYear } from '../../../types/accounting'
-
-const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-})
 
 function formatEur(n: unknown): string {
   const value = Number(n)
   if (!Number.isFinite(value)) return '—'
-  return EUR_FORMATTER.format(value)
+  return formatMoney(value)
 }
 
 function formatDate(d: string | undefined | null): string {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('fr-FR')
+  return formatDateIntl(d) || '—'
 }
 
-const CLASS_LABELS: Record<number, string> = {
-  1: 'Capitaux',
-  2: 'Immobilisations',
-  3: 'Stocks',
-  4: 'Tiers',
-  5: 'Trésorerie',
+const CLASS_LABEL_KEYS: Record<number, MessageKey> = {
+  1: 'accAccounts.balanceSheet.class1',
+  2: 'accAccounts.balanceSheet.class2',
+  3: 'accAccounts.balanceSheet.class3',
+  4: 'accAccounts.balanceSheet.class4',
+  5: 'accAccounts.balanceSheet.class5',
 }
 
 interface BSGroup {
   cls: number
-  label: string
   lines: IBalanceSheetLine[]
   subtotal: number
 }
@@ -43,7 +41,6 @@ function groupByClass(items: IBalanceSheetLine[] | undefined): BSGroup[] {
   }
   const groups: BSGroup[] = Array.from(map.entries()).map(([cls, lines]) => ({
     cls,
-    label: CLASS_LABELS[cls] || `Classe ${cls}`,
     lines,
     subtotal: lines.reduce((s, l) => s + Number(l.amount || 0), 0),
   }))
@@ -57,6 +54,9 @@ interface BSFilters {
 }
 
 const BalanceSheet = () => {
+  const { t } = useI18n()
+  const classLabel = (cls: number) =>
+    CLASS_LABEL_KEYS[cls] ? t(CLASS_LABEL_KEYS[cls]) : t('accAccounts.balanceSheet.classN', { n: cls })
   const [fiscalYears, setFiscalYears] = useState<IFiscalYear[]>([])
   const [data, setData] = useState<IBalanceSheetData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -75,7 +75,7 @@ const BalanceSheet = () => {
         const f = await listFiscalYears()
         if (!cancelled) setFiscalYears(f || [])
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Erreur')
+        if (!cancelled) setError(err instanceof Error ? err.message : translate('common.error'))
       }
     })()
     return () => {
@@ -93,7 +93,7 @@ const BalanceSheet = () => {
       })
       setData(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
       setData(null)
     } finally {
       setLoading(false)
@@ -112,7 +112,7 @@ const BalanceSheet = () => {
         asOf: filters.asOf || undefined,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     }
   }
 
@@ -126,11 +126,11 @@ const BalanceSheet = () => {
 
   return (
     <AccountingLayout
-      title="Bilan comptable"
-      subtitle="Actif et passif à une date donnée"
+      title={t('accAccounts.balanceSheet.title')}
+      subtitle={t('accAccounts.balanceSheet.subtitle')}
       actions={
         <button className="portal-button secondary" onClick={handleExport}>
-          ⬇ Export CSV
+          {t('accAccounts.common.exportCsv')}
         </button>
       }
     >
@@ -143,7 +143,7 @@ const BalanceSheet = () => {
             value={filters.fiscalYear}
             onChange={(e) => setFilters({ ...filters, fiscalYear: e.target.value })}
           >
-            <option value="">— Choisir un exercice —</option>
+            <option value="">{t('accAccounts.balanceSheet.chooseFiscalYear')}</option>
             {fiscalYears.map((fy) => (
               <option key={fy._id} value={fy._id}>
                 {fy.code || fy.label}
@@ -155,34 +155,32 @@ const BalanceSheet = () => {
             className="portal-input"
             value={filters.asOf}
             onChange={(e) => setFilters({ ...filters, asOf: e.target.value })}
-            title="Arrêté au"
+            title={t('accAccounts.common.asOf')}
           />
           <button className="portal-button" onClick={runQuery}>
-            Filtrer
+            {t('accAccounts.common.filter')}
           </button>
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
         ) : !data ? (
-          <div className="accounting-empty">
-            Sélectionnez un exercice puis cliquez sur « Filtrer » pour afficher le bilan.
-          </div>
+          <div className="accounting-empty">{t('accAccounts.balanceSheet.prompt')}</div>
         ) : (
           <>
             <div style={{ marginBottom: 16, color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem' }}>
-              Arrêté au <strong>{formatDate(data.asOf)}</strong>
+              {t('accAccounts.common.asOf')} <strong>{formatDate(data.asOf)}</strong>
               {data.fiscalYear && (
                 <>
                   {' · '}
-                  Exercice <strong>{data.fiscalYear.code || data.fiscalYear.label}</strong>
+                  {t('accAccounts.common.fiscalYear')} <strong>{data.fiscalYear.code || data.fiscalYear.label}</strong>
                 </>
               )}
             </div>
 
             {Array.isArray(data.notes) && data.notes.length > 0 && (
               <div className="accounting-message info" style={{ marginBottom: 16 }}>
-                <strong>Notes :</strong>
+                <strong>{t('accAccounts.balanceSheet.notes')}</strong>
                 <ul style={{ margin: '6px 0 0 18px' }}>
                   {data.notes.map((note, i) => (
                     <li key={i}>{note}</li>
@@ -209,10 +207,12 @@ const BalanceSheet = () => {
                     color: 'rgba(14, 165, 233, 0.9)',
                   }}
                 >
-                  Actif
+                  {t('accAccounts.balanceSheet.assets')}
                 </h2>
                 {actifGroups.length === 0 ? (
-                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>Aucun élément d'actif.</p>
+                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
+                    {t('accAccounts.balanceSheet.noAssets')}
+                  </p>
                 ) : (
                   <table className="accounting-table">
                     <tbody>
@@ -230,7 +230,7 @@ const BalanceSheet = () => {
                                 fontWeight: 600,
                               }}
                             >
-                              {g.label}
+                              {classLabel(g.cls)}
                             </td>
                             <td
                               className="amount"
@@ -258,7 +258,7 @@ const BalanceSheet = () => {
                     <tfoot>
                       <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                         <td colSpan={2} style={{ fontWeight: 700, padding: '14px' }}>
-                          Total Actif
+                          {t('accAccounts.balanceSheet.totalAssets')}
                         </td>
                         <td className="amount" style={{ fontWeight: 700, color: '#4ade80' }}>
                           {formatEur(totalActif)}
@@ -280,10 +280,12 @@ const BalanceSheet = () => {
                     color: 'rgba(14, 165, 233, 0.9)',
                   }}
                 >
-                  Passif
+                  {t('accAccounts.balanceSheet.liabilities')}
                 </h2>
                 {passifGroups.length === 0 && resultExercise === 0 ? (
-                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>Aucun élément de passif.</p>
+                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
+                    {t('accAccounts.balanceSheet.noLiabilities')}
+                  </p>
                 ) : (
                   <table className="accounting-table">
                     <tbody>
@@ -301,7 +303,7 @@ const BalanceSheet = () => {
                                 fontWeight: 600,
                               }}
                             >
-                              {g.label}
+                              {classLabel(g.cls)}
                             </td>
                             <td
                               className="amount"
@@ -339,14 +341,16 @@ const BalanceSheet = () => {
                             color: 'rgba(255,255,255,0.9)',
                           }}
                         >
-                          Résultat de l'exercice (
+                          {t('accAccounts.balanceSheet.fiscalResult')} (
                           <span
                             style={{
                               color: resultExercise >= 0 ? '#4ade80' : '#f87171',
                               fontWeight: 700,
                             }}
                           >
-                            {resultExercise >= 0 ? 'Bénéfice' : 'Perte'}
+                            {resultExercise >= 0
+                              ? t('accAccounts.balanceSheet.profit')
+                              : t('accAccounts.balanceSheet.loss')}
                           </span>
                           )
                         </td>
@@ -364,7 +368,7 @@ const BalanceSheet = () => {
                     <tfoot>
                       <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
                         <td colSpan={2} style={{ fontWeight: 700, padding: '14px' }}>
-                          Total Passif
+                          {t('accAccounts.balanceSheet.totalLiabilities')}
                         </td>
                         <td className="amount" style={{ fontWeight: 700, color: '#4ade80' }}>
                           {formatEur(totalPassif)}
@@ -385,7 +389,7 @@ const BalanceSheet = () => {
             >
               {balanced ? (
                 <span className="accounting-badge validated" style={{ fontSize: '0.85rem' }}>
-                  Équilibré ✓
+                  {t('accAccounts.balanceSheet.balanced')}
                 </span>
               ) : (
                 <span
@@ -397,7 +401,7 @@ const BalanceSheet = () => {
                     fontSize: '0.85rem',
                   }}
                 >
-                  Déséquilibre : {formatEur(imbalance)}
+                  {t('accAccounts.balanceSheet.imbalance', { amount: formatEur(imbalance) })}
                 </span>
               )}
             </div>

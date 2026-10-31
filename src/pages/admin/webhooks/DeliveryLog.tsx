@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useToast } from '../../../context/ToastContext'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import { getDelivery, listDeliveries, replayDelivery } from '../../../services/webhooks'
 import { eventTypeLabel, formatDateTime, statusLabel, type WebhookDelivery, type WebhookEndpoint } from './types'
 
@@ -15,6 +17,7 @@ interface Props {
  */
 export default function DeliveryLog({ selected, onSelect }: Props) {
   const { showToast } = useToast()
+  const { t } = useI18n()
   // Voir Webhooks.tsx : la fonction du contexte n'est pas garantie stable, on
   // la lit via une ref pour que `load` ne se recrée pas à chaque rendu.
   const toastRef = useRef(showToast)
@@ -47,7 +50,7 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
       setPages(data.pages || 1)
       setTotal(data.total || 0)
     } catch (err) {
-      toastRef.current((err as Error).message || 'Erreur de chargement du journal', 'error')
+      toastRef.current((err as Error).message || translate('adminTech.webhooks.logLoadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -62,7 +65,7 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
       const data = await getDelivery(delivery._id)
       setDetail(data.delivery)
     } catch (err) {
-      toastRef.current((err as Error).message || 'Détail indisponible', 'error')
+      toastRef.current((err as Error).message || t('adminTech.webhooks.detailError'), 'error')
     }
   }
 
@@ -71,12 +74,14 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
     try {
       const { outcome } = await replayDelivery(delivery._id)
       toastRef.current(
-        outcome?.ok ? `Rejeu réussi (HTTP ${outcome.httpStatus})` : 'Rejeu échoué, une reprise est planifiée',
+        outcome?.ok
+          ? t('adminTech.webhooks.replayOk', { status: outcome.httpStatus ?? '' })
+          : t('adminTech.webhooks.replayFailed'),
         outcome?.ok ? 'success' : 'error',
       )
       await load()
     } catch (err) {
-      toastRef.current((err as Error).message || 'Rejeu impossible', 'error')
+      toastRef.current((err as Error).message || t('adminTech.webhooks.replayError'), 'error')
     } finally {
       setReplayingId(null)
     }
@@ -87,10 +92,8 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
   if (!selected) {
     return (
       <div style={{ marginTop: 32 }}>
-        <h2>Journal des livraisons</h2>
-        <p style={{ color: 'var(--text-muted)' }}>
-          Sélectionnez un endpoint (bouton « Journal ») pour consulter ses livraisons.
-        </p>
+        <h2>{t('adminTech.webhooks.deliveriesTitle')}</h2>
+        <p style={{ color: 'var(--text-muted)' }}>{t('adminTech.webhooks.deliveriesHint')}</p>
       </div>
     )
   }
@@ -98,15 +101,15 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
   return (
     <div style={{ marginTop: 32 }}>
       <div className="admin-header">
-        <h2>Journal — {selected.name}</h2>
+        <h2>{t('adminTech.webhooks.deliveriesFor', { name: selected.name })}</h2>
         <button type="button" className="admin-card-btn" onClick={() => onSelect(null)}>
-          Fermer le journal
+          {t('adminTech.webhooks.closeLog')}
         </button>
       </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
         <label>
-          <span style={{ marginRight: 6 }}>Statut</span>
+          <span style={{ marginRight: 6 }}>{t('adminTech.webhooks.filterStatus')}</span>
           <select
             className="portal-input"
             value={status}
@@ -115,14 +118,14 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
               setPage(1)
             }}
           >
-            <option value="">Tous</option>
-            <option value="PENDING">En attente</option>
-            <option value="DELIVERED">Livré</option>
-            <option value="FAILED">Échoué</option>
+            <option value="">{t('adminTech.webhooks.filterAll')}</option>
+            <option value="PENDING">{statusLabel('PENDING')}</option>
+            <option value="DELIVERED">{statusLabel('DELIVERED')}</option>
+            <option value="FAILED">{statusLabel('FAILED')}</option>
           </select>
         </label>
         <label>
-          <span style={{ marginRight: 6 }}>Type</span>
+          <span style={{ marginRight: 6 }}>{t('adminTech.webhooks.filterType')}</span>
           <select
             className="portal-input"
             value={eventType}
@@ -131,7 +134,7 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
               setPage(1)
             }}
           >
-            <option value="">Tous</option>
+            <option value="">{t('adminTech.webhooks.filterAll')}</option>
             {availableTypes.map((type) => (
               <option key={type} value={type}>
                 {eventTypeLabel(type)}
@@ -140,25 +143,29 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
           </select>
         </label>
         <span style={{ alignSelf: 'center', color: 'var(--text-muted)' }}>
-          {total} livraison{total > 1 ? 's' : ''}
+          {t('adminTech.webhooks.deliveryCount', { count: total })}
         </span>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Chargement…</div>
+        <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
+          {t('adminTech.webhooks.loading')}
+        </div>
       ) : deliveries.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Aucune livraison</div>
+        <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
+          {t('adminTech.webhooks.noDeliveries')}
+        </div>
       ) : (
         <div className="admin-table-wrapper">
           <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left' }}>Date</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left' }}>Événement</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left' }}>Statut</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left' }}>Tentatives</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left' }}>Durée</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left' }}>Actions</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('adminTech.webhooks.colDate')}</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('adminTech.webhooks.colEvent')}</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('adminTech.webhooks.filterStatus')}</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('adminTech.webhooks.attempts')}</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('adminTech.webhooks.colDuration')}</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('adminTech.webhooks.colActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -177,7 +184,7 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
                       <span className="admin-badge">{statusLabel(delivery.status)}</span>
                       {delivery.status === 'PENDING' && delivery.nextRetryAt && (
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          reprise {formatDateTime(delivery.nextRetryAt)}
+                          {t('adminTech.webhooks.retryAt', { date: formatDateTime(delivery.nextRetryAt) })}
                         </div>
                       )}
                     </td>
@@ -186,7 +193,7 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button type="button" className="admin-card-btn" onClick={() => void openDetail(delivery)}>
-                          Détail
+                          {t('adminTech.webhooks.detail')}
                         </button>
                         <button
                           type="button"
@@ -194,7 +201,7 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
                           disabled={replayingId === delivery._id}
                           onClick={() => void replay(delivery)}
                         >
-                          Rejouer
+                          {t('adminTech.webhooks.replay')}
                         </button>
                       </div>
                     </td>
@@ -214,7 +221,7 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
             disabled={page <= 1}
             onClick={() => setPage((current) => current - 1)}
           >
-            Précédent
+            {t('common.previous')}
           </button>
           <span style={{ padding: '6px 14px', color: 'var(--text-muted)' }}>
             {page} / {pages}
@@ -225,7 +232,7 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
             disabled={page >= pages}
             onClick={() => setPage((current) => current + 1)}
           >
-            Suivant
+            {t('common.next')}
           </button>
         </div>
       )}
@@ -247,13 +254,13 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
                 type="button"
                 className="confirm-modal__close"
                 onClick={() => setDetail(null)}
-                aria-label="Fermer"
+                aria-label={t('common.close')}
               >
                 ✕
               </button>
             </div>
             <div className="confirm-modal__body">
-              <h3 style={{ marginTop: 0 }}>Payload envoyé</h3>
+              <h3 style={{ marginTop: 0 }}>{t('adminTech.webhooks.payloadSent')}</h3>
               <pre
                 style={{
                   background: 'rgba(0,0,0,0.3)',
@@ -265,16 +272,18 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
                 {JSON.stringify(detail.payload ?? {}, null, 2)}
               </pre>
 
-              <h3>Tentatives</h3>
+              <h3>{t('adminTech.webhooks.attempts')}</h3>
               {detail.attempts.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)' }}>Aucune tentative enregistrée.</p>
+                <p style={{ color: 'var(--text-muted)' }}>{t('adminTech.webhooks.noAttempts')}</p>
               ) : (
                 <ul style={{ paddingLeft: 18 }}>
                   {detail.attempts.map((attempt, index) => (
                     <li key={`${attempt.at}-${index}`}>
                       {formatDateTime(attempt.at)} —{' '}
-                      {attempt.httpStatus ? `HTTP ${attempt.httpStatus}` : attempt.error || 'erreur réseau'} (
-                      {attempt.durationMs} ms)
+                      {attempt.httpStatus
+                        ? `HTTP ${attempt.httpStatus}`
+                        : attempt.error || t('adminTech.webhooks.networkError')}{' '}
+                      ({attempt.durationMs} ms)
                     </li>
                   ))}
                 </ul>
@@ -282,14 +291,14 @@ export default function DeliveryLog({ selected, onSelect }: Props) {
             </div>
             <div className="confirm-modal__footer">
               <button type="button" className="confirm-modal__btn" onClick={() => setDetail(null)}>
-                Fermer
+                {t('common.close')}
               </button>
               <button
                 type="button"
                 className="confirm-modal__btn confirm-modal__btn--confirm"
                 onClick={() => void replay(detail)}
               >
-                Rejouer
+                {t('adminTech.webhooks.replay')}
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { AlertTriangle } from 'lucide-react'
 import type { BetaCoverage, BetaScenario, BetaTester } from '../../../services/beta'
-import { VERDICT_LABEL, coverageRatio, sortScenariosByAttention, verdictTone } from './helpers'
+import { useI18n } from '../../../context/I18nContext'
+import { VERDICT_LABEL_KEY, coverageRatio, sortScenariosByAttention, verdictTone } from './helpers'
 
 interface Props {
   scenarios: BetaScenario[]
@@ -17,6 +18,7 @@ interface Props {
  * l'information.
  */
 export default function CoverageGrid({ scenarios, testers, coverage }: Props) {
+  const { t } = useI18n()
   const active = testers.filter((tester) => !tester.revokedAt)
   const ordered = sortScenariosByAttention(scenarios)
   const disputed = new Set(coverage.disputedScenarioIds)
@@ -24,8 +26,8 @@ export default function CoverageGrid({ scenarios, testers, coverage }: Props) {
   if (active.length === 0) {
     return (
       <div className="beta-coverage beta-coverage-empty">
-        <p>Aucun testeur invité pour l’instant.</p>
-        <p className="beta-muted">Invitez quelqu’un pour commencer à suivre qui a testé quoi.</p>
+        <p>{t('beta.coverage.noTesters')}</p>
+        <p className="beta-muted">{t('beta.coverage.noTestersHint')}</p>
       </div>
     )
   }
@@ -36,12 +38,12 @@ export default function CoverageGrid({ scenarios, testers, coverage }: Props) {
         <div>
           <span className="beta-coverage-ratio">{coverageRatio(coverage)} %</span>
           <span className="beta-muted">
-            {coverage.testedCount} / {coverage.expectedCount} verdicts rendus
+            {t('beta.coverage.verdictsDone', { tested: coverage.testedCount, expected: coverage.expectedCount })}
           </span>
         </div>
         {coverage.silentTesterIds.length > 0 && (
           <span className="beta-chip beta-chip-warn">
-            {coverage.silentTesterIds.length} testeur(s) sans aucun retour
+            {t('beta.coverage.silentTesters', { count: coverage.silentTesterIds.length })}
           </span>
         )}
       </header>
@@ -51,7 +53,7 @@ export default function CoverageGrid({ scenarios, testers, coverage }: Props) {
           <thead>
             <tr>
               <th scope="col" className="beta-coverage-corner">
-                Démarche
+                {t('beta.shared.scenario')}
               </th>
               {active.map((tester) => (
                 <th key={tester._id} scope="col" className="beta-coverage-tester">
@@ -67,19 +69,19 @@ export default function CoverageGrid({ scenarios, testers, coverage }: Props) {
                   <span className="beta-coverage-id">{scenario.identifier}</span>
                   <span className="beta-coverage-title">{scenario.title}</span>
                   {disputed.has(scenario._id) && (
-                    <span title="Les testeurs ne sont pas d’accord" className="beta-disputed">
+                    <span title={t('beta.coverage.disputed')} className="beta-disputed">
                       <AlertTriangle size={13} aria-hidden />
                     </span>
                   )}
                 </th>
                 {active.map((tester) => {
                   const verdict = coverage.cells[scenario._id]?.[tester._id] ?? null
-                  const label = verdict ? VERDICT_LABEL[verdict] : 'pas encore testé'
+                  const label = verdict ? t(VERDICT_LABEL_KEY[verdict]) : t('beta.coverage.notTestedYet')
                   return (
                     <td key={tester._id} className="beta-coverage-cell">
                       <span
                         className={`beta-dot beta-dot-${verdict ? verdictTone(verdict) : 'empty'}`}
-                        aria-label={`${tester.name} : ${label}`}
+                        aria-label={t('beta.coverage.cellLabel', { name: tester.name, status: label })}
                         role="img"
                       />
                     </td>

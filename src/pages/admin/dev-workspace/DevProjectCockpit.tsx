@@ -57,6 +57,9 @@ import {
   type DevTimelineCategory,
 } from '../../../services/dev'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
+import { translate, type MessageKey } from '../../../i18n'
+import { formatDate } from '../../../i18n/format'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 // Import via le barrel pour charger dashboard.css (style financial timeline).
 import { FinancialChart } from '../../../components/dashboard'
@@ -64,6 +67,7 @@ import RecommendationsPanel from './RecommendationsPanel'
 import './DevProjectCockpit.css'
 
 import { formatBytes, formatNumber, formatRelative, formatShortDate, userInitial } from './cockpit/helpers'
+import { withStrong } from './cockpit/rich'
 import {
   GithubIcon,
   IssueRow,
@@ -89,12 +93,13 @@ const HEALTH_META: Record<
 }
 
 // Format JJ/MM pour l'axe temporel du chart vélocité.
-const shortDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+const shortDate = (d: string) => formatDate(new Date(d), { day: '2-digit', month: '2-digit' })
 
 const DevProjectCockpit = () => {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t, locale } = useI18n()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_DEV)
 
   const [cockpit, setCockpit] = useState<DevCockpit | null>(null)
@@ -123,7 +128,7 @@ const DevProjectCockpit = () => {
       const data = await fetchDevProjectCockpit(projectId)
       setCockpit(data)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur de chargement')
+      setError(e instanceof Error ? e.message : translate('devB.common.loadError'))
     } finally {
       setLoading(false)
     }
@@ -240,7 +245,7 @@ const DevProjectCockpit = () => {
       await loadIntel(true)
       await refreshLargeFiles(true)
     } catch (e) {
-      setGhError(e instanceof Error ? e.message : "Erreur lors de l'enregistrement")
+      setGhError(e instanceof Error ? e.message : translate('devB.cockpit.saveError'))
     } finally {
       setGhSaving(false)
     }
@@ -254,14 +259,14 @@ const DevProjectCockpit = () => {
       value: cockpit.byStatus[s] || 0,
       color: STATUS_COLOR[s],
     })).filter((d) => d.value > 0)
-  }, [cockpit])
+  }, [cockpit, locale])
 
   const priorityData = useMemo(() => {
     if (!cockpit) return []
     return (Object.entries(cockpit.byPriority) as [DevIssuePriority, number][])
       .filter(([, v]) => v > 0)
       .map(([k, v]) => ({ key: k, name: PRIORITY_LABEL[k], value: v, color: PRIORITY_COLOR[k] }))
-  }, [cockpit])
+  }, [cockpit, locale])
 
   const visibleTimeline = useMemo(() => {
     if (!cockpit) return []
@@ -275,20 +280,20 @@ const DevProjectCockpit = () => {
     return (Object.entries(cockpit.byType) as [DevIssueType, number][])
       .filter(([, v]) => v > 0)
       .map(([k, v]) => ({ key: k, name: TYPE_LABEL[k], value: v, color: TYPE_COLOR[k] }))
-  }, [cockpit])
+  }, [cockpit, locale])
 
-  if (!projectId) return <div className="cockpit-loading">Identifiant de projet manquant.</div>
-  if (loading && !cockpit) return <div className="cockpit-loading">Chargement du cockpit…</div>
+  if (!projectId) return <div className="cockpit-loading">{t('devB.cockpit.missingId')}</div>
+  if (loading && !cockpit) return <div className="cockpit-loading">{t('devB.cockpit.loading')}</div>
   if (error)
     return (
       <div className="cockpit-error">
         <AlertOctagon size={16} /> {error}
         <button className="cockpit-btn" onClick={load}>
-          Réessayer
+          {t('devB.cockpit.retry')}
         </button>
       </div>
     )
-  if (!cockpit) return <div className="cockpit-loading">Aucune donnée.</div>
+  if (!cockpit) return <div className="cockpit-loading">{t('devB.cockpit.noData')}</div>
 
   const { project, counts, progress, health, velocity } = cockpit
   const HealthIcon = HEALTH_META[health].icon
@@ -297,7 +302,7 @@ const DevProjectCockpit = () => {
     <div className="cockpit-page" style={{ ['--accent' as never]: project.color }}>
       <header className="cockpit-header">
         <div className="cockpit-header-left">
-          <button className="cockpit-back" onClick={() => navigate('/admin/dev')} title="Retour Dev Workspace">
+          <button className="cockpit-back" onClick={() => navigate('/admin/dev')} title={t('devB.cockpit.backTitle')}>
             <ArrowLeft size={14} />
           </button>
           <div className="cockpit-header-id">
@@ -312,16 +317,16 @@ const DevProjectCockpit = () => {
           <h1 className="cockpit-title">{project.name}</h1>
         </div>
         <div className="cockpit-header-actions">
-          <button className="cockpit-btn subtle" onClick={load} title="Rafraîchir">
-            <RefreshCw size={12} /> Rafraîchir
+          <button className="cockpit-btn subtle" onClick={load} title={t('devB.common.refresh')}>
+            <RefreshCw size={12} /> {t('devB.common.refresh')}
           </button>
           <button className="cockpit-btn subtle" onClick={() => navigate(`/admin/dev?project=${project._id}`)}>
-            <ListChecks size={12} /> Voir les issues
+            <ListChecks size={12} /> {t('devB.cockpit.seeIssues')}
           </button>
           <button
             className="cockpit-btn subtle"
             onClick={() => navigate(`/admin/dev?project=${project._id}`)}
-            title="Ouvrir dans le workspace"
+            title={t('devB.cockpit.openInWorkspace')}
           >
             <ExternalLink size={12} /> Workspace
           </button>
@@ -329,9 +334,9 @@ const DevProjectCockpit = () => {
             <button
               className="cockpit-btn primary"
               onClick={() => navigate('/admin/dev')}
-              title="Créer une issue (workspace)"
+              title={t('devB.cockpit.newIssueTitle')}
             >
-              <Plus size={12} /> Nouvelle issue
+              <Plus size={12} /> {t('devB.cockpit.newIssue')}
             </button>
           )}
         </div>
@@ -342,34 +347,34 @@ const DevProjectCockpit = () => {
       <section className="cockpit-kpis">
         <div className={`cockpit-kpi-card health tone-${HEALTH_META[health].tone}`}>
           <div className="cockpit-kpi-label">
-            <HealthIcon size={12} /> Santé
+            <HealthIcon size={12} /> {t('devB.cockpit.kpiHealth')}
           </div>
           <div className="cockpit-kpi-value">{HEALTH_META[health].label}</div>
-          <div className="cockpit-kpi-sub">{progress}% complétion</div>
+          <div className="cockpit-kpi-sub">{t('devB.cockpit.kpiCompletion', { percent: progress })}</div>
           <div className="cockpit-kpi-progress" aria-hidden>
             <span style={{ width: `${progress}%` }} />
           </div>
         </div>
         <div className={`cockpit-kpi-card${counts.blocked ? ' tone-fail' : ''}`}>
           <div className="cockpit-kpi-label">
-            <ShieldAlert size={12} /> Bloquées
+            <ShieldAlert size={12} /> {t('devB.cockpit.kpiBlocked')}
           </div>
           <div className="cockpit-kpi-value">{counts.blocked}</div>
-          <div className="cockpit-kpi-sub">à débloquer en priorité</div>
+          <div className="cockpit-kpi-sub">{t('devB.cockpit.kpiBlockedSub')}</div>
         </div>
         <div className={`cockpit-kpi-card${counts.urgent ? ' tone-warn' : ''}`}>
           <div className="cockpit-kpi-label">
-            <Flame size={12} /> Urgentes
+            <Flame size={12} /> {t('devB.cockpit.kpiUrgent')}
           </div>
           <div className="cockpit-kpi-value">{counts.urgent}</div>
-          <div className="cockpit-kpi-sub">à traiter</div>
+          <div className="cockpit-kpi-sub">{t('devB.cockpit.kpiUrgentSub')}</div>
         </div>
         <div className={`cockpit-kpi-card${counts.overdue ? ' tone-fail' : ''}`}>
           <div className="cockpit-kpi-label">
-            <Clock size={12} /> En retard
+            <Clock size={12} /> {t('devB.cockpit.kpiOverdue')}
           </div>
           <div className="cockpit-kpi-value">{counts.overdue}</div>
-          <div className="cockpit-kpi-sub">échéances dépassées</div>
+          <div className="cockpit-kpi-sub">{t('devB.cockpit.kpiOverdueSub')}</div>
         </div>
         <div className="cockpit-kpi-card">
           <div className="cockpit-kpi-label">
@@ -377,15 +382,15 @@ const DevProjectCockpit = () => {
           </div>
           <div className="cockpit-kpi-value">{counts.total}</div>
           <div className="cockpit-kpi-sub">
-            {counts.open} ouvertes · {counts.done} terminées
+            {t('devB.cockpit.kpiIssuesSub', { open: counts.open, done: counts.done })}
           </div>
         </div>
         <div className="cockpit-kpi-card">
           <div className="cockpit-kpi-label">
-            <Target size={12} /> Récent
+            <Target size={12} /> {t('devB.cockpit.kpiRecent')}
           </div>
           <div className="cockpit-kpi-value">{velocity.completed7d}</div>
-          <div className="cockpit-kpi-sub">terminées sur 7 j</div>
+          <div className="cockpit-kpi-sub">{t('devB.cockpit.kpiRecentSub')}</div>
         </div>
       </section>
 
@@ -394,12 +399,12 @@ const DevProjectCockpit = () => {
         <div className="cockpit-card">
           <div className="cockpit-card-header">
             <span className="cockpit-card-kicker">
-              <ShieldAlert size={11} /> Bloquées
+              <ShieldAlert size={11} /> {t('devB.cockpit.kpiBlocked')}
             </span>
             <span className="cockpit-card-meta">{cockpit.blockers.length}</span>
           </div>
           {cockpit.blockers.length === 0 ? (
-            <div className="cockpit-empty">Aucune issue bloquée. </div>
+            <div className="cockpit-empty">{t('devB.cockpit.noBlocked')}</div>
           ) : (
             cockpit.blockers.map((i) => <IssueRow key={i._id} issue={i} onOpen={openIssue} />)
           )}
@@ -408,12 +413,12 @@ const DevProjectCockpit = () => {
         <div className="cockpit-card">
           <div className="cockpit-card-header">
             <span className="cockpit-card-kicker">
-              <Flame size={11} /> Urgentes
+              <Flame size={11} /> {t('devB.cockpit.kpiUrgent')}
             </span>
             <span className="cockpit-card-meta">{cockpit.urgent.length}</span>
           </div>
           {cockpit.urgent.length === 0 ? (
-            <div className="cockpit-empty">Aucune issue urgente.</div>
+            <div className="cockpit-empty">{t('devB.cockpit.noUrgent')}</div>
           ) : (
             cockpit.urgent.map((i) => <IssueRow key={i._id} issue={i} onOpen={openIssue} />)
           )}
@@ -422,12 +427,12 @@ const DevProjectCockpit = () => {
         <div className="cockpit-card">
           <div className="cockpit-card-header">
             <span className="cockpit-card-kicker">
-              <Clock size={11} /> En retard
+              <Clock size={11} /> {t('devB.cockpit.kpiOverdue')}
             </span>
             <span className="cockpit-card-meta">{cockpit.overdue.length}</span>
           </div>
           {cockpit.overdue.length === 0 ? (
-            <div className="cockpit-empty">Aucune échéance dépassée.</div>
+            <div className="cockpit-empty">{t('devB.cockpit.noOverdue')}</div>
           ) : (
             cockpit.overdue.map((i) => <IssueRow key={i._id} issue={i} onOpen={openIssue} />)
           )}
@@ -460,18 +465,16 @@ const DevProjectCockpit = () => {
           />
           <div className="cockpit-card cockpit-intel-card">
             <div className="cockpit-card-header">
-              <span className="cockpit-card-kicker">Contexte projet</span>
+              <span className="cockpit-card-kicker">{t('devB.cockpit.context')}</span>
               <span className="cockpit-card-meta">
-                <Users size={11} /> {project.members.length} membre(s)
-                {project.lead && <> · Lead : {project.lead.name || project.lead.email}</>}
+                <Users size={11} /> {t('devB.cockpit.members', { count: project.members.length })}
+                {project.lead && <> · {t('devB.cockpit.lead', { name: project.lead.name || project.lead.email })}</>}
               </span>
             </div>
             {project.description ? (
               <pre className="cockpit-readme-body">{project.description}</pre>
             ) : (
-              <div className="cockpit-readme-empty">
-                Aucune description. Renseignez-la dans le workspace pour donner du contexte au projet.
-              </div>
+              <div className="cockpit-readme-empty">{t('devB.cockpit.noDescription')}</div>
             )}
           </div>
         </section>
@@ -494,12 +497,14 @@ const DevProjectCockpit = () => {
         <div className="cockpit-card">
           <div className="cockpit-card-header">
             <span className="cockpit-card-kicker">
-              <CalendarClock size={11} /> Prochaine action
+              <CalendarClock size={11} /> {t('devB.cockpit.nextAction')}
             </span>
-            <span className="cockpit-card-meta">{cockpit.nextDue.length} échéance(s) à venir</span>
+            <span className="cockpit-card-meta">
+              {t('devB.cockpit.upcomingCount', { count: cockpit.nextDue.length })}
+            </span>
           </div>
           {cockpit.nextDue.length === 0 ? (
-            <div className="cockpit-empty">Aucune échéance à venir.</div>
+            <div className="cockpit-empty">{t('devB.cockpit.noUpcoming')}</div>
           ) : (
             cockpit.nextDue.map((i) => <IssueRow key={i._id} issue={i} onOpen={openIssue} />)
           )}
@@ -507,31 +512,33 @@ const DevProjectCockpit = () => {
 
         <div className="cockpit-card cockpit-status">
           <div className="cockpit-card-header">
-            <span className="cockpit-card-kicker">Où ça en est</span>
-            <span className="cockpit-card-meta">dernière activité {formatRelative(cockpit.lastActivityAt)}</span>
+            <span className="cockpit-card-kicker">{t('devB.cockpit.whereWeAre')}</span>
+            <span className="cockpit-card-meta">
+              {t('devB.cockpit.lastActivity', { when: formatRelative(cockpit.lastActivityAt) })}
+            </span>
           </div>
           <ul className="cockpit-status-list">
             <li>
-              <strong>{counts.open}</strong> issue(s) ouverte(s) — {counts.done} terminée(s) / {counts.total}
+              {withStrong(t('devB.cockpit.openSummary', { open: counts.open, done: counts.done, total: counts.total }))}
             </li>
             {counts.urgent > 0 && (
               <li className="warn">
-                <Flame size={11} /> <strong>{counts.urgent}</strong> urgentes à traiter
+                <Flame size={11} /> {withStrong(t('devB.cockpit.urgentTodo', { count: counts.urgent }))}
               </li>
             )}
             {counts.blocked > 0 && (
               <li className="fail">
-                <ShieldAlert size={11} /> <strong>{counts.blocked}</strong> bloquée(s) — débloquer pour avancer
+                <ShieldAlert size={11} /> {withStrong(t('devB.cockpit.blockedTodo', { count: counts.blocked }))}
               </li>
             )}
             {counts.overdue > 0 && (
               <li className="fail">
-                <Clock size={11} /> <strong>{counts.overdue}</strong> en retard sur échéance
+                <Clock size={11} /> {withStrong(t('devB.cockpit.overdueTodo', { count: counts.overdue }))}
               </li>
             )}
             {cockpit.nextDue[0] && (
               <li>
-                <CalendarClock size={11} /> Prochaine échéance :{' '}
+                <CalendarClock size={11} /> {t('devB.cockpit.nextDueLabel')}{' '}
                 <button className="cockpit-inline-link" onClick={() => openIssue(cockpit.nextDue[0]!._id)}>
                   {cockpit.nextDue[0].identifier} · {formatShortDate(cockpit.nextDue[0].dueDate!)}
                 </button>
@@ -539,10 +546,10 @@ const DevProjectCockpit = () => {
             )}
             {counts.open === 0 && counts.total > 0 && (
               <li className="ok">
-                <CheckCircle2 size={11} /> Backlog vidé : aucune issue ouverte.
+                <CheckCircle2 size={11} /> {t('devB.cockpit.backlogCleared')}
               </li>
             )}
-            {counts.total === 0 && <li>Aucune issue pour ce projet. Créez-en une depuis le workspace.</li>}
+            {counts.total === 0 && <li>{t('devB.cockpit.noIssues')}</li>}
           </ul>
         </div>
       </section>
@@ -552,20 +559,20 @@ const DevProjectCockpit = () => {
         <div className="cockpit-card">
           <div className="cockpit-card-header">
             <span className="cockpit-card-kicker">
-              <Users size={11} /> Charge par assigné
+              <Users size={11} /> {t('devB.cockpit.workload')}
             </span>
-            <span className="cockpit-card-meta">{cockpit.assignees.length} entrée(s)</span>
+            <span className="cockpit-card-meta">{t('devB.cockpit.entries', { count: cockpit.assignees.length })}</span>
           </div>
           {cockpit.assignees.length === 0 ? (
-            <div className="cockpit-empty">Aucun assigné.</div>
+            <div className="cockpit-empty">{t('devB.cockpit.noAssignees')}</div>
           ) : (
             <table className="cockpit-assignees">
               <thead>
                 <tr>
-                  <th>Membre</th>
-                  <th>Ouvertes</th>
-                  <th>Urgent</th>
-                  <th>Terminé</th>
+                  <th>{t('devB.cockpit.thMember')}</th>
+                  <th>{t('devB.cockpit.thOpen')}</th>
+                  <th>{t('devB.cockpit.thUrgent')}</th>
+                  <th>{t('devB.cockpit.thDone')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -573,7 +580,7 @@ const DevProjectCockpit = () => {
                   <tr key={row.user?._id || `unassigned-${idx}`}>
                     <td>
                       <span className="cockpit-avatar">{userInitial(row.user)}</span>
-                      {row.user?.name || row.user?.email || 'Non assignée'}
+                      {row.user?.name || row.user?.email || t('devB.cockpit.unassigned')}
                     </td>
                     <td>{row.open}</td>
                     <td className={row.urgent ? 'warn' : ''}>{row.urgent}</td>
@@ -588,12 +595,12 @@ const DevProjectCockpit = () => {
         <div className="cockpit-card">
           <div className="cockpit-card-header">
             <span className="cockpit-card-kicker">
-              <CheckCircle2 size={11} /> Récemment terminées
+              <CheckCircle2 size={11} /> {t('devB.cockpit.recentlyDone')}
             </span>
             <span className="cockpit-card-meta">{cockpit.recentlyDone.length}</span>
           </div>
           {cockpit.recentlyDone.length === 0 ? (
-            <div className="cockpit-empty">Aucune issue terminée.</div>
+            <div className="cockpit-empty">{t('devB.cockpit.noDone')}</div>
           ) : (
             cockpit.recentlyDone.map((i) => <IssueRow key={i._id} issue={i} onOpen={openIssue} />)
           )}
@@ -605,20 +612,22 @@ const DevProjectCockpit = () => {
         <div className="cockpit-card">
           <div className="cockpit-card-header">
             <span className="cockpit-card-kicker">
-              <Activity size={11} /> Timeline technique
+              <Activity size={11} /> {t('devB.cockpit.timeline')}
             </span>
-            <span className="cockpit-card-meta">{visibleTimeline.length} événement(s)</span>
+            <span className="cockpit-card-meta">
+              {t('devB.cockpit.eventsCount', { count: visibleTimeline.length })}
+            </span>
           </div>
-          <div className="cockpit-timeline-filters" role="group" aria-label="Filtrer la timeline technique">
+          <div className="cockpit-timeline-filters" role="group" aria-label={t('devB.cockpit.timelineFilterAria')}>
             {(
               [
-                ['all', 'Tout'],
-                ['change', 'Changements'],
-                ['comment', 'Commentaires'],
-                ['github', 'GitHub / CI'],
-                ['agent', 'Agents'],
-                ['deployment', 'Déploiements'],
-              ] as const
+                ['all', 'devB.cockpit.filterAll'],
+                ['change', 'devB.cockpit.filterChange'],
+                ['comment', 'devB.cockpit.filterComment'],
+                ['github', 'devB.cockpit.filterGithub'],
+                ['agent', 'devB.cockpit.filterAgent'],
+                ['deployment', 'devB.cockpit.filterDeployment'],
+              ] as const satisfies readonly (readonly [DevTimelineCategory | 'all', MessageKey])[]
             ).map(([value, label]) => (
               <button
                 key={value}
@@ -627,14 +636,14 @@ const DevProjectCockpit = () => {
                 aria-pressed={timelineFilter === value}
                 onClick={() => setTimelineFilter(value)}
               >
-                {label}
+                {t(label)}
               </button>
             ))}
           </div>
           {cockpit.timeline.length === 0 ? (
-            <div className="cockpit-empty">Aucun événement technique n’a encore été tracé pour ce projet.</div>
+            <div className="cockpit-empty">{t('devB.cockpit.timelineEmpty')}</div>
           ) : visibleTimeline.length === 0 ? (
-            <div className="cockpit-empty">Aucun événement ne correspond à ce filtre.</div>
+            <div className="cockpit-empty">{t('devB.cockpit.timelineFilterEmpty')}</div>
           ) : (
             <div className="cockpit-timeline-list">
               {visibleTimeline.map((event) => (
@@ -652,8 +661,8 @@ const DevProjectCockpit = () => {
       <section className="cockpit-metrics-section">
         <header className="cockpit-metrics-header">
           <TrendingUp size={12} />
-          <span>Métriques</span>
-          <span className="cockpit-metrics-subtitle">vélocité, répartitions, code, tokens — pour analyse</span>
+          <span>{t('devB.cockpit.metrics')}</span>
+          <span className="cockpit-metrics-subtitle">{t('devB.cockpit.metricsSubtitle')}</span>
         </header>
 
         <div className="cockpit-row">
@@ -663,24 +672,28 @@ const DevProjectCockpit = () => {
             <FinancialChart
               data={velocity.days.map((d) => ({ ts: shortDate(d.date), value: d.completed, volume: d.created }))}
               secondarySeries={velocity.days.map((d) => ({ ts: shortDate(d.date), value: d.created }))}
-              label="Vélocité 14 jours"
-              currentValue={`${velocity.completed14d} terminées · ${velocity.velocityPerDay14d.toFixed(1)}/j`}
+              label={t('devB.cockpit.velocityLabel')}
+              currentValue={t('devB.cockpit.velocityCurrent', {
+                done: velocity.completed14d,
+                perDay: velocity.velocityPerDay14d.toFixed(1),
+              })}
               height={220}
             />
             {velocity.avgCompletionDays !== null && (
               <div className="cockpit-card-foot">
-                <Activity size={11} /> Temps moyen de résolution : <strong>{velocity.avgCompletionDays} j</strong>
+                <Activity size={11} /> {t('devB.cockpit.avgResolution')}{' '}
+                <strong>{t('devB.cockpit.daysShort', { count: velocity.avgCompletionDays })}</strong>
               </div>
             )}
           </div>
 
           <div className="cockpit-card">
             <div className="cockpit-card-header">
-              <span className="cockpit-card-kicker">Statut</span>
-              <span className="cockpit-card-meta">{counts.total} issue(s)</span>
+              <span className="cockpit-card-kicker">{t('devB.cockpit.statusTitle')}</span>
+              <span className="cockpit-card-meta">{t('devB.cockpit.issuesCount', { count: counts.total })}</span>
             </div>
             {statusData.length === 0 ? (
-              <div className="cockpit-empty">Aucune donnée</div>
+              <div className="cockpit-empty">{t('devB.common.noData')}</div>
             ) : (
               <div className="cockpit-chart-wrap">
                 <div className="cockpit-chart" style={{ height: 180, flex: '0 0 180px' }}>
@@ -720,11 +733,11 @@ const DevProjectCockpit = () => {
         <div className="cockpit-row">
           <div className="cockpit-card">
             <div className="cockpit-card-header">
-              <span className="cockpit-card-kicker">Priorité</span>
-              <span className="cockpit-card-meta">répartition</span>
+              <span className="cockpit-card-kicker">{t('devB.cockpit.priorityTitle')}</span>
+              <span className="cockpit-card-meta">{t('devB.cockpit.breakdown')}</span>
             </div>
             {priorityData.length === 0 ? (
-              <div className="cockpit-empty">Aucune donnée</div>
+              <div className="cockpit-empty">{t('devB.common.noData')}</div>
             ) : (
               <div className="cockpit-chart" style={{ height: 180 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -756,11 +769,11 @@ const DevProjectCockpit = () => {
 
           <div className="cockpit-card">
             <div className="cockpit-card-header">
-              <span className="cockpit-card-kicker">Type</span>
+              <span className="cockpit-card-kicker">{t('devB.cockpit.typeTitle')}</span>
               <span className="cockpit-card-meta">feature · bug · …</span>
             </div>
             {typeData.length === 0 ? (
-              <div className="cockpit-empty">Aucune donnée</div>
+              <div className="cockpit-empty">{t('devB.common.noData')}</div>
             ) : (
               <div className="cockpit-chart" style={{ height: 180 }}>
                 <ResponsiveContainer width="100%" height="100%">

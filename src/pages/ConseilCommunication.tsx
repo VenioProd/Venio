@@ -5,6 +5,8 @@ import StructuredData from '../components/StructuredData'
 import TrustLine from '../components/conversion/TrustLine'
 import NeedStart from '../components/qualification/NeedStart'
 import { InstrumentRings, LineIcon, useSpotlight, type LineIconName } from '../components/graphics'
+import { useI18n } from '../context/I18nContext'
+import type { MessageKey } from '../i18n'
 import { useReveal } from '../hooks/useReveal'
 import '../styles/monolithe-pages.css'
 import '../styles/refonte-pages.css'
@@ -12,78 +14,79 @@ import '../styles/refonte-pages.css'
 interface Prestation {
   index: string
   icon: LineIconName
-  label: string
-  title: string
-  text: string
-  delivered: string
-  useless: string
+  label: MessageKey
+  title: MessageKey
+  text: MessageKey
+  delivered: MessageKey
+  useless: MessageKey
 }
 
 const PRESTATIONS: Prestation[] = [
   {
     index: '01',
     icon: 'loupe',
-    label: 'Diagnostic',
-    title: 'Un état des lieux écrit',
-    text: 'Ce que vous dites, à qui, où, et ce que ça coûte. Ce qui marche, ce qui coûte cher pour rien, et les décisions à prendre dans l’ordre.',
-    delivered: 'état des lieux écrit',
-    useless: 'Vous savez déjà quoi faire et cherchez quelqu’un pour le valider.',
+    label: 'pubHome.advice.svc1Label',
+    title: 'pubHome.advice.svc1Title',
+    text: 'pubHome.advice.svc1Text',
+    delivered: 'pubHome.advice.svc1Delivered',
+    useless: 'pubHome.advice.svc1Useless',
   },
   {
     index: '02',
     icon: 'target',
-    label: 'Positionnement',
-    title: 'Une phrase que vos clients répètent',
-    text: 'Positionnement, messages, preuves et ton. De quoi présenter l’entreprise de la même façon, partout.',
-    delivered: 'guide de message',
-    useless: 'Votre offre elle-même n’est pas arrêtée. On commence par là.',
+    label: 'pubHome.advice.svc2Label',
+    title: 'pubHome.advice.svc2Title',
+    text: 'pubHome.advice.svc2Text',
+    delivered: 'pubHome.advice.svc2Delivered',
+    useless: 'pubHome.advice.svc2Useless',
   },
   {
     index: '03',
     icon: 'calendar',
-    label: 'Plan de communication',
-    title: 'Canaux, rythme, budget',
-    text: 'Les canaux choisis, un rythme que votre équipe peut tenir, et la liste de ce qu’on arrête.',
-    delivered: 'plan et calendrier',
-    useless: 'Personne chez vous ne peut y consacrer deux heures par semaine.',
+    label: 'pubHome.advice.svc3Label',
+    title: 'pubHome.advice.svc3Title',
+    text: 'pubHome.advice.svc3Text',
+    delivered: 'pubHome.advice.svc3Delivered',
+    useless: 'pubHome.advice.svc3Useless',
   },
   {
     index: '04',
     icon: 'megaphone',
-    label: 'Contenus & réseaux',
-    title: 'Une ligne éditoriale tenable',
-    text: 'Sujets, formats, gabarits et calendrier. Écrits avec vous, publiables sans nous.',
-    delivered: 'ligne éditoriale et gabarits',
-    useless: 'Vous n’avez rien à montrer ni à raconter pour l’instant.',
+    label: 'pubHome.advice.svc4Label',
+    title: 'pubHome.advice.svc4Title',
+    text: 'pubHome.advice.svc4Text',
+    delivered: 'pubHome.advice.svc4Delivered',
+    useless: 'pubHome.advice.svc4Useless',
   },
   {
     index: '05',
     icon: 'spark',
-    label: 'Acquisition & mesure',
-    title: 'Trois chiffres, chaque mois',
-    text: 'Référencement, campagnes, et la règle pour décider quoi couper. Un point écrit par mois.',
-    delivered: 'tableau de suivi mensuel',
-    useless: 'Le site qui reçoit les visiteurs ne dit pas ce que vous faites. On le refait d’abord.',
+    label: 'pubHome.advice.svc5Label',
+    title: 'pubHome.advice.svc5Title',
+    text: 'pubHome.advice.svc5Text',
+    delivered: 'pubHome.advice.svc5Delivered',
+    useless: 'pubHome.advice.svc5Useless',
   },
 ]
 
-const CUTS: [string, string][] = [
-  ['Cinq réseaux sociaux tenus à moitié', 'deux, tenus'],
-  ['Une plaquette de 24 pages', 'une page claire'],
-  ['Trente indicateurs dans un tableau', 'trois, regardés'],
-  ['« Solutions innovantes »', 'ce que vous faites'],
+const CUTS: [MessageKey, MessageKey][] = [
+  ['pubHome.advice.cut1Before', 'pubHome.advice.cut1After'],
+  ['pubHome.advice.cut2Before', 'pubHome.advice.cut2After'],
+  ['pubHome.advice.cut3Before', 'pubHome.advice.cut3After'],
+  ['pubHome.advice.cut4Before', 'pubHome.advice.cut4After'],
 ]
 
 const ConseilCommunication: React.FC = () => {
+  const { t } = useI18n()
   useReveal('.mp-page .mp-reveal', 'mp-visible')
   const jobsRef = useSpotlight<HTMLDivElement>()
 
   return (
     <div className="mp-page">
       <SEO
-        title="Conseil marketing et communication à Paris"
-        description="Diagnostic, positionnement, plan de communication, contenus et mesure : cinq prestations indépendantes, chacune avec un livrable écrit que vous gardez."
-        keywords="conseil marketing Paris, conseil communication Paris, stratégie de communication, positionnement, plan de communication"
+        title={t('pubHome.advice.seoTitle')}
+        description={t('pubHome.advice.seoDescription')}
+        keywords={t('pubHome.advice.seoKeywords')}
       />
       <StructuredData type="conseil-communication" />
 
@@ -93,23 +96,19 @@ const ConseilCommunication: React.FC = () => {
           <div>
             <p className="rp-mono rp-eb">
               <i aria-hidden="true" />
-              Conseil marketing &amp; communication · Paris
+              {t('pubHome.advice.heroEyebrow')}
             </p>
             <h1 className="rp-h1 rp-h1--wide">
-              La plupart des communications ne servent à rien.{' '}
-              <span className="rp-acc vn-shine">Ce n’est pas une fatalité.</span>
+              {t('pubHome.advice.title')} <span className="rp-acc vn-shine">{t('pubHome.advice.titleAccent')}</span>
             </h1>
-            <p className="rp-lede">
-              On clarifie ce que vous dites, on choisit où le dire, et on coupe ce qui ne rapporte pas. Chaque étape
-              produit un document que vous gardez.
-            </p>
+            <p className="rp-lede">{t('pubHome.advice.lede')}</p>
             <div className="rp-ctas vn-fx">
               <Link
                 to="/contact?besoin=com"
                 className="mc-btn mc-btn--primary"
                 data-analytics-cta="conseil_hero_besoin"
               >
-                Décrire mon besoin
+                {t('pubHome.cta.describeNeed')}
               </Link>
             </div>
             <div className="rp-trust">
@@ -118,14 +117,14 @@ const ConseilCommunication: React.FC = () => {
           </div>
           <div className="rp-plate">
             <div className="rp-plate-h">
-              <span className="rp-mono">Ce qu’on coupe souvent</span>
-              <span className="rp-mono rp-acc">Exemples</span>
+              <span className="rp-mono">{t('pubHome.advice.cutsTitle')}</span>
+              <span className="rp-mono rp-acc">{t('pubHome.advice.cutsBadge')}</span>
             </div>
             <div className="rp-plate-b">
               {CUTS.map(([before, after]) => (
                 <p key={before} className="rp-cut">
-                  <s>{before}</s>
-                  <span className="rp-mono rp-acc">→ {after}</span>
+                  <s>{t(before)}</s>
+                  <span className="rp-mono rp-acc">→ {t(after)}</span>
                 </p>
               ))}
             </div>
@@ -137,10 +136,11 @@ const ConseilCommunication: React.FC = () => {
         <div className="mp-container mp-reveal">
           <p className="rp-mono rp-eb">
             <i aria-hidden="true" />
-            Cinq prestations
+            {t('pubHome.advice.servicesEyebrow')}
           </p>
           <h2>
-            Elles vivent seules. <span className="rp-acc">Elles s’enchaînent si le diagnostic le justifie.</span>
+            {t('pubHome.advice.servicesTitle')}{' '}
+            <span className="rp-acc">{t('pubHome.advice.servicesTitleAccent')}</span>
           </h2>
           <div className="rp-services">
             {PRESTATIONS.map((p, i) => (
@@ -148,15 +148,15 @@ const ConseilCommunication: React.FC = () => {
                 <LineIcon name={p.icon} delay={i * 90} />
                 <div>
                   <span className="rp-mono">
-                    {p.index} · {p.label}
+                    {p.index} · {t(p.label)}
                   </span>
-                  <h3>{p.title}</h3>
-                  <p>{p.text}</p>
-                  <p className="rp-liv">Livré : {p.delivered}</p>
+                  <h3>{t(p.title)}</h3>
+                  <p>{t(p.text)}</p>
+                  <p className="rp-liv">{t('pubHome.advice.delivered', { value: t(p.delivered) })}</p>
                 </div>
                 <div className="rp-nope">
-                  <span className="rp-mono">Inutile si</span>
-                  <p>{p.useless}</p>
+                  <span className="rp-mono">{t('pubHome.cta.nope')}</span>
+                  <p>{t(p.useless)}</p>
                 </div>
               </article>
             ))}
@@ -168,33 +168,33 @@ const ConseilCommunication: React.FC = () => {
         <div className="mp-container mp-reveal">
           <p className="rp-mono rp-eb">
             <i aria-hidden="true" />
-            Et aussi
+            {t('pubHome.advice.moreEyebrow')}
           </p>
           <h2>
-            Deux autres métiers, <span className="rp-acc">quand il le faut.</span>
+            {t('pubHome.advice.moreTitle')} <span className="rp-acc">{t('pubHome.advice.moreTitleAccent')}</span>
           </h2>
           <div className="rp-jobs" ref={jobsRef}>
             <Link to="/contact?besoin=marque" className="rp-job vn-spot" data-analytics-cta="conseil_job_marque">
               <LineIcon name="glyph" />
-              <span className="rp-mono">Marque</span>
-              <h3>Un nom, une voix, un système</h3>
-              <p>De quoi écrire, décliner et tenir sans nous rappeler à chaque production.</p>
+              <span className="rp-mono">{t('pubHome.advice.brandLabel')}</span>
+              <h3>{t('pubHome.advice.brandTitle')}</h3>
+              <p>{t('pubHome.advice.brandText')}</p>
               <div className="rp-nope">
-                <span className="rp-mono">Inutile si</span>
-                <p>Votre problème est commercial. Une belle marque ne remplit pas un carnet vide.</p>
+                <span className="rp-mono">{t('pubHome.cta.nope')}</span>
+                <p>{t('pubHome.advice.brandNope')}</p>
               </div>
-              <span className="rp-go">En parler →</span>
+              <span className="rp-go">{t('pubHome.advice.go')}</span>
             </Link>
             <Link to="/contact?besoin=outil" className="rp-job vn-spot" data-analytics-cta="conseil_job_outil">
               <LineIcon name="code" />
-              <span className="rp-mono">Développement</span>
-              <h3>L’outil que le tableur ne fait plus</h3>
-              <p>Construit autour de votre façon de travailler, repris par vos équipes quand elles veulent.</p>
+              <span className="rp-mono">{t('pubHome.advice.devLabel')}</span>
+              <h3>{t('pubHome.advice.devTitle')}</h3>
+              <p>{t('pubHome.advice.devText')}</p>
               <div className="rp-nope">
-                <span className="rp-mono">Inutile si</span>
-                <p>Un logiciel du marché couvre déjà l’essentiel. On vous dira lequel.</p>
+                <span className="rp-mono">{t('pubHome.cta.nope')}</span>
+                <p>{t('pubHome.advice.devNope')}</p>
               </div>
-              <span className="rp-go">En parler →</span>
+              <span className="rp-go">{t('pubHome.advice.go')}</span>
             </Link>
           </div>
         </div>

@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate } from '../../../i18n/format'
 import { useInternalProjectListCtx } from './Context'
 
 export default function ArrowTab() {
+  const { t } = useI18n()
   const {
     arrowPilotage,
     arrowScorecardStates,
@@ -53,11 +56,11 @@ export default function ArrowTab() {
                 color: 'var(--primary)',
               }}
             >
-              Pilotage interne
+              {t('projA.arrow.eyebrow')}
             </span>
             <h2 style={{ margin: '6px 0 8px', fontSize: 22, color: 'var(--text-primary)' }}>Arrow</h2>
             <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
-              Suivre le cap, les avancées, les blocages et les apprentissages Arrow depuis les projets internes Venio.
+              {t('projA.arrow.intro')}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -69,10 +72,10 @@ export default function ArrowTab() {
                 setViewTab('projects')
               }}
             >
-              Voir les projets Arrow
+              {t('projA.arrow.viewProjects')}
             </button>
             <button className="portal-button" type="button" onClick={() => setShowMissionForm(true)}>
-              Créer une mission
+              {t('projA.common.createMission')}
             </button>
           </div>
         </div>
@@ -80,27 +83,38 @@ export default function ArrowTab() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(140px, 1fr))', gap: 12 }}>
         {[
-          { label: 'Projets actifs', value: arrowActiveProjects.length, color: '#0ea5e9' },
-          { label: 'Missions Arrow', value: arrowMissions.length, color: '#9b9b9b' },
-          { label: 'Terminées', value: arrowCompletedMissions.length, color: '#6ee7b7' },
           {
-            label: 'Bloquées',
+            id: 'active',
+            label: t('projA.arrow.cardActiveProjects'),
+            value: arrowActiveProjects.length,
+            color: '#0ea5e9',
+          },
+          { id: 'missions', label: t('projA.arrow.cardMissions'), value: arrowMissions.length, color: '#9b9b9b' },
+          {
+            id: 'completed',
+            label: t('projA.arrow.cardCompleted'),
+            value: arrowCompletedMissions.length,
+            color: '#6ee7b7',
+          },
+          {
+            id: 'blocked',
+            label: t('projA.arrow.cardBlocked'),
             value: arrowBlockedMissions.length,
             color: arrowBlockedMissions.length > 0 ? '#f87171' : '#9b9b9b',
           },
         ].map((card) => (
           <button
-            key={card.label}
+            key={card.id}
             type="button"
             className="portal-card"
             onClick={() => {
-              if (card.label === 'Projets actifs') {
+              if (card.id === 'active') {
                 setFilterEntity('Arrow')
                 setFilterStatus('EN_COURS')
                 setViewTab('projects')
                 return
               }
-              if (card.label === 'Terminées') {
+              if (card.id === 'completed') {
                 setFilterEntity('Arrow')
                 setFilterStatus('TERMINE')
                 setViewTab('projects')
@@ -112,7 +126,9 @@ export default function ArrowTab() {
           >
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>{card.label}</div>
             <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: card.color }}>{card.value}</div>
-            <div style={{ fontSize: 11, color: 'rgba(165,180,207,0.45)', marginTop: 8 }}>Cliquer pour ouvrir</div>
+            <div style={{ fontSize: 11, color: 'rgba(165,180,207,0.45)', marginTop: 8 }}>
+              {t('projA.arrow.clickToOpen')}
+            </div>
           </button>
         ))}
       </div>
@@ -129,9 +145,11 @@ export default function ArrowTab() {
             }}
           >
             <div>
-              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Objectif de la semaine</h3>
+              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>
+                {t('projA.pilot.section.goals')}
+              </h3>
               <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>
-                Ce qui doit guider les décisions et les tâches Arrow.
+                {t('projA.arrow.goalsHint')}
               </p>
             </div>
             <button
@@ -148,7 +166,7 @@ export default function ArrowTab() {
                 cursor: 'pointer',
               }}
             >
-              Modifier · {arrowAverageProgress}% moyen
+              {t('projA.arrow.editAverage', { progress: arrowAverageProgress })}
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -202,7 +220,9 @@ export default function ArrowTab() {
               marginBottom: 14,
             }}
           >
-            <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Scorecard</h3>
+            <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>
+              {t('projA.pilot.section.scorecard')}
+            </h3>
             <button
               type="button"
               onClick={() => openArrowSectionEditor('scorecard')}
@@ -217,7 +237,7 @@ export default function ArrowTab() {
                 cursor: 'pointer',
               }}
             >
-              Modifier
+              {t('common.edit')}
             </button>
           </div>
           {arrowPilotage.scorecard.map((label: any, index: number) => {
@@ -254,7 +274,7 @@ export default function ArrowTab() {
                     border: `1px solid ${state ? 'rgba(16,185,129,0.24)' : 'rgba(251,191,36,0.24)'}`,
                   }}
                 >
-                  {state ? 'OK' : 'À cadrer'}
+                  {state ? 'OK' : t('projA.arrow.toScope')}
                 </span>
               </div>
             )
@@ -267,20 +287,22 @@ export default function ArrowTab() {
           style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14 }}
         >
           <div>
-            <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Avancement opérationnel</h3>
+            <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>{t('projA.arrow.progressTitle')}</h3>
             <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>
-              Lecture rapide des missions Arrow par statut.
+              {t('projA.arrow.progressHint')}
             </p>
           </div>
-          {missionsLoading && <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Chargement...</span>}
+          {missionsLoading && (
+            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('common.loading')}</span>
+          )}
         </div>
         {arrowMissions.length === 0 ? (
           <div style={{ padding: '26px 0', textAlign: 'center' }}>
             <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 12px' }}>
-              Aucune mission Arrow pour l’instant.
+              {t('projA.arrow.noMission')}
             </p>
             <button className="portal-button" type="button" onClick={() => setShowMissionForm(true)}>
-              Créer la première mission
+              {t('projA.arrow.createFirstMission')}
             </button>
           </div>
         ) : (
@@ -362,7 +384,9 @@ export default function ArrowTab() {
                     </button>
                   ))}
                   {column.missions.length === 0 && (
-                    <span style={{ fontSize: 13, color: 'rgba(165,180,207,0.35)', padding: '8px 0' }}>Vide</span>
+                    <span style={{ fontSize: 13, color: 'rgba(165,180,207,0.35)', padding: '8px 0' }}>
+                      {t('projA.arrow.emptyColumn')}
+                    </span>
                   )}
                 </div>
               </div>
@@ -373,9 +397,11 @@ export default function ArrowTab() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
         <div className="portal-card">
-          <h3 style={{ margin: '0 0 14px', fontSize: 16, color: 'var(--text-primary)' }}>Prochaines actions</h3>
+          <h3 style={{ margin: '0 0 14px', fontSize: 16, color: 'var(--text-primary)' }}>
+            {t('projA.arrow.nextActions')}
+          </h3>
           {arrowUpcomingMissions.length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>Aucune action datée à suivre.</p>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>{t('projA.arrow.noDatedAction')}</p>
           ) : (
             arrowUpcomingMissions.map((m) => {
               const isOverdue = m.dueDate && new Date(m.dueDate) < new Date()
@@ -407,7 +433,7 @@ export default function ArrowTab() {
                     </span>
                   </span>
                   <span style={{ fontSize: 12, color: isOverdue ? '#f87171' : '#9b9b9b', whiteSpace: 'nowrap' }}>
-                    {m.dueDate ? new Date(m.dueDate).toLocaleDateString('fr-FR') : 'Sans date'}
+                    {m.dueDate ? formatDate(m.dueDate) : t('projA.common.noDate')}
                   </span>
                 </button>
               )
@@ -425,7 +451,9 @@ export default function ArrowTab() {
               marginBottom: 14,
             }}
           >
-            <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Journal des décisions</h3>
+            <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>
+              {t('projA.pilot.section.decisions')}
+            </h3>
             <button
               type="button"
               onClick={() => openArrowSectionEditor('decisions')}
@@ -440,7 +468,7 @@ export default function ArrowTab() {
                 cursor: 'pointer',
               }}
             >
-              Modifier
+              {t('common.edit')}
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -465,7 +493,9 @@ export default function ArrowTab() {
                 <p style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.45 }}>
                   {item.decision}
                 </p>
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Responsable : {item.owner}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                  {t('projA.arrow.owner', { owner: item.owner })}
+                </span>
               </button>
             ))}
           </div>
@@ -476,7 +506,7 @@ export default function ArrowTab() {
         <div
           style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 10 }}
         >
-          <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>Cadre de suivi</h3>
+          <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>{t('projA.pilot.section.cadence')}</h3>
           <button
             type="button"
             onClick={() => openArrowSectionEditor('cadence')}
@@ -491,7 +521,7 @@ export default function ArrowTab() {
               cursor: 'pointer',
             }}
           >
-            Modifier
+            {t('common.edit')}
           </button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 10 }}>

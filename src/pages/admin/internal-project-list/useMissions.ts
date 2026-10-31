@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiDownload, apiFetch, apiUpload } from '../../../lib/api'
+import { translate } from '../../../i18n'
 import type { Mission } from './types'
 
 type ViewTab = 'arrow' | 'projects' | 'missions'
@@ -87,15 +88,15 @@ export function useMissions({ viewTab, showToast }: UseMissionsOptions) {
   const handleCreateMission = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!missionForm.projectId) {
-      showToast('Sélectionne un projet', 'error')
+      showToast(translate('projA.missionCreate.selectProject'), 'error')
       return
     }
     if (!missionForm.title.trim()) {
-      showToast('Le titre est requis', 'error')
+      showToast(translate('projA.missionCreate.titleRequired'), 'error')
       return
     }
     if (missionForm.assignedTo.length === 0) {
-      showToast('Assigne la mission à au moins une personne', 'error')
+      showToast(translate('projA.missionCreate.assigneeRequired'), 'error')
       return
     }
     setSavingMission(true)
@@ -115,9 +116,9 @@ export function useMissions({ viewTab, showToast }: UseMissionsOptions) {
       setMissions((ms) => [data.mission, ...ms])
       setShowMissionForm(false)
       setMissionForm({ projectId: '', title: '', description: '', assignedTo: [], dueDate: '' })
-      showToast('Mission créée', 'success')
+      showToast(translate('projA.missionCreate.created'), 'success')
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || translate('common.error'), 'error')
     } finally {
       setSavingMission(false)
     }

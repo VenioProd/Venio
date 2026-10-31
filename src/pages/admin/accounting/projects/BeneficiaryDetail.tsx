@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../../../context/AuthContext'
+import { useI18n } from '../../../../context/I18nContext'
+import { translate } from '../../../../i18n'
 import { hasPermission, PERMISSIONS } from '../../../../lib/permissions'
 import { apiFetch } from '../../../../lib/api'
 import AccountingLayout from '../AccountingLayout'
 import BeneficiaryForm from './BeneficiaryForm'
 import StatementView from './StatementView'
 import { formatMoney, parseMoney } from './money'
-import { ACCOUNTING, ActionForm, errorText, Field, labels, text, today, write } from './shared'
+import { ACCOUNTING, ActionForm, errorText, Field, labelFor, text, today, write } from './shared'
 import type { Beneficiary, Statement } from './types'
 
 function SettlementForm({
@@ -19,6 +21,7 @@ function SettlementForm({
   beneficiary: Beneficiary
   onSaved: () => Promise<void>
 }) {
+  const { t } = useI18n()
   const [projectId, setProjectId] = useState('')
   let remaining = statement.remainingCents
   if (projectId)
@@ -28,7 +31,7 @@ function SettlementForm({
     )
   return (
     <ActionForm
-      label="Enregistrer le versement"
+      label={t('accProjects.settlement.save')}
       onSaved={onSaved}
       submit={async (data, key) => {
         const htCents = parseMoney(text(data, 'ht'))
@@ -39,7 +42,7 @@ function SettlementForm({
             statement.projects.find((row) => row.project._id === projectId)?.remainingCents ?? 0,
           )
         if (htCents > maximum)
-          throw new Error(`Le versement dépasse le restant disponible : ${formatMoney(maximum)} HT.`)
+          throw new Error(t('accProjects.settlement.overRemaining', { amount: formatMoney(maximum) }))
         return write(
           `${ACCOUNTING}/beneficiaries/${beneficiary._id}/settlements`,
           'POST',
@@ -56,34 +59,40 @@ function SettlementForm({
       }}
     >
       <p aria-live="polite">
-        Restant disponible : <strong>{formatMoney(remaining)} HT</strong> · mode{' '}
-        {beneficiary.settlementMode === 'PAIE' ? 'Paie (sans écriture bancaire)' : 'Banque'}.
+        {t('accProjects.settlement.available')}{' '}
+        <strong>{t('accProjects.common.ht', { amount: formatMoney(remaining) })}</strong>{' '}
+        {t('accProjects.settlement.modeLine', {
+          mode: beneficiary.settlementMode === 'PAIE' ? t('accProjects.settlement.modePayroll') : labelFor(t, 'BANQUE'),
+        })}
       </p>
-      {remaining <= 0 && <p>Aucun versement possible tant que le restant n’est pas positif.</p>}
+      {remaining <= 0 && <p>{t('accProjects.settlement.none')}</p>}
       <div className="pf-grid">
-        <Field label="Projet (facultatif)">
+        <Field label={t('accProjects.settlement.projectOptional')}>
           <select name="projectId" value={projectId} onChange={(event) => setProjectId(event.target.value)}>
-            <option value="">Sans rattachement</option>
+            <option value="">{t('accProjects.statement.unattached')}</option>
             {statement.projects.map((row) => (
               <option key={row.project._id} value={row.project._id}>
-                {row.project.name} · {formatMoney(row.remainingCents)} HT
+                {t('accProjects.settlement.projectOption', {
+                  name: row.project.name,
+                  amount: formatMoney(row.remainingCents),
+                })}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="Montant HT (€)">
+        <Field label={t('accProjects.common.amountHtEur')}>
           <input name="ht" inputMode="decimal" required />
         </Field>
-        <Field label="Montant de TVA (€)">
+        <Field label={t('accProjects.common.vatAmountEur')}>
           <input name="vat" inputMode="decimal" required defaultValue="0" readOnly={!beneficiary.vatRegistered} />
         </Field>
-        <Field label="Date du versement">
+        <Field label={t('accProjects.settlement.date')}>
           <input name="paidAt" type="date" required max={today()} defaultValue={today()} />
         </Field>
-        <Field label="Référence de sa facture">
+        <Field label={t('accProjects.settlement.invoiceRef')}>
           <input name="invoiceRef" required />
         </Field>
-        <Field label="Note (facultative)">
+        <Field label={t('accProjects.settlement.note')}>
           <input name="note" />
         </Field>
       </div>
@@ -92,6 +101,7 @@ function SettlementForm({
 }
 
 export default function BeneficiaryDetail() {
+  const { t } = useI18n()
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_ACCOUNTING)
@@ -107,7 +117,7 @@ export default function BeneficiaryDetail() {
         apiFetch<Statement>(`${ACCOUNTING}/beneficiaries/${id}/statement`),
       ]).then(([list, statement]) => {
         const beneficiary = list.beneficiaries.find((item) => item._id === id)
-        if (!beneficiary) throw new Error('Bénéficiaire introuvable.')
+        if (!beneficiary) throw new Error(translate('accProjects.detail.notFound'))
         setData({ beneficiary, statement })
         setError('')
       }),
@@ -124,51 +134,57 @@ export default function BeneficiaryDetail() {
   }
   return (
     <AccountingLayout
-      title={data?.beneficiary.displayName || 'Bénéficiaire'}
-      subtitle={<Link to="/admin/comptabilite/beneficiaires">Tous les bénéficiaires</Link>}
+      title={data?.beneficiary.displayName || t('accProjects.cols.beneficiary')}
+      subtitle={<Link to="/admin/comptabilite/beneficiaires">{t('accProjects.detail.allBeneficiaries')}</Link>}
     >
       <div className="pf-workspace">
         {error && (
           <p className="admin-error" role="alert">
-            {error} <button onClick={() => void load().catch((error) => setError(errorText(error)))}>Actualiser</button>
+            {error}{' '}
+            <button onClick={() => void load().catch((error) => setError(errorText(error)))}>
+              {t('accProjects.common.refresh')}
+            </button>
           </p>
         )}
-        {!data && !error && <p role="status">Chargement du relevé…</p>}
+        {!data && !error && <p role="status">{t('accProjects.statement.loading')}</p>}
         {data && (
           <>
             <section className="accounting-card">
-              <h2>Coordonnées et versement</h2>
+              <h2>{t('accProjects.detail.contactTitle')}</h2>
               <p>
-                {labels[data.beneficiary.kind]} · {data.beneficiary.email || 'E-mail non renseigné'} · SIRET :{' '}
-                {data.beneficiary.siret || 'Non renseigné'}
+                {labelFor(t, data.beneficiary.kind)} · {data.beneficiary.email || t('accProjects.detail.noEmail')} ·{' '}
+                {t('accProjects.detail.siret')} {data.beneficiary.siret || t('accProjects.detail.notProvided')}
               </p>
               <p>
-                {data.beneficiary.vatRegistered ? 'Assujetti à la TVA' : 'Non assujetti à la TVA'} · Compte{' '}
-                {data.beneficiary.defaultAccountCode} · Mode {labels[data.beneficiary.settlementMode]}
+                {data.beneficiary.vatRegistered
+                  ? t('accProjects.beneficiaryForm.vatRegistered')
+                  : t('accProjects.detail.notVatRegistered')}{' '}
+                · {t('accProjects.detail.account', { code: data.beneficiary.defaultAccountCode })} ·{' '}
+                {t('accProjects.detail.mode', { mode: labelFor(t, data.beneficiary.settlementMode) })}
               </p>
             </section>
-            {!data.beneficiary.isActive && <p>Bénéficiaire archivé.</p>}
+            {!data.beneficiary.isActive && <p>{t('accProjects.detail.archivedNote')}</p>}
             {canManage && (
               <div className="pf-actions">
                 <button className="portal-button secondary" onClick={() => setEditing(!editing)}>
-                  Modifier
+                  {t('accProjects.common.edit')}
                 </button>
                 <button className="portal-button" onClick={() => setSettling(!settling)}>
-                  Verser
+                  {t('accProjects.detail.pay')}
                 </button>
                 {data.beneficiary.isActive && (
                   <button className="portal-button secondary" onClick={() => setArchiving(!archiving)}>
-                    Archiver
+                    {t('accProjects.common.archive')}
                   </button>
                 )}
               </div>
             )}
             {canManage && archiving && (
               <section className="accounting-card">
-                <h2>Archiver ce bénéficiaire</h2>
-                <p>Son historique sera conservé.</p>
+                <h2>{t('accProjects.detail.archiveTitle')}</h2>
+                <p>{t('accProjects.detail.archiveNote')}</p>
                 <ActionForm
-                  label="Confirmer l’archivage"
+                  label={t('accProjects.detail.confirmArchive')}
                   submit={(_, key) => write(`${ACCOUNTING}/beneficiaries/${id}/archive`, 'POST', {}, key)}
                   onSaved={saved}
                 />
@@ -176,13 +192,13 @@ export default function BeneficiaryDetail() {
             )}
             {canManage && editing && (
               <section className="accounting-card">
-                <h2>Modifier le bénéficiaire</h2>
+                <h2>{t('accProjects.detail.editTitle')}</h2>
                 <BeneficiaryForm key={data.beneficiary._id} beneficiary={data.beneficiary} onSaved={saved} />
               </section>
             )}
             {canManage && settling && (
               <section className="accounting-card">
-                <h2>Verser au bénéficiaire</h2>
+                <h2>{t('accProjects.detail.payTitle')}</h2>
                 <SettlementForm statement={data.statement} beneficiary={data.beneficiary} onSaved={saved} />
               </section>
             )}

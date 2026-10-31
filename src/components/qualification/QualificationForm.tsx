@@ -2,6 +2,8 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import { trackPublicEvent } from '../../lib/publicAnalytics'
 import { LineIcon } from '../graphics'
 import {
@@ -9,8 +11,8 @@ import {
   LAST_STEP,
   NEED_CARDS,
   STEP_COUNT,
-  STEP_NAMES,
-  STEP_TITLES,
+  STEP_NAME_KEYS,
+  STEP_TITLE_KEYS,
   hasNeed,
   initialState,
   note,
@@ -25,8 +27,6 @@ import type { FieldName, QualificationState, StepError } from './qualification'
 import './QualificationForm.css'
 
 const CTA = 'qualification_form'
-const SEND_ERROR =
-  "Une erreur est survenue lors de l'envoi. Veuillez réessayer ou nous écrire directement à contact@venio.paris"
 
 type ArrayKey = 'need' | 'pain' | 'outilnow'
 type SingleKey = 'formule' | 'marque' | 'taille' | 'quand' | 'budget' | 'decide' | 'reponse'
@@ -34,7 +34,7 @@ type SingleKey = 'formule' | 'marque' | 'taille' | 'quand' | 'budget' | 'decide'
 interface ChipsProps {
   legend: ReactNode
   hint?: ReactNode
-  options: readonly (readonly [string, string])[]
+  options: readonly (readonly [string, MessageKey])[]
   value: string | readonly string[] | null
   multi?: boolean
   onToggle: (v: string) => void
@@ -42,6 +42,7 @@ interface ChipsProps {
 
 /** Groupe de puces : boutons `aria-pressed`, sélection simple ou multiple. */
 const Chips = ({ legend, hint, options, value, multi, onToggle }: ChipsProps) => {
+  const { t } = useI18n()
   const id = useId()
   const isOn = (v: string) => (Array.isArray(value) ? value.includes(v) : value === v)
   return (
@@ -50,9 +51,9 @@ const Chips = ({ legend, hint, options, value, multi, onToggle }: ChipsProps) =>
         {legend}
       </p>
       <div className="chips" role="group" aria-labelledby={id} data-multi={multi ? '' : undefined}>
-        {options.map(([v, label]) => (
+        {options.map(([v, labelKey]) => (
           <button key={v} type="button" className="chip" aria-pressed={isOn(v)} onClick={() => onToggle(v)}>
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </div>
@@ -62,6 +63,7 @@ const Chips = ({ legend, hint, options, value, multi, onToggle }: ChipsProps) =>
 }
 
 const QualificationForm = () => {
+  const { t } = useI18n()
   const uid = useId()
   const location = useLocation()
   const preset = useMemo(() => parsePreset(location.search), [location.search])
@@ -141,7 +143,7 @@ const QualificationForm = () => {
       trackPublicEvent('contact_form_succeeded', CTA)
       setDone(true)
     } catch {
-      setError({ message: SEND_ERROR, fields: [] })
+      setError({ message: t('pubForms.qualification.errSend'), fields: [] })
       trackPublicEvent('contact_form_failed', CTA)
     } finally {
       setSending(false)
@@ -213,27 +215,28 @@ const QualificationForm = () => {
 
   const legend = (
     <legend ref={legendRef} tabIndex={-1}>
-      {STEP_TITLES[step]}
+      {t(STEP_TITLE_KEYS[step])}
     </legend>
   )
 
   const stepClass = `qf-step${back ? ' back' : ''}`
 
   return (
-    <form className="qf" ref={formRef} onSubmit={onSubmit} noValidate aria-label="Formulaire de qualification">
+    <form className="qf" ref={formRef} onSubmit={onSubmit} noValidate aria-label={t('pubForms.qualification.formAria')}>
       <div className="qf-main">
-        <ol className="qf-prog" aria-label="Progression">
-          {STEP_NAMES.map((name, i) => {
+        <ol className="qf-prog" aria-label={t('pubForms.qualification.progressAria')}>
+          {STEP_NAME_KEYS.map((nameKey, i) => {
+            const name = t(nameKey)
             const state = done || i < step ? 'done' : i === step ? 'cur' : ''
             const clickable = !done && i < step
             const node = <span className="node">{String(i + 1).padStart(2, '0')}</span>
             return (
-              <li key={name} className={state} aria-current={i === step && !done ? 'step' : undefined}>
+              <li key={nameKey} className={state} aria-current={i === step && !done ? 'step' : undefined}>
                 {clickable ? (
                   <button
                     type="button"
                     className="qf-prog-btn"
-                    aria-label={`Revenir à l'étape ${i + 1} : ${name}`}
+                    aria-label={t('pubForms.qualification.backToStepAria', { n: i + 1, name })}
                     onClick={() => goTo(i, true)}
                   >
                     {node}
@@ -262,12 +265,14 @@ const QualificationForm = () => {
               </svg>
             </span>
             <h2 ref={doneRef} tabIndex={-1}>
-              C'est noté{s.prenom.trim() ? `, ${s.prenom.trim()}` : ''}.
+              {s.prenom.trim()
+                ? t('pubForms.qualification.doneTitleName', { name: s.prenom.trim() })
+                : t('pubForms.qualification.doneTitle')}
             </h2>
             <p className="qf-sub">
-              On relit votre relevé et on vous répond sous 48 h ouvrées,{' '}
-              {s.reponse === 'appel' ? "pour convenir d'un appel de 30 minutes" : 'par écrit'}. Si votre projet n'est
-              pas pour nous, on vous le dit, et on vous oriente ailleurs.
+              {s.reponse === 'appel'
+                ? t('pubForms.qualification.doneTextCall')
+                : t('pubForms.qualification.doneTextWritten')}
             </p>
           </div>
         ) : (
@@ -275,7 +280,7 @@ const QualificationForm = () => {
             {step === 0 && (
               <fieldset className={stepClass} key="s0">
                 {legend}
-                <p className="qf-hint">Plusieurs réponses possibles.</p>
+                <p className="qf-hint">{t('pubForms.qualification.multiHint')}</p>
                 <div className="cards">
                   {NEED_CARDS.map((c) => (
                     <button
@@ -288,8 +293,8 @@ const QualificationForm = () => {
                       <span className="ic">
                         <LineIcon name={c.icon} size="sm" />
                       </span>
-                      <b>{c.title}</b>
-                      <small>{c.hint}</small>
+                      <b>{t(c.titleKey)}</b>
+                      <small>{t(c.hintKey)}</small>
                     </button>
                   ))}
                 </div>
@@ -302,16 +307,16 @@ const QualificationForm = () => {
                 {legend}
                 {showsForAny(s, ['site', 'refonte']) && (
                   <Chips
-                    legend="Que doit faire le site ?"
+                    legend={t('pubForms.qualification.qSiteDoes')}
                     options={CHOICES.formule}
                     value={s.formule}
                     onToggle={(v) => pick('formule', v)}
                   />
                 )}
-                {hasNeed(s, 'refonte') && siteUrlField('url', "L'adresse du site actuel")}
+                {hasNeed(s, 'refonte') && siteUrlField('url', t('pubForms.qualification.qCurrentSite'))}
                 {hasNeed(s, 'com') && (
                   <Chips
-                    legend="Qu'est-ce qui coince aujourd'hui ?"
+                    legend={t('pubForms.qualification.qPain')}
                     options={CHOICES.pain}
                     value={s.pain}
                     multi
@@ -320,7 +325,7 @@ const QualificationForm = () => {
                 )}
                 {hasNeed(s, 'marque') && (
                   <Chips
-                    legend="Où en est votre marque ?"
+                    legend={t('pubForms.qualification.qBrand')}
                     options={CHOICES.marque}
                     value={s.marque}
                     onToggle={(v) => pick('marque', v)}
@@ -328,7 +333,7 @@ const QualificationForm = () => {
                 )}
                 {hasNeed(s, 'outil') && (
                   <Chips
-                    legend="Aujourd'hui, ça tourne sur…"
+                    legend={t('pubForms.qualification.qToolNow')}
                     options={CHOICES.outilnow}
                     value={s.outilnow}
                     multi
@@ -338,14 +343,14 @@ const QualificationForm = () => {
                 {hasNeed(s, 'flou') && (
                   <div className="qf-block">
                     <label className="qf-q" htmlFor={`${uid}-flou`}>
-                      Racontez ce qui vous bloque, en deux lignes.
+                      {t('pubForms.qualification.qUndefined')}
                     </label>
                     <textarea
                       className="in"
                       id={`${uid}-flou`}
                       rows={3}
                       maxLength={1000}
-                      placeholder="Ex. : on a un site, des réseaux, un peu de pub, mais les demandes ne viennent pas."
+                      placeholder={t('pubForms.qualification.undefinedPlaceholder')}
                       value={s.flou}
                       onChange={(e) => patch({ flou: e.target.value })}
                     />
@@ -360,26 +365,26 @@ const QualificationForm = () => {
                 {legend}
                 <div className="qf-block">
                   <label className="qf-q" htmlFor={`${uid}-act`}>
-                    Votre activité, en quelques mots
+                    {t('pubForms.qualification.qActivity')}
                   </label>
                   <input
                     className="in"
                     id={`${uid}-act`}
                     type="text"
                     maxLength={200}
-                    placeholder="Ex. : cabinet d'avocats en droit social, 3 associés"
+                    placeholder={t('pubForms.qualification.activityPlaceholder')}
                     autoComplete="organization"
                     value={s.activite}
                     onChange={(e) => patch({ activite: e.target.value })}
                   />
                 </div>
                 <Chips
-                  legend="Combien êtes-vous ?"
+                  legend={t('pubForms.qualification.qSize')}
                   options={CHOICES.taille}
                   value={s.taille}
                   onToggle={(v) => pick('taille', v)}
                 />
-                {!hasNeed(s, 'refonte') && siteUrlField('url2', "Votre site actuel, s'il existe")}
+                {!hasNeed(s, 'refonte') && siteUrlField('url2', t('pubForms.qualification.qExistingSite'))}
                 {errorEl}
               </fieldset>
             )}
@@ -388,20 +393,20 @@ const QualificationForm = () => {
               <fieldset className={stepClass} key="s3">
                 {legend}
                 <Chips
-                  legend="Pour quand ?"
+                  legend={t('pubForms.qualification.qWhen')}
                   options={CHOICES.quand}
                   value={s.quand}
                   onToggle={(v) => pick('quand', v)}
                 />
                 <Chips
-                  legend="Quel budget envisagez-vous ?"
+                  legend={t('pubForms.qualification.qBudget')}
                   options={CHOICES.budget}
                   value={s.budget}
                   onToggle={(v) => pick('budget', v)}
                   hint={showBudgetNote ? <p className="qf-note">{remark}</p> : undefined}
                 />
                 <Chips
-                  legend="Qui décide ?"
+                  legend={t('pubForms.qualification.qDecide')}
                   options={CHOICES.decide}
                   value={s.decide}
                   onToggle={(v) => pick('decide', v)}
@@ -416,7 +421,7 @@ const QualificationForm = () => {
                 <div className="qf-2">
                   <div className="qf-block">
                     <label className="qf-q" htmlFor={`${uid}-pre`}>
-                      Prénom
+                      {t('pubForms.qualification.firstName')}
                     </label>
                     <input
                       {...fieldProps('prenom')}
@@ -431,7 +436,7 @@ const QualificationForm = () => {
                   </div>
                   <div className="qf-block">
                     <label className="qf-q" htmlFor={`${uid}-nom`}>
-                      Nom
+                      {t('pubForms.qualification.lastName')}
                     </label>
                     <input
                       className="in"
@@ -447,7 +452,7 @@ const QualificationForm = () => {
                 <div className="qf-2">
                   <div className="qf-block">
                     <label className="qf-q" htmlFor={`${uid}-mail`}>
-                      E-mail
+                      {t('pubForms.qualification.email')}
                     </label>
                     <input
                       {...fieldProps('email')}
@@ -462,7 +467,7 @@ const QualificationForm = () => {
                   </div>
                   <div className="qf-block">
                     <label className="qf-q" htmlFor={`${uid}-tel`}>
-                      Téléphone <small>(facultatif)</small>
+                      {t('pubForms.qualification.phone')} <small>{t('pubForms.qualification.optional')}</small>
                     </label>
                     <input
                       className="in"
@@ -476,14 +481,14 @@ const QualificationForm = () => {
                   </div>
                 </div>
                 <Chips
-                  legend="Comment préférez-vous qu'on revienne vers vous ?"
+                  legend={t('pubForms.qualification.qReply')}
                   options={CHOICES.reponse}
                   value={s.reponse}
                   onToggle={(v) => pick('reponse', v)}
                 />
                 <div className="qf-block">
                   <label className="qf-q" htmlFor={`${uid}-msg`}>
-                    Autre chose à ajouter ? <small>(facultatif)</small>
+                    {t('pubForms.qualification.qMessage')} <small>{t('pubForms.qualification.optional')}</small>
                   </label>
                   <textarea
                     className="in"
@@ -495,7 +500,7 @@ const QualificationForm = () => {
                   />
                 </div>
                 <div className="qf-honeypot" aria-hidden="true">
-                  <label htmlFor={`${uid}-website`}>Site web</label>
+                  <label htmlFor={`${uid}-website`}>{t('pubForms.qualification.honeypot')}</label>
                   <input
                     id={`${uid}-website`}
                     type="text"
@@ -514,8 +519,8 @@ const QualificationForm = () => {
                     onChange={(e) => patch({ consent: e.target.checked })}
                   />
                   <span>
-                    J'accepte que Venio utilise ces informations pour me répondre. Rien d'autre. Voir la{' '}
-                    <Link to="/confidentialite">politique de confidentialité</Link>.
+                    {t('pubForms.qualification.consent')}{' '}
+                    <Link to="/confidentialite">{t('pubForms.qualification.privacyLink')}</Link>.
                   </span>
                 </label>
                 {errorEl}
@@ -529,24 +534,28 @@ const QualificationForm = () => {
                 disabled={step === 0 || sending}
                 onClick={() => goTo(step - 1, true)}
               >
-                ← Retour
+                {t('pubForms.qualification.back')}
               </button>
               <span className="qf-count">
-                Étape {step + 1} sur {STEP_COUNT}
+                {t('pubForms.qualification.stepCount', { current: step + 1, total: STEP_COUNT })}
               </span>
               <button type="submit" className="qf-btn qf-btn--p" disabled={sending}>
-                {step === LAST_STEP ? (sending ? 'Envoi…' : 'Envoyer ma demande →') : 'Continuer →'}
+                {step === LAST_STEP
+                  ? sending
+                    ? t('pubForms.qualification.sending')
+                    : t('pubForms.qualification.send')
+                  : t('pubForms.qualification.continue')}
               </button>
             </div>
           </>
         )}
       </div>
 
-      <aside className="qf-side" aria-live="polite" aria-label="Relevé de votre besoin">
+      <aside className="qf-side" aria-live="polite" aria-label={t('pubForms.qualification.sideTitle')}>
         <div className="qf-side-h">
-          <span>Relevé de votre besoin</span>
+          <span>{t('pubForms.qualification.sideTitle')}</span>
           <span className="qf-live">
-            <b aria-hidden="true">●</b> En direct
+            <b aria-hidden="true">●</b> {t('pubForms.qualification.live')}
           </span>
         </div>
         <div className="qf-side-b">
@@ -559,12 +568,12 @@ const QualificationForm = () => {
             ))}
           </dl>
           <div className="reco">
-            <span className="qf-side-label">Ce qu'on vous proposerait sans doute</span>
+            <span className="qf-side-label">{t('pubForms.qualification.recoLabel')}</span>
             <ul>
               {recos.length ? (
                 recos.map((x) => <li key={x}>{x}</li>)
               ) : (
-                <li className="empty">Répondez à la première question.</li>
+                <li className="empty">{t('pubForms.qualification.recoEmpty')}</li>
               )}
             </ul>
           </div>

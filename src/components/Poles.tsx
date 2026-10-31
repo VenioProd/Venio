@@ -1,33 +1,35 @@
 import React from 'react'
 import PoleCard from './PoleCard'
+import { useI18n } from '../context/I18nContext'
 import './Poles.css'
 
 const Poles = () => {
+  const { t } = useI18n()
   const poles = [
     {
       name: 'DECISIO',
-      description: 'Communication juridique',
+      description: t('pubHome.poles.legal'),
       link: 'https://decisio.paris',
-      external: true
+      external: true,
     },
     {
       name: 'CREATIO',
-      description: 'Supports de cours',
+      description: t('pubHome.poles.courses'),
       link: 'https://creatio.paris',
-      external: true
+      external: true,
     },
     {
       name: 'FORMATIO',
-      description: 'Formations professionnelles',
+      description: t('pubHome.poles.training'),
       link: 'https://formatio.paris',
-      external: true
-    }
+      external: true,
+    },
   ]
 
   return (
     <section className="poles" id="poles">
       <div className="section-header">
-        <h2 className="section-title">Trois pôles. Trois spécialisations.</h2>
+        <h2 className="section-title">{t('pubHome.shared.polesTitle')}</h2>
       </div>
       <div className="poles-grid">
         {poles.map((pole, index) => (
@@ -39,4 +41,3 @@ const Poles = () => {
 }
 
 export default Poles
-

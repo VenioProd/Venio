@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -14,15 +14,33 @@ import {
   UploadCloud,
   type LucideIcon,
 } from 'lucide-react'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import './ClientPortal.css'
+
+interface GuideItem {
+  key: MessageKey
+  sub?: MessageKey[]
+}
 
 interface GuideSection {
   id: string
-  title: string
+  titleKey: MessageKey
   icon: LucideIcon
-  intro: string
-  content: ReactNode
+  introKey: MessageKey
+  items: GuideItem[]
 }
+
+/** Rend les segments entourés de `**` en gras, pour garder une phrase entière par clé de traduction. */
+const Rich = ({ text }: { text: string }) => (
+  <>
+    {text
+      .split('**')
+      .map((part, index) =>
+        index % 2 === 1 ? <strong key={index}>{part}</strong> : <Fragment key={index}>{part}</Fragment>,
+      )}
+  </>
+)
 
 const listStyle = {
   margin: 0,
@@ -43,257 +61,138 @@ const subListStyle = {
 const SECTIONS: GuideSection[] = [
   {
     id: 'tableau-de-bord',
-    title: 'Votre tableau de bord',
+    titleKey: 'client.guide.dashboard.title',
     icon: LayoutDashboard,
-    intro: 'Ce qui vous attend, en un coup d’œil.',
-    content: (
-      <ul style={listStyle}>
-        <li>
-          En haut de la page d’accueil, le bloc <strong>« À faire »</strong> rassemble tout ce qui attend une action de
-          votre part : devis à signer, étape à valider, demande livrée à confirmer, facture à régler.
-        </li>
-        <li>Si ce bloc est vide, vous n’avez rien à faire : la balle est dans notre camp.</li>
-        <li>
-          En dessous, chaque projet apparaît sous forme de carte avec son statut, sa progression et l’étape en cours.
-        </li>
-      </ul>
-    ),
+    introKey: 'client.guide.dashboard.intro',
+    items: [
+      { key: 'client.guide.dashboard.item1' },
+      { key: 'client.guide.dashboard.item2' },
+      { key: 'client.guide.dashboard.item3' },
+    ],
   },
   {
     id: 'projets',
-    title: 'Vos projets',
+    titleKey: 'client.guide.projects.title',
     icon: FolderKanban,
-    intro: 'Le détail d’un projet, organisé en onglets.',
-    content: (
-      <ul style={listStyle}>
-        <li>
-          <strong>Contenu</strong> — les livrables et documents publiés par l’équipe, regroupés par section.
-        </li>
-        <li>
-          <strong>Actualités</strong> — le fil des nouvelles publiées au fur et à mesure de l’avancement.
-        </li>
-        <li>
-          <strong>Étapes</strong> — la progression détaillée du projet et vos validations (voir la section suivante).
-        </li>
-        <li>
-          <strong>Documents</strong> — les fichiers propres à ce projet.
-        </li>
-        <li>
-          <strong>Messages</strong> — la conversation avec l’équipe sur ce projet.
-        </li>
-        <li>
-          <strong>Collaborateurs</strong> — les personnes de votre côté qui ont accès au projet.
-        </li>
-      </ul>
-    ),
+    introKey: 'client.guide.projects.intro',
+    items: [
+      { key: 'client.guide.projects.item1' },
+      { key: 'client.guide.projects.item2' },
+      { key: 'client.guide.projects.item3' },
+      { key: 'client.guide.projects.item4' },
+      { key: 'client.guide.projects.item5' },
+      { key: 'client.guide.projects.item6' },
+    ],
   },
   {
     id: 'etapes',
-    title: 'Les étapes et vos validations',
+    titleKey: 'client.guide.steps.title',
     icon: ListChecks,
-    intro: 'Suivre la fabrication, et donner votre feu vert au bon moment.',
-    content: (
-      <ul style={listStyle}>
-        <li>
-          Chaque projet est découpé en étapes successives — par exemple cadrage, maquettes, développement, recette, mise
-          en ligne. Vous voyez à tout moment où en est la fabrication.
-        </li>
-        <li>
-          Une étape peut être :
-          <ul style={subListStyle}>
-            <li>
-              <strong>À venir</strong> — pas encore commencée ;
-            </li>
-            <li>
-              <strong>En cours</strong> — l’équipe y travaille ;
-            </li>
-            <li>
-              <strong>En attente de votre validation</strong> — c’est à vous de jouer ;
-            </li>
-            <li>
-              <strong>Terminée</strong> — validée, la suite est lancée.
-            </li>
-          </ul>
-        </li>
-        <li>
-          Quand une étape attend votre validation, elle affiche les livrables concernés. Après les avoir consultés, deux
-          choix s’offrent à vous :
-          <ul style={subListStyle}>
-            <li>
-              <strong>Valider cette étape</strong> — vous donnez votre accord et l’équipe enchaîne sur la suite ;
-            </li>
-            <li>
-              <strong>Demander des retouches</strong> — vous expliquez ce qui doit changer, l’étape repart chez nous.
-            </li>
-          </ul>
-        </li>
-        <li>
-          Votre validation est <strong>enregistrée avec votre nom, la date et l’heure</strong>. Elle sert de référence
-          commune : chacun sait ce qui a été approuvé, et quand.
-        </li>
-        <li>
-          Tant que vous n’avez pas validé, <strong>l’étape suivante ne démarre pas</strong>. Rien n’avance sans votre
-          accord, et vous ne découvrez jamais un travail engagé sur une base que vous n’aviez pas approuvée.
-        </li>
-      </ul>
-    ),
+    introKey: 'client.guide.steps.intro',
+    items: [
+      { key: 'client.guide.steps.item1' },
+      {
+        key: 'client.guide.steps.item2',
+        sub: [
+          'client.guide.steps.item2_1',
+          'client.guide.steps.item2_2',
+          'client.guide.steps.item2_3',
+          'client.guide.steps.item2_4',
+        ],
+      },
+      { key: 'client.guide.steps.item3', sub: ['client.guide.steps.item3_1', 'client.guide.steps.item3_2'] },
+      { key: 'client.guide.steps.item4' },
+      { key: 'client.guide.steps.item5' },
+    ],
   },
   {
     id: 'demandes',
-    title: 'Vos demandes',
+    titleKey: 'client.guide.requests.title',
     icon: MessageSquarePlus,
-    intro: 'Demander un changement ou une évolution, et suivre son traitement.',
-    content: (
-      <ul style={listStyle}>
-        <li>
-          Depuis <strong>Demandes</strong>, décrivez ce que vous souhaitez modifier ou ajouter. Vous pouvez préciser la
-          page concernée, joindre des fichiers ou des captures, et indiquer l’urgence.
-        </li>
-        <li>Une demande peut être rattachée à un projet en cours, ou exister seule — utile pour un site déjà livré.</li>
-        <li>
-          Chaque demande suit un parcours visible sur sa fiche :
-          <ul style={subListStyle}>
-            <li>
-              <strong>Soumise</strong> — nous l’avons reçue et nous l’étudions ;
-            </li>
-            <li>
-              <strong>Qualifiée</strong> — nous vous disons si elle est comprise dans votre accompagnement, si elle
-              nécessite un devis, ou pourquoi nous ne pouvons pas la retenir ;
-            </li>
-            <li>
-              <strong>Planifiée</strong>, puis <strong>en cours</strong> — le travail est programmé, puis engagé ;
-            </li>
-            <li>
-              <strong>Livrée</strong> — à vous de vérifier et de confirmer ;
-            </li>
-            <li>
-              <strong>Validée</strong> — la demande est close.
-            </li>
-          </ul>
-        </li>
-        <li>
-          Si la demande nécessite un devis, celui-ci est <strong>rattaché à la demande</strong> : dès que vous le
-          signez, le travail est automatiquement programmé, sans autre démarche de votre part.
-        </li>
-        <li>Un fil de discussion accompagne chaque demande : posez vos questions, nous répondons au même endroit.</li>
-      </ul>
-    ),
+    introKey: 'client.guide.requests.intro',
+    items: [
+      { key: 'client.guide.requests.item1' },
+      { key: 'client.guide.requests.item2' },
+      {
+        key: 'client.guide.requests.item3',
+        sub: [
+          'client.guide.requests.item3_1',
+          'client.guide.requests.item3_2',
+          'client.guide.requests.item3_3',
+          'client.guide.requests.item3_4',
+          'client.guide.requests.item3_5',
+        ],
+      },
+      { key: 'client.guide.requests.item4' },
+      { key: 'client.guide.requests.item5' },
+    ],
   },
   {
     id: 'devis',
-    title: 'Devis, signature et factures',
+    titleKey: 'client.guide.quotes.title',
     icon: FileSignature,
-    intro: 'Lire une proposition, la signer en ligne, retrouver vos factures.',
-    content: (
-      <ul style={listStyle}>
-        <li>
-          Une proposition vous est présentée poste par poste, avec les éléments obligatoires et les options que vous
-          pouvez retenir ou écarter. Le montant se met à jour selon vos choix.
-        </li>
-        <li>
-          La <strong>signature se fait en ligne</strong>, dans votre espace. Elle est horodatée et conservée avec le
-          document signé.
-        </li>
-        <li>Une fois signé, le devis devient consultable et téléchargeable à tout moment, comme vos factures.</li>
-      </ul>
-    ),
+    introKey: 'client.guide.quotes.intro',
+    items: [
+      { key: 'client.guide.quotes.item1' },
+      { key: 'client.guide.quotes.item2' },
+      { key: 'client.guide.quotes.item3' },
+    ],
   },
   {
     id: 'documents',
-    title: 'Mes documents',
+    titleKey: 'client.guide.documents.title',
     icon: FileText,
-    intro: 'Tous vos documents au même endroit, tous projets confondus.',
-    content: (
-      <ul style={listStyle}>
-        <li>
-          <strong>Mes documents</strong> rassemble vos contrats, devis signés, factures et livrables téléchargeables,
-          sans avoir à ouvrir chaque projet.
-        </li>
-        <li>Filtrez par type ou par projet, ou cherchez un document par son nom.</li>
-        <li>Chaque document se télécharge en un clic, pour vos archives ou votre comptabilité.</li>
-      </ul>
-    ),
+    introKey: 'client.guide.documents.intro',
+    items: [
+      { key: 'client.guide.documents.item1' },
+      { key: 'client.guide.documents.item2' },
+      { key: 'client.guide.documents.item3' },
+    ],
   },
   {
     id: 'fichiers',
-    title: 'Vos fichiers',
+    titleKey: 'client.guide.files.title',
     icon: UploadCloud,
-    intro: 'Nous transmettre vos contenus, sans passer par l’e-mail.',
-    content: (
-      <ul style={listStyle}>
-        <li>
-          <strong>Vos fichiers</strong> est l’espace où vous déposez ce dont nous avons besoin : logos, photos, textes,
-          documents de référence.
-        </li>
-        <li>Vous pouvez rattacher un fichier à un projet précis, ou le déposer sans rattachement.</li>
-        <li>
-          L’équipe est prévenue automatiquement à chaque dépôt : plus de pièce jointe perdue dans une conversation.
-        </li>
-      </ul>
-    ),
+    introKey: 'client.guide.files.intro',
+    items: [
+      { key: 'client.guide.files.item1' },
+      { key: 'client.guide.files.item2' },
+      { key: 'client.guide.files.item3' },
+    ],
   },
   {
     id: 'messages',
-    title: 'Messages et collaborateurs',
+    titleKey: 'client.guide.messages.title',
     icon: MessageSquare,
-    intro: 'Échanger avec l’équipe, et associer vos collègues.',
-    content: (
-      <ul style={listStyle}>
-        <li>
-          La messagerie est <strong>rattachée à chaque projet</strong>, ce qui garde le contexte : on sait toujours de
-          quoi on parle.
-        </li>
-        <li>Vous pouvez joindre des fichiers à vos messages, et les réponses arrivent en temps réel.</li>
-        <li>
-          Depuis l’onglet <strong>Collaborateurs</strong>, invitez vos collègues sur un projet et choisissez s’ils
-          peuvent seulement consulter ou aussi intervenir.
-        </li>
-      </ul>
-    ),
+    introKey: 'client.guide.messages.intro',
+    items: [
+      { key: 'client.guide.messages.item1' },
+      { key: 'client.guide.messages.item2' },
+      { key: 'client.guide.messages.item3' },
+    ],
   },
   {
     id: 'compte',
-    title: 'Votre compte et votre sécurité',
+    titleKey: 'client.guide.account.title',
     icon: ShieldCheck,
-    intro: 'Vos informations, votre mot de passe, votre connexion.',
-    content: (
-      <ul style={listStyle}>
-        <li>
-          Depuis <strong>Profil</strong>, modifiez votre nom, votre téléphone, votre entreprise et votre site web.
-        </li>
-        <li>Vous pouvez changer votre mot de passe à tout moment depuis cette même page.</li>
-        <li>
-          Votre adresse e-mail sert d’identifiant de connexion et n’est pas modifiable directement : écrivez-nous si
-          elle doit changer.
-        </li>
-        <li>
-          Mot de passe oublié ? Utilisez le lien prévu sur la page de connexion : vous recevrez un e-mail pour en
-          définir un nouveau.
-        </li>
-      </ul>
-    ),
+    introKey: 'client.guide.account.intro',
+    items: [
+      { key: 'client.guide.account.item1' },
+      { key: 'client.guide.account.item2' },
+      { key: 'client.guide.account.item3' },
+      { key: 'client.guide.account.item4' },
+    ],
   },
 ]
 
-const STARTER_STEPS = [
-  {
-    num: '01',
-    title: 'Ouvrez votre projet',
-    text: 'Depuis « Mes projets », cliquez sur la carte de votre projet, puis sur l’onglet Étapes pour voir où en est la fabrication.',
-  },
-  {
-    num: '02',
-    title: 'Répondez à ce qui vous attend',
-    text: 'Le bloc « À faire » de l’accueil liste les validations, signatures et confirmations en attente. C’est votre point de départ à chaque visite.',
-  },
-  {
-    num: '03',
-    title: 'Demandez, déposez, échangez',
-    text: 'Une évolution à demander ? Passez par « Demandes ». Des contenus à nous transmettre ? Par « Vos fichiers ». Une question ? Par la messagerie du projet.',
-  },
+const STARTER_STEPS: { num: string; titleKey: MessageKey; textKey: MessageKey }[] = [
+  { num: '01', titleKey: 'client.guide.start.openTitle', textKey: 'client.guide.start.openText' },
+  { num: '02', titleKey: 'client.guide.start.answerTitle', textKey: 'client.guide.start.answerText' },
+  { num: '03', titleKey: 'client.guide.start.askTitle', textKey: 'client.guide.start.askText' },
 ]
 
 const ClientGuide = () => {
+  const { t } = useI18n()
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({ etapes: true })
 
   const toggle = (id: string) => {
@@ -305,7 +204,7 @@ const ClientGuide = () => {
       <div style={{ marginBottom: 40 }}>
         <Link to="/espace-client" className="client-project-back" style={{ marginBottom: 24, display: 'inline-flex' }}>
           <ArrowLeft size={16} aria-hidden />
-          Retour au tableau de bord
+          {t('client.guide.back')}
         </Link>
 
         <h1
@@ -318,7 +217,7 @@ const ClientGuide = () => {
             lineHeight: 1.2,
           }}
         >
-          Guide de votre espace client
+          {t('client.guide.heading')}
         </h1>
         <p
           style={{
@@ -329,8 +228,7 @@ const ClientGuide = () => {
             maxWidth: 700,
           }}
         >
-          Votre espace vous permet de suivre l’avancement de vos projets, de valider ce qui doit l’être, de nous
-          adresser vos demandes et de retrouver tous vos documents. Voici comment il fonctionne.
+          {t('client.guide.lead')}
         </p>
       </div>
 
@@ -352,7 +250,7 @@ const ClientGuide = () => {
             color: 'var(--primary-light)',
           }}
         >
-          Pour bien démarrer
+          {t('client.guide.startTitle')}
         </h2>
         <div
           style={{
@@ -384,9 +282,11 @@ const ClientGuide = () => {
                   marginBottom: 6,
                 }}
               >
-                {step.title}
+                {t(step.titleKey)}
               </strong>
-              <span style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{step.text}</span>
+              <span style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                {t(step.textKey)}
+              </span>
             </div>
           ))}
         </div>
@@ -434,10 +334,10 @@ const ClientGuide = () => {
                       letterSpacing: '-0.01em',
                     }}
                   >
-                    {section.title}
+                    {t(section.titleKey)}
                   </span>
                   <span style={{ display: 'block', fontSize: '0.84rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    {section.intro}
+                    {t(section.introKey)}
                   </span>
                 </span>
                 <ChevronDown
@@ -462,7 +362,24 @@ const ClientGuide = () => {
                     lineHeight: 1.7,
                   }}
                 >
-                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 20 }}>{section.content}</div>
+                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 20 }}>
+                    <ul style={listStyle}>
+                      {section.items.map((item) => (
+                        <li key={item.key}>
+                          <Rich text={t(item.key)} />
+                          {item.sub && (
+                            <ul style={subListStyle}>
+                              {item.sub.map((subKey) => (
+                                <li key={subKey}>
+                                  <Rich text={t(subKey)} />
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
             </div>
@@ -480,12 +397,9 @@ const ClientGuide = () => {
         }}
       >
         <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px 0' }}>
-          Une question qui n’est pas traitée ici ?
+          {t('client.guide.footerTitle')}
         </p>
-        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>
-          Écrivez-nous depuis la messagerie de votre projet : c’est le plus rapide, et l’échange reste rattaché au bon
-          dossier.
-        </p>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>{t('client.guide.footerBody')}</p>
       </div>
     </div>
   )

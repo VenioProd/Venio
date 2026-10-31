@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
+import { useI18n } from '../../context/I18nContext'
+import { translate, type MessageKey } from '../../i18n'
+import { formatDate } from '../../i18n/format'
 import { SkeletonStat, SkeletonGrid } from '../../components/Skeleton'
 import { listChangeRequests } from '../../services/changeRequests'
 import type { ClientChangeRequest } from '../../types/changeRequest.types'
@@ -24,14 +27,14 @@ function formatDueDate(dueAt: string | null): { label: string; overdue: boolean 
   if (!dueAt) return null
   const date = new Date(dueAt)
   const overdue = date.getTime() < Date.now()
-  return { label: `avant le ${date.toLocaleDateString('fr-FR')}`, overdue }
+  return { label: translate('client.dashboard.dueBefore', { date: formatDate(date) }), overdue }
 }
 
-const statusLabels: Record<string, string> = {
-  EN_COURS: 'En cours',
-  TERMINE: 'Terminé',
-  EN_ATTENTE: 'En attente',
-  ANNULE: 'Annulé',
+const statusLabelKeys: Record<string, MessageKey> = {
+  EN_COURS: 'client.projectStatus.inProgress',
+  TERMINE: 'client.projectStatus.done',
+  EN_ATTENTE: 'client.projectStatus.pending',
+  ANNULE: 'client.projectStatus.cancelled',
 }
 
 const statusClass: Record<string, string> = {
@@ -42,6 +45,7 @@ const statusClass: Record<string, string> = {
 }
 
 const ClientDashboard = () => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -69,13 +73,13 @@ const ClientDashboard = () => {
         setChangeRequests(changeRequestsData.changeRequests || [])
         setActionItems(actionItemsData.items || [])
       } catch (err: unknown) {
-        setError((err as Error).message || 'Erreur chargement projets')
+        setError((err as Error).message || t('client.dashboard.loadError'))
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [])
+  }, [t])
 
   const activeProjects = projects.filter((p) => p.status === 'EN_COURS')
   const completedProjects = projects.filter((p) => p.status === 'TERMINE')
@@ -109,8 +113,12 @@ const ClientDashboard = () => {
     <div className="portal-container client-dashboard">
       <section className="client-dashboard-hero">
         <div className="client-dashboard-hero-content">
-          <h1 className="client-dashboard-title">Bonjour, {user?.name?.split(' ')[0] || 'vous'} 👋</h1>
-          <p className="client-dashboard-subtitle">Retrouvez ici vos projets et les documents associés.</p>
+          <h1 className="client-dashboard-title">
+            {t('client.dashboard.greeting', {
+              name: user?.name?.split(' ')[0] || t('client.dashboard.greetingFallback'),
+            })}
+          </h1>
+          <p className="client-dashboard-subtitle">{t('client.dashboard.subtitle')}</p>
         </div>
         <div className="client-dashboard-hero-decoration">
           <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -126,8 +134,7 @@ const ClientDashboard = () => {
       {!loading && !error && actionItems.length > 0 && (
         <section className="client-dashboard-todo" style={{ padding: '0 24px', marginBottom: 24 }}>
           <h2 className="client-dashboard-section-title">
-            À faire — {actionItems.length} action{actionItems.length > 1 ? 's' : ''} attendue
-            {actionItems.length > 1 ? 's' : ''} de votre part
+            {t('client.dashboard.todoTitle', { count: actionItems.length })}
           </h2>
           <div className="portal-list" style={{ marginTop: 12 }}>
             {actionItems.map((item, index) => {
@@ -162,7 +169,7 @@ const ClientDashboard = () => {
                     </div>
                   </div>
                   <Link className="portal-button" to={item.link}>
-                    Voir
+                    {t('client.dashboard.todoView')}
                   </Link>
                 </div>
               )
@@ -210,7 +217,7 @@ const ClientDashboard = () => {
               <div className="client-dashboard-stat-content">
                 <span className="client-dashboard-stat-value">{projects.length}</span>
                 <span className="client-dashboard-stat-label">
-                  {projects.length <= 1 ? 'projet total' : 'projets totaux'}
+                  {projects.length <= 1 ? t('client.dashboard.statTotalOne') : t('client.dashboard.statTotalMany')}
                 </span>
               </div>
             </div>
@@ -229,7 +236,7 @@ const ClientDashboard = () => {
               </div>
               <div className="client-dashboard-stat-content">
                 <span className="client-dashboard-stat-value">{activeProjects.length}</span>
-                <span className="client-dashboard-stat-label">en cours</span>
+                <span className="client-dashboard-stat-label">{t('client.dashboard.statActive')}</span>
               </div>
             </div>
             <div className="client-dashboard-stat">
@@ -247,7 +254,7 @@ const ClientDashboard = () => {
               </div>
               <div className="client-dashboard-stat-content">
                 <span className="client-dashboard-stat-value">{completedProjects.length}</span>
-                <span className="client-dashboard-stat-label">terminés</span>
+                <span className="client-dashboard-stat-label">{t('client.dashboard.statDone')}</span>
               </div>
             </div>
             <div className="client-dashboard-stat">
@@ -266,7 +273,7 @@ const ClientDashboard = () => {
               </div>
               <div className="client-dashboard-stat-content">
                 <span className="client-dashboard-stat-value">{pendingProjects.length}</span>
-                <span className="client-dashboard-stat-label">en attente</span>
+                <span className="client-dashboard-stat-label">{t('client.dashboard.statPending')}</span>
               </div>
             </div>
           </div>
@@ -274,10 +281,8 @@ const ClientDashboard = () => {
           {changeRequests.length > 0 && (
             <section className="client-dashboard-projects">
               <div className="client-dashboard-section-header">
-                <h2 className="client-dashboard-section-title">Vos demandes en cours</h2>
-                <p className="client-dashboard-section-subtitle">
-                  Retouches et évolutions en cours de traitement chez Venio
-                </p>
+                <h2 className="client-dashboard-section-title">{t('client.dashboard.openRequestsTitle')}</h2>
+                <p className="client-dashboard-section-subtitle">{t('client.dashboard.openRequestsSubtitle')}</p>
               </div>
 
               <div className="portal-list">
@@ -296,7 +301,7 @@ const ClientDashboard = () => {
                           {formatChangeRequestDate(request.createdAt)}
                         </div>
                       </div>
-                      <span className={`client-project-card-badge ${status.className}`}>{status.label}</span>
+                      <span className={`client-project-card-badge ${status.className}`}>{t(status.labelKey)}</span>
                     </Link>
                   )
                 })}
@@ -304,10 +309,10 @@ const ClientDashboard = () => {
 
               <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
                 <Link to="/espace-client/demandes" className="portal-link">
-                  Toutes vos demandes →
+                  {t('client.dashboard.allRequests')}
                 </Link>
                 <Link to="/espace-client/demandes/nouvelle" className="portal-badge" style={{ padding: '8px 14px' }}>
-                  + Nouvelle demande
+                  {t('client.crList.newRequest')}
                 </Link>
               </div>
             </section>
@@ -315,8 +320,8 @@ const ClientDashboard = () => {
 
           <section className="client-dashboard-projects">
             <div className="client-dashboard-section-header">
-              <h2 className="client-dashboard-section-title">Mes projets</h2>
-              <p className="client-dashboard-section-subtitle">Suivez l'avancement de vos projets en temps réel</p>
+              <h2 className="client-dashboard-section-title">{t('client.dashboard.projectsTitle')}</h2>
+              <p className="client-dashboard-section-subtitle">{t('client.dashboard.projectsSubtitle')}</p>
             </div>
 
             {projects.length > 0 && (
@@ -347,7 +352,7 @@ const ClientDashboard = () => {
                   <input
                     className="portal-input"
                     type="text"
-                    placeholder="Rechercher un projet..."
+                    placeholder={t('client.dashboard.searchPlaceholder')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     style={{ paddingLeft: '36px' }}
@@ -359,11 +364,11 @@ const ClientDashboard = () => {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   style={{ flex: '0 0 auto', width: 'auto', minWidth: '140px' }}
                 >
-                  <option value="ALL">Tous les statuts</option>
-                  <option value="EN_COURS">En cours</option>
-                  <option value="EN_ATTENTE">En attente</option>
-                  <option value="TERMINE">Terminé</option>
-                  <option value="ANNULE">Annulé</option>
+                  <option value="ALL">{t('client.dashboard.allStatuses')}</option>
+                  <option value="EN_COURS">{t('client.projectStatus.inProgress')}</option>
+                  <option value="EN_ATTENTE">{t('client.projectStatus.pending')}</option>
+                  <option value="TERMINE">{t('client.projectStatus.done')}</option>
+                  <option value="ANNULE">{t('client.projectStatus.cancelled')}</option>
                 </select>
                 <select
                   className="portal-input"
@@ -371,9 +376,9 @@ const ClientDashboard = () => {
                   onChange={(e) => setSortBy(e.target.value)}
                   style={{ flex: '0 0 auto', width: 'auto', minWidth: '140px' }}
                 >
-                  <option value="recent">Plus récents</option>
-                  <option value="name">Nom A-Z</option>
-                  <option value="status">Par statut</option>
+                  <option value="recent">{t('client.dashboard.sortRecent')}</option>
+                  <option value="name">{t('client.dashboard.sortName')}</option>
+                  <option value="status">{t('client.dashboard.sortStatus')}</option>
                 </select>
               </div>
             )}
@@ -381,14 +386,14 @@ const ClientDashboard = () => {
             {projects.length === 0 ? (
               <div className="client-dashboard-empty">
                 <div className="client-dashboard-empty-icon">📁</div>
-                <h3>Aucun projet pour le moment</h3>
-                <p>Vos projets apparaîtront ici dès qu'ils seront partagés avec vous.</p>
+                <h3>{t('client.dashboard.emptyTitle')}</h3>
+                <p>{t('client.dashboard.emptyBody')}</p>
               </div>
             ) : filteredProjects.length === 0 ? (
               <div className="client-dashboard-empty">
                 <div className="client-dashboard-empty-icon">🔍</div>
-                <h3>Aucun résultat</h3>
-                <p>Aucun projet ne correspond à vos critères de recherche.</p>
+                <h3>{t('client.dashboard.noResultTitle')}</h3>
+                <p>{t('client.dashboard.noResultBody')}</p>
               </div>
             ) : (
               <div className="client-dashboard-grid">
@@ -400,12 +405,14 @@ const ClientDashboard = () => {
                         <span
                           className={`client-project-card-badge ${statusClass[project.status] || 'client-status-pending'}`}
                         >
-                          {statusLabels[project.status] || project.status}
+                          {statusLabelKeys[project.status] ? t(statusLabelKeys[project.status]) : project.status}
                         </span>
                       </div>
                       <h3 className="client-project-card-title">{project.name}</h3>
                       {project.summary && <p className="client-project-card-summary">{project.summary}</p>}
-                      <p className="client-project-card-desc">{project.description || 'Aucune description'}</p>
+                      <p className="client-project-card-desc">
+                        {project.description || t('client.dashboard.noDescription')}
+                      </p>
                       {project.serviceTypes && project.serviceTypes.length > 0 && (
                         <div className="client-project-card-tags">
                           {project.serviceTypes.slice(0, 3).map((service, idx) => (
@@ -421,7 +428,7 @@ const ClientDashboard = () => {
                       {taskProgress[project._id] && taskProgress[project._id].total > 0 && (
                         <div className="client-project-card-progress">
                           <div className="client-project-card-progress-header">
-                            <span className="client-project-card-progress-label">Avancement</span>
+                            <span className="client-project-card-progress-label">{t('client.dashboard.progress')}</span>
                             <span className="client-project-card-progress-value">
                               {taskProgress[project._id].percent}%
                             </span>
@@ -436,7 +443,7 @@ const ClientDashboard = () => {
                       )}
                       <div className="client-project-card-footer">
                         <span className="client-project-card-cta">
-                          Voir le détail
+                          {t('client.dashboard.viewDetail')}
                           <span className="client-project-card-cta-arrow">→</span>
                         </span>
                       </div>
@@ -446,7 +453,7 @@ const ClientDashboard = () => {
                       to={`/espace-client/projets/${project._id}/facturation`}
                       className="client-project-card-billing-link"
                     >
-                      Devis et factures
+                      {t('client.dashboard.billingLink')}
                     </Link>
                   </div>
                 ))}

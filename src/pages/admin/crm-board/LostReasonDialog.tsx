@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
+import { useI18n } from '../../../context/I18nContext'
 
 interface LostReasonDialogProps {
   company: string
@@ -18,6 +19,7 @@ interface LostReasonDialogProps {
  * quelqu'un sait pourquoi l'affaire est perdue.
  */
 const LostReasonDialog: React.FC<LostReasonDialogProps> = ({ company, reasons, saving, onCancel, onConfirm }) => {
+  const { t } = useI18n()
   const [reason, setReason] = useState(reasons[0] ?? '')
   const [comment, setComment] = useState('')
 
@@ -25,7 +27,7 @@ const LostReasonDialog: React.FC<LostReasonDialogProps> = ({ company, reasons, s
     <div className="crm-modal-overlay" onClick={onCancel}>
       <div className="crm-modal" onClick={(event) => event.stopPropagation()}>
         <div className="crm-modal-header">
-          <h2>Affaire perdue — {company}</h2>
+          <h2>{t('crm.lost.title', { company })}</h2>
         </div>
         <form
           className="crm-modal-body lost-reason-form"
@@ -36,7 +38,7 @@ const LostReasonDialog: React.FC<LostReasonDialogProps> = ({ company, reasons, s
           }}
         >
           <label className="lost-reason-field">
-            <span>Motif</span>
+            <span>{t('crm.lost.reason')}</span>
             <CustomSelect
               className="lost-reason-select"
               value={reason}
@@ -46,25 +48,25 @@ const LostReasonDialog: React.FC<LostReasonDialogProps> = ({ company, reasons, s
           </label>
 
           <label className="lost-reason-field">
-            <span>Précision (facultative)</span>
+            <span>{t('crm.lost.detail')}</span>
             <textarea
               className="portal-input"
               rows={3}
               maxLength={2000}
-              placeholder="Ce qui a fait basculer la décision…"
+              placeholder={t('crm.lost.detailPlaceholder')}
               value={comment}
               onChange={(event) => setComment(event.target.value)}
             />
           </label>
 
-          <p className="lost-reason-hint">Ce motif alimente les statistiques de perte du pilotage commercial.</p>
+          <p className="lost-reason-hint">{t('crm.lost.hint')}</p>
 
           <div className="crm-modal-actions">
             <button type="button" className="portal-button secondary" onClick={onCancel} disabled={saving}>
-              Annuler
+              {t('common.cancel')}
             </button>
             <button type="submit" className="portal-button" disabled={saving || !reason}>
-              {saving ? 'Enregistrement…' : 'Marquer perdue'}
+              {saving ? t('crm.lost.saving') : t('crm.lost.confirm')}
             </button>
           </div>
         </form>

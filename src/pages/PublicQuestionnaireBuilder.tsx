@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { ApiError, apiFetch } from '../lib/api'
+import { useI18n } from '../context/I18nContext'
+import type { MessageKey } from '../i18n'
 import './PublicQuestionnaire.css'
 
 interface Question {
@@ -11,12 +13,13 @@ interface Question {
 }
 
 const QUESTION_TYPES = [
-  { value: 'rating', label: 'Notation / etoiles' },
-  { value: 'text', label: 'Texte libre' },
-  { value: 'multiple_choice', label: 'Choix multiples' },
-]
+  { value: 'rating', labelKey: 'pubForms.builder.typeRating' },
+  { value: 'text', labelKey: 'pubForms.builder.typeText' },
+  { value: 'multiple_choice', labelKey: 'pubForms.builder.typeChoice' },
+] as const satisfies readonly { value: Question['type']; labelKey: MessageKey }[]
 
 const PublicQuestionnaireBuilder = () => {
+  const { t } = useI18n()
   const { token } = useParams<{ token: string }>()
   const [validating, setValidating] = useState(true)
   const [valid, setValid] = useState(false)
@@ -34,16 +37,14 @@ const PublicQuestionnaireBuilder = () => {
         await apiFetch(`/api/questionnaire/create/${token}`)
         setValid(true)
       } catch (err) {
-        setError(
-          err instanceof ApiError
-            ? 'Ce lien de creation est invalide ou desactive.'
-            : 'Erreur de connexion au serveur.',
-        )
+        setError(err instanceof ApiError ? t('pubForms.builder.linkInvalid') : t('pubForms.builder.connectionError'))
       } finally {
         setValidating(false)
       }
     }
     validate()
+    // Le message d'erreur est posé une fois, à la validation du lien.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   const updateQuestion = (i: number, patch: Partial<Question>) => {
@@ -74,7 +75,7 @@ const PublicQuestionnaireBuilder = () => {
 
       setCreated({ token: data.token })
     } catch (err: any) {
-      setError(err.message || 'Erreur inattendue')
+      setError(err.message || t('pubForms.builder.unexpectedError'))
     } finally {
       setSubmitting(false)
     }
@@ -83,7 +84,7 @@ const PublicQuestionnaireBuilder = () => {
   if (validating) {
     return (
       <div className="pq-page">
-        <div className="pq-loading">Verification du lien...</div>
+        <div className="pq-loading">{t('pubForms.builder.checking')}</div>
       </div>
     )
   }
@@ -93,7 +94,7 @@ const PublicQuestionnaireBuilder = () => {
       <div className="pq-page">
         <div className="pq-form">
           <div className="pq-header">
-            <h1 className="pq-title">Lien invalide</h1>
+            <h1 className="pq-title">{t('pubForms.builder.invalidTitle')}</h1>
             <p className="pq-desc">{error}</p>
           </div>
         </div>
@@ -112,12 +113,12 @@ const PublicQuestionnaireBuilder = () => {
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
-              <h2>Questionnaire cree !</h2>
-              <p>Votre questionnaire est maintenant disponible.</p>
+              <h2>{t('pubForms.builder.createdTitle')}</h2>
+              <p>{t('pubForms.builder.createdText')}</p>
             </div>
           </div>
           <div className="pq-section">
-            <h3>Lien public du questionnaire</h3>
+            <h3>{t('pubForms.builder.publicLinkHeading')}</h3>
             <div className="pqb-link-box">
               <code className="pqb-link-url">{publicLink}</code>
               <button
@@ -133,7 +134,7 @@ const PublicQuestionnaireBuilder = () => {
                   })
                 }}
               >
-                Copier le lien
+                {t('pubForms.builder.copyLink')}
               </button>
             </div>
           </div>
@@ -146,28 +147,28 @@ const PublicQuestionnaireBuilder = () => {
     <div className="pq-page">
       <div className="pq-form pqb-form">
         <div className="pq-header">
-          <h1 className="pq-title">Creer un questionnaire</h1>
-          <p className="pq-desc">Configurez votre questionnaire de satisfaction</p>
+          <h1 className="pq-title">{t('pubForms.builder.title')}</h1>
+          <p className="pq-desc">{t('pubForms.builder.subtitle')}</p>
         </div>
 
         {/* Title & Description */}
         <div className="pq-section">
-          <h3>Informations generales</h3>
+          <h3>{t('pubForms.builder.generalHeading')}</h3>
           <div className="pq-field">
-            <label>Titre *</label>
+            <label>{t('pubForms.builder.titleLabel')}</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Satisfaction formation React"
+              placeholder={t('pubForms.builder.titlePlaceholder')}
             />
           </div>
           <div className="pq-field">
-            <label>Description (optionnel)</label>
+            <label>{t('pubForms.builder.descriptionLabel')}</label>
             <textarea
               className="pqb-textarea"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Decrivez le questionnaire..."
+              placeholder={t('pubForms.builder.descriptionPlaceholder')}
               rows={3}
             />
           </div>
@@ -175,7 +176,7 @@ const PublicQuestionnaireBuilder = () => {
 
         {/* Questions */}
         <div className="pq-section">
-          <h3>Questions</h3>
+          <h3>{t('pubForms.builder.questionsHeading')}</h3>
 
           {questions.map((q, i) => (
             <div key={i} className="pqb-question-card">
@@ -186,9 +187,9 @@ const PublicQuestionnaireBuilder = () => {
                   value={q.type}
                   onChange={(e) => updateQuestion(i, { type: e.target.value as any })}
                 >
-                  {QUESTION_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
+                  {QUESTION_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {t(type.labelKey)}
                     </option>
                   ))}
                 </select>
@@ -198,7 +199,7 @@ const PublicQuestionnaireBuilder = () => {
                     checked={q.required}
                     onChange={(e) => updateQuestion(i, { required: e.target.checked })}
                   />
-                  Obligatoire
+                  {t('pubForms.builder.required')}
                 </label>
                 {questions.length > 1 && (
                   <button className="pqb-remove-btn" onClick={() => removeQuestion(i)}>
@@ -213,7 +214,7 @@ const PublicQuestionnaireBuilder = () => {
                 className="pqb-question-label-input"
                 value={q.label}
                 onChange={(e) => updateQuestion(i, { label: e.target.value })}
-                placeholder="Intitule de la question..."
+                placeholder={t('pubForms.builder.questionLabelPlaceholder')}
               />
 
               {q.type === 'multiple_choice' && (
@@ -227,7 +228,7 @@ const PublicQuestionnaireBuilder = () => {
                           newOpts[oi] = e.target.value
                           updateQuestion(i, { options: newOpts })
                         }}
-                        placeholder={`Option ${oi + 1}`}
+                        placeholder={t('pubForms.builder.optionPlaceholder', { n: oi + 1 })}
                       />
                       <button
                         className="pqb-remove-opt"
@@ -238,12 +239,12 @@ const PublicQuestionnaireBuilder = () => {
                     </div>
                   ))}
                   <button className="pqb-add-opt" onClick={() => updateQuestion(i, { options: [...q.options, ''] })}>
-                    + Ajouter une option
+                    {t('pubForms.builder.addOption')}
                   </button>
                 </div>
               )}
 
-              {q.type === 'rating' && <div className="pqb-rating-preview">Notation de 1 a 5</div>}
+              {q.type === 'rating' && <div className="pqb-rating-preview">{t('pubForms.builder.ratingPreview')}</div>}
             </div>
           ))}
 
@@ -252,14 +253,14 @@ const PublicQuestionnaireBuilder = () => {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Ajouter une question
+            {t('pubForms.builder.addQuestion')}
           </button>
         </div>
 
         {error && <div className="pq-form-error">{error}</div>}
 
         <button className="pq-submit" onClick={handleSubmit} disabled={!canSubmit || submitting}>
-          {submitting ? 'Creation en cours...' : 'Creer le questionnaire'}
+          {submitting ? t('pubForms.builder.creating') : t('pubForms.builder.create')}
         </button>
       </div>
     </div>

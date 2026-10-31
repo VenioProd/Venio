@@ -2,23 +2,28 @@
  * Petits composants UI extraits de InternalProjectDetail pour rester < 800 lignes.
  * Logique métier reste dans le composant parent ; ces parts ne font que du JSX.
  */
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate } from '../../../i18n/format'
+import type { MessageKey } from '../../../i18n'
 import type { Project, Mission } from './types'
 
 export function LoadingState() {
+  const { t } = useI18n()
   return (
     <div className="portal-container">
       <div className="portal-card">
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Chargement...</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t('common.loading')}</p>
       </div>
     </div>
   )
 }
 
 export function NotFoundState() {
+  const { t } = useI18n()
   return (
     <div className="portal-container">
       <div className="portal-card">
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Projet introuvable.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t('projB.parts.notFound')}</p>
       </div>
     </div>
   )
@@ -27,17 +32,18 @@ export function NotFoundState() {
 interface StatusSelectorProps {
   current: string
   saving: boolean
-  statusLabels: Record<string, string>
+  statusLabelKeys: Record<string, MessageKey>
   statusColors: Record<string, { bg: string; border: string; text: string }>
   onChange: (status: string) => void
 }
 
-export function StatusSelector({ current, saving, statusLabels, statusColors, onChange }: StatusSelectorProps) {
+export function StatusSelector({ current, saving, statusLabelKeys, statusColors, onChange }: StatusSelectorProps) {
+  const { t } = useI18n()
   return (
     <div style={{ marginTop: 20 }}>
-      <label className="portal-label">Changer le statut</label>
+      <label className="portal-label">{t('projB.parts.changeStatus')}</label>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-        {Object.entries(statusLabels).map(([v, l]) => {
+        {Object.entries(statusLabelKeys).map(([v, labelKey]) => {
           const c = statusColors[v]
           return (
             <button
@@ -59,7 +65,7 @@ export function StatusSelector({ current, saving, statusLabels, statusColors, on
                 transition: 'all .15s',
               }}
             >
-              {l}
+              {t(labelKey)}
             </button>
           )
         })}
@@ -75,6 +81,7 @@ interface OverviewTabProps {
 }
 
 export function MetaInfo({ project }: { project: Project }) {
+  const { t } = useI18n()
   return (
     <div
       style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginTop: 24 }}
@@ -91,9 +98,9 @@ export function MetaInfo({ project }: { project: Project }) {
               letterSpacing: '.5px',
             }}
           >
-            Début
+            {t('projB.parts.start')}
           </div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>{new Date(project.startDate).toLocaleDateString('fr-FR')}</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>{formatDate(project.startDate)}</div>
         </div>
       )}
       {project.endDate && (
@@ -108,9 +115,9 @@ export function MetaInfo({ project }: { project: Project }) {
               letterSpacing: '.5px',
             }}
           >
-            Fin prévue
+            {t('projB.parts.plannedEnd')}
           </div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>{new Date(project.endDate).toLocaleDateString('fr-FR')}</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>{formatDate(project.endDate)}</div>
         </div>
       )}
       <div className="portal-card" style={{ padding: '12px 16px' }}>
@@ -124,7 +131,7 @@ export function MetaInfo({ project }: { project: Project }) {
             letterSpacing: '.5px',
           }}
         >
-          Créé par
+          {t('projB.parts.createdBy')}
         </div>
         <div style={{ fontSize: 14, fontWeight: 600 }}>{project.createdBy?.name || '—'}</div>
       </div>
@@ -139,20 +146,23 @@ export function MetaInfo({ project }: { project: Project }) {
             letterSpacing: '.5px',
           }}
         >
-          Mise à jour
+          {t('projB.parts.updatedAt')}
         </div>
-        <div style={{ fontSize: 14, fontWeight: 600 }}>{new Date(project.updatedAt).toLocaleDateString('fr-FR')}</div>
+        <div style={{ fontSize: 14, fontWeight: 600 }}>{formatDate(project.updatedAt)}</div>
       </div>
     </div>
   )
 }
 
 export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabProps) {
+  const { t } = useI18n()
   return (
     <>
       {project.poles.length > 0 && (
         <div className="portal-card" style={{ marginTop: 16 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>Pôles</h2>
+          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
+            {t('projB.parts.poles')}
+          </h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {project.poles.map((pole) => (
               <span
@@ -175,12 +185,10 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
       )}
       <div className="portal-card" style={{ marginTop: 16 }}>
         <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
-          Membres ({project.members.length})
+          {t('projB.parts.members', { count: project.members.length })}
         </h2>
         {project.members.length === 0 ? (
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            Aucun membre assigné directement (accessible via pôle)
-          </p>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('projB.parts.noMembers')}</p>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {project.members.map((m) => (
@@ -223,7 +231,9 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
       </div>
       {project.tags.length > 0 && (
         <div className="portal-card" style={{ marginTop: 16 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: 'var(--text-primary)' }}>Tags</h2>
+          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: 'var(--text-primary)' }}>
+            {t('projB.parts.tags')}
+          </h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {project.tags.map((tag) => (
               <span
@@ -258,7 +268,7 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
               textUnderlineOffset: 3,
             }}
           >
-            Voir les {missions.length} mission{missions.length > 1 ? 's' : ''} de ce projet →
+            {t('projB.parts.seeMissions', { count: missions.length })}
           </button>
         </div>
       )}

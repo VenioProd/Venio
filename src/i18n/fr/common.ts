@@ -1,4 +1,9 @@
-const fr: Record<string, string> = {
+const fr = {
+  // SEO
+  'seo.defaultTitle': 'Création de sites web sur mesure à Paris | Venio',
+  'seo.defaultDescription':
+    'Studio digital à Paris. Sites web sur mesure, conseil et identité de marque — du concret, fait pour vous, pas de modèle tout fait. Parlons de votre projet.',
+
   // Navigation
   'nav.home': 'Accueil',
   'nav.services': 'Sites web',
@@ -38,6 +43,7 @@ const fr: Record<string, string> = {
   'common.next': 'Suivant',
   'common.previous': 'Précédent',
   'common.close': 'Fermer',
+  'common.language': 'Langue',
   'common.yes': 'Oui',
   'common.no': 'Non',
 
@@ -53,6 +59,6 @@ const fr: Record<string, string> = {
   'status.inProgress': 'En cours',
   'status.completed': 'Terminé',
   'status.archived': 'Archivé',
-}
+} as const
 
 export default fr

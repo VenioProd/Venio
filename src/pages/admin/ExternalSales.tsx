@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import CustomSelect from '../../components/admin/CustomSelect'
+import { useI18n } from '../../context/I18nContext'
+import { formatDateTime, formatNumber, formatPercent } from '../../i18n/format'
 import {
   externalSalesAdminApi,
   formatCents,
-  formatDate,
-  STATUS_LABELS,
+  formatDay,
+  STATUS_LABEL_KEYS,
   type ExternalRepActivity,
   type ExternalRepCommission,
   type ExternalRepLead,
@@ -16,12 +18,13 @@ import './AdminPortal.css'
 import '../commercial/CommercialSpace.css'
 
 type Tab = 'leads' | 'commissions' | 'journal'
+type RepDetail = Awaited<ReturnType<typeof externalSalesAdminApi.rep>>
 // Valeur du destinataire « l'équipe » : distincte de l'absence de choix.
 const TEAM = 'TEAM'
-type RepDetail = Awaited<ReturnType<typeof externalSalesAdminApi.rep>>
 
 /** Pilotage des commerciaux externes : tableau, fiches, commissions, journal. */
 const ExternalSales = () => {
+  const { t } = useI18n()
   const [reps, setReps] = useState<ExternalRepRow[] | null>(null)
   const [rateBp, setRateBp] = useState(1000)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -88,7 +91,7 @@ const ExternalSales = () => {
       const { moved } = await externalSalesAdminApi.reassign(
         scope === 'all' ? { fromRep: selectedId!, toRep } : { leadIds: checkedLeads, toRep },
       )
-      return `${moved} fiche(s) réattribuée(s)`
+      return t('commercial.admin.reassigned', { count: moved })
     })
 
   const markPaid = (scope: 'selection' | 'all') =>
@@ -96,36 +99,40 @@ const ExternalSales = () => {
       const { paid } = await externalSalesAdminApi.markPaid(
         scope === 'all' ? { rep: selectedId! } : { ids: checkedCommissions },
       )
-      return `${paid} commission(s) marquée(s) versée(s)`
+      return t('commercial.admin.marked', { count: paid })
     })
 
   const targetOptions = [
-    { value: '', label: 'Choisir le destinataire…' },
-    { value: TEAM, label: "Rendre à l'équipe" },
+    { value: '', label: t('commercial.admin.chooseTarget') },
+    { value: TEAM, label: t('commercial.admin.toTeam') },
     ...(reps ?? [])
       .filter((rep) => rep._id !== selectedId && rep.isActive)
       .map((rep) => ({ value: rep._id, label: rep.name })),
+  ]
+  const tabs: [Tab, string][] = [
+    ['leads', t('commercial.admin.tabLeads', { count: detail?.leads.length ?? 0 })],
+    ['commissions', t('commercial.admin.tabCommissions')],
+    ['journal', t('commercial.admin.tabJournal')],
   ]
 
   return (
     <div className="portal-container">
       <div className="portal-card">
         <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
+          <Link to="/admin">{t('commercial.admin.breadcrumb')}</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Commerciaux externes</span>
+          <span style={{ color: 'var(--text-primary)' }}>{t('commercial.admin.title')}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <h1 style={{ margin: 0 }}>Commerciaux externes</h1>
+          <h1 style={{ margin: 0 }}>{t('commercial.admin.title')}</h1>
           <Link className="portal-button" to="/admin/comptes-admin/nouveau">
-            Inviter un commercial
+            {t('commercial.admin.invite')}
           </Link>
         </div>
         <p className="commercial-muted">
-          Commission de {rateBp / 100} % sur le HT encaissé des clients issus de leurs leads. Le closer qui reçoit les
-          dossiers se règle dans{' '}
+          {t('commercial.admin.ruleBefore', { rate: formatNumber(rateBp / 100) })}{' '}
           <Link className="commercial-link" to="/admin/crm/settings">
-            les paramètres CRM
+            {t('commercial.admin.ruleLink')}
           </Link>
           .
         </p>
@@ -135,23 +142,23 @@ const ExternalSales = () => {
       {info && <div className="admin-success">{info}</div>}
 
       {!reps ? (
-        <div className="admin-loading">Chargement…</div>
+        <div className="admin-loading">{t('commercial.loading')}</div>
       ) : reps.length === 0 ? (
         <div className="admin-empty-state">
-          <p className="admin-empty-state-text">Aucun commercial externe pour l’instant.</p>
+          <p className="admin-empty-state-text">{t('commercial.admin.empty')}</p>
         </div>
       ) : (
         <div className="admin-table-wrapper" style={{ marginTop: 24 }}>
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Commercial</th>
-                <th className="commercial-amount">Leads</th>
-                <th className="commercial-amount">Transmis</th>
-                <th className="commercial-amount">Conversion</th>
-                <th className="commercial-amount">Encaissé HT</th>
-                <th className="commercial-amount">Dû</th>
-                <th className="commercial-amount">Versé</th>
+                <th>{t('commercial.admin.colRep')}</th>
+                <th className="commercial-amount">{t('commercial.admin.colLeads')}</th>
+                <th className="commercial-amount">{t('commercial.admin.colHandedOff')}</th>
+                <th className="commercial-amount">{t('commercial.admin.colConversion')}</th>
+                <th className="commercial-amount">{t('commercial.admin.colCollected')}</th>
+                <th className="commercial-amount">{t('commercial.admin.colDue')}</th>
+                <th className="commercial-amount">{t('commercial.admin.colPaid')}</th>
               </tr>
             </thead>
             <tbody>
@@ -170,13 +177,14 @@ const ExternalSales = () => {
                     </button>
                     <div className="commercial-muted">
                       {rep.email}
-                      {!rep.isActive && ' · désactivé'}
+                      {!rep.isActive && ` · ${t('commercial.admin.inactive')}`}
                     </div>
                   </td>
                   <td className="commercial-amount">{rep.leads}</td>
                   <td className="commercial-amount">{rep.handedOff}</td>
                   <td className="commercial-amount">
-                    {Math.round(rep.conversionRate * 100)} % <span className="commercial-muted">({rep.won})</span>
+                    {formatPercent(rep.conversionRate, { maximumFractionDigits: 0 })}{' '}
+                    <span className="commercial-muted">({rep.won})</span>
                   </td>
                   <td className="commercial-amount">{formatCents(rep.collectedHtCents)}</td>
                   <td className="commercial-amount">{formatCents(rep.dueCents)}</td>
@@ -193,17 +201,11 @@ const ExternalSales = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <h2 style={{ margin: 0 }}>{detail.rep.name}</h2>
             <Link className="portal-button secondary" to={`/admin/comptes-admin/${detail.rep._id}`}>
-              Gérer le compte
+              {t('commercial.admin.manageAccount')}
             </Link>
           </div>
           <div className="admin-tabs">
-            {(
-              [
-                ['leads', `Fiches (${detail.leads.length})`],
-                ['commissions', 'Commissions'],
-                ['journal', 'Journal'],
-              ] as [Tab, string][]
-            ).map(([key, label]) => (
+            {tabs.map(([key, label]) => (
               <button
                 key={key}
                 type="button"
@@ -230,19 +232,21 @@ const ExternalSales = () => {
                   disabled={busy || !target || checkedLeads.length === 0}
                   onClick={() => reassign('selection')}
                 >
-                  Réattribuer la sélection ({checkedLeads.length})
+                  {t('commercial.admin.reassignSelection', { count: checkedLeads.length })}
                 </button>
                 <button
                   type="button"
                   className="portal-button secondary"
                   disabled={busy || !target || detail.leads.length === 0}
                   onClick={() => {
-                    if (window.confirm(`Réattribuer les ${detail.leads.length} fiches de ${detail.rep.name} ?`)) {
-                      reassign('all')
-                    }
+                    const question = t('commercial.admin.reassignAllConfirm', {
+                      count: detail.leads.length,
+                      name: detail.rep.name,
+                    })
+                    if (window.confirm(question)) reassign('all')
                   }}
                 >
-                  Tout réattribuer
+                  {t('commercial.admin.reassignAll')}
                 </button>
               </div>
               <LeadsTable
@@ -257,15 +261,15 @@ const ExternalSales = () => {
             <>
               <div className="commercial-stats">
                 <div className="commercial-stat">
-                  <span className="commercial-muted">Encaissé HT</span>
+                  <span className="commercial-muted">{t('commercial.admin.colCollected')}</span>
                   <span className="commercial-stat-value">{formatCents(detail.totals.collectedHtCents)}</span>
                 </div>
                 <div className="commercial-stat">
-                  <span className="commercial-muted">Dû</span>
+                  <span className="commercial-muted">{t('commercial.admin.colDue')}</span>
                   <span className="commercial-stat-value">{formatCents(detail.totals.dueCents)}</span>
                 </div>
                 <div className="commercial-stat">
-                  <span className="commercial-muted">Versé</span>
+                  <span className="commercial-muted">{t('commercial.admin.colPaid')}</span>
                   <span className="commercial-stat-value">{formatCents(detail.totals.paidCents)}</span>
                 </div>
               </div>
@@ -276,19 +280,20 @@ const ExternalSales = () => {
                   disabled={busy || checkedCommissions.length === 0}
                   onClick={() => markPaid('selection')}
                 >
-                  Marquer la sélection versée ({checkedCommissions.length})
+                  {t('commercial.admin.markSelection', { count: checkedCommissions.length })}
                 </button>
                 <button
                   type="button"
                   className="portal-button secondary"
                   disabled={busy || detail.totals.dueCents === 0}
                   onClick={() => {
-                    if (window.confirm(`Marquer versé tout le dû (${formatCents(detail.totals.dueCents)}) ?`)) {
-                      markPaid('all')
-                    }
+                    const question = t('commercial.admin.markAllConfirm', {
+                      amount: formatCents(detail.totals.dueCents),
+                    })
+                    if (window.confirm(question)) markPaid('all')
                   }}
                 >
-                  Tout le dû est versé
+                  {t('commercial.admin.markAll')}
                 </button>
               </div>
               <CommissionsTable
@@ -301,12 +306,12 @@ const ExternalSales = () => {
 
           {tab === 'journal' && (
             <ul className="commercial-timeline">
-              {activity.length === 0 && <li className="commercial-muted">Aucune activité.</li>}
+              {activity.length === 0 && <li className="commercial-muted">{t('commercial.admin.noActivity')}</li>}
               {activity.map((item) => (
                 <li key={item._id}>
-                  <strong>{item.leadId?.company ?? 'Fiche supprimée'}</strong> · {item.label}
+                  <strong>{item.leadId?.company ?? t('commercial.admin.deletedLead')}</strong> · {item.label}
                   <small>
-                    {new Date(item.createdAt).toLocaleString('fr-FR')}
+                    {formatDateTime(item.createdAt)}
                     {item.actorId && ` · ${item.actorId.name}`}
                   </small>
                 </li>
@@ -328,17 +333,18 @@ function LeadsTable({
   checked: string[]
   onToggle: (id: string) => void
 }) {
-  if (leads.length === 0) return <p className="commercial-muted">Aucune fiche.</p>
+  const { t } = useI18n()
+  if (leads.length === 0) return <p className="commercial-muted">{t('commercial.admin.noLeads')}</p>
   return (
     <div className="admin-table-wrapper">
       <table className="admin-table">
         <thead>
           <tr>
-            <th aria-label="Sélection" />
-            <th>Entreprise</th>
-            <th>Statut</th>
-            <th>Suivi par</th>
-            <th>Mis à jour</th>
+            <th aria-label={t('commercial.admin.selection')} />
+            <th>{t('commercial.admin.colCompany')}</th>
+            <th>{t('commercial.admin.colStatus')}</th>
+            <th>{t('commercial.admin.colOwner')}</th>
+            <th>{t('commercial.admin.colUpdated')}</th>
           </tr>
         </thead>
         <tbody>
@@ -347,7 +353,7 @@ function LeadsTable({
               <td>
                 <input
                   type="checkbox"
-                  aria-label={`Sélectionner ${lead.company}`}
+                  aria-label={t('commercial.admin.selectLead', { company: lead.company })}
                   checked={checked.includes(lead._id)}
                   onChange={() => onToggle(lead._id)}
                 />
@@ -359,13 +365,15 @@ function LeadsTable({
                 {lead.contactName && <div className="commercial-muted">{lead.contactName}</div>}
               </td>
               <td>
-                {STATUS_LABELS[lead.status]}
+                {t(STATUS_LABEL_KEYS[lead.status])}
                 {lead.closingHandoff && (
-                  <div className="commercial-muted">Transmis le {formatDate(lead.closingHandoff.at)}</div>
+                  <div className="commercial-muted">
+                    {t('commercial.admin.handedOffOn', { date: formatDay(lead.closingHandoff.at) })}
+                  </div>
                 )}
               </td>
               <td>{lead.assignedTo?.name ?? '—'}</td>
-              <td>{formatDate(lead.updatedAt)}</td>
+              <td>{formatDay(lead.updatedAt)}</td>
             </tr>
           ))}
         </tbody>
@@ -383,18 +391,19 @@ function CommissionsTable({
   checked: string[]
   onToggle: (id: string) => void
 }) {
-  if (commissions.length === 0) return <p className="commercial-muted">Aucune commission.</p>
+  const { t } = useI18n()
+  if (commissions.length === 0) return <p className="commercial-muted">{t('commercial.admin.noCommissions')}</p>
   return (
     <div className="admin-table-wrapper">
       <table className="admin-table">
         <thead>
           <tr>
-            <th aria-label="Sélection" />
-            <th>Date</th>
-            <th>Client · facture</th>
-            <th className="commercial-amount">Encaissé HT</th>
-            <th className="commercial-amount">Commission</th>
-            <th>Statut</th>
+            <th aria-label={t('commercial.admin.selection')} />
+            <th>{t('commercial.admin.colDate')}</th>
+            <th>{t('commercial.admin.colInvoice')}</th>
+            <th className="commercial-amount">{t('commercial.admin.colCollected')}</th>
+            <th className="commercial-amount">{t('commercial.admin.colAmount')}</th>
+            <th>{t('commercial.admin.colStatus')}</th>
           </tr>
         </thead>
         <tbody>
@@ -404,26 +413,28 @@ function CommissionsTable({
                 {line.status === 'DUE' && (
                   <input
                     type="checkbox"
-                    aria-label="Sélectionner la commission"
+                    aria-label={t('commercial.admin.selectCommission')}
                     checked={checked.includes(line._id)}
                     onChange={() => onToggle(line._id)}
                   />
                 )}
               </td>
-              <td>{formatDate(line.receivedAt)}</td>
+              <td>{formatDay(line.receivedAt)}</td>
               <td>
                 {line.client?.companyName || line.client?.name}
                 <div className="commercial-muted">
                   {line.invoice?.number}
-                  {line.kind === 'REFUND' && ' · remboursement'}
+                  {line.kind === 'REFUND' && ` · ${t('commercial.commissions.refund')}`}
                 </div>
               </td>
               <td className="commercial-amount">{formatCents(line.baseHtCents)}</td>
               <td className="commercial-amount">{formatCents(line.amountCents)}</td>
               <td>
                 {line.status === 'PAID'
-                  ? `Versée le ${formatDate(line.paidAt)}${line.paidBy ? ` par ${line.paidBy.name}` : ''}`
-                  : 'Due'}
+                  ? line.paidBy
+                    ? t('commercial.admin.paidBy', { date: formatDay(line.paidAt), name: line.paidBy.name })
+                    : t('commercial.admin.paidOn', { date: formatDay(line.paidAt) })
+                  : t('commercial.admin.due')}
               </td>
             </tr>
           ))}

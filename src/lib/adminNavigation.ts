@@ -1,12 +1,15 @@
 import type { User, UserRole } from '../types/auth.types'
 import { hasPermission, PERMISSIONS } from './permissions'
 import { getVisibleNavigation, NAVIGATION } from './rbac'
+import { translate, type MessageKey } from '../i18n'
 
 export const ADMIN_NAVIGATION_ZONES = [
   'Pilotage',
   'Clients & projets',
   'Contenu & outils',
+  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
   'Finance & conformité',
+  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
   'Équipe',
   'Analyse & rapports',
   'Administration',
@@ -15,6 +18,66 @@ export const ADMIN_NAVIGATION_ZONES = [
 export type AdminNavigationZone = (typeof ADMIN_NAVIGATION_ZONES)[number]
 type NavigationItem = (typeof NAVIGATION)[number]
 type NavigationId = NavigationItem['id']
+
+// Les zones gardent leur libellé français comme identifiant stable ; l'affichage passe par ces clés.
+const ZONE_LABEL_KEYS = {
+  Pilotage: 'shell.zone.pilotage',
+  'Clients & projets': 'shell.zone.clientsProjects',
+  'Contenu & outils': 'shell.zone.contentTools',
+  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
+  'Finance & conformité': 'shell.zone.financeCompliance',
+  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
+  Équipe: 'shell.zone.team',
+  'Analyse & rapports': 'shell.zone.analysisReports',
+  Administration: 'shell.zone.administration',
+} as const satisfies Record<AdminNavigationZone, MessageKey>
+
+/** Libellé affiché d'une zone dans la langue active. */
+export function getZoneLabel(zone: AdminNavigationZone): string {
+  return translate(ZONE_LABEL_KEYS[zone])
+}
+
+const NAVIGATION_LABEL_KEYS: Record<string, MessageKey | undefined> = {
+  home: 'shell.navItem.home',
+  dashboard: 'shell.navItem.dashboard',
+  'activity-center': 'shell.navItem.activityCenter',
+  messages: 'shell.navItem.messages',
+  clients: 'shell.navItem.clients',
+  'external-sales': 'shell.navItem.externalSales',
+  crm: 'shell.navItem.crm',
+  projects: 'shell.navItem.projects',
+  accounting: 'shell.navItem.accounting',
+  interns: 'shell.navItem.interns',
+  calendar: 'shell.navItem.calendar',
+  emails: 'shell.navItem.emails',
+  templates: 'shell.navItem.templates',
+  resources: 'shell.navItem.resources',
+  'tool-access': 'shell.navItem.toolAccess',
+  reports: 'shell.navItem.reports',
+  analytics: 'shell.navItem.analytics',
+  qualiopi: 'shell.navItem.qualiopi',
+  tickets: 'shell.navItem.tickets',
+  'change-requests': 'shell.navItem.changeRequests',
+  audit: 'shell.navItem.audit',
+  'internal-projects': 'shell.navItem.internalProjects',
+  dev: 'shell.navItem.dev',
+  beta: 'shell.navItem.beta',
+  education: 'shell.navItem.education',
+  subsidiaries: 'shell.navItem.subsidiaries',
+  arrow: 'shell.navItem.arrow',
+  'admin-accounts': 'shell.navItem.adminAccounts',
+  agents: 'shell.navItem.agents',
+  health: 'shell.navItem.health',
+  decisions: 'shell.navItem.decisions',
+  guide: 'shell.navItem.guide',
+  webhooks: 'shell.navItem.webhooks',
+}
+
+/** Libellé affiché d'un module de navigation dans la langue active (repli : libellé de la matrice RBAC). */
+export function getNavigationLabel(item: NavigationItem): string {
+  const key = NAVIGATION_LABEL_KEYS[item.id]
+  return key ? translate(key) : item.label
+}
 
 /**
  * Tiroirs déployés par défaut à l'ouverture de la sidebar. Vide : tout est
@@ -56,10 +119,15 @@ const ZONE_BY_NAVIGATION_ID: Partial<Record<NavigationId, AdminNavigationZone>> 
   'internal-projects': 'Contenu & outils',
   dev: 'Contenu & outils',
   beta: 'Contenu & outils',
+  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
   accounting: 'Finance & conformité',
+  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
   qualiopi: 'Finance & conformité',
+  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
   audit: 'Finance & conformité',
+  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
   interns: 'Équipe',
+  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
   emails: 'Équipe',
   analytics: 'Analyse & rapports',
   reports: 'Analyse & rapports',
@@ -118,58 +186,71 @@ export interface RoleCockpit {
   priorities: NavigationId[]
 }
 
-const ROLE_COCKPITS: Record<Exclude<UserRole, 'CLIENT' | 'COMMERCIAL_EXTERNE'>, RoleCockpit> = {
+interface RoleCockpitDefinition {
+  titleKey: MessageKey
+  descriptionKey: MessageKey
+  priorities: NavigationId[]
+}
+
+const ROLE_COCKPITS: Record<Exclude<UserRole, 'CLIENT' | 'COMMERCIAL_EXTERNE'>, RoleCockpitDefinition> = {
   SUPER_ADMIN: {
-    title: 'Arbitrages et santé de l’organisation',
-    description: 'Décidez des priorités, surveillez les signaux transverses et accédez à la console système.',
+    titleKey: 'shell.cockpit.superAdminTitle',
+    descriptionKey: 'shell.cockpit.superAdminDescription',
     priorities: ['activity-center', 'dashboard', 'decisions', 'analytics', 'health'],
   },
   ADMIN: {
-    title: 'Coordination des opérations',
-    description: 'Suivez les projets, les clients et les sujets à débloquer pour l’équipe.',
+    titleKey: 'shell.cockpit.adminTitle',
+    descriptionKey: 'shell.cockpit.adminDescription',
     priorities: ['activity-center', 'projects', 'crm', 'tickets'],
   },
   MANAGER: {
-    title: 'Pilotage des projets et de la charge',
-    description: 'Concentrez-vous sur les projets actifs, les relances et le travail de l’équipe.',
+    titleKey: 'shell.cockpit.managerTitle',
+    descriptionKey: 'shell.cockpit.managerDescription',
     priorities: ['projects', 'crm', 'tickets', 'messages'],
   },
   COMMERCIAL: {
-    title: 'Suivi commercial',
-    description: 'Traitez le pipeline, les comptes clients et les prochaines relances.',
+    titleKey: 'shell.cockpit.commercialTitle',
+    descriptionKey: 'shell.cockpit.commercialDescription',
     priorities: ['crm', 'clients', 'projects', 'tickets'],
   },
   RH: {
-    title: 'Suivi équipe et conformité',
-    description: 'Priorisez l’équipe, Qualiopi et les demandes qui nécessitent un suivi.',
+    titleKey: 'shell.cockpit.rhTitle',
+    descriptionKey: 'shell.cockpit.rhDescription',
     priorities: ['interns', 'qualiopi', 'tickets', 'projects'],
   },
   COMPTABLE: {
-    title: 'Clôture et conformité financière',
-    description: 'Accédez aux écritures, à la TVA et aux éléments nécessaires à la clôture.',
+    titleKey: 'shell.cockpit.comptableTitle',
+    descriptionKey: 'shell.cockpit.comptableDescription',
     priorities: ['accounting', 'projects', 'messages'],
   },
   VIEWER: {
-    title: 'Lecture et suivi',
-    description: 'Consultez les projets, les chiffres et les sujets à signaler.',
+    titleKey: 'shell.cockpit.viewerTitle',
+    descriptionKey: 'shell.cockpit.viewerDescription',
     priorities: ['projects', 'accounting', 'tickets', 'dev'],
   },
   STAGIAIRE: {
-    title: 'Travail à réaliser',
-    description: 'Retrouvez les projets, ressources et demandes sur lesquelles avancer.',
+    titleKey: 'shell.cockpit.stagiaireTitle',
+    descriptionKey: 'shell.cockpit.stagiaireDescription',
     priorities: ['projects', 'resources', 'tickets', 'crm'],
   },
 }
 
-const DEFAULT_COCKPIT: RoleCockpit = {
-  title: 'Mon espace de travail',
-  description: 'Accédez aux modules autorisés pour votre rôle.',
+const DEFAULT_COCKPIT: RoleCockpitDefinition = {
+  titleKey: 'shell.cockpit.defaultTitle',
+  descriptionKey: 'shell.cockpit.defaultDescription',
   priorities: ['home'],
 }
 
 export function getRoleCockpit(user: User | null): RoleCockpit {
-  if (!user || user.role === 'CLIENT' || user.role === 'COMMERCIAL_EXTERNE') return DEFAULT_COCKPIT
-  return ROLE_COCKPITS[user.role] || DEFAULT_COCKPIT
+  const definition =
+    !user || user.role === 'CLIENT' || user.role === 'COMMERCIAL_EXTERNE'
+      ? DEFAULT_COCKPIT
+      : ROLE_COCKPITS[user.role] || DEFAULT_COCKPIT
+  return {
+    title: translate(definition.titleKey),
+    description: translate(definition.descriptionKey),
+    priorities: definition.priorities,
+  }
 }
 
 export function getRoleCockpitNavigation(user: User | null): NavigationItem[] {
@@ -180,7 +261,7 @@ export function getRoleCockpitNavigation(user: User | null): NavigationItem[] {
 
 type PaletteActionDefinition = {
   id: string
-  label: string
+  labelKey: MessageKey
   to: string
   permission: string
   destination: NavigationId
@@ -189,28 +270,28 @@ type PaletteActionDefinition = {
 const PALETTE_ACTIONS: PaletteActionDefinition[] = [
   {
     id: 'create-project',
-    label: 'Créer un projet',
+    labelKey: 'shell.paletteAction.createProject',
     to: '/admin/projets/nouveau',
     permission: PERMISSIONS.EDIT_PROJECTS,
     destination: 'projects',
   },
   {
     id: 'create-lead',
-    label: 'Créer ou qualifier un lead',
+    labelKey: 'shell.paletteAction.createLead',
     to: '/admin/crm',
     permission: PERMISSIONS.MANAGE_CRM,
     destination: 'crm',
   },
   {
     id: 'create-ticket',
-    label: 'Créer un ticket',
+    labelKey: 'shell.paletteAction.createTicket',
     to: '/admin/tickets',
     permission: PERMISSIONS.CREATE_TICKETS,
     destination: 'tickets',
   },
   {
     id: 'send-message',
-    label: 'Envoyer un message',
+    labelKey: 'shell.paletteAction.sendMessage',
     to: '/admin/messages',
     permission: PERMISSIONS.SEND_MESSAGES,
     destination: 'messages',
@@ -226,7 +307,7 @@ export function getCommandPaletteItems(user: User | null): AdminCommandPaletteIt
   const modules = visible.map((item) => ({
     kind: 'module' as const,
     id: item.id,
-    label: item.label,
+    label: getNavigationLabel(item),
     to: item.screen,
     zone: getNavigationZone(item),
   }))
@@ -236,7 +317,7 @@ export function getCommandPaletteItems(user: User | null): AdminCommandPaletteIt
   ).map((action) => ({
     kind: 'action' as const,
     id: action.id,
-    label: action.label,
+    label: translate(action.labelKey),
     to: action.to,
     zone: getNavigationZone(visible.find((item) => item.id === action.destination)!),
   }))

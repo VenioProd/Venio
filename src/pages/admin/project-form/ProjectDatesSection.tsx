@@ -1,8 +1,10 @@
 import React from 'react'
 import type { ProjectDatesSectionProps } from './types'
 import { toDateTimeLocal } from '../../../lib/formatUtils'
+import { useI18n } from '../../../context/I18nContext'
 
 const ProjectDatesSection: React.FC<ProjectDatesSectionProps> = ({ form, setForm }) => {
+  const { t } = useI18n()
   const addDeadline = () => {
     setForm({
       ...form,
@@ -27,8 +29,8 @@ const ProjectDatesSection: React.FC<ProjectDatesSectionProps> = ({ form, setForm
       <div className="project-form-section-header">
         <div className="project-form-section-icon">📅</div>
         <div>
-          <h2 className="project-form-section-title">Planning & Dates</h2>
-          <p className="project-form-section-subtitle">Dates clés et jalons du projet</p>
+          <h2 className="project-form-section-title">{t('projects.form.dates.title')}</h2>
+          <p className="project-form-section-subtitle">{t('projects.form.dates.subtitle')}</p>
         </div>
       </div>
       <div className="portal-list">
@@ -36,7 +38,7 @@ const ProjectDatesSection: React.FC<ProjectDatesSectionProps> = ({ form, setForm
           <div className="project-form-field">
             <label className="project-form-label">
               <span className="project-form-label-icon">🚀</span>
-              Date de début
+              {t('projects.form.dates.start')}
             </label>
             <input
               className="portal-input"
@@ -49,7 +51,7 @@ const ProjectDatesSection: React.FC<ProjectDatesSectionProps> = ({ form, setForm
           <div className="project-form-field">
             <label className="project-form-label">
               <span className="project-form-label-icon">🎯</span>
-              Fin prévue
+              {t('projects.form.dates.plannedEnd')}
             </label>
             <input
               className="portal-input"
@@ -62,7 +64,7 @@ const ProjectDatesSection: React.FC<ProjectDatesSectionProps> = ({ form, setForm
           <div className="project-form-field">
             <label className="project-form-label">
               <span className="project-form-label-icon">✅</span>
-              Livraison réelle
+              {t('projects.form.dates.actualDelivery')}
             </label>
             <input
               className="portal-input"
@@ -76,13 +78,13 @@ const ProjectDatesSection: React.FC<ProjectDatesSectionProps> = ({ form, setForm
         <div className="project-form-field">
           <label className="project-form-label">
             <span className="project-form-label-icon">⏰</span>
-            Deadlines & Jalons
+            {t('projects.form.dates.deadlines')}
           </label>
           {form.deadlines.map((d, i) => (
             <div key={i} className="deadline-row">
               <input
                 className="portal-input"
-                placeholder="Libellé du jalon"
+                placeholder={t('projects.form.dates.milestonePlaceholder')}
                 value={d.label}
                 onChange={(e) => updateDeadline(i, 'label', e.target.value)}
                 style={{ flex: 1, margin: 0 }}
@@ -104,20 +106,15 @@ const ProjectDatesSection: React.FC<ProjectDatesSectionProps> = ({ form, setForm
               </button>
             </div>
           ))}
-          <button
-            type="button"
-            className="portal-button secondary"
-            onClick={addDeadline}
-            style={{ marginTop: 8 }}
-          >
-            + Ajouter un jalon
+          <button type="button" className="portal-button secondary" onClick={addDeadline} style={{ marginTop: 8 }}>
+            {t('projects.form.dates.addMilestone')}
           </button>
         </div>
 
         <div className="project-form-field">
           <label className="project-form-label">
             <span className="project-form-label-icon">🔔</span>
-            Date de rappel
+            {t('projects.form.dates.reminder')}
           </label>
           <input
             className="portal-input"

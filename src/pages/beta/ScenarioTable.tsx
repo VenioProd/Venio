@@ -1,12 +1,14 @@
 import { Fragment, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import type { TesterRun, TesterScenario } from '../../services/betaTester'
 
-const VERDICT_LABEL: Record<string, string> = {
-  WORKS: 'Fonctionne',
-  BROKEN: 'Ne fonctionne pas',
-  TO_OPTIMIZE: 'À optimiser',
-  BLOCKED: 'N’a pas pu être testée',
+const VERDICT_LABEL_KEY: Record<string, MessageKey> = {
+  WORKS: 'beta.verdict.works',
+  BROKEN: 'beta.verdict.broken',
+  TO_OPTIMIZE: 'beta.verdict.toOptimize',
+  BLOCKED: 'beta.verdict.blocked',
 }
 
 const VERDICT_TONE: Record<string, string> = {
@@ -38,19 +40,20 @@ interface Props {
  * à quelqu'un d'extérieur — c'est la position dans le parcours qui compte.
  */
 export default function ScenarioTable({ scenarios, myRuns, checkedByScenario, openId, onToggle, renderDetail }: Props) {
+  const { t } = useI18n()
   return (
     <table className="bt-table">
       <thead>
         <tr>
           <th scope="col" className="bt-col-rank">
-            <span className="bt-sr">Rang</span>
+            <span className="bt-sr">{t('beta.table.rank')}</span>
           </th>
-          <th scope="col">Démarche</th>
+          <th scope="col">{t('beta.shared.scenario')}</th>
           <th scope="col" className="bt-col-steps">
-            Étapes
+            {t('beta.shared.steps')}
           </th>
           <th scope="col" className="bt-col-verdict">
-            Mon verdict
+            {t('beta.table.verdict')}
           </th>
         </tr>
       </thead>
@@ -80,16 +83,18 @@ export default function ScenarioTable({ scenarios, myRuns, checkedByScenario, op
                       {checked.length} / {total}
                     </span>
                   ) : (
-                    <span className="bt-sr">sans étape</span>
+                    <span className="bt-sr">{t('beta.table.noSteps')}</span>
                   )}
                 </td>
                 <td className="bt-col-verdict">
                   {toRecheck ? (
-                    <span className="bt-pill bt-pill-retest">Corrigé, à revérifier</span>
+                    <span className="bt-pill bt-pill-retest">{t('beta.shared.toRecheck')}</span>
                   ) : run ? (
-                    <span className={`bt-pill bt-pill-${VERDICT_TONE[run.verdict]}`}>{VERDICT_LABEL[run.verdict]}</span>
+                    <span className={`bt-pill bt-pill-${VERDICT_TONE[run.verdict]}`}>
+                      {t(VERDICT_LABEL_KEY[run.verdict])}
+                    </span>
                   ) : (
-                    <span className="bt-pill bt-pill-todo">À tester</span>
+                    <span className="bt-pill bt-pill-todo">{t('beta.table.todo')}</span>
                   )}
                 </td>
               </tr>

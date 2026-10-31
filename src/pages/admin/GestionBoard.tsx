@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import { apiFetch } from '../../lib/api'
 import { fetchAllTasks } from '../../services/gestion'
 import { updateTask, moveTask } from '../../services/adminTasks'
@@ -22,25 +24,26 @@ interface ProjectOption {
   name: string
 }
 
-const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
-  { value: 'A_FAIRE', label: 'A faire' },
-  { value: 'EN_COURS', label: 'En cours' },
-  { value: 'EN_REVIEW', label: 'En review' },
-  { value: 'VALIDE', label: 'Valide' },
-  { value: 'NON_VALIDE', label: 'Non valide' },
-  { value: 'A_MODIFIER', label: 'A modifier' },
-  { value: 'TERMINE', label: 'Termine' },
+const STATUS_OPTIONS: { value: TaskStatus; labelKey: MessageKey }[] = [
+  { value: 'A_FAIRE', labelKey: 'adminAccess.board.statusTodo' },
+  { value: 'EN_COURS', labelKey: 'adminAccess.board.statusInProgress' },
+  { value: 'EN_REVIEW', labelKey: 'adminAccess.board.statusInReview' },
+  { value: 'VALIDE', labelKey: 'adminAccess.board.statusApproved' },
+  { value: 'NON_VALIDE', labelKey: 'adminAccess.board.statusRejected' },
+  { value: 'A_MODIFIER', labelKey: 'adminAccess.board.statusToRevise' },
+  { value: 'TERMINE', labelKey: 'adminAccess.board.statusDone' },
 ]
 
-const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
-  { value: 'BASSE', label: 'Basse' },
-  { value: 'NORMALE', label: 'Normale' },
-  { value: 'HAUTE', label: 'Haute' },
-  { value: 'URGENTE', label: 'Urgente' },
+const PRIORITY_OPTIONS: { value: TaskPriority; labelKey: MessageKey }[] = [
+  { value: 'BASSE', labelKey: 'adminAccess.board.priorityLow' },
+  { value: 'NORMALE', labelKey: 'adminAccess.board.priorityNormal' },
+  { value: 'HAUTE', labelKey: 'adminAccess.board.priorityHigh' },
+  { value: 'URGENTE', labelKey: 'adminAccess.board.priorityUrgent' },
 ]
 
 export default function GestionBoard() {
   const { user } = useAuth()
+  const { t: tr } = useI18n()
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
   const [searchParams] = useSearchParams()
   const initialView = (searchParams.get('view') as ViewMode) || 'table'
@@ -66,10 +69,12 @@ export default function GestionBoard() {
   }, [selectedProject])
 
   useEffect(() => {
-    apiFetch('/api/admin/projects').then((res: any) => {
-      const list = res.projects || res
-      setProjects(Array.isArray(list) ? list.map((p: any) => ({ _id: p._id, name: p.name })) : [])
-    }).catch(() => {})
+    apiFetch('/api/admin/projects')
+      .then((res: any) => {
+        const list = res.projects || res
+        setProjects(Array.isArray(list) ? list.map((p: any) => ({ _id: p._id, name: p.name })) : [])
+      })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -81,10 +86,12 @@ export default function GestionBoard() {
   // Non-super-admin : filtrer les projets à ceux qui ont des tâches assignées
   const visibleProjects = isSuperAdmin
     ? projects
-    : projects.filter((p) => tasks.some((t) => {
-        const pid = typeof t.project === 'object' ? t.project?._id : t.project
-        return pid === p._id
-      }))
+    : projects.filter((p) =>
+        tasks.some((t) => {
+          const pid = typeof t.project === 'object' ? t.project?._id : t.project
+          return pid === p._id
+        }),
+      )
 
   // Liste des assignés uniques pour le filtre
   const assigneeOptions = useMemo(() => {
@@ -131,7 +138,7 @@ export default function GestionBoard() {
   }
 
   const ALL_TABS: { key: ViewMode; label: string; icon: string; superOnly?: boolean }[] = [
-    { key: 'table', label: 'Tableau', icon: '☰' },
+    { key: 'table', label: tr('adminAccess.board.tabTable'), icon: '☰' },
     { key: 'kanban', label: 'Kanban', icon: '▦' },
     { key: 'gantt', label: 'Gantt', icon: '▬' },
     { key: 'kpi', label: 'KPI', icon: '◉', superOnly: true },
@@ -145,8 +152,12 @@ export default function GestionBoard() {
     <div className="portal-container">
       <div className="gestion-header">
         <div className="gestion-header-top">
-          <Link to="/admin" className="ticket-back-btn">← Retour</Link>
-          <h1 className="gestion-title">{isSuperAdmin ? 'Gestion de projets' : 'Mes projets & taches'}</h1>
+          <Link to="/admin" className="ticket-back-btn">
+            {tr('adminAccess.board.back')}
+          </Link>
+          <h1 className="gestion-title">
+            {isSuperAdmin ? tr('adminAccess.board.titleSuper') : tr('adminAccess.board.titleMine')}
+          </h1>
         </div>
 
         <div className="gestion-controls">
@@ -156,7 +167,10 @@ export default function GestionBoard() {
               value={selectedProject}
               onChange={(v) => setSelectedProject(v)}
               options={[
-                { value: '', label: isSuperAdmin ? 'Tous les projets' : 'Tous mes projets' },
+                {
+                  value: '',
+                  label: isSuperAdmin ? tr('adminAccess.board.allProjects') : tr('adminAccess.board.allMyProjects'),
+                },
                 ...visibleProjects.map((p) => ({ value: p._id, label: p.name })),
               ]}
             />
@@ -184,8 +198,8 @@ export default function GestionBoard() {
               value={filterStatus}
               onChange={(v) => setFilterStatus(v)}
               options={[
-                { value: '', label: 'Tous les statuts' },
-                ...STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+                { value: '', label: tr('adminAccess.board.allStatuses') },
+                ...STATUS_OPTIONS.map((o) => ({ value: o.value, label: tr(o.labelKey) })),
               ]}
             />
 
@@ -194,8 +208,8 @@ export default function GestionBoard() {
               value={filterPriority}
               onChange={(v) => setFilterPriority(v)}
               options={[
-                { value: '', label: 'Toutes les priorites' },
-                ...PRIORITY_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+                { value: '', label: tr('adminAccess.board.allPriorities') },
+                ...PRIORITY_OPTIONS.map((o) => ({ value: o.value, label: tr(o.labelKey) })),
               ]}
             />
 
@@ -205,7 +219,7 @@ export default function GestionBoard() {
                 value={filterAssignee}
                 onChange={(v) => setFilterAssignee(v)}
                 options={[
-                  { value: '', label: 'Tous les assignes' },
+                  { value: '', label: tr('adminAccess.board.allAssignees') },
                   ...assigneeOptions.map((o) => ({ value: o.value, label: o.label })),
                 ]}
               />
@@ -214,9 +228,13 @@ export default function GestionBoard() {
             {hasActiveFilters && (
               <button
                 className="gestion-filter-clear"
-                onClick={() => { setFilterStatus(''); setFilterPriority(''); setFilterAssignee('') }}
+                onClick={() => {
+                  setFilterStatus('')
+                  setFilterPriority('')
+                  setFilterAssignee('')
+                }}
               >
-                Reinitialiser
+                {tr('adminAccess.board.reset')}
               </button>
             )}
           </div>
@@ -253,15 +271,8 @@ export default function GestionBoard() {
             readOnly={!isSuperAdmin}
           />
         )}
-        {viewMode === 'kpi' && (
-          <GestionKpi />
-        )}
-        {viewMode === 'briefs' && (
-          <GestionBriefs
-            projects={projects}
-            user={user}
-          />
-        )}
+        {viewMode === 'kpi' && <GestionKpi />}
+        {viewMode === 'briefs' && <GestionBriefs projects={projects} user={user} />}
       </div>
     </div>
   )

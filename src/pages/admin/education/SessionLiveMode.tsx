@@ -1,10 +1,11 @@
 import { WorkspaceOverlayPortal } from '../../../components/WorkspaceOverlayPortal'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import { X, Users, CheckCheck, Flag } from 'lucide-react'
 import {
   ATTENDANCE_COLOR,
   ATTENDANCE_LABEL,
-  formatDate,
   getSession,
   nextAttendanceState,
   studentDisplayName,
@@ -16,6 +17,7 @@ import {
   type EducationTemplate,
 } from '../../../services/education'
 import { useEducationAutosave } from './useEducationAutosave'
+import { formatShortDate as formatDate } from './eduFormat'
 import { AutosaveStatus } from './AutosaveStatus'
 import { PostSessionFlow } from './PostSessionFlow'
 import './SessionLiveMode.css'
@@ -44,6 +46,7 @@ export function SessionLiveMode({
   onClose: () => void
   onChanged: () => void
 }) {
+  const { t } = useI18n()
   const [session, setSession] = useState<EducationSession | null>(null)
   const { stage, restore, flush, status: recapSaveStatus, error: recapSaveError } = useEducationAutosave()
   const onClose = useCallback(async () => {
@@ -81,7 +84,7 @@ export function SessionLiveMode({
       setRecap(restore('session', sessionId, s).recap || '')
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de charger la séance')
+      setError(err instanceof Error ? err.message : translate('eduB.sessionDrawer.loadFailed'))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, restore])
@@ -126,9 +129,9 @@ export function SessionLiveMode({
     const abs = Math.abs(diffMin)
     const h = Math.floor(abs / 60)
     const m = abs % 60
-    const fmt = h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m} min`
-    return diffMin >= 0 ? `${fmt} restantes` : `dépassé de ${fmt}`
-  }, [session, now])
+    const fmt = h > 0 ? t('eduB.live.timeHours', { h, m: String(m).padStart(2, '0') }) : t('eduB.live.timeMin', { m })
+    return diffMin >= 0 ? t('eduB.live.remaining', { time: fmt }) : t('eduB.live.overdue', { time: fmt })
+  }, [session, now, t])
 
   /** Applique localement un nouvel état de présence (optimiste). */
   function setLocalAttendance(updates: Array<{ studentId: string; state: AttendanceState }>) {
@@ -157,7 +160,7 @@ export function SessionLiveMode({
     } catch (err) {
       // Rollback + bannière.
       setLocalAttendance([{ studentId, state: prev }])
-      setError(err instanceof Error ? err.message : 'Erreur de mise à jour de la présence')
+      setError(err instanceof Error ? err.message : t('eduB.live.attendanceUpdateFailed'))
     }
   }
 
@@ -173,7 +176,7 @@ export function SessionLiveMode({
       onChanged()
     } catch (err) {
       setLocalAttendance(entries.map((e) => ({ studentId: e.studentId, state: 'NON_RENSEIGNE' as AttendanceState })))
-      setError(err instanceof Error ? err.message : 'Erreur de mise à jour de la présence')
+      setError(err instanceof Error ? err.message : t('eduB.live.attendanceUpdateFailed'))
     }
   }
 
@@ -188,7 +191,7 @@ export function SessionLiveMode({
       // Enchaînement post-séance au lieu de fermer ; sa fermeture appelle onClose.
       setPostFlowOpen(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de terminer la séance')
+      setError(err instanceof Error ? err.message : t('eduB.live.endFailed'))
     } finally {
       setEnding(false)
     }
@@ -197,7 +200,7 @@ export function SessionLiveMode({
   if (!session) {
     return (
       <WorkspaceOverlayPortal>
-        <div className="edu-live-overlay" role="dialog" aria-label="Mode séance">
+        <div className="edu-live-overlay" role="dialog" aria-label={t('eduB.live.mode')}>
           {error ? (
             <div className="edu-banner-error" style={{ margin: 24 }} role="alert">
               {error}
@@ -209,14 +212,14 @@ export function SessionLiveMode({
                   load()
                 }}
               >
-                Réessayer
+                {t('eduB.shared.retry')}
               </button>
               <button className="edu-btn ghost" onClick={onClose}>
-                Fermer
+                {t('common.close')}
               </button>
             </div>
           ) : (
-            <div className="edu-live-loading">Chargement…</div>
+            <div className="edu-live-loading">{t('eduB.shared.loading')}</div>
           )}
         </div>
       </WorkspaceOverlayPortal>
@@ -228,7 +231,7 @@ export function SessionLiveMode({
 
   return (
     <WorkspaceOverlayPortal>
-      <div className="edu-live-overlay" role="dialog" aria-label="Mode séance">
+      <div className="edu-live-overlay" role="dialog" aria-label={t('eduB.live.mode')}>
         <AutosaveStatus status={recapSaveStatus} error={recapSaveError} onRetry={flush} />
         <div className="edu-live-head">
           <div className="edu-live-head-info">
@@ -245,11 +248,16 @@ export function SessionLiveMode({
             </div>
           </div>
           <div className="edu-live-head-actions">
-            <span className="edu-live-counters" title="Présents · absents · retards / total">
-              <Users size={14} /> présents {counters.present} · absents {counters.absent} · retard {counters.late} /{' '}
-              {counters.total}
+            <span className="edu-live-counters" title={t('eduB.live.countersTitle')}>
+              <Users size={14} />{' '}
+              {t('eduB.live.counters', {
+                present: counters.present,
+                absent: counters.absent,
+                late: counters.late,
+                total: counters.total,
+              })}
             </span>
-            <button className="edu-btn-icon" onClick={onClose} title="Fermer (Esc)">
+            <button className="edu-btn-icon" onClick={onClose} title={t('eduB.live.closeEsc')}>
               <X size={18} />
             </button>
           </div>
@@ -259,21 +267,22 @@ export function SessionLiveMode({
           <div className="edu-banner-error" style={{ margin: '0 20px 10px' }} role="alert">
             {error}
             <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={() => setError(null)}>
-              Fermer
+              {t('common.close')}
             </button>
           </div>
         )}
 
         <div className="edu-live-body">
           <div className="edu-row between" style={{ marginBottom: 12 }}>
-            <strong>Présence — tape sur une carte pour changer l'état</strong>
+            <strong>{t('eduB.live.tapHint')}</strong>
             <button className="edu-btn ghost" onClick={markAllPresent} disabled={remaining === 0}>
-              <CheckCheck size={14} /> Tous présents{remaining > 0 ? ` (${remaining})` : ''}
+              <CheckCheck size={14} />{' '}
+              {remaining > 0 ? t('eduB.live.allPresentCount', { count: remaining }) : t('eduB.live.allPresent')}
             </button>
           </div>
 
           {session.attendance.length === 0 ? (
-            <div className="edu-empty">Aucun étudiant inscrit dans la classe.</div>
+            <div className="edu-empty">{t('eduB.shared.noStudents')}</div>
           ) : (
             <div className="edu-live-grid">
               {session.attendance.map((a) => {
@@ -297,24 +306,24 @@ export function SessionLiveMode({
           )}
 
           <h2 className="edu-h2" style={{ marginTop: 24 }}>
-            Compte-rendu de séance
+            {t('eduB.shared.recapTitle')}
           </h2>
           <textarea
             className="edu-textarea"
             value={recap}
             onChange={(e) => changeRecap(e.target.value)}
-            placeholder="Notes à chaud : ce qui s'est passé, points clés, à reprendre la prochaine fois…"
+            placeholder={t('eduB.live.notesPlaceholder')}
             style={{ minHeight: 140, width: '100%' }}
-            aria-label="Compte-rendu de séance"
+            aria-label={t('eduB.shared.recapTitle')}
           />
         </div>
 
         <div className="edu-live-foot">
           <button className="edu-btn ghost" onClick={onClose}>
-            Fermer
+            {t('common.close')}
           </button>
           <button className="edu-btn" disabled={ending || session.status === 'TERMINEE'} onClick={endSession}>
-            <Flag size={14} /> {ending ? 'Clôture…' : 'Terminer la séance'}
+            <Flag size={14} /> {ending ? t('eduB.live.ending') : t('eduB.live.end')}
           </button>
         </div>
 

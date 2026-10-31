@@ -4,8 +4,10 @@ import { useConfirm } from '../../../hooks/useConfirm'
 import { Link } from 'react-router-dom'
 import { apiDownload, apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import QualiopiQuestionnaires from '../../../components/admin/QualiopiQuestionnaires'
-import { CRITERIA_COLORS, getProgress } from './types'
+import { CRITERIA_COLORS, STATUS_CONFIG, formatFileDate, formatFileSize, getProgress } from './types'
 import type { QualiopiCriterion, QualiopiStatus } from './types'
 import QualiopiStats from './QualiopiStats'
 import CriterionCard from './CriterionCard'
@@ -13,6 +15,7 @@ import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 
 const QualiopiBoard = () => {
+  const { t } = useI18n()
   const { user } = useAuth()
   const [criteria, setCriteria] = useState<QualiopiCriterion[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,7 +46,7 @@ const QualiopiBoard = () => {
       }
     } catch (err: any) {
       console.error(err)
-      setError(err.message || 'Erreur lors du chargement')
+      setError(err.message || translate('orgs.qualiopi.board.loadError'))
     } finally {
       setLoading(false)
     }
@@ -110,6 +113,7 @@ const QualiopiBoard = () => {
         `/api/admin/qualiopi/criteria/${criterionId}/indicators/${indicatorId}/sub`,
         {
           method: 'POST',
+          // i18n-ignore: titre par défaut enregistré en base, pas un libellé d'interface
           body: JSON.stringify({ title: 'Nouveau sous-element' }),
         },
       )
@@ -275,7 +279,7 @@ const QualiopiBoard = () => {
       <div className="portal-container">
         <div className="portal-card" style={{ padding: 60, textAlign: 'center' }}>
           <div className="qualiopi-loading-spinner" />
-          <p style={{ color: 'var(--text-muted)', marginTop: 16 }}>Chargement du referentiel Qualiopi...</p>
+          <p style={{ color: 'var(--text-muted)', marginTop: 16 }}>{t('orgs.qualiopi.board.loading')}</p>
         </div>
       </div>
     )
@@ -284,7 +288,7 @@ const QualiopiBoard = () => {
     return (
       <div className="portal-container">
         <div className="portal-card" style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: '#ef4444', marginBottom: 16 }}>Erreur : {error}</p>
+          <p style={{ color: '#ef4444', marginBottom: 16 }}>{t('orgs.qualiopi.board.errorPrefix', { error })}</p>
           <button
             onClick={load}
             style={{
@@ -297,7 +301,7 @@ const QualiopiBoard = () => {
               fontSize: 14,
             }}
           >
-            Reessayer
+            {t('orgs.qualiopi.board.retry')}
           </button>
         </div>
       </div>
@@ -322,14 +326,12 @@ const QualiopiBoard = () => {
             >
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Retour au dashboard
+            {t('orgs.qualiopi.board.backToDashboard')}
           </Link>
           <h1 className="qualiopi-hero-title">
-            Suivi Qualiopi — <span>Formatio</span>
+            {t('orgs.qualiopi.board.title')} — <span>Formatio</span>
           </h1>
-          <p className="qualiopi-hero-subtitle">
-            Referentiel National Qualite — Certification des organismes de formation
-          </p>
+          <p className="qualiopi-hero-subtitle">{t('orgs.qualiopi.board.subtitle')}</p>
         </div>
         <div className="qualiopi-hero-badge">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="1.5">
@@ -352,7 +354,7 @@ const QualiopiBoard = () => {
             <rect x="3" y="14" width="7" height="7" />
             <rect x="14" y="14" width="7" height="7" />
           </svg>
-          Tableau de bord
+          {t('orgs.qualiopi.board.tabBoard')}
         </button>
         <button
           className={`qualiopi-tab ${activeTab === 'files' ? 'active' : ''}`}
@@ -362,7 +364,7 @@ const QualiopiBoard = () => {
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
             <path d="M14 2v6h6" />
           </svg>
-          Tous les fichiers
+          {t('orgs.qualiopi.board.tabFiles')}
           {allSubs.reduce((acc, s) => acc + s.files.length, 0) > 0 && (
             <span className="qualiopi-tab-badge">{allSubs.reduce((acc, s) => acc + s.files.length, 0)}</span>
           )}
@@ -375,7 +377,7 @@ const QualiopiBoard = () => {
             <path d="M9 11l3 3L22 4" />
             <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
           </svg>
-          Questionnaires
+          {t('orgs.qualiopi.board.tabQuestionnaires')}
         </button>
       </div>
 
@@ -423,21 +425,26 @@ const QualiopiBoard = () => {
                 onPreviewFile={previewFile}
                 onDownloadFile={downloadFile}
                 onConfirmDeleteCriterion={() =>
-                  confirm({ message: 'Supprimer ce critere et tous ses indicateurs ?', title: 'Suppression' })
+                  confirm({
+                    message: t('orgs.qualiopi.board.confirmDeleteCriterion'),
+                    title: t('orgs.qualiopi.board.confirmDeleteTitle'),
+                  })
                 }
-                onConfirmDeleteSub={() => confirm({ message: 'Supprimer ce sous-element ?', title: 'Suppression' })}
+                onConfirmDeleteSub={() =>
+                  confirm({
+                    message: t('orgs.qualiopi.board.confirmDeleteSub'),
+                    title: t('orgs.qualiopi.board.confirmDeleteTitle'),
+                  })
+                }
               />
             ))}
 
           {/* === VUE KANBAN === */}
           {viewMode === 'kanban' &&
             (() => {
-              const columns: { key: QualiopiStatus; label: string; color: string }[] = [
-                { key: 'A_FAIRE', label: 'A faire', color: '#94a3b8' },
-                { key: 'EN_COURS', label: 'En cours', color: '#f59e0b' },
-                { key: 'FAIT', label: 'Fait', color: '#22c55e' },
-                { key: 'BLOQUE', label: 'Bloque', color: '#ef4444' },
-              ]
+              const columns: { key: QualiopiStatus; label: string; color: string }[] = (
+                ['A_FAIRE', 'EN_COURS', 'FAIT', 'BLOQUE'] as const
+              ).map((key) => ({ key, label: t(STATUS_CONFIG[key].labelKey), color: STATUS_CONFIG[key].color }))
 
               return (
                 <div className="qualiopi-kanban">
@@ -451,7 +458,9 @@ const QualiopiBoard = () => {
                           <span className="qualiopi-kanban-col-count">{indicators.length}</span>
                         </div>
                         <div className="qualiopi-kanban-col-body">
-                          {indicators.length === 0 && <div className="qualiopi-kanban-empty">Aucun indicateur</div>}
+                          {indicators.length === 0 && (
+                            <div className="qualiopi-kanban-empty">{t('orgs.qualiopi.board.noIndicator')}</div>
+                          )}
                           {indicators.map((ind) => {
                             const criterion = criteria.find((c) => c.indicators.some((i) => i._id === ind._id))
                             const ci = criterion ? criterion.number - 1 : 0
@@ -474,9 +483,11 @@ const QualiopiBoard = () => {
                                 <div className="qualiopi-kanban-card-title">{ind.title}</div>
                                 <div className="qualiopi-kanban-card-meta">
                                   <span>
-                                    {subDone}/{subTotal} elements
+                                    {t('orgs.qualiopi.indicator.subCount', { done: subDone, total: subTotal })}
                                   </span>
-                                  {filesCount > 0 && <span>{filesCount} fichier(s)</span>}
+                                  {filesCount > 0 && (
+                                    <span>{t('orgs.qualiopi.file.count', { count: filesCount })}</span>
+                                  )}
                                   {ind.assignee && <span>{ind.assignee.name}</span>}
                                 </div>
                                 <div className="qualiopi-kanban-card-bar">
@@ -534,7 +545,7 @@ const QualiopiBoard = () => {
                       criterionTitle: c.title,
                       indicatorNum: ind.number,
                       indicatorTitle: ind.title,
-                      subTitle: '(fichier global)',
+                      subTitle: t('orgs.qualiopi.board.globalFile'),
                       criterionId: c._id,
                       indicatorId: ind._id,
                       subId: '',
@@ -575,16 +586,12 @@ const QualiopiBoard = () => {
                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                     <path d="M14 2v6h6" />
                   </svg>
-                  <p>Aucun fichier uploade pour le moment</p>
+                  <p>{t('orgs.qualiopi.board.noFiles')}</p>
                 </div>
               )
             }
 
             const fileExt = (name: string) => name.split('.').pop()?.toUpperCase() || 'FILE'
-            const fileSize = (size: number) =>
-              size > 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(1)} Mo` : `${Math.round(size / 1024)} Ko`
-            const fileDate = (d: string) =>
-              new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 
             // Group by criterion
             const byCriterion = new Map<number, typeof allFiles>()
@@ -596,7 +603,9 @@ const QualiopiBoard = () => {
 
             return (
               <>
-                <div className="qualiopi-files-count">{allFiles.length} fichier(s) au total</div>
+                <div className="qualiopi-files-count">
+                  {t('orgs.qualiopi.board.filesTotal', { count: allFiles.length })}
+                </div>
                 {Array.from(byCriterion.entries())
                   .sort((a, b) => a[0] - b[0])
                   .map(([num, files]) => {
@@ -604,9 +613,13 @@ const QualiopiBoard = () => {
                     return (
                       <div key={num} className="qualiopi-files-criterion-group">
                         <div className="qualiopi-files-criterion-header" style={{ borderLeftColor: color }}>
-                          <span style={{ color, fontWeight: 700 }}>Critere {num}</span>
+                          <span style={{ color, fontWeight: 700 }}>
+                            {t('orgs.qualiopi.criterion.label', { number: num })}
+                          </span>
                           <span style={{ color: 'var(--text-muted)' }}> — {files[0].criterionTitle}</span>
-                          <span className="qualiopi-files-criterion-count">{files.length} fichier(s)</span>
+                          <span className="qualiopi-files-criterion-count">
+                            {t('orgs.qualiopi.file.count', { count: files.length })}
+                          </span>
                         </div>
                         <div className="qualiopi-files-grid">
                           {files.map((item) => (
@@ -625,13 +638,13 @@ const QualiopiBoard = () => {
                                     {item.file.originalName}
                                   </button>
                                   <span className="qualiopi-file-size">
-                                    {fileSize(item.file.size)} — {fileDate(item.file.uploadedAt)}
+                                    {formatFileSize(item.file.size)} — {formatFileDate(item.file.uploadedAt)}
                                   </span>
                                 </div>
                               </div>
                               <div className="qualiopi-file-full-origin">
                                 <span className="qualiopi-file-origin-badge" style={{ background: color }}>
-                                  Ind. {item.indicatorNum}
+                                  {t('orgs.qualiopi.board.indicatorShort', { number: item.indicatorNum })}
                                 </span>
                                 <span className="qualiopi-file-origin-text">{item.subTitle}</span>
                               </div>
@@ -639,7 +652,7 @@ const QualiopiBoard = () => {
                                 <button
                                   onClick={() => previewFile(item.file._id, item.file.originalName, item.file.mimeType)}
                                   className="qualiopi-file-action-btn"
-                                  title="Visualiser"
+                                  title={t('orgs.qualiopi.file.preview')}
                                 >
                                   <svg
                                     width="14"
@@ -656,7 +669,7 @@ const QualiopiBoard = () => {
                                 <button
                                   onClick={() => downloadFile(item.file._id, item.file.originalName)}
                                   className="qualiopi-file-action-btn"
-                                  title="Telecharger"
+                                  title={t('orgs.qualiopi.file.download')}
                                 >
                                   <svg
                                     width="14"
@@ -678,7 +691,7 @@ const QualiopiBoard = () => {
                                       : deleteFile(item.criterionId, item.indicatorId, item.subId, item.file._id)
                                   }
                                   className="qualiopi-file-action-btn qualiopi-file-action-delete"
-                                  title="Supprimer"
+                                  title={t('orgs.qualiopi.file.delete')}
                                 >
                                   <svg
                                     width="14"
@@ -715,7 +728,12 @@ const QualiopiBoard = () => {
               <div className="qualiopi-preview-header">
                 <span className="qualiopi-preview-title">{preview.name}</span>
                 <div className="qualiopi-preview-actions">
-                  <a href={preview.url} download={preview.name} className="qualiopi-preview-dl" title="Telecharger">
+                  <a
+                    href={preview.url}
+                    download={preview.name}
+                    className="qualiopi-preview-dl"
+                    title={t('orgs.qualiopi.file.download')}
+                  >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
                       <polyline points="7 10 12 15 17 10" />
@@ -742,9 +760,9 @@ const QualiopiBoard = () => {
                       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                       <path d="M14 2v6h6" />
                     </svg>
-                    <p>Apercu non disponible pour ce format</p>
+                    <p>{t('orgs.qualiopi.board.previewUnsupported')}</p>
                     <a href={preview.url} download={preview.name} className="qualiopi-preview-dl-btn">
-                      Telecharger le fichier
+                      {t('orgs.qualiopi.board.downloadFile')}
                     </a>
                   </div>
                 )}

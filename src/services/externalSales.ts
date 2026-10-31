@@ -1,4 +1,6 @@
 import { apiFetch } from '../lib/api'
+import type { MessageKey } from '../i18n'
+import { formatDate, formatMoney } from '../i18n/format'
 
 export type RepLeadStatus = 'LEAD' | 'QUALIFIED' | 'CONTACTED' | 'DEMO' | 'PROPOSAL' | 'WON' | 'LOST'
 
@@ -28,6 +30,7 @@ export interface RepActivity {
   _id: string
   type: string
   label: string
+  status: RepLeadStatus | null
   actorName: string | null
   createdAt: string
 }
@@ -96,22 +99,22 @@ export type RepLeadInput = Partial<
 // Statuts que l'externe peut choisir : la proposition et la signature reviennent au closer.
 export const REP_EDITABLE_STATUSES: RepLeadStatus[] = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'LOST']
 
-export const STATUS_LABELS: Record<RepLeadStatus, string> = {
-  LEAD: 'Lead',
-  QUALIFIED: 'Qualifié',
-  CONTACTED: 'Contacté',
-  DEMO: 'Démo',
-  PROPOSAL: 'Proposition',
-  WON: 'Gagné',
-  LOST: 'Perdu',
+export const STATUS_LABEL_KEYS: Record<RepLeadStatus, MessageKey> = {
+  LEAD: 'crm.status.lead',
+  QUALIFIED: 'crm.status.qualified',
+  CONTACTED: 'crm.status.contacted',
+  DEMO: 'crm.status.demo',
+  PROPOSAL: 'crm.status.proposal',
+  WON: 'crm.status.won',
+  LOST: 'crm.status.lost',
 }
 
 export function formatCents(cents: number): string {
-  return `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
+  return formatMoney(cents / 100)
 }
 
-export function formatDate(value: string | null | undefined): string {
-  return value ? new Date(value).toLocaleDateString('fr-FR') : '—'
+export function formatDay(value: string | null | undefined): string {
+  return formatDate(value) || '—'
 }
 
 const json = (body: unknown) => ({ body: JSON.stringify(body) })

@@ -1,3 +1,5 @@
+import { useI18n } from '../../context/I18nContext'
+
 export interface StatusSegment {
   key: string
   label: string
@@ -16,16 +18,17 @@ interface Props {
  * compte associés dans la légende.
  */
 const StackedStatusBar = ({ segments }: Props) => {
+  const { t } = useI18n()
   const total = segments.reduce((sum, s) => sum + s.count, 0)
   const visible = segments.filter((s) => s.count > 0)
 
   if (total === 0) {
-    return <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Aucun projet</p>
+    return <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('shared.dash.noProject')}</p>
   }
 
   return (
     <div>
-      <div className="dash-status-bar" role="img" aria-label="Répartition des projets par statut">
+      <div className="dash-status-bar" role="img" aria-label={t('shared.dash.statusBarLabel')}>
         {visible.map((s) => (
           <div
             key={s.key}

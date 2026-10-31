@@ -1,3 +1,4 @@
+import { useI18n } from '../../../context/I18nContext'
 import type { ActivityReport } from './types'
 import { formatDate, REPORT_STATUS_CONFIG } from './types'
 import ReportBody from './ReportBody'
@@ -39,22 +40,23 @@ export default function ReportsTab({
   setCommentText,
   setCommentModal,
 }: Props) {
+  const { t } = useI18n()
   // Regrouper les rapports par personne
   const grouped: Record<string, { name: string; reports: ActivityReport[] }> = {}
   reports.forEach((r) => {
     const uid = r.userId?._id || 'unknown'
-    if (!grouped[uid]) grouped[uid] = { name: r.userId?.name || 'Inconnu', reports: [] }
+    if (!grouped[uid]) grouped[uid] = { name: r.userId?.name || t('intern.reports.unknown'), reports: [] }
     grouped[uid].reports.push(r)
   })
   const people = Object.entries(grouped).sort((a, b) => a[1].name.localeCompare(b[1].name))
   const colors = ['#0ea5e9', '#9b9b9b', '#22c55e', '#f59e0b', '#ef4444', '#ffffff']
   const getColor = (name: string) => colors[name.charCodeAt(0) % colors.length]
   const kanbanCols: { key: string; label: string; color: string }[] = [
-    { key: 'BROUILLON', label: 'Brouillon', color: '#a5b4cf' },
-    { key: 'SOUMIS', label: 'Soumis', color: '#0ea5e9' },
-    { key: 'EN_COURS_DE_REVUE', label: 'En revue', color: '#f59e0b' },
-    { key: 'VALIDE', label: 'Validé', color: '#22c55e' },
-    { key: 'REJETE', label: 'Rejeté', color: '#ef4444' },
+    { key: 'BROUILLON', label: t('intern.reportStatus.draft'), color: '#a5b4cf' },
+    { key: 'SOUMIS', label: t('intern.reportStatus.submitted'), color: '#0ea5e9' },
+    { key: 'EN_COURS_DE_REVUE', label: t('intern.reports.kanbanReview'), color: '#f59e0b' },
+    { key: 'VALIDE', label: t('intern.reports.kanbanValidated'), color: '#22c55e' },
+    { key: 'REJETE', label: t('intern.reports.kanbanRejected'), color: '#ef4444' },
   ]
   return (
     <>
@@ -90,7 +92,7 @@ export default function ReportsTab({
             <line x1="3" y1="12" x2="3.01" y2="12" />
             <line x1="3" y1="18" x2="3.01" y2="18" />
           </svg>
-          Liste
+          {t('intern.reports.viewList')}
         </button>
         <button
           onClick={() => setReportView('kanban')}
@@ -119,12 +121,12 @@ export default function ReportsTab({
             <rect x="10" y="3" width="5" height="12" rx="1" />
             <rect x="17" y="3" width="5" height="15" rx="1" />
           </svg>
-          Kanban
+          {t('intern.reports.viewKanban')}
         </button>
       </div>
 
       {reports.length === 0 && (
-        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun rapport d'activite</p>
+        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>{t('intern.reports.empty')}</p>
       )}
 
       {/* ── VUE LISTE (par personne) ── */}
@@ -164,7 +166,7 @@ export default function ReportsTab({
                       <div>
                         <div style={{ color: '#fff', fontWeight: 600 }}>{name}</div>
                         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-                          {total} rapport{total > 1 ? 's' : ''} — {validated} valide{validated > 1 ? 's' : ''}
+                          {t('intern.reports.personSummary', { total, validated })}
                         </div>
                       </div>
                     </div>
@@ -196,7 +198,7 @@ export default function ReportsTab({
                               <span style={{ color: '#fff', fontWeight: 600 }}>{formatDate(report.date)}</span>
                               {report.taches.length > 0 && (
                                 <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                                  {report.taches.length} tache(s)
+                                  {t('intern.reports.taskCount', { count: report.taches.length })}
                                 </span>
                               )}
                             </div>
@@ -216,7 +218,7 @@ export default function ReportsTab({
                                   color: sCfg.color,
                                 }}
                               >
-                                {sCfg.label}
+                                {t(sCfg.labelKey)}
                               </span>
                               <span
                                 style={{
@@ -332,7 +334,7 @@ export default function ReportsTab({
                 <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 120 }}>
                   {colReports.length === 0 && (
                     <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-                      Aucun rapport
+                      {t('intern.reports.columnEmpty')}
                     </p>
                   )}
                   {colReports.map((report) => {
@@ -386,7 +388,7 @@ export default function ReportsTab({
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              {report.userId?.name || 'Inconnu'}
+                              {report.userId?.name || t('intern.reports.unknown')}
                             </span>
                           </div>
                           <p
@@ -415,7 +417,7 @@ export default function ReportsTab({
                               )}
                               {report.taches.length > 0 && (
                                 <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>
-                                  {report.taches.length} tache(s)
+                                  {t('intern.reports.taskCount', { count: report.taches.length })}
                                 </span>
                               )}
                             </div>

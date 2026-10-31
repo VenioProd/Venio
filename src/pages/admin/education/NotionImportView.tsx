@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download, AlertTriangle, CheckCircle2, FileText, Database, RefreshCw, Play, Eye } from 'lucide-react'
 import { ApiError } from '../../../lib/api'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatShortDate } from './eduFormat'
 import {
   listNotionImportLogs,
   previewNotionImport,
   runNotionImport,
-  formatDate,
   type EducationClass,
   type NotionImportLog,
   type NotionImportPayload,
@@ -25,15 +27,15 @@ function emptyStats(): NotionImportStats {
 function statusLabel(status: NotionImportLog['status']): string {
   switch (status) {
     case 'success':
-      return 'Succès'
+      return translate('common.success')
     case 'partial':
-      return 'Partiel'
+      return translate('eduA.notion.status.partial')
     case 'error':
-      return 'Erreur'
+      return translate('common.error')
     case 'running':
-      return 'En cours'
+      return translate('eduA.notion.status.running')
     case 'pending':
-      return 'En attente'
+      return translate('eduA.notion.status.pending')
     default:
       return status
   }
@@ -61,6 +63,7 @@ function classLabel(log: NotionImportLog, classes: EducationClass[]): string {
 }
 
 export function NotionImportView({ classes, onImported }: Props) {
+  const { t } = useI18n()
   const [pageInput, setPageInput] = useState('')
   const [dbInput, setDbInput] = useState('')
   const [query, setQuery] = useState('')
@@ -88,7 +91,7 @@ export function NotionImportView({ classes, onImported }: Props) {
       const r = await listNotionImportLogs({ limit: 10 })
       setLogs(r.logs)
     } catch (err) {
-      setLogsError(err instanceof Error ? err.message : 'Impossible de charger les imports passés.')
+      setLogsError(err instanceof Error ? err.message : translate('eduA.notion.logsError'))
     } finally {
       setLogsLoading(false)
     }
@@ -117,7 +120,7 @@ export function NotionImportView({ classes, onImported }: Props) {
       setError(err.message)
       return
     }
-    setError(err instanceof Error ? err.message : 'Erreur inconnue')
+    setError(err instanceof Error ? err.message : translate('eduA.notion.unknownError'))
   }
 
   async function onPreview() {
@@ -161,20 +164,17 @@ export function NotionImportView({ classes, onImported }: Props) {
         <div>
           <h1 className="edu-h1">
             <Download size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />
-            Import Notion
+            {t('eduA.notion.title')}
           </h1>
-          <p className="edu-sub">
-            Importez une page Notion comme note, ou les étudiants d'une base Notion dans une classe. Lors d'un nouvel
-            import, les éléments existants sont mis à jour sans créer de doublons.
-          </p>
+          <p className="edu-sub">{t('eduA.notion.subtitle')}</p>
         </div>
         <button
           className="edu-btn ghost"
           onClick={refreshLogs}
           disabled={logsLoading}
-          title="Rafraîchir les imports passés"
+          title={t('eduA.notion.refreshTitle')}
         >
-          <RefreshCw size={14} className={logsLoading ? 'edu-spin' : ''} /> Rafraîchir
+          <RefreshCw size={14} className={logsLoading ? 'edu-spin' : ''} /> {t('eduA.notion.refresh')}
         </button>
       </div>
 
@@ -182,11 +182,8 @@ export function NotionImportView({ classes, onImported }: Props) {
         <div className="edu-notion-banner warn" role="alert">
           <AlertTriangle size={18} />
           <div>
-            <div style={{ fontWeight: 600 }}>Notion non configuré côté serveur.</div>
-            <div style={{ opacity: 0.8, fontSize: 13 }}>
-              Connectez une intégration Notion au workspace (intégration interne Notion partagée avec la page ou la base
-              à importer).
-            </div>
+            <div style={{ fontWeight: 600 }}>{t('eduA.notion.notConfigured')}</div>
+            <div style={{ opacity: 0.8, fontSize: 13 }}>{t('eduA.notion.notConfiguredHelp')}</div>
           </div>
         </div>
       )}
@@ -195,49 +192,47 @@ export function NotionImportView({ classes, onImported }: Props) {
         <div className="edu-form-group">
           <label>
             <FileText size={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />
-            Page Notion (URL ou ID)
+            {t('eduA.notion.pageLabel')}
           </label>
           <input
             className="edu-input"
             value={pageInput}
             onChange={(e) => setPageInput(e.target.value)}
-            placeholder="https://www.notion.so/Ma-page-... ou un ID 32 caractères"
+            placeholder={t('eduA.notion.pagePlaceholder')}
             disabled={wantsDatabase}
           />
-          <div className="edu-notion-hint">Importe la page comme note (titre + blocs convertis en Markdown).</div>
+          <div className="edu-notion-hint">{t('eduA.notion.pageHint')}</div>
         </div>
 
         <div className="edu-notion-sep">
-          <span>ou</span>
+          <span>{t('eduA.notion.or')}</span>
         </div>
 
         <div className="edu-form-group">
           <label>
             <Database size={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />
-            Base Notion (URL ou ID)
+            {t('eduA.notion.dbLabel')}
           </label>
           <input
             className="edu-input"
             value={dbInput}
             onChange={(e) => setDbInput(e.target.value)}
-            placeholder="URL de base de données Notion ou ID 32 caractères"
+            placeholder={t('eduA.notion.dbPlaceholder')}
             disabled={wantsPage}
           />
-          <div className="edu-notion-hint">
-            Importe les lignes comme étudiants d'une classe. Champs reconnus : Nom, Prénom, Email, Téléphone.
-          </div>
+          <div className="edu-notion-hint">{t('eduA.notion.dbHint')}</div>
         </div>
 
         <div className="edu-grid-2">
           <div className="edu-form-group">
-            <label>Classe cible (étudiants)</label>
+            <label>{t('eduA.notion.targetClass')}</label>
             <select
               className="edu-select"
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
               disabled={!wantsDatabase}
             >
-              <option value="">— Sélectionner une classe —</option>
+              <option value="">{t('eduA.notion.selectClass')}</option>
               {classes.map((c) => (
                 <option key={c._id} value={c._id}>
                   {c.name}
@@ -247,32 +242,30 @@ export function NotionImportView({ classes, onImported }: Props) {
             </select>
           </div>
           <div className="edu-form-group">
-            <label>Filtre nom (optionnel)</label>
+            <label>{t('eduA.notion.nameFilter')}</label>
             <input
               className="edu-input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ne garde que les lignes contenant…"
+              placeholder={t('eduA.notion.nameFilterPlaceholder')}
               disabled={!wantsDatabase}
             />
           </div>
         </div>
 
-        {wantsPage && wantsDatabase && (
-          <div className="edu-notion-hint warn">Choisis soit une page, soit une base de données — pas les deux.</div>
-        )}
+        {wantsPage && wantsDatabase && <div className="edu-notion-hint warn">{t('eduA.notion.eitherOr')}</div>}
 
         <div className="edu-row" style={{ gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           <button
             className="edu-btn ghost"
             onClick={onPreview}
             disabled={!canSubmit || previewing || importing}
-            title="Prévisualiser les éléments sans les importer"
+            title={t('eduA.notion.previewTitle')}
           >
-            <Eye size={14} /> {previewing ? 'Aperçu en cours…' : 'Aperçu'}
+            <Eye size={14} /> {previewing ? t('eduA.notion.previewing') : t('eduA.notion.preview')}
           </button>
           <button className="edu-btn" onClick={onImport} disabled={!canSubmit || previewing || importing}>
-            <Play size={14} /> {importing ? 'Import en cours…' : "Lancer l'import"}
+            <Play size={14} /> {importing ? t('eduA.notion.importing') : t('eduA.notion.runImport')}
           </button>
         </div>
       </div>
@@ -286,7 +279,7 @@ export function NotionImportView({ classes, onImported }: Props) {
 
       {preview && (
         <ResultCard
-          title="Résultat de l'aperçu (aucune écriture)"
+          title={t('eduA.notion.previewResult')}
           stats={preview.stats}
           messages={preview.messages}
           errors={preview.errors}
@@ -297,7 +290,7 @@ export function NotionImportView({ classes, onImported }: Props) {
 
       {lastImport && (
         <ResultCard
-          title={`Import terminé — ${statusLabel(lastImport.status)}`}
+          title={t('eduA.notion.importDone', { status: statusLabel(lastImport.status) })}
           stats={lastImport.stats}
           messages={lastImport.messages}
           errors={lastImport.errors}
@@ -307,20 +300,20 @@ export function NotionImportView({ classes, onImported }: Props) {
       )}
 
       <div>
-        <h2 className="edu-h2">Derniers imports</h2>
+        <h2 className="edu-h2">{t('eduA.notion.recent')}</h2>
         {logsError && (
           <div className="edu-notion-banner error" role="alert">
             <AlertTriangle size={18} />
             <div style={{ flex: 1 }}>{logsError}</div>
             <button className="edu-btn ghost" onClick={refreshLogs}>
-              Réessayer
+              {t('eduA.common.retry')}
             </button>
           </div>
         )}
         {!logsError && logs.length === 0 && !logsLoading && (
           <div className="edu-empty edu-empty-compact">
             <div className="edu-empty-icon">📥</div>
-            <div>Aucun import Notion enregistré pour l'instant.</div>
+            <div>{t('eduA.notion.noImports')}</div>
           </div>
         )}
         {logs.length > 0 && (
@@ -352,6 +345,7 @@ function ResultCard({
   source: 'page' | 'database'
   variant: 'preview' | 'success' | 'partial' | 'error'
 }) {
+  const { t } = useI18n()
   const total = stats.created + stats.updated + stats.skipped + stats.errors
   return (
     <div className={`edu-notion-result is-${variant}`}>
@@ -362,35 +356,39 @@ function ResultCard({
         <strong>{title}</strong>
         <span className="edu-notion-result-source">
           {source === 'page' ? <FileText size={12} /> : <Database size={12} />}
-          {source === 'page' ? 'Page' : 'Base de données'}
+          {source === 'page' ? t('eduA.notion.sourcePage') : t('eduA.notion.sourceDatabase')}
         </span>
       </div>
       <div className="edu-notion-stats">
-        <Stat label="Créés" value={stats.created} color="#22C55E" />
-        <Stat label="Mis à jour" value={stats.updated} color="#0EA5E9" />
-        <Stat label="Ignorés" value={stats.skipped} color="#94A3B8" />
-        <Stat label="Erreurs" value={stats.errors} color="#EF4444" />
-        <Stat label="Total" value={total} color="#F59E0B" />
+        <Stat label={t('eduA.notion.stat.created')} value={stats.created} color="#22C55E" />
+        <Stat label={t('eduA.notion.stat.updated')} value={stats.updated} color="#0EA5E9" />
+        <Stat label={t('eduA.notion.stat.skipped')} value={stats.skipped} color="#94A3B8" />
+        <Stat label={t('eduA.notion.stat.errors')} value={stats.errors} color="#EF4444" />
+        <Stat label={t('eduA.notion.stat.total')} value={total} color="#F59E0B" />
       </div>
       {messages.length > 0 && (
         <div className="edu-notion-list">
-          <div className="edu-notion-list-title">Messages</div>
+          <div className="edu-notion-list-title">{t('eduA.notion.messages')}</div>
           <ul>
             {messages.slice(0, 50).map((m, i) => (
               <li key={i}>{m}</li>
             ))}
-            {messages.length > 50 && <li className="edu-notion-list-more">… +{messages.length - 50} de plus</li>}
+            {messages.length > 50 && (
+              <li className="edu-notion-list-more">{t('eduA.notion.more', { count: messages.length - 50 })}</li>
+            )}
           </ul>
         </div>
       )}
       {errors.length > 0 && (
         <div className="edu-notion-list errors">
-          <div className="edu-notion-list-title">Erreurs</div>
+          <div className="edu-notion-list-title">{t('eduA.notion.stat.errors')}</div>
           <ul>
             {errors.slice(0, 50).map((m, i) => (
               <li key={i}>{m}</li>
             ))}
-            {errors.length > 50 && <li className="edu-notion-list-more">… +{errors.length - 50} de plus</li>}
+            {errors.length > 50 && (
+              <li className="edu-notion-list-more">{t('eduA.notion.more', { count: errors.length - 50 })}</li>
+            )}
           </ul>
         </div>
       )}
@@ -410,6 +408,7 @@ function Stat({ label, value, color }: { label: string; value: number; color: st
 }
 
 function LogRow({ log, classes }: { log: NotionImportLog; classes: EducationClass[] }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const color = statusColor(log.status)
   return (
@@ -421,24 +420,25 @@ function LogRow({ log, classes }: { log: NotionImportLog; classes: EducationClas
           </span>
           <span className="edu-notion-log-source">
             {log.sourceType === 'page' ? <FileText size={12} /> : <Database size={12} />}
-            {log.sourceType === 'page' ? 'Page' : 'Base'}
+            {log.sourceType === 'page' ? t('eduA.notion.sourcePage') : t('eduA.notion.sourceBase')}
           </span>
-          <span className="edu-notion-log-date">{formatDate(log.createdAt, true)}</span>
+          <span className="edu-notion-log-date">{formatShortDate(log.createdAt, true)}</span>
           {log.classId && <span className="edu-pill">{classLabel(log, classes)}</span>}
         </div>
         <div className="edu-notion-log-stats">
-          <span title="Créés">
-            <strong style={{ color: '#22C55E' }}>{log.stats.created}</strong> créés
+          <span title={t('eduA.notion.stat.created')}>
+            <strong style={{ color: '#22C55E' }}>{log.stats.created}</strong> {t('eduA.notion.log.created')}
           </span>
-          <span title="Mis à jour">
-            <strong style={{ color: '#0EA5E9' }}>{log.stats.updated}</strong> maj
+          <span title={t('eduA.notion.stat.updated')}>
+            <strong style={{ color: '#0EA5E9' }}>{log.stats.updated}</strong> {t('eduA.notion.log.updated')}
           </span>
-          <span title="Ignorés">
-            <strong style={{ color: 'var(--text-secondary)' }}>{log.stats.skipped}</strong> ignorés
+          <span title={t('eduA.notion.stat.skipped')}>
+            <strong style={{ color: 'var(--text-secondary)' }}>{log.stats.skipped}</strong>{' '}
+            {t('eduA.notion.log.skipped')}
           </span>
           {log.stats.errors > 0 && (
-            <span title="Erreurs">
-              <strong style={{ color: '#EF4444' }}>{log.stats.errors}</strong> err.
+            <span title={t('eduA.notion.stat.errors')}>
+              <strong style={{ color: '#EF4444' }}>{log.stats.errors}</strong> {t('eduA.notion.log.errors')}
             </span>
           )}
         </div>
@@ -447,14 +447,12 @@ function LogRow({ log, classes }: { log: NotionImportLog; classes: EducationClas
         <div className="edu-notion-log-body">
           {log.sourceUrl && (
             <div className="edu-notion-log-meta">
-              Source : <code>{log.sourceUrl}</code>
+              {t('eduA.notion.source')} <code>{log.sourceUrl}</code>
             </div>
           )}
           {log.messages.length > 0 && (
             <details open>
-              <summary>
-                {log.messages.length} message{log.messages.length > 1 ? 's' : ''}
-              </summary>
+              <summary>{t('eduA.notion.messageCount', { count: log.messages.length })}</summary>
               <ul>
                 {log.messages.slice(0, 50).map((m, i) => (
                   <li key={i}>{m}</li>
@@ -466,7 +464,7 @@ function LogRow({ log, classes }: { log: NotionImportLog; classes: EducationClas
           {log.errors.length > 0 && (
             <details open>
               <summary style={{ color: '#FCA5A5' }}>
-                {log.errors.length} erreur{log.errors.length > 1 ? 's' : ''}
+                {t('eduA.notion.errorCount', { count: log.errors.length })}
               </summary>
               <ul>
                 {log.errors.slice(0, 50).map((m, i) => (
