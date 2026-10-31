@@ -1,3 +1,5 @@
+import { useI18n } from '../../context/I18nContext'
+
 interface Props {
   onSnooze: (until: Date) => void
   onClose: () => void
@@ -27,19 +29,37 @@ function tomorrow9am(): Date {
 }
 
 const SnoozePopover = ({ onSnooze, onClose }: Props) => {
-  const handle = (until: Date) => { onSnooze(until); onClose() }
+  const { t } = useI18n()
+  const handle = (until: Date) => {
+    onSnooze(until)
+    onClose()
+  }
 
   return (
     <div className="ix-snooze" role="menu">
-      <span className="ix-snooze__label">Snooze :</span>
-      <button type="button" className="ix-snooze__opt" onClick={() => handle(new Date(Date.now() + 3600 * 1000))}>1h</button>
-      <button type="button" className="ix-snooze__opt" onClick={() => handle(thisEvening())}>Ce soir 18h</button>
-      <button type="button" className="ix-snooze__opt" onClick={() => handle(tomorrow9am())}>Demain 9h</button>
-      <button type="button" className="ix-snooze__opt" onClick={() => handle(nextMonday9am())}>Lundi</button>
-      <button type="button" className="ix-snooze__opt" onClick={() => {
-        const v = window.prompt('Snooze jusqu\'à (YYYY-MM-DD HH:MM) :')
-        if (v) handle(new Date(v))
-      }}>Custom…</button>
+      <span className="ix-snooze__label">{t('shared.dash.snoozeLabel')}</span>
+      <button type="button" className="ix-snooze__opt" onClick={() => handle(new Date(Date.now() + 3600 * 1000))}>
+        1h
+      </button>
+      <button type="button" className="ix-snooze__opt" onClick={() => handle(thisEvening())}>
+        {t('shared.dash.snoozeTonight')}
+      </button>
+      <button type="button" className="ix-snooze__opt" onClick={() => handle(tomorrow9am())}>
+        {t('shared.dash.snoozeTomorrow')}
+      </button>
+      <button type="button" className="ix-snooze__opt" onClick={() => handle(nextMonday9am())}>
+        {t('shared.dash.snoozeMonday')}
+      </button>
+      <button
+        type="button"
+        className="ix-snooze__opt"
+        onClick={() => {
+          const v = window.prompt(t('shared.dash.snoozeCustomPrompt'))
+          if (v) handle(new Date(v))
+        }}
+      >
+        {t('shared.dash.snoozeCustom')}
+      </button>
     </div>
   )
 }

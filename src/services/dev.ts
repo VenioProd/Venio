@@ -1,15 +1,10 @@
 import { apiFetch } from '../lib/api'
+import { localizedLabels } from '../lib/localizedLabels'
+import { translate } from '../i18n'
 
 export type DevProjectStatus = 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
 export type DevIssueStatus =
-  | 'BACKLOG'
-  | 'TODO'
-  | 'IN_PROGRESS'
-  | 'IN_REVIEW'
-  | 'BLOCKED'
-  | 'DONE'
-  | 'DUPLICATE'
-  | 'CANCELLED'
+  'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'BLOCKED' | 'DONE' | 'DUPLICATE' | 'CANCELLED'
 export type DevIssuePriority = 'NO_PRIORITY' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 export type DevIssueType = 'FEATURE' | 'BUG' | 'CHORE' | 'TASK' | 'REFACTOR' | 'SECURITY' | 'CI' | 'DEPLOY' | 'DOC'
 
@@ -46,13 +41,7 @@ export interface DevProject {
 
 export type DevCiStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILURE' | 'UNKNOWN'
 export type DevAiModel =
-  | 'CLAUDE_SONNET'
-  | 'CLAUDE_OPUS'
-  | 'CLAUDE_FABLE'
-  | 'GPT_5_6_LUNA'
-  | 'GPT_5_6_TERRA'
-  | 'GPT_5_6_SOL'
-  | 'GPT_6_ASTRA'
+  'CLAUDE_SONNET' | 'CLAUDE_OPUS' | 'CLAUDE_FABLE' | 'GPT_5_6_LUNA' | 'GPT_5_6_TERRA' | 'GPT_5_6_SOL' | 'GPT_6_ASTRA'
 export type DevReasoningEffort = 'LOW' | 'MEDIUM' | 'HIGH' | 'MAX'
 export type DevIssueCommentKind = 'NOTE' | 'CONTEXT' | 'PROGRESS' | 'DECISION' | 'EVIDENCE' | 'BLOCKER' | 'HANDOFF'
 
@@ -66,22 +55,22 @@ export const DEV_AI_MODEL_LABEL: Record<DevAiModel, string> = {
   GPT_6_ASTRA: 'ChatGPT 6 Astra',
 }
 
-export const DEV_REASONING_EFFORT_LABEL: Record<DevReasoningEffort, string> = {
-  LOW: 'Bas',
-  MEDIUM: 'Moyen',
-  HIGH: 'Élevé',
-  MAX: 'Maximum',
-}
+export const DEV_REASONING_EFFORT_LABEL: Record<DevReasoningEffort, string> = localizedLabels({
+  LOW: 'shared.dev.effortLow',
+  MEDIUM: 'shared.dev.effortMedium',
+  HIGH: 'shared.dev.effortHigh',
+  MAX: 'shared.dev.effortMax',
+})
 
-export const DEV_ISSUE_COMMENT_KIND_LABEL: Record<DevIssueCommentKind, string> = {
-  NOTE: 'Note',
-  CONTEXT: 'Contexte',
-  PROGRESS: 'Progression',
-  DECISION: 'Décision',
-  EVIDENCE: 'Preuve',
-  BLOCKER: 'Blocage',
-  HANDOFF: 'Handoff',
-}
+export const DEV_ISSUE_COMMENT_KIND_LABEL: Record<DevIssueCommentKind, string> = localizedLabels({
+  NOTE: 'shared.dev.commentNote',
+  CONTEXT: 'shared.dev.commentContext',
+  PROGRESS: 'shared.dev.commentProgress',
+  DECISION: 'shared.dev.commentDecision',
+  EVIDENCE: 'shared.dev.commentEvidence',
+  BLOCKER: 'shared.dev.commentBlocker',
+  HANDOFF: 'shared.dev.commentHandoff',
+})
 
 export interface DevIssueGithubLink {
   repo: string | null
@@ -366,11 +355,10 @@ export async function listDevIssues(
     for (const issue of data.issues) issues.set(issue._id, issue)
     total = data.total ?? issues.size
     if (data.nextPage == null) break
-    if (data.nextPage <= page) throw new Error('Pagination des tickets incohérente')
+    if (data.nextPage <= page) throw new Error(translate('shared.dev.paginationInconsistent'))
     page = data.nextPage
   }
-  if (issues.size !== total)
-    throw new Error('La liste des tickets a changé pendant le chargement. Réessayez pour obtenir la liste complète.')
+  if (issues.size !== total) throw new Error(translate('shared.dev.listChanged'))
   return { issues: [...issues.values()], total }
 }
 
@@ -854,13 +842,7 @@ export function fetchDevProjectLargeFiles(
 export type DevRecommendationSection = 'improve' | 'add' | 'optimize' | 'large_files'
 export type DevRecommendationPriority = 'critical' | 'high' | 'medium' | 'low'
 export type DevRecommendationSource =
-  | 'issues'
-  | 'pull_requests'
-  | 'code_metrics'
-  | 'backlog'
-  | 'roadmap'
-  | 'labels'
-  | 'ci'
+  'issues' | 'pull_requests' | 'code_metrics' | 'backlog' | 'roadmap' | 'labels' | 'ci'
 export type DevRecommendationStatus = 'ok' | 'partial' | 'empty' | 'error'
 export type DevRecommendationActionKind = 'open_issue' | 'open_pr' | 'open_file' | 'open_url'
 
@@ -948,16 +930,16 @@ export function fetchDevRoadmap(
 }
 
 // UI helpers
-export const STATUS_LABEL: Record<DevIssueStatus, string> = {
-  BACKLOG: 'Backlog',
-  TODO: 'À faire',
-  IN_PROGRESS: 'En cours',
-  IN_REVIEW: 'En revue',
-  BLOCKED: 'Bloqué',
-  DONE: 'Terminé',
-  DUPLICATE: 'Doublon',
-  CANCELLED: 'Annulé',
-}
+export const STATUS_LABEL: Record<DevIssueStatus, string> = localizedLabels({
+  BACKLOG: 'shared.dev.statusBacklog',
+  TODO: 'shared.dev.statusTodo',
+  IN_PROGRESS: 'shared.dev.statusInProgress',
+  IN_REVIEW: 'shared.dev.statusInReview',
+  BLOCKED: 'shared.dev.statusBlocked',
+  DONE: 'shared.dev.statusDone',
+  DUPLICATE: 'shared.dev.statusDuplicate',
+  CANCELLED: 'shared.dev.statusCancelled',
+})
 
 export const STATUS_COLOR: Record<DevIssueStatus, string> = {
   BACKLOG: '#94a3b8',
@@ -981,13 +963,13 @@ export const STATUS_ORDER: DevIssueStatus[] = [
   'CANCELLED',
 ]
 
-export const PRIORITY_LABEL: Record<DevIssuePriority, string> = {
-  NO_PRIORITY: 'Aucune',
-  LOW: 'Basse',
-  MEDIUM: 'Moyenne',
-  HIGH: 'Haute',
-  URGENT: 'Urgent',
-}
+export const PRIORITY_LABEL: Record<DevIssuePriority, string> = localizedLabels({
+  NO_PRIORITY: 'shared.dev.priorityNone',
+  LOW: 'shared.dev.priorityLow',
+  MEDIUM: 'shared.dev.priorityMedium',
+  HIGH: 'shared.dev.priorityHigh',
+  URGENT: 'shared.dev.priorityUrgent',
+})
 
 export const PRIORITY_COLOR: Record<DevIssuePriority, string> = {
   NO_PRIORITY: '#64748b',
@@ -999,17 +981,17 @@ export const PRIORITY_COLOR: Record<DevIssuePriority, string> = {
 
 export const PRIORITY_ORDER: DevIssuePriority[] = ['URGENT', 'HIGH', 'MEDIUM', 'LOW', 'NO_PRIORITY']
 
-export const TYPE_LABEL: Record<DevIssueType, string> = {
-  FEATURE: 'Feature',
-  BUG: 'Bug',
-  CHORE: 'Chore',
-  TASK: 'Task',
-  REFACTOR: 'Refactor',
-  SECURITY: 'Sécurité',
-  CI: 'CI',
-  DEPLOY: 'Déploiement',
-  DOC: 'Doc',
-}
+export const TYPE_LABEL: Record<DevIssueType, string> = localizedLabels({
+  FEATURE: 'shared.dev.typeFeature',
+  BUG: 'shared.dev.typeBug',
+  CHORE: 'shared.dev.typeChore',
+  TASK: 'shared.dev.typeTask',
+  REFACTOR: 'shared.dev.typeRefactor',
+  SECURITY: 'shared.dev.typeSecurity',
+  CI: 'shared.dev.typeCi',
+  DEPLOY: 'shared.dev.typeDeploy',
+  DOC: 'shared.dev.typeDoc',
+})
 
 export const TYPE_COLOR: Record<DevIssueType, string> = {
   FEATURE: '#7dd3fc',

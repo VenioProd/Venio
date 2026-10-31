@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useI18n } from '../context/I18nContext'
 
 interface DocPreviewModalProps {
   url: string
@@ -16,6 +17,7 @@ function getFileKind(name: string): 'image' | 'pdf' | 'video' | 'other' {
 }
 
 export default function DocPreviewModal({ url, name, onClose }: DocPreviewModalProps) {
+  const { t } = useI18n()
   const kind = getFileKind(name)
 
   // Bloquer le scroll du body pendant que la modale est ouverte
@@ -104,7 +106,7 @@ export default function DocPreviewModal({ url, name, onClose }: DocPreviewModalP
                 textDecoration: 'none',
               }}
             >
-              Télécharger
+              {t('shared.docPreview.download')}
             </a>
             <button
               onClick={onClose}
@@ -118,7 +120,7 @@ export default function DocPreviewModal({ url, name, onClose }: DocPreviewModalP
                 cursor: 'pointer',
               }}
             >
-              Fermer ✕
+              {t('shared.docPreview.close')}
             </button>
           </div>
         </div>
@@ -158,7 +160,7 @@ export default function DocPreviewModal({ url, name, onClose }: DocPreviewModalP
                 <polyline points="14 2 14 8 20 8" />
               </svg>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginBottom: 16 }}>
-                Ce format ne peut pas être prévisualisé
+                {t('shared.docPreview.unsupported')}
               </p>
               <a
                 href={url}
@@ -173,7 +175,7 @@ export default function DocPreviewModal({ url, name, onClose }: DocPreviewModalP
                   textDecoration: 'none',
                 }}
               >
-                Télécharger le fichier
+                {t('shared.docPreview.downloadFile')}
               </a>
             </div>
           )}

@@ -1,4 +1,5 @@
 import { apiFetch } from '../lib/api'
+import { translate } from '../i18n'
 
 /**
  * Convertit la clé VAPID base64url en Uint8Array (format attendu par PushManager).
@@ -66,27 +67,27 @@ async function fetchVapidPublicKey(): Promise<string | null> {
  */
 export async function subscribePush(): Promise<{ ok: boolean; reason?: string }> {
   if (!isPushSupported()) {
-    return { ok: false, reason: 'Push non supporté par ce navigateur' }
+    return { ok: false, reason: translate('shared.push.unsupported') }
   }
 
   if (Notification.permission === 'denied') {
-    return { ok: false, reason: 'Permission refusée par l’utilisateur' }
+    return { ok: false, reason: translate('shared.push.denied') }
   }
 
   const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
 
   if (permission !== 'granted') {
-    return { ok: false, reason: 'Permission non accordée' }
+    return { ok: false, reason: translate('shared.push.notGranted') }
   }
 
   const registration = await getRegistration()
   if (!registration) {
-    return { ok: false, reason: 'Service worker indisponible' }
+    return { ok: false, reason: translate('shared.push.noServiceWorker') }
   }
 
   const publicKey = await fetchVapidPublicKey()
   if (!publicKey) {
-    return { ok: false, reason: 'Push non configuré côté serveur' }
+    return { ok: false, reason: translate('shared.push.notConfigured') }
   }
 
   // Une rotation VAPID invalide les anciens abonnements côté push provider.
@@ -108,7 +109,7 @@ export async function subscribePush(): Promise<{ ok: boolean; reason?: string }>
 
   const json = subscription.toJSON() as { endpoint: string; keys?: { p256dh: string; auth: string } }
   if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
-    return { ok: false, reason: 'Subscription malformée' }
+    return { ok: false, reason: translate('shared.push.malformed') }
   }
 
   await apiFetch('/api/push/subscriptions', {

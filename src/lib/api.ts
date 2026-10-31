@@ -1,4 +1,5 @@
 import type { ApiFetchOptions } from '../types/api.types'
+import { translate } from '../i18n'
 
 // ─── ApiError ───────────────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
   const data = await readResponsePayload(response)
 
   if (!response.ok) {
-    throwApiError(response, data, 'Erreur serveur', path)
+    throwApiError(response, data, translate('shared.api.serverError'), path)
   }
 
   return data as T
@@ -115,7 +116,7 @@ export async function apiUpload<T = unknown>(
   })
   const data = await readResponsePayload(response)
   if (!response.ok) {
-    throwApiError(response, data, 'Erreur upload', path)
+    throwApiError(response, data, translate('shared.api.uploadError'), path)
   }
   return data as T
 }
@@ -204,7 +205,7 @@ export async function apiDownload(path: string, options: ApiDownloadOptions = {}
   })
 
   if (!response.ok) {
-    throwApiError(response, await readResponsePayload(response), 'Erreur téléchargement', path)
+    throwApiError(response, await readResponsePayload(response), translate('shared.api.downloadError'), path)
   }
 
   const blob = await response.blob()

@@ -9,17 +9,7 @@ export interface SubsidiaryPerson {
 }
 
 export type SubsidiaryLinkType =
-  | 'repo'
-  | 'production'
-  | 'staging'
-  | 'analytics'
-  | 'hosting'
-  | 'dns'
-  | 'ci'
-  | 'design'
-  | 'docs'
-  | 'drive'
-  | 'other'
+  'repo' | 'production' | 'staging' | 'analytics' | 'hosting' | 'dns' | 'ci' | 'design' | 'docs' | 'drive' | 'other'
 
 export interface SubsidiaryLink {
   type: SubsidiaryLinkType
@@ -140,41 +130,6 @@ export interface Subsidiary {
   linkedProjects?: LinkedProject[]
   createdAt: string
   updatedAt: string
-}
-
-export const LINK_TYPE_LABELS: Record<SubsidiaryLinkType, string> = {
-  repo: 'Repo GitHub',
-  production: 'Production',
-  staging: 'Staging',
-  analytics: 'Analytics',
-  hosting: 'Hébergement',
-  dns: 'DNS / domaine',
-  ci: 'CI / CD',
-  design: 'Design',
-  docs: 'Documentation',
-  drive: 'Drive / fichiers',
-  other: 'Autre lien',
-}
-
-export const CREDENTIAL_CATEGORY_LABELS: Record<SubsidiaryCredentialCategory, string> = {
-  admin: 'Admin',
-  service: 'Compte de service',
-  api: 'Clé API',
-  db: 'Base de données',
-  other: 'Autre',
-}
-
-export const STATUS_LABELS: Record<SubsidiaryStatus, string> = {
-  ACTIVE: 'Active',
-  INCUBATION: 'Incubation',
-  PAUSE: 'En pause',
-  ARCHIVED: 'Archivée',
-}
-
-export const HEALTH_LABELS: Record<SubsidiaryHealth, string> = {
-  GOOD: 'Bonne santé',
-  WATCH: 'À surveiller',
-  RISK: 'À risque',
 }
 
 export const HEALTH_COLORS: Record<SubsidiaryHealth, string> = {
