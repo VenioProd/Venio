@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import CustomSelect from '../../../../components/admin/CustomSelect'
+import { useI18n } from '../../../../context/I18nContext'
 import type { AdminUser, Lead, WorklistThresholds } from '../../../../types/crm.types'
 import { CRM_STATUSES, getLeadAlerts } from '../constants'
 import PostponeMenu from './PostponeMenu'
@@ -33,6 +34,7 @@ const WorklistRow: React.FC<WorklistRowProps> = ({
   onAddNote,
   onOpenDetail,
 }) => {
+  const { t } = useI18n()
   const [panel, setPanel] = useState<'contact' | 'note' | null>(null)
   const [note, setNote] = useState('')
   const alerts = getLeadAlerts(lead, thresholds)
@@ -45,7 +47,7 @@ const WorklistRow: React.FC<WorklistRowProps> = ({
             {lead.company}
           </button>
           <span className="crm-worklist-meta">
-            {lead.contactName || 'Contact non renseigné'}
+            {lead.contactName || t('crm.card.contactMissing')}
             {assignee ? ` · ${assignee.name}` : ''}
           </span>
         </div>
@@ -75,7 +77,7 @@ const WorklistRow: React.FC<WorklistRowProps> = ({
               disabled={busy}
               onClick={() => setPanel((current) => (current === 'contact' ? null : 'contact'))}
             >
-              Contacté
+              {t('crm.worklist.contacted')}
             </button>
             <button
               type="button"
@@ -83,13 +85,13 @@ const WorklistRow: React.FC<WorklistRowProps> = ({
               disabled={busy}
               onClick={() => setPanel((current) => (current === 'note' ? null : 'note'))}
             >
-              Note
+              {t('crm.worklist.note')}
             </button>
             <CustomSelect
               className="crm-worklist-status"
               value={lead.status}
               onChange={(value) => onPatch(lead._id, { status: value })}
-              options={CRM_STATUSES.map((status) => ({ value: status.key, label: status.label }))}
+              options={CRM_STATUSES.map((status) => ({ value: status.key, label: t(status.labelKey) }))}
             />
           </div>
         )}
@@ -120,13 +122,13 @@ const WorklistRow: React.FC<WorklistRowProps> = ({
         >
           <div className="crm-worklist-panel-fields">
             <label className="crm-worklist-panel-note">
-              <span>Note</span>
+              <span>{t('crm.worklist.note')}</span>
               <input
                 type="text"
                 className="portal-input"
                 autoFocus
                 maxLength={2000}
-                placeholder="Ce qui s'est dit…"
+                placeholder={t('crm.logContact.notePlaceholder')}
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
               />
@@ -134,10 +136,10 @@ const WorklistRow: React.FC<WorklistRowProps> = ({
           </div>
           <div className="crm-worklist-panel-actions">
             <button type="button" className="portal-button secondary" onClick={() => setPanel(null)} disabled={busy}>
-              Annuler
+              {t('common.cancel')}
             </button>
             <button type="submit" className="portal-button" disabled={busy || !note.trim()}>
-              Ajouter
+              {t('common.add')}
             </button>
           </div>
         </form>

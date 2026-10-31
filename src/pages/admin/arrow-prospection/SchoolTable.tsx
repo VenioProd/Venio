@@ -1,10 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom'
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate } from '../../../i18n/format'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import type { ArrowRelance, ArrowSchool } from '../../../types/arrow.types'
-import { STATUS_MAP, TEMPERATURE_MAP, SCHOOL_TYPE_MAP, ARROW_STATUSES, ARROW_TEMPERATURES, EMPTY_RELANCE } from './constants'
+import {
+  STATUS_MAP,
+  TEMPERATURE_MAP,
+  SCHOOL_TYPE_MAP,
+  ARROW_STATUSES,
+  ARROW_TEMPERATURES,
+  EMPTY_RELANCE,
+} from './constants'
 
-interface AdminUser { _id: string; name: string; email: string }
+interface AdminUser {
+  _id: string
+  name: string
+  email: string
+}
 
 export type ModalSection = 'ecole' | 'contact' | 'prospection'
 
@@ -19,13 +32,20 @@ interface Props {
 }
 
 // Popover relance inline
-function RelancePopover({ relance, index, onSave, onClose, anchorEl }: {
+function RelancePopover({
+  relance,
+  index,
+  onSave,
+  onClose,
+  anchorEl,
+}: {
   relance: ArrowRelance
   index: number
   onSave: (r: ArrowRelance) => void
   onClose: () => void
   anchorEl: HTMLElement | null
 }) {
+  const { t } = useI18n()
   const [r, setR] = useState<ArrowRelance>({ ...relance })
   const ref = useRef<HTMLDivElement>(null)
   const rect = anchorEl?.getBoundingClientRect()
@@ -33,60 +53,123 @@ function RelancePopover({ relance, index, onSave, onClose, anchorEl }: {
   const left = rect ? Math.min(rect.left, window.innerWidth - 276) : 0
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose() }
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
   return ReactDOM.createPortal(
-    <div ref={ref} style={{
-      position: 'fixed', top, left, zIndex: 2000,
-      background: '#13151f', border: '1px solid rgba(255,255,255,0.12)',
-      borderRadius: 10, padding: 14, width: 260,
-      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-    }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-        Relance {index + 1}
+    <div
+      ref={ref}
+      style={{
+        position: 'fixed',
+        top,
+        left,
+        zIndex: 2000,
+        background: '#13151f',
+        border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: 10,
+        padding: 14,
+        width: 260,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: 'var(--text-muted)',
+          marginBottom: 10,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+        }}
+      >
+        {t('crm.arrow.table.relance', { n: index + 1 })}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <input className="portal-input" type="date" value={r.date ? r.date.slice(0, 10) : ''}
-          onChange={e => setR(prev => ({ ...prev, date: e.target.value || null }))} />
-        <input className="portal-input" placeholder="Note (optionnel)" value={r.note}
-          onChange={e => setR(prev => ({ ...prev, note: e.target.value }))} />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', color: r.done ? '#22c55e' : 'var(--text-secondary)' }}>
-          <input type="checkbox" checked={r.done} onChange={e => setR(prev => ({ ...prev, done: e.target.checked }))} />
-          Marquée comme faite
+        <input
+          className="portal-input"
+          type="date"
+          value={r.date ? r.date.slice(0, 10) : ''}
+          onChange={(e) => setR((prev) => ({ ...prev, date: e.target.value || null }))}
+        />
+        <input
+          className="portal-input"
+          placeholder={t('crm.arrow.table.noteOptional')}
+          value={r.note}
+          onChange={(e) => setR((prev) => ({ ...prev, note: e.target.value }))}
+        />
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 13,
+            cursor: 'pointer',
+            color: r.done ? '#22c55e' : 'var(--text-secondary)',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={r.done}
+            onChange={(e) => setR((prev) => ({ ...prev, done: e.target.checked }))}
+          />
+          {t('crm.arrow.table.markDone')}
         </label>
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button className="portal-button" style={{ flex: 1, fontSize: 12, padding: '6px 0' }}
-            onClick={() => { onSave(r); onClose() }}>
-            Enregistrer
+          <button
+            className="portal-button"
+            style={{ flex: 1, fontSize: 12, padding: '6px 0' }}
+            onClick={() => {
+              onSave(r)
+              onClose()
+            }}
+          >
+            {t('common.save')}
           </button>
           {r.date && (
-            <button onClick={() => { onSave({ date: null, done: false, note: '' }); onClose() }}
-              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ef444440', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}>
-              Effacer
+            <button
+              onClick={() => {
+                onSave({ date: null, done: false, note: '' })
+                onClose()
+              }}
+              style={{
+                padding: '6px 10px',
+                borderRadius: 6,
+                border: '1px solid #ef444440',
+                background: 'none',
+                color: '#ef4444',
+                cursor: 'pointer',
+                fontSize: 12,
+              }}
+            >
+              {t('crm.filters.clear')}
             </button>
           )}
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   )
 }
 
 export default function SchoolTable({ schools, admins, onEdit, onDelete, onSelect, onPatch, canManage }: Props) {
+  const { t } = useI18n()
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [relancePopover, setRelancePopover] = useState<{ schoolId: string; index: number; anchor: HTMLElement } | null>(null)
+  const [relancePopover, setRelancePopover] = useState<{ schoolId: string; index: number; anchor: HTMLElement } | null>(
+    null,
+  )
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
-  const toggleGroup = (key: string) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
+  const toggleGroup = (key: string) => setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }))
 
   // Grouper par statut
-  const grouped = ARROW_STATUSES.map(s => ({
+  const grouped = ARROW_STATUSES.map((s) => ({
     ...s,
-    schools: schools.filter(sc => sc.status === s.key),
-  })).filter(g => g.schools.length > 0 || schools.length === 0)
+    schools: schools.filter((sc) => sc.status === s.key),
+  })).filter((g) => g.schools.length > 0 || schools.length === 0)
 
   return (
     <div className="crm-table-container">
@@ -94,26 +177,30 @@ export default function SchoolTable({ schools, admins, onEdit, onDelete, onSelec
         <table className="crm-table">
           <thead>
             <tr>
-              <th className="crm-th">École</th>
-              <th className="crm-th">Type · Ville</th>
-              <th className="crm-th">Contact</th>
-              <th className="crm-th">Email</th>
-              <th className="crm-th">Température</th>
-              <th className="crm-th">Commercial</th>
-              <th className="crm-th">Prochain contact</th>
-              <th className="crm-th">Relances</th>
+              <th className="crm-th">{t('crm.arrow.table.school')}</th>
+              <th className="crm-th">{t('crm.arrow.table.typeCity')}</th>
+              <th className="crm-th">{t('crm.col.contact')}</th>
+              <th className="crm-th">{t('crm.col.email')}</th>
+              <th className="crm-th">{t('crm.arrow.table.temperature')}</th>
+              <th className="crm-th">{t('crm.col.sales')}</th>
+              <th className="crm-th">{t('crm.arrow.form.nextContact')}</th>
+              <th className="crm-th">{t('crm.arrow.detail.relances')}</th>
               {canManage && <th className="crm-th"></th>}
             </tr>
           </thead>
           <tbody>
             {schools.length === 0 && (
               <tr>
-                <td colSpan={canManage ? 9 : 8} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
-                  Aucune école enregistrée · <span style={{ color: 'var(--primary)' }}>Cliquez sur "+ Ajouter une école" pour commencer</span>
+                <td
+                  colSpan={canManage ? 9 : 8}
+                  style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}
+                >
+                  {t('crm.arrow.table.emptyTitle')} ·{' '}
+                  <span style={{ color: 'var(--primary)' }}>{t('crm.arrow.table.emptyHint')}</span>
                 </td>
               </tr>
             )}
-            {grouped.map(group => {
+            {grouped.map((group) => {
               const isCollapsed = collapsed[group.key]
               if (group.schools.length === 0) return null
               return (
@@ -124,157 +211,301 @@ export default function SchoolTable({ schools, admins, onEdit, onDelete, onSelec
                       <div className="crm-group-header" style={{ '--group-color': group.color } as React.CSSProperties}>
                         <span className={`crm-group-chevron ${isCollapsed ? '' : 'open'}`}>▶</span>
                         <span className="crm-group-color-bar" style={{ background: group.color }} />
-                        <span className="crm-group-label">{group.label}</span>
-                        <span className="crm-group-count">{group.schools.length} école{group.schools.length !== 1 ? 's' : ''}</span>
+                        <span className="crm-group-label">{t(group.labelKey)}</span>
+                        <span className="crm-group-count">
+                          {t('crm.arrow.schoolCount', { count: group.schools.length })}
+                        </span>
                       </div>
                     </td>
                   </tr>
 
                   {/* Lignes */}
-                  {!isCollapsed && group.schools.map(school => {
-                    const isOverdue = school.nextActionAt && new Date(school.nextActionAt) < new Date() && !['SIGNE', 'NON_INTERESSE'].includes(school.status)
-                    const doneRelances = (school.relances ?? []).filter(r => r.done).length
-                    const totalRelances = (school.relances ?? []).filter(r => r.date).length
+                  {!isCollapsed &&
+                    group.schools.map((school) => {
+                      const isOverdue =
+                        school.nextActionAt &&
+                        new Date(school.nextActionAt) < new Date() &&
+                        !['SIGNE', 'NON_INTERESSE'].includes(school.status)
+                      const doneRelances = (school.relances ?? []).filter((r) => r.done).length
+                      const totalRelances = (school.relances ?? []).filter((r) => r.date).length
 
-                    return (
-                      <tr key={school._id} className="crm-table-row">
+                      return (
+                        <tr key={school._id} className="crm-table-row">
+                          {/* École */}
+                          <td
+                            className="crm-td crm-td-company"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => onSelect(school, 'ecole')}
+                          >
+                            <span className="crm-row-color-indicator" style={{ background: group.color }} />
+                            <strong>{school.name}</strong>
+                          </td>
 
-                        {/* École */}
-                        <td className="crm-td crm-td-company" style={{ cursor: 'pointer' }} onClick={() => onSelect(school, 'ecole')}>
-                          <span className="crm-row-color-indicator" style={{ background: group.color }} />
-                          <strong>{school.name}</strong>
-                        </td>
-
-                        {/* Type · Ville */}
-                        <td className="crm-td" style={{ cursor: 'pointer' }} onClick={() => onSelect(school, 'ecole')}>
-                          <span className="crm-table-badge">{SCHOOL_TYPE_MAP[school.schoolType]?.label || school.schoolType}</span>
-                          {school.city && <span style={{ marginLeft: 6, color: 'var(--text-muted)', fontSize: 12 }}>{school.city}</span>}
-                        </td>
-
-                        {/* Contact */}
-                        <td className="crm-td" style={{ cursor: 'pointer' }} onClick={() => onSelect(school, 'contact')}>
-                          {school.contactName
-                            ? <>{school.contactName}{school.contactRole && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> · {school.contactRole}</span>}</>
-                            : '—'}
-                        </td>
-
-                        {/* Email */}
-                        <td className="crm-td crm-td-email" style={{ cursor: 'pointer' }} onClick={() => onSelect(school, 'contact')}>
-                          {school.contactEmail
-                            ? <a href={`mailto:${school.contactEmail}`} className="crm-email-link" onClick={e => e.stopPropagation()}>{school.contactEmail}</a>
-                            : school.emailGeneral
-                              ? <a href={`mailto:${school.emailGeneral}`} className="crm-email-link" style={{ opacity: 0.6 }} onClick={e => e.stopPropagation()}>{school.emailGeneral}</a>
-                              : '—'}
-                        </td>
-
-                        {/* Température inline */}
-                        <td className="crm-td crm-td-temperature" onClick={e => e.stopPropagation()}>
-                          {canManage ? (
-                            <CustomSelect
-                              className="crm-inline-select"
-                              value={school.temperature}
-                              onChange={v => onPatch(school._id, { temperature: v })}
-                              options={ARROW_TEMPERATURES.map(t => ({ value: t.key, label: t.label }))}
-                            />
-                          ) : (
-                            <span style={{ color: TEMPERATURE_MAP[school.temperature]?.color }}>{TEMPERATURE_MAP[school.temperature]?.label}</span>
-                          )}
-                        </td>
-
-                        {/* Commercial inline */}
-                        <td className="crm-td" onClick={e => e.stopPropagation()}>
-                          {canManage ? (
-                            <CustomSelect
-                              className="crm-inline-select crm-inline-assignee"
-                              value={school.assignedTo?._id || ''}
-                              onChange={v => onPatch(school._id, { assignedTo: v || null })}
-                              options={[{ value: '', label: 'Non assigné' }, ...admins.map(a => ({ value: a._id, label: a.name }))]}
-                            />
-                          ) : (
-                            <span>{school.assignedTo?.name || '—'}</span>
-                          )}
-                        </td>
-
-                        {/* Prochain contact */}
-                        <td className={`crm-td ${isOverdue ? 'crm-td-overdue' : ''}`} style={{ cursor: 'pointer' }} onClick={() => onSelect(school, 'prospection')}>
-                          {school.nextActionAt ? new Date(school.nextActionAt).toLocaleDateString('fr-FR') : '—'}
-                          {isOverdue && <span className="crm-overdue-tag">En retard</span>}
-                        </td>
-
-                        {/* Relances */}
-                        <td className="crm-td" onClick={e => e.stopPropagation()}>
-                          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                            {[0, 1, 2].map(i => {
-                              const r = school.relances?.[i]
-                              const isDone = r?.done
-                              const isLate = r?.date && !isDone && new Date(r.date) < new Date()
-                              const hasDate = r?.date
-                              const color = isDone ? '#22c55e' : isLate ? '#ef4444' : hasDate ? '#f59e0b' : 'rgba(255,255,255,0.2)'
-                              const isOpen = relancePopover?.schoolId === school._id && relancePopover?.index === i
-                              return (
-                                <div key={i} style={{ position: 'relative' }}>
-                                  <span
-                                    onClick={e => { if (canManage) setRelancePopover(isOpen ? null : { schoolId: school._id, index: i, anchor: e.currentTarget as HTMLElement }) }}
-                                    title={hasDate ? `R${i + 1} — ${new Date(r!.date!).toLocaleDateString('fr-FR')}${r?.note ? ` · ${r.note}` : ''}` : `R${i + 1} — cliquer pour planifier`}
-                                    style={{ width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, border: `2px solid ${color}`, color, background: isDone ? '#22c55e18' : isLate ? '#ef444418' : hasDate ? '#f59e0b18' : 'transparent', cursor: canManage ? 'pointer' : 'default', flexShrink: 0 }}>
-                                    {isDone ? '✓' : i + 1}
-                                  </span>
-                                  {isOpen && canManage && (
-                                    <RelancePopover
-                                      relance={school.relances?.[i] ?? { ...EMPTY_RELANCE }}
-                                      index={i}
-                                      anchorEl={relancePopover?.anchor ?? null}
-                                      onSave={updated => {
-                                        const next = [0, 1, 2].map(j => school.relances?.[j] ?? { ...EMPTY_RELANCE })
-                                        next[i] = updated
-                                        onPatch(school._id, { relances: next })
-                                      }}
-                                      onClose={() => setRelancePopover(null)}
-                                    />
-                                  )}
-                                </div>
-                              )
-                            })}
-                            {totalRelances > 0 && (
-                              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2 }}>{doneRelances}/{totalRelances}</span>
+                          {/* Type · Ville */}
+                          <td
+                            className="crm-td"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => onSelect(school, 'ecole')}
+                          >
+                            <span className="crm-table-badge">
+                              {SCHOOL_TYPE_MAP[school.schoolType]
+                                ? t(SCHOOL_TYPE_MAP[school.schoolType].labelKey)
+                                : school.schoolType}
+                            </span>
+                            {school.city && (
+                              <span style={{ marginLeft: 6, color: 'var(--text-muted)', fontSize: 12 }}>
+                                {school.city}
+                              </span>
                             )}
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Actions */}
-                        {canManage && (
-                          <td className="crm-td crm-td-actions" onClick={e => e.stopPropagation()}>
-                            <div className="crm-row-actions">
+                          {/* Contact */}
+                          <td
+                            className="crm-td"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => onSelect(school, 'contact')}
+                          >
+                            {school.contactName ? (
+                              <>
+                                {school.contactName}
+                                {school.contactRole && (
+                                  <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                                    {' '}
+                                    · {school.contactRole}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+
+                          {/* Email */}
+                          <td
+                            className="crm-td crm-td-email"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => onSelect(school, 'contact')}
+                          >
+                            {school.contactEmail ? (
+                              <a
+                                href={`mailto:${school.contactEmail}`}
+                                className="crm-email-link"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {school.contactEmail}
+                              </a>
+                            ) : school.emailGeneral ? (
+                              <a
+                                href={`mailto:${school.emailGeneral}`}
+                                className="crm-email-link"
+                                style={{ opacity: 0.6 }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {school.emailGeneral}
+                              </a>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+
+                          {/* Température inline */}
+                          <td className="crm-td crm-td-temperature" onClick={(e) => e.stopPropagation()}>
+                            {canManage ? (
                               <CustomSelect
-                                className="crm-inline-select crm-inline-status"
-                                value={school.status}
-                                onChange={v => onPatch(school._id, { status: v })}
-                                options={ARROW_STATUSES.map(s => ({ value: s.key, label: s.label }))}
+                                className="crm-inline-select"
+                                value={school.temperature}
+                                onChange={(v) => onPatch(school._id, { temperature: v })}
+                                options={ARROW_TEMPERATURES.map((tp) => ({ value: tp.key, label: t(tp.labelKey) }))}
                               />
-                              <button className="crm-btn-notes" onClick={() => onEdit(school)} title="Modifier">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                </svg>
-                              </button>
-                              {deleteConfirm === school._id ? (
-                                <div className="crm-delete-confirm">
-                                  <button className="crm-btn-confirm-delete" onClick={() => { onDelete(school._id); setDeleteConfirm(null) }}>Oui</button>
-                                  <button className="crm-btn-cancel-delete" onClick={() => setDeleteConfirm(null)}>Non</button>
-                                </div>
-                              ) : (
-                                <button className="crm-btn-delete" onClick={() => setDeleteConfirm(school._id)} title="Supprimer">
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                                  </svg>
-                                </button>
+                            ) : (
+                              <span style={{ color: TEMPERATURE_MAP[school.temperature]?.color }}>
+                                {TEMPERATURE_MAP[school.temperature]
+                                  ? t(TEMPERATURE_MAP[school.temperature].labelKey)
+                                  : ''}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Commercial inline */}
+                          <td className="crm-td" onClick={(e) => e.stopPropagation()}>
+                            {canManage ? (
+                              <CustomSelect
+                                className="crm-inline-select crm-inline-assignee"
+                                value={school.assignedTo?._id || ''}
+                                onChange={(v) => onPatch(school._id, { assignedTo: v || null })}
+                                options={[
+                                  { value: '', label: t('crm.common.unassigned') },
+                                  ...admins.map((a) => ({ value: a._id, label: a.name })),
+                                ]}
+                              />
+                            ) : (
+                              <span>{school.assignedTo?.name || '—'}</span>
+                            )}
+                          </td>
+
+                          {/* Prochain contact */}
+                          <td
+                            className={`crm-td ${isOverdue ? 'crm-td-overdue' : ''}`}
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => onSelect(school, 'prospection')}
+                          >
+                            {school.nextActionAt ? formatDate(school.nextActionAt) : '—'}
+                            {isOverdue && <span className="crm-overdue-tag">{t('crm.alert.overdue')}</span>}
+                          </td>
+
+                          {/* Relances */}
+                          <td className="crm-td" onClick={(e) => e.stopPropagation()}>
+                            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                              {[0, 1, 2].map((i) => {
+                                const r = school.relances?.[i]
+                                const isDone = r?.done
+                                const isLate = r?.date && !isDone && new Date(r.date) < new Date()
+                                const hasDate = r?.date
+                                const color = isDone
+                                  ? '#22c55e'
+                                  : isLate
+                                    ? '#ef4444'
+                                    : hasDate
+                                      ? '#f59e0b'
+                                      : 'rgba(255,255,255,0.2)'
+                                const isOpen = relancePopover?.schoolId === school._id && relancePopover?.index === i
+                                return (
+                                  <div key={i} style={{ position: 'relative' }}>
+                                    <span
+                                      onClick={(e) => {
+                                        if (canManage)
+                                          setRelancePopover(
+                                            isOpen
+                                              ? null
+                                              : {
+                                                  schoolId: school._id,
+                                                  index: i,
+                                                  anchor: e.currentTarget as HTMLElement,
+                                                },
+                                          )
+                                      }}
+                                      title={
+                                        hasDate
+                                          ? `${t('crm.arrow.table.relanceTitle', { n: i + 1, date: formatDate(r!.date) })}${r?.note ? ` · ${r.note}` : ''}`
+                                          : t('crm.arrow.table.relanceSchedule', { n: i + 1 })
+                                      }
+                                      style={{
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: 11,
+                                        fontWeight: 700,
+                                        border: `2px solid ${color}`,
+                                        color,
+                                        background: isDone
+                                          ? '#22c55e18'
+                                          : isLate
+                                            ? '#ef444418'
+                                            : hasDate
+                                              ? '#f59e0b18'
+                                              : 'transparent',
+                                        cursor: canManage ? 'pointer' : 'default',
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      {isDone ? '✓' : i + 1}
+                                    </span>
+                                    {isOpen && canManage && (
+                                      <RelancePopover
+                                        relance={school.relances?.[i] ?? { ...EMPTY_RELANCE }}
+                                        index={i}
+                                        anchorEl={relancePopover?.anchor ?? null}
+                                        onSave={(updated) => {
+                                          const next = [0, 1, 2].map(
+                                            (j) => school.relances?.[j] ?? { ...EMPTY_RELANCE },
+                                          )
+                                          next[i] = updated
+                                          onPatch(school._id, { relances: next })
+                                        }}
+                                        onClose={() => setRelancePopover(null)}
+                                      />
+                                    )}
+                                  </div>
+                                )
+                              })}
+                              {totalRelances > 0 && (
+                                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2 }}>
+                                  {doneRelances}/{totalRelances}
+                                </span>
                               )}
                             </div>
                           </td>
-                        )}
-                      </tr>
-                    )
-                  })}
+
+                          {/* Actions */}
+                          {canManage && (
+                            <td className="crm-td crm-td-actions" onClick={(e) => e.stopPropagation()}>
+                              <div className="crm-row-actions">
+                                <CustomSelect
+                                  className="crm-inline-select crm-inline-status"
+                                  value={school.status}
+                                  onChange={(v) => onPatch(school._id, { status: v })}
+                                  options={ARROW_STATUSES.map((s) => ({ value: s.key, label: t(s.labelKey) }))}
+                                />
+                                <button
+                                  className="crm-btn-notes"
+                                  onClick={() => onEdit(school)}
+                                  title={t('common.edit')}
+                                >
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                  </svg>
+                                </button>
+                                {deleteConfirm === school._id ? (
+                                  <div className="crm-delete-confirm">
+                                    <button
+                                      className="crm-btn-confirm-delete"
+                                      onClick={() => {
+                                        onDelete(school._id)
+                                        setDeleteConfirm(null)
+                                      }}
+                                    >
+                                      {t('common.yes')}
+                                    </button>
+                                    <button className="crm-btn-cancel-delete" onClick={() => setDeleteConfirm(null)}>
+                                      {t('common.no')}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    className="crm-btn-delete"
+                                    onClick={() => setDeleteConfirm(school._id)}
+                                    title={t('common.delete')}
+                                  >
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      )
+                    })}
                 </React.Fragment>
               )
             })}

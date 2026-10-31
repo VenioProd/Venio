@@ -1,11 +1,14 @@
 import React, { useState } from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
+import { useI18n } from '../../../context/I18nContext'
 import LeadFilters from './LeadFilters'
 import LeadTableRow from './LeadTableRow'
-import type { Lead, AdminUser, CrmStatusConfig } from '../../../types/crm.types'
+import type { Lead, AdminUser } from '../../../types/crm.types'
+import type { CrmOption } from './constants'
+import type { MessageKey } from '../../../i18n'
 
 interface LeadTableProps {
-  groupedLeads: (CrmStatusConfig & { leads: Lead[] })[]
+  groupedLeads: (CrmOption & { leads: Lead[] })[]
   filteredLeads: Lead[]
   totalLeads: number
   search: string
@@ -49,16 +52,16 @@ const SortIcon = ({ field, sortField, sortDir }: { field: string; sortField: str
 
 // Tri proposé sur mobile, où l'en-tête du tableau n'existe pas (les lignes sont
 // des cartes). Mêmes champs que les colonnes triables de l'en-tête.
-const MOBILE_SORT_OPTIONS = [
-  { value: 'company', label: 'Entreprise' },
-  { value: 'contactName', label: 'Contact' },
-  { value: 'nextActionAt', label: 'Prochaine action' },
-  { value: 'updatedAt', label: 'Mis \u00e0 jour' },
-  { value: 'priority', label: 'Priorit\u00e9' },
-  { value: 'budget', label: 'Budget' },
-  { value: 'leadTemperature', label: 'Chaleur' },
-  { value: 'project', label: 'Projet' },
-  { value: 'source', label: 'Source' },
+const MOBILE_SORT_OPTIONS: { value: string; labelKey: MessageKey }[] = [
+  { value: 'company', labelKey: 'crm.col.company' },
+  { value: 'contactName', labelKey: 'crm.col.contact' },
+  { value: 'nextActionAt', labelKey: 'crm.col.nextAction' },
+  { value: 'updatedAt', labelKey: 'crm.col.updatedAt' },
+  { value: 'priority', labelKey: 'crm.col.priority' },
+  { value: 'budget', labelKey: 'crm.col.budget' },
+  { value: 'leadTemperature', labelKey: 'crm.col.temperature' },
+  { value: 'project', labelKey: 'crm.col.project' },
+  { value: 'source', labelKey: 'crm.col.source' },
 ]
 
 const LeadTable: React.FC<LeadTableProps> = ({
@@ -98,6 +101,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
   onTransferToArrow,
   onTransferSelectionToArrow,
 }) => {
+  const { t } = useI18n()
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const allIds = filteredLeads.map((l) => l._id)
@@ -140,20 +144,20 @@ const LeadTable: React.FC<LeadTableProps> = ({
 
       {/* Tri (mobile uniquement : l'en-tête du tableau y est masqué) */}
       <div className="crm-sort-bar">
-        <span className="crm-sort-bar-label">Trier par</span>
+        <span className="crm-sort-bar-label">{t('crm.table.sortBy')}</span>
         <CustomSelect
           className="crm-sort-bar-select"
           value={sortField}
           onChange={(v) => {
             if (v !== sortField) onToggleSort(v)
           }}
-          options={MOBILE_SORT_OPTIONS}
+          options={MOBILE_SORT_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
         />
         <button
           type="button"
           className="crm-sort-bar-dir"
           onClick={() => onToggleSort(sortField)}
-          aria-label={sortDir === 'asc' ? 'Tri croissant' : 'Tri d\u00e9croissant'}
+          aria-label={sortDir === 'asc' ? t('crm.table.sortAsc') : t('crm.table.sortDesc')}
         >
           {sortDir === 'asc' ? '\u2191' : '\u2193'}
         </button>
@@ -162,9 +166,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
       {/* Barre de sélection */}
       {someSelected && onTransferSelectionToArrow && (
         <div className="crm-selection-bar">
-          <span className="crm-selection-count">
-            {selected.size} lead{selected.size > 1 ? 's' : ''} sélectionné{selected.size > 1 ? 's' : ''}
-          </span>
+          <span className="crm-selection-count">{t('crm.table.selectedCount', { count: selected.size })}</span>
           <button
             className="portal-button crm-selection-transfer"
             onClick={() => {
@@ -172,10 +174,10 @@ const LeadTable: React.FC<LeadTableProps> = ({
               setSelected(new Set())
             }}
           >
-            Transférer vers Arrow Écoles
+            {t('crm.row.transferToArrow')}
           </button>
           <button className="crm-selection-clear" onClick={() => setSelected(new Set())}>
-            Désélectionner
+            {t('crm.table.deselect')}
           </button>
         </div>
       )}
@@ -191,40 +193,40 @@ const LeadTable: React.FC<LeadTableProps> = ({
                     className="crm-select-checkbox"
                     checked={allSelected}
                     onChange={toggleAll}
-                    aria-label="Tout sélectionner"
+                    aria-label={t('crm.table.selectAll')}
                   />
                 </th>
               )}
               <th className="crm-th crm-th-company" onClick={() => onToggleSort('company')}>
-                Entreprise <SortIcon field="company" sortField={sortField} sortDir={sortDir} />
+                {t('crm.col.company')} <SortIcon field="company" sortField={sortField} sortDir={sortDir} />
               </th>
               <th className="crm-th crm-th-contact" onClick={() => onToggleSort('contactName')}>
-                Contact <SortIcon field="contactName" sortField={sortField} sortDir={sortDir} />
+                {t('crm.col.contact')} <SortIcon field="contactName" sortField={sortField} sortDir={sortDir} />
               </th>
-              <th className="crm-th crm-th-email">Email</th>
-              <th className="crm-th crm-th-phone">Téléphone</th>
+              <th className="crm-th crm-th-email">{t('crm.col.email')}</th>
+              <th className="crm-th crm-th-phone">{t('crm.col.phone')}</th>
               <th className="crm-th crm-th-source" onClick={() => onToggleSort('source')}>
-                Source <SortIcon field="source" sortField={sortField} sortDir={sortDir} />
+                {t('crm.col.source')} <SortIcon field="source" sortField={sortField} sortDir={sortDir} />
               </th>
               <th className="crm-th crm-th-project" onClick={() => onToggleSort('project')}>
-                Projet <SortIcon field="project" sortField={sortField} sortDir={sortDir} />
+                {t('crm.col.project')} <SortIcon field="project" sortField={sortField} sortDir={sortDir} />
               </th>
               <th className="crm-th crm-th-priority" onClick={() => onToggleSort('priority')}>
-                Priorité <SortIcon field="priority" sortField={sortField} sortDir={sortDir} />
+                {t('crm.col.priority')} <SortIcon field="priority" sortField={sortField} sortDir={sortDir} />
               </th>
               <th className="crm-th crm-th-budget" onClick={() => onToggleSort('budget')}>
-                Budget <SortIcon field="budget" sortField={sortField} sortDir={sortDir} />
+                {t('crm.col.budget')} <SortIcon field="budget" sortField={sortField} sortDir={sortDir} />
               </th>
-              <th className="crm-th crm-th-service">Service</th>
+              <th className="crm-th crm-th-service">{t('crm.col.service')}</th>
               <th className="crm-th crm-th-temperature" onClick={() => onToggleSort('leadTemperature')}>
-                Chaleur <SortIcon field="leadTemperature" sortField={sortField} sortDir={sortDir} />
+                {t('crm.col.temperature')} <SortIcon field="leadTemperature" sortField={sortField} sortDir={sortDir} />
               </th>
-              <th className="crm-th crm-th-assignee">Commercial</th>
+              <th className="crm-th crm-th-assignee">{t('crm.col.sales')}</th>
               <th className="crm-th crm-th-date" onClick={() => onToggleSort('nextActionAt')}>
-                Prochaine action <SortIcon field="nextActionAt" sortField={sortField} sortDir={sortDir} />
+                {t('crm.col.nextAction')} <SortIcon field="nextActionAt" sortField={sortField} sortDir={sortDir} />
               </th>
               <th className="crm-th crm-th-date" onClick={() => onToggleSort('updatedAt')}>
-                Mis à jour <SortIcon field="updatedAt" sortField={sortField} sortDir={sortDir} />
+                {t('crm.col.updatedAt')} <SortIcon field="updatedAt" sortField={sortField} sortDir={sortDir} />
               </th>
               {canManageCrm && <th className="crm-th crm-th-actions"></th>}
             </tr>
@@ -239,9 +241,9 @@ const LeadTable: React.FC<LeadTableProps> = ({
                       <div className="crm-group-header" style={{ '--group-color': group.color } as React.CSSProperties}>
                         <span className={`crm-group-chevron ${isCollapsed ? '' : 'open'}`}>▶</span>
                         <span className="crm-group-color-bar" style={{ background: group.color }} />
-                        <span className="crm-group-label">{group.label}</span>
+                        <span className="crm-group-label">{t(group.labelKey)}</span>
                         <span className="crm-group-count">
-                          {group.leads.length} lead{group.leads.length !== 1 ? 's' : ''}
+                          {t('crm.filters.leadCount', { count: group.leads.length })}
                         </span>
                       </div>
                     </td>
@@ -284,8 +286,8 @@ const LeadTable: React.FC<LeadTableProps> = ({
             >
               <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <p>Aucun lead trouvé</p>
-            {activeFilters > 0 && <p className="crm-table-empty-sub">Essayez de modifier vos filtres</p>}
+            <p>{t('crm.table.empty')}</p>
+            {activeFilters > 0 && <p className="crm-table-empty-sub">{t('crm.table.emptyHint')}</p>}
           </div>
         )}
       </div>

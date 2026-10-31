@@ -1,5 +1,6 @@
 import React from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
+import { useI18n } from '../../../context/I18nContext'
 import type { AdminUser } from '../../../types/crm.types'
 import { CRM_STATUSES, CRM_PRIORITIES, CRM_PROJECTS } from './constants'
 
@@ -45,6 +46,7 @@ const LeadFilters: React.FC<LeadFiltersProps> = ({
   onClearFilters,
   onToggleAll,
 }) => {
+  const { t } = useI18n()
   return (
     <div className="crm-table-toolbar">
       <div className="crm-table-search-wrap">
@@ -62,12 +64,12 @@ const LeadFilters: React.FC<LeadFiltersProps> = ({
         </svg>
         <input
           className="crm-table-search"
-          placeholder="Rechercher un lead..."
+          placeholder={t('crm.filters.searchPlaceholder')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
         />
         {search && (
-          <button className="crm-table-search-clear" onClick={() => onSearchChange('')} title="Effacer">
+          <button className="crm-table-search-clear" onClick={() => onSearchChange('')} title={t('crm.filters.clear')}>
             &times;
           </button>
         )}
@@ -78,8 +80,8 @@ const LeadFilters: React.FC<LeadFiltersProps> = ({
           value={filterStatus}
           onChange={onFilterStatusChange}
           options={[
-            { value: '', label: 'Tous les statuts' },
-            ...CRM_STATUSES.map((s) => ({ value: s.key, label: s.label })),
+            { value: '', label: t('crm.filters.allStatuses') },
+            ...CRM_STATUSES.map((s) => ({ value: s.key, label: t(s.labelKey) })),
           ]}
         />
         <CustomSelect
@@ -87,8 +89,8 @@ const LeadFilters: React.FC<LeadFiltersProps> = ({
           value={filterPriority}
           onChange={onFilterPriorityChange}
           options={[
-            { value: '', label: 'Toutes priorit\u00e9s' },
-            ...CRM_PRIORITIES.map((p) => ({ value: p.key, label: p.label })),
+            { value: '', label: t('crm.filters.allPriorities') },
+            ...CRM_PRIORITIES.map((p) => ({ value: p.key, label: t(p.labelKey) })),
           ]}
         />
         {onFilterProjectChange && (
@@ -97,8 +99,8 @@ const LeadFilters: React.FC<LeadFiltersProps> = ({
             value={filterProject}
             onChange={onFilterProjectChange}
             options={[
-              { value: '', label: 'Tous les projets' },
-              ...CRM_PROJECTS.map((p) => ({ value: p.key, label: p.label })),
+              { value: '', label: t('crm.filters.allProjects') },
+              ...CRM_PROJECTS.map((p) => ({ value: p.key, label: t(p.labelKey) })),
             ]}
           />
         )}
@@ -108,26 +110,26 @@ const LeadFilters: React.FC<LeadFiltersProps> = ({
             value={filterAssignee}
             onChange={onFilterAssigneeChange}
             options={[
-              { value: '', label: 'Tous les commerciaux' },
+              { value: '', label: t('crm.filters.allSales') },
               ...admins.map((a) => ({ value: a._id, label: a.name })),
             ]}
           />
         )}
         {activeFilters > 0 && (
           <button className="crm-table-filter-clear" onClick={onClearFilters}>
-            Effacer les filtres ({activeFilters})
+            {t('crm.filters.clearFilters', { count: activeFilters })}
           </button>
         )}
       </div>
       <div className="crm-table-stats">
         <div>
-          <span>
-            {filteredCount} lead{filteredCount !== 1 ? 's' : ''}
-          </span>
-          {filteredCount !== totalCount && <span className="crm-table-stats-total"> / {totalCount} total</span>}
+          <span>{t('crm.filters.leadCount', { count: filteredCount })}</span>
+          {filteredCount !== totalCount && (
+            <span className="crm-table-stats-total"> {t('crm.filters.ofTotal', { total: totalCount })}</span>
+          )}
         </div>
         <button type="button" className="crm-table-toggle-all" onClick={onToggleAll}>
-          {allCollapsed ? 'Tout déplier' : 'Tout plier'}
+          {allCollapsed ? t('crm.filters.expandAll') : t('crm.filters.collapseAll')}
         </button>
       </div>
     </div>

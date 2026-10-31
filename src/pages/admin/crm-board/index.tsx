@@ -4,16 +4,11 @@ import { apiFetch } from '../../../lib/api'
 import { exportToCsv } from '../../../lib/exportCsv'
 import { logInteraction } from '../../../services/interactions'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import ConfirmModal from '../../../components/ConfirmModal'
-import type {
-  Lead,
-  LeadFormData,
-  PipelineColumn,
-  AdminUser,
-  CrmStatusConfig,
-  WorklistResponse,
-} from '../../../types/crm.types'
+import type { Lead, LeadFormData, PipelineColumn, AdminUser, WorklistResponse } from '../../../types/crm.types'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 
@@ -32,6 +27,7 @@ import {
   STATUS_MAP,
   PRIORITY_MAP,
   EMPTY_FORM,
+  type CrmOption,
 } from './constants'
 import SchoolTable from '../arrow-prospection/SchoolTable'
 import SchoolFormPanel from '../arrow-prospection/SchoolFormPanel'
@@ -41,6 +37,7 @@ import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.type
 
 const CrmBoard = () => {
   const { user } = useAuth()
+  const { t } = useI18n()
   const canManageCrm = hasPermission(user, PERMISSIONS.MANAGE_CRM)
   const [columns, setColumns] = useState<PipelineColumn[]>([])
   const [admins, setAdmins] = useState<AdminUser[]>([])
@@ -175,20 +172,19 @@ const CrmBoard = () => {
   }
 
   const handleTransferToArrow = async (leadId: string) => {
-    if (!window.confirm('Transférer ce lead vers Arrow Écoles ? Il sera retiré du CRM.')) return
+    if (!window.confirm(t('crm.transfer.confirmOne'))) return
     try {
       await apiFetch(`/api/admin/arrow-prospection/transfer-lead/${leadId}`, { method: 'POST' })
       await load()
       setSection('arrow')
       await loadArrow()
     } catch (err: any) {
-      alert(err.message || 'Erreur lors du transfert')
+      alert(err.message || t('crm.transfer.error'))
     }
   }
 
   const handleTransferAllToArrow = async () => {
-    if (!window.confirm(`Transférer les ${totalLeads} leads vers Arrow Écoles ? Ils seront tous retirés du CRM.`))
-      return
+    if (!window.confirm(t('crm.transfer.confirmAll', { count: totalLeads }))) return
     try {
       for (const lead of filteredLeads) {
         await apiFetch(`/api/admin/arrow-prospection/transfer-lead/${lead._id}`, { method: 'POST' })
@@ -197,7 +193,7 @@ const CrmBoard = () => {
       setSection('arrow')
       await loadArrow()
     } catch (err: any) {
-      alert(err.message || 'Erreur lors du transfert')
+      alert(err.message || t('crm.transfer.error'))
     }
   }
 
@@ -214,7 +210,7 @@ const CrmBoard = () => {
     try {
       setWorklist(await apiFetch<WorklistResponse>('/api/admin/crm/worklist'))
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur chargement de la file')
+      setError((err as Error).message || translate('crm.error.loadWorklist'))
     } finally {
       setWorklistLoading(false)
     }
@@ -234,7 +230,7 @@ const CrmBoard = () => {
       setWorklist(worklistRes)
       setPipelineStale(false)
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur chargement CRM')
+      setError((err as Error).message || t('crm.error.load'))
     } finally {
       setLoading(false)
     }
@@ -275,7 +271,7 @@ const CrmBoard = () => {
       setPipelineStale(true)
       succeeded = true
     } catch (err: unknown) {
-      setError((err as Error).message || 'Action impossible sur ce lead')
+      setError((err as Error).message || t('crm.error.leadAction'))
     } finally {
       await loadWorklist()
       setBusyLeadId(null)
@@ -363,7 +359,7 @@ const CrmBoard = () => {
 
   // Group leads by status for Monday.com style
   const groupedLeads = useMemo(() => {
-    const groups: (CrmStatusConfig & { leads: Lead[] })[] = []
+    const groups: (CrmOption & { leads: Lead[] })[] = []
     CRM_STATUSES.forEach((status) => {
       const leads = filteredLeads.filter((l) => l.status === status.key)
       if (leads.length > 0 || !filterStatus) {
@@ -402,7 +398,7 @@ const CrmBoard = () => {
       setShowForm(false)
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur création lead')
+      setError((err as Error).message || t('crm.error.create'))
     }
   }
 
@@ -437,7 +433,7 @@ const CrmBoard = () => {
       await patchLead(leadId, patch)
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur mise à jour lead')
+      setError((err as Error).message || t('crm.error.update'))
     }
   }
 
@@ -448,7 +444,7 @@ const CrmBoard = () => {
       setDeleteConfirm(null)
       await load()
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur suppression lead')
+      setError((err as Error).message || t('crm.error.delete'))
     }
   }
 
@@ -474,7 +470,7 @@ const CrmBoard = () => {
         await load()
       }
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur conversion en client')
+      setError((err as Error).message || t('crm.error.convert'))
     } finally {
       setConverting(null)
     }
@@ -539,24 +535,22 @@ const CrmBoard = () => {
       <div className="portal-container crm-page-container">
         <div className="portal-card">
           <div className="admin-breadcrumb">
-            <Link to="/admin">Admin</Link>
+            <Link to="/admin">{t('crm.page.admin')}</Link>
             <span>/</span>
-            <span style={{ color: 'var(--text-primary)' }}>CRM & Prospection</span>
+            <span style={{ color: 'var(--text-primary)' }}>{t('crm.page.title')}</span>
           </div>
           <div className="admin-header">
             <div>
-              <h1>CRM & Prospection</h1>
+              <h1>{t('crm.page.title')}</h1>
               <p style={{ color: 'var(--text-muted)', margin: '8px 0 0 0', fontSize: '15px' }}>
-                {section === 'leads'
-                  ? 'Pipeline commercial avec attribution, relances et automatisations'
-                  : 'Prospection des établissements scolaires pour Arrow'}
+                {section === 'leads' ? t('crm.page.subtitleLeads') : t('crm.page.subtitleArrow')}
               </p>
               {/* Onglets */}
               <div className="crm-section-tabs" style={{ display: 'flex', gap: 4, marginTop: 16 }}>
                 {(
                   [
-                    ['leads', 'Leads & Clients'],
-                    ['arrow', '🎯 Arrow — Écoles'],
+                    ['leads', t('crm.page.tabLeads')],
+                    ['arrow', t('crm.page.tabArrow')],
                   ] as const
                 ).map(([key, label]) => (
                   <button
@@ -587,7 +581,7 @@ const CrmBoard = () => {
                 <button
                   className={`crm-view-btn ${viewMode === 'file' ? 'active' : ''}`}
                   onClick={() => changeViewMode('file')}
-                  title="Ma file de travail"
+                  title={t('crm.page.viewQueue')}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -609,7 +603,7 @@ const CrmBoard = () => {
                 <button
                   className={`crm-view-btn ${viewMode === 'table' ? 'active' : ''}`}
                   onClick={() => changeViewMode('table')}
-                  title="Vue tableau"
+                  title={t('crm.page.viewTable')}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -628,7 +622,7 @@ const CrmBoard = () => {
                 <button
                   className={`crm-view-btn ${viewMode === 'kanban' ? 'active' : ''}`}
                   onClick={() => changeViewMode('kanban')}
-                  title="Vue Kanban"
+                  title={t('crm.page.viewKanban')}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -647,17 +641,27 @@ const CrmBoard = () => {
               <button
                 className="portal-button secondary portal-action-link"
                 type="button"
-                title="Exporter CSV"
+                title={t('crm.page.exportCsv')}
                 onClick={() => {
-                  const headers = ['Entreprise', 'Contact', 'Email', 'Statut', 'Priorite', 'Budget', 'Assigne']
+                  const headers = [
+                    t('crm.col.company'),
+                    t('crm.col.contact'),
+                    t('crm.col.email'),
+                    t('crm.detail.status'),
+                    t('crm.export.priority'),
+                    t('crm.col.budget'),
+                    t('crm.export.assignee'),
+                  ]
                   const rows = filteredLeads.map((lead) => [
                     lead.company || '',
                     lead.contactName || '',
                     lead.contactEmail || '',
-                    STATUS_MAP[lead.status]?.label || lead.status || '',
-                    PRIORITY_MAP[lead.priority || '']?.label || lead.priority || '',
+                    STATUS_MAP[lead.status] ? t(STATUS_MAP[lead.status].labelKey) : lead.status || '',
+                    PRIORITY_MAP[lead.priority || '']
+                      ? t(PRIORITY_MAP[lead.priority || ''].labelKey)
+                      : lead.priority || '',
                     lead.budget != null ? String(lead.budget) : '',
-                    adminsById[lead.assignedTo || '']?.name || 'Non assigne',
+                    adminsById[lead.assignedTo || '']?.name || t('crm.export.unassigned'),
                   ])
                   exportToCsv('leads.csv', headers, rows)
                 }}
@@ -676,19 +680,19 @@ const CrmBoard = () => {
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
                 </span>
-                <span className="portal-action-label">Exporter CSV</span>
+                <span className="portal-action-label">{t('crm.page.exportCsv')}</span>
               </button>
               {section === 'leads' && canManageCrm && (
                 <>
                   <button
                     className="portal-button secondary"
                     onClick={handleTransferAllToArrow}
-                    title="Transférer tous les leads vers Arrow Écoles"
+                    title={t('crm.page.transferAllTitle')}
                   >
-                    Tout transférer → Arrow
+                    {t('crm.page.transferAll')}
                   </button>
                   <button className="portal-button" onClick={() => setShowForm((v) => !v)}>
-                    {showForm ? 'Masquer le formulaire' : '+ Nouveau lead'}
+                    {showForm ? t('crm.page.hideForm') : t('crm.page.newLead')}
                   </button>
                 </>
               )}
@@ -701,11 +705,11 @@ const CrmBoard = () => {
                     setShowSchoolForm(true)
                   }}
                 >
-                  + Ajouter une école
+                  {t('crm.page.addSchool')}
                 </button>
               )}
               {canManageCrm && (
-                <Link className="crm-settings-link" to="/admin/crm/settings" title="Paramètres des automatisations">
+                <Link className="crm-settings-link" to="/admin/crm/settings" title={t('crm.page.automationSettings')}>
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -717,7 +721,7 @@ const CrmBoard = () => {
                     <circle cx="12" cy="12" r="3" />
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                   </svg>
-                  Automatisations
+                  {t('crm.page.automations')}
                 </Link>
               )}
             </div>
@@ -772,7 +776,7 @@ const CrmBoard = () => {
           {section === 'arrow' ? (
             arrowLoading ? (
               <div className="admin-loading" style={{ padding: 32 }}>
-                Chargement...
+                {t('common.loading')}
               </div>
             ) : (
               <SchoolTable
@@ -804,7 +808,7 @@ const CrmBoard = () => {
             />
           ) : loading ? (
             <div className="admin-loading" style={{ padding: 32 }}>
-              Chargement du pipeline...
+              {t('crm.page.loadingPipeline')}
             </div>
           ) : viewMode === 'kanban' ? (
             <div className="crm-board">
@@ -860,8 +864,7 @@ const CrmBoard = () => {
               onExpandLead={setExpandedLead}
               onTransferToArrow={handleTransferToArrow}
               onTransferSelectionToArrow={async (ids) => {
-                if (!window.confirm(`Transférer ${ids.length} lead${ids.length > 1 ? 's' : ''} vers Arrow Écoles ?`))
-                  return
+                if (!window.confirm(t('crm.transfer.confirmSelection', { count: ids.length }))) return
                 for (const id of ids) {
                   await apiFetch(`/api/admin/arrow-prospection/transfer-lead/${id}`, { method: 'POST' }).catch(() => {})
                 }
@@ -921,10 +924,10 @@ const CrmBoard = () => {
 
         <ConfirmModal
           isOpen={convertTarget !== null}
-          title="Convertir en client"
-          message={convertTarget ? `Convertir "${convertTarget.company}" en client ?` : ''}
-          confirmLabel="Convertir"
-          cancelLabel="Annuler"
+          title={t('crm.row.convertToClient')}
+          message={convertTarget ? t('crm.convert.message', { company: convertTarget.company }) : ''}
+          confirmLabel={t('crm.convert.confirm')}
+          cancelLabel={t('common.cancel')}
           variant="info"
           onConfirm={confirmConvertToClient}
           onCancel={() => setConvertTarget(null)}
