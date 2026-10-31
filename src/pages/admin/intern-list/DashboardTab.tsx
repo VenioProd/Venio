@@ -1,6 +1,19 @@
+import { useI18n } from '../../../context/I18nContext'
+import type { MessageKey } from '../../../i18n'
+import { formatDateTime } from '../../../i18n/format'
 import { apiFetch } from '../../../lib/api'
 import type { Intern } from './types'
-import { formatDate } from './types'
+import { formatDate, INTERN_DAYS } from './types'
+
+const DAY_SHORT_KEYS: Record<string, MessageKey> = {
+  lundi: 'intern.dayShort.monday',
+  mardi: 'intern.dayShort.tuesday',
+  mercredi: 'intern.dayShort.wednesday',
+  jeudi: 'intern.dayShort.thursday',
+  vendredi: 'intern.dayShort.friday',
+  samedi: 'intern.dayShort.saturday',
+  dimanche: 'intern.dayShort.sunday',
+}
 
 interface ReminderLog {
   _id: string
@@ -51,6 +64,7 @@ export default function DashboardTab({
   loadDashboard,
   navigate,
 }: Props) {
+  const { t } = useI18n()
   return (
     <>
       {/* Rappels manuels + logs — toujours visible */}
@@ -66,9 +80,9 @@ export default function DashboardTab({
             }}
           >
             <div>
-              <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>Rappels de rapport</span>
+              <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>{t('intern.dash.remindersTitle')}</span>
               <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 10 }}>
-                Automatique tous les jours à 09h00 sur les jours de présence
+                {t('intern.dash.remindersSchedule')}
               </span>
             </div>
             {isSuperAdmin && (
@@ -102,7 +116,7 @@ export default function DashboardTab({
                   opacity: sendingReminders ? 0.6 : 1,
                 }}
               >
-                {sendingReminders ? 'Envoi...' : 'Envoyer maintenant'}
+                {sendingReminders ? t('intern.dash.sending') : t('intern.dash.sendNow')}
               </button>
             )}
           </div>
@@ -116,26 +130,36 @@ export default function DashboardTab({
               }}
             >
               <span style={{ color: reminderResult.sent > 0 ? '#22c55e' : '#fbbf24', fontWeight: 600 }}>
-                {reminderResult.sent === 0 ? 'Aucun rappel envoyé' : `${reminderResult.sent} rappel(s) envoyé(s)`}
+                {reminderResult.sent === 0
+                  ? t('intern.dash.noneSent')
+                  : t('intern.dash.sentCount', { count: reminderResult.sent })}
               </span>
               {reminderResult.details && (
                 <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 10, fontSize: 11 }}>
-                  {reminderResult.details.totalInterns} stagiaire(s) actif(s) · jour: {reminderResult.details.today}
+                  {t('intern.dash.resultDetails', {
+                    total: reminderResult.details.totalInterns ?? '',
+                    day: reminderResult.details.today ?? '',
+                  })}
                   {(reminderResult.details.errors?.length ?? 0) > 0 &&
-                    ` · erreurs: ${(reminderResult.details.errors ?? []).join(', ')}`}
+                    t('intern.dash.resultErrors', { errors: (reminderResult.details.errors ?? []).join(', ') })}
                 </span>
               )}
             </div>
           )}
           {reminderLogs.length === 0 ? (
             <div style={{ padding: '20px', color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center' }}>
-              Aucune activité enregistrée
+              {t('intern.dash.noActivity')}
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  {['Date', 'Statut', 'Rappels envoyés', 'Destinataires'].map((h) => (
+                  {[
+                    t('intern.dash.logDate'),
+                    t('intern.dash.logStatus'),
+                    t('intern.dash.logSent'),
+                    t('intern.dash.logRecipients'),
+                  ].map((h) => (
                     <th
                       key={h}
                       style={{
@@ -155,7 +179,7 @@ export default function DashboardTab({
                 {reminderLogs.map((log: any) => (
                   <tr key={log._id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                     <td style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
-                      {new Date(log.startedAt).toLocaleString('fr-FR', {
+                      {formatDateTime(log.startedAt, {
                         day: '2-digit',
                         month: 'short',
                         hour: '2-digit',
@@ -183,7 +207,11 @@ export default function DashboardTab({
                                 : '#ef4444',
                         }}
                       >
-                        {log.status === 'SUCCESS' ? 'Succès' : log.status === 'SKIPPED' ? 'Ignoré' : 'Erreur'}
+                        {log.status === 'SUCCESS'
+                          ? t('intern.dash.logSuccess')
+                          : log.status === 'SKIPPED'
+                            ? t('intern.dash.logSkipped')
+                            : t('intern.dash.logError')}
                       </span>
                     </td>
                     <td style={{ padding: '10px 16px', fontSize: 12, color: '#fff', fontWeight: 600 }}>
@@ -201,20 +229,28 @@ export default function DashboardTab({
       )}
 
       {dashboardLoading ? (
-        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Chargement...</p>
+        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>{t('intern.dash.loading')}</p>
       ) : dashboard.length === 0 ? (
-        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun membre actif</p>
+        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>
+          {t('intern.dash.noActiveMember')}
+        </p>
       ) : (
         <>
           {/* Tableau récap activité */}
           <div className="portal-card" style={{ marginTop: 16, marginBottom: 20, overflow: 'hidden' }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>Dernières connexions</span>
+              <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>{t('intern.dash.lastLogins')}</span>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  {['Stagiaire', 'Poste', 'Jours présence', 'Dernière connexion', 'Dernier rapport'].map((h) => (
+                  {[
+                    t('intern.dash.colIntern'),
+                    t('intern.dash.colRole'),
+                    t('intern.dash.colPresenceDays'),
+                    t('intern.dash.colLastLogin'),
+                    t('intern.dash.colLastReport'),
+                  ].map((h) => (
                     <th
                       key={h}
                       style={{
@@ -257,15 +293,6 @@ export default function DashboardTab({
                           ? '#f59e0b'
                           : '#ef4444'
                   const jours = (di.joursPresence as string[] | undefined) || []
-                  const joursAbrev: Record<string, string> = {
-                    lundi: 'Lu',
-                    mardi: 'Ma',
-                    mercredi: 'Me',
-                    jeudi: 'Je',
-                    vendredi: 'Ve',
-                    samedi: 'Sa',
-                    dimanche: 'Di',
-                  }
                   return (
                     <tr
                       key={di._id}
@@ -287,13 +314,15 @@ export default function DashboardTab({
                             color: di.type === 'ALTERNANT' ? 'var(--primary)' : '#9b9b9b',
                           }}
                         >
-                          {di.type === 'ALTERNANT' ? 'Alt' : 'St'}
+                          {di.type === 'ALTERNANT'
+                            ? t('intern.dash.typeApprenticeShort')
+                            : t('intern.dash.typeInternShort')}
                         </span>
                       </td>
                       <td style={{ padding: '10px 16px', color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{di.poste}</td>
                       <td style={{ padding: '10px 16px' }}>
                         <div style={{ display: 'flex', gap: 3 }}>
-                          {['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((j) => (
+                          {INTERN_DAYS.map((j) => (
                             <span
                               key={j}
                               style={{
@@ -305,7 +334,7 @@ export default function DashboardTab({
                                 color: jours.includes(j) ? 'var(--primary)' : 'rgba(255,255,255,0.2)',
                               }}
                             >
-                              {joursAbrev[j]}
+                              {t(DAY_SHORT_KEYS[j])}
                             </span>
                           ))}
                         </div>
@@ -314,15 +343,15 @@ export default function DashboardTab({
                         <span style={{ fontSize: 12, fontWeight: 600, color: loginColor }}>
                           {loginAt
                             ? daysSinceLogin === 0
-                              ? "Aujourd'hui"
+                              ? t('intern.dash.today')
                               : daysSinceLogin === 1
-                                ? 'Hier'
-                                : `il y a ${daysSinceLogin}j`
-                            : 'Jamais'}
+                                ? t('intern.dash.yesterday')
+                                : t('intern.dash.daysAgo', { count: daysSinceLogin ?? 0 })
+                            : t('intern.dash.never')}
                         </span>
                         {loginAt && (
                           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>
-                            {new Date(loginAt).toLocaleString('fr-FR', {
+                            {formatDateTime(loginAt, {
                               day: '2-digit',
                               month: 'short',
                               hour: '2-digit',
@@ -335,11 +364,11 @@ export default function DashboardTab({
                         <span style={{ fontSize: 12, fontWeight: 600, color: reportColor }}>
                           {ds.lastActivity
                             ? ds.daysSinceLastReport === 0
-                              ? "Aujourd'hui"
+                              ? t('intern.dash.today')
                               : ds.daysSinceLastReport === 1
-                                ? 'Hier'
-                                : `il y a ${ds.daysSinceLastReport}j`
-                            : 'Aucun rapport'}
+                                ? t('intern.dash.yesterday')
+                                : t('intern.dash.daysAgo', { count: ds.daysSinceLastReport })
+                            : t('intern.dash.noReport')}
                         </span>
                         {ds.lastActivity && (
                           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>
@@ -416,7 +445,7 @@ export default function DashboardTab({
                               color: di.type === 'ALTERNANT' ? 'var(--primary)' : '#9b9b9b',
                             }}
                           >
-                            {di.type === 'ALTERNANT' ? 'Alternant' : 'Stagiaire'}
+                            {di.type === 'ALTERNANT' ? t('intern.type.apprentice') : t('intern.type.intern')}
                           </span>
                         </div>
                         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
@@ -435,7 +464,7 @@ export default function DashboardTab({
                             color: '#ef4444',
                           }}
                         >
-                          INACTIF {ds.daysSinceLastReport}j
+                          {t('intern.dash.inactive', { count: ds.daysSinceLastReport })}
                         </span>
                       )}
                       {alertLevel === 'warning' && (
@@ -449,7 +478,7 @@ export default function DashboardTab({
                             color: '#f59e0b',
                           }}
                         >
-                          {ds.daysSinceLastReport}j sans rapport
+                          {t('intern.dash.noReportFor', { count: ds.daysSinceLastReport })}
                         </span>
                       )}
                     </div>
@@ -467,7 +496,7 @@ export default function DashboardTab({
                         <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 18 }}>
                           {ds.reportsThisWeek}
                         </div>
-                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Cette semaine</div>
+                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>{t('intern.dash.thisWeek')}</div>
                       </div>
                       <div
                         style={{
@@ -480,7 +509,9 @@ export default function DashboardTab({
                         <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 18 }}>
                           {ds.validationRate}%
                         </div>
-                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Validation</div>
+                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>
+                          {t('intern.dash.validation')}
+                        </div>
                       </div>
                       <div
                         style={{
@@ -491,14 +522,18 @@ export default function DashboardTab({
                         }}
                       >
                         <div style={{ color: '#22c55e', fontWeight: 700, fontSize: 18 }}>{ds.totalReports}</div>
-                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Total rapports</div>
+                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>
+                          {t('intern.dash.totalReports')}
+                        </div>
                       </div>
                     </div>
 
                     {/* Barre de progression */}
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Stage : {ds.progress}%</span>
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                          {t('intern.dash.internshipProgress', { progress: ds.progress })}
+                        </span>
                         <span
                           style={{
                             color:
@@ -510,7 +545,9 @@ export default function DashboardTab({
                             fontSize: 11,
                           }}
                         >
-                          {ds.daysRemaining > 0 ? `${ds.daysRemaining}j restants` : 'Termine'}
+                          {ds.daysRemaining > 0
+                            ? t('intern.card.daysLeft', { count: ds.daysRemaining })
+                            : t('intern.status.finished')}
                         </span>
                       </div>
                       <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
@@ -529,7 +566,9 @@ export default function DashboardTab({
 
                     {/* Derniere activite */}
                     <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
-                      Derniere activite : {ds.lastActivity ? formatDate(ds.lastActivity) : 'Aucune'}
+                      {t('intern.dash.lastActivity', {
+                        value: ds.lastActivity ? formatDate(ds.lastActivity) : t('intern.dash.lastActivityNone'),
+                      })}
                     </div>
                   </div>
                 </div>

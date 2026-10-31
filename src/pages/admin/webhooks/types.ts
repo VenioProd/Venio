@@ -1,3 +1,6 @@
+import { formatDateTime as formatDateTimeIntl } from '../../../i18n/format'
+import { translate, type MessageKey } from '../../../i18n'
+
 export type WebhookDeliveryStatus = 'PENDING' | 'DELIVERED' | 'FAILED'
 export type WebhookDisabledReason = 'AUTO_FAILURES' | 'MANUAL' | null
 
@@ -54,85 +57,82 @@ export const emptyEndpointForm: EndpointFormState = { name: '', url: '', eventTy
 
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return formatDateTimeIntl(iso) || '—'
 }
 
-const STATUS_LABELS: Record<WebhookDeliveryStatus, string> = {
-  PENDING: 'En attente',
-  DELIVERED: 'Livré',
-  FAILED: 'Échoué',
-}
+const STATUS_LABEL_KEYS = {
+  PENDING: 'adminTech.webhooks.status.pending',
+  DELIVERED: 'adminTech.webhooks.status.delivered',
+  FAILED: 'adminTech.webhooks.status.failed',
+} as const satisfies Record<WebhookDeliveryStatus, MessageKey>
 
 export function statusLabel(status: WebhookDeliveryStatus): string {
-  return STATUS_LABELS[status] || status
+  const key = STATUS_LABEL_KEYS[status]
+  return key ? translate(key) : status
 }
 
 /**
- * Libellés lisibles des types d'événement. Le catalogue faisant foi vient du
- * serveur : tout type sans libellé s'affiche tel quel plutôt que d'être masqué.
+ * Clés des libellés lisibles des types d'événement. Le catalogue faisant foi
+ * vient du serveur : tout type sans libellé s'affiche tel quel plutôt que
+ * d'être masqué.
  */
-export const EVENT_TYPE_LABELS: Record<string, string> = {
-  TASK_ASSIGNED: 'Tâche assignée',
-  TASK_UPDATED: 'Tâche mise à jour',
-  PROJECT_UPDATE: 'Annonce de projet',
-  DOCUMENT_ADDED: 'Document ajouté',
-  TICKET_CREATED: 'Ticket créé',
-  TICKET_REPLY: 'Réponse à un ticket',
-  TICKET_STATUS_CHANGED: 'Statut de ticket modifié',
-  TICKET_ASSIGNED: 'Ticket assigné',
-  INTERNAL_MESSAGE: 'Message interne',
-  DECISION_SUBMITTED: 'Décision soumise',
-  DECISION_APPROVED: 'Décision approuvée',
-  DECISION_REJECTED: 'Décision rejetée',
-  DECISION_IMPROVEMENT: 'Décision à améliorer',
-  INTERN_CREATED: 'Stagiaire créé',
-  INTERN_REPORT_SUBMITTED: 'Rapport de stage soumis',
-  INTERN_REPORT_UPDATED: 'Rapport de stage mis à jour',
-  INTERN_CONVENTION_ADDED: 'Convention de stage ajoutée',
-  INTERN_CREDENTIALS_SENT: 'Identifiants stagiaire envoyés',
-  INTERNAL_PROJECT_CREATED: 'Projet interne créé',
-  INTERNAL_MISSION_ASSIGNED: 'Mission interne assignée',
-  INTERNAL_MISSION_REVIEW_REQUESTED: 'Revue de mission demandée',
-  INTERNAL_MISSION_VALIDATED: 'Mission interne validée',
-  INTERNAL_MISSION_FILE_ADDED: 'Fichier de mission ajouté',
-  BILLING_QUOTE_CREATED: 'Devis créé',
-  BILLING_INVOICE_CREATED: 'Facture créée',
-  BILLING_DOCUMENT_SENT: 'Document de facturation envoyé',
-  BILLING_DOCUMENT_PAID: 'Document de facturation payé',
-  CRM_LEAD_CREATED: 'Lead créé',
-  CRM_LEAD_ASSIGNED: 'Lead assigné',
-  CRM_LEAD_STATUS_CHANGED: 'Statut de lead modifié',
-  CRM_LEAD_CONVERTED: 'Lead converti',
-  DEV_ISSUE_ASSIGNED: 'Issue dev assignée',
-  DEV_ISSUE_STATUS_CHANGED: 'Statut d’issue dev modifié',
-  QUALIOPI_INDICATOR_UPDATED: 'Indicateur Qualiopi mis à jour',
-  QUALIOPI_QUESTIONNAIRE_RECEIVED: 'Questionnaire Qualiopi reçu',
-  CLIENT_CREATED: 'Client créé',
-  CLIENT_NOTE_ADDED: 'Note client ajoutée',
-  PROJECT_ITEM_CREATED: 'Élément de projet créé',
-  PROJECT_ITEM_VALIDATED: 'Élément de projet validé',
-  TOOL_ACCESS_GRANTED: 'Accès outil accordé',
-  RESOURCE_REQUESTED: 'Ressource demandée',
-  ADMIN_CREATED: 'Administrateur créé',
-  ADMIN_ROLE_CHANGED: 'Rôle administrateur modifié',
-  ADMIN_PERMISSIONS_CHANGED: 'Permissions administrateur modifiées',
-  TWO_FACTOR_ENABLED: 'Double authentification activée',
-  TWO_FACTOR_DISABLED: 'Double authentification désactivée',
-  AGENT_TOKEN_CREATED: 'Token agent créé',
-  AGENT_TOKEN_REVOKED: 'Token agent révoqué',
-  SENSITIVE_ACTION_EXECUTED: 'Action sensible exécutée',
-  BRIEF_ASSIGNED: 'Brief assigné',
-  BRIEF_STATUS_CHANGED: 'Statut de brief modifié',
-  WEBHOOK_TEST: 'Test de webhook',
-  WEBHOOK_ENDPOINT_DISABLED: 'Endpoint désactivé',
+export const EVENT_TYPE_LABEL_KEYS: Record<string, MessageKey> = {
+  TASK_ASSIGNED: 'adminTech.webhooks.event.taskAssigned',
+  TASK_UPDATED: 'adminTech.webhooks.event.taskUpdated',
+  PROJECT_UPDATE: 'adminTech.webhooks.event.projectUpdate',
+  DOCUMENT_ADDED: 'adminTech.webhooks.event.documentAdded',
+  TICKET_CREATED: 'adminTech.webhooks.event.ticketCreated',
+  TICKET_REPLY: 'adminTech.webhooks.event.ticketReply',
+  TICKET_STATUS_CHANGED: 'adminTech.webhooks.event.ticketStatusChanged',
+  TICKET_ASSIGNED: 'adminTech.webhooks.event.ticketAssigned',
+  INTERNAL_MESSAGE: 'adminTech.webhooks.event.internalMessage',
+  DECISION_SUBMITTED: 'adminTech.webhooks.event.decisionSubmitted',
+  DECISION_APPROVED: 'adminTech.webhooks.event.decisionApproved',
+  DECISION_REJECTED: 'adminTech.webhooks.event.decisionRejected',
+  DECISION_IMPROVEMENT: 'adminTech.webhooks.event.decisionImprovement',
+  INTERN_CREATED: 'adminTech.webhooks.event.internCreated',
+  INTERN_REPORT_SUBMITTED: 'adminTech.webhooks.event.internReportSubmitted',
+  INTERN_REPORT_UPDATED: 'adminTech.webhooks.event.internReportUpdated',
+  INTERN_CONVENTION_ADDED: 'adminTech.webhooks.event.internConventionAdded',
+  INTERN_CREDENTIALS_SENT: 'adminTech.webhooks.event.internCredentialsSent',
+  INTERNAL_PROJECT_CREATED: 'adminTech.webhooks.event.internalProjectCreated',
+  INTERNAL_MISSION_ASSIGNED: 'adminTech.webhooks.event.internalMissionAssigned',
+  INTERNAL_MISSION_REVIEW_REQUESTED: 'adminTech.webhooks.event.internalMissionReviewRequested',
+  INTERNAL_MISSION_VALIDATED: 'adminTech.webhooks.event.internalMissionValidated',
+  INTERNAL_MISSION_FILE_ADDED: 'adminTech.webhooks.event.internalMissionFileAdded',
+  BILLING_QUOTE_CREATED: 'adminTech.webhooks.event.billingQuoteCreated',
+  BILLING_INVOICE_CREATED: 'adminTech.webhooks.event.billingInvoiceCreated',
+  BILLING_DOCUMENT_SENT: 'adminTech.webhooks.event.billingDocumentSent',
+  BILLING_DOCUMENT_PAID: 'adminTech.webhooks.event.billingDocumentPaid',
+  CRM_LEAD_CREATED: 'adminTech.webhooks.event.crmLeadCreated',
+  CRM_LEAD_ASSIGNED: 'adminTech.webhooks.event.crmLeadAssigned',
+  CRM_LEAD_STATUS_CHANGED: 'adminTech.webhooks.event.crmLeadStatusChanged',
+  CRM_LEAD_CONVERTED: 'adminTech.webhooks.event.crmLeadConverted',
+  DEV_ISSUE_ASSIGNED: 'adminTech.webhooks.event.devIssueAssigned',
+  DEV_ISSUE_STATUS_CHANGED: 'adminTech.webhooks.event.devIssueStatusChanged',
+  QUALIOPI_INDICATOR_UPDATED: 'adminTech.webhooks.event.qualiopiIndicatorUpdated',
+  QUALIOPI_QUESTIONNAIRE_RECEIVED: 'adminTech.webhooks.event.qualiopiQuestionnaireReceived',
+  CLIENT_CREATED: 'adminTech.webhooks.event.clientCreated',
+  CLIENT_NOTE_ADDED: 'adminTech.webhooks.event.clientNoteAdded',
+  PROJECT_ITEM_CREATED: 'adminTech.webhooks.event.projectItemCreated',
+  PROJECT_ITEM_VALIDATED: 'adminTech.webhooks.event.projectItemValidated',
+  TOOL_ACCESS_GRANTED: 'adminTech.webhooks.event.toolAccessGranted',
+  RESOURCE_REQUESTED: 'adminTech.webhooks.event.resourceRequested',
+  ADMIN_CREATED: 'adminTech.webhooks.event.adminCreated',
+  ADMIN_ROLE_CHANGED: 'adminTech.webhooks.event.adminRoleChanged',
+  ADMIN_PERMISSIONS_CHANGED: 'adminTech.webhooks.event.adminPermissionsChanged',
+  TWO_FACTOR_ENABLED: 'adminTech.webhooks.event.twoFactorEnabled',
+  TWO_FACTOR_DISABLED: 'adminTech.webhooks.event.twoFactorDisabled',
+  AGENT_TOKEN_CREATED: 'adminTech.webhooks.event.agentTokenCreated',
+  AGENT_TOKEN_REVOKED: 'adminTech.webhooks.event.agentTokenRevoked',
+  SENSITIVE_ACTION_EXECUTED: 'adminTech.webhooks.event.sensitiveActionExecuted',
+  BRIEF_ASSIGNED: 'adminTech.webhooks.event.briefAssigned',
+  BRIEF_STATUS_CHANGED: 'adminTech.webhooks.event.briefStatusChanged',
+  WEBHOOK_TEST: 'adminTech.webhooks.event.webhookTest',
+  WEBHOOK_ENDPOINT_DISABLED: 'adminTech.webhooks.event.webhookEndpointDisabled',
 }
 
 export function eventTypeLabel(type: string): string {
-  return EVENT_TYPE_LABELS[type] || type
+  const key = EVENT_TYPE_LABEL_KEYS[type]
+  return key ? translate(key) : type
 }

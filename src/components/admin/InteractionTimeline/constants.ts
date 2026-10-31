@@ -1,18 +1,20 @@
 import type { InteractionKind } from '../../../types/interaction.types'
+import { formatDateTime } from '../../../i18n/format'
+import type { MessageKey } from '../../../i18n'
 
 export interface KindConfig {
   key: InteractionKind
-  label: string
+  labelKey: MessageKey
   /** Pastille affichée dans la timeline : courte, pour rester lisible. */
-  badge: string
+  badgeKey: MessageKey
   color: string
 }
 
 export const INTERACTION_KINDS: KindConfig[] = [
-  { key: 'EMAIL', label: 'Email', badge: 'MAIL', color: '#0ea5e9' },
-  { key: 'CALL', label: 'Appel', badge: 'APPEL', color: '#8b5cf6' },
-  { key: 'MEETING', label: 'Rendez-vous', badge: 'RDV', color: '#f59e0b' },
-  { key: 'NOTE', label: 'Note', badge: 'NOTE', color: '#64748b' },
+  { key: 'EMAIL', labelKey: 'compB.timeline.kindEmail', badgeKey: 'compB.timeline.badgeEmail', color: '#0ea5e9' },
+  { key: 'CALL', labelKey: 'compB.timeline.kindCall', badgeKey: 'compB.timeline.badgeCall', color: '#8b5cf6' },
+  { key: 'MEETING', labelKey: 'compB.timeline.kindMeeting', badgeKey: 'compB.timeline.badgeMeeting', color: '#f59e0b' },
+  { key: 'NOTE', labelKey: 'compB.timeline.kindNote', badgeKey: 'compB.timeline.badgeNote', color: '#64748b' },
 ]
 
 export const KIND_MAP: Record<string, KindConfig> = Object.fromEntries(
@@ -21,8 +23,8 @@ export const KIND_MAP: Record<string, KindConfig> = Object.fromEntries(
 
 export const SYSTEM_KIND: KindConfig = {
   key: 'NOTE',
-  label: 'Système',
-  badge: 'SYS',
+  labelKey: 'compB.timeline.kindSystem',
+  badgeKey: 'compB.timeline.badgeSystem',
   color: '#475569',
 }
 
@@ -31,30 +33,27 @@ export const LOGGABLE_KINDS: KindConfig[] = INTERACTION_KINDS.filter((kind) => k
 
 export type TimelineFilter = 'ALL' | InteractionKind | 'SYSTEM'
 
-export const TIMELINE_FILTERS: { key: TimelineFilter; label: string }[] = [
-  { key: 'ALL', label: 'Tout' },
-  { key: 'EMAIL', label: 'Emails' },
-  { key: 'CALL', label: 'Appels' },
-  { key: 'MEETING', label: 'RDV' },
-  { key: 'NOTE', label: 'Notes' },
-  { key: 'SYSTEM', label: 'Système' },
+export const TIMELINE_FILTERS: { key: TimelineFilter; labelKey: MessageKey }[] = [
+  { key: 'ALL', labelKey: 'compB.timeline.filterAll' },
+  { key: 'EMAIL', labelKey: 'compB.timeline.filterEmail' },
+  { key: 'CALL', labelKey: 'compB.timeline.filterCall' },
+  { key: 'MEETING', labelKey: 'compB.timeline.filterMeeting' },
+  { key: 'NOTE', labelKey: 'compB.timeline.filterNote' },
+  { key: 'SYSTEM', labelKey: 'compB.timeline.filterSystem' },
 ]
 
-export const DELIVERY_LABELS: Record<string, string> = {
-  SENT: 'Envoyé',
-  PARTIAL: 'Partiellement envoyé',
-  FAILED: "Échec d'envoi",
+export const DELIVERY_LABEL_KEYS: Record<string, MessageKey> = {
+  SENT: 'compB.timeline.deliverySent',
+  PARTIAL: 'compB.timeline.deliveryPartial',
+  FAILED: 'compB.timeline.deliveryFailed',
 }
 
-const dateFormat = new Intl.DateTimeFormat('fr-FR', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-})
-
 export function formatOccurredAt(value: string): string {
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '' : dateFormat.format(date)
+  return formatDateTime(value, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }

@@ -3,30 +3,25 @@ import { Link } from 'react-router-dom'
 import AccountingLayout from './AccountingLayout'
 import { listEntries, listExternalSources, bulkValidateEntries } from '../../../services/accounting'
 import type { IAccountingEntry, IExternalSource } from '../../../types/accounting'
-
-const EUR_FORMATTER = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-})
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import type { MessageKey } from '../../../i18n'
+import { formatDate as formatDateIntl, formatMoney } from '../../../i18n/format'
 
 function formatEur(n: unknown): string {
   const value = Number(n)
   if (!Number.isFinite(value)) return '—'
-  return EUR_FORMATTER.format(value)
+  return formatMoney(value)
 }
 
 function formatDate(d: string | undefined | null): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleDateString('fr-FR')
-  } catch {
-    return '—'
-  }
+  return formatDateIntl(d) || '—'
 }
 
-const STATUS_FILTER_OPTIONS = [
-  { value: 'DRAFT', label: 'À valider (DRAFT)' },
-  { value: '', label: 'Tous statuts' },
+const STATUS_FILTER_OPTIONS: { value: string; labelKey: MessageKey }[] = [
+  { value: 'DRAFT', labelKey: 'accAccounts.queue.filterDraft' },
+  { value: '', labelKey: 'accAccounts.queue.filterAll' },
 ]
 
 interface DraftFilters {
@@ -40,6 +35,7 @@ interface DraftFilters {
 }
 
 const DraftQueue = () => {
+  const { t } = useI18n()
   const [entries, setEntries] = useState<IAccountingEntry[]>([])
   const [total, setTotal] = useState(0)
   const [sources, setSources] = useState<IExternalSource[]>([])
@@ -84,7 +80,7 @@ const DraftQueue = () => {
       setSources(sList)
       setSelected(new Set())
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     } finally {
       setLoading(false)
     }
@@ -128,7 +124,7 @@ const DraftQueue = () => {
 
   async function handleBulkValidate(ids: string[]) {
     if (!ids || ids.length === 0) return
-    if (!confirm(`Valider ${ids.length} écriture(s) ?`)) return
+    if (!confirm(t('accAccounts.queue.confirmBulk', { count: ids.length }))) return
     setValidating(true)
     setError('')
     setSuccess('')
@@ -136,10 +132,10 @@ const DraftQueue = () => {
       const results = await bulkValidateEntries(ids)
       const ok = Array.isArray(results) ? results.filter((r) => r.ok || r.success).length : ids.length
       const ko = Array.isArray(results) ? results.length - ok : 0
-      setSuccess(`${ok} écriture(s) validée(s)${ko > 0 ? `, ${ko} en erreur` : ''}.`)
+      setSuccess(ko > 0 ? t('accAccounts.queue.resultWithErrors', { ok, ko }) : t('accAccounts.queue.resultOk', { ok }))
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     } finally {
       setValidating(false)
     }
@@ -148,21 +144,23 @@ const DraftQueue = () => {
   async function handleValidateAll() {
     const ids = selectableEntries.map((e) => e._id)
     if (ids.length === 0) return
-    if (!confirm(`Valider toutes les ${ids.length} écritures DRAFT affichées sur cette page ?`)) return
+    if (!confirm(t('accAccounts.queue.confirmAll', { count: ids.length }))) return
     await handleBulkValidate(ids)
   }
 
   return (
     <AccountingLayout
-      title="File d'attente — écritures à valider"
-      subtitle="Écritures issues des sources externes, en attente de revue manuelle"
+      title={t('accAccounts.queue.title')}
+      subtitle={t('accAccounts.queue.subtitle')}
       actions={
         <button
           className="portal-button"
           onClick={handleValidateAll}
           disabled={validating || selectableEntries.length === 0}
         >
-          {validating ? 'Validation…' : `✓ Tout valider (${selectableEntries.length})`}
+          {validating
+            ? t('accAccounts.queue.validating')
+            : t('accAccounts.queue.validateAll', { count: selectableEntries.length })}
         </button>
       }
     >
@@ -171,21 +169,21 @@ const DraftQueue = () => {
 
       <div className="accounting-kpi-grid">
         <div className="accounting-kpi">
-          <div className="label">Écritures à valider</div>
+          <div className="label">{t('accAccounts.queue.kpiToValidate')}</div>
           <div className="value" style={{ color: draftCount > 0 ? '#fbbf24' : '#4ade80' }}>
             {draftCount}
           </div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">Total en attente</div>
+          <div className="label">{t('accAccounts.queue.kpiPendingTotal')}</div>
           <div className="value">{formatEur(totalAmount)}</div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">Sources actives</div>
+          <div className="label">{t('accAccounts.queue.kpiActiveSources')}</div>
           <div className="value">{sources.filter((s) => s.status === 'ACTIVE').length}</div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">Sélectionnées</div>
+          <div className="label">{t('accAccounts.queue.kpiSelected')}</div>
           <div className="value" style={{ color: selected.size > 0 ? 'var(--primary)' : undefined }}>
             {selected.size}
           </div>
@@ -199,7 +197,7 @@ const DraftQueue = () => {
             value={filters.sourceSlug}
             onChange={(e) => setFilters({ ...filters, sourceSlug: e.target.value, page: 1 })}
           >
-            <option value="">Toutes les sources externes</option>
+            <option value="">{t('accAccounts.queue.allSources')}</option>
             {sources.map((s) => (
               <option key={s._id} value={s.slug}>
                 {s.name} ({s.slug})
@@ -213,7 +211,7 @@ const DraftQueue = () => {
           >
             {STATUS_FILTER_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.label}
+                {t(o.labelKey)}
               </option>
             ))}
           </select>
@@ -230,7 +228,7 @@ const DraftQueue = () => {
             onChange={(e) => setFilters({ ...filters, to: e.target.value })}
           />
           <button className="portal-button secondary" onClick={() => reload()}>
-            Filtrer
+            {t('accAccounts.common.filter')}
           </button>
 
           <div className="accounting-toolbar-right">
@@ -240,18 +238,21 @@ const DraftQueue = () => {
                 onClick={() => handleBulkValidate(Array.from(selected))}
                 disabled={validating}
               >
-                {validating ? 'Validation…' : `✓ Valider la sélection (${selected.size})`}
+                {validating
+                  ? t('accAccounts.queue.validating')
+                  : t('accAccounts.queue.validateSelection', { count: selected.size })}
               </button>
             )}
           </div>
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
         ) : entries.length === 0 ? (
           <div className="accounting-empty">
             <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>✓</div>
-            Tout est à jour !<div className="hint">Aucune écriture en attente de validation pour ces filtres.</div>
+            {t('accAccounts.queue.upToDate')}
+            <div className="hint">{t('accAccounts.queue.upToDateHint')}</div>
           </div>
         ) : (
           <table className="accounting-table">
@@ -265,16 +266,16 @@ const DraftQueue = () => {
                     disabled={selectableEntries.length === 0}
                   />
                 </th>
-                <th>Numéro</th>
-                <th>Date</th>
-                <th>Source</th>
-                <th>N° pièce</th>
-                <th>Libellé</th>
-                <th className="amount">Débit</th>
-                <th className="amount">Crédit</th>
-                <th>Auto-validée</th>
-                <th>Statut</th>
-                <th>Actions</th>
+                <th>{t('accAccounts.col.number')}</th>
+                <th>{t('accAccounts.col.date')}</th>
+                <th>{t('accAccounts.queue.colSource')}</th>
+                <th>{t('accAccounts.queue.colPieceRef')}</th>
+                <th>{t('accAccounts.col.label')}</th>
+                <th className="amount">{t('accAccounts.col.debit')}</th>
+                <th className="amount">{t('accAccounts.col.credit')}</th>
+                <th>{t('accAccounts.queue.colAutoValidated')}</th>
+                <th>{t('accAccounts.col.status')}</th>
+                <th>{t('accAccounts.queue.colActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -306,7 +307,7 @@ const DraftQueue = () => {
                     <td className="amount">{formatEur(e.totalCredit)}</td>
                     <td>
                       {e.autoValidated ? (
-                        <span className="accounting-badge validated">Oui</span>
+                        <span className="accounting-badge validated">{t('common.yes')}</span>
                       ) : (
                         <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
                       )}
@@ -317,11 +318,11 @@ const DraftQueue = () => {
                     <td>
                       <div className="accounting-row-actions">
                         <Link to={`/admin/comptabilite/ecritures/${e._id}`}>
-                          <button type="button">Ouvrir</button>
+                          <button type="button">{t('accAccounts.queue.open')}</button>
                         </Link>
                         {isDraft && (
                           <button type="button" onClick={() => handleBulkValidate([e._id])} disabled={validating}>
-                            ✓ Valider
+                            {t('accAccounts.queue.validateOne')}
                           </button>
                         )}
                       </div>
@@ -340,17 +341,20 @@ const DraftQueue = () => {
               disabled={filters.page <= 1}
               onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
             >
-              ← Précédent
+              {t('accAccounts.common.previous')}
             </button>
             <span style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.6)' }}>
-              Page {filters.page} / {Math.max(1, Math.ceil(total / filters.limit))}
+              {t('accAccounts.common.page', {
+                page: filters.page,
+                total: Math.max(1, Math.ceil(total / filters.limit)),
+              })}
             </span>
             <button
               className="portal-button secondary"
               disabled={filters.page >= Math.ceil(total / filters.limit)}
               onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
             >
-              Suivant →
+              {t('accAccounts.common.next')}
             </button>
           </div>
         )}

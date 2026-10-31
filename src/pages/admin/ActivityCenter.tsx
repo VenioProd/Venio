@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchActivitySummary, type ActivitySummary } from '../../services/activityCenter'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate } from '../../i18n/format'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
-function formatDate(value?: string): string {
-  if (!value) return ''
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
-}
-
 export default function ActivityCenter() {
+  const { t } = useI18n()
   const [data, setData] = useState<ActivitySummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -20,11 +18,11 @@ export default function ActivityCenter() {
     try {
       setData(await fetchActivitySummary())
     } catch {
-      setError('Impossible de charger le centre d’activité.')
+      setError(t('adminOps.activity.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void load()
@@ -45,16 +43,19 @@ export default function ActivityCenter() {
         >
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-              Centre d’activité
+              {t('adminOps.activity.title')}
             </h1>
             {data && (
               <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '5px 0 0' }}>
-                Mis à jour le {formatDate(data.checkedAt)} · aperçu limité à {data.limit} éléments par rubrique
+                {t('adminOps.activity.updated', {
+                  date: formatDate(data.checkedAt, { dateStyle: 'short', timeStyle: 'short' }),
+                  limit: data.limit,
+                })}
               </p>
             )}
           </div>
           <button className="portal-button secondary" onClick={() => void load()} disabled={loading}>
-            {loading ? 'Chargement…' : 'Rafraîchir'}
+            {loading ? t('adminOps.common.loading') : t('adminOps.common.refresh')}
           </button>
         </div>
         {error && (
@@ -62,7 +63,7 @@ export default function ActivityCenter() {
             {error}
           </div>
         )}
-        {loading && !data && <p style={{ color: 'var(--text-muted)' }}>Chargement…</p>}
+        {loading && !data && <p style={{ color: 'var(--text-muted)' }}>{t('adminOps.common.loading')}</p>}
         {data && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
             {data.sections.map((section) => (
@@ -90,11 +91,13 @@ export default function ActivityCenter() {
                     className="portal-button secondary"
                     style={{ padding: '5px 9px', fontSize: 12 }}
                   >
-                    Voir tout
+                    {t('adminOps.activity.viewAll')}
                   </Link>
                 </div>
                 {section.entries.length === 0 ? (
-                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>Rien à traiter.</p>
+                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
+                    {t('adminOps.activity.nothing')}
+                  </p>
                 ) : (
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
                     {section.entries.map((entry) => (
@@ -118,13 +121,13 @@ export default function ActivityCenter() {
                 )}
                 {section.hasMore && (
                   <p style={{ margin: '12px 0 0', color: 'var(--text-muted)', fontSize: 12 }}>
-                    D’autres éléments sont disponibles.
+                    {t('adminOps.activity.more')}
                   </p>
                 )}
               </section>
             ))}
             {data.sections.length === 0 && (
-              <p style={{ color: 'var(--text-muted)' }}>Aucune rubrique n’est accessible avec vos permissions.</p>
+              <p style={{ color: 'var(--text-muted)' }}>{t('adminOps.activity.noSections')}</p>
             )}
           </div>
         )}

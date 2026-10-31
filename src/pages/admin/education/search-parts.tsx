@@ -71,6 +71,8 @@ import {
   type EducationTemplate,
   type EducationSearchDocument,
 } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
+import type { MessageKey } from '../../../i18n'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
 import { CorrectionMode } from './CorrectionMode'
@@ -93,6 +95,14 @@ function previewKindForMimeType(mimeType: string | null | undefined): PreviewKin
   return PREVIEWABLE_MIME_TYPES[mimeType?.split(';', 1)[0].trim().toLowerCase() ?? ''] ?? null
 }
 
+const OPEN_TARGET_KEYS = {
+  assignment: 'eduD.search.openAssignment',
+  class: 'eduD.search.openClass',
+  session: 'eduD.search.openSession',
+  student: 'eduD.search.openStudent',
+  note: 'eduD.search.openNote',
+} as const satisfies Record<string, MessageKey>
+
 type DocumentPreviewState = {
   document: EducationSearchDocument
   kind: PreviewKind
@@ -109,9 +119,10 @@ function QuickfindDocumentPreview({
   onClose: () => void
   onDownload: (document: EducationSearchDocument) => void
 }) {
+  const { t } = useI18n()
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
-  const documentLabel = preview.document.title || preview.document.originalName || 'Document sans titre'
+  const documentLabel = preview.document.title || preview.document.originalName || t('eduD.search.untitledDocument')
 
   useEffect(() => {
     closeButtonRef.current?.focus()
@@ -189,24 +200,24 @@ function QuickfindDocumentPreview({
               whiteSpace: 'nowrap',
             }}
           >
-            Aperçu : {documentLabel}
+            {t('eduD.search.previewTitle', { name: documentLabel })}
           </h2>
           <button
             type="button"
             className="edu-search-document-action"
             onClick={() => onDownload(preview.document)}
-            aria-label={`Télécharger ${documentLabel}`}
+            aria-label={t('eduD.search.downloadAria', { name: documentLabel })}
           >
-            <Download size={13} aria-hidden /> Télécharger
+            <Download size={13} aria-hidden /> {t('eduD.search.download')}
           </button>
           <button
             ref={closeButtonRef}
             type="button"
             className="edu-search-document-action"
             onClick={onClose}
-            aria-label={`Fermer l’aperçu de ${documentLabel}`}
+            aria-label={t('eduD.search.closePreviewAria', { name: documentLabel })}
           >
-            <X size={13} aria-hidden /> Fermer
+            <X size={13} aria-hidden /> {t('common.close')}
           </button>
         </div>
         <div
@@ -221,12 +232,12 @@ function QuickfindDocumentPreview({
         >
           {preview.status === 'loading' && (
             <div role="status" aria-live="polite" className="edu-empty">
-              <Loader2 size={18} className="edu-spin" aria-hidden /> Chargement de l’aperçu…
+              <Loader2 size={18} className="edu-spin" aria-hidden /> {t('eduD.search.previewLoading')}
             </div>
           )}
           {preview.status === 'error' && (
             <div role="alert" className="edu-banner-error" style={{ maxWidth: 520 }}>
-              Impossible de charger l’aperçu du document. Vous pouvez le télécharger si vous y avez toujours accès.
+              {t('eduD.search.previewError')}
             </div>
           )}
           {preview.status === 'ready' && preview.objectUrl && preview.kind === 'image' && (
@@ -239,7 +250,7 @@ function QuickfindDocumentPreview({
           {preview.status === 'ready' && preview.objectUrl && preview.kind === 'pdf' && (
             <iframe
               src={preview.objectUrl}
-              title={`Aperçu PDF : ${documentLabel}`}
+              title={t('eduD.search.pdfTitle', { name: documentLabel })}
               sandbox=""
               referrerPolicy="no-referrer"
               tabIndex={-1}
@@ -267,6 +278,7 @@ export function SearchModal({
   onPickStudent: (id: string) => void
   onPickNote: (id: string) => void
 }) {
+  const { t } = useI18n()
   const [q, setQ] = useState('')
   const [results, setResults] = useState<Awaited<ReturnType<typeof searchEducation>>['results'] | null>(null)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
@@ -282,7 +294,7 @@ export function SearchModal({
       return
     }
     let cancelled = false
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       try {
         const r = await searchEducation(q)
         if (!cancelled) setResults(r.results)
@@ -292,7 +304,7 @@ export function SearchModal({
     }, 200)
     return () => {
       cancelled = true
-      clearTimeout(t)
+      clearTimeout(timer)
     }
   }, [q])
 
@@ -322,7 +334,7 @@ export function SearchModal({
       link.remove()
       URL.revokeObjectURL(href)
     } catch (err) {
-      setDownloadError(err instanceof Error ? err.message : 'Erreur de téléchargement du document')
+      setDownloadError(err instanceof Error ? err.message : t('eduD.search.downloadError'))
     } finally {
       setDownloadingId(null)
     }
@@ -396,7 +408,7 @@ export function SearchModal({
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Rechercher classes, étudiants, séances, devoirs, notes, documents…"
+            placeholder={t('eduD.search.placeholder')}
             style={{ fontSize: 14 }}
           />
         </div>
@@ -406,10 +418,10 @@ export function SearchModal({
               {downloadError}
             </div>
           )}
-          {!results && q.trim().length < 2 && <div className="edu-empty">Tape au moins 2 caractères…</div>}
+          {!results && q.trim().length < 2 && <div className="edu-empty">{t('eduD.search.minChars')}</div>}
           {results && (
             <>
-              {results.classes.length > 0 && <h4>Classes</h4>}
+              {results.classes.length > 0 && <h4>{t('eduD.search.headingClasses')}</h4>}
               {results.classes.map((c) => (
                 <div key={c._id} className="edu-search-result" onClick={() => onPickClass(c._id)}>
                   <span
@@ -420,7 +432,7 @@ export function SearchModal({
                   <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 6 }}>{c.school}</span>
                 </div>
               ))}
-              {results.students.length > 0 && <h4>Étudiants</h4>}
+              {results.students.length > 0 && <h4>{t('eduD.search.headingStudents')}</h4>}
               {results.students.map((s) => (
                 <div
                   key={s._id}
@@ -433,7 +445,7 @@ export function SearchModal({
                   )}
                 </div>
               ))}
-              {results.sessions.length > 0 && <h4>Séances</h4>}
+              {results.sessions.length > 0 && <h4>{t('eduD.search.headingSessions')}</h4>}
               {results.sessions.map((s) => (
                 <div
                   key={s._id}
@@ -444,7 +456,7 @@ export function SearchModal({
                   <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 6 }}>· {formatDate(s.date)}</span>
                 </div>
               ))}
-              {results.assignments.length > 0 && <h4>Devoirs</h4>}
+              {results.assignments.length > 0 && <h4>{t('eduD.search.headingAssignments')}</h4>}
               {results.assignments.map((a) => (
                 <div
                   key={a._id}
@@ -454,25 +466,25 @@ export function SearchModal({
                   {a.title}
                 </div>
               ))}
-              {results.notes.length > 0 && <h4>Notes</h4>}
+              {results.notes.length > 0 && <h4>{t('eduD.search.headingNotes')}</h4>}
               {results.notes.map((n) => (
                 <div key={n._id} className="edu-search-result">
-                  {n.title || 'Sans titre'}
+                  {n.title || t('eduD.search.untitledNote')}
                 </div>
               ))}
-              {results.documents.length > 0 && <h4>Documents</h4>}
+              {results.documents.length > 0 && <h4>{t('eduD.search.headingDocuments')}</h4>}
               {results.documents.map((document) => {
                 const target = document.parentContext?.state === 'available' ? document.parentContext.target : null
-                const documentLabel = document.title || document.originalName || 'Document sans titre'
+                const documentLabel = document.title || document.originalName || t('eduD.search.untitledDocument')
                 const noParent =
                   document.parentContext?.state === 'unavailable' && document.parentContext.reason === 'NO_PARENT'
                 const unavailableMessage = noParent
                   ? document.parentType === 'note'
-                    ? ' · Aucune note parente associée'
-                    : ' · Aucun contexte pédagogique associé'
+                    ? t('eduD.search.noParentNote')
+                    : t('eduD.search.noParentContext')
                   : document.parentType === 'note'
-                    ? ' · Note parente indisponible'
-                    : ' · Contexte parent indisponible'
+                    ? t('eduD.search.parentNoteUnavailable')
+                    : t('eduD.search.parentContextUnavailable')
                 return (
                   <div key={document._id} className="edu-search-result edu-search-document-result">
                     <div>
@@ -481,22 +493,22 @@ export function SearchModal({
                     </div>
                     <div className="edu-search-result-meta">
                       {target
-                        ? ` · Ouvrir ${target.kind === 'assignment' ? 'le devoir' : target.kind === 'class' ? 'la classe' : target.kind === 'session' ? 'la séance' : target.kind === 'student' ? 'l’étudiant' : 'la note'} · ${target.label}${target.school ? ` · ${target.school}` : ''}`
+                        ? `${t(OPEN_TARGET_KEYS[target.kind], { label: target.label })}${target.school ? ` · ${target.school}` : ''}`
                         : unavailableMessage}
                     </div>
                     <div
                       className="edu-search-document-actions"
                       role="group"
-                      aria-label={`Actions pour ${documentLabel}`}
+                      aria-label={t('eduD.search.actionsFor', { name: documentLabel })}
                     >
                       <button
                         type="button"
                         className="edu-search-document-action"
                         disabled={!target}
                         onClick={() => openDocumentContext(document)}
-                        aria-label={`Ouvrir le contexte de ${documentLabel}`}
+                        aria-label={t('eduD.search.openContextAria', { name: documentLabel })}
                       >
-                        Ouvrir le contexte
+                        {t('eduD.search.openContext')}
                       </button>
                       {previewKindForMimeType(document.mimeType) ? (
                         <button
@@ -510,7 +522,7 @@ export function SearchModal({
                             previewTrigger.current = event.currentTarget
                             void previewDocument(document)
                           }}
-                          aria-label={`Prévisualiser ${documentLabel}`}
+                          aria-label={t('eduD.search.previewAria', { name: documentLabel })}
                         >
                           {preview?.document._id === document._id && preview.status === 'loading' ? (
                             <Loader2 size={13} className="edu-spin" aria-hidden />
@@ -518,34 +530,32 @@ export function SearchModal({
                             <FileText size={13} aria-hidden />
                           )}
                           {preview?.document._id === document._id && preview.status === 'loading'
-                            ? 'Chargement…'
-                            : 'Prévisualiser'}
+                            ? t('eduD.common.loading')
+                            : t('eduD.search.previewAction')}
                         </button>
                       ) : (
-                        <span className="edu-search-result-meta">
-                          Aperçu indisponible pour ce format — téléchargez le fichier.
-                        </span>
+                        <span className="edu-search-result-meta">{t('eduD.search.noPreview')}</span>
                       )}
                       <button
                         type="button"
                         className="edu-search-document-action"
                         disabled={downloadingId === document._id}
                         onClick={() => downloadDocument(document)}
-                        aria-label={`Télécharger ${documentLabel}`}
+                        aria-label={t('eduD.search.downloadAria', { name: documentLabel })}
                       >
                         {downloadingId === document._id ? (
                           <Loader2 size={13} className="edu-spin" aria-hidden />
                         ) : (
                           <Download size={13} aria-hidden />
                         )}
-                        {downloadingId === document._id ? 'Téléchargement…' : 'Télécharger'}
+                        {downloadingId === document._id ? t('eduD.search.downloading') : t('eduD.search.download')}
                       </button>
                     </div>
                   </div>
                 )
               })}
               {Object.values(results).every((arr) => arr.length === 0) && q.trim().length >= 2 && (
-                <div className="edu-empty">Aucun résultat pour « {q} »</div>
+                <div className="edu-empty">{t('eduD.search.noResults', { q })}</div>
               )}
             </>
           )}

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../lib/api'
+import { useI18n } from '../context/I18nContext'
+import { translate, type MessageKey } from '../i18n'
 import type { ProjectCollaborator, ProjectCollaboratorRole } from '../types/project.types'
 
 interface ProjectCollaboratorsProps {
@@ -7,16 +9,17 @@ interface ProjectCollaboratorsProps {
   canManage: boolean
 }
 
-const roleLabels: Record<ProjectCollaboratorRole, string> = {
-  VIEWER: 'Lecteur',
-  EDITOR: 'Éditeur',
-}
+const ROLE_LABEL_KEYS = {
+  VIEWER: 'shared.projectRole.viewer',
+  EDITOR: 'shared.projectRole.editor',
+} as const satisfies Record<ProjectCollaboratorRole, MessageKey>
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback
 }
 
 export default function ProjectCollaborators({ projectId, canManage }: ProjectCollaboratorsProps) {
+  const { t } = useI18n()
   const [collaborators, setCollaborators] = useState<ProjectCollaborator[]>([])
   const [email, setEmail] = useState('')
   const [newRole, setNewRole] = useState<ProjectCollaboratorRole>('VIEWER')
@@ -34,7 +37,7 @@ export default function ProjectCollaborators({ projectId, canManage }: ProjectCo
         if (!cancelled) setCollaborators(data.collaborators || [])
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(errorMessage(err, 'Impossible de charger les collaborateurs'))
+        if (!cancelled) setError(errorMessage(err, translate('shared.collaborators.loadError')))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -60,7 +63,7 @@ export default function ProjectCollaborators({ projectId, canManage }: ProjectCo
       setEmail('')
       setNewRole('VIEWER')
     } catch (err: unknown) {
-      setError(errorMessage(err, 'Impossible d’ajouter ce collaborateur'))
+      setError(errorMessage(err, t('shared.collaborators.addError')))
     } finally {
       setSubmitting(false)
     }
@@ -79,21 +82,21 @@ export default function ProjectCollaborators({ projectId, canManage }: ProjectCo
         current.map((item) => (item._id === data.collaborator._id ? data.collaborator : item)),
       )
     } catch (err: unknown) {
-      setError(errorMessage(err, 'Impossible de modifier ce rôle'))
+      setError(errorMessage(err, t('shared.collaborators.roleError')))
     } finally {
       setPendingMemberId(null)
     }
   }
 
   const revoke = async (collaborator: ProjectCollaborator) => {
-    if (!window.confirm(`Révoquer l’accès de ${collaborator.user.name} ?`)) return
+    if (!window.confirm(t('shared.collaborators.revokeConfirm', { name: collaborator.user.name }))) return
     setError('')
     setPendingMemberId(collaborator._id)
     try {
       await apiFetch(`/api/projects/${projectId}/collaborators/${collaborator._id}`, { method: 'DELETE' })
       setCollaborators((current) => current.filter((item) => item._id !== collaborator._id))
     } catch (err: unknown) {
-      setError(errorMessage(err, 'Impossible de révoquer cet accès'))
+      setError(errorMessage(err, t('shared.collaborators.revokeError')))
     } finally {
       setPendingMemberId(null)
     }
@@ -103,37 +106,37 @@ export default function ProjectCollaborators({ projectId, canManage }: ProjectCo
     <section className="client-collaborators" aria-labelledby="collaborators-title">
       <div className="client-collaborators-header">
         <div>
-          <h2 id="collaborators-title">Collaborateurs</h2>
-          <p>Ajoutez un client par son adresse e-mail exacte et définissez son accès au projet.</p>
+          <h2 id="collaborators-title">{t('shared.collaborators.title')}</h2>
+          <p>{t('shared.collaborators.intro')}</p>
         </div>
       </div>
 
       <form className="client-collaborators-form" onSubmit={addCollaborator}>
         <label>
-          Adresse e-mail
+          {t('shared.collaborators.emailLabel')}
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="client@exemple.fr"
+            placeholder={t('shared.collaborators.emailPlaceholder')}
             autoComplete="email"
             required
             disabled={submitting}
           />
         </label>
         <label>
-          Rôle
+          {t('shared.collaborators.roleLabel')}
           <select
             value={newRole}
             onChange={(event) => setNewRole(event.target.value as ProjectCollaboratorRole)}
             disabled={submitting}
           >
-            <option value="VIEWER">Lecteur</option>
-            <option value="EDITOR">Éditeur</option>
+            <option value="VIEWER">{t('shared.projectRole.viewer')}</option>
+            <option value="EDITOR">{t('shared.projectRole.editor')}</option>
           </select>
         </label>
         <button className="portal-button" type="submit" disabled={submitting}>
-          {submitting ? 'Ajout…' : 'Ajouter'}
+          {submitting ? t('shared.collaborators.adding') : t('shared.collaborators.add')}
         </button>
       </form>
 
@@ -144,9 +147,9 @@ export default function ProjectCollaborators({ projectId, canManage }: ProjectCo
       )}
 
       {loading ? (
-        <p className="client-collaborators-status">Chargement des collaborateurs…</p>
+        <p className="client-collaborators-status">{t('shared.collaborators.loading')}</p>
       ) : collaborators.length === 0 ? (
-        <p className="client-collaborators-status">Aucun collaborateur pour le moment.</p>
+        <p className="client-collaborators-status">{t('shared.collaborators.empty')}</p>
       ) : (
         <ul className="client-collaborators-list">
           {collaborators.map((collaborator) => {
@@ -158,16 +161,16 @@ export default function ProjectCollaborators({ projectId, canManage }: ProjectCo
                   <span>{collaborator.user.email}</span>
                 </div>
                 <label className="client-collaborator-role">
-                  <span className="sr-only">Rôle de {collaborator.user.name}</span>
+                  <span className="sr-only">{t('shared.collaborators.roleOf', { name: collaborator.user.name })}</span>
                   <select
-                    aria-label={`Rôle de ${collaborator.user.name}`}
+                    aria-label={t('shared.collaborators.roleOf', { name: collaborator.user.name })}
                     value={collaborator.role}
                     onChange={(event) => updateRole(collaborator, event.target.value as ProjectCollaboratorRole)}
                     disabled={pending}
                   >
-                    {Object.entries(roleLabels).map(([role, label]) => (
+                    {Object.entries(ROLE_LABEL_KEYS).map(([role, labelKey]) => (
                       <option key={role} value={role}>
-                        {label}
+                        {t(labelKey)}
                       </option>
                     ))}
                   </select>
@@ -178,7 +181,7 @@ export default function ProjectCollaborators({ projectId, canManage }: ProjectCo
                   onClick={() => revoke(collaborator)}
                   disabled={pending}
                 >
-                  {pending ? 'Mise à jour…' : 'Révoquer'}
+                  {pending ? t('shared.collaborators.updating') : t('shared.collaborators.revoke')}
                 </button>
               </li>
             )

@@ -2,6 +2,7 @@ import React, { useRef } from 'react'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG, formatDate, formatFileSize, isImage } from './types'
 import type { Ticket, TicketFile } from './types'
 import UserAvatar from '../../../components/UserAvatar'
+import { useI18n } from '../../../context/I18nContext'
 
 interface TicketDetailProps {
   ticket: Ticket
@@ -40,6 +41,7 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
   onDelete,
   onPreview,
 }) => {
+  const { t } = useI18n()
   const replyFileRef = useRef<HTMLInputElement>(null)
 
   const removeReplyFile = (idx: number) => onReplyFilesChange(replyFiles.filter((_, i) => i !== idx))
@@ -114,14 +116,14 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
       <div className="ticket-card-header" onClick={onToggleExpand}>
         <div className="ticket-card-left">
           <span className="ticket-category-badge" style={{ background: cat.color }}>
-            {cat.label}
+            {t(cat.labelKey)}
           </span>
-          <span className="ticket-priority-dot" style={{ background: pri.color }} title={pri.label} />
+          <span className="ticket-priority-dot" style={{ background: pri.color }} title={t(pri.labelKey)} />
           <h3 className="ticket-card-title">{ticket.title}</h3>
         </div>
         <div className="ticket-card-right">
           <span className="ticket-status-badge" style={{ color: st.color, borderColor: st.color }}>
-            {st.label}
+            {t(st.labelKey)}
           </span>
           {(ticket.attachments?.length || 0) > 0 && (
             <span style={{ opacity: 0.4, fontSize: 12 }}>
@@ -139,9 +141,7 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
             </span>
           )}
           {ticket.replies.length > 0 && (
-            <span className="ticket-reply-count">
-              {ticket.replies.length} reponse{ticket.replies.length > 1 ? 's' : ''}
-            </span>
+            <span className="ticket-reply-count">{t('orgs.tickets.replyCount', { count: ticket.replies.length })}</span>
           )}
           <svg
             width="14"
@@ -165,13 +165,15 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
         <div className="ticket-card-body">
           <div className="ticket-meta">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>Par</span>
+              <span>{t('orgs.tickets.detail.by')}</span>
               <UserAvatar name={ticket.authorName} avatarUrl={ticket.authorAvatarUrl} size={24} />
               <strong>{ticket.authorName}</strong>
             </div>
             <span>{formatDate(ticket.createdAt)}</span>
             {ticket.archivedAt && (
-              <span style={{ color: 'var(--ink-faint)' }}>Archive le {formatDate(ticket.archivedAt)}</span>
+              <span style={{ color: 'var(--ink-faint)' }}>
+                {t('orgs.tickets.detail.archivedOn', { date: formatDate(ticket.archivedAt) })}
+              </span>
             )}
           </div>
           <div className="ticket-message">{ticket.message}</div>
@@ -202,7 +204,7 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
                   <textarea
                     value={replyText}
                     onChange={(e) => onReplyTextChange(e.target.value)}
-                    placeholder="Votre reponse..."
+                    placeholder={t('orgs.tickets.detail.replyPlaceholder')}
                     rows={2}
                   />
                   {renderFilePreview(replyFiles)}
@@ -228,7 +230,7 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
                       onClick={() => onReply(ticket._id)}
                       disabled={submitting || !replyText.trim()}
                     >
-                      Repondre
+                      {t('orgs.tickets.detail.reply')}
                     </button>
                     <select
                       value={ticket.status}
@@ -237,7 +239,7 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
                     >
                       {Object.entries(STATUS_CONFIG).map(([k, v]) => (
                         <option key={k} value={k}>
-                          {v.label}
+                          {t(v.labelKey)}
                         </option>
                       ))}
                     </select>
@@ -245,17 +247,25 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
                 </div>
               )}
               {isSuperAdmin && (ticket.status === 'FERME' || ticket.status === 'RESOLU') && (
-                <button className="ticket-archive-btn" onClick={() => onArchive(ticket._id)} title="Archiver">
+                <button
+                  className="ticket-archive-btn"
+                  onClick={() => onArchive(ticket._id)}
+                  title={t('orgs.tickets.detail.archive')}
+                >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="21 8 21 21 3 21 3 8" />
                     <rect x="1" y="3" width="22" height="5" />
                     <line x1="10" y1="12" x2="14" y2="12" />
                   </svg>
-                  Archiver
+                  {t('orgs.tickets.detail.archive')}
                 </button>
               )}
               {isSuperAdmin && (
-                <button className="ticket-delete-btn" onClick={() => onDelete(ticket._id)} title="Supprimer">
+                <button
+                  className="ticket-delete-btn"
+                  onClick={() => onDelete(ticket._id)}
+                  title={t('orgs.tickets.detail.delete')}
+                >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -272,12 +282,12 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
                   <polyline points="1 4 1 10 7 10" />
                   <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                 </svg>
-                Restaurer
+                {t('orgs.tickets.detail.restore')}
               </button>
               <button
                 className="ticket-delete-btn"
                 onClick={() => onDelete(ticket._id)}
-                title="Supprimer definitivement"
+                title={t('orgs.tickets.detail.deleteForever')}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="3 6 5 6 21 6" />

@@ -6,6 +6,7 @@
  */
 
 import type { CSSProperties } from 'react'
+import { useI18n } from '../../context/I18nContext'
 
 /** Rang d'apparition d'un élément du relevé, lu par la feuille via --mh-n. */
 const n = (rang: number) => ({ '--mh-n': rang }) as CSSProperties
@@ -16,73 +17,72 @@ const BADGES: { n: string; cx: number; cy: number }[] = [
   { n: '03', cx: 363, cy: 32 },
 ]
 
-const SitePlate = () => (
-  <figure className="mh-plate">
-    <figcaption className="mh-plate-cap">
-      <span className="mh-mono">Un site Venio</span>
-      <span className="mh-mono">01 · 02 · 03</span>
-    </figcaption>
+const SitePlate = () => {
+  const { t } = useI18n()
+  return (
+    <figure className="mh-plate">
+      <figcaption className="mh-plate-cap">
+        <span className="mh-mono">{t('pubHome.plate.caption')}</span>
+        <span className="mh-mono">01 · 02 · 03</span>
+      </figcaption>
 
-    <svg
-      viewBox="0 0 600 336"
-      role="img"
-      aria-label="Schéma d'un site web, annoté de trois repères : le design est dessiné pour vous, le code vous appartient, rien n'est bloqué techniquement."
-    >
-      {/* ─── l'objet mesuré ───
+      <svg viewBox="0 0 600 336" role="img" aria-label={t('pubHome.plate.aria')}>
+        {/* ─── l'objet mesuré ───
           --mh-n donne le rang d'apparition quand le relevé se dessine :
           la barre de titre, puis les blocs, de haut en bas et de gauche à
           droite, comme on lirait la page. Voir monolithe-home.css. */}
-      <rect className="mh-pl-frame" x="96" y="52" width="452" height="200" rx="5" />
-      <rect className="mh-pl-node" style={n(0)} x="112" y="68" width="420" height="18" rx="5" />
-      <circle className="mh-pl-dot" style={n(1)} cx="506" cy="77" r="2.6" />
-      <circle className="mh-pl-dot" style={n(1)} cx="516" cy="77" r="2.6" />
-      <circle className="mh-pl-dot" style={n(1)} cx="526" cy="77" r="2.6" />
-      <rect className="mh-pl-node mh-pl-node--live" style={n(2)} x="112" y="98" width="262" height="62" rx="5" />
-      <rect className="mh-pl-node" style={n(3)} x="386" y="98" width="146" height="62" rx="5" />
-      <rect className="mh-pl-node" style={n(4)} x="112" y="172" width="132" height="62" rx="5" />
-      <rect className="mh-pl-node" style={n(5)} x="256" y="172" width="132" height="62" rx="5" />
-      <rect className="mh-pl-node" style={n(6)} x="400" y="172" width="132" height="62" rx="5" />
+        <rect className="mh-pl-frame" x="96" y="52" width="452" height="200" rx="5" />
+        <rect className="mh-pl-node" style={n(0)} x="112" y="68" width="420" height="18" rx="5" />
+        <circle className="mh-pl-dot" style={n(1)} cx="506" cy="77" r="2.6" />
+        <circle className="mh-pl-dot" style={n(1)} cx="516" cy="77" r="2.6" />
+        <circle className="mh-pl-dot" style={n(1)} cx="526" cy="77" r="2.6" />
+        <rect className="mh-pl-node mh-pl-node--live" style={n(2)} x="112" y="98" width="262" height="62" rx="5" />
+        <rect className="mh-pl-node" style={n(3)} x="386" y="98" width="146" height="62" rx="5" />
+        <rect className="mh-pl-node" style={n(4)} x="112" y="172" width="132" height="62" rx="5" />
+        <rect className="mh-pl-node" style={n(5)} x="256" y="172" width="132" height="62" rx="5" />
+        <rect className="mh-pl-node" style={n(6)} x="400" y="172" width="132" height="62" rx="5" />
 
-      {/* ─── repère 01 : le design ─── */}
-      <line className="mh-pl-ext" x1="96" y1="256" x2="96" y2="300" />
-      <line className="mh-pl-ext" x1="548" y1="256" x2="548" y2="300" />
-      <line className="mh-pl-dim" x1="96" y1="288" x2="274" y2="288" />
-      <line className="mh-pl-dim" x1="370" y1="288" x2="548" y2="288" />
-      <path className="mh-pl-arrow" d="M 96 288 l 9 -3.6 v 7.2 z" />
-      <path className="mh-pl-arrow" d="M 548 288 l -9 -3.6 v 7.2 z" />
-      <text className="mh-pl-t mh-pl-t--live" x="322" y="292" textAnchor="middle">
-        Dessiné pour vous
-      </text>
+        {/* ─── repère 01 : le design ─── */}
+        <line className="mh-pl-ext" x1="96" y1="256" x2="96" y2="300" />
+        <line className="mh-pl-ext" x1="548" y1="256" x2="548" y2="300" />
+        <line className="mh-pl-dim" x1="96" y1="288" x2="274" y2="288" />
+        <line className="mh-pl-dim" x1="370" y1="288" x2="548" y2="288" />
+        <path className="mh-pl-arrow" d="M 96 288 l 9 -3.6 v 7.2 z" />
+        <path className="mh-pl-arrow" d="M 548 288 l -9 -3.6 v 7.2 z" />
+        <text className="mh-pl-t mh-pl-t--live" x="322" y="292" textAnchor="middle">
+          {t('pubHome.plate.designed')}
+        </text>
 
-      {/* ─── repère 02 : le code vous appartient ─── */}
-      <line className="mh-pl-ext" x1="92" y1="52" x2="44" y2="52" />
-      <line className="mh-pl-ext" x1="92" y1="252" x2="44" y2="252" />
-      <line className="mh-pl-dim" x1="56" y1="52" x2="56" y2="104" />
-      <line className="mh-pl-dim" x1="56" y1="200" x2="56" y2="252" />
-      <path className="mh-pl-arrow" d="M 56 52 l -3.6 9 h 7.2 z" />
-      <path className="mh-pl-arrow" d="M 56 252 l -3.6 -9 h 7.2 z" />
-      <text className="mh-pl-t" x="56" y="152" textAnchor="middle" transform="rotate(-90 56 152)">
-        Le code est à vous
-      </text>
+        {/* ─── repère 02 : le code vous appartient ─── */}
+        <line className="mh-pl-ext" x1="92" y1="52" x2="44" y2="52" />
+        <line className="mh-pl-ext" x1="92" y1="252" x2="44" y2="252" />
+        <line className="mh-pl-dim" x1="56" y1="52" x2="56" y2="104" />
+        <line className="mh-pl-dim" x1="56" y1="200" x2="56" y2="252" />
+        <path className="mh-pl-arrow" d="M 56 52 l -3.6 9 h 7.2 z" />
+        <path className="mh-pl-arrow" d="M 56 252 l -3.6 -9 h 7.2 z" />
+        <text className="mh-pl-t" x="56" y="152" textAnchor="middle" transform="rotate(-90 56 152)">
+          {t('pubHome.plate.code')}
+        </text>
 
-      {/* ─── repère 03 : aucune limite technique ─── */}
-      <circle className="mh-pl-anchor" cx="322" cy="77" r="3.2" />
-      <path className="mh-pl-lead" d="M 322 77 V 32 H 352" />
-      <text className="mh-pl-t" x="378" y="36">
-        Rien n’est bloqué
-      </text>
+        {/* ─── repère 03 : aucune limite technique ─── */}
+        <circle className="mh-pl-anchor" cx="322" cy="77" r="3.2" />
+        <path className="mh-pl-lead" d="M 322 77 V 32 H 352" />
+        <text className="mh-pl-t" x="378" y="36">
+          {t('pubHome.plate.unblocked')}
+        </text>
 
-      {/* ─── repères, keyés sur les relevés ─── */}
-      {BADGES.map((b) => (
-        <g key={b.n}>
-          <circle className="mh-pl-badge" cx={b.cx} cy={b.cy} r="9.5" />
-          <text className="mh-pl-t mh-pl-t--badge" x={b.cx} y={b.cy + 3.4} textAnchor="middle">
-            {b.n}
-          </text>
-        </g>
-      ))}
-    </svg>
-  </figure>
-)
+        {/* ─── repères, keyés sur les relevés ─── */}
+        {BADGES.map((b) => (
+          <g key={b.n}>
+            <circle className="mh-pl-badge" cx={b.cx} cy={b.cy} r="9.5" />
+            <text className="mh-pl-t mh-pl-t--badge" x={b.cx} y={b.cy + 3.4} textAnchor="middle">
+              {b.n}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </figure>
+  )
+}
 
 export default SitePlate

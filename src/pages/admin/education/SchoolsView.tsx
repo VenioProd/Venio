@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Building2, ChevronRight, RefreshCw } from 'lucide-react'
-import {
-  listEducationBySchool,
-  type SchoolBucket,
-} from '../../../services/education'
+import { listEducationBySchool, type SchoolBucket } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
 
 /**
  * VENIO-32 — Fiches école légères.
@@ -13,11 +11,8 @@ import {
  * total étudiants, lien vers la classe détaillée.
  */
 
-export function SchoolsView({
-  onOpenClass,
-}: {
-  onOpenClass: (classId: string) => void
-}) {
+export function SchoolsView({ onOpenClass }: { onOpenClass: (classId: string) => void }) {
+  const { t } = useI18n()
   const [buckets, setBuckets] = useState<SchoolBucket[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -29,43 +24,49 @@ export function SchoolsView({
       const r = await listEducationBySchool()
       setBuckets(r.schools)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : t('common.error'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   return (
     <div>
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <h1 className="edu-h1">Écoles</h1>
+          <h1 className="edu-h1">{t('eduD.schools.title')}</h1>
           <p className="edu-sub">
-            {buckets.length} école{buckets.length > 1 ? 's' : ''} suivie{buckets.length > 1 ? 's' : ''}.
-            Vue agrégée depuis le champ <code>école</code> de chaque classe.
+            {t('eduD.schools.followedCount', { count: buckets.length })} {t('eduD.schools.aggregatedPre')}{' '}
+            <code>{t('eduD.schools.fieldName')}</code> {t('eduD.schools.aggregatedPost')}
           </p>
         </div>
-        <button className="edu-btn ghost" onClick={refresh}><RefreshCw size={14} /> Rafraîchir</button>
+        <button className="edu-btn ghost" onClick={refresh}>
+          <RefreshCw size={14} /> {t('eduD.schools.refresh')}
+        </button>
       </div>
 
       {error && (
         <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
           {error}
-          <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={refresh}>Réessayer</button>
+          <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={refresh}>
+            {t('eduD.common.retry')}
+          </button>
         </div>
       )}
 
-      {loading && !buckets.length && <div className="edu-sub">Chargement…</div>}
+      {loading && !buckets.length && <div className="edu-sub">{t('eduD.common.loading')}</div>}
 
       {!loading && buckets.length === 0 && (
         <div className="edu-empty">
-          <div className="edu-empty-icon"><Building2 size={20} /></div>
-          <div>Aucune école pour l'instant.</div>
-          <div className="edu-empty-sub">
-            Ajoute le champ "École" sur tes classes (ESIC, EMA, ISIFA…) pour activer cette vue.
+          <div className="edu-empty-icon">
+            <Building2 size={20} />
           </div>
+          <div>{t('eduD.schools.emptyTitle')}</div>
+          <div className="edu-empty-sub">{t('eduD.schools.emptyHint')}</div>
         </div>
       )}
 
@@ -79,18 +80,16 @@ export function SchoolsView({
                 <span className="edu-school-bucket-name">{b.school}</span>
               </div>
               <div className="edu-school-bucket-meta">
-                {b.classes.length} classe{b.classes.length > 1 ? 's' : ''}
-                {' · '}{active} active{active > 1 ? 's' : ''}
-                {' · '}{b.studentCount} étudiant{b.studentCount > 1 ? 's' : ''}
+                {t('eduD.schools.classCount', { count: b.classes.length })}
+                {' · '}
+                {t('eduD.schools.activeCount', { count: active })}
+                {' · '}
+                {t('eduD.schools.studentCount', { count: b.studentCount })}
               </div>
             </div>
             <div className="edu-school-bucket-classes">
               {b.classes.map((c) => (
-                <button
-                  key={c._id}
-                  className="edu-school-bucket-class"
-                  onClick={() => onOpenClass(c._id)}
-                >
+                <button key={c._id} className="edu-school-bucket-class" onClick={() => onOpenClass(c._id)}>
                   <span className="edu-side-dot" style={{ background: c.color }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 500 }}>{c.name}</div>

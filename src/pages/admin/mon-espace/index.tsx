@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Settings, Check } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import RoleCockpitFocus from '../../../components/RoleCockpitFocus'
 import BentoGrid from './BentoGrid'
 import { renderWidget } from './widgets'
@@ -18,13 +20,14 @@ import './MonEspace.css'
 
 function greeting(): string {
   const h = new Date().getHours()
-  if (h < 12) return 'Bonjour'
-  if (h < 18) return 'Bon après-midi'
-  return 'Bonsoir'
+  if (h < 12) return translate('adminAccess.monEspace.greetingMorning')
+  if (h < 18) return translate('adminAccess.monEspace.greetingAfternoon')
+  return translate('adminAccess.monEspace.greetingEvening')
 }
 
 export default function MonEspace() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [widgets, setWidgets] = useState<WidgetConfig[]>([])
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -60,7 +63,7 @@ export default function MonEspace() {
   if (loading)
     return (
       <div className="mon-espace">
-        <p className="subtitle">Chargement…</p>
+        <p className="subtitle">{t('adminAccess.monEspace.loading')}</p>
       </div>
     )
 
@@ -73,11 +76,11 @@ export default function MonEspace() {
         <button className="btn-secondary" onClick={() => setEditing((e) => !e)}>
           {editing ? (
             <>
-              <Check size={16} /> Terminer
+              <Check size={16} /> {t('adminAccess.monEspace.done')}
             </>
           ) : (
             <>
-              <Settings size={16} /> Personnaliser
+              <Settings size={16} /> {t('adminAccess.monEspace.customize')}
             </>
           )}
         </button>
@@ -87,10 +90,10 @@ export default function MonEspace() {
 
       {editing && disabledKeys.length > 0 && (
         <div className="mon-espace__drawer">
-          <span className="label">Ajouter un widget :</span>
+          <span className="label">{t('adminAccess.monEspace.addWidget')}</span>
           {disabledKeys.map((k) => (
             <button key={k} className="chip" onClick={() => enableWidget(k)}>
-              + {WIDGET_LABELS[k]}
+              + {t(WIDGET_LABELS[k])}
             </button>
           ))}
         </div>

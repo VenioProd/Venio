@@ -22,24 +22,26 @@ import {
   type DevRecommendationsPayload,
 } from '../../../services/dev'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
+import { translate, type MessageKey } from '../../../i18n'
 import AgentLaunchControl from './AgentLaunchControl'
 import './RecommendationsPanel.css'
 
 const SECTION_META: Record<
   DevRecommendationSection,
-  { label: string; icon: typeof Sparkles; tone: 'accent' | 'add' | 'optim' | 'files' }
+  { label: MessageKey; icon: typeof Sparkles; tone: 'accent' | 'add' | 'optim' | 'files' }
 > = {
-  improve: { label: 'À améliorer', icon: Wrench, tone: 'accent' },
-  add: { label: 'À ajouter ensuite', icon: Lightbulb, tone: 'add' },
-  optimize: { label: 'Optimisations', icon: Sparkles, tone: 'optim' },
-  large_files: { label: 'Fichiers volumineux', icon: FileWarning, tone: 'files' },
+  improve: { label: 'devB.reco.sectionImprove', icon: Wrench, tone: 'accent' },
+  add: { label: 'devB.reco.sectionAdd', icon: Lightbulb, tone: 'add' },
+  optimize: { label: 'devB.reco.sectionOptimize', icon: Sparkles, tone: 'optim' },
+  large_files: { label: 'devB.reco.sectionLargeFiles', icon: FileWarning, tone: 'files' },
 }
 
-const PRIORITY_META: Record<DevRecommendationPriority, { label: string; color: string }> = {
-  critical: { label: 'Critique', color: '#ef4444' },
-  high: { label: 'Haute', color: '#f97316' },
-  medium: { label: 'Moyenne', color: '#06b6d4' },
-  low: { label: 'Basse', color: '#64748b' },
+const PRIORITY_META: Record<DevRecommendationPriority, { label: MessageKey; color: string }> = {
+  critical: { label: 'devB.reco.prioCritical', color: '#ef4444' },
+  high: { label: 'devB.reco.prioHigh', color: '#f97316' },
+  medium: { label: 'devB.reco.prioMedium', color: '#06b6d4' },
+  low: { label: 'devB.reco.prioLow', color: '#64748b' },
 }
 
 const SOURCE_LABEL: Record<DevRecommendationSource, string> = {
@@ -57,15 +59,15 @@ function relativeFR(iso: string | null | undefined): string {
   const diff = Date.now() - new Date(iso).getTime()
   if (diff < 0) {
     const future = -diff
-    if (future < 60_000) return 'dans <1 min'
-    if (future < 3_600_000) return `dans ${Math.round(future / 60_000)} min`
-    if (future < 86_400_000) return `dans ${Math.round(future / 3_600_000)} h`
-    return `dans ${Math.round(future / 86_400_000)} j`
+    if (future < 60_000) return translate('devB.rel.inLessThanMin')
+    if (future < 3_600_000) return translate('devB.rel.inMin', { n: Math.round(future / 60_000) })
+    if (future < 86_400_000) return translate('devB.rel.inHour', { n: Math.round(future / 3_600_000) })
+    return translate('devB.rel.inDay', { n: Math.round(future / 86_400_000) })
   }
-  if (diff < 60_000) return 'à l’instant'
-  if (diff < 3_600_000) return `il y a ${Math.floor(diff / 60_000)} min`
-  if (diff < 86_400_000) return `il y a ${Math.floor(diff / 3_600_000)} h`
-  return `il y a ${Math.floor(diff / 86_400_000)} j`
+  if (diff < 60_000) return translate('devB.rel.justNowCurly')
+  if (diff < 3_600_000) return translate('devB.rel.minAgo', { n: Math.floor(diff / 60_000) })
+  if (diff < 86_400_000) return translate('devB.rel.hourAgo', { n: Math.floor(diff / 3_600_000) })
+  return translate('devB.rel.dayAgo', { n: Math.floor(diff / 86_400_000) })
 }
 
 interface ItemRowProps {
@@ -76,6 +78,7 @@ interface ItemRowProps {
 }
 
 const ItemRow = ({ item, projectId, agentAvailability, onOpenIssue }: ItemRowProps) => {
+  const { t } = useI18n()
   const p = PRIORITY_META[item.priority]
   const linkedIssueId = item.actions.find((action) => action.kind === 'open_issue' && action.issueId)?.issueId ?? null
   return (
@@ -85,7 +88,7 @@ const ItemRow = ({ item, projectId, agentAvailability, onOpenIssue }: ItemRowPro
         <div className="reco-row-title">{item.title}</div>
         {item.description && <div className="reco-row-desc">{item.description}</div>}
         <div className="reco-row-badges">
-          <span className="reco-badge reco-badge-prio">{p.label}</span>
+          <span className="reco-badge reco-badge-prio">{t(p.label)}</span>
           <span className="reco-badge reco-badge-source">{SOURCE_LABEL[item.source]}</span>
           {item.badges.slice(0, 4).map((b, idx) => (
             <span key={`${item.id}-b-${idx}`} className="reco-badge">
@@ -94,15 +97,18 @@ const ItemRow = ({ item, projectId, agentAvailability, onOpenIssue }: ItemRowPro
           ))}
           {item.metric && (
             <span className="reco-badge reco-badge-metric">
-              {item.metric.label} : <strong>{item.metric.value}</strong>
+              {t('devB.reco.metric', { label: item.metric.label })} <strong>{item.metric.value}</strong>
             </span>
           )}
         </div>
         <details className="reco-row-evidence" open>
           <summary>
-            Source : {item.evidence.source} · observé {relativeFR(item.evidence.observedAt) || 'indisponible'}
+            {t('devB.reco.evidenceSummary', {
+              source: item.evidence.source,
+              observed: relativeFR(item.evidence.observedAt) || t('devB.reco.evidenceUnavailable'),
+            })}
           </summary>
-          <span>Limite : {item.evidence.limitation}</span>
+          <span>{t('devB.reco.evidenceLimit', { limit: item.evidence.limitation })}</span>
         </details>
       </div>
       {item.actions.length > 0 && (
@@ -167,18 +173,19 @@ interface SectionCardProps {
 }
 
 const SectionCard = ({ section, items, projectId, agentAvailability, onOpenIssue }: SectionCardProps) => {
+  const { t } = useI18n()
   const meta = SECTION_META[section]
   const Icon = meta.icon
   return (
     <div className={`reco-section reco-tone-${meta.tone}`}>
       <header className="reco-section-header">
         <span className="reco-section-kicker">
-          <Icon size={12} /> {meta.label}
+          <Icon size={12} /> {t(meta.label)}
         </span>
         <span className="reco-section-meta">{items.length}</span>
       </header>
       {items.length === 0 ? (
-        <div className="reco-empty">Rien à signaler ici pour le moment.</div>
+        <div className="reco-empty">{t('devB.reco.emptySection')}</div>
       ) : (
         <ul className="reco-list">
           {items.map((item) => (
@@ -203,6 +210,7 @@ interface RecommendationsPanelProps {
 
 const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelProps) => {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [data, setData] = useState<DevRecommendationsPayload | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -217,7 +225,7 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
         const payload = await fetchDevProjectRecommendations(projectId, { refresh: force })
         setData(payload)
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Erreur de chargement')
+        setError(e instanceof Error ? e.message : translate('devB.common.loadError'))
       } finally {
         setLoading(false)
       }
@@ -276,31 +284,32 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
       <header className="reco-panel-header">
         <div className="reco-panel-title">
           <Sparkles size={14} />
-          <h2>Recommandations projet</h2>
-          <span className="reco-panel-subtitle">ce qu’il faut améliorer, ajouter ou optimiser ensuite</span>
+          <h2>{t('devB.reco.title')}</h2>
+          <span className="reco-panel-subtitle">{t('devB.reco.subtitle')}</span>
         </div>
         <div className="reco-panel-meta">
           {data && (
             <>
-              <span className="reco-panel-stat">
-                {data.counts.total} suggestion{data.counts.total > 1 ? 's' : ''}
-              </span>
+              <span className="reco-panel-stat">{t('devB.reco.suggestions', { count: data.counts.total })}</span>
               {data.counts.bySeverity.critical > 0 && (
                 <span className="reco-panel-stat tone-critical">
-                  <AlertOctagon size={11} /> {data.counts.bySeverity.critical} critique
-                  {data.counts.bySeverity.critical > 1 ? 's' : ''}
+                  <AlertOctagon size={11} /> {t('devB.reco.criticalCount', { count: data.counts.bySeverity.critical })}
                 </span>
               )}
               <span
                 className="reco-panel-stat"
-                title={`Source(s) : ${
-                  [data.source.issues && 'issues', data.source.github && 'github', data.source.code && 'code']
-                    .filter(Boolean)
-                    .join(', ') || 'aucune'
-                }`}
+                title={t('devB.reco.sourcesTitle', {
+                  list:
+                    [data.source.issues && 'issues', data.source.github && 'github', data.source.code && 'code']
+                      .filter(Boolean)
+                      .join(', ') || t('devB.reco.sourcesNone'),
+                })}
               >
-                {data.fromCache ? 'cache' : 'frais'} · MAJ {relativeFR(data.generatedAt)} · prochain{' '}
-                {relativeFR(data.nextRefreshAt)}
+                {t('devB.reco.freshness', {
+                  state: data.fromCache ? t('devB.reco.cached') : t('devB.reco.fresh'),
+                  updated: relativeFR(data.generatedAt),
+                  next: relativeFR(data.nextRefreshAt),
+                })}
               </span>
             </>
           )}
@@ -309,11 +318,11 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
             className="reco-refresh-btn"
             onClick={() => load(true)}
             disabled={loading}
-            title="Recalculer à partir des sources et du snapshot disponibles"
-            aria-label="Rafraîchir"
+            title={t('devB.reco.refreshTitle')}
+            aria-label={t('devB.common.refresh')}
           >
             <RefreshCw size={11} className={loading ? 'reco-spin' : undefined} />
-            {loading ? 'Calcul…' : 'Rafraîchir'}
+            {loading ? t('devB.reco.computing') : t('devB.common.refresh')}
           </button>
         </div>
       </header>
@@ -324,13 +333,12 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
         </div>
       )}
 
-      {!data && !error && <div className="reco-empty reco-empty-loading">Calcul des recommandations…</div>}
+      {!data && !error && <div className="reco-empty reco-empty-loading">{t('devB.reco.computingAll')}</div>}
 
       {data && data.status === 'partial' && data.reasons.length > 0 && (
         <details className="reco-warnings">
           <summary>
-            <AlertTriangle size={11} /> Données partielles ({data.reasons.length} source
-            {data.reasons.length > 1 ? 's' : ''} indisponible{data.reasons.length > 1 ? 's' : ''})
+            <AlertTriangle size={11} /> {t('devB.reco.partial', { count: data.reasons.length })}
           </summary>
           <ul>
             {data.reasons.slice(0, 4).map((r, i) => (
@@ -375,8 +383,7 @@ const RecommendationsPanel = ({ projectId, onOpenIssue }: RecommendationsPanelPr
 
       {data && !hasContent && data.status !== 'partial' && (
         <div className="reco-empty">
-          Aucune recommandation actionnable détectée pour le moment. Les recommandations sont recalculées toutes les{' '}
-          {Math.round(data.ttlSeconds / 3600)} h à partir du snapshot périodique disponible.
+          {t('devB.reco.nothingActionable', { hours: Math.round(data.ttlSeconds / 3600) })}
         </div>
       )}
     </section>

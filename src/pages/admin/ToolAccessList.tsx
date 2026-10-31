@@ -4,6 +4,8 @@ import { apiFetch } from '../../lib/api'
 import { SENSITIVE_ACTIONS, sensitiveActionHeaders } from '../../lib/sensitiveActions'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import { useConfirm } from '../../hooks/useConfirm'
 import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
@@ -25,22 +27,22 @@ interface ToolAccess {
 const CATEGORIES = ['IA', 'DESIGN', 'DEV', 'MARKETING', 'COMMUNICATION', 'GESTION', 'AUTRE']
 
 const ALL_ROLES = ['ADMIN', 'MANAGER', 'RH', 'VIEWER', 'CLIENT']
-const ROLE_LABELS: Record<string, string> = {
-  ADMIN: 'Admin',
-  MANAGER: 'Manager',
-  RH: 'RH',
-  VIEWER: 'Viewer',
-  CLIENT: 'Client',
+const ROLE_LABEL_KEYS: Record<string, MessageKey> = {
+  ADMIN: 'adminTech.toolAccess.role.admin',
+  MANAGER: 'adminTech.toolAccess.role.manager',
+  RH: 'adminTech.toolAccess.role.hr',
+  VIEWER: 'adminTech.toolAccess.role.viewer',
+  CLIENT: 'adminTech.toolAccess.role.client',
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  IA: 'Intelligence artificielle',
-  DESIGN: 'Design',
-  DEV: 'Developpement',
-  MARKETING: 'Marketing',
-  COMMUNICATION: 'Communication',
-  GESTION: 'Gestion',
-  AUTRE: 'Autre',
+const CATEGORY_LABEL_KEYS: Record<string, MessageKey> = {
+  IA: 'adminTech.toolAccess.category.ai',
+  DESIGN: 'adminTech.toolAccess.category.design',
+  DEV: 'adminTech.toolAccess.category.dev',
+  MARKETING: 'adminTech.toolAccess.category.marketing',
+  COMMUNICATION: 'adminTech.toolAccess.category.communication',
+  GESTION: 'adminTech.toolAccess.category.management',
+  AUTRE: 'adminTech.toolAccess.category.other',
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -66,6 +68,10 @@ const emptyForm = {
 const ToolAccessList = () => {
   const { user } = useAuth()
   const { showToast } = useToast()
+  const { t: tr } = useI18n()
+  const roleLabel = (role: string) => (ROLE_LABEL_KEYS[role] ? tr(ROLE_LABEL_KEYS[role]) : role)
+  const categoryLabel = (category: string) =>
+    CATEGORY_LABEL_KEYS[category] ? tr(CATEGORY_LABEL_KEYS[category]) : category
   const { confirm, ConfirmDialog } = useConfirm()
   const [tools, setTools] = useState<ToolAccess[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,7 +91,7 @@ const ToolAccessList = () => {
       const data = await apiFetch<ToolAccess[]>('/api/admin/tool-access')
       setTools(data)
     } catch {
-      showToast('Erreur chargement des outils', 'error')
+      showToast(tr('adminTech.toolAccess.loadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -155,45 +161,45 @@ const ToolAccessList = () => {
           body: JSON.stringify(password ? form : metadata),
           headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.TOOL_ACCESS_UPDATE),
         })
-        showToast('Outil mis a jour', 'success')
+        showToast(tr('adminTech.toolAccess.updated'), 'success')
       } else {
         await apiFetch('/api/admin/tool-access', {
           method: 'POST',
           body: JSON.stringify(form),
           headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.TOOL_ACCESS_CREATE),
         })
-        showToast('Outil ajoute', 'success')
+        showToast(tr('adminTech.toolAccess.added'), 'success')
       }
       handleCloseForm()
       load()
     } catch {
-      showToast('Erreur lors de la sauvegarde', 'error')
+      showToast(tr('adminTech.toolAccess.saveError'), 'error')
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (tool: ToolAccess) => {
-    const ok = await confirm(`Supprimer l'acces "${tool.name}" ?`)
+    const ok = await confirm(tr('adminTech.toolAccess.confirmDelete', { name: tool.name }))
     if (!ok) return
     try {
       await apiFetch(`/api/admin/tool-access/${tool._id}`, {
         method: 'DELETE',
         headers: sensitiveActionHeaders(SENSITIVE_ACTIONS.TOOL_ACCESS_DELETE),
       })
-      showToast('Outil supprime', 'success')
+      showToast(tr('adminTech.toolAccess.deleted'), 'success')
       load()
     } catch {
-      showToast('Erreur lors de la suppression', 'error')
+      showToast(tr('adminTech.toolAccess.deleteError'), 'error')
     }
   }
 
   const handleReveal = async (tool: ToolAccess) => {
     if (user?.role !== 'SUPER_ADMIN') {
-      showToast('La révélation est réservée au super admin', 'error')
+      showToast(tr('adminTech.toolAccess.revealSuperAdminOnly'), 'error')
       return
     }
-    const totpCode = window.prompt('Saisissez votre code MFA à 6 chiffres pour révéler ce secret')
+    const totpCode = window.prompt(tr('adminTech.toolAccess.mfaPrompt'))
     if (!totpCode) return
     try {
       const data = await apiFetch<{ password: string }>(`/api/admin/tool-access/${tool._id}/reveal`, {
@@ -209,15 +215,15 @@ const ToolAccessList = () => {
           return next
         })
       }, 30_000)
-      showToast('Secret révélé temporairement', 'success')
+      showToast(tr('adminTech.toolAccess.revealed'), 'success')
     } catch {
-      showToast('Révélation refusée : vérifiez votre code MFA', 'error')
+      showToast(tr('adminTech.toolAccess.revealDenied'), 'error')
     }
   }
 
   const handleCopy = async (tool: ToolAccess) => {
     const password = revealedPasswords[tool._id]
-    const text = `${tool.name}\nLogin : ${tool.login}${password ? `\nMot de passe : ${password}` : ''}${tool.url ? `\nURL : ${tool.url}` : ''}`
+    const text = `${tool.name}\n${tr('adminTech.toolAccess.copyLogin', { value: tool.login })}${password ? `\n${tr('adminTech.toolAccess.copyPassword', { value: password })}` : ''}${tool.url ? `\n${tr('adminTech.toolAccess.copyUrl', { value: tool.url })}` : ''}`
     await navigator.clipboard.writeText(text)
     setCopiedId(tool._id)
     setTimeout(() => setCopiedId(null), 2000)
@@ -227,20 +233,18 @@ const ToolAccessList = () => {
     <div className="portal-container">
       <div className="portal-card">
         <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
+          <Link to="/admin">{tr('nav.admin')}</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Acces outils</span>
+          <span style={{ color: 'var(--text-primary)' }}>{tr('adminTech.toolAccess.title')}</span>
         </div>
         <div className="admin-header">
           <div>
-            <h1 style={{ marginBottom: 4 }}>Acces outils</h1>
-            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: 13 }}>
-              Identifiants et liens de connexion partages pour l'equipe
-            </p>
+            <h1 style={{ marginBottom: 4 }}>{tr('adminTech.toolAccess.title')}</h1>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: 13 }}>{tr('adminTech.toolAccess.subtitle')}</p>
           </div>
           {canWrite && (
             <button className="portal-button" type="button" onClick={() => handleOpenForm()}>
-              + Ajouter
+              {tr('adminTech.toolAccess.addButton')}
             </button>
           )}
         </div>
@@ -250,7 +254,7 @@ const ToolAccessList = () => {
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <input
             className="portal-input"
-            placeholder="Rechercher un outil..."
+            placeholder={tr('adminTech.toolAccess.searchPlaceholder')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             style={{ flex: 1, minWidth: 200 }}
@@ -260,8 +264,8 @@ const ToolAccessList = () => {
             value={filterCategory}
             onChange={setFilterCategory}
             options={[
-              { value: '', label: 'Toutes les categories' },
-              ...CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABELS[c] || c })),
+              { value: '', label: tr('adminTech.toolAccess.allCategories') },
+              ...CATEGORIES.map((c) => ({ value: c, label: categoryLabel(c) })),
             ]}
           />
         </div>
@@ -269,12 +273,12 @@ const ToolAccessList = () => {
 
       {loading ? (
         <div className="admin-loading" style={{ marginTop: 24 }}>
-          Chargement...
+          {tr('common.loading')}
         </div>
       ) : filtered.length === 0 ? (
         <div className="portal-card" style={{ marginTop: 24, textAlign: 'center', padding: 40 }}>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>
-            {tools.length === 0 ? 'Aucun outil enregistre.' : 'Aucun resultat.'}
+            {tools.length === 0 ? tr('adminTech.toolAccess.emptyNone') : tr('adminTech.toolAccess.emptyNoResult')}
           </p>
         </div>
       ) : (
@@ -290,7 +294,7 @@ const ToolAccessList = () => {
                 }}
               />
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>
-                {CATEGORY_LABELS[category] || category}
+                {categoryLabel(category)}
               </span>
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({categoryTools.length})</span>
             </div>
@@ -310,7 +314,9 @@ const ToolAccessList = () => {
                         <h3 style={{ margin: 0, fontSize: 15, color: 'var(--text-primary)' }}>{tool.name}</h3>
                         {tool.visibleTo?.length > 0 && (
                           <span
-                            title={`Visible par : ${tool.visibleTo.map((r) => ROLE_LABELS[r] || r).join(', ')}`}
+                            title={tr('adminTech.toolAccess.visibleBy', {
+                              roles: tool.visibleTo.map(roleLabel).join(', '),
+                            })}
                             style={{
                               fontSize: 11,
                               padding: '2px 8px',
@@ -321,7 +327,7 @@ const ToolAccessList = () => {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {tool.visibleTo.map((r) => ROLE_LABELS[r] || r).join(', ')}
+                            {tool.visibleTo.map(roleLabel).join(', ')}
                           </span>
                         )}
                       </div>
@@ -344,7 +350,7 @@ const ToolAccessList = () => {
                       <button
                         type="button"
                         onClick={() => handleCopy(tool)}
-                        title="Copier"
+                        title={tr('adminTech.toolAccess.copy')}
                         style={{
                           background: 'none',
                           border: 'none',
@@ -360,7 +366,7 @@ const ToolAccessList = () => {
                           <button
                             type="button"
                             onClick={() => handleOpenForm(tool)}
-                            title="Modifier"
+                            title={tr('common.edit')}
                             style={{
                               background: 'none',
                               border: 'none',
@@ -375,7 +381,7 @@ const ToolAccessList = () => {
                             <button
                               type="button"
                               onClick={() => handleDelete(tool)}
-                              title="Supprimer"
+                              title={tr('common.delete')}
                               style={{
                                 background: 'none',
                                 border: 'none',
@@ -394,13 +400,15 @@ const ToolAccessList = () => {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Login</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {tr('adminTech.toolAccess.login')}
+                      </span>
                       <span style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
                         {tool.login}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Mot de passe</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tr('auth.password')}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span
                           style={{
@@ -487,16 +495,16 @@ const ToolAccessList = () => {
             onClick={(event) => event.stopPropagation()}
           >
             <h2 style={{ margin: '0 0 20px', fontSize: 17, color: 'var(--text-primary)' }}>
-              {editId ? "Modifier l'outil" : 'Nouvel outil'}
+              {editId ? tr('adminTech.toolAccess.editTitle') : tr('adminTech.toolAccess.createTitle')}
             </h2>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
-                  Nom de l'outil *
+                  {tr('adminTech.toolAccess.nameLabel')}
                 </label>
                 <input
                   className="portal-input"
-                  placeholder="Ex: Leonardo AI"
+                  placeholder={tr('adminTech.toolAccess.namePlaceholder')}
                   value={form.name}
                   onChange={(event) => setForm({ ...form, name: event.target.value })}
                   required
@@ -516,7 +524,7 @@ const ToolAccessList = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    Login / Email *
+                    {tr('adminTech.toolAccess.loginLabel')}
                   </label>
                   <input
                     className="portal-input"
@@ -528,11 +536,13 @@ const ToolAccessList = () => {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    Mot de passe {editId ? '(laisser vide pour ne pas le modifier)' : '*'}
+                    {editId
+                      ? tr('adminTech.toolAccess.passwordLabelEdit')
+                      : tr('adminTech.toolAccess.passwordLabelNew')}
                   </label>
                   <input
                     className="portal-input"
-                    placeholder="Mot de passe"
+                    placeholder={tr('auth.password')}
                     value={form.password}
                     onChange={(event) => setForm({ ...form, password: event.target.value })}
                     required={!editId}
@@ -541,22 +551,22 @@ const ToolAccessList = () => {
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
-                  Categorie
+                  {tr('adminTech.toolAccess.categoryLabel')}
                 </label>
                 <CustomSelect
                   className="portal-input"
                   value={form.category}
                   onChange={(v) => setForm({ ...form, category: v })}
-                  options={CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABELS[c] || c }))}
+                  options={CATEGORIES.map((c) => ({ value: c, label: categoryLabel(c) }))}
                 />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
-                  Notes
+                  {tr('adminTech.toolAccess.notesLabel')}
                 </label>
                 <textarea
                   className="portal-input"
-                  placeholder="Infos complementaires..."
+                  placeholder={tr('adminTech.toolAccess.notesPlaceholder')}
                   value={form.notes}
                   onChange={(event) => setForm({ ...form, notes: event.target.value })}
                   rows={3}
@@ -565,8 +575,10 @@ const ToolAccessList = () => {
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
-                  Visible par —{' '}
-                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>laisser vide = tous les admins</span>
+                  {tr('adminTech.toolAccess.visibleByLabel')}{' '}
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
+                    {tr('adminTech.toolAccess.visibleByHint')}
+                  </span>
                 </label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {ALL_ROLES.map((role) => {
@@ -591,7 +603,7 @@ const ToolAccessList = () => {
                           cursor: 'pointer',
                         }}
                       >
-                        {ROLE_LABELS[role]}
+                        {roleLabel(role)}
                       </button>
                     )
                   })}
@@ -599,10 +611,14 @@ const ToolAccessList = () => {
               </div>
               <div className="admin-button-group" style={{ marginTop: 4 }}>
                 <button className="portal-button" type="submit" disabled={saving}>
-                  {saving ? 'Enregistrement...' : editId ? 'Mettre a jour' : 'Ajouter'}
+                  {saving
+                    ? tr('adminTech.toolAccess.saving')
+                    : editId
+                      ? tr('adminTech.toolAccess.update')
+                      : tr('common.add')}
                 </button>
                 <button className="portal-button secondary" type="button" onClick={handleCloseForm}>
-                  Annuler
+                  {tr('common.cancel')}
                 </button>
               </div>
             </form>

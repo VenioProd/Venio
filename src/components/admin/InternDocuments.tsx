@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { apiFetch } from '../../lib/api'
 import { exportToCsv } from '../../lib/exportCsv'
 import DocPreviewModal from '../DocPreviewModal'
+import { useI18n } from '../../context/I18nContext'
+import { translate, type MessageKey } from '../../i18n'
+import { formatDate } from '../../i18n/format'
 
 interface DocItem {
   _id: string
@@ -24,60 +27,59 @@ interface DocStats {
   byType: Record<string, number>
 }
 
-const TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
+const TYPE_CONFIG: Record<string, { labelKey: MessageKey; color: string; icon: string }> = {
   image: {
-    label: 'Image',
+    labelKey: 'compA.internDocs.typeImage',
     color: '#22c55e',
     icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
   },
   pdf: {
-    label: 'PDF',
+    labelKey: 'compA.internDocs.typePDF',
     color: '#ef4444',
     icon: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
   },
   document: {
-    label: 'Document',
+    labelKey: 'compA.internDocs.typeDocument',
     color: '#0ea5e9',
     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
   },
   tableur: {
-    label: 'Tableur',
+    labelKey: 'compA.internDocs.typeTableur',
     color: '#22c55e',
     icon: 'M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z',
   },
   presentation: {
-    label: 'Presentation',
+    labelKey: 'compA.internDocs.typePresentation',
     color: '#f59e0b',
     icon: 'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z',
   },
   video: {
-    label: 'Video',
+    labelKey: 'compA.internDocs.typeVideo',
     color: '#9b9b9b',
     icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z',
   },
   audio: {
-    label: 'Audio',
+    labelKey: 'compA.internDocs.typeAudio',
     color: '#0284c7',
     icon: 'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z',
   },
   archive: {
-    label: 'Archive',
+    labelKey: 'compA.internDocs.typeArchive',
     color: '#64748b',
     icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4',
   },
   autre: {
-    label: 'Autre',
+    labelKey: 'compA.internDocs.typeAutre',
     color: '#94a3b8',
     icon: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
   },
 }
 
-const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+const fmtDate = (d: string) => formatDate(d, { day: '2-digit', month: 'short', year: 'numeric' })
 const fmtSize = (bytes: number) => {
-  if (bytes < 1024) return `${bytes} o`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  if (bytes < 1024) return translate('compA.gTable.sizeBytes', { n: bytes })
+  if (bytes < 1024 * 1024) return translate('compA.gTable.sizeKb', { n: (bytes / 1024).toFixed(0) })
+  return translate('compA.gTable.sizeMb', { n: (bytes / (1024 * 1024)).toFixed(1) })
 }
 
 interface InternOption {
@@ -86,6 +88,7 @@ interface InternOption {
 }
 
 export default function InternDocuments() {
+  const { t } = useI18n()
   const [documents, setDocuments] = useState<DocItem[]>([])
   const [stats, setStats] = useState<DocStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -124,10 +127,17 @@ export default function InternDocuments() {
   }, [])
 
   const handleExportCsv = () => {
-    const headers = ['Fichier', 'Type', 'Taille', 'Stagiaire', 'Date rapport', 'Statut rapport']
+    const headers = [
+      t('compA.internDocs.csvFile'),
+      t('compA.internDocs.csvType'),
+      t('compA.internDocs.csvSize'),
+      t('compA.internDocs.csvIntern'),
+      t('compA.internDocs.csvReportDate'),
+      t('compA.internDocs.csvReportStatus'),
+    ]
     const rows = documents.map((d) => [
       d.originalName,
-      TYPE_CONFIG[d.fileType]?.label || d.fileType,
+      TYPE_CONFIG[d.fileType] ? t(TYPE_CONFIG[d.fileType].labelKey) : d.fileType,
       fmtSize(d.size),
       d.user?.name || '—',
       fmtDate(d.reportDate),
@@ -145,7 +155,8 @@ export default function InternDocuments() {
   })
   const sortedDates = Object.keys(groupedByDate).sort((a, b) => b.localeCompare(a))
 
-  if (loading) return <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Chargement...</p>
+  if (loading)
+    return <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>{t('common.loading')}</p>
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -176,7 +187,7 @@ export default function InternDocuments() {
               cursor: 'pointer',
             }}
           >
-            <option value="">Tous les stagiaires</option>
+            <option value="">{t('compA.internDocs.allInterns')}</option>
             {interns
               .filter((i: any) => i.status === 'ACTIF')
               .map((i: any) => (
@@ -200,10 +211,10 @@ export default function InternDocuments() {
               cursor: 'pointer',
             }}
           >
-            <option value="all">Tous les types</option>
+            <option value="all">{t('compA.internDocs.allTypes')}</option>
             {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
               <option key={key} value={key}>
-                {cfg.label}
+                {t(cfg.labelKey)}
               </option>
             ))}
           </select>
@@ -222,10 +233,10 @@ export default function InternDocuments() {
               cursor: 'pointer',
             }}
           >
-            <option value="date">Tri par date</option>
-            <option value="name">Tri par nom</option>
-            <option value="size">Tri par taille</option>
-            <option value="type">Tri par type</option>
+            <option value="date">{t('compA.internDocs.sortDate')}</option>
+            <option value="name">{t('compA.internDocs.sortName')}</option>
+            <option value="size">{t('compA.internDocs.sortSize')}</option>
+            <option value="type">{t('compA.internDocs.sortType')}</option>
           </select>
 
           {/* Vue */}
@@ -244,7 +255,7 @@ export default function InternDocuments() {
                 color: viewMode === v ? '#fff' : 'rgba(255,255,255,0.5)',
               }}
             >
-              {v === 'liste' ? 'Liste' : 'Grille'}
+              {v === 'liste' ? t('compA.internDocs.viewList') : t('compA.internDocs.viewGrid')}
             </button>
           ))}
         </div>
@@ -287,14 +298,14 @@ export default function InternDocuments() {
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
           >
             <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 22 }}>{stats.total}</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Fichiers</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{t('compA.internDocs.files')}</span>
           </div>
           <div
             className="ticket-stat-card"
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
           >
             <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 22 }}>{fmtSize(stats.totalSize)}</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Taille totale</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{t('compA.internDocs.totalSize')}</span>
           </div>
           {Object.entries(stats.byType)
             .sort((a, b) => b[1] - a[1])
@@ -308,7 +319,7 @@ export default function InternDocuments() {
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
                 >
                   <span style={{ color: cfg.color, fontWeight: 700, fontSize: 22 }}>{count}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{cfg.label}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{t(cfg.labelKey)}</span>
                 </div>
               )
             })}
@@ -316,7 +327,9 @@ export default function InternDocuments() {
       )}
 
       {documents.length === 0 ? (
-        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Aucun document</p>
+        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>
+          {t('compA.internDocs.empty')}
+        </p>
       ) : viewMode === 'liste' ? (
         /* ── VUE LISTE groupee par date ── */
         <div>
@@ -409,7 +422,7 @@ export default function InternDocuments() {
                     {doc.originalName}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                    <span style={{ color: cfg.color, fontSize: 10, fontWeight: 600 }}>{cfg.label}</span>
+                    <span style={{ color: cfg.color, fontSize: 10, fontWeight: 600 }}>{t(cfg.labelKey)}</span>
                     <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>{fmtSize(doc.size)}</span>
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, marginTop: 4 }}>
@@ -426,6 +439,7 @@ export default function InternDocuments() {
 }
 
 function DocRow({ doc, onPreview }: { doc: DocItem; onPreview: (p: { url: string; name: string }) => void }) {
+  const { t } = useI18n()
   const cfg = TYPE_CONFIG[doc.fileType] || TYPE_CONFIG.autre
   return (
     <div
@@ -508,7 +522,7 @@ function DocRow({ doc, onPreview }: { doc: DocItem; onPreview: (p: { url: string
           flexShrink: 0,
         }}
       >
-        {cfg.label}
+        {t(cfg.labelKey)}
       </span>
 
       {/* Taille */}

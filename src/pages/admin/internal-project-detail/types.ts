@@ -1,10 +1,29 @@
+import type { MessageKey } from '../../../i18n'
+
 // Status color maps pour les missions
 export const MSC: Record<string, string> = { A_FAIRE: '#fde047', EN_COURS: '#38bdf8', TERMINE: '#6ee7b7' }
-export const MSBg: Record<string, string> = { A_FAIRE: 'rgba(234,179,8,0.12)', EN_COURS: 'rgba(14,165,233,0.12)', TERMINE: 'rgba(16,185,129,0.12)' }
-export const MSBo: Record<string, string> = { A_FAIRE: 'rgba(234,179,8,0.3)', EN_COURS: 'rgba(14,165,233,0.3)', TERMINE: 'rgba(16,185,129,0.3)' }
-export const MSL: Record<string, string> = { A_FAIRE: 'À faire', EN_COURS: 'En cours', TERMINE: 'Terminée' }
+export const MSBg: Record<string, string> = {
+  A_FAIRE: 'rgba(234,179,8,0.12)',
+  EN_COURS: 'rgba(14,165,233,0.12)',
+  TERMINE: 'rgba(16,185,129,0.12)',
+}
+export const MSBo: Record<string, string> = {
+  A_FAIRE: 'rgba(234,179,8,0.3)',
+  EN_COURS: 'rgba(14,165,233,0.3)',
+  TERMINE: 'rgba(16,185,129,0.3)',
+}
+export const MSL_KEYS: Record<string, MessageKey> = {
+  A_FAIRE: 'projB.mission.statusTodo',
+  EN_COURS: 'projB.mission.statusInProgress',
+  TERMINE: 'projB.mission.statusDone',
+}
 
-export interface Member { _id: string; name: string; email: string; role: string }
+export interface Member {
+  _id: string
+  name: string
+  email: string
+  role: string
+}
 
 export interface Project {
   _id: string
@@ -39,7 +58,14 @@ export interface Mission {
   status: 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
   progress: number
   dueDate: string | null
-  steps: { _id: string; title: string; description: string; done: boolean; waitingReview: boolean; assignedTo?: string }[]
+  steps: {
+    _id: string
+    title: string
+    description: string
+    done: boolean
+    waitingReview: boolean
+    assignedTo?: string
+  }[]
   deliverables: { _id: string; title: string; description: string; done: boolean; assignedTo?: string }[]
   files: { _id: string; originalName: string; mimeType: string; size: number }[]
   createdBy: { name: string }

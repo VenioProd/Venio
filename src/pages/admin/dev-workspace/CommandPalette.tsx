@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, LayoutGrid, Plus, Search, Sun, Target } from 'lucide-react'
 import type { DevIssue, DevProject } from '../../../services/dev'
+import { useI18n } from '../../../context/I18nContext'
 import './CommandPalette.css'
 
 // Normalisation insensible à la casse et aux accents pour le filtrage client.
@@ -49,6 +50,7 @@ const CommandPalette = ({
   onShowToday,
   onOpenCockpit,
 }: CommandPaletteProps) => {
+  const { t } = useI18n()
   const [q, setQ] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const listRef = useRef<HTMLDivElement | null>(null)
@@ -56,21 +58,21 @@ const CommandPalette = ({
   const actions = useMemo<PaletteAction[]>(() => {
     const base: PaletteAction[] = []
     if (canCreate) {
-      base.push({ id: 'new-issue', label: 'Nouvelle issue', icon: <Plus size={13} />, run: onNewIssue })
+      base.push({ id: 'new-issue', label: t('devA.workspace.newIssue'), icon: <Plus size={13} />, run: onNewIssue })
     }
     base.push(
-      { id: 'review-queue', label: 'File de revue', icon: <Check size={13} />, run: onOpenReviewQueue },
-      { id: 'toggle-view', label: 'Basculer liste/kanban', icon: <LayoutGrid size={13} />, run: onToggleViewMode },
-      { id: 'today', label: 'Ma journée', icon: <Sun size={13} />, run: onShowToday },
+      { id: 'review-queue', label: t('devA.palette.reviewQueue'), icon: <Check size={13} />, run: onOpenReviewQueue },
+      { id: 'toggle-view', label: t('devA.palette.toggleView'), icon: <LayoutGrid size={13} />, run: onToggleViewMode },
+      { id: 'today', label: t('devA.quickView.today'), icon: <Sun size={13} />, run: onShowToday },
       ...projects.map((p) => ({
         id: `cockpit-${p._id}`,
-        label: `Cockpit ${p.key}`,
+        label: t('devA.palette.cockpit', { key: p.key }),
         icon: <Target size={13} />,
         run: () => onOpenCockpit(p._id),
       })),
     )
     return base
-  }, [canCreate, projects, onNewIssue, onOpenReviewQueue, onToggleViewMode, onShowToday, onOpenCockpit])
+  }, [t, canCreate, projects, onNewIssue, onOpenReviewQueue, onToggleViewMode, onShowToday, onOpenCockpit])
 
   // Liste plate des items affichés : actions matchantes puis issues (max 8).
   const items = useMemo<PaletteItem[]>(() => {
@@ -119,13 +121,13 @@ const CommandPalette = ({
   return (
     <>
       <div className="dev-cmdk-backdrop" onClick={onClose} />
-      <div className="dev-cmdk" role="dialog" aria-label="Palette de commandes" onKeyDown={handleKeyDown}>
+      <div className="dev-cmdk" role="dialog" aria-label={t('devA.palette.aria')} onKeyDown={handleKeyDown}>
         <div className="dev-cmdk-input-row">
           <Search size={14} />
           <input
             autoFocus
             className="dev-cmdk-input"
-            placeholder="Action ou issue… (↑↓ pour naviguer, Enter pour ouvrir)"
+            placeholder={t('devA.palette.placeholder')}
             value={q}
             onChange={(e) => {
               // Reset de la sélection quand la requête change.
@@ -137,12 +139,16 @@ const CommandPalette = ({
         </div>
         <div className="dev-cmdk-list" ref={listRef}>
           {items.length === 0 ? (
-            <div className="dev-cmdk-empty">Aucun résultat pour « {q} »</div>
+            <div className="dev-cmdk-empty">{t('devA.palette.noResult', { query: q })}</div>
           ) : (
             items.map((item, idx) => (
               <div key={item.kind === 'action' ? item.action.id : item.issue._id}>
-                {idx === 0 && item.kind === 'action' && <div className="dev-cmdk-section">Actions</div>}
-                {idx === firstIssueIndex && item.kind === 'issue' && <div className="dev-cmdk-section">Issues</div>}
+                {idx === 0 && item.kind === 'action' && (
+                  <div className="dev-cmdk-section">{t('devA.palette.actions')}</div>
+                )}
+                {idx === firstIssueIndex && item.kind === 'issue' && (
+                  <div className="dev-cmdk-section">{t('devA.palette.issues')}</div>
+                )}
                 <button
                   type="button"
                   className={'dev-cmdk-item' + (idx === activeIndex ? ' active' : '')}

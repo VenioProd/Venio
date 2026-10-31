@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FormEvent } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import type { Project, Member } from './types'
 
 interface MissionFormState {
@@ -21,17 +21,23 @@ interface Props {
 }
 
 export default function MissionFormDrawer({ form, setForm, projects, admins, saving, onClose, onSubmit }: Props) {
+  const { t } = useI18n()
   return (
     <div className="portal-card" style={{ marginTop: 20 }}>
       <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
-        Nouvelle mission interne
+        {t('projA.missionForm.title')}
       </h2>
       <form onSubmit={onSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div>
-            <label className="portal-label">Projet *</label>
-            <select className="portal-input" value={form.projectId} onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))} required>
-              <option value="">— Choisir —</option>
+            <label className="portal-label">{t('projA.missionForm.projectLabel')}</label>
+            <select
+              className="portal-input"
+              value={form.projectId}
+              onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}
+              required
+            >
+              <option value="">{t('projA.missionForm.choose')}</option>
               {projects.map((p) => (
                 <option key={p._id} value={p._id}>
                   {p.entity} · {p.name}
@@ -40,7 +46,7 @@ export default function MissionFormDrawer({ form, setForm, projects, admins, sav
             </select>
           </div>
           <div>
-            <label className="portal-label">Deadline</label>
+            <label className="portal-label">{t('projA.common.deadline')}</label>
             <input
               type="date"
               className="portal-input"
@@ -49,27 +55,27 @@ export default function MissionFormDrawer({ form, setForm, projects, admins, sav
             />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="portal-label">Titre *</label>
+            <label className="portal-label">{t('projA.missionForm.titleLabel')}</label>
             <input
               className="portal-input"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              placeholder="Ex: Refonte landing page"
+              placeholder={t('projA.missionForm.titlePlaceholder')}
               required
             />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="portal-label">Description</label>
+            <label className="portal-label">{t('projA.common.description')}</label>
             <textarea
               className="portal-input"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               rows={3}
-              placeholder="Détails de la mission..."
+              placeholder={t('projA.missionForm.descriptionPlaceholder')}
             />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="portal-label">Assigner à</label>
+            <label className="portal-label">{t('projA.missionForm.assignTo')}</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
               {admins.map((a) => {
                 const selected = form.assignedTo.includes(a._id)
@@ -106,10 +112,10 @@ export default function MissionFormDrawer({ form, setForm, projects, admins, sav
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <button className="portal-button" type="submit" disabled={saving}>
-            {saving ? 'Création...' : 'Créer la mission'}
+            {saving ? t('projA.missionForm.creating') : t('projA.missionForm.create')}
           </button>
           <button className="portal-button secondary" type="button" onClick={onClose}>
-            Annuler
+            {t('common.cancel')}
           </button>
         </div>
       </form>

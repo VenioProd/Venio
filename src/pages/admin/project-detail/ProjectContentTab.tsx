@@ -1,4 +1,6 @@
 import React from 'react'
+import { useI18n } from '../../../context/I18nContext'
+import type { MessageKey } from '../../../i18n'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import FileDropZone from '../../../components/admin/FileDropZone'
 import type { ProjectContentTabProps } from './types'
@@ -11,20 +13,17 @@ function getPreviewUrl(projectId: string, itemId: string): string {
   return `/api/admin/projects/${projectId}/items/${itemId}/preview`
 }
 
-const getItemTypeLabel = (type: string): string => {
-  const labels: Record<string, string> = {
-    LIVRABLE: 'Livrable',
-    DEVIS: 'Devis',
-    FACTURE: 'Facture',
-    CONTRAT: 'Contrat',
-    CAHIER_DES_CHARGES: 'Cahier des charges',
-    MAQUETTE: 'Maquette',
-    DOCUMENTATION: 'Documentation',
-    LIEN: 'Lien',
-    NOTE: 'Note',
-    AUTRE: 'Autre',
-  }
-  return labels[type] || type
+const ITEM_TYPE_LABEL_KEYS: Record<string, MessageKey> = {
+  LIVRABLE: 'projects.itemType.deliverable',
+  DEVIS: 'projects.itemType.quote',
+  FACTURE: 'projects.itemType.invoice',
+  CONTRAT: 'projects.itemType.contract',
+  CAHIER_DES_CHARGES: 'projects.itemType.specs',
+  MAQUETTE: 'projects.itemType.mockup',
+  DOCUMENTATION: 'projects.itemType.documentation',
+  LIEN: 'projects.itemType.link',
+  NOTE: 'projects.itemType.note',
+  AUTRE: 'projects.itemType.other',
 }
 
 const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
@@ -52,6 +51,9 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
   onToggleItemVisibility,
   onDownloadItem,
 }) => {
+  const { t } = useI18n()
+  const getItemTypeLabel = (type: string): string => (ITEM_TYPE_LABEL_KEYS[type] ? t(ITEM_TYPE_LABEL_KEYS[type]) : type)
+
   const getItemsBySection = (sectionId: string) => {
     return items.filter((item) => (typeof item.section === 'object' ? item.section?._id : item.section) === sectionId)
   }
@@ -65,19 +67,19 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
       {/* Ajouter une section */}
       {(canEditContent || !canUploadDocuments) && (
         <div className="admin-form-section">
-          <h2>Ajouter une section</h2>
+          <h2>{t('projects.content.addSection')}</h2>
           {canEditContent ? (
             <form className="portal-list" onSubmit={onAddSection}>
               <input
                 className="portal-input"
-                placeholder="Titre de la section"
+                placeholder={t('projects.content.sectionTitlePlaceholder')}
                 value={sectionForm.title}
                 onChange={(e) => setSectionForm({ ...sectionForm, title: e.target.value })}
                 required
               />
               <textarea
                 className="portal-input"
-                placeholder="Description (optionnel)"
+                placeholder={t('projects.content.descriptionOptional')}
                 value={sectionForm.description}
                 onChange={(e) => setSectionForm({ ...sectionForm, description: e.target.value })}
                 rows={2}
@@ -89,14 +91,14 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                   checked={sectionForm.isVisible}
                   onChange={(e) => setSectionForm({ ...sectionForm, isVisible: e.target.checked })}
                 />
-                <span style={{ fontSize: '14px' }}>Visible pour le client</span>
+                <span style={{ fontSize: '14px' }}>{t('projects.content.visibleToClient')}</span>
               </label>
               <button className="portal-button" type="submit">
-                + Créer la section
+                {t('projects.content.createSection')}
               </button>
             </form>
           ) : (
-            <div className="admin-info">Accès lecture seule au contenu.</div>
+            <div className="admin-info">{t('projects.content.readOnly')}</div>
           )}
         </div>
       )}
@@ -104,7 +106,11 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
       {/* Ajouter un élément */}
       <div className="admin-form-section" style={{ marginTop: 24 }}>
         <h2>
-          {canEditContent ? 'Ajouter un élément' : editingItemId ? 'Modifier le document' : 'Ajouter un document'}
+          {canEditContent
+            ? t('projects.content.addItem')
+            : editingItemId
+              ? t('projects.content.editDocument')
+              : t('projects.content.addDocument')}
         </h2>
         {canEditContent || canUploadDocuments ? (
           <form className="portal-list" onSubmit={onAddItem}>
@@ -113,7 +119,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
               value={itemForm.section as string}
               onChange={(v) => setItemForm({ ...itemForm, section: v })}
               options={[
-                { value: '', label: 'Sans section' },
+                { value: '', label: t('projects.content.noSection') },
                 ...sections.map((s) => ({ value: s._id, label: s.title })),
               ]}
             />
@@ -122,28 +128,28 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
               value={itemForm.type as string}
               onChange={(v) => setItemForm({ ...itemForm, type: v })}
               options={[
-                { value: 'LIVRABLE', label: 'Livrable' },
-                { value: 'DEVIS', label: 'Devis' },
-                { value: 'FACTURE', label: 'Facture' },
-                { value: 'CONTRAT', label: 'Contrat' },
-                { value: 'CAHIER_DES_CHARGES', label: 'Cahier des charges' },
-                { value: 'MAQUETTE', label: 'Maquette' },
-                { value: 'DOCUMENTATION', label: 'Documentation' },
-                { value: 'LIEN', label: 'Lien' },
-                { value: 'NOTE', label: 'Note' },
-                { value: 'AUTRE', label: 'Autre' },
+                { value: 'LIVRABLE', label: t('projects.itemType.deliverable') },
+                { value: 'DEVIS', label: t('projects.itemType.quote') },
+                { value: 'FACTURE', label: t('projects.itemType.invoice') },
+                { value: 'CONTRAT', label: t('projects.itemType.contract') },
+                { value: 'CAHIER_DES_CHARGES', label: t('projects.itemType.specs') },
+                { value: 'MAQUETTE', label: t('projects.itemType.mockup') },
+                { value: 'DOCUMENTATION', label: t('projects.itemType.documentation') },
+                { value: 'LIEN', label: t('projects.itemType.link') },
+                { value: 'NOTE', label: t('projects.itemType.note') },
+                { value: 'AUTRE', label: t('projects.itemType.other') },
               ].filter((option) => canEditContent || !['LIVRABLE', 'LIEN', 'NOTE'].includes(option.value))}
             />
             <input
               className="portal-input"
-              placeholder="Titre"
+              placeholder={t('projects.content.titlePlaceholder')}
               value={itemForm.title as string}
               onChange={(e) => setItemForm({ ...itemForm, title: e.target.value })}
               required
             />
             <textarea
               className="portal-input"
-              placeholder="Description"
+              placeholder={t('projects.content.descriptionPlaceholder')}
               value={itemForm.description as string}
               onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
               rows={3}
@@ -152,7 +158,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
             {itemForm.type === 'LIEN' && (
               <input
                 className="portal-input"
-                placeholder="URL (https://...)"
+                placeholder={t('projects.content.urlPlaceholder')}
                 value={itemForm.url as string}
                 onChange={(e) => setItemForm({ ...itemForm, url: e.target.value })}
               />
@@ -160,7 +166,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
             {itemForm.type === 'NOTE' && (
               <textarea
                 className="portal-input"
-                placeholder="Contenu de la note"
+                placeholder={t('projects.content.noteContentPlaceholder')}
                 value={itemForm.content as string}
                 onChange={(e) => setItemForm({ ...itemForm, content: e.target.value })}
                 rows={4}
@@ -173,10 +179,10 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                 value={itemForm.status as string}
                 onChange={(v) => setItemForm({ ...itemForm, status: v })}
                 options={[
-                  { value: 'EN_ATTENTE', label: 'En attente' },
-                  { value: 'EN_COURS', label: 'En cours' },
-                  { value: 'TERMINE', label: 'Terminé' },
-                  { value: 'VALIDE', label: 'Validé' },
+                  { value: 'EN_ATTENTE', label: t('projects.content.statusPending') },
+                  { value: 'EN_COURS', label: t('projects.content.statusInProgress') },
+                  { value: 'TERMINE', label: t('projects.content.statusDone') },
+                  { value: 'VALIDE', label: t('projects.content.statusValidated') },
                 ]}
               />
             )}
@@ -189,7 +195,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                     checked={itemForm.isVisible as boolean}
                     onChange={(e) => setItemForm({ ...itemForm, isVisible: e.target.checked })}
                   />
-                  <span style={{ fontSize: '14px' }}>Visible</span>
+                  <span style={{ fontSize: '14px' }}>{t('projects.content.visible')}</span>
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                   <input
@@ -197,25 +203,25 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                     checked={itemForm.isDownloadable as boolean}
                     onChange={(e) => setItemForm({ ...itemForm, isDownloadable: e.target.checked })}
                   />
-                  <span style={{ fontSize: '14px' }}>Téléchargeable</span>
+                  <span style={{ fontSize: '14px' }}>{t('projects.content.downloadable')}</span>
                 </label>
               </div>
             )}
             <button className="portal-button" type="submit">
               {canEditContent
-                ? "+ Ajouter l'élément"
+                ? t('projects.content.submitAddItem')
                 : editingItemId
-                  ? 'Enregistrer le document'
-                  : '+ Ajouter le document'}
+                  ? t('projects.content.submitSaveDocument')
+                  : t('projects.content.submitAddDocument')}
             </button>
             {editingItemId && (
               <button className="portal-button secondary" type="button" onClick={onCancelEdit}>
-                Annuler
+                {t('common.cancel')}
               </button>
             )}
           </form>
         ) : (
-          <div className="admin-info">Accès lecture seule au contenu.</div>
+          <div className="admin-info">{t('projects.content.readOnly')}</div>
         )}
       </div>
 
@@ -224,7 +230,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
         {/* Items sans section */}
         {getItemsWithoutSection().length > 0 && (
           <div className="admin-form-section" style={{ marginBottom: 24 }}>
-            <h3>Éléments sans section</h3>
+            <h3>{t('projects.content.itemsWithoutSection')}</h3>
             <div className="admin-list">
               {getItemsWithoutSection().map((item) => (
                 <div key={item._id} className="admin-list-item">
@@ -241,10 +247,10 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                       {item.title}
                       {!item.isVisible &&
                         (canEditContent ? (
-                          <span style={{ marginLeft: '8px', opacity: 0.5 }}>Masque</span>
+                          <span style={{ marginLeft: '8px', opacity: 0.5 }}>{t('projects.content.hiddenPlain')}</span>
                         ) : (
                           <span className="admin-badge" style={{ marginLeft: '8px' }}>
-                            Interne
+                            {t('projects.content.internal')}
                           </span>
                         ))}
                     </h4>
@@ -252,7 +258,11 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                       <span className="admin-badge">{getItemTypeLabel(item.type)}</span>
                       {item.file && (
                         <span style={{ marginLeft: '8px' }}>
-                          {item.file.originalName} ({item.file.size ? `${(item.file.size / 1024).toFixed(0)} Ko` : ''})
+                          {item.file.originalName} (
+                          {item.file.size
+                            ? t('projects.content.sizeKb', { size: (item.file.size / 1024).toFixed(0) })
+                            : ''}
+                          )
                         </span>
                       )}
                     </p>
@@ -264,7 +274,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                         onClick={() => onEditItem(item)}
                         style={{ fontSize: '12px', padding: '8px 12px' }}
                       >
-                        Modifier
+                        {t('projects.content.edit')}
                       </button>
                     )}
                     {canEditContent && (
@@ -273,7 +283,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                         onClick={() => onToggleItemVisibility(item)}
                         style={{ fontSize: '12px', padding: '8px 12px' }}
                       >
-                        {item.isVisible ? 'Masquer' : 'Afficher'}
+                        {item.isVisible ? t('projects.content.hide') : t('projects.content.show')}
                       </button>
                     )}
                     {canViewContent && item.file && (
@@ -282,7 +292,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                         onClick={() => onDownloadItem(item._id, item.file!.originalName)}
                         style={{ fontSize: '12px', padding: '8px 12px' }}
                       >
-                        Telecharger
+                        {t('projects.content.download')}
                       </button>
                     )}
                     {canModifyItem(item) && (
@@ -296,7 +306,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                           borderColor: 'rgba(239, 68, 68, 0.3)',
                         }}
                       >
-                        Supprimer
+                        {t('projects.content.delete')}
                       </button>
                     )}
                   </div>
@@ -312,7 +322,9 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h3>
                 {section.title}
-                {!section.isVisible && <span style={{ marginLeft: '8px', opacity: 0.5 }}>👁️ Masqué</span>}
+                {!section.isVisible && (
+                  <span style={{ marginLeft: '8px', opacity: 0.5 }}>{t('projects.content.hiddenEmoji')}</span>
+                )}
               </h3>
               <div style={{ display: 'flex', gap: '8px' }}>
                 {canEditContent && (
@@ -321,7 +333,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                     onClick={() => onToggleSectionVisibility(section)}
                     style={{ fontSize: '12px', padding: '8px 12px' }}
                   >
-                    {section.isVisible ? '👁️ Masquer' : '👁️ Afficher'}
+                    {section.isVisible ? t('projects.content.hideEmoji') : t('projects.content.showEmoji')}
                   </button>
                 )}
                 {canEditContent && (
@@ -346,7 +358,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
             <div className="admin-list">
               {getItemsBySection(section._id).length === 0 ? (
                 <div className="admin-empty-state" style={{ padding: '24px' }}>
-                  <p className="admin-empty-state-text">Aucun élément dans cette section</p>
+                  <p className="admin-empty-state-text">{t('projects.content.emptySection')}</p>
                 </div>
               ) : (
                 getItemsBySection(section._id).map((item) => (
@@ -356,10 +368,10 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                         {item.title}
                         {!item.isVisible &&
                           (canEditContent ? (
-                            <span style={{ marginLeft: '8px', opacity: 0.5 }}>👁️ Masqué</span>
+                            <span style={{ marginLeft: '8px', opacity: 0.5 }}>{t('projects.content.hiddenEmoji')}</span>
                           ) : (
                             <span className="admin-badge" style={{ marginLeft: '8px' }}>
-                              Interne
+                              {t('projects.content.internal')}
                             </span>
                           ))}
                       </h4>
@@ -367,7 +379,9 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                         <span className="admin-badge">{getItemTypeLabel(item.type)}</span>
                         {item.file && <span style={{ marginLeft: '8px' }}>📎 {item.file.originalName}</span>}
                         {!item.isDownloadable && (
-                          <span style={{ marginLeft: '8px', opacity: 0.5 }}>🔒 Non téléchargeable</span>
+                          <span style={{ marginLeft: '8px', opacity: 0.5 }}>
+                            {t('projects.content.notDownloadable')}
+                          </span>
                         )}
                       </p>
                     </div>
@@ -378,7 +392,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                           onClick={() => onEditItem(item)}
                           style={{ fontSize: '12px', padding: '8px 12px' }}
                         >
-                          Modifier
+                          {t('projects.content.edit')}
                         </button>
                       )}
                       {canEditContent && (
@@ -387,7 +401,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                           onClick={() => onToggleItemVisibility(item)}
                           style={{ fontSize: '12px', padding: '8px 12px' }}
                         >
-                          {item.isVisible ? '👁️ Masquer' : '👁️ Afficher'}
+                          {item.isVisible ? t('projects.content.hideEmoji') : t('projects.content.showEmoji')}
                         </button>
                       )}
                       {canViewContent && item.file && (
@@ -424,7 +438,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
         {sections.length === 0 && getItemsWithoutSection().length === 0 && (
           <div className="admin-empty-state" style={{ padding: '48px' }}>
             <div className="admin-empty-state-icon">📁</div>
-            <p className="admin-empty-state-text">Aucun contenu pour ce projet</p>
+            <p className="admin-empty-state-text">{t('projects.content.emptyProject')}</p>
           </div>
         )}
       </div>

@@ -1,4 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react'
+import { translate } from '../../i18n'
+import { useI18n } from '../../context/I18nContext'
 import '../../styles/file-dropzone.css'
 
 interface Props {
@@ -9,31 +11,35 @@ interface Props {
 }
 
 function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} o`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  if (bytes < 1024) return `${bytes} ${translate('compB.fileUnit.b')}`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ${translate('compB.fileUnit.kb')}`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} ${translate('compB.fileUnit.mb')}`
 }
 
 export default function FileDropZone({ onFile, accept, maxSizeMB = 20, currentFile }: Props) {
+  const { t } = useI18n()
   const [dragOver, setDragOver] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleFile = useCallback((file: File) => {
-    setError('')
-    if (file.size > maxSizeMB * 1024 * 1024) {
-      setError(`Fichier trop volumineux (max ${maxSizeMB} Mo)`)
-      return
-    }
-    onFile(file)
-    if (file.type.startsWith('image/')) {
-      const url = URL.createObjectURL(file)
-      setPreview(url)
-    } else {
-      setPreview(null)
-    }
-  }, [onFile, maxSizeMB])
+  const handleFile = useCallback(
+    (file: File) => {
+      setError('')
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        setError(t('compB.dropZone.tooLarge', { max: maxSizeMB }))
+        return
+      }
+      onFile(file)
+      if (file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file)
+        setPreview(url)
+      } else {
+        setPreview(null)
+      }
+    },
+    [onFile, maxSizeMB, t],
+  )
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -66,13 +72,7 @@ export default function FileDropZone({ onFile, accept, maxSizeMB = 20, currentFi
       onDragLeave={handleDragLeave}
       onClick={handleClick}
     >
-      <input
-        ref={inputRef}
-        type="file"
-        accept={accept}
-        onChange={handleChange}
-        style={{ display: 'none' }}
-      />
+      <input ref={inputRef} type="file" accept={accept} onChange={handleChange} style={{ display: 'none' }} />
 
       {preview && (
         <div className="file-dropzone-preview">
@@ -92,8 +92,8 @@ export default function FileDropZone({ onFile, accept, maxSizeMB = 20, currentFi
             <polyline points="17 8 12 3 7 8" />
             <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
-          <p>Glissez un fichier ici ou cliquez pour choisir</p>
-          <span className="file-dropzone-limit">Max {maxSizeMB} Mo</span>
+          <p>{t('compB.dropZone.prompt')}</p>
+          <span className="file-dropzone-limit">{t('compB.dropZone.max', { max: maxSizeMB })}</span>
         </div>
       )}
 

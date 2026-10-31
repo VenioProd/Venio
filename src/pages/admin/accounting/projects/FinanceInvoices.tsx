@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { apiDownload } from '../../../../lib/api'
+import { useI18n } from '../../../../context/I18nContext'
 import { formatMoney, parseMoney } from './money'
 import {
   ACCOUNTING,
@@ -7,7 +8,7 @@ import {
   dateLabel,
   errorText,
   Field,
-  labels,
+  labelFor,
   methodOptions,
   text,
   today,
@@ -17,13 +18,14 @@ import type { Invoice, Payment } from './types'
 import InvoicePaymentLink from './InvoicePaymentLink'
 
 function ReceiptForm({ invoice, onSaved }: { invoice: Invoice; onSaved: () => Promise<void> }) {
+  const { t } = useI18n()
   return (
     <ActionForm
-      label="Enregistrer l’encaissement"
+      label={t('accProjects.invoices.saveReceipt')}
       onSaved={onSaved}
       submit={(data, key) => {
         const amountTtcCents = parseMoney(text(data, 'amount'))
-        if (amountTtcCents > invoice.remainingTtcCents) throw new Error('Le montant dépasse le reste dû de la facture.')
+        if (amountTtcCents > invoice.remainingTtcCents) throw new Error(t('accProjects.invoices.amountOverRemaining'))
         return write(
           `${ACCOUNTING}/invoices/${invoice._id}/payments`,
           'POST',
@@ -38,22 +40,22 @@ function ReceiptForm({ invoice, onSaved }: { invoice: Invoice; onSaved: () => Pr
       }}
     >
       <div className="pf-grid">
-        <Field label="Montant TTC (€)">
+        <Field label={t('accProjects.common.amountTtcEur')}>
           <input name="amount" required inputMode="decimal" defaultValue={String(invoice.remainingTtcCents / 100)} />
         </Field>
-        <Field label="Moyen">
+        <Field label={t('accProjects.invoices.method')}>
           <select name="method">
             {methodOptions.map((method) => (
               <option key={method} value={method}>
-                {labels[method]}
+                {labelFor(t, method)}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="Date d’encaissement">
+        <Field label={t('accProjects.invoices.receiptDate')}>
           <input name="date" type="date" max={today()} required defaultValue={today()} />
         </Field>
-        <Field label="Référence">
+        <Field label={t('accProjects.invoices.reference')}>
           <input name="reference" />
         </Field>
       </div>
@@ -70,13 +72,14 @@ function RefundForm({
   remaining: number
   onSaved: () => Promise<void>
 }) {
+  const { t } = useI18n()
   return (
     <ActionForm
-      label="Enregistrer le remboursement"
+      label={t('accProjects.invoices.saveRefund')}
       onSaved={onSaved}
       submit={(data, key) => {
         const amountTtcCents = parseMoney(text(data, 'amount'))
-        if (amountTtcCents > remaining) throw new Error('Le montant dépasse le solde remboursable de cet encaissement.')
+        if (amountTtcCents > remaining) throw new Error(t('accProjects.invoices.amountOverRefundable'))
         return write(
           `${ACCOUNTING}/payments/${payment._id}/refunds`,
           'POST',
@@ -86,17 +89,20 @@ function RefundForm({
       }}
     >
       <p>
-        Encaissement du {dateLabel(payment.receivedAt)} · {formatMoney(payment.amountTtcCents)} TTC · Remboursable :{' '}
-        {formatMoney(remaining)} TTC.
+        {t('accProjects.invoices.refundContext', {
+          date: dateLabel(payment.receivedAt),
+          amount: formatMoney(payment.amountTtcCents),
+          refundable: formatMoney(remaining),
+        })}
       </p>
       <div className="pf-grid">
-        <Field label="Montant TTC (€)">
+        <Field label={t('accProjects.common.amountTtcEur')}>
           <input name="amount" required inputMode="decimal" defaultValue={String(remaining / 100)} />
         </Field>
-        <Field label="Date de remboursement">
+        <Field label={t('accProjects.invoices.refundDate')}>
           <input name="date" type="date" max={today()} required defaultValue={today()} />
         </Field>
-        <Field label="Motif">
+        <Field label={t('accProjects.cols.reason')}>
           <textarea name="reason" required />
         </Field>
       </div>
@@ -105,10 +111,11 @@ function RefundForm({
 }
 
 function CreditForm({ invoice, onSaved }: { invoice: Invoice; onSaved: () => Promise<void> }) {
+  const { t } = useI18n()
   const [partial, setPartial] = useState(false)
   return (
     <ActionForm
-      label="Créer l’avoir brouillon"
+      label={t('accProjects.invoices.createCredit')}
       retryable={false}
       onSaved={onSaved}
       submit={(data, key) =>
@@ -123,23 +130,23 @@ function CreditForm({ invoice, onSaved }: { invoice: Invoice; onSaved: () => Pro
         )
       }
     >
-      <p>L’avoir créé est un brouillon. Il devra être émis pour réduire le facturé.</p>
+      <p>{t('accProjects.invoices.creditDraftNote')}</p>
       <div className="pf-grid">
-        <Field label="Type d’avoir">
+        <Field label={t('accProjects.invoices.creditType')}>
           <select
             value={partial ? 'partial' : 'total'}
             onChange={(event) => setPartial(event.target.value === 'partial')}
           >
-            <option value="total">Total de la facture (sans avoir antérieur)</option>
-            <option value="partial">Partiel en HT</option>
+            <option value="total">{t('accProjects.invoices.creditTotal')}</option>
+            <option value="partial">{t('accProjects.invoices.creditPartial')}</option>
           </select>
         </Field>
         {partial && (
-          <Field label="Montant HT (€)">
+          <Field label={t('accProjects.common.amountHtEur')}>
             <input name="amount" required inputMode="decimal" />
           </Field>
         )}
-        <Field label="Motif">
+        <Field label={t('accProjects.cols.reason')}>
           <textarea name="reason" required />
         </Field>
       </div>
@@ -162,6 +169,7 @@ export default function FinanceInvoices({
   canDownload: boolean
   onSaved: () => Promise<void>
 }) {
+  const { t } = useI18n()
   const [action, setAction] = useState<{ kind: string; id: string } | null>(null)
   const [error, setError] = useState('')
   const [warning, setWarning] = useState('')
@@ -185,14 +193,14 @@ export default function FinanceInvoices({
   }
   return (
     <section className="accounting-card">
-      <h2>Factures et encaissements</h2>
+      <h2>{t('accProjects.invoices.title')}</h2>
       {error && (
         <p className="admin-error" role="alert">
           {error}
         </p>
       )}
       {warning && <p role="status">{warning}</p>}
-      {!invoices.length && <p>Aucune facture pour ce projet.</p>}
+      {!invoices.length && <p>{t('accProjects.invoices.empty')}</p>}
       {invoices.map((invoice) => {
         const receipts = payments.filter((payment) => payment.invoice === invoice._id)
         const received = receipts.reduce((sum, payment) => sum + payment.amountTtcCents, 0)
@@ -202,33 +210,34 @@ export default function FinanceInvoices({
           <article className="pf-record" id={`facture-${invoice._id}`} key={invoice._id}>
             <h3>
               {invoice.number}
-              {invoice.creditedInvoice && ' · Avoir'} · {labels[invoice.status] || invoice.status}
+              {invoice.creditedInvoice && ` · ${t('accProjects.invoices.creditNote')}`} · {labelFor(t, invoice.status)}
             </h3>
             <p>
-              {invoice.payerName} · {formatMoney(invoice.totalTtcCents)} TTC · Échéance : {dateLabel(invoice.dueAt)}
+              {t('accProjects.invoices.summary', {
+                payer: invoice.payerName,
+                total: formatMoney(invoice.totalTtcCents),
+                due: dateLabel(invoice.dueAt),
+              })}
             </p>
             {!invoice.creditedInvoice && (
               <p>
-                Reste dû : <strong>{formatMoney(invoice.remainingTtcCents)} TTC</strong>
-                {invoice.status === 'DRAFT' && ' · Montant prévisionnel du brouillon'}
+                {t('accProjects.invoices.remainingDue')}{' '}
+                <strong>{t('accProjects.common.ttc', { amount: formatMoney(invoice.remainingTtcCents) })}</strong>
+                {invoice.status === 'DRAFT' && ` · ${t('accProjects.invoices.draftForecast')}`}
               </p>
             )}
-            {invoice.historical && (
-              <p className="pf-status">
-                Facture réglée avant le suivi détaillé : toute correction passe par une écriture manuelle.
-              </p>
-            )}
+            {invoice.historical && <p className="pf-status">{t('accProjects.invoices.historicalNote')}</p>}
             <div className="pf-actions">
               {canDownload && issued && (
                 <button className="portal-button secondary" onClick={() => void download(invoice)}>
-                  Télécharger le PDF
+                  {t('accProjects.invoices.downloadPdf')}
                 </button>
               )}
               {canManage && invoice.status === 'DRAFT' && (
                 <>
                   {canIssue && (
                     <ActionForm
-                      label="Émettre"
+                      label={t('accProjects.invoices.issue')}
                       submit={async (_, key) => {
                         const result = await write<{ accounting?: { warning?: string } }>(
                           `/api/admin/billing/${invoice._id}/generate-pdf`,
@@ -241,9 +250,7 @@ export default function FinanceInvoices({
                       onSaved={saved}
                     />
                   )}
-                  {!canIssue && (
-                    <p className="pf-status">Le droit de gestion de la facturation est requis pour émettre.</p>
-                  )}
+                  {!canIssue && <p className="pf-status">{t('accProjects.invoices.issueRightRequired')}</p>}
                 </>
               )}
               {canManage &&
@@ -252,7 +259,7 @@ export default function FinanceInvoices({
                 !invoice.historical &&
                 invoice.remainingTtcCents > 0 && (
                   <button className="portal-button" onClick={() => setAction({ kind: 'payment', id: invoice._id })}>
-                    Encaisser
+                    {t('accProjects.invoices.collect')}
                   </button>
                 )}
               {canManage && creditable && (
@@ -260,7 +267,7 @@ export default function FinanceInvoices({
                   className="portal-button secondary"
                   onClick={() => setAction({ kind: 'credit', id: invoice._id })}
                 >
-                  Avoir
+                  {t('accProjects.invoices.creditNote')}
                 </button>
               )}
             </div>
@@ -270,7 +277,7 @@ export default function FinanceInvoices({
               !invoice.historical &&
               invoice.remainingTtcCents > 0 && <InvoicePaymentLink invoiceId={invoice._id} />}
             {canManage && issued && !invoice.creditedInvoice && received > 0 && (
-              <p className="pf-status">Remboursez les encaissements avant de créer un avoir.</p>
+              <p className="pf-status">{t('accProjects.invoices.refundBeforeCredit')}</p>
             )}
             {canManage && action?.kind === 'payment' && action.id === invoice._id && (
               <ReceiptForm invoice={invoice} onSaved={saved} />
@@ -287,25 +294,31 @@ export default function FinanceInvoices({
               return (
                 <div className="pf-record" key={payment._id}>
                   <p>
-                    {payment.kind === 'REFUND' ? 'Remboursement' : 'Encaissement'} du {dateLabel(payment.receivedAt)} ·{' '}
-                    {formatMoney(payment.amountTtcCents)} TTC · {formatMoney(payment.htCents)} HT ·{' '}
-                    {labels[payment.method] || payment.method}
+                    {t(
+                      payment.kind === 'REFUND'
+                        ? 'accProjects.invoices.refundLine'
+                        : 'accProjects.invoices.receiptLine',
+                      {
+                        date: dateLabel(payment.receivedAt),
+                        ttc: formatMoney(payment.amountTtcCents),
+                        ht: formatMoney(payment.htCents),
+                        method: labelFor(t, payment.method),
+                      },
+                    )}
                   </p>
                   <p>
                     {payment.reference}
                     {payment.reason && ` · ${payment.reason}`}
                   </p>
                   {canManage && payment.kind === 'PAYMENT' && refundable > 0 && payment.source === 'STRIPE' && (
-                    <p>
-                      Effectuez le remboursement dans le tableau de bord Stripe. Il sera enregistré automatiquement ici.
-                    </p>
+                    <p>{t('accProjects.invoices.stripeRefundNote')}</p>
                   )}
                   {canManage && payment.kind === 'PAYMENT' && refundable > 0 && payment.source !== 'STRIPE' && (
                     <button
                       className="portal-button secondary"
                       onClick={() => setAction({ kind: 'refund', id: payment._id })}
                     >
-                      Rembourser cet encaissement
+                      {t('accProjects.invoices.refundThisReceipt')}
                     </button>
                   )}
                   {canManage && action?.kind === 'refund' && action.id === payment._id && (

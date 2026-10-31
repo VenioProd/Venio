@@ -46,7 +46,6 @@ import {
   listTemplates,
   searchEducation,
   studentDisplayName,
-  formatDate,
   assignmentExportUrl,
   CLASS_STATUS_LABEL,
   SESSION_STATUS_LABEL,
@@ -71,6 +70,9 @@ import { EducationAiDraftPanel } from './EducationAiDraft'
 import { SessionLiveMode } from './SessionLiveMode'
 import { NoteEditor, type BacklinkEntry } from './NoteEditor'
 import { CorrectionMode } from './CorrectionMode'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatShortDate as formatDate } from './eduFormat'
 
 export type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
 export type ClassTab = 'overview' | 'students' | 'sessions' | 'assignments' | 'notes'
@@ -92,6 +94,7 @@ export function SessionsTab({
   /** Templates tous kinds : filtrés localement pour le form, transmis entiers au drawer. */
   templates?: EducationTemplate[]
 }) {
+  const { t } = useI18n()
   const [sessions, setSessions] = useState<EducationSession[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [openSessionId, setOpenSessionId] = useState<string | null>(null)
@@ -107,24 +110,22 @@ export function SessionsTab({
   return (
     <div>
       <div className="edu-row between" style={{ marginBottom: 12 }}>
-        <strong>
-          {sessions.length} séance{sessions.length > 1 ? 's' : ''}
-        </strong>
+        <strong>{t('eduB.sessionsList.count', { count: sessions.length })}</strong>
         <button className="edu-btn" onClick={() => setShowCreate(true)}>
-          <Plus size={14} /> Nouvelle séance
+          <Plus size={14} /> {t('eduB.sessionsList.newSession')}
         </button>
       </div>
 
       {sessions.length === 0 ? (
-        <div className="edu-empty">Aucune séance planifiée.</div>
+        <div className="edu-empty">{t('eduB.sessionsList.empty')}</div>
       ) : (
         <table className="edu-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Séance</th>
-              <th>Statut</th>
-              <th>Présence</th>
+              <th>{t('eduB.cols.date')}</th>
+              <th>{t('eduB.cols.session')}</th>
+              <th>{t('eduB.cols.status')}</th>
+              <th>{t('eduB.cols.attendance')}</th>
               <th></th>
             </tr>
           </thead>
@@ -201,6 +202,7 @@ export function SessionForm({
   /** Reçoit la séance créée (utilisé par PostSessionFlow pour l'afficher). */
   onSaved: (created?: EducationSession) => void
 }) {
+  const { t } = useI18n()
   const [classChoice, setClassChoice] = useState(classId ?? '')
   const [templateId, setTemplateId] = useState('')
   const [form, setForm] = useState({
@@ -241,7 +243,7 @@ export function SessionForm({
       <div className="edu-drawer" style={{ width: 'min(560px, 92vw)' }}>
         <div className="edu-drawer-head">
           <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-            Nouvelle séance
+            {t('eduB.sessionsList.newSession')}
           </h2>
           <button className="edu-btn-icon" onClick={onClose}>
             <X size={18} />
@@ -250,9 +252,9 @@ export function SessionForm({
         <div className="edu-drawer-body">
           {templates && templates.length > 0 && (
             <div className="edu-form-group">
-              <label>Partir d'un template…</label>
+              <label>{t('eduB.sessionForm.fromTemplate')}</label>
               <select className="edu-select" value={templateId} onChange={(e) => applyTemplate(e.target.value)}>
-                <option value="">— Aucun —</option>
+                <option value="">{t('eduB.sessionForm.none')}</option>
                 {templates.map((t) => (
                   <option key={t._id} value={t._id}>
                     {t.name}
@@ -263,9 +265,9 @@ export function SessionForm({
           )}
           {!classId && (
             <div className="edu-form-group">
-              <label>Classe *</label>
+              <label>{t('eduB.createSession.classLabel')}</label>
               <select className="edu-select" value={classChoice} onChange={(e) => setClassChoice(e.target.value)}>
-                <option value="">Choisir une classe…</option>
+                <option value="">{t('eduB.createSession.classPlaceholder')}</option>
                 {(classes ?? []).map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
@@ -275,7 +277,7 @@ export function SessionForm({
             </div>
           )}
           <div className="edu-form-group">
-            <label>Titre</label>
+            <label>{t('eduB.createSession.titleLabel')}</label>
             <input
               className="edu-input"
               autoFocus
@@ -285,7 +287,7 @@ export function SessionForm({
           </div>
           <div className="edu-grid-2">
             <div className="edu-form-group">
-              <label>Date & heure</label>
+              <label>{t('eduB.createSession.dateLabel')}</label>
               <input
                 type="datetime-local"
                 className="edu-input"
@@ -294,7 +296,7 @@ export function SessionForm({
               />
             </div>
             <div className="edu-form-group">
-              <label>Durée (min)</label>
+              <label>{t('eduB.createSession.durationLabel')}</label>
               <input
                 type="number"
                 className="edu-input"
@@ -304,7 +306,7 @@ export function SessionForm({
             </div>
           </div>
           <div className="edu-form-group">
-            <label>Thème</label>
+            <label>{t('eduB.sessionForm.theme')}</label>
             <input
               className="edu-input"
               value={form.theme}
@@ -329,7 +331,7 @@ export function SessionForm({
             }}
           />
           <div className="edu-form-group">
-            <label>Lieu</label>
+            <label>{t('eduB.createSession.locationLabel')}</label>
             <input
               className="edu-input"
               value={form.location}
@@ -337,7 +339,7 @@ export function SessionForm({
             />
           </div>
           <div className="edu-form-group">
-            <label>Déroulé</label>
+            <label>{t('eduB.sessionForm.agenda')}</label>
             <textarea
               className="edu-textarea"
               value={form.agenda}
@@ -346,13 +348,13 @@ export function SessionForm({
           </div>
           {form.objectives.length > 0 && (
             <p className="edu-sub" style={{ marginTop: 4 }}>
-              Objectifs du template : {form.objectives.join(' · ')}
+              {t('eduB.sessionForm.objectives', { list: form.objectives.join(' · ') })}
             </p>
           )}
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
-            Annuler
+            {t('common.cancel')}
           </button>
           <button
             className="edu-btn"
@@ -376,7 +378,7 @@ export function SessionForm({
               }
             }}
           >
-            {saving ? 'Création…' : 'Créer la séance'}
+            {saving ? t('eduB.createSession.creating') : t('eduB.createSession.title')}
           </button>
         </div>
       </div>
@@ -402,6 +404,7 @@ export function SessionsView({
   /** Templates tous kinds : filtrés localement pour le form, transmis entiers au drawer/live. */
   templates?: EducationTemplate[]
 }) {
+  const { t } = useI18n()
   const [filterClass, setFilterClass] = useState<string>('')
   const [items, setItems] = useState<EducationSession[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -415,7 +418,7 @@ export function SessionsView({
         setItems(r.sessions)
         setError(null)
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Impossible de charger les séances'))
+      .catch((err) => setError(err instanceof Error ? err.message : translate('eduB.sessionsView.loadFailed')))
   }, [filterClass])
 
   useEffect(() => {
@@ -433,7 +436,7 @@ export function SessionsView({
     <>
       <div>
         <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <h1 className="edu-h1">Séances</h1>
+          <h1 className="edu-h1">{t('eduB.sessionsView.title')}</h1>
           <div className="edu-row" style={{ gap: 8 }}>
             <select
               className="edu-select"
@@ -441,7 +444,7 @@ export function SessionsView({
               value={filterClass}
               onChange={(e) => setFilterClass(e.target.value)}
             >
-              <option value="">Toutes les classes</option>
+              <option value="">{t('eduB.sessionsView.allClasses')}</option>
               {classes.map((c) => (
                 <option key={c._id} value={c._id}>
                   {c.name}
@@ -449,7 +452,7 @@ export function SessionsView({
               ))}
             </select>
             <button className="edu-btn" onClick={() => setShowCreate(true)}>
-              <Plus size={14} /> Nouvelle séance
+              <Plus size={14} /> {t('eduB.sessionsList.newSession')}
             </button>
           </div>
         </div>
@@ -458,26 +461,22 @@ export function SessionsView({
             {error}
           </div>
         )}
-        <p className="edu-sub">
-          {items.length} séance{items.length > 1 ? 's' : ''}
-        </p>
+        <p className="edu-sub">{t('eduB.sessionsList.count', { count: items.length })}</p>
         {items.length === 0 ? (
           <div className="edu-empty">
             <div className="edu-empty-icon">📅</div>
-            <div>{filterClass ? 'Aucune séance pour cette classe.' : 'Aucune séance encore.'}</div>
-            <div className="edu-empty-sub">
-              Les séances apparaîtront ici dès qu'elles sont planifiées depuis une classe.
-            </div>
+            <div>{filterClass ? t('eduB.sessionsView.emptyForClass') : t('eduB.sessionsView.emptyAll')}</div>
+            <div className="edu-empty-sub">{t('eduB.sessionsView.emptySub')}</div>
           </div>
         ) : (
           <table className="edu-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Classe</th>
-                <th>Séance</th>
-                <th>Statut</th>
-                <th>Présence</th>
+                <th>{t('eduB.cols.date')}</th>
+                <th>{t('eduB.cols.class')}</th>
+                <th>{t('eduB.cols.session')}</th>
+                <th>{t('eduB.cols.status')}</th>
+                <th>{t('eduB.cols.attendance')}</th>
                 <th></th>
               </tr>
             </thead>
@@ -508,13 +507,13 @@ export function SessionsView({
                       {liveable && (
                         <button
                           className="edu-btn"
-                          title="Ouvrir le mode séance (présence un-tap)"
+                          title={t('eduB.sessionDrawer.liveModeTitle')}
                           onClick={(e) => {
                             e.stopPropagation()
                             setLiveId(s._id)
                           }}
                         >
-                          ▶ Live
+                          {t('eduB.sessionsView.live')}
                         </button>
                       )}
                     </td>

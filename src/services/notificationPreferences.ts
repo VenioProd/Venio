@@ -1,4 +1,5 @@
 import { apiFetch } from '../lib/api'
+import type { MessageKey } from '../i18n'
 
 export type NotificationChannel = 'inApp' | 'push' | 'email'
 
@@ -45,58 +46,73 @@ export async function updateNotificationPreferences(
   })
 }
 
-export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, { label: string; description: string }> = {
-  CRM_LEAD_CREATED: { label: 'Nouveau lead', description: 'Un contact est arrivé dans le CRM.' },
-  CRM_LEAD_ASSIGNED: { label: 'Lead assigné', description: 'Un lead vous est confié.' },
-  LEAD_FOLLOW_UP_DUE: { label: 'Relance à effectuer', description: 'Une action commerciale arrive à échéance.' },
-  QUOTE_PROPOSAL_VIEWED: { label: 'Devis consulté', description: 'Un client a consulté votre proposition.' },
-  QUOTE_PROPOSAL_SIGNED: { label: 'Devis signé', description: 'Un client a signé votre proposition.' },
+export const NOTIFICATION_TYPE_LABEL_KEYS = {
+  CRM_LEAD_CREATED: {
+    label: 'shared.notifTypes.crmLeadCreatedLabel',
+    description: 'shared.notifTypes.crmLeadCreatedDescription',
+  },
+  CRM_LEAD_ASSIGNED: {
+    label: 'shared.notifTypes.crmLeadAssignedLabel',
+    description: 'shared.notifTypes.crmLeadAssignedDescription',
+  },
+  LEAD_FOLLOW_UP_DUE: {
+    label: 'shared.notifTypes.leadFollowUpDueLabel',
+    description: 'shared.notifTypes.leadFollowUpDueDescription',
+  },
+  QUOTE_PROPOSAL_VIEWED: {
+    label: 'shared.notifTypes.quoteViewedLabel',
+    description: 'shared.notifTypes.quoteViewedDescription',
+  },
+  QUOTE_PROPOSAL_SIGNED: {
+    label: 'shared.notifTypes.quoteSignedLabel',
+    description: 'shared.notifTypes.quoteSignedDescription',
+  },
   TASK_ASSIGNED: {
-    label: 'Tâche assignée',
-    description: 'Une nouvelle tâche t’est confiée.',
+    label: 'shared.notifTypes.taskAssignedLabel',
+    description: 'shared.notifTypes.taskAssignedDescription',
   },
   TASK_UPDATED: {
-    label: 'Mise à jour de tâche / projet',
-    description: 'Mises à jour des tâches, messages clients sur un projet.',
+    label: 'shared.notifTypes.taskUpdatedLabel',
+    description: 'shared.notifTypes.taskUpdatedDescription',
   },
   PROJECT_UPDATE: {
-    label: 'Annonce de projet',
-    description: 'Nouvelle annonce ou avancée importante sur un projet.',
+    label: 'shared.notifTypes.projectUpdateLabel',
+    description: 'shared.notifTypes.projectUpdateDescription',
   },
   DOCUMENT_ADDED: {
-    label: 'Document ajouté',
-    description: 'Un livrable, devis ou facture a été ajouté.',
+    label: 'shared.notifTypes.documentAddedLabel',
+    description: 'shared.notifTypes.documentAddedDescription',
   },
   TICKET_CREATED: {
-    label: 'Nouveau ticket',
-    description: 'Un ticket de support a été ouvert.',
+    label: 'shared.notifTypes.ticketCreatedLabel',
+    description: 'shared.notifTypes.ticketCreatedDescription',
   },
   TICKET_REPLY: {
-    label: 'Réponse à un ticket',
-    description: 'Quelqu’un a répondu à un ticket auquel tu participes.',
+    label: 'shared.notifTypes.ticketReplyLabel',
+    description: 'shared.notifTypes.ticketReplyDescription',
   },
   INTERNAL_MESSAGE: {
-    label: 'Messagerie interne',
-    description: 'Messages dans la messagerie interne (channels et DM).',
+    label: 'shared.notifTypes.internalMessageLabel',
+    description: 'shared.notifTypes.internalMessageDescription',
   },
   PHASE_VALIDATION_REQUESTED: {
-    label: 'Validation d’étape attendue',
-    description: 'Une étape de production attend ta validation.',
+    label: 'shared.notifTypes.phaseValidationRequestedLabel',
+    description: 'shared.notifTypes.phaseValidationRequestedDescription',
   },
   PHASE_VALIDATED: {
-    label: 'Étape validée',
-    description: 'Un client a validé une étape de production.',
+    label: 'shared.notifTypes.phaseValidatedLabel',
+    description: 'shared.notifTypes.phaseValidatedDescription',
   },
   PHASE_REVISION_REQUESTED: {
-    label: 'Retouches demandées',
-    description: 'Un client a demandé des retouches sur une étape.',
+    label: 'shared.notifTypes.phaseRevisionRequestedLabel',
+    description: 'shared.notifTypes.phaseRevisionRequestedDescription',
   },
   WEBHOOK_ENDPOINT_DISABLED: {
-    label: 'Webhook désactivé',
-    description: 'Un endpoint de webhook a été désactivé après des échecs répétés.',
+    label: 'shared.notifTypes.webhookDisabledLabel',
+    description: 'shared.notifTypes.webhookDisabledDescription',
   },
   WEBHOOK_TEST: {
-    label: 'Test de webhook',
-    description: 'Événement réservé aux envois de test depuis la page Webhooks.',
+    label: 'shared.notifTypes.webhookTestLabel',
+    description: 'shared.notifTypes.webhookTestDescription',
   },
-}
+} as const satisfies Record<NotificationType, { label: MessageKey; description: MessageKey }>

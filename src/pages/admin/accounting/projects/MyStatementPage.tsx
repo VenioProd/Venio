@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { ApiError, apiFetch } from '../../../../lib/api'
+import { useI18n } from '../../../../context/I18nContext'
 import StatementView from './StatementView'
 import { ACCOUNTING, errorText } from './shared'
 import type { Statement } from './types'
 import '../AccountingPortal.css'
 
 export default function MyStatementPage() {
+  const { t } = useI18n()
   const [statement, setStatement] = useState<Statement | null>(null)
   const [error, setError] = useState('')
   const [empty, setEmpty] = useState(false)
@@ -25,11 +27,11 @@ export default function MyStatementPage() {
     <div className="pf-workspace">
       <div className="admin-page-header">
         <div>
-          <h1>Mon relevé</h1>
-          <p className="admin-page-subtitle">Vos parts et vos versements.</p>
+          <h1>{t('accProjects.myStatement.title')}</h1>
+          <p className="admin-page-subtitle">{t('accProjects.myStatement.subtitle')}</p>
         </div>
       </div>
-      {empty && <div className="accounting-card">Aucun relevé ne vous est rattaché</div>}
+      {empty && <div className="accounting-card">{t('accProjects.myStatement.empty')}</div>}
       {error && (
         <p role="alert" className="admin-error">
           {error}{' '}
@@ -40,11 +42,11 @@ export default function MyStatementPage() {
               setAttempt(attempt + 1)
             }}
           >
-            Réessayer
+            {t('accProjects.common.retry')}
           </button>
         </p>
       )}
-      {!statement && !error && !empty && <p role="status">Chargement du relevé…</p>}
+      {!statement && !error && !empty && <p role="status">{t('accProjects.statement.loading')}</p>}
       {statement && <StatementView statement={statement} personal />}
     </div>
   )

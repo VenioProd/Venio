@@ -1,4 +1,5 @@
 import React from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import type { PerformanceRow } from '../../../../types/pilotage.types'
 import { displayKey, formatEuro, formatPercent } from './constants'
 
@@ -15,20 +16,21 @@ interface PerformanceTableProps {
  * performance pour un échec. Les affaires en cours ont leur propre colonne.
  */
 const PerformanceTable: React.FC<PerformanceTableProps> = ({ rows, resolveLabel, emptyLabel }) => {
+  const { t } = useI18n()
   if (rows.length === 0) return <p className="pilotage-empty">{emptyLabel}</p>
 
   return (
     <table className="pilotage-table">
       <thead>
         <tr>
-          <th>Origine</th>
-          <th>Leads</th>
-          <th>En cours</th>
-          <th>Gagnés</th>
-          <th>Perdus</th>
-          <th>Taux (conclues)</th>
-          <th>Budget déclaré</th>
-          <th>Signé</th>
+          <th>{t('adminTech.pilotage.colOrigin')}</th>
+          <th>{t('adminTech.pilotage.colLeads')}</th>
+          <th>{t('adminTech.pilotage.colActive')}</th>
+          <th>{t('adminTech.pilotage.colWon')}</th>
+          <th>{t('adminTech.pilotage.colLost')}</th>
+          <th>{t('adminTech.pilotage.colWinRate')}</th>
+          <th>{t('adminTech.pilotage.declaredBudget')}</th>
+          <th>{t('adminTech.pilotage.signed')}</th>
         </tr>
       </thead>
       <tbody>

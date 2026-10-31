@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { ApiError, apiFetch } from '../lib/api'
+import { useI18n } from '../context/I18nContext'
 import './PublicQuestionnaire.css'
 
 interface Question {
@@ -18,6 +19,7 @@ interface QuestionnaireData {
 }
 
 const PublicQuestionnaire = () => {
+  const { t } = useI18n()
   const { token } = useParams<{ token: string }>()
   const [data, setData] = useState<QuestionnaireData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,8 +35,12 @@ const PublicQuestionnaire = () => {
   useEffect(() => {
     apiFetch<QuestionnaireData>(`/api/questionnaire/${token}`)
       .then((d) => setData(d))
-      .catch((err: unknown) => setError(err instanceof ApiError ? 'Questionnaire introuvable' : (err as Error).message))
+      .catch((err: unknown) =>
+        setError(err instanceof ApiError ? t('pubForms.questionnaire.notFound') : (err as Error).message),
+      )
       .finally(() => setLoading(false))
+    // `t` change avec la langue : le message d'erreur est posé à la réception, pas relancé.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   const setAnswer = (i: number, val: string) => {
@@ -69,7 +75,7 @@ const PublicQuestionnaire = () => {
   if (loading)
     return (
       <div className="pq-page">
-        <div className="pq-loading">Chargement...</div>
+        <div className="pq-loading">{t('pubForms.questionnaire.loading')}</div>
       </div>
     )
   if (error && !data)
@@ -87,8 +93,8 @@ const PublicQuestionnaire = () => {
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
             <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
-          <h2>Merci pour votre retour !</h2>
-          <p>Votre reponse a bien ete enregistree.</p>
+          <h2>{t('pubForms.questionnaire.thanksTitle')}</h2>
+          <p>{t('pubForms.questionnaire.thanksText')}</p>
         </div>
       </div>
     )
@@ -107,29 +113,38 @@ const PublicQuestionnaire = () => {
         {error && <div className="pq-form-error">{error}</div>}
 
         <div className="pq-section">
-          <h3>Vos informations</h3>
+          <h3>{t('pubForms.questionnaire.infoHeading')}</h3>
           <div className="pq-field">
-            <label>Nom complet *</label>
-            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Votre nom et prenom" />
+            <label>{t('pubForms.questionnaire.fullNameLabel')}</label>
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t('pubForms.questionnaire.fullNamePlaceholder')}
+            />
           </div>
           <div className="pq-field">
-            <label>Email *</label>
+            <label>{t('pubForms.questionnaire.emailLabel')}</label>
             <input
               required
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com"
+              placeholder={t('pubForms.questionnaire.emailPlaceholder')}
             />
           </div>
           <div className="pq-field">
-            <label>Formation concernee</label>
-            <input value={formation} onChange={(e) => setFormation(e.target.value)} placeholder="Nom de la formation" />
+            <label>{t('pubForms.questionnaire.trainingLabel')}</label>
+            <input
+              value={formation}
+              onChange={(e) => setFormation(e.target.value)}
+              placeholder={t('pubForms.questionnaire.trainingPlaceholder')}
+            />
           </div>
         </div>
 
         <div className="pq-section">
-          <h3>Questions</h3>
+          <h3>{t('pubForms.questionnaire.questionsHeading')}</h3>
           {data.questions.map((q, i) => (
             <div key={i} className="pq-question">
               <div className="pq-question-label">
@@ -155,7 +170,7 @@ const PublicQuestionnaire = () => {
                 <textarea
                   value={answers.get(i) || ''}
                   onChange={(e) => setAnswer(i, e.target.value)}
-                  placeholder="Votre reponse..."
+                  placeholder={t('pubForms.questionnaire.answerPlaceholder')}
                   rows={3}
                   required={q.required}
                 />
@@ -183,7 +198,7 @@ const PublicQuestionnaire = () => {
         </div>
 
         <button type="submit" className="pq-submit" disabled={submitting}>
-          {submitting ? 'Envoi en cours...' : 'Envoyer mes reponses'}
+          {submitting ? t('pubForms.questionnaire.submitting') : t('pubForms.questionnaire.submit')}
         </button>
       </form>
     </div>

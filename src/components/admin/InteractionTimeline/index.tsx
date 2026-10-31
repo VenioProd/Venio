@@ -18,6 +18,7 @@ import TimelineEntryRow from './TimelineEntry'
 import InteractionComposer from './InteractionComposer'
 import EmailComposer from './EmailComposer'
 import { TIMELINE_FILTERS, type TimelineFilter } from './constants'
+import { useI18n } from '../../../context/I18nContext'
 import './InteractionTimeline.css'
 
 interface InteractionTimelineProps {
@@ -30,6 +31,7 @@ interface InteractionTimelineProps {
 }
 
 const InteractionTimeline: React.FC<InteractionTimelineProps> = ({ subjectType, subjectId, canWrite, legacyNote }) => {
+  const { t } = useI18n()
   const [data, setData] = useState<TimelineResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -43,11 +45,11 @@ const InteractionTimeline: React.FC<InteractionTimelineProps> = ({ subjectType, 
       setData(await fetchTimeline(subjectType, subjectId))
       setError('')
     } catch (err) {
-      setError((err as Error).message || 'Impossible de charger les échanges')
+      setError((err as Error).message || t('compB.timeline.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [subjectType, subjectId])
+  }, [subjectType, subjectId, t])
 
   useEffect(() => {
     void load()
@@ -62,7 +64,7 @@ const InteractionTimeline: React.FC<InteractionTimelineProps> = ({ subjectType, 
       await load()
       return true
     } catch (err) {
-      setError((err as Error).message || 'Action impossible')
+      setError((err as Error).message || t('compB.timeline.actionError'))
       return false
     } finally {
       setBusy(false)
@@ -79,7 +81,7 @@ const InteractionTimeline: React.FC<InteractionTimelineProps> = ({ subjectType, 
       await load()
       return result
     } catch (err) {
-      setError((err as Error).message || "L'envoi a échoué")
+      setError((err as Error).message || t('compB.timeline.sendError'))
       // L'échec est journalisé côté serveur : on recharge pour le montrer.
       await load()
       return null
@@ -108,7 +110,7 @@ const InteractionTimeline: React.FC<InteractionTimelineProps> = ({ subjectType, 
       {canWrite && (
         <div className="interaction-toolbar">
           <button type="button" className="portal-button" onClick={() => setEmailOpen((open) => !open)} disabled={busy}>
-            {emailOpen ? "Masquer l'email" : 'Écrire un email'}
+            {emailOpen ? t('compB.timeline.hideEmail') : t('compB.timeline.writeEmail')}
           </button>
         </div>
       )}
@@ -121,7 +123,7 @@ const InteractionTimeline: React.FC<InteractionTimelineProps> = ({ subjectType, 
 
       {error && <div className="admin-error interaction-error">{error}</div>}
 
-      <div className="interaction-filters" role="group" aria-label="Filtrer les échanges">
+      <div className="interaction-filters" role="group" aria-label={t('compB.timeline.filterGroup')}>
         {TIMELINE_FILTERS.map((option) => (
           <button
             key={option.key}
@@ -129,29 +131,28 @@ const InteractionTimeline: React.FC<InteractionTimelineProps> = ({ subjectType, 
             className={filter === option.key ? 'active' : ''}
             onClick={() => setFilter(option.key)}
           >
-            {option.label}
+            {t(option.labelKey)}
           </button>
         ))}
         <span className="interaction-counts">
-          {counts.exchanges} échange{counts.exchanges > 1 ? 's' : ''} · {counts.system} événement
-          {counts.system > 1 ? 's' : ''}
+          {t('compB.timeline.counts', { exchanges: counts.exchanges, events: counts.system })}
         </span>
       </div>
 
       {loading && !data ? (
-        <div className="admin-loading">Chargement des échanges…</div>
+        <div className="admin-loading">{t('compB.timeline.loading')}</div>
       ) : (
         <>
           {legacyNote && filter === 'ALL' && (
             <div className="interaction-legacy">
-              <span className="interaction-legacy-tag">Note historique</span>
+              <span className="interaction-legacy-tag">{t('compB.timeline.legacyNote')}</span>
               <p>{legacyNote}</p>
             </div>
           )}
 
           {entries.length === 0 ? (
             <p className="interaction-empty">
-              {filter === 'ALL' ? "Aucun échange consigné pour l'instant." : "Rien de ce type dans l'historique."}
+              {filter === 'ALL' ? t('compB.timeline.emptyAll') : t('compB.timeline.emptyFiltered')}
             </p>
           ) : (
             <ul className="interaction-entries">
@@ -170,9 +171,7 @@ const InteractionTimeline: React.FC<InteractionTimelineProps> = ({ subjectType, 
             </ul>
           )}
 
-          {data?.hasMore && (
-            <p className="interaction-hint">Seuls les {data.limit} échanges les plus récents sont affichés.</p>
-          )}
+          {data?.hasMore && <p className="interaction-hint">{t('compB.timeline.hasMore', { limit: data.limit })}</p>}
         </>
       )}
     </div>

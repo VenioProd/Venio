@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useToast } from '../../context/ToastContext'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -20,14 +22,28 @@ interface SendResult {
   error?: string
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: 'Super admin',
-  ADMIN: 'Contributeur',
-  RH: 'RH',
-  VIEWER: 'Lecture seule',
+const ROLE_LABEL_KEYS: Record<string, MessageKey> = {
+  SUPER_ADMIN: 'adminOps.email.roleSuper',
+  ADMIN: 'adminOps.email.roleContributor',
+  RH: 'adminOps.email.roleHr',
+  VIEWER: 'adminOps.email.roleViewer',
+}
+
+/** Met en valeur le nombre dans un texte déjà traduit (« 3 destinataires »). */
+function EmphasizedCount({ text, count }: { text: string; count: number }) {
+  const at = text.indexOf(String(count))
+  if (at === -1) return <>{text}</>
+  return (
+    <>
+      {text.slice(0, at)}
+      <strong style={{ color: 'var(--primary)' }}>{count}</strong>
+      {text.slice(at + String(count).length)}
+    </>
+  )
 }
 
 export default function EmailComposer() {
+  const { t } = useI18n()
   const { showToast } = useToast()
 
   const [admins, setAdmins] = useState<Recipient[]>([])
@@ -95,7 +111,7 @@ export default function EmailComposer() {
     const val = customEmail.trim().toLowerCase()
     if (!val) return
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-      showToast('Adresse email invalide', 'error')
+      showToast(t('adminOps.email.invalidAddress'), 'error')
       return
     }
     if (!customEmails.includes(val) && !selectedEmails.has(val)) setCustomEmails((prev) => [...prev, val])
@@ -105,15 +121,15 @@ export default function EmailComposer() {
 
   const handleSend = async () => {
     if (totalSelected === 0) {
-      showToast('Aucun destinataire sélectionné', 'error')
+      showToast(t('adminOps.email.noRecipient'), 'error')
       return
     }
     if (!subject.trim()) {
-      showToast("L'objet est requis", 'error')
+      showToast(t('adminOps.email.subjectRequired'), 'error')
       return
     }
     if (!body.trim()) {
-      showToast('Le corps du message est requis', 'error')
+      showToast(t('adminOps.email.bodyRequired'), 'error')
       return
     }
 
@@ -134,14 +150,10 @@ export default function EmailComposer() {
         },
       )
       setResults(data.results)
-      if (data.failed === 0) showToast(`Email envoyé à ${data.sent} destinataire${data.sent > 1 ? 's' : ''}`, 'success')
-      else
-        showToast(
-          `${data.sent} envoyé${data.sent > 1 ? 's' : ''}, ${data.failed} échec${data.failed > 1 ? 's' : ''}`,
-          'warning',
-        )
+      if (data.failed === 0) showToast(t('adminOps.email.sentOk', { count: data.sent }), 'success')
+      else showToast(t('adminOps.email.sentPartial', { sent: data.sent, failed: data.failed }), 'warning')
     } catch (err: unknown) {
-      showToast((err as Error).message || "Erreur lors de l'envoi", 'error')
+      showToast((err as Error).message || t('adminOps.email.sendError'), 'error')
     } finally {
       setSending(false)
     }
@@ -165,13 +177,13 @@ export default function EmailComposer() {
             >
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Retour
+            {t('common.back')}
           </Link>
           <h1 className="ticket-hero-title" style={{ marginTop: 8 }}>
-            Composer un email
+            {t('adminOps.email.title')}
           </h1>
           <p className="ticket-hero-subtitle">
-            Envoyez un message à plusieurs personnes en une seule fois
+            {t('adminOps.email.subtitle')}
             {fromEmail && (
               <span
                 style={{
@@ -186,7 +198,7 @@ export default function EmailComposer() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                ✉ Depuis : {fromEmail}
+                {t('adminOps.email.from', { email: fromEmail })}
               </span>
             )}
           </p>
@@ -194,8 +206,10 @@ export default function EmailComposer() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {totalSelected > 0 && (
             <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-              <strong style={{ color: 'var(--primary)' }}>{totalSelected}</strong> destinataire
-              {totalSelected > 1 ? 's' : ''}
+              <EmphasizedCount
+                text={t('adminOps.email.recipientCount', { count: totalSelected })}
+                count={totalSelected}
+              />
             </span>
           )}
           <button
@@ -219,7 +233,7 @@ export default function EmailComposer() {
                 >
                   <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                 </svg>
-                Envoi...
+                {t('adminOps.email.sending')}
               </>
             ) : (
               <>
@@ -236,7 +250,7 @@ export default function EmailComposer() {
                   <line x1="22" y1="2" x2="11" y2="13" />
                   <polygon points="22 2 15 22 11 13 2 9 22 2" />
                 </svg>
-                Envoyer
+                {t('adminOps.email.send')}
               </>
             )}
           </button>
@@ -256,7 +270,9 @@ export default function EmailComposer() {
               alignItems: 'center',
             }}
           >
-            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink-body)' }}>Destinataires</span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink-body)' }}>
+              {t('adminOps.email.recipientsTitle')}
+            </span>
             <span
               style={{
                 background: totalSelected > 0 ? 'rgba(var(--primary-rgb), 0.15)' : 'rgba(255,255,255,0.06)',
@@ -269,7 +285,7 @@ export default function EmailComposer() {
                   totalSelected > 0 ? '1px solid rgba(var(--primary-rgb), 0.3)' : '1px solid rgba(255,255,255,0.1)',
               }}
             >
-              {totalSelected} sélectionné{totalSelected > 1 ? 's' : ''}
+              {t('adminOps.email.selectedCount', { count: totalSelected })}
             </span>
           </div>
 
@@ -278,7 +294,7 @@ export default function EmailComposer() {
             <div className="ticket-form-field" style={{ marginBottom: 10 }}>
               <input
                 type="text"
-                placeholder="Rechercher un membre..."
+                placeholder={t('adminOps.email.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -302,14 +318,14 @@ export default function EmailComposer() {
                 }}
               >
                 {admins.length > 0 && admins.every((a) => selectedEmails.has(a.email))
-                  ? 'Tout désélectionner'
-                  : `Sélectionner toute l'équipe (${admins.length})`}
+                  ? t('adminOps.email.deselectAll')
+                  : t('adminOps.email.selectTeam', { count: admins.length })}
               </button>
             </div>
 
             {/* Chips cliquables — membres */}
             {loadingRecipients ? (
-              <div style={{ color: 'var(--ink-ghost)', fontSize: 13, padding: '8px 0' }}>Chargement...</div>
+              <div style={{ color: 'var(--ink-ghost)', fontSize: 13, padding: '8px 0' }}>{t('common.loading')}</div>
             ) : (
               <div
                 style={{
@@ -322,7 +338,9 @@ export default function EmailComposer() {
                 }}
               >
                 {filteredList.length === 0 ? (
-                  <div style={{ color: 'var(--ink-ghost)', fontSize: 13, padding: '8px 0' }}>Aucun résultat</div>
+                  <div style={{ color: 'var(--ink-ghost)', fontSize: 13, padding: '8px 0' }}>
+                    {t('adminOps.email.noResults')}
+                  </div>
                 ) : (
                   filteredList.map((r) => {
                     const selected = selectedEmails.has(r.email)
@@ -389,7 +407,7 @@ export default function EmailComposer() {
                                   fontWeight: 600,
                                 }}
                               >
-                                Stage
+                                {t('adminOps.email.internTag')}
                               </span>
                             )}
                           </div>
@@ -444,14 +462,14 @@ export default function EmailComposer() {
                   letterSpacing: '0.5px',
                 }}
               >
-                Adresse externe
+                {t('adminOps.email.externalAddress')}
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <div className="ticket-form-field" style={{ flex: 1, marginBottom: 0 }}>
                   <input
                     ref={customInputRef}
                     type="email"
-                    placeholder="email@exemple.com"
+                    placeholder={t('adminOps.email.externalPlaceholder')}
                     value={customEmail}
                     onChange={(e) => setCustomEmail(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomEmail())}
@@ -520,10 +538,10 @@ export default function EmailComposer() {
           {/* Objet */}
           <div className="portal-card" style={{ padding: '20px 24px' }}>
             <div className="ticket-form-field" style={{ marginBottom: 0 }}>
-              <label>Objet *</label>
+              <label>{t('adminOps.email.subjectLabel')}</label>
               <input
                 type="text"
-                placeholder="Objet de l'email..."
+                placeholder={t('adminOps.email.subjectPlaceholder')}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 style={{ fontSize: 15, fontWeight: 500 }}
@@ -543,7 +561,7 @@ export default function EmailComposer() {
                   fontWeight: 600,
                 }}
               >
-                Corps du message *
+                {t('adminOps.email.bodyLabel')}
               </label>
               <button
                 onClick={() => setPreview((p) => !p)}
@@ -556,7 +574,7 @@ export default function EmailComposer() {
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>{' '}
-                    Éditer
+                    {t('adminOps.email.edit')}
                   </>
                 ) : (
                   <>
@@ -564,7 +582,7 @@ export default function EmailComposer() {
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>{' '}
-                    Prévisualiser
+                    {t('adminOps.email.preview')}
                   </>
                 )}
               </button>
@@ -594,7 +612,9 @@ export default function EmailComposer() {
                     ),
                   )
                 ) : (
-                  <span style={{ color: 'var(--ink-whisper)', fontStyle: 'italic' }}>Aucun contenu</span>
+                  <span style={{ color: 'var(--ink-whisper)', fontStyle: 'italic' }}>
+                    {t('adminOps.email.noContent')}
+                  </span>
                 )}
                 {showCta && ctaUrl && ctaLabel && (
                   <div style={{ marginTop: 16 }}>
@@ -617,7 +637,7 @@ export default function EmailComposer() {
             ) : (
               <div className="ticket-form-field" style={{ marginBottom: 0 }}>
                 <textarea
-                  placeholder="Écrivez votre message ici..."
+                  placeholder={t('adminOps.email.bodyPlaceholder')}
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   style={{ minHeight: 200, fontSize: 14, lineHeight: 1.7 }}
@@ -636,22 +656,22 @@ export default function EmailComposer() {
                 style={{ accentColor: 'var(--primary)', width: 14, height: 14 }}
               />
               <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-                Ajouter un bouton d'action dans l'email (optionnel)
+                {t('adminOps.email.ctaToggle')}
               </span>
             </label>
             {showCta && (
               <div className="ticket-form-row" style={{ marginTop: 14, marginBottom: 0 }}>
                 <div className="ticket-form-field" style={{ marginBottom: 0 }}>
-                  <label>Texte du bouton</label>
+                  <label>{t('adminOps.email.ctaLabelLabel')}</label>
                   <input
                     type="text"
-                    placeholder="Accéder au site"
+                    placeholder={t('adminOps.email.ctaLabelPlaceholder')}
                     value={ctaLabel}
                     onChange={(e) => setCtaLabel(e.target.value)}
                   />
                 </div>
                 <div className="ticket-form-field" style={{ marginBottom: 0 }}>
-                  <label>URL de destination</label>
+                  <label>{t('adminOps.email.ctaUrlLabel')}</label>
                   <input
                     type="url"
                     placeholder="https://..."
@@ -680,7 +700,7 @@ export default function EmailComposer() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                 </svg>
-                Résultats de l'envoi
+                {t('adminOps.email.resultsTitle')}
                 <span style={{ marginLeft: 'auto', fontSize: 13, color: '#22c55e', fontWeight: 600 }}>
                   {results.filter((r) => r.success).length} ✓
                 </span>

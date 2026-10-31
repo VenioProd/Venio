@@ -14,12 +14,14 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useI18n } from '../context/I18nContext'
+import type { MessageKey } from '../i18n'
 import UserAvatar from './UserAvatar'
 import './ClientSidebar.css'
 
 interface ClientNavItem {
   to: string
-  label: string
+  labelKey: MessageKey
   icon: LucideIcon
   end?: boolean
   activePrefixes?: string[]
@@ -28,21 +30,21 @@ interface ClientNavItem {
 const NAV_ITEMS: ClientNavItem[] = [
   {
     to: '/espace-client',
-    label: 'Mes projets',
+    labelKey: 'shell.client.myProjects',
     icon: FolderKanban,
     end: true,
     activePrefixes: ['/espace-client/projets'],
   },
   {
     to: '/espace-client/demandes',
-    label: 'Demandes',
+    labelKey: 'shell.client.requests',
     icon: MessageSquarePlus,
     activePrefixes: ['/espace-client/demandes'],
   },
-  { to: '/espace-client/documents', label: 'Mes documents', icon: FileText },
-  { to: '/espace-client/fichiers', label: 'Vos fichiers', icon: UploadCloud },
-  { to: '/espace-client/guide', label: 'Guide', icon: BookOpen },
-  { to: '/espace-client/profil', label: 'Profil', icon: User },
+  { to: '/espace-client/documents', labelKey: 'shell.client.myDocuments', icon: FileText },
+  { to: '/espace-client/fichiers', labelKey: 'shell.client.yourFiles', icon: UploadCloud },
+  { to: '/espace-client/guide', labelKey: 'shell.client.guide', icon: BookOpen },
+  { to: '/espace-client/profil', labelKey: 'shell.client.profile', icon: User },
 ]
 
 interface ClientSidebarProps {
@@ -52,6 +54,7 @@ interface ClientSidebarProps {
 
 const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps) => {
   const { user, logout } = useAuth()
+  const { t } = useI18n()
   const location = useLocation()
   const navigate = useNavigate()
   useEffect(() => {
@@ -76,12 +79,12 @@ const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps
   const nav = (
     <>
       <div className="client-sb-section">
-        <span className="client-sb-section-label">Navigation</span>
+        <span className="client-sb-section-label">{t('shell.client.navSection')}</span>
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon
           return (
             <NavLink
-              key={`${item.to}-${item.label}`}
+              key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) => {
@@ -90,16 +93,16 @@ const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps
               }}
             >
               <Icon size={18} className="client-sb-icon" aria-hidden />
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </NavLink>
           )
         })}
       </div>
       <div className="client-sb-section">
-        <span className="client-sb-section-label">Support</span>
+        <span className="client-sb-section-label">{t('shell.client.supportSection')}</span>
         <a className="client-sb-item" href="mailto:contact@venio.fr">
           <HelpCircle size={18} className="client-sb-icon" aria-hidden />
-          <span>Contacter Venio</span>
+          <span>{t('shell.client.contactVenio')}</span>
         </a>
       </div>
     </>
@@ -115,25 +118,25 @@ const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps
           size={32}
         />
         <div className="client-sb-user-info">
-          <div className="client-sb-user-name">{user?.name || user?.email || 'Client'}</div>
+          <div className="client-sb-user-name">{user?.name || user?.email || t('shell.client.userFallback')}</div>
           {user?.companyName && <div className="client-sb-user-role">{user.companyName}</div>}
         </div>
       </div>
       <button type="button" className="client-sb-logout" onClick={handleLogout}>
         <LogOut size={16} aria-hidden />
-        <span>Déconnexion</span>
+        <span>{t('auth.logout')}</span>
       </button>
     </>
   )
 
   return (
     <>
-      <aside className="client-sidebar" aria-label="Navigation espace client">
+      <aside className="client-sidebar" aria-label={t('shell.client.navAria')}>
         <button type="button" className="client-sb-brand" onClick={() => navigate('/espace-client')}>
           <span className="client-sb-logo">V</span>
           <span className="client-sb-brand-name">Venio</span>
         </button>
-        <nav className="client-sb-nav" aria-label="Navigation principale">
+        <nav className="client-sb-nav" aria-label={t('shell.nav.mainAria')}>
           {nav}
         </nav>
         <div className="client-sb-footer">{footer}</div>
@@ -143,17 +146,22 @@ const ClientSidebar = ({ drawerOpen = false, onDrawerClose }: ClientSidebarProps
         createPortal(
           <>
             <div className="client-sb-drawer-overlay" onClick={onDrawerClose} aria-hidden />
-            <aside className="client-sb-drawer" aria-label="Navigation mobile espace client">
+            <aside className="client-sb-drawer" aria-label={t('shell.client.mobileNavAria')}>
               <div className="client-sb-drawer-header">
                 <button type="button" className="client-sb-brand" onClick={() => navigate('/espace-client')}>
                   <span className="client-sb-logo">V</span>
                   <span className="client-sb-brand-name">Venio</span>
                 </button>
-                <button type="button" className="client-sb-drawer-close" onClick={onDrawerClose} aria-label="Fermer">
+                <button
+                  type="button"
+                  className="client-sb-drawer-close"
+                  onClick={onDrawerClose}
+                  aria-label={t('common.close')}
+                >
                   <X size={18} aria-hidden />
                 </button>
               </div>
-              <nav className="client-sb-drawer-body" aria-label="Navigation mobile">
+              <nav className="client-sb-drawer-body" aria-label={t('shell.nav.mobileAria')}>
                 {nav}
               </nav>
               <div className="client-sb-drawer-footer">{footer}</div>

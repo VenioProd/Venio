@@ -4,38 +4,22 @@ import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, T
 import type { TooltipContentProps } from 'recharts'
 import AccountingLayout from './AccountingLayout'
 import { getAccountingDashboard, getAccountingSettings, listEntries } from '../../../services/accounting'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatDate, formatMoney } from '../../../i18n/format'
 import type { IAccountingDashboard, IAccountingEntry, ICompanySettings, IDashboardKpi } from '../../../types/accounting'
 
 // ---- Formatters ----
-const EUR_COMPACT = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-  maximumFractionDigits: 0,
-})
-const EUR_DETAIL = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
-
 function formatEur(n: number | undefined | null): string {
   const num = Number(n)
   if (!Number.isFinite(num)) return '—'
-  return EUR_COMPACT.format(num)
+  return formatMoney(num, 'EUR', { maximumFractionDigits: 0 })
 }
 
 function formatEurDetail(n: number | undefined | null): string {
   const num = Number(n)
   if (!Number.isFinite(num)) return '—'
-  return EUR_DETAIL.format(num)
-}
-
-function formatDateFr(iso: string | undefined | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('fr-FR')
+  return formatMoney(num, 'EUR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 // ---- Theme constants — graphes en accent data-viz cyan (distinct de l'UI lime) ----
@@ -102,6 +86,7 @@ interface ChartPoint {
 }
 
 const AccountingDashboard = () => {
+  const { t } = useI18n()
   const [settings, setSettings] = useState<ICompanySettings | null>(null)
   const [dashboard, setDashboard] = useState<IAccountingDashboard | null>(null)
   const [recent, setRecent] = useState<IAccountingEntry[]>([])
@@ -117,7 +102,7 @@ const AccountingDashboard = () => {
           getAccountingSettings().catch(() => null),
           getAccountingDashboard().catch((err: Error) => {
             if (!cancelled) {
-              setDashboardError(err?.message || 'Impossible de charger les indicateurs')
+              setDashboardError(err?.message || translate('accAccounts.dashboard.kpiLoadFailed'))
             }
             return null
           }),
@@ -133,7 +118,7 @@ const AccountingDashboard = () => {
         setDashboard(d)
         setRecent(recentEntries.entries || [])
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Erreur de chargement'
+        const msg = err instanceof Error ? err.message : translate('accAccounts.dashboard.loadFailed')
         if (!cancelled) setError(msg)
       } finally {
         if (!cancelled) setLoading(false)
@@ -161,17 +146,21 @@ const AccountingDashboard = () => {
   }, [monthlyRevenue])
 
   return (
-    <AccountingLayout title="Comptabilité" subtitle="Tableau de bord — indicateurs, écritures, accès rapide">
+    <AccountingLayout title={t('accAccounts.layout.title')} subtitle={t('accAccounts.dashboard.subtitle')}>
       {error && <div className="accounting-message error">{error}</div>}
-      {dashboardError && <div className="accounting-message error">Indicateurs indisponibles : {dashboardError}</div>}
+      {dashboardError && (
+        <div className="accounting-message error">
+          {t('accAccounts.dashboard.kpiUnavailable', { message: dashboardError })}
+        </div>
+      )}
 
       {!loading && !isConfigured && (
         <div className="accounting-message info">
-          Le module n'est pas encore paramétré. Commencez par{' '}
+          {t('accAccounts.dashboard.notConfiguredIntro')}{' '}
           <Link to="/admin/comptabilite/parametres" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
-            renseigner les informations de la société
+            {t('accAccounts.dashboard.notConfiguredLink')}
           </Link>{' '}
-          et par initialiser le plan comptable.
+          {t('accAccounts.dashboard.notConfiguredOutro')}
         </div>
       )}
 
@@ -197,7 +186,7 @@ const AccountingDashboard = () => {
               marginBottom: 4,
             }}
           >
-            Exercice en cours
+            {t('accAccounts.dashboard.currentFiscalYear')}
           </div>
           <div
             style={{
@@ -206,11 +195,14 @@ const AccountingDashboard = () => {
               color: 'rgba(255,255,255,0.95)',
             }}
           >
-            {loading ? '…' : fiscalYear?.label || 'Aucun exercice défini'}
+            {loading ? '…' : fiscalYear?.label || t('accAccounts.dashboard.noFiscalYear')}
           </div>
           {fiscalYear && (
             <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>
-              du {formatDateFr(fiscalYear.startDate)} au {formatDateFr(fiscalYear.endDate)}
+              {t('accAccounts.dashboard.fiscalYearRange', {
+                start: formatDate(fiscalYear.startDate),
+                end: formatDate(fiscalYear.endDate),
+              })}
               {fiscalYear.code && (
                 <span style={{ marginLeft: 10, fontFamily: 'SF Mono, Menlo, Consolas, monospace' }}>
                   · {fiscalYear.code}
@@ -229,7 +221,7 @@ const AccountingDashboard = () => {
               color: 'rgba(255,255,255,0.5)',
             }}
           >
-            Exercice
+            {t('accAccounts.dashboard.fiscalYearLabel')}
           </label>
           <select
             id="fiscal-year-select"
@@ -247,7 +239,7 @@ const AccountingDashboard = () => {
             }}
             onChange={() => undefined}
           >
-            <option value={fiscalYear?._id || ''}>{fiscalYear?.label || '— aucun —'}</option>
+            <option value={fiscalYear?._id || ''}>{fiscalYear?.label || t('accAccounts.dashboard.noneOption')}</option>
           </select>
         </div>
       </section>
@@ -255,62 +247,72 @@ const AccountingDashboard = () => {
       {/* ---- 2. KPI Grid ---- */}
       <div className="accounting-kpi-grid">
         <div className="accounting-kpi">
-          <div className="label">CA du mois</div>
+          <div className="label">{t('accAccounts.dashboard.kpiRevenueMonth')}</div>
           <div className="value" style={{ color: COLOR_GREEN }}>
             {loading ? '…' : formatEur(kpi.revenueMonth)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>ce mois</div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+            {t('accAccounts.dashboard.kpiThisMonth')}
+          </div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">CA cumul exercice</div>
+          <div className="label">{t('accAccounts.dashboard.kpiRevenueYtd')}</div>
           <div className="value" style={{ color: COLOR_GREEN }}>
             {loading ? '…' : formatEur(kpi.revenueYTD)}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
-            depuis le début d'exercice
+            {t('accAccounts.dashboard.kpiSinceYearStart')}
           </div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">Charges du mois</div>
+          <div className="label">{t('accAccounts.dashboard.kpiExpensesMonth')}</div>
           <div className="value" style={{ color: COLOR_RED }}>
             {loading ? '…' : formatEur(kpi.expensesMonth)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>ce mois</div>
-        </div>
-        <div className="accounting-kpi">
-          <div className="label">Charges cumul</div>
-          <div className="value">{loading ? '…' : formatEur(kpi.expensesYTD)}</div>
           <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
-            depuis le début d'exercice
+            {t('accAccounts.dashboard.kpiThisMonth')}
           </div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">Créances clients</div>
+          <div className="label">{t('accAccounts.dashboard.kpiExpensesYtd')}</div>
+          <div className="value">{loading ? '…' : formatEur(kpi.expensesYTD)}</div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+            {t('accAccounts.dashboard.kpiSinceYearStart')}
+          </div>
+        </div>
+        <div className="accounting-kpi">
+          <div className="label">{t('accAccounts.dashboard.kpiReceivables')}</div>
           <div className="value" style={{ color: Number(kpi.receivables) > 0 ? COLOR_ORANGE : undefined }}>
             {loading ? '…' : formatEur(kpi.receivables)}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
-            en attente d'encaissement
+            {t('accAccounts.dashboard.kpiAwaitingPayment')}
           </div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">Dettes fournisseurs</div>
+          <div className="label">{t('accAccounts.dashboard.kpiPayables')}</div>
           <div className="value">{loading ? '…' : formatEur(kpi.payables)}</div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>à régler</div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+            {t('accAccounts.dashboard.kpiToPay')}
+          </div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">TVA à payer</div>
+          <div className="label">{t('accAccounts.dashboard.kpiVat')}</div>
           <div className="value" style={{ color: Number(kpi.vatToPay) > 0 ? COLOR_RED : undefined }}>
             {loading ? '…' : formatEur(kpi.vatToPay)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>solde de TVA</div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+            {t('accAccounts.dashboard.kpiVatBalance')}
+          </div>
         </div>
         <div className="accounting-kpi">
-          <div className="label">Solde banque</div>
+          <div className="label">{t('accAccounts.dashboard.kpiBank')}</div>
           <div className="value" style={{ color: COLOR_GREEN }}>
             {loading ? '…' : formatEur(kpi.bankBalance)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>comptes 512</div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+            {t('accAccounts.dashboard.kpiBankAccounts')}
+          </div>
         </div>
       </div>
 
@@ -320,21 +322,20 @@ const AccountingDashboard = () => {
             to="/admin/comptabilite/ecritures?status=DRAFT"
             style={{ color: 'var(--primary)', textDecoration: 'underline' }}
           >
-            Vous avez {kpi.draftEntriesCount} écriture
-            {kpi.draftEntriesCount > 1 ? 's' : ''} en brouillon à valider →
+            {t('accAccounts.dashboard.draftsToValidate', { count: Number(kpi.draftEntriesCount) })}
           </Link>
         </div>
       )}
 
       {/* ---- 3. Évolution mensuelle ---- */}
       <section className="accounting-card">
-        <h2>Évolution mensuelle</h2>
+        <h2>{t('accAccounts.dashboard.monthlyTrend')}</h2>
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.dashboard.loading')}</p>
         ) : chartData.length === 0 ? (
           <div className="accounting-empty">
-            Aucune donnée à afficher pour le moment.
-            <div className="hint">Les écritures validées alimenteront ce graphique.</div>
+            {t('accAccounts.dashboard.noChartData')}
+            <div className="hint">{t('accAccounts.dashboard.noChartDataHint')}</div>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
@@ -364,12 +365,24 @@ const AccountingDashboard = () => {
                   color: 'rgba(255,255,255,0.7)',
                 }}
               />
-              <Bar dataKey="revenue" name="Produits" fill={COLOR_REVENUE} radius={[4, 4, 0, 0]} maxBarSize={32} />
-              <Bar dataKey="expense" name="Charges" fill={COLOR_EXPENSE} radius={[4, 4, 0, 0]} maxBarSize={32} />
+              <Bar
+                dataKey="revenue"
+                name={t('accAccounts.dashboard.seriesRevenue')}
+                fill={COLOR_REVENUE}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={32}
+              />
+              <Bar
+                dataKey="expense"
+                name={t('accAccounts.dashboard.seriesExpenses')}
+                fill={COLOR_EXPENSE}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={32}
+              />
               <Line
                 type="monotone"
                 dataKey="margin"
-                name="Marge nette"
+                name={t('accAccounts.dashboard.seriesMargin')}
                 stroke={COLOR_MARGIN}
                 strokeWidth={2.5}
                 dot={{ r: 4, strokeWidth: 0, fill: COLOR_MARGIN }}
@@ -382,18 +395,18 @@ const AccountingDashboard = () => {
 
       {/* ---- 4. Top comptes de produits ---- */}
       <section className="accounting-card">
-        <h2>Top comptes de produits</h2>
+        <h2>{t('accAccounts.dashboard.topRevenueAccounts')}</h2>
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.dashboard.loading')}</p>
         ) : topRevenueAccounts.length === 0 ? (
-          <div className="accounting-empty">Aucun produit comptabilisé sur l'exercice.</div>
+          <div className="accounting-empty">{t('accAccounts.dashboard.noRevenue')}</div>
         ) : (
           <table className="accounting-table">
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Libellé</th>
-                <th className="amount">Montant</th>
+                <th>{t('accAccounts.col.code')}</th>
+                <th>{t('accAccounts.col.label')}</th>
+                <th className="amount">{t('accAccounts.col.amount')}</th>
               </tr>
             </thead>
             <tbody>
@@ -418,15 +431,15 @@ const AccountingDashboard = () => {
 
       {/* ---- 5. Dernières écritures ---- */}
       <section className="accounting-card">
-        <h2>Dernières écritures</h2>
+        <h2>{t('accAccounts.dashboard.recentEntries')}</h2>
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.dashboard.loading')}</p>
         ) : recent.length === 0 ? (
           <div className="accounting-empty">
-            Aucune écriture pour le moment.
+            {t('accAccounts.dashboard.noEntries')}
             <div className="hint">
               <Link to="/admin/comptabilite/ecritures/nouvelle" style={{ color: 'var(--primary)' }}>
-                Créer une première écriture →
+                {t('accAccounts.dashboard.createFirstEntry')}
               </Link>
             </div>
           </div>
@@ -434,13 +447,13 @@ const AccountingDashboard = () => {
           <table className="accounting-table">
             <thead>
               <tr>
-                <th>Numéro</th>
-                <th>Date</th>
-                <th>Journal</th>
-                <th>Libellé</th>
-                <th className="amount">Débit</th>
-                <th className="amount">Crédit</th>
-                <th>Statut</th>
+                <th>{t('accAccounts.col.number')}</th>
+                <th>{t('accAccounts.col.date')}</th>
+                <th>{t('accAccounts.col.journal')}</th>
+                <th>{t('accAccounts.col.label')}</th>
+                <th className="amount">{t('accAccounts.col.debit')}</th>
+                <th className="amount">{t('accAccounts.col.credit')}</th>
+                <th>{t('accAccounts.col.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -451,7 +464,7 @@ const AccountingDashboard = () => {
                       {e.entryNumber}
                     </Link>
                   </td>
-                  <td>{formatDateFr(e.date)}</td>
+                  <td>{formatDate(e.date)}</td>
                   <td className="code">{e.journalCode}</td>
                   <td>{e.label}</td>
                   <td className="amount">{formatEurDetail(e.totalDebit)}</td>
@@ -468,19 +481,19 @@ const AccountingDashboard = () => {
 
       {/* ---- 6. Accès rapide ---- */}
       <section className="accounting-card">
-        <h2>Accès rapide</h2>
+        <h2>{t('accAccounts.dashboard.quickAccess')}</h2>
         <div className="accounting-toolbar">
           <Link to="/admin/comptabilite/ecritures/nouvelle" className="portal-button">
-            ✚ Nouvelle écriture
+            {t('accAccounts.dashboard.newEntry')}
           </Link>
           <Link to="/admin/comptabilite/plan-comptable" className="portal-button secondary">
-            Plan comptable
+            {t('accAccounts.nav.chartOfAccounts')}
           </Link>
           <Link to="/admin/comptabilite/journaux" className="portal-button secondary">
-            Journaux
+            {t('accAccounts.nav.journals')}
           </Link>
           <Link to="/admin/comptabilite/parametres" className="portal-button secondary">
-            Paramètres société
+            {t('accAccounts.dashboard.companySettings')}
           </Link>
         </div>
       </section>

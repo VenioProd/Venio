@@ -9,7 +9,9 @@ import PushPermissionPrompt from './PushPermissionPrompt'
 import { useAuth } from '../context/AuthContext'
 import { MessagingProvider, useMessaging } from '../context/MessagingContext'
 import { trackAdminEvent } from '../lib/adminAnalytics'
-import { getMobileNavigation } from '../lib/adminNavigation'
+import { getMobileNavigation, getNavigationLabel } from '../lib/adminNavigation'
+import { useI18n } from '../context/I18nContext'
+import LanguageSelect from './LanguageSelect'
 import './AdminShell.css'
 
 const LS_KEY = 'venio-admin-sidebar-collapsed'
@@ -36,6 +38,7 @@ const AdminShellInner = ({
 }: AdminShellInnerProps) => {
   const { conversations } = useMessaging()
   const { user } = useAuth()
+  const { t } = useI18n()
   const unreadTotal = useMemo(() => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0), [conversations])
   const mobileItems = useMemo(() => getMobileNavigation(user), [user])
 
@@ -46,7 +49,7 @@ const AdminShellInner = ({
         <span className="admin-mobile-tab-icon">
           <MessageSquare size={22} aria-hidden />
           {unreadTotal > 0 && (
-            <span className="admin-mobile-badge" aria-label={`${unreadTotal} non lus`}>
+            <span className="admin-mobile-badge" aria-label={t('shell.nav.unreadTab', { count: unreadTotal })}>
               {unreadTotal > 9 ? '9+' : unreadTotal}
             </span>
           )}
@@ -72,7 +75,7 @@ const AdminShellInner = ({
             type="button"
             className="admin-shell-burger"
             onClick={() => setMobileDrawerOpen(true)}
-            aria-label="Ouvrir le menu de navigation"
+            aria-label={t('shell.nav.openMenu')}
             aria-haspopup="dialog"
             aria-expanded={mobileDrawerOpen}
           >
@@ -83,12 +86,13 @@ const AdminShellInner = ({
             type="button"
             className="admin-shell-palette-trigger"
             onClick={onPaletteOpen}
-            aria-label="Recherche rapide"
+            aria-label={t('shell.palette.quickSearch')}
           >
             <Search size={16} aria-hidden />
-            <span>Recherche</span>
+            <span>{t('shell.palette.searchTrigger')}</span>
             <kbd>⌘K</kbd>
           </button>
+          <LanguageSelect compact />
         </div>
         <main className="admin-shell-main">
           <PushPermissionPrompt variant="admin" />
@@ -97,7 +101,7 @@ const AdminShellInner = ({
       </div>
 
       {/* Bottom tab bar mobile admin */}
-      <nav className="admin-mobile-nav" aria-label="Navigation mobile">
+      <nav className="admin-mobile-nav" aria-label={t('shell.nav.mobileAria')}>
         {mobileItems.map((item) => (
           <NavLink
             key={item.id}
@@ -107,19 +111,19 @@ const AdminShellInner = ({
             onClick={() => trackAdminEvent('admin_navigation_selected', item.id.replace(/-/g, '_'))}
           >
             {mobileIcon(item.id)}
-            <span>{item.label}</span>
+            <span>{getNavigationLabel(item)}</span>
           </NavLink>
         ))}
         <button
           type="button"
           className={`admin-mobile-tab${mobileDrawerOpen ? ' active' : ''}`}
           onClick={() => setMobileDrawerOpen(true)}
-          aria-label="Ouvrir la navigation complète"
+          aria-label={t('shell.nav.openFullNav')}
           aria-haspopup="dialog"
           aria-expanded={mobileDrawerOpen}
         >
           <Menu size={22} aria-hidden />
-          <span>Menu</span>
+          <span>{t('nav.menu')}</span>
         </button>
       </nav>
       {paletteOpen && <AdminCommandPalette onClose={onPaletteClose} />}

@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
 
 interface DashWidgetProps {
   title: string
@@ -19,11 +20,12 @@ const DashWidget = ({
   icon,
   action,
   empty,
-  emptyLabel = 'Aucun élément',
+  emptyLabel,
   error,
   neon = false,
   children,
 }: DashWidgetProps) => {
+  const { t } = useI18n()
   return (
     <section className={`dash-widget${neon ? ' dash-widget--neon' : ''}`} aria-label={title}>
       <header className="dash-widget__header">
@@ -46,7 +48,7 @@ const DashWidget = ({
       {error ? (
         <div className="dash-widget__error">{error}</div>
       ) : empty ? (
-        <div className="dash-widget__empty">{emptyLabel}</div>
+        <div className="dash-widget__empty">{emptyLabel ?? t('shared.dash.widgetEmpty')}</div>
       ) : (
         children
       )}

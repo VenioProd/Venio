@@ -2,20 +2,23 @@ import { useEffect, useState } from 'react'
 import {
   fetchNotificationPreferences,
   updateNotificationPreferences,
-  NOTIFICATION_TYPE_LABELS,
+  NOTIFICATION_TYPE_LABEL_KEYS,
   type ChannelPreferences,
   type NotificationChannel,
   type NotificationType,
 } from '../services/notificationPreferences'
+import { useI18n } from '../context/I18nContext'
+import type { MessageKey } from '../i18n'
 import './NotificationPreferencesPanel.css'
 
-const CHANNELS: { key: NotificationChannel; label: string; hint: string }[] = [
-  { key: 'inApp', label: 'In-app', hint: 'Apparaît dans la cloche de notifications' },
-  { key: 'push', label: 'Push', hint: 'Notification système (mobile + desktop)' },
-  { key: 'email', label: 'Email', hint: 'Email envoyé sur ton adresse' },
+const CHANNELS: { key: NotificationChannel; label: MessageKey; hint: MessageKey }[] = [
+  { key: 'inApp', label: 'shared.notifPrefs.channelInApp', hint: 'shared.notifPrefs.channelInAppHint' },
+  { key: 'push', label: 'shared.notifPrefs.channelPush', hint: 'shared.notifPrefs.channelPushHint' },
+  { key: 'email', label: 'shared.notifPrefs.channelEmail', hint: 'shared.notifPrefs.channelEmailHint' },
 ]
 
 export default function NotificationPreferencesPanel() {
+  const { t } = useI18n()
   const [prefs, setPrefs] = useState<Record<NotificationType, ChannelPreferences> | null>(null)
   const [types, setTypes] = useState<NotificationType[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,13 +35,15 @@ export default function NotificationPreferencesPanel() {
         setPrefs(res.preferences)
         setTypes(res.types)
       } catch (err) {
-        if (!cancelled) setError((err as Error).message || 'Erreur de chargement')
+        if (!cancelled) setError((err as Error).message || t('shared.notifPrefs.loadError'))
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
     load()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const handleToggle = async (type: NotificationType, channel: NotificationChannel) => {
@@ -55,7 +60,7 @@ export default function NotificationPreferencesPanel() {
       setPrefs(res.preferences)
       setSavedAt(Date.now())
     } catch (err) {
-      setError((err as Error).message || 'Erreur de sauvegarde')
+      setError((err as Error).message || t('shared.notifPrefs.saveError'))
       // Rollback local
       setPrefs(prefs)
     } finally {
@@ -79,7 +84,7 @@ export default function NotificationPreferencesPanel() {
       setPrefs(res.preferences)
       setSavedAt(Date.now())
     } catch (err) {
-      setError((err as Error).message || 'Erreur de sauvegarde')
+      setError((err as Error).message || t('shared.notifPrefs.saveError'))
       setPrefs(prefs)
     } finally {
       setSaving(false)
@@ -90,11 +95,11 @@ export default function NotificationPreferencesPanel() {
     <section className="notif-prefs">
       <header className="notif-prefs-header">
         <div>
-          <h3>Préférences par type de notification</h3>
-          <p>Choisis pour chaque catégorie comment tu veux être informé.</p>
+          <h3>{t('shared.notifPrefs.title')}</h3>
+          <p>{t('shared.notifPrefs.intro')}</p>
         </div>
-        {saving && <span className="notif-prefs-status saving">Enregistrement…</span>}
-        {!saving && savedAt && <span className="notif-prefs-status saved">Enregistré</span>}
+        {saving && <span className="notif-prefs-status saving">{t('shared.notifPrefs.saving')}</span>}
+        {!saving && savedAt && <span className="notif-prefs-status saved">{t('shared.notifPrefs.saved')}</span>}
       </header>
 
       {error && <p className="notif-prefs-error">{error}</p>}
@@ -102,34 +107,36 @@ export default function NotificationPreferencesPanel() {
       {loading ? (
         <div className="notif-prefs-loading">
           <span className="notif-prefs-spinner" aria-hidden="true" />
-          <span>Chargement…</span>
+          <span>{t('shared.notifPrefs.loading')}</span>
         </div>
       ) : prefs ? (
         <div className="notif-prefs-table-wrap">
           <table className="notif-prefs-table">
             <thead>
               <tr>
-                <th scope="col" className="notif-prefs-th-type">Type</th>
+                <th scope="col" className="notif-prefs-th-type">
+                  {t('shared.notifPrefs.colType')}
+                </th>
                 {CHANNELS.map((channel) => (
                   <th key={channel.key} scope="col" className="notif-prefs-th-channel">
-                    <span className="notif-prefs-channel-label">{channel.label}</span>
-                    <span className="notif-prefs-channel-hint">{channel.hint}</span>
+                    <span className="notif-prefs-channel-label">{t(channel.label)}</span>
+                    <span className="notif-prefs-channel-hint">{t(channel.hint)}</span>
                     <div className="notif-prefs-bulk">
                       <button
                         type="button"
                         className="notif-prefs-bulk-btn"
                         onClick={() => handleBulk(channel.key, true)}
-                        title={`Tout activer pour ${channel.label}`}
+                        title={t('shared.notifPrefs.enableAllFor', { channel: t(channel.label) })}
                       >
-                        Tout
+                        {t('shared.notifPrefs.all')}
                       </button>
                       <button
                         type="button"
                         className="notif-prefs-bulk-btn"
                         onClick={() => handleBulk(channel.key, false)}
-                        title={`Tout désactiver pour ${channel.label}`}
+                        title={t('shared.notifPrefs.disableAllFor', { channel: t(channel.label) })}
                       >
-                        Aucun
+                        {t('shared.notifPrefs.none')}
                       </button>
                     </div>
                   </th>
@@ -138,7 +145,10 @@ export default function NotificationPreferencesPanel() {
             </thead>
             <tbody>
               {types.map((type) => {
-                const label = NOTIFICATION_TYPE_LABELS[type] || { label: type, description: '' }
+                const labelKeys = NOTIFICATION_TYPE_LABEL_KEYS[type]
+                const label = labelKeys
+                  ? { label: t(labelKeys.label), description: t(labelKeys.description) }
+                  : { label: type, description: '' }
                 return (
                   <tr key={type}>
                     <th scope="row" className="notif-prefs-row-type">
@@ -154,7 +164,7 @@ export default function NotificationPreferencesPanel() {
                               type="checkbox"
                               checked={checked}
                               onChange={() => handleToggle(type, channel.key)}
-                              aria-label={`${label.label} — ${channel.label}`}
+                              aria-label={`${label.label} — ${t(channel.label)}`}
                             />
                             <span className="notif-toggle-slider" aria-hidden="true" />
                           </label>

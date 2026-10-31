@@ -1,39 +1,53 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import AccountingLayout from './AccountingLayout'
 import { downloadFec, listFiscalYears } from '../../../services/accounting'
 import type { IFiscalYear } from '../../../types/accounting'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import type { MessageKey } from '../../../i18n'
+import { formatDate as formatDateIntl } from '../../../i18n/format'
 
 function formatDate(d: string | undefined | null): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleDateString('fr-FR')
-  } catch {
-    return '—'
-  }
+  return formatDateIntl(d) || '—'
 }
 
-const FEC_COLUMNS = [
-  { code: 'JournalCode', label: 'Code journal (3 caractères)' },
-  { code: 'JournalLib', label: 'Libellé du journal' },
-  { code: 'EcritureNum', label: "Numéro d'écriture" },
-  { code: 'EcritureDate', label: 'Date de comptabilisation (AAAAMMJJ)' },
-  { code: 'CompteNum', label: 'Numéro de compte' },
-  { code: 'CompteLib', label: 'Libellé du compte' },
-  { code: 'CompAuxNum', label: 'Numéro de compte auxiliaire' },
-  { code: 'CompAuxLib', label: 'Libellé du compte auxiliaire' },
-  { code: 'PieceRef', label: 'Référence de la pièce justificative' },
-  { code: 'PieceDate', label: 'Date de la pièce (AAAAMMJJ)' },
-  { code: 'EcritureLib', label: "Libellé de l'écriture" },
-  { code: 'Debit', label: 'Montant au débit' },
-  { code: 'Credit', label: 'Montant au crédit' },
-  { code: 'EcritureLet', label: 'Lettrage' },
-  { code: 'DateLet', label: 'Date de lettrage (AAAAMMJJ)' },
-  { code: 'ValidDate', label: 'Date de validation (AAAAMMJJ)' },
-  { code: 'Montantdevise', label: 'Montant en devise' },
-  { code: 'Idevise', label: 'Code de la devise' },
+/** Renders `**bold**` segments and `{slot}` placeholders of a translated sentence. */
+function renderRich(text: string, slots: Record<string, ReactNode> = {}): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*|\{\w+\})/).map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>
+    }
+    const slot = /^\{(\w+)\}$/.exec(part)
+    if (slot && slot[1] in slots) return <Fragment key={i}>{slots[slot[1]]}</Fragment>
+    return part
+  })
+}
+
+const FEC_COLUMNS: { code: string; labelKey: MessageKey }[] = [
+  { code: 'JournalCode', labelKey: 'accAccounts.fec.col.JournalCode' },
+  { code: 'JournalLib', labelKey: 'accAccounts.fec.col.JournalLib' },
+  { code: 'EcritureNum', labelKey: 'accAccounts.fec.col.EcritureNum' },
+  { code: 'EcritureDate', labelKey: 'accAccounts.fec.col.EcritureDate' },
+  { code: 'CompteNum', labelKey: 'accAccounts.fec.col.CompteNum' },
+  { code: 'CompteLib', labelKey: 'accAccounts.fec.col.CompteLib' },
+  { code: 'CompAuxNum', labelKey: 'accAccounts.fec.col.CompAuxNum' },
+  { code: 'CompAuxLib', labelKey: 'accAccounts.fec.col.CompAuxLib' },
+  { code: 'PieceRef', labelKey: 'accAccounts.fec.col.PieceRef' },
+  { code: 'PieceDate', labelKey: 'accAccounts.fec.col.PieceDate' },
+  { code: 'EcritureLib', labelKey: 'accAccounts.fec.col.EcritureLib' },
+  { code: 'Debit', labelKey: 'accAccounts.fec.col.Debit' },
+  { code: 'Credit', labelKey: 'accAccounts.fec.col.Credit' },
+  { code: 'EcritureLet', labelKey: 'accAccounts.fec.col.EcritureLet' },
+  { code: 'DateLet', labelKey: 'accAccounts.fec.col.DateLet' },
+  { code: 'ValidDate', labelKey: 'accAccounts.fec.col.ValidDate' },
+  { code: 'Montantdevise', labelKey: 'accAccounts.fec.col.Montantdevise' },
+  { code: 'Idevise', labelKey: 'accAccounts.fec.col.Idevise' },
 ]
 
 const FecExport = () => {
+  const { t } = useI18n()
   const [fiscalYears, setFiscalYears] = useState<IFiscalYear[]>([])
   const [fiscalYear, setFiscalYear] = useState('')
   const [from, setFrom] = useState('')
@@ -50,7 +64,7 @@ const FecExport = () => {
         const f = await listFiscalYears()
         if (!cancelled) setFiscalYears(f || [])
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Erreur')
+        if (!cancelled) setError(err instanceof Error ? err.message : translate('common.error'))
       }
     })()
     return () => {
@@ -58,10 +72,7 @@ const FecExport = () => {
     }
   }, [])
 
-  const selectedFy = useMemo(
-    () => fiscalYears.find((fy) => fy._id === fiscalYear) || null,
-    [fiscalYears, fiscalYear]
-  )
+  const selectedFy = useMemo(() => fiscalYears.find((fy) => fy._id === fiscalYear) || null, [fiscalYears, fiscalYear])
 
   const effectiveFrom = from || (selectedFy ? selectedFy.startDate : '')
   const effectiveTo = to || (selectedFy ? selectedFy.endDate : '')
@@ -76,9 +87,9 @@ const FecExport = () => {
         to: to || undefined,
         fiscalYear: fiscalYear || undefined,
       })
-      setSuccess('Téléchargement du FEC démarré.')
+      setSuccess(t('accAccounts.fec.downloadStarted'))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur')
+      setError(err instanceof Error ? err.message : translate('common.error'))
     } finally {
       setLoading(false)
     }
@@ -87,65 +98,43 @@ const FecExport = () => {
   const canDownload = !!(fiscalYear || (from && to))
 
   return (
-    <AccountingLayout
-      title="Export FEC (Fichier des Écritures Comptables)"
-      subtitle="Génération du fichier conforme aux exigences DGFiP en cas de contrôle fiscal"
-    >
+    <AccountingLayout title={t('accAccounts.fec.title')} subtitle={t('accAccounts.fec.subtitle')}>
       {error && <div className="accounting-message error">{error}</div>}
       {success && <div className="accounting-message success">{success}</div>}
 
       <section className="accounting-card" style={{ marginBottom: 16 }}>
         <div className="accounting-message info" style={{ margin: 0 }}>
-          Le FEC est obligatoire selon l'article{' '}
-          <strong>A.47 A-1 du Livre des procédures fiscales</strong> en cas de contrôle
-          fiscal. Format pipe-séparé avec <strong>18 colonnes</strong>, conforme aux
-          exigences DGFiP. Il inclut <strong>uniquement</strong> les écritures{' '}
-          <span className="accounting-badge validated">VALIDATED</span> ou{' '}
-          <span className="accounting-badge locked">LOCKED</span> — les brouillons sont
-          automatiquement exclus.
+          {renderRich(t('accAccounts.fec.info'), {
+            validated: <span className="accounting-badge validated">VALIDATED</span>,
+            locked: <span className="accounting-badge locked">LOCKED</span>,
+          })}
         </div>
       </section>
 
       <section className="accounting-card" style={{ marginBottom: 16 }}>
-        <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Paramètres d'export</h2>
+        <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>{t('accAccounts.fec.settingsTitle')}</h2>
 
         <div className="accounting-form">
           <div className="accounting-form-field">
-            <label>Exercice fiscal</label>
-            <select
-              className="portal-input"
-              value={fiscalYear}
-              onChange={(e) => setFiscalYear(e.target.value)}
-            >
-              <option value="">— Aucun (utiliser une période manuelle) —</option>
+            <label>{t('accAccounts.fec.fiscalYearLabel')}</label>
+            <select className="portal-input" value={fiscalYear} onChange={(e) => setFiscalYear(e.target.value)}>
+              <option value="">{t('accAccounts.fec.noFiscalYear')}</option>
               {fiscalYears.map((fy) => (
                 <option key={fy._id} value={fy._id}>
                   {fy.code || fy.label}
-                  {fy.startDate && fy.endDate
-                    ? ` (${formatDate(fy.startDate)} → ${formatDate(fy.endDate)})`
-                    : ''}
-                  {fy.status === 'CLOSED' ? ' — clos' : ''}
+                  {fy.startDate && fy.endDate ? ` (${formatDate(fy.startDate)} → ${formatDate(fy.endDate)})` : ''}
+                  {fy.status === 'CLOSED' ? t('accAccounts.fec.closedSuffix') : ''}
                 </option>
               ))}
             </select>
           </div>
           <div className="accounting-form-field">
-            <label>Date début (custom)</label>
-            <input
-              type="date"
-              className="portal-input"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
+            <label>{t('accAccounts.fec.customStart')}</label>
+            <input type="date" className="portal-input" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
           <div className="accounting-form-field">
-            <label>Date fin (custom)</label>
-            <input
-              type="date"
-              className="portal-input"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
+            <label>{t('accAccounts.fec.customEnd')}</label>
+            <input type="date" className="portal-input" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
         </div>
 
@@ -160,23 +149,19 @@ const FecExport = () => {
               color: 'rgba(255,255,255,0.85)',
             }}
           >
-            <strong>Période effective :</strong> {formatDate(effectiveFrom)} →{' '}
+            <strong>{t('accAccounts.fec.effectivePeriod')}</strong> {formatDate(effectiveFrom)} →{' '}
             {formatDate(effectiveTo)}
             {!from && !to && selectedFy && (
               <span style={{ color: 'rgba(255,255,255,0.55)', marginLeft: 6 }}>
-                (déduite de l'exercice sélectionné)
+                {t('accAccounts.fec.derivedFromYear')}
               </span>
             )}
           </div>
         )}
 
         <div style={{ marginTop: 16 }}>
-          <button
-            className="portal-button"
-            onClick={handleDownload}
-            disabled={loading || !canDownload}
-          >
-            {loading ? 'Génération…' : '⬇ Télécharger le FEC'}
+          <button className="portal-button" onClick={handleDownload} disabled={loading || !canDownload}>
+            {loading ? t('accAccounts.fec.generating') : t('accAccounts.fec.download')}
           </button>
           {!canDownload && (
             <span
@@ -186,7 +171,7 @@ const FecExport = () => {
                 fontSize: '0.85rem',
               }}
             >
-              Sélectionnez un exercice ou définissez une période complète.
+              {t('accAccounts.fec.selectPeriod')}
             </span>
           )}
         </div>
@@ -202,18 +187,12 @@ const FecExport = () => {
             margin: 0,
           }}
         >
-          <strong>⚠ Avant export :</strong> assurez-vous que toutes les écritures
-          significatives de la période sont au statut <strong>VALIDATED</strong> ou{' '}
-          <strong>LOCKED</strong>. Les brouillons sont automatiquement exclus du FEC ;
-          un export incomplet pourrait être contesté par l'administration en cas de
-          contrôle.
+          {renderRich(t('accAccounts.fec.warning'))}
         </div>
       </section>
 
       <section className="accounting-card">
-        <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>
-          Aperçu — Structure du FEC (18 colonnes)
-        </h2>
+        <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>{t('accAccounts.fec.previewTitle')}</h2>
         <p
           style={{
             color: 'rgba(255,255,255,0.6)',
@@ -221,16 +200,14 @@ const FecExport = () => {
             marginTop: 0,
           }}
         >
-          Le fichier est un texte UTF-8 séparé par des barres verticales{' '}
-          <span className="code">|</span>. Chaque ligne correspond à une ligne
-          d'écriture (un débit ou un crédit) — pas à une écriture entière.
+          {renderRich(t('accAccounts.fec.previewText'), { pipe: <span className="code">|</span> })}
         </p>
         <table className="accounting-table">
           <thead>
             <tr>
               <th style={{ width: 40 }}>#</th>
-              <th>Colonne</th>
-              <th>Description</th>
+              <th>{t('accAccounts.fec.colColumn')}</th>
+              <th>{t('accAccounts.col.description')}</th>
             </tr>
           </thead>
           <tbody>
@@ -238,7 +215,7 @@ const FecExport = () => {
               <tr key={c.code}>
                 <td className="code">{i + 1}</td>
                 <td className="code">{c.code}</td>
-                <td>{c.label}</td>
+                <td>{t(c.labelKey)}</td>
               </tr>
             ))}
           </tbody>

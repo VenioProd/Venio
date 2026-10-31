@@ -1,5 +1,7 @@
 import { WorkspaceOverlayPortal } from '../../../components/WorkspaceOverlayPortal'
 import { useState } from 'react'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import {
   createAssignment,
   createClass,
@@ -21,6 +23,7 @@ export function TemplateApplyDrawer({
   onClose: () => void
   onApplied: () => void
 }) {
+  const { t } = useI18n()
   const [classId, setClassId] = useState('')
   const [title, setTitle] = useState(
     String(template.body[template.kind === 'class' ? 'name' : 'title'] || template.name),
@@ -44,7 +47,7 @@ export function TemplateApplyDrawer({
           name: title.trim(),
         })
       else if (template.kind === 'session') {
-        if (!date || !Number.isFinite(new Date(date).getTime())) throw new Error('Choisissez la date de la séance.')
+        if (!date || !Number.isFinite(new Date(date).getTime())) throw new Error(translate('eduA.apply.dateRequired'))
         await createSession({
           ...pick(['theme', 'agenda', 'objectives', 'durationMin', 'location', 'supports']),
           title: title.trim(),
@@ -76,7 +79,7 @@ export function TemplateApplyDrawer({
         })
       onApplied()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible d’appliquer le template')
+      setError(err instanceof Error ? err.message : translate('eduA.apply.failed'))
     } finally {
       setBusy(false)
     }
@@ -89,30 +92,30 @@ export function TemplateApplyDrawer({
           if (!busy) onClose()
         }}
       />
-      <div className="edu-drawer" role="dialog" aria-label="Utiliser le template">
+      <div className="edu-drawer" role="dialog" aria-label={t('eduA.apply.dialogAria')}>
         <div className="edu-drawer-head">
-          <h2>Utiliser « {template.name} »</h2>
+          <h2>{t('eduA.apply.title', { name: template.name })}</h2>
           <button className="edu-btn ghost" disabled={busy} onClick={onClose}>
-            Fermer
+            {t('common.close')}
           </button>
         </div>
         <div className="edu-drawer-body">
           <p>
             {template.kind === 'class'
-              ? 'Crée une nouvelle classe à partir du modèle.'
+              ? t('eduA.apply.introClass')
               : template.kind === 'assignment'
-                ? 'Crée un devoir en brouillon dans la classe choisie.'
-                : 'Crée un nouveau contenu dans la classe choisie.'}
+                ? t('eduA.apply.introAssignment')
+                : t('eduA.apply.introOther')}
           </p>
           <label className="edu-form-group">
-            {template.kind === 'class' ? 'Nom de la nouvelle classe' : 'Titre'}
+            {template.kind === 'class' ? t('eduA.apply.newClassName') : t('eduA.templates.field.title')}
             <input className="edu-input" value={title} onChange={(e) => setTitle(e.target.value)} />
           </label>
           {template.kind !== 'class' && (
             <label className="edu-form-group">
-              Classe destinataire
+              {t('eduA.apply.targetClass')}
               <select className="edu-select" value={classId} onChange={(e) => setClassId(e.target.value)}>
-                <option value="">Choisir une classe…</option>
+                <option value="">{t('eduA.apply.chooseClass')}</option>
                 {classes
                   .filter((c) => !c.deletedAt && c.status !== 'ARCHIVE')
                   .map((c) => (
@@ -126,7 +129,7 @@ export function TemplateApplyDrawer({
           )}
           {template.kind === 'session' && (
             <label className="edu-form-group">
-              Date et heure
+              {t('eduA.apply.dateTime')}
               <input
                 className="edu-input"
                 type="datetime-local"
@@ -155,7 +158,7 @@ export function TemplateApplyDrawer({
               void apply()
             }}
           >
-            {busy ? 'Création…' : 'Créer à partir du template'}
+            {busy ? t('eduA.apply.creating') : t('eduA.apply.create')}
           </button>
         </div>
       </div>

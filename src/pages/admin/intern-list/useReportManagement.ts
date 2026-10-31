@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { translate } from '../../../i18n'
 import { apiFetch, apiUpload } from '../../../lib/api'
 import type { ActivityReport, Intern } from './types'
 
@@ -100,7 +101,11 @@ export function useReportManagement({ confirm, isAdmin }: UseReportManagementOpt
 
   const handleDeleteReport = useCallback(
     async (reportId: string) => {
-      const ok = await confirm({ message: 'Supprimer ce rapport ?', title: 'Suppression', variant: 'danger' })
+      const ok = await confirm({
+        message: translate('intern.delete.confirmReport'),
+        title: translate('intern.delete.title'),
+        variant: 'danger',
+      })
       if (!ok) return
       try {
         await apiFetch(`/api/admin/interns/reports/${reportId}`, { method: 'DELETE' })

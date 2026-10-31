@@ -1,6 +1,7 @@
 import { Activity, CheckCircle2, GitBranch, GitPullRequest, X, XCircle } from 'lucide-react'
 import type { DevIssue, DevIssueGithubLink, DevCiStatus } from '../../../services/dev'
-import { CI_STATUS_LABEL, ciStatusTone } from './helpers'
+import { useI18n } from '../../../context/I18nContext'
+import { CI_STATUS_LABEL, CI_STATUS_LABEL_KEYS, ciStatusTone } from './helpers'
 
 interface GithubLinkPanelProps {
   issue: DevIssue
@@ -10,6 +11,7 @@ interface GithubLinkPanelProps {
 }
 
 export default function GithubLinkPanel({ issue, canManage, onPatch, onClear }: GithubLinkPanelProps) {
+  const { t } = useI18n()
   const link = issue.github
   const isMerged = Boolean(link?.mergedAt)
 
@@ -32,7 +34,7 @@ export default function GithubLinkPanel({ issue, canManage, onPatch, onClear }: 
             })
           }
         >
-          <GitBranch size={12} /> Rattacher une PR / branche GitHub
+          <GitBranch size={12} /> {t('devA.github.attach')}
         </button>
       </div>
     )
@@ -44,7 +46,11 @@ export default function GithubLinkPanel({ issue, canManage, onPatch, onClear }: 
       <div className="dev-detail-github-header">
         <span className="dev-detail-github-title">
           <GitPullRequest size={13} />
-          {isMerged ? 'PR mergée' : link.prNumber ? `PR #${link.prNumber}` : 'Lien GitHub'}
+          {isMerged
+            ? t('devA.github.mergedPr')
+            : link.prNumber
+              ? t('devA.github.prNumber', { number: link.prNumber })
+              : t('devA.github.link')}
         </span>
         {link.ciStatus && (
           <span className={`dev-detail-github-ci tone-${tone}`} title={CI_STATUS_LABEL[link.ciStatus] || link.ciStatus}>
@@ -55,14 +61,14 @@ export default function GithubLinkPanel({ issue, canManage, onPatch, onClear }: 
           </span>
         )}
         {canManage && (
-          <button className="dev-detail-github-clear" type="button" onClick={onClear} title="Détacher">
+          <button className="dev-detail-github-clear" type="button" onClick={onClear} title={t('devA.github.detach')}>
             <X size={11} />
           </button>
         )}
       </div>
       <div className="dev-detail-github-grid">
         <label>
-          <span>Repo</span>
+          <span>{t('devA.github.repo')}</span>
           <input
             disabled={!canManage}
             defaultValue={link.repo ?? ''}
@@ -71,7 +77,7 @@ export default function GithubLinkPanel({ issue, canManage, onPatch, onClear }: 
           />
         </label>
         <label>
-          <span>Branche</span>
+          <span>{t('devA.github.branch')}</span>
           <input
             disabled={!canManage}
             defaultValue={link.branch ?? ''}
@@ -80,7 +86,7 @@ export default function GithubLinkPanel({ issue, canManage, onPatch, onClear }: 
           />
         </label>
         <label>
-          <span>PR</span>
+          <span>{t('devA.github.pr')}</span>
           <input
             disabled={!canManage}
             type="number"
@@ -96,7 +102,7 @@ export default function GithubLinkPanel({ issue, canManage, onPatch, onClear }: 
           />
         </label>
         <label>
-          <span>URL PR</span>
+          <span>{t('devA.github.prUrl')}</span>
           <input
             disabled={!canManage}
             defaultValue={link.prUrl ?? ''}
@@ -105,7 +111,7 @@ export default function GithubLinkPanel({ issue, canManage, onPatch, onClear }: 
           />
         </label>
         <label>
-          <span>CI</span>
+          <span>{t('devA.github.ci')}</span>
           <select
             disabled={!canManage}
             value={link.ciStatus ?? ''}
@@ -114,15 +120,15 @@ export default function GithubLinkPanel({ issue, canManage, onPatch, onClear }: 
             }
           >
             <option value="">—</option>
-            <option value="PENDING">En attente</option>
-            <option value="RUNNING">En cours</option>
-            <option value="SUCCESS">Succès</option>
-            <option value="FAILURE">Échec</option>
-            <option value="UNKNOWN">Inconnu</option>
+            <option value="PENDING">{t(CI_STATUS_LABEL_KEYS.PENDING)}</option>
+            <option value="RUNNING">{t(CI_STATUS_LABEL_KEYS.RUNNING)}</option>
+            <option value="SUCCESS">{t(CI_STATUS_LABEL_KEYS.SUCCESS)}</option>
+            <option value="FAILURE">{t(CI_STATUS_LABEL_KEYS.FAILURE)}</option>
+            <option value="UNKNOWN">{t(CI_STATUS_LABEL_KEYS.UNKNOWN)}</option>
           </select>
         </label>
         <label>
-          <span>Mergée</span>
+          <span>{t('devA.github.merged')}</span>
           <input
             disabled={!canManage}
             type="date"

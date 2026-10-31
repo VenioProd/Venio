@@ -12,12 +12,13 @@ import {
   ClipboardList,
 } from 'lucide-react'
 import {
-  formatDate,
   type SessionDuty,
   type SessionLink,
   type SessionReminder,
   type SessionRemark,
 } from '../../../services/education'
+import { useI18n } from '../../../context/I18nContext'
+import { formatShortDate } from './eduFormat'
 
 /**
  * VENIO-44 — Sections de "workspace" pédagogique partagées entre :
@@ -36,8 +37,10 @@ export function makeShortId(): string {
 }
 
 export function SaveIndicator({ state }: { state: SaveState }) {
+  const { t } = useI18n()
   if (state === 'idle') return null
-  const label = state === 'saving' ? 'Sauvegarde…' : state === 'saved' ? 'Sauvegardé' : 'Erreur'
+  const label =
+    state === 'saving' ? t('eduC.sections.saving') : state === 'saved' ? t('eduC.sections.saved') : t('common.error')
   const color = state === 'error' ? '#EF4444' : state === 'saved' ? '#22C55E' : 'rgba(255,255,255,0.6)'
   return (
     <span
@@ -52,6 +55,7 @@ export function SaveIndicator({ state }: { state: SaveState }) {
 
 /* ─── Section : Notes libres ─────────────────────────────────────────── */
 export function NotesSection({ notes, onChange }: { notes: string; onChange: (v: string) => void }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState<boolean>(() => Boolean(notes))
   useEffect(() => {
     if (notes) setOpen(true)
@@ -61,8 +65,10 @@ export function NotesSection({ notes, onChange }: { notes: string; onChange: (v:
       <button type="button" className="edu-collapse-toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <StickyNote size={13} />
-        <span>Notes libres</span>
-        {notes.trim() && <span className="edu-side-badge">{notes.trim().length} car.</span>}
+        <span>{t('eduC.sections.notes')}</span>
+        {notes.trim() && (
+          <span className="edu-side-badge">{t('eduC.sections.notesCount', { count: notes.trim().length })}</span>
+        )}
       </button>
       {open && (
         <textarea
@@ -70,8 +76,8 @@ export function NotesSection({ notes, onChange }: { notes: string; onChange: (v:
           style={{ minHeight: 120, marginTop: 8 }}
           value={notes}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Tout ce qui n'a pas sa place dans le recap : idées, brouillons, contexte…"
-          aria-label="Notes libres"
+          placeholder={t('eduC.sections.notesPlaceholder')}
+          aria-label={t('eduC.sections.notes')}
         />
       )}
     </div>
@@ -80,6 +86,7 @@ export function NotesSection({ notes, onChange }: { notes: string; onChange: (v:
 
 /* ─── Section : Devoirs à donner ─────────────────────────────────────── */
 export function DutiesSection({ duties, onChange }: { duties: SessionDuty[]; onChange: (v: SessionDuty[]) => void }) {
+  const { t } = useI18n()
   const total = duties.length
   const open = total > 0 ? duties.filter((d) => !d.done).length : 0
   const [expanded, setExpanded] = useState<boolean>(true)
@@ -93,7 +100,7 @@ export function DutiesSection({ duties, onChange }: { duties: SessionDuty[]; onC
       >
         {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <ClipboardList size={13} />
-        <span>Devoirs à donner</span>
+        <span>{t('eduC.sections.duties')}</span>
         {total > 0 && (
           <span className="edu-side-badge">
             {open} / {total}
@@ -116,7 +123,7 @@ export function DutiesSection({ duties, onChange }: { duties: SessionDuty[]; onC
               <input
                 className="edu-input"
                 value={d.label}
-                placeholder="Ex. Lire le chapitre 4 pour la prochaine séance"
+                placeholder={t('eduC.sections.dutyPlaceholder')}
                 onChange={(e) => {
                   const next = duties.slice()
                   next[i] = { ...d, label: e.target.value }
@@ -134,14 +141,14 @@ export function DutiesSection({ duties, onChange }: { duties: SessionDuty[]; onC
                   onChange(next)
                 }}
                 style={{ width: 150 }}
-                aria-label="Échéance"
+                aria-label={t('eduC.shared.dueDate')}
               />
               <button
                 type="button"
                 className="edu-btn-icon"
                 onClick={() => onChange(duties.filter((_, j) => j !== i))}
-                aria-label="Supprimer le devoir"
-                title="Supprimer"
+                aria-label={t('eduC.sections.removeDuty')}
+                title={t('common.delete')}
               >
                 <Trash2 size={14} />
               </button>
@@ -153,7 +160,7 @@ export function DutiesSection({ duties, onChange }: { duties: SessionDuty[]; onC
             style={{ marginTop: 4 }}
             onClick={() => onChange([...duties, { id: makeShortId(), label: '', dueAt: null, done: false }])}
           >
-            <Plus size={13} /> Ajouter un devoir
+            <Plus size={13} /> {t('eduC.sections.addDuty')}
           </button>
         </div>
       )}
@@ -169,6 +176,7 @@ export function RemindersSection({
   reminders: SessionReminder[]
   onChange: (v: SessionReminder[]) => void
 }) {
+  const { t } = useI18n()
   const total = reminders.length
   const open = total > 0 ? reminders.filter((r) => !r.done).length : 0
   const [expanded, setExpanded] = useState<boolean>(true)
@@ -182,7 +190,7 @@ export function RemindersSection({
       >
         {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <BellRing size={13} />
-        <span>Rappels</span>
+        <span>{t('eduC.sections.reminders')}</span>
         {total > 0 && (
           <span className="edu-side-badge">
             {open} / {total}
@@ -205,7 +213,7 @@ export function RemindersSection({
               <input
                 className="edu-input"
                 value={r.label}
-                placeholder="Ex. Préparer le support pour la prochaine séance"
+                placeholder={t('eduC.sections.reminderPlaceholder')}
                 onChange={(e) => {
                   const next = reminders.slice()
                   next[i] = { ...r, label: e.target.value }
@@ -223,14 +231,14 @@ export function RemindersSection({
                   onChange(next)
                 }}
                 style={{ width: 150 }}
-                aria-label="Échéance"
+                aria-label={t('eduC.shared.dueDate')}
               />
               <button
                 type="button"
                 className="edu-btn-icon"
                 onClick={() => onChange(reminders.filter((_, j) => j !== i))}
-                aria-label="Supprimer le rappel"
-                title="Supprimer"
+                aria-label={t('eduC.sections.removeReminder')}
+                title={t('common.delete')}
               >
                 <Trash2 size={14} />
               </button>
@@ -242,7 +250,7 @@ export function RemindersSection({
             style={{ marginTop: 4 }}
             onClick={() => onChange([...reminders, { id: makeShortId(), label: '', dueAt: null, done: false }])}
           >
-            <Plus size={13} /> Ajouter un rappel
+            <Plus size={13} /> {t('eduC.sections.addReminder')}
           </button>
         </div>
       )}
@@ -258,6 +266,7 @@ export function RemarksSection({
   remarks: SessionRemark[]
   onChange: (v: SessionRemark[]) => void
 }) {
+  const { t } = useI18n()
   const [draft, setDraft] = useState('')
   const [expanded, setExpanded] = useState<boolean>(true)
   const sorted = useMemo(() => {
@@ -279,7 +288,7 @@ export function RemarksSection({
       >
         {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <MessageSquare size={13} />
-        <span>Remarques</span>
+        <span>{t('eduC.sections.remarks')}</span>
         {remarks.length > 0 && <span className="edu-side-badge">{remarks.length}</span>}
       </button>
       {expanded && (
@@ -295,16 +304,16 @@ export function RemarksSection({
                   addRemark()
                 }
               }}
-              placeholder="Une observation rapide sur la séance, un point d'attention…"
+              placeholder={t('eduC.sections.remarkPlaceholder')}
               style={{ flex: 1 }}
             />
             <button type="button" className="edu-btn" onClick={addRemark} disabled={!draft.trim()}>
-              <Plus size={13} /> Ajouter
+              <Plus size={13} /> {t('common.add')}
             </button>
           </div>
           {sorted.length === 0 ? (
             <p className="edu-sub" style={{ marginTop: 6 }}>
-              Aucune remarque pour le moment.
+              {t('eduC.sections.remarksEmpty')}
             </p>
           ) : (
             <ul className="edu-session-remarks">
@@ -313,15 +322,15 @@ export function RemarksSection({
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13.5, whiteSpace: 'pre-wrap' }}>{r.text}</div>
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
-                      {formatDate(r.createdAt, true)}
+                      {formatShortDate(r.createdAt, true)}
                     </div>
                   </div>
                   <button
                     type="button"
                     className="edu-btn-icon"
                     onClick={() => onChange(remarks.filter((x) => x.id !== r.id))}
-                    aria-label="Supprimer la remarque"
-                    title="Supprimer"
+                    aria-label={t('eduC.sections.removeRemark')}
+                    title={t('common.delete')}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -337,6 +346,7 @@ export function RemarksSection({
 
 /* ─── Section : Liens ────────────────────────────────────────────────── */
 export function LinksSection({ links, onChange }: { links: SessionLink[]; onChange: (v: SessionLink[]) => void }) {
+  const { t } = useI18n()
   const [expanded, setExpanded] = useState<boolean>(true)
   return (
     <div className="edu-session-block">
@@ -348,7 +358,7 @@ export function LinksSection({ links, onChange }: { links: SessionLink[]; onChan
       >
         {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <LinkIcon size={13} />
-        <span>Liens</span>
+        <span>{t('eduC.sections.links')}</span>
         {links.length > 0 && <span className="edu-side-badge">{links.length}</span>}
       </button>
       {expanded && (
@@ -358,7 +368,7 @@ export function LinksSection({ links, onChange }: { links: SessionLink[]; onChan
               <input
                 className="edu-input"
                 value={l.label}
-                placeholder="Libellé (Slides, Drive, vidéo…)"
+                placeholder={t('eduC.sections.linkLabelPlaceholder')}
                 onChange={(e) => {
                   const next = links.slice()
                   next[i] = { ...l, label: e.target.value }
@@ -383,8 +393,8 @@ export function LinksSection({ links, onChange }: { links: SessionLink[]; onChan
                   target="_blank"
                   rel="noopener noreferrer"
                   className="edu-btn-icon"
-                  aria-label="Ouvrir le lien"
-                  title="Ouvrir"
+                  aria-label={t('eduC.sections.openLink')}
+                  title={t('eduC.sections.open')}
                 >
                   <ExternalLink size={14} />
                 </a>
@@ -393,8 +403,8 @@ export function LinksSection({ links, onChange }: { links: SessionLink[]; onChan
                 type="button"
                 className="edu-btn-icon"
                 onClick={() => onChange(links.filter((_, j) => j !== i))}
-                aria-label="Supprimer le lien"
-                title="Supprimer"
+                aria-label={t('eduC.sections.removeLink')}
+                title={t('common.delete')}
               >
                 <Trash2 size={14} />
               </button>
@@ -406,7 +416,7 @@ export function LinksSection({ links, onChange }: { links: SessionLink[]; onChan
             style={{ marginTop: 4 }}
             onClick={() => onChange([...links, { id: makeShortId(), label: '', url: '' }])}
           >
-            <Plus size={13} /> Ajouter un lien
+            <Plus size={13} /> {t('eduC.sections.addLink')}
           </button>
         </div>
       )}

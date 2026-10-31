@@ -4,6 +4,9 @@ import { ApiError, apiDownload, apiFetch, apiUpload } from '../../lib/api'
 import { Plus, Check, X, Trash2, Calendar, User, ChevronDown, ChevronUp, Paperclip, MessageSquare } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useI18n } from '../../context/I18nContext'
+import { translate, type MessageKey } from '../../i18n'
+import { formatDate } from '../../i18n/format'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -49,7 +52,11 @@ interface Decision {
 
 function formatFileSize(bytes: number): string {
   if (!bytes) return ''
-  const units = ['o', 'Ko', 'Mo']
+  const units = [
+    translate('adminOps.decisions.unitByte'),
+    translate('adminOps.decisions.unitKb'),
+    translate('adminOps.decisions.unitMb'),
+  ]
   let size = bytes,
     i = 0
   while (size >= 1024 && i < units.length - 1) {
@@ -73,8 +80,9 @@ async function fetchDecisionBlob(
     const { blob } = await apiDownload(`/api/admin/decisions/${decisionId}/attachments/${index}/download`)
     return { blob }
   } catch (err) {
-    if (err instanceof ApiError) return { error: err.message || `Erreur ${err.status}` }
-    return { error: 'Erreur téléchargement' }
+    if (err instanceof ApiError)
+      return { error: err.message || translate('adminOps.decisions.errorStatus', { status: err.status }) }
+    return { error: translate('adminOps.decisions.downloadError') }
   }
 }
 
@@ -88,6 +96,7 @@ function forceDownload(objectUrl: string, name: string) {
 }
 
 function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose: () => void }) {
+  const { t } = useI18n()
   const isImage = preview.mimeType?.startsWith('image/')
   const isPdf = preview.mimeType === 'application/pdf'
   const isVideo = preview.mimeType?.startsWith('video/')
@@ -170,7 +179,7 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
                 fontSize: 13,
               }}
             >
-              Télécharger
+              {t('adminOps.decisions.download')}
             </button>
             <button
               type="button"
@@ -248,7 +257,7 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
                   fontSize: 14,
                 }}
               >
-                Télécharger
+                {t('adminOps.decisions.download')}
               </button>
             </div>
           )}
@@ -269,19 +278,22 @@ const PRIORITY_COLORS: Record<DecisionPriority, string> = {
 const CATEGORIES: DecisionCategory[] = ['BUDGET', 'EMBAUCHE', 'PROJET', 'PARTENARIAT', 'AUTRE']
 const PRIORITIES: DecisionPriority[] = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE']
 
-const STATUS_META: Record<Exclude<DecisionStatus, 'PENDING'>, { label: string; color: string; background: string }> = {
+const STATUS_META: Record<
+  Exclude<DecisionStatus, 'PENDING'>,
+  { label: MessageKey; color: string; background: string }
+> = {
   APPROVED: {
-    label: 'Approuvée',
+    label: 'adminOps.decisions.statusApproved',
     color: '#10b981',
     background: 'rgba(16,185,129,0.08)',
   },
   REJECTED: {
-    label: 'Rejetée',
+    label: 'adminOps.decisions.statusRejected',
     color: '#ef4444',
     background: 'rgba(239,68,68,0.08)',
   },
   IMPROVEMENT: {
-    label: 'À améliorer',
+    label: 'adminOps.decisions.statusImprovement',
     color: '#f59e0b',
     background: 'rgba(245,158,11,0.1)',
   },
@@ -289,19 +301,36 @@ const STATUS_META: Record<Exclude<DecisionStatus, 'PENDING'>, { label: string; c
 
 type Tab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPROVEMENT' | 'MINE'
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'PENDING', label: 'En attente' },
-  { key: 'APPROVED', label: 'Approuvées' },
-  { key: 'IMPROVEMENT', label: 'À améliorer' },
-  { key: 'REJECTED', label: 'Rejetées' },
-  { key: 'MINE', label: 'Mes soumissions' },
+const TABS: { key: Tab; label: MessageKey }[] = [
+  { key: 'PENDING', label: 'adminOps.decisions.tabPending' },
+  { key: 'APPROVED', label: 'adminOps.decisions.tabApproved' },
+  { key: 'IMPROVEMENT', label: 'adminOps.decisions.tabImprovement' },
+  { key: 'REJECTED', label: 'adminOps.decisions.tabRejected' },
+  { key: 'MINE', label: 'adminOps.decisions.tabMine' },
 ]
+
+// Les valeurs (BUDGET, BASSE…) sont envoyées à l'API : seul le libellé affiché est traduit.
+const CATEGORY_LABEL_KEYS = {
+  BUDGET: 'adminOps.decisions.categoryBudget',
+  EMBAUCHE: 'adminOps.decisions.categoryHiring',
+  PROJET: 'adminOps.decisions.categoryProject',
+  PARTENARIAT: 'adminOps.decisions.categoryPartnership',
+  AUTRE: 'adminOps.decisions.categoryOther',
+} as const satisfies Record<DecisionCategory, MessageKey>
+
+const PRIORITY_LABEL_KEYS = {
+  BASSE: 'adminOps.decisions.priorityLow',
+  NORMALE: 'adminOps.decisions.priorityNormal',
+  HAUTE: 'adminOps.decisions.priorityHigh',
+  URGENTE: 'adminOps.decisions.priorityUrgent',
+} as const satisfies Record<DecisionPriority, MessageKey>
 
 function getSubmitterId(d: Decision): string {
   return typeof d.submittedBy === 'string' ? d.submittedBy : d.submittedBy?._id || ''
 }
 
 export default function DecisionsList() {
+  const { t } = useI18n()
   const { user } = useAuth()
   const { showToast } = useToast()
   const isSuperAdmin = ['SUPER_ADMIN', 'PDG'].includes(user?.role || '')
@@ -322,7 +351,7 @@ export default function DecisionsList() {
   const openPreview = async (decisionId: string, index: number, name: string, mimeType: string) => {
     const result = await fetchDecisionBlob(decisionId, index)
     if (result.error || !result.blob) {
-      showToast(result.error ?? 'Erreur', 'error')
+      showToast(result.error ?? t('common.error'), 'error')
       return
     }
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
@@ -359,7 +388,7 @@ export default function DecisionsList() {
         }, {}),
       )
     } catch (err) {
-      setError((err as Error).message || 'Erreur de chargement')
+      setError((err as Error).message || translate('adminOps.decisions.loadError'))
     } finally {
       setLoading(false)
     }
@@ -379,7 +408,7 @@ export default function DecisionsList() {
       })
       await loadDecisions()
     } catch (err) {
-      window.alert((err as Error).message || 'Erreur')
+      window.alert((err as Error).message || t('common.error'))
     } finally {
       setActingId(null)
     }
@@ -395,7 +424,7 @@ export default function DecisionsList() {
       })
       await loadDecisions()
     } catch (err) {
-      window.alert((err as Error).message || 'Erreur')
+      window.alert((err as Error).message || t('common.error'))
     } finally {
       setActingId(null)
     }
@@ -411,7 +440,7 @@ export default function DecisionsList() {
       })
       await loadDecisions()
     } catch (err) {
-      window.alert((err as Error).message || 'Erreur')
+      window.alert((err as Error).message || t('common.error'))
     } finally {
       setActingId(null)
     }
@@ -427,22 +456,22 @@ export default function DecisionsList() {
       })
       setDecisions((prev) => prev.map((decision) => (decision._id === id ? data.decision : decision)))
       setCommentDrafts((prev) => ({ ...prev, [id]: data.decision.decisionComment || '' }))
-      showToast('Commentaire sauvegardé', 'success')
+      showToast(t('adminOps.decisions.commentSaved'), 'success')
     } catch (err) {
-      window.alert((err as Error).message || 'Erreur')
+      window.alert((err as Error).message || t('common.error'))
     } finally {
       setSavingCommentId(null)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Supprimer cette décision ?')) return
+    if (!window.confirm(t('adminOps.decisions.confirmDelete'))) return
     setActingId(id)
     try {
       await apiFetch(`/api/admin/decisions/${id}`, { method: 'DELETE' })
       await loadDecisions()
     } catch (err) {
-      window.alert((err as Error).message || 'Erreur')
+      window.alert((err as Error).message || t('common.error'))
     } finally {
       setActingId(null)
     }
@@ -452,39 +481,39 @@ export default function DecisionsList() {
     <div className="portal-container">
       <div className="admin-page-header">
         <div>
-          <h1>Décisions</h1>
-          <p className="admin-page-subtitle">Soumettez une décision à valider ou consultez celles en attente</p>
+          <h1>{t('adminOps.decisions.title')}</h1>
+          <p className="admin-page-subtitle">{t('adminOps.decisions.subtitle')}</p>
         </div>
         <div className="admin-quick-actions">
           <button type="button" className="portal-button" onClick={() => setShowCreate(true)}>
             <Plus size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-            Nouvelle décision
+            {t('adminOps.decisions.newDecision')}
           </button>
         </div>
       </div>
 
       {/* Onglets */}
       <div style={{ display: 'flex', gap: 6, marginTop: 18, marginBottom: 16, flexWrap: 'wrap' }}>
-        {TABS.map((t) => (
+        {TABS.map((tabDef) => (
           <button
-            key={t.key}
+            key={tabDef.key}
             type="button"
-            className={tab === t.key ? 'portal-button' : 'portal-button secondary'}
+            className={tab === tabDef.key ? 'portal-button' : 'portal-button secondary'}
             style={{ padding: '6px 14px', fontSize: 13 }}
-            onClick={() => setTab(t.key)}
+            onClick={() => setTab(tabDef.key)}
           >
-            {t.label}
+            {t(tabDef.label)}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <p style={{ color: 'var(--text-muted)' }}>Chargement…</p>
+        <p style={{ color: 'var(--text-muted)' }}>{t('adminOps.decisions.loading')}</p>
       ) : error ? (
         <p style={{ color: '#ef4444' }}>{error}</p>
       ) : decisions.length === 0 ? (
         <div className="admin-stat-card" style={{ textAlign: 'center', padding: 32 }}>
-          <p style={{ color: 'var(--text-muted)', margin: 0 }}>Aucune décision dans cette catégorie.</p>
+          <p style={{ color: 'var(--text-muted)', margin: 0 }}>{t('adminOps.decisions.empty')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -506,7 +535,7 @@ export default function DecisionsList() {
               >
                 <div className="decision-card-layout">
                   <span
-                    title={d.priority}
+                    title={d.priority in PRIORITY_LABEL_KEYS ? t(PRIORITY_LABEL_KEYS[d.priority]) : d.priority}
                     style={{
                       width: 10,
                       height: 10,
@@ -527,7 +556,9 @@ export default function DecisionsList() {
                       }}
                     >
                       <strong style={{ fontSize: 14 }}>{d.title}</strong>
-                      <span className="admin-badge">{d.category}</span>
+                      <span className="admin-badge">
+                        {d.category in CATEGORY_LABEL_KEYS ? t(CATEGORY_LABEL_KEYS[d.category]) : d.category}
+                      </span>
                     </div>
                     <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '6px 0' }}>
                       {!expanded && d.description.length > 200 ? d.description.slice(0, 200) + '…' : d.description}
@@ -545,7 +576,7 @@ export default function DecisionsList() {
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         <User size={11} /> {d.submittedByName}
                       </span>
-                      <span>{new Date(d.createdAt).toLocaleDateString('fr-FR')}</span>
+                      <span>{formatDate(d.createdAt)}</span>
                       {deadlineDate && (
                         <span
                           style={{
@@ -556,7 +587,7 @@ export default function DecisionsList() {
                           }}
                         >
                           <Calendar size={11} />
-                          Échéance : {deadlineDate.toLocaleDateString('fr-FR')}
+                          {t('adminOps.decisions.deadline', { date: formatDate(deadlineDate) })}
                         </span>
                       )}
                       <button
@@ -576,11 +607,11 @@ export default function DecisionsList() {
                       >
                         {expanded ? (
                           <>
-                            <ChevronUp size={12} /> Réduire
+                            <ChevronUp size={12} /> {t('adminOps.decisions.collapse')}
                           </>
                         ) : (
                           <>
-                            <ChevronDown size={12} /> Détails
+                            <ChevronDown size={12} /> {t('adminOps.decisions.details')}
                           </>
                         )}
                       </button>
@@ -608,7 +639,7 @@ export default function DecisionsList() {
                                 marginBottom: 4,
                               }}
                             >
-                              Contexte
+                              {t('adminOps.decisions.contextLabel')}
                             </div>
                             <div style={{ color: 'var(--text-muted)' }}>{d.context}</div>
                           </div>
@@ -623,7 +654,7 @@ export default function DecisionsList() {
                                 marginBottom: 4,
                               }}
                             >
-                              Options
+                              {t('adminOps.decisions.optionsLabel')}
                             </div>
                             <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--text-muted)' }}>
                               {d.options.map((opt, i) => (
@@ -642,7 +673,7 @@ export default function DecisionsList() {
                                 marginBottom: 4,
                               }}
                             >
-                              Recommandation
+                              {t('adminOps.decisions.recommendationLabel')}
                             </div>
                             <div style={{ color: 'var(--text-muted)' }}>{d.recommendation}</div>
                           </div>
@@ -658,7 +689,7 @@ export default function DecisionsList() {
                                 marginBottom: 4,
                               }}
                             >
-                              Adressé à
+                              {t('adminOps.decisions.recipientsLabel')}
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                               {d.recipients.map((r) => (
@@ -691,7 +722,7 @@ export default function DecisionsList() {
                               }}
                             >
                               <Paperclip size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                              Pièces jointes
+                              {t('adminOps.decisions.attachmentsLabel')}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                               {d.attachments.map((a, idx) => (
@@ -752,7 +783,7 @@ export default function DecisionsList() {
                                 marginBottom: 6,
                               }}
                             >
-                              Commentaire de décision
+                              {t('adminOps.decisions.decisionCommentLabel')}
                             </div>
                             {isSuperAdmin ? (
                               <>
@@ -764,7 +795,7 @@ export default function DecisionsList() {
                                   }
                                   rows={3}
                                   maxLength={2000}
-                                  placeholder="Note, consigne ou raison à conserver avec cette décision…"
+                                  placeholder={t('adminOps.decisions.commentPlaceholder')}
                                 />
                                 <div
                                   style={{
@@ -777,7 +808,7 @@ export default function DecisionsList() {
                                   }}
                                 >
                                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                    Ce commentaire sera visible après validation, rejet ou demande d'amélioration.
+                                    {t('adminOps.decisions.commentHint')}
                                   </span>
                                   <button
                                     type="button"
@@ -786,14 +817,16 @@ export default function DecisionsList() {
                                     disabled={savingCommentId === d._id}
                                     onClick={() => handleSaveComment(d._id)}
                                   >
-                                    {savingCommentId === d._id ? 'Sauvegarde…' : 'Sauvegarder'}
+                                    {savingCommentId === d._id
+                                      ? t('adminOps.decisions.saving')
+                                      : t('adminOps.decisions.save')}
                                   </button>
                                 </div>
                               </>
                             ) : d.decisionComment ? (
                               <div style={{ color: 'var(--text-muted)' }}>« {d.decisionComment} »</div>
                             ) : (
-                              <div style={{ color: 'var(--text-muted)' }}>Aucun commentaire pour l'instant.</div>
+                              <div style={{ color: 'var(--text-muted)' }}>{t('adminOps.decisions.noComment')}</div>
                             )}
                           </div>
                         )}
@@ -813,11 +846,15 @@ export default function DecisionsList() {
                                 marginBottom: 4,
                               }}
                             >
-                              {STATUS_META[d.status].label}
+                              {t(STATUS_META[d.status].label)}
                             </div>
                             <div style={{ fontSize: 12 }}>
-                              Par <strong>{d.decidedByName || '—'}</strong>
-                              {d.decidedAt && ` · le ${new Date(d.decidedAt).toLocaleDateString('fr-FR')}`}
+                              {t('adminOps.decisions.decidedBy', { name: '\u0000' })
+                                .split('\u0000')
+                                .flatMap((part, i) =>
+                                  i === 0 ? [part] : [<strong key="by">{d.decidedByName || '—'}</strong>, part],
+                                )}
+                              {d.decidedAt && t('adminOps.decisions.decidedOn', { date: formatDate(d.decidedAt) })}
                             </div>
                             {d.decisionComment && (
                               <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-muted)' }}>
@@ -841,7 +878,7 @@ export default function DecisionsList() {
                           onClick={() => handleApprove(d._id)}
                         >
                           <Check size={12} style={{ verticalAlign: 'middle', marginRight: 2 }} />
-                          Valider
+                          {t('adminOps.decisions.approve')}
                         </button>
                         <button
                           type="button"
@@ -850,7 +887,8 @@ export default function DecisionsList() {
                           disabled={actingId === d._id}
                           onClick={() => handleImprove(d._id)}
                         >
-                          <MessageSquare size={12} style={{ verticalAlign: 'middle', marginRight: 2 }} />À améliorer
+                          <MessageSquare size={12} style={{ verticalAlign: 'middle', marginRight: 2 }} />
+                          {t('adminOps.decisions.statusImprovement')}
                         </button>
                         <button
                           type="button"
@@ -860,7 +898,7 @@ export default function DecisionsList() {
                           onClick={() => handleReject(d._id)}
                         >
                           <X size={12} style={{ verticalAlign: 'middle', marginRight: 2 }} />
-                          Rejeter
+                          {t('adminOps.decisions.reject')}
                         </button>
                       </>
                     )}
@@ -873,7 +911,7 @@ export default function DecisionsList() {
                         onClick={() => handleDelete(d._id)}
                       >
                         <Trash2 size={12} style={{ verticalAlign: 'middle', marginRight: 2 }} />
-                        Supprimer
+                        {t('common.delete')}
                       </button>
                     )}
                   </div>
@@ -907,6 +945,7 @@ interface CreateModalProps {
 }
 
 function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
+  const { t } = useI18n()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState<DecisionCategory>('AUTRE')
@@ -952,11 +991,11 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (title.trim().length < 3 || title.trim().length > 200) {
-      setErr('Le titre doit faire entre 3 et 200 caractères')
+      setErr(t('adminOps.decisions.errTitleLength'))
       return
     }
     if (!description.trim()) {
-      setErr('La description est requise')
+      setErr(t('adminOps.decisions.errDescriptionRequired'))
       return
     }
     setSubmitting(true)
@@ -978,7 +1017,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
       await apiUpload('/api/admin/decisions', form)
       onCreated()
     } catch (e2) {
-      setErr((e2 as Error).message || 'Erreur')
+      setErr((e2 as Error).message || t('common.error'))
     } finally {
       setSubmitting(false)
     }
@@ -989,7 +1028,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
       <div className="dm-backdrop" onClick={onClose} />
       <form className="dm-modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
         <div className="dm-header">
-          <h2>Nouvelle demande de décision</h2>
+          <h2>{t('adminOps.decisions.modalTitle')}</h2>
           <button type="button" className="dm-close" onClick={onClose}>
             <X size={16} />
           </button>
@@ -997,7 +1036,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
 
         <div className="dm-body">
           <div className="dm-field">
-            <label className="dm-label">Titre *</label>
+            <label className="dm-label">{t('adminOps.decisions.titleLabel')}</label>
             <input
               className="portal-input"
               type="text"
@@ -1006,25 +1045,25 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
               required
               minLength={3}
               maxLength={200}
-              placeholder="Intitulé de la décision…"
+              placeholder={t('adminOps.decisions.titlePlaceholder')}
             />
           </div>
 
           <div className="dm-field">
-            <label className="dm-label">Description *</label>
+            <label className="dm-label">{t('adminOps.decisions.descriptionLabel')}</label>
             <textarea
               className="portal-input"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
               rows={3}
-              placeholder="Décrivez la décision à prendre…"
+              placeholder={t('adminOps.decisions.descriptionPlaceholder')}
             />
           </div>
 
           <div className="dm-row">
             <div className="dm-field">
-              <label className="dm-label">Catégorie</label>
+              <label className="dm-label">{t('adminOps.decisions.categoryLabel')}</label>
               <select
                 className="portal-input"
                 value={category}
@@ -1032,13 +1071,13 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
-                    {c}
+                    {t(CATEGORY_LABEL_KEYS[c])}
                   </option>
                 ))}
               </select>
             </div>
             <div className="dm-field">
-              <label className="dm-label">Priorité</label>
+              <label className="dm-label">{t('adminOps.decisions.priorityLabel')}</label>
               <select
                 className="portal-input"
                 value={priority}
@@ -1046,7 +1085,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
-                    {p}
+                    {t(PRIORITY_LABEL_KEYS[p])}
                   </option>
                 ))}
               </select>
@@ -1055,46 +1094,47 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
 
           <div className="dm-field">
             <label className="dm-label">
-              Contexte <small>(optionnel)</small>
+              {t('adminOps.decisions.contextLabel')} <small>{t('adminOps.decisions.optional')}</small>
             </label>
             <textarea
               className="portal-input"
               value={context}
               onChange={(e) => setContext(e.target.value)}
               rows={2}
-              placeholder="Informations de contexte utiles à la décision…"
+              placeholder={t('adminOps.decisions.contextPlaceholder')}
             />
           </div>
 
           <div className="dm-field">
             <label className="dm-label">
-              Options <small>(une par ligne — {parsedOptions.length}/10)</small>
+              {t('adminOps.decisions.optionsLabel')}{' '}
+              <small>{t('adminOps.decisions.optionsHint', { count: parsedOptions.length })}</small>
             </label>
             <textarea
               className="portal-input"
               value={optionsText}
               onChange={(e) => setOptionsText(e.target.value)}
               rows={3}
-              placeholder={'Option A\nOption B\nOption C'}
+              placeholder={t('adminOps.decisions.optionsPlaceholder')}
             />
           </div>
 
           <div className="dm-row">
             <div className="dm-field">
               <label className="dm-label">
-                Recommandation <small>(optionnel)</small>
+                {t('adminOps.decisions.recommendationLabel')} <small>{t('adminOps.decisions.optional')}</small>
               </label>
               <textarea
                 className="portal-input"
                 value={recommendation}
                 onChange={(e) => setRecommendation(e.target.value)}
                 rows={2}
-                placeholder="Votre recommandation…"
+                placeholder={t('adminOps.decisions.recommendationPlaceholder')}
               />
             </div>
             <div className="dm-field">
               <label className="dm-label">
-                Échéance <small>(optionnel)</small>
+                {t('adminOps.decisions.deadlineLabel')} <small>{t('adminOps.decisions.optional')}</small>
               </label>
               <input
                 className="portal-input"
@@ -1107,11 +1147,11 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
 
           <div className="dm-field">
             <label className="dm-label">
-              Adresser à <small>(en plus des admins)</small>
+              {t('adminOps.decisions.addressTo')} <small>{t('adminOps.decisions.addressToHint')}</small>
             </label>
             <div className="dm-chips">
               {allUsers.length === 0 ? (
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement…</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('adminOps.decisions.loading')}</span>
               ) : (
                 allUsers.map((u) => {
                   const sel = selectedRecipients.some((r) => r._id === u._id)
@@ -1132,7 +1172,7 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
 
           <div className="dm-field">
             <label className="dm-label">
-              Pièces jointes <small>(max 5 × 20 Mo)</small>
+              {t('adminOps.decisions.attachmentsLabel')} <small>{t('adminOps.decisions.attachmentsHint')}</small>
             </label>
             <input
               ref={fileInputRef}
@@ -1148,8 +1188,8 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
               <Paperclip size={14} />
               <span>
                 {fileNames.length === 0
-                  ? 'Cliquer pour ajouter des fichiers…'
-                  : `${fileNames.length} fichier(s) sélectionné(s)`}
+                  ? t('adminOps.decisions.filesPrompt')
+                  : t('adminOps.decisions.filesSelected', { count: fileNames.length })}
               </span>
             </button>
             {fileNames.length > 0 && (
@@ -1169,10 +1209,10 @@ function CreateDecisionModal({ onClose, onCreated }: CreateModalProps) {
 
         <div className="dm-footer">
           <button type="button" className="portal-button secondary" onClick={onClose} disabled={submitting}>
-            Annuler
+            {t('common.cancel')}
           </button>
           <button type="submit" className="portal-button" disabled={submitting}>
-            {submitting ? 'Envoi…' : 'Soumettre la demande'}
+            {submitting ? t('adminOps.decisions.sending') : t('adminOps.decisions.submit')}
           </button>
         </div>
       </form>

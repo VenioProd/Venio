@@ -1,4 +1,5 @@
-import { ACCOUNTING, ActionForm, Field, labels, text, write } from './shared'
+import { useI18n } from '../../../../context/I18nContext'
+import { ACCOUNTING, ActionForm, Field, labelFor, text, write } from './shared'
 import type { Beneficiary } from './types'
 
 export default function BeneficiaryForm({
@@ -8,10 +9,11 @@ export default function BeneficiaryForm({
   beneficiary?: Beneficiary
   onSaved: () => Promise<void>
 }) {
+  const { t } = useI18n()
   return (
     <ActionForm
       retryable={!!beneficiary}
-      label={beneficiary ? 'Enregistrer le bénéficiaire' : 'Créer le bénéficiaire'}
+      label={beneficiary ? t('accProjects.beneficiaryForm.save') : t('accProjects.beneficiaryForm.create')}
       onSaved={onSaved}
       submit={(data, key) =>
         write(
@@ -32,37 +34,37 @@ export default function BeneficiaryForm({
       }
     >
       <div className="pf-grid">
-        <Field label="Nom">
+        <Field label={t('accProjects.cols.name')}>
           <input name="displayName" required defaultValue={beneficiary?.displayName || ''} />
         </Field>
-        <Field label="Type">
+        <Field label={t('accProjects.cols.type')}>
           <select name="kind" defaultValue={beneficiary?.kind || 'FREELANCE'}>
             {['ASSOCIE', 'COMMERCIAL', 'FREELANCE', 'APPORTEUR'].map((kind) => (
               <option key={kind} value={kind}>
-                {labels[kind]}
+                {labelFor(t, kind)}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="E-mail">
+        <Field label={t('accProjects.cols.email')}>
           <input name="email" type="email" defaultValue={beneficiary?.email || ''} />
         </Field>
         <Field label="SIRET">
           <input name="siret" defaultValue={beneficiary?.siret || ''} />
         </Field>
-        <Field label="Identifiant de l’utilisateur interne (facultatif)">
+        <Field label={t('accProjects.beneficiaryForm.userId')}>
           <input name="user" pattern="[a-fA-F0-9]{24}" defaultValue={beneficiary?.user || ''} />
         </Field>
-        <Field label="Compte de charge par défaut">
+        <Field label={t('accProjects.beneficiaryForm.defaultAccount')}>
           <input name="defaultAccountCode" required defaultValue={beneficiary?.defaultAccountCode || '604000'} />
         </Field>
-        <Field label="Mode de versement">
+        <Field label={t('accProjects.beneficiaryForm.settlementMode')}>
           <select name="settlementMode" defaultValue={beneficiary?.settlementMode || 'BANQUE'}>
-            <option value="BANQUE">Banque</option>
-            <option value="PAIE">Paie</option>
+            <option value="BANQUE">{labelFor(t, 'BANQUE')}</option>
+            <option value="PAIE">{labelFor(t, 'PAIE')}</option>
           </select>
         </Field>
-        <Field label="Assujetti à la TVA">
+        <Field label={t('accProjects.beneficiaryForm.vatRegistered')}>
           <input name="vatRegistered" type="checkbox" defaultChecked={beneficiary?.vatRegistered || false} />
         </Field>
       </div>

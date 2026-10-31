@@ -15,6 +15,7 @@ import {
   type DevIssueEvent,
   type DevProject,
 } from '../../../services/dev'
+import { useI18n } from '../../../context/I18nContext'
 import { CI_STATUS_LABEL, ciStatusTone, formatRelative, PRIORITY_ICON } from './helpers'
 import { ReviewEvidence, criterion } from './ReviewEvidence'
 import './ReviewQueue.css'
@@ -35,6 +36,7 @@ export function ReviewQueue({
   onClose: () => void
   onChanged: () => void
 }) {
+  const { t } = useI18n()
   const loadRequest = useRef(0)
   const [detailRevision, setDetailRevision] = useState(0)
   const [queue, setQueue] = useState<DevIssue[]>([])
@@ -69,12 +71,11 @@ export function ReviewQueue({
       setRejectOpen(false)
       setRejectDraft('')
     } catch (err) {
-      if (request === loadRequest.current)
-        setError(err instanceof Error ? err.message : 'Impossible de charger la file de revue')
+      if (request === loadRequest.current) setError(err instanceof Error ? err.message : t('devA.review.loadError'))
     } finally {
       if (request === loadRequest.current) setLoading(false)
     }
-  }, [projectFilter])
+  }, [projectFilter, t])
 
   useEffect(() => {
     load()
@@ -96,7 +97,7 @@ export function ReviewQueue({
         if (!cancelled) setDetail(d)
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Impossible de charger les preuves')
+        if (!cancelled) setError(err instanceof Error ? err.message : t('devA.review.evidenceLoadError'))
       })
     return () => {
       cancelled = true
@@ -130,25 +131,25 @@ export function ReviewQueue({
   const approve = useCallback(async () => {
     if (!canManage || !active || acting || evidenceBusy || !detail || detail.issue._id !== active._id) return
     if ((detail.issue.acceptanceCriteria ?? []).some((value) => !criterion(value).checked)) {
-      setError('Vérifiez les critères d’acceptation avant de terminer cette tâche.')
+      setError(t('devA.review.criteriaFirst'))
       return
     }
     setActing(true)
     setError(null)
     try {
       const fresh = await getDevIssue(active._id)
-      if (fresh.issue.status !== 'IN_REVIEW') throw new Error('Le statut de cette tâche a changé. Rechargez la file.')
+      if (fresh.issue.status !== 'IN_REVIEW') throw new Error(t('devA.review.statusChanged'))
       if ((fresh.issue.acceptanceCriteria ?? []).some((value) => !criterion(value).checked))
-        throw new Error('Des critères restent à vérifier.')
+        throw new Error(t('devA.review.criteriaPending'))
       await updateDevIssue(active._id, { status: 'DONE' })
       removeFromQueue(active._id)
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Échec de l'approbation")
+      setError(err instanceof Error ? err.message : t('devA.review.approveFailed'))
     } finally {
       setActing(false)
     }
-  }, [canManage, active, acting, evidenceBusy, detail, onChanged, removeFromQueue])
+  }, [canManage, active, acting, evidenceBusy, detail, onChanged, removeFromQueue, t])
 
   const submitReject = useCallback(async () => {
     const text = rejectDraft.trim()
@@ -161,11 +162,11 @@ export function ReviewQueue({
       removeFromQueue(active._id)
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Échec du renvoi')
+      setError(err instanceof Error ? err.message : t('devA.review.rejectFailed'))
     } finally {
       setActing(false)
     }
-  }, [canManage, active, acting, evidenceBusy, onChanged, rejectDraft, removeFromQueue])
+  }, [canManage, active, acting, evidenceBusy, onChanged, rejectDraft, removeFromQueue, t])
 
   // Raccourcis clavier (ignorés quand le focus est dans un champ).
   useEffect(() => {
@@ -201,30 +202,28 @@ export function ReviewQueue({
 
   return (
     <WorkspaceOverlayPortal>
-      <div className="review-queue-overlay" role="dialog" aria-label="File de revue">
+      <div className="review-queue-overlay" role="dialog" aria-label={t('devA.review.aria')}>
         <header className="review-queue-header">
           <button
             className="review-queue-close"
             disabled={acting || evidenceBusy}
             onClick={onClose}
-            title="Fermer (Esc)"
+            title={t('devA.review.closeTitle')}
           >
             <X size={16} />
           </button>
           <div className="review-queue-heading">
-            <h2>À valider</h2>
-            <span className="review-queue-sub">
-              {processed} traitée(s) · {queue.length} restante(s)
-            </span>
+            <h2>{t('devA.list.groupReview')}</h2>
+            <span className="review-queue-sub">{t('devA.review.counter', { processed, remaining: queue.length })}</span>
           </div>
           <select
             className="dev-select"
             disabled={acting || evidenceBusy}
             value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
-            aria-label="Filtrer par projet"
+            aria-label={t('devA.review.filterAria')}
           >
-            <option value="">Tous projets</option>
+            <option value="">{t('devA.toolbar.allProjects')}</option>
             {projects.map((p) => (
               <option key={p._id} value={p._id}>
                 {p.key} · {p.name}
@@ -237,21 +236,21 @@ export function ReviewQueue({
           <div className="review-queue-error">
             {error}
             <button className="dev-btn subtle" disabled={acting || evidenceBusy} onClick={load}>
-              Réessayer
+              {t('devA.common.retry')}
             </button>
           </div>
         )}
 
         {loading ? (
-          <div className="review-queue-empty">Chargement…</div>
+          <div className="review-queue-empty">{t('devA.common.loading')}</div>
         ) : queue.length === 0 ? (
           <div className="review-queue-empty">
             <span className="review-queue-empty-emoji" aria-hidden>
               🎉
             </span>
-            <span>Rien à valider</span>
+            <span>{t('devA.review.nothing')}</span>
             <button className="dev-btn primary" onClick={onClose}>
-              Fermer
+              {t('common.close')}
             </button>
           </div>
         ) : (
@@ -314,14 +313,14 @@ export function ReviewQueue({
                       <div className="review-queue-description">{detail.issue.description}</div>
                     ) : (
                       <div className="review-queue-description muted">
-                        {detail ? 'Pas de description.' : 'Chargement…'}
+                        {detail ? t('devA.review.noDescription') : t('devA.common.loading')}
                       </div>
                     )}
 
                     {github?.prUrl && (
                       <div className="review-queue-github">
                         <span className="review-queue-github-title">
-                          <GitPullRequest size={14} /> Pull request
+                          <GitPullRequest size={14} /> {t('devA.review.pullRequest')}
                         </span>
                         <a href={github.prUrl} target="_blank" rel="noopener noreferrer">
                           {github.prNumber ? `#${github.prNumber}` : github.prUrl}
@@ -329,7 +328,7 @@ export function ReviewQueue({
                         {github.branch && <code className="review-queue-branch">{github.branch}</code>}
                         {github.ciStatus && (
                           <span className={`review-queue-ci tone-${ciStatusTone(github.ciStatus)}`}>
-                            CI : {CI_STATUS_LABEL[github.ciStatus]}
+                            {t('devA.review.ciStatus', { status: CI_STATUS_LABEL[github.ciStatus] })}
                           </span>
                         )}
                       </div>
@@ -359,12 +358,14 @@ export function ReviewQueue({
 
                     <div className="review-queue-comments">
                       <span className="review-queue-section-label">
-                        Commentaires{detail ? ` (${detail.comments.length})` : ''}
+                        {detail
+                          ? t('devA.review.commentsCount', { count: detail.comments.length })
+                          : t('devA.review.comments')}
                       </span>
                       {!detail ? (
-                        <div className="review-queue-muted">Chargement…</div>
+                        <div className="review-queue-muted">{t('devA.common.loading')}</div>
                       ) : lastComments.length === 0 ? (
-                        <div className="review-queue-muted">Aucun commentaire.</div>
+                        <div className="review-queue-muted">{t('devA.review.noComments')}</div>
                       ) : (
                         lastComments.map((c) => (
                           <div key={c._id} className="review-queue-comment">
@@ -383,7 +384,7 @@ export function ReviewQueue({
                         <textarea
                           autoFocus
                           value={rejectDraft}
-                          placeholder="Pourquoi cette issue est renvoyée ? (obligatoire)"
+                          placeholder={t('devA.review.rejectPlaceholder')}
                           onChange={(e) => setRejectDraft(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Escape') {
@@ -397,14 +398,14 @@ export function ReviewQueue({
                         />
                         <div className="review-queue-reject-actions">
                           <button className="dev-btn subtle" onClick={() => setRejectOpen(false)}>
-                            Annuler
+                            {t('common.cancel')}
                           </button>
                           <button
                             className="dev-btn primary"
                             disabled={!canManage || !rejectDraft.trim() || acting || evidenceBusy}
                             onClick={() => void submitReject()}
                           >
-                            Renvoyer en cours (⌘⏎)
+                            {t('devA.review.rejectSubmit')}
                           </button>
                         </div>
                       </div>
@@ -426,25 +427,25 @@ export function ReviewQueue({
                 }
                 onClick={() => void approve()}
               >
-                <Check size={13} /> Approuver (a)
+                <Check size={13} /> {t('devA.review.approve')}
               </button>
               <button
                 className="dev-btn"
                 disabled={!canManage || acting || evidenceBusy}
                 onClick={() => setRejectOpen(true)}
               >
-                <Undo2 size={13} /> Renvoyer (r)
+                <Undo2 size={13} /> {t('devA.review.reject')}
               </button>
               <span className="review-queue-nav">
-                <button className="dev-btn subtle" onClick={goPrev} title="Précédent (k)">
+                <button className="dev-btn subtle" onClick={goPrev} title={t('devA.review.previousTitle')}>
                   <ChevronUp size={13} />
                 </button>
-                <button className="dev-btn subtle" onClick={goNext} title="Suivant (j)">
+                <button className="dev-btn subtle" onClick={goNext} title={t('devA.review.nextTitle')}>
                   <ChevronDown size={13} />
                 </button>
               </span>
               <span className="review-queue-counter">
-                <Keyboard size={13} /> {processed} traitée(s) · {queue.length} restante(s)
+                <Keyboard size={13} /> {t('devA.review.counter', { processed, remaining: queue.length })}
               </span>
             </footer>
           </>

@@ -1,3 +1,5 @@
+import { useI18n } from '../../../../context/I18nContext'
+
 interface RotateKeyModalProps {
   apiKey: string
   webhookSecret: string
@@ -15,6 +17,7 @@ export default function RotateKeyModal({
   onCopy,
   onClose,
 }: RotateKeyModalProps) {
+  const { t } = useI18n()
   return (
     <div
       style={{
@@ -38,7 +41,7 @@ export default function RotateKeyModal({
           overflow: 'auto',
         }}
       >
-        <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Nouvelle clé API et nouveau secret</h2>
+        <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>{t('accVat.esd.rotateHeading')}</h2>
 
         <div
           className="accounting-message"
@@ -48,8 +51,7 @@ export default function RotateKeyModal({
             color: '#fde68a',
           }}
         >
-          ⚠ L'ancienne clé est invalidée. Ces nouvelles valeurs ne seront PLUS jamais affichées. Mettez à jour la
-          configuration du site tiers immédiatement.
+          ⚠ {t('accVat.esd.rotateWarning')}
           {warning && <div style={{ marginTop: 6, fontSize: '0.82rem', opacity: 0.85 }}>{warning}</div>}
         </div>
 
@@ -63,7 +65,7 @@ export default function RotateKeyModal({
               marginBottom: 6,
             }}
           >
-            Clé API
+            {t('accVat.esd.apiKey')}
           </div>
           <div
             style={{
@@ -86,7 +88,7 @@ export default function RotateKeyModal({
             style={{ marginTop: 8 }}
             onClick={() => onCopy(apiKey, 'key')}
           >
-            {copyState.key ? '✓ Copié' : '📋 Copier la clé'}
+            {copyState.key ? t('accVat.modal.copied') : t('accVat.src.copyKey')}
           </button>
         </div>
 
@@ -100,7 +102,7 @@ export default function RotateKeyModal({
               marginBottom: 6,
             }}
           >
-            Secret de signature webhook
+            {t('accVat.esd.webhookSecret')}
           </div>
           <div
             style={{
@@ -123,7 +125,7 @@ export default function RotateKeyModal({
             style={{ marginTop: 8 }}
             onClick={() => onCopy(webhookSecret, 'secret')}
           >
-            {copyState.secret ? '✓ Copié' : '📋 Copier le secret'}
+            {copyState.secret ? t('accVat.modal.copied') : t('accVat.src.copySecret')}
           </button>
         </div>
 
@@ -136,7 +138,7 @@ export default function RotateKeyModal({
           }}
         >
           <button type="button" className="portal-button" onClick={onClose}>
-            J'ai bien noté → Fermer
+            {t('accVat.src.noted')}
           </button>
         </div>
       </div>

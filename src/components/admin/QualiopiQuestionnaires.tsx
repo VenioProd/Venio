@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { apiDownload, apiFetch } from '../../lib/api'
 import { useConfirm } from '../../hooks/useConfirm'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate } from '../../i18n/format'
+import type { MessageKey } from '../../i18n'
 
 interface Question {
   type: 'rating' | 'text' | 'multiple_choice'
@@ -41,13 +44,14 @@ interface QuestionnaireFull {
 
 type View = 'list' | 'create' | 'detail'
 
-const QUESTION_TYPES = [
-  { value: 'rating', label: 'Note /5' },
-  { value: 'text', label: 'Texte libre' },
-  { value: 'multiple_choice', label: 'Choix multiples' },
+const QUESTION_TYPES: { value: string; labelKey: MessageKey }[] = [
+  { value: 'rating', labelKey: 'compA.qualiopi.typeRating' },
+  { value: 'text', labelKey: 'compA.qualiopi.typeText' },
+  { value: 'multiple_choice', labelKey: 'compA.qualiopi.typeChoice' },
 ]
 
 const QualiopiQuestionnaires = () => {
+  const { t } = useI18n()
   const [view, setView] = useState<View>('list')
   const [questionnaires, setQuestionnaires] = useState<QuestionnaireListItem[]>([])
   const [selected, setSelected] = useState<QuestionnaireFull | null>(null)
@@ -147,8 +151,7 @@ const QualiopiQuestionnaires = () => {
   }
 
   const handleDelete = async (id: string) => {
-    if (!(await confirm({ message: 'Supprimer ce questionnaire et toutes ses reponses ?', title: 'Suppression' })))
-      return
+    if (!(await confirm({ message: t('compA.qualiopi.deleteConfirm'), title: t('compA.qualiopi.deleteTitle') }))) return
     await apiFetch(`/api/admin/qualiopi-questionnaires/${id}`, { method: 'DELETE' })
     await loadList()
     if (selected?._id === id) {
@@ -158,7 +161,10 @@ const QualiopiQuestionnaires = () => {
   }
 
   const deleteResponse = async (qId: string, rId: string) => {
-    if (!(await confirm({ message: 'Supprimer cette reponse ?', title: 'Suppression' }))) return
+    if (
+      !(await confirm({ message: t('compA.qualiopi.deleteResponseConfirm'), title: t('compA.qualiopi.deleteTitle') }))
+    )
+      return
     await apiFetch(`/api/admin/qualiopi-questionnaires/${qId}/responses/${rId}`, { method: 'DELETE' })
     openDetail(qId)
   }
@@ -217,7 +223,8 @@ const QualiopiQuestionnaires = () => {
   }
 
   const deleteCreationLink = async (id: string) => {
-    if (!(await confirm({ message: 'Supprimer ce lien de creation ?', title: 'Suppression' }))) return
+    if (!(await confirm({ message: t('compA.qualiopi.deleteLinkConfirm'), title: t('compA.qualiopi.deleteTitle') })))
+      return
     try {
       await apiFetch(`/api/admin/qualiopi-questionnaires/creation-links/${id}`, { method: 'DELETE' })
       await loadCreationLinks()
@@ -290,7 +297,7 @@ const QualiopiQuestionnaires = () => {
       <div className="qq-container">
         {ConfirmDialog}
         <div className="qq-header">
-          <h2 className="qq-title">Questionnaires de satisfaction</h2>
+          <h2 className="qq-title">{t('compA.qualiopi.title')}</h2>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
               className="qq-create-btn"
@@ -305,14 +312,14 @@ const QualiopiQuestionnaires = () => {
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
               </svg>
-              Lien de creation
+              {t('compA.qualiopi.creationLink')}
             </button>
             <button className="qq-create-btn" onClick={openCreate}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Nouveau questionnaire
+              {t('compA.qualiopi.new')}
             </button>
           </div>
         </div>
@@ -332,9 +339,9 @@ const QualiopiQuestionnaires = () => {
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}
             >
               <h3 className="qq-section-title" style={{ margin: 0, border: 'none', padding: 0 }}>
-                Liens de creation
+                {t('compA.qualiopi.creationLinks')}
               </h3>
-              <button className="qq-icon-btn" onClick={() => setShowCreationLinks(false)} title="Fermer">
+              <button className="qq-icon-btn" onClick={() => setShowCreationLinks(false)} title={t('common.close')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
@@ -356,24 +363,24 @@ const QualiopiQuestionnaires = () => {
                 }}
                 value={creationLabel}
                 onChange={(e) => setCreationLabel(e.target.value)}
-                placeholder="Label (optionnel)"
+                placeholder={t('compA.qualiopi.labelPlaceholder')}
               />
               <button className="qq-create-btn" onClick={generateCreationLink} style={{ whiteSpace: 'nowrap' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                Generer
+                {t('compA.qualiopi.generate')}
               </button>
             </div>
 
             {creationLoading ? (
-              <div className="qq-loading">Chargement...</div>
+              <div className="qq-loading">{t('common.loading')}</div>
             ) : creationLinks.length === 0 ? (
               <div
                 style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', textAlign: 'center', padding: '12px 0' }}
               >
-                Aucun lien de creation
+                {t('compA.qualiopi.noCreationLink')}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -382,12 +389,12 @@ const QualiopiQuestionnaires = () => {
                     <span className="qq-link-label">{link.label}</span>
                     <code className="qq-link-url">{getCreationLink(link.token)}</code>
                     <button className="qq-copy-btn" onClick={() => copyCreationLink(link.token)}>
-                      {copiedCreation === link.token ? '✓ Copie !' : 'Copier'}
+                      {copiedCreation === link.token ? t('compA.qualiopi.copied') : t('compA.qualiopi.copy')}
                     </button>
                     <button
                       className="qq-icon-btn qq-icon-btn-danger"
                       onClick={() => deleteCreationLink(link._id)}
-                      title="Supprimer"
+                      title={t('common.delete')}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -401,7 +408,7 @@ const QualiopiQuestionnaires = () => {
         )}
 
         {loading ? (
-          <div className="qq-loading">Chargement...</div>
+          <div className="qq-loading">{t('common.loading')}</div>
         ) : questionnaires.length === 0 ? (
           <div className="qq-empty">
             <svg
@@ -415,8 +422,8 @@ const QualiopiQuestionnaires = () => {
               <path d="M9 11l3 3L22 4" />
               <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
             </svg>
-            <p>Aucun questionnaire cree</p>
-            <p className="qq-empty-sub">Creez votre premier questionnaire de satisfaction</p>
+            <p>{t('compA.qualiopi.emptyTitle')}</p>
+            <p className="qq-empty-sub">{t('compA.qualiopi.emptySub')}</p>
           </div>
         ) : (
           <div className="qq-list">
@@ -425,18 +432,21 @@ const QualiopiQuestionnaires = () => {
                 <div className="qq-card-left">
                   <div className="qq-card-title">{q.title}</div>
                   <div className="qq-card-meta">
-                    {q.questionCount} question(s) · {q.responseCount} reponse(s) ·{' '}
-                    {new Date(q.createdAt).toLocaleDateString('fr-FR')}
+                    {t('compA.qualiopi.cardMeta', {
+                      questions: q.questionCount,
+                      responses: q.responseCount,
+                      date: formatDate(q.createdAt),
+                    })}
                   </div>
                 </div>
                 <div className="qq-card-right" onClick={(e) => e.stopPropagation()}>
                   <span className={`qq-badge ${q.active ? 'qq-badge-active' : 'qq-badge-inactive'}`}>
-                    {q.active ? 'Actif' : 'Inactif'}
+                    {q.active ? t('compA.qualiopi.active') : t('compA.qualiopi.inactive')}
                   </span>
                   <button
                     className="qq-icon-btn"
                     onClick={() => toggleActive(q._id, q.active)}
-                    title={q.active ? 'Desactiver' : 'Activer'}
+                    title={q.active ? t('compA.qualiopi.deactivate') : t('compA.qualiopi.activate')}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       {q.active ? (
@@ -456,7 +466,7 @@ const QualiopiQuestionnaires = () => {
                   <button
                     className="qq-icon-btn qq-icon-btn-danger"
                     onClick={() => handleDelete(q._id)}
-                    title="Supprimer"
+                    title={t('common.delete')}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -476,39 +486,39 @@ const QualiopiQuestionnaires = () => {
     return (
       <div className="qq-container">
         <button className="qq-back" onClick={() => setView('list')}>
-          ← Retour
+          {t('compA.qualiopi.back')}
         </button>
-        <h2 className="qq-title">{editingId ? 'Modifier le questionnaire' : 'Nouveau questionnaire'}</h2>
+        <h2 className="qq-title">{editingId ? t('compA.qualiopi.editTitle') : t('compA.qualiopi.new')}</h2>
 
         <div className="qq-form">
           <div className="qq-field">
-            <label>Titre</label>
+            <label>{t('compA.taskBoard.fTitle')}</label>
             <input
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
-              placeholder="Ex: Satisfaction formation React"
+              placeholder={t('compA.qualiopi.titlePlaceholder')}
             />
           </div>
           <div className="qq-field">
-            <label>Description (optionnel)</label>
+            <label>{t('compA.qualiopi.descriptionLabel')}</label>
             <textarea
               value={formDesc}
               onChange={(e) => setFormDesc(e.target.value)}
-              placeholder="Decrivez le questionnaire..."
+              placeholder={t('compA.qualiopi.descriptionPlaceholder')}
               rows={2}
             />
           </div>
 
-          <h3 className="qq-section-title">Questions</h3>
+          <h3 className="qq-section-title">{t('compA.qualiopi.questions')}</h3>
 
           {formQuestions.map((q, i) => (
             <div key={i} className="qq-question-card">
               <div className="qq-question-header">
                 <span className="qq-question-num">Q{i + 1}</span>
                 <select value={q.type} onChange={(e) => updateQuestion(i, { type: e.target.value as any })}>
-                  {QUESTION_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
+                  {QUESTION_TYPES.map((qt) => (
+                    <option key={qt.value} value={qt.value}>
+                      {t(qt.labelKey)}
                     </option>
                   ))}
                 </select>
@@ -518,7 +528,7 @@ const QualiopiQuestionnaires = () => {
                     checked={q.required}
                     onChange={(e) => updateQuestion(i, { required: e.target.checked })}
                   />
-                  Obligatoire
+                  {t('compA.qualiopi.required')}
                 </label>
                 {formQuestions.length > 1 && (
                   <button className="qq-remove-q" onClick={() => removeQuestion(i)}>
@@ -532,7 +542,7 @@ const QualiopiQuestionnaires = () => {
                 className="qq-question-label"
                 value={q.label}
                 onChange={(e) => updateQuestion(i, { label: e.target.value })}
-                placeholder="Intitule de la question..."
+                placeholder={t('compA.qualiopi.questionPlaceholder')}
               />
               {q.type === 'multiple_choice' && (
                 <div className="qq-options">
@@ -545,7 +555,7 @@ const QualiopiQuestionnaires = () => {
                           newOpts[oi] = e.target.value
                           updateQuestion(i, { options: newOpts })
                         }}
-                        placeholder={`Option ${oi + 1}`}
+                        placeholder={t('compA.qualiopi.optionPlaceholder', { n: oi + 1 })}
                       />
                       <button
                         className="qq-remove-opt"
@@ -556,28 +566,28 @@ const QualiopiQuestionnaires = () => {
                     </div>
                   ))}
                   <button className="qq-add-opt" onClick={() => updateQuestion(i, { options: [...q.options, ''] })}>
-                    + Ajouter une option
+                    {t('compA.qualiopi.addOption')}
                   </button>
                 </div>
               )}
-              {q.type === 'rating' && <div className="qq-rating-preview">★★★★★ (Note de 1 a 5)</div>}
+              {q.type === 'rating' && <div className="qq-rating-preview">{t('compA.qualiopi.ratingPreview')}</div>}
             </div>
           ))}
 
           <button className="qq-add-question" onClick={addQuestion}>
-            + Ajouter une question
+            {t('compA.qualiopi.addQuestion')}
           </button>
 
           <div className="qq-form-actions">
             <button className="qq-cancel" onClick={() => setView('list')}>
-              Annuler
+              {t('common.cancel')}
             </button>
             <button
               className="qq-save"
               onClick={handleSave}
               disabled={!formTitle.trim() || formQuestions.some((q) => !q.label.trim())}
             >
-              {editingId ? 'Enregistrer' : 'Creer le questionnaire'}
+              {editingId ? t('common.save') : t('compA.qualiopi.create')}
             </button>
           </div>
         </div>
@@ -598,7 +608,7 @@ const QualiopiQuestionnaires = () => {
             setSelected(null)
           }}
         >
-          ← Retour
+          {t('compA.qualiopi.back')}
         </button>
 
         <div className="qq-detail-header">
@@ -608,23 +618,23 @@ const QualiopiQuestionnaires = () => {
           </div>
           <div className="qq-detail-actions">
             <button className="qq-edit-btn" onClick={() => openEdit(selected)}>
-              Modifier
+              {t('common.edit')}
             </button>
             <button
               className={`qq-toggle-btn ${selected.active ? '' : 'inactive'}`}
               onClick={() => toggleActive(selected._id, selected.active)}
             >
-              {selected.active ? 'Desactiver' : 'Activer'}
+              {selected.active ? t('compA.qualiopi.deactivate') : t('compA.qualiopi.activate')}
             </button>
           </div>
         </div>
 
         {/* Link */}
         <div className="qq-link-box">
-          <span className="qq-link-label">Lien public :</span>
+          <span className="qq-link-label">{t('compA.qualiopi.publicLink')}</span>
           <code className="qq-link-url">{getPublicLink(selected.token)}</code>
           <button className="qq-copy-btn" onClick={() => copyLink(selected.token)}>
-            {copied ? '✓ Copie !' : 'Copier'}
+            {copied ? t('compA.qualiopi.copied') : t('compA.qualiopi.copy')}
           </button>
         </div>
 
@@ -633,7 +643,7 @@ const QualiopiQuestionnaires = () => {
           <div className="qq-stats">
             <div className="qq-stat-card">
               <div className="qq-stat-value">{selected.responses.length}</div>
-              <div className="qq-stat-label">Reponses</div>
+              <div className="qq-stat-label">{t('compA.qualiopi.responses')}</div>
             </div>
             {stats.map(
               (s, i) =>
@@ -651,10 +661,10 @@ const QualiopiQuestionnaires = () => {
         )}
 
         {/* Responses */}
-        <h3 className="qq-section-title">Reponses ({selected.responses.length})</h3>
+        <h3 className="qq-section-title">{t('compA.qualiopi.responsesCount', { n: selected.responses.length })}</h3>
 
         {selected.responses.length === 0 ? (
-          <div className="qq-empty-responses">Aucune reponse pour le moment</div>
+          <div className="qq-empty-responses">{t('compA.qualiopi.noResponse')}</div>
         ) : (
           <div className="qq-responses">
             {selected.responses.map((r) => (
@@ -667,7 +677,7 @@ const QualiopiQuestionnaires = () => {
                   </div>
                   <div className="qq-response-meta">
                     <span className="qq-response-date">
-                      {new Date(r.submittedAt).toLocaleDateString('fr-FR', {
+                      {formatDate(r.submittedAt, {
                         day: '2-digit',
                         month: 'short',
                         year: 'numeric',
@@ -676,7 +686,7 @@ const QualiopiQuestionnaires = () => {
                     <button
                       className="qq-dl-btn"
                       onClick={() => downloadPdf(selected._id, r._id, r.respondentName)}
-                      title="Telecharger PDF"
+                      title={t('compA.qualiopi.downloadPdf')}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -688,7 +698,7 @@ const QualiopiQuestionnaires = () => {
                     <button
                       className="qq-icon-btn qq-icon-btn-danger"
                       onClick={() => deleteResponse(selected._id, r._id)}
-                      title="Supprimer"
+                      title={t('common.delete')}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />

@@ -4,7 +4,7 @@ import type { AutomationCategory } from './types'
 export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
   {
     id: 'assignment',
-    label: 'Attribution automatique',
+    labelKey: 'crm.settings.cat.assignment',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -16,7 +16,7 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
   },
   {
     id: 'qualification',
-    label: 'Qualification',
+    labelKey: 'crm.settings.cat.qualification',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -26,7 +26,7 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
   },
   {
     id: 'status',
-    label: 'Changements de statut',
+    labelKey: 'crm.settings.cat.status',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <polyline points="17 1 21 5 17 9" />
@@ -38,7 +38,7 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
   },
   {
     id: 'notifications',
-    label: 'Notifications',
+    labelKey: 'crm.settings.cat.notifications',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -48,7 +48,7 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
   },
   {
     id: 'alerts',
-    label: 'Alertes & Rappels',
+    labelKey: 'crm.settings.cat.alerts',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="12" cy="12" r="10" />
@@ -59,7 +59,7 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
   },
   {
     id: 'escalation',
-    label: 'Escalade',
+    labelKey: 'crm.settings.cat.escalation',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -69,7 +69,7 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
   },
   {
     id: 'scoring',
-    label: 'Scoring',
+    labelKey: 'crm.settings.cat.scoring',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -78,7 +78,7 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
   },
   {
     id: 'duplicates',
-    label: 'Détection doublons',
+    labelKey: 'crm.settings.cat.duplicates',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
@@ -90,7 +90,7 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
   },
   {
     id: 'reports',
-    label: 'Rapports',
+    labelKey: 'crm.settings.cat.reports',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <line x1="18" y1="20" x2="18" y2="10" />

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { useI18n } from '../../../../context/I18nContext'
+import type { MessageKey } from '../../../../i18n'
 
 /** Heure par défaut d'une relance reportée : début de journée ouvrée. */
 const FOLLOW_UP_HOUR = 9
@@ -10,10 +12,10 @@ export function inDays(days: number, from: Date = new Date()): Date {
   return date
 }
 
-const PRESETS: { label: string; days: number }[] = [
-  { label: 'Demain', days: 1 },
-  { label: 'Dans 3 jours', days: 3 },
-  { label: 'Dans 1 semaine', days: 7 },
+const PRESETS: { labelKey: MessageKey; days: number }[] = [
+  { labelKey: 'crm.postpone.tomorrow', days: 1 },
+  { labelKey: 'crm.postpone.in3Days', days: 3 },
+  { labelKey: 'crm.postpone.in1Week', days: 7 },
 ]
 
 interface PostponeMenuProps {
@@ -22,6 +24,7 @@ interface PostponeMenuProps {
 }
 
 const PostponeMenu: React.FC<PostponeMenuProps> = ({ disabled, onPostpone }) => {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -56,17 +59,17 @@ const PostponeMenu: React.FC<PostponeMenuProps> = ({ disabled, onPostpone }) => 
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
       >
-        Reporter
+        {t('crm.postpone.button')}
       </button>
       {open && (
         <div className="crm-worklist-popover" role="menu">
           {PRESETS.map((preset) => (
             <button key={preset.days} type="button" role="menuitem" onClick={() => choose(inDays(preset.days))}>
-              {preset.label}
+              {t(preset.labelKey)}
             </button>
           ))}
           <label className="crm-worklist-popover-date">
-            <span>Date précise</span>
+            <span>{t('crm.postpone.exactDate')}</span>
             <input
               type="date"
               onChange={(event) => {

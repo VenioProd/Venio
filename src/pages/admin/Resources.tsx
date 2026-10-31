@@ -3,12 +3,27 @@ import { Link } from 'react-router-dom'
 import { ApiError, apiDownload, apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate } from '../../i18n/format'
+import { translate, type MessageKey } from '../../i18n'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
+// i18n-ignore: valeurs de catégorie stockées et envoyées à l'API, traduites à l'affichage via CATEGORY_LABEL_KEYS
 const CATEGORIES = ['Présentation', 'Charte graphique', 'RH', 'Juridique', 'Commercial', 'Formation', 'Autre']
 
+const CATEGORY_LABEL_KEYS: Record<string, MessageKey> = {
+  Présentation: 'adminTech.resources.category.presentation',
+  'Charte graphique': 'adminTech.resources.category.brandGuidelines',
+  RH: 'adminTech.resources.category.hr',
+  Juridique: 'adminTech.resources.category.legal',
+  Commercial: 'adminTech.resources.category.sales',
+  Formation: 'adminTech.resources.category.training',
+  Autre: 'adminTech.resources.category.other',
+}
+
+// i18n-ignore: clés de catégorie (valeurs API), pas du texte affiché
 const CAT_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   Présentation: { bg: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.3)', text: '#0ea5e9' },
   'Charte graphique': { bg: 'rgba(155,155,155,0.12)', border: 'rgba(155,155,155,0.3)', text: '#9b9b9b' },
@@ -31,9 +46,9 @@ function fileIcon(mime: string) {
 }
 
 function formatSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} o`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  if (bytes < 1024) return translate('adminTech.resources.sizeBytes', { value: bytes })
+  if (bytes < 1024 * 1024) return translate('adminTech.resources.sizeKb', { value: (bytes / 1024).toFixed(0) })
+  return translate('adminTech.resources.sizeMb', { value: (bytes / (1024 * 1024)).toFixed(1) })
 }
 
 interface Resource {
@@ -51,6 +66,9 @@ interface Resource {
 export default function Resources() {
   const { user } = useAuth()
   const { showToast } = useToast()
+  const { t } = useI18n()
+  const categoryLabel = (category: string) =>
+    CATEGORY_LABEL_KEYS[category] ? t(CATEGORY_LABEL_KEYS[category]) : category
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -90,7 +108,10 @@ export default function Resources() {
         setTimeout(() => URL.revokeObjectURL(url), 5000)
       }
     } catch (err) {
-      showToast(err instanceof ApiError ? "Impossible d'ouvrir le fichier" : 'Erreur réseau', 'error')
+      showToast(
+        err instanceof ApiError ? t('adminTech.resources.openError') : t('adminTech.resources.networkError'),
+        'error',
+      )
     }
   }
 
@@ -127,11 +148,11 @@ export default function Resources() {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file) {
-      showToast('Sélectionne un fichier', 'error')
+      showToast(t('adminTech.resources.fileRequired'), 'error')
       return
     }
     if (!form.name.trim()) {
-      showToast('Le nom est requis', 'error')
+      showToast(t('adminTech.resources.nameRequired'), 'error')
       return
     }
 
@@ -157,22 +178,22 @@ export default function Resources() {
             resolve()
           } else {
             try {
-              reject(new Error(JSON.parse(xhr.responseText).error || 'Erreur'))
+              reject(new Error(JSON.parse(xhr.responseText).error || t('adminTech.resources.genericError')))
             } catch {
-              reject(new Error('Erreur upload'))
+              reject(new Error(t('adminTech.resources.uploadError')))
             }
           }
         }
-        xhr.onerror = () => reject(new Error('Erreur réseau'))
+        xhr.onerror = () => reject(new Error(t('adminTech.resources.networkError')))
         xhr.send(formData)
       })
-      showToast('Fichier uploadé', 'success')
+      showToast(t('adminTech.resources.uploaded'), 'success')
       setShowForm(false)
       setForm({ name: '', description: '', category: 'Autre' })
       setFile(null)
       load()
     } catch (err: any) {
-      showToast(err.message || 'Erreur upload', 'error')
+      showToast(err.message || t('adminTech.resources.uploadError'), 'error')
     } finally {
       setUploading(false)
       setUploadProgress(0)
@@ -183,11 +204,11 @@ export default function Resources() {
     if (!deleteTarget) return
     try {
       await apiFetch(`/api/admin/resources/${deleteTarget}`, { method: 'DELETE' })
-      showToast('Ressource supprimée', 'success')
+      showToast(t('adminTech.resources.deleted'), 'success')
       setDeleteTarget(null)
       load()
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('adminTech.resources.genericError'), 'error')
     }
   }
 
@@ -203,12 +224,12 @@ export default function Resources() {
     <div className="portal-container">
       <div className="portal-card">
         <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
+          <Link to="/admin">{t('nav.admin')}</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Ressources</span>
+          <span style={{ color: 'var(--text-primary)' }}>{t('adminTech.resources.breadcrumb')}</span>
         </div>
         <div className="admin-header">
-          <h1>Ressources du groupe</h1>
+          <h1>{t('adminTech.resources.title')}</h1>
           {isSuperAdmin && (
             <div className="admin-actions portal-actions-reveal">
               <button className="portal-button portal-action-link" type="button" onClick={() => setShowForm(true)}>
@@ -226,7 +247,7 @@ export default function Resources() {
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
                 </span>
-                <span className="portal-action-label">Ajouter un fichier</span>
+                <span className="portal-action-label">{t('adminTech.resources.addFile')}</span>
               </button>
             </div>
           )}
@@ -236,7 +257,7 @@ export default function Resources() {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
           <input
             className="portal-input"
-            placeholder="Rechercher..."
+            placeholder={t('adminTech.resources.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ minWidth: 200, fontSize: 13, padding: '6px 10px' }}
@@ -257,7 +278,7 @@ export default function Resources() {
                 color: filterCat === 'all' ? '#fff' : 'var(--text-secondary)',
               }}
             >
-              Tous
+              {t('adminTech.resources.filterAll')}
             </button>
             {CATEGORIES.map((cat) => {
               const c = CAT_COLORS[cat] || CAT_COLORS['Autre']
@@ -278,7 +299,7 @@ export default function Resources() {
                     color: filterCat === cat ? c.text : 'var(--text-secondary)',
                   }}
                 >
-                  {cat}
+                  {categoryLabel(cat)}
                 </button>
               )
             })}
@@ -289,20 +310,20 @@ export default function Resources() {
       {/* Upload form */}
       {showForm && isSuperAdmin && (
         <div className="portal-card" style={{ marginTop: 20 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Ajouter une ressource</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>{t('adminTech.resources.addTitle')}</h2>
           <form onSubmit={handleUpload}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div>
-                <label className="portal-label">Nom *</label>
+                <label className="portal-label">{t('adminTech.resources.nameLabel')}</label>
                 <input
                   className="portal-input"
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="Ex: Présentation groupe Venio 2026"
+                  placeholder={t('adminTech.resources.namePlaceholder')}
                 />
               </div>
               <div>
-                <label className="portal-label">Catégorie</label>
+                <label className="portal-label">{t('adminTech.resources.categoryLabel')}</label>
                 <select
                   className="portal-input"
                   value={form.category}
@@ -310,22 +331,22 @@ export default function Resources() {
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
-                      {c}
+                      {categoryLabel(c)}
                     </option>
                   ))}
                 </select>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label className="portal-label">Description (optionnel)</label>
+                <label className="portal-label">{t('adminTech.resources.descriptionLabel')}</label>
                 <input
                   className="portal-input"
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  placeholder="Brève description du document..."
+                  placeholder={t('adminTech.resources.descriptionPlaceholder')}
                 />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label className="portal-label">Fichier *</label>
+                <label className="portal-label">{t('adminTech.resources.fileLabel')}</label>
                 <input
                   ref={fileRef}
                   type="file"
@@ -363,10 +384,10 @@ export default function Resources() {
                     <div>
                       <div style={{ fontSize: 24 }}>📁</div>
                       <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
-                        Clique pour choisir un fichier
+                        {t('adminTech.resources.chooseFile')}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                        Tous formats acceptés · max 100 Mo
+                        {t('adminTech.resources.fileHint')}
                       </div>
                     </div>
                   )}
@@ -393,7 +414,9 @@ export default function Resources() {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
               <button className="portal-button" type="submit" disabled={uploading}>
-                {uploading ? `Upload... ${uploadProgress}%` : 'Publier la ressource'}
+                {uploading
+                  ? t('adminTech.resources.uploading', { progress: uploadProgress })
+                  : t('adminTech.resources.publish')}
               </button>
               <button
                 className="portal-button secondary"
@@ -404,7 +427,7 @@ export default function Resources() {
                   setForm({ name: '', description: '', category: 'Autre' })
                 }}
               >
-                Annuler
+                {t('common.cancel')}
               </button>
             </div>
           </form>
@@ -415,14 +438,14 @@ export default function Resources() {
       <div style={{ marginTop: 20 }}>
         {loading ? (
           <div className="portal-card">
-            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Chargement...</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t('common.loading')}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="portal-card">
             <div className="admin-empty-state">
               <div className="admin-empty-state-icon">📂</div>
               <p className="admin-empty-state-text">
-                {resources.length === 0 ? "Aucune ressource pour l'instant" : 'Aucun résultat'}
+                {resources.length === 0 ? t('adminTech.resources.emptyNone') : t('adminTech.resources.emptyNoResult')}
               </p>
             </div>
           </div>
@@ -466,7 +489,7 @@ export default function Resources() {
                               color: c.text,
                             }}
                           >
-                            {r.category}
+                            {categoryLabel(r.category)}
                           </span>
                           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{formatSize(r.size)}</span>
                         </div>
@@ -483,7 +506,10 @@ export default function Resources() {
                     }}
                   >
                     <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                      Ajouté par {r.uploadedBy?.name || '—'} · {new Date(r.createdAt).toLocaleDateString('fr-FR')}
+                      {t('adminTech.resources.addedBy', {
+                        name: r.uploadedBy?.name || '—',
+                        date: formatDate(r.createdAt),
+                      })}
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       {(r.mimeType.startsWith('image/') || r.mimeType.includes('pdf')) && (
@@ -493,7 +519,7 @@ export default function Resources() {
                           onClick={() => openFile(r, true)}
                           style={{ fontSize: 12 }}
                         >
-                          Aperçu
+                          {t('adminTech.resources.preview')}
                         </button>
                       )}
                       <button
@@ -502,7 +528,7 @@ export default function Resources() {
                         onClick={() => openFile(r, false)}
                         style={{ fontSize: 12 }}
                       >
-                        Télécharger
+                        {t('adminTech.resources.download')}
                       </button>
                       {isSuperAdmin && (
                         <button
@@ -511,7 +537,7 @@ export default function Resources() {
                           onClick={() => setDeleteTarget(r._id)}
                           style={{ fontSize: 12 }}
                         >
-                          Supprimer
+                          {t('common.delete')}
                         </button>
                       )}
                     </div>
@@ -593,10 +619,10 @@ export default function Resources() {
 
       <ConfirmModal
         isOpen={deleteTarget !== null}
-        title="Supprimer la ressource"
-        message="Supprimer ce fichier ? Il sera supprimé du serveur définitivement."
-        confirmLabel="Supprimer"
-        cancelLabel="Annuler"
+        title={t('adminTech.resources.deleteTitle')}
+        message={t('adminTech.resources.deleteMessage')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}

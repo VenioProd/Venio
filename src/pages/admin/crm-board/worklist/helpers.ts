@@ -1,3 +1,5 @@
+import { translate, type MessageKey } from '../../../../i18n'
+import { formatDate } from '../../../../i18n/format'
 import type { Lead, WorklistFollowUp, WorklistGroupKey, WorklistThresholds } from '../../../../types/crm.types'
 
 export type { WorklistFollowUp }
@@ -10,11 +12,11 @@ export function followUpDaysFor(status: string, followUp: WorklistFollowUp): num
   return followUp.defaultDays
 }
 
-export const WORKLIST_GROUPS: { key: WorklistGroupKey; label: string; hint: string }[] = [
-  { key: 'overdue', label: 'En retard', hint: 'La relance était due' },
-  { key: 'today', label: "Aujourd'hui", hint: 'À traiter dans la journée' },
-  { key: 'upcoming', label: 'Cette semaine', hint: 'Les 7 prochains jours' },
-  { key: 'drifting', label: 'À ne pas laisser filer', hint: 'Sans échéance, mais en train de refroidir' },
+export const WORKLIST_GROUPS: { key: WorklistGroupKey; labelKey: MessageKey; hintKey: MessageKey }[] = [
+  { key: 'overdue', labelKey: 'crm.worklist.overdue', hintKey: 'crm.worklist.overdueHint' },
+  { key: 'today', labelKey: 'crm.worklist.today', hintKey: 'crm.worklist.todayHint' },
+  { key: 'upcoming', labelKey: 'crm.worklist.upcoming', hintKey: 'crm.worklist.upcomingHint' },
+  { key: 'drifting', labelKey: 'crm.worklist.drifting', hintKey: 'crm.worklist.driftingHint' },
 ]
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
@@ -23,8 +25,6 @@ function daysBetween(value: string): number {
   return Math.floor((Date.now() - new Date(value).getTime()) / MS_PER_DAY)
 }
 
-const dateFormat = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' })
-
 /**
  * Pourquoi cette ligne est dans la file, en une formule courte. On préfère la
  * raison la plus actionnable : une échéance datée avant un signal de dérive.
@@ -32,15 +32,16 @@ const dateFormat = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'sh
 export function describeDue(lead: Lead, thresholds: WorklistThresholds): string {
   if (lead.nextActionAt) {
     const date = new Date(lead.nextActionAt)
-    if (!Number.isNaN(date.getTime())) return `Relance ${dateFormat.format(date)}`
+    if (!Number.isNaN(date.getTime()))
+      return translate('crm.worklist.followUpOn', { date: formatDate(date, { day: '2-digit', month: 'short' }) })
   }
   if (thresholds.coldEnabled && lead.lastContactAt) {
     const days = daysBetween(lead.lastContactAt)
-    if (days >= thresholds.coldDays) return `Sans contact depuis ${days} j`
+    if (days >= thresholds.coldDays) return translate('crm.worklist.noContactSince', { days })
   }
   if (thresholds.staleEnabled && lead.statusChangedAt) {
     const days = daysBetween(lead.statusChangedAt)
-    if (days >= thresholds.staleDays) return `Même statut depuis ${days} j`
+    if (days >= thresholds.staleDays) return translate('crm.worklist.sameStatusSince', { days })
   }
-  return 'À traiter'
+  return translate('crm.worklist.toHandle')
 }

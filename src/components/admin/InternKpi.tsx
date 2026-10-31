@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { exportToCsv } from '../../lib/exportCsv'
 import { loadJsPdf } from '../../lib/loadPdf'
+import { useI18n } from '../../context/I18nContext'
+import { formatDate } from '../../i18n/format'
 
 interface InternKpiData {
   intern: {
@@ -36,10 +38,16 @@ interface InternKpiData {
   weeks: { weekLabel: string; reports: number; taches: number; validated: number }[]
 }
 
-const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+const fmtDate = (d: string) => formatDate(d, { day: '2-digit', month: 'short', year: 'numeric' })
 
 export default function InternKpi() {
+  const { t } = useI18n()
+  const filterLabel = (s: string) =>
+    s === 'ACTIF'
+      ? t('compA.internKpi.filterActive')
+      : s === 'TERMINE'
+        ? t('compA.internKpi.filterFinished')
+        : t('compA.internKpi.filterAll')
   const navigate = useNavigate()
   const [data, setData] = useState<InternKpiData[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,26 +65,26 @@ export default function InternKpi() {
   // ── Export CSV ──
   const handleExportCsv = () => {
     const headers = [
-      'Nom',
-      'Email',
-      'Poste',
-      'Departement',
-      'Ecole',
-      'Tuteur',
-      'Date debut',
-      'Date fin',
-      'Jours restants',
-      'Progression',
-      'Rapports total',
-      'Valides',
-      'En attente',
-      'Brouillons',
-      'Taux validation',
-      'Taches realisees',
-      'Fichiers joints',
-      'Regularite (4 sem)',
-      'Derniere activite',
-      'Jours sans rapport',
+      t('compA.internKpi.csvName'),
+      t('compA.internKpi.csvEmail'),
+      t('compA.internKpi.csvRole'),
+      t('compA.internKpi.csvDepartment'),
+      t('compA.internKpi.csvSchool'),
+      t('compA.internKpi.csvTutor'),
+      t('compA.internKpi.csvStart'),
+      t('compA.internKpi.csvEnd'),
+      t('compA.internKpi.csvDaysLeft'),
+      t('compA.internKpi.csvProgress'),
+      t('compA.internKpi.csvReports'),
+      t('compA.internKpi.csvValid'),
+      t('compA.internKpi.csvPending'),
+      t('compA.internKpi.csvDrafts'),
+      t('compA.internKpi.csvRate'),
+      t('compA.internKpi.csvTasks'),
+      t('compA.internKpi.csvFiles'),
+      t('compA.internKpi.csvRegularity'),
+      t('compA.internKpi.csvLastActivity'),
+      t('compA.internKpi.csvDaysNoReport'),
     ]
     const rows = data.map((d) => [
       d.intern.name,
@@ -97,7 +105,7 @@ export default function InternKpi() {
       String(d.kpis.totalTaches),
       String(d.kpis.totalAttachments),
       `${d.kpis.regularite}%`,
-      d.kpis.lastActivity ? fmtDate(d.kpis.lastActivity) : 'Aucune',
+      d.kpis.lastActivity ? fmtDate(d.kpis.lastActivity) : t('compA.internKpi.none'),
       d.kpis.daysSinceLastReport !== null ? String(d.kpis.daysSinceLastReport) : '—',
     ])
     const date = new Date().toISOString().split('T')[0]
@@ -108,21 +116,17 @@ export default function InternKpi() {
   const handleExportPdf = async () => {
     const jsPDF = await loadJsPdf()
     const doc = new jsPDF()
-    const now = new Date().toLocaleDateString('fr-FR')
+    const now = formatDate(new Date())
     let y = 20
 
     // Titre
     doc.setFontSize(18)
     doc.setTextColor(14, 165, 233)
-    doc.text('KPI Stagiaires — Venio', 14, y)
+    doc.text(t('compA.internKpi.pdfTitle'), 14, y)
     y += 10
     doc.setFontSize(10)
     doc.setTextColor(100)
-    doc.text(
-      `Genere le ${now} — Filtre : ${filterStatus === 'ACTIF' ? 'Actifs' : filterStatus === 'TERMINE' ? 'Termines' : 'Tous'}`,
-      14,
-      y,
-    )
+    doc.text(t('compA.internKpi.pdfSubtitle', { date: now, filter: filterLabel(filterStatus) }), 14, y)
     y += 14
 
     // Resume global
@@ -135,17 +139,17 @@ export default function InternKpi() {
 
     doc.setFontSize(13)
     doc.setTextColor(30)
-    doc.text('Resume global', 14, y)
+    doc.text(t('compA.internKpi.pdfSummary'), 14, y)
     y += 8
     doc.setFontSize(10)
     doc.setTextColor(60)
-    doc.text(`Stagiaires : ${totalInterns}`, 14, y)
+    doc.text(t('compA.internKpi.pdfInterns', { n: totalInterns }), 14, y)
     y += 6
-    doc.text(`Rapports totaux : ${totalReportsAll}`, 14, y)
+    doc.text(t('compA.internKpi.pdfReportsTotal', { n: totalReportsAll }), 14, y)
     y += 6
-    doc.text(`Taux validation moyen : ${avgValidation}%`, 14, y)
+    doc.text(t('compA.internKpi.pdfAvgValidation', { n: avgValidation }), 14, y)
     y += 6
-    doc.text(`Regularite moyenne (4 sem) : ${avgRegularite}%`, 14, y)
+    doc.text(t('compA.internKpi.pdfAvgRegularity', { n: avgRegularite }), 14, y)
     y += 14
 
     // Tableau par stagiaire
@@ -163,37 +167,62 @@ export default function InternKpi() {
 
       doc.setFontSize(9)
       doc.setTextColor(80)
-      doc.text(`Poste : ${d.intern.poste}${d.intern.departement ? ' — ' + d.intern.departement : ''}`, 20, y)
+      doc.text(
+        t('compA.internKpi.pdfRole', {
+          role: d.intern.poste + (d.intern.departement ? ' — ' + d.intern.departement : ''),
+        }),
+        20,
+        y,
+      )
       y += 5
       doc.text(
-        `Stage : ${fmtDate(d.intern.dateDebut)} → ${fmtDate(d.intern.dateFin)} (${d.kpis.progress}%, ${d.kpis.daysRemaining}j restants)`,
+        t('compA.internKpi.pdfInternship', {
+          start: fmtDate(d.intern.dateDebut),
+          end: fmtDate(d.intern.dateFin),
+          progress: d.kpis.progress,
+          days: d.kpis.daysRemaining,
+        }),
         20,
         y,
       )
       y += 5
       if (d.intern.tuteur) {
-        doc.text(`Tuteur : ${d.intern.tuteur}`, 20, y)
+        doc.text(t('compA.internKpi.pdfTutor', { name: d.intern.tuteur }), 20, y)
         y += 5
       }
       if (d.intern.ecole) {
-        doc.text(`Ecole : ${d.intern.ecole}`, 20, y)
+        doc.text(t('compA.internKpi.pdfSchool', { name: d.intern.ecole }), 20, y)
         y += 5
       }
       y += 2
 
       doc.setTextColor(40)
       doc.text(
-        `Rapports : ${d.kpis.totalReports} total | ${d.kpis.validated} valides | ${d.kpis.pending} en attente | ${d.kpis.drafts} brouillons`,
+        t('compA.internKpi.pdfReportsLine', {
+          total: d.kpis.totalReports,
+          valid: d.kpis.validated,
+          pending: d.kpis.pending,
+          drafts: d.kpis.drafts,
+        }),
         20,
         y,
       )
       y += 5
-      doc.text(`Taux validation : ${d.kpis.validationRate}% | Regularite : ${d.kpis.regularite}%`, 20, y)
+      doc.text(
+        t('compA.internKpi.pdfRatesLine', { validation: d.kpis.validationRate, regularity: d.kpis.regularite }),
+        20,
+        y,
+      )
       y += 5
-      doc.text(`Taches realisees : ${d.kpis.totalTaches} | Fichiers joints : ${d.kpis.totalAttachments}`, 20, y)
+      doc.text(t('compA.internKpi.pdfTasksLine', { tasks: d.kpis.totalTaches, files: d.kpis.totalAttachments }), 20, y)
       y += 5
       doc.text(
-        `Derniere activite : ${d.kpis.lastActivity ? fmtDate(d.kpis.lastActivity) : 'Aucune'}${d.kpis.daysSinceLastReport !== null ? ' (' + d.kpis.daysSinceLastReport + 'j)' : ''}`,
+        t('compA.internKpi.pdfLastActivity', {
+          date: d.kpis.lastActivity ? fmtDate(d.kpis.lastActivity) : t('compA.internKpi.none'),
+        }) +
+          (d.kpis.daysSinceLastReport !== null
+            ? ' (' + t('compA.internKpi.daysShort', { n: d.kpis.daysSinceLastReport }) + ')'
+            : ''),
         20,
         y,
       )
@@ -204,7 +233,7 @@ export default function InternKpi() {
         y += 2
         doc.setFontSize(9)
         doc.setTextColor(100)
-        doc.text('Semaine          Rapports   Taches   Valides', 20, y)
+        doc.text(t('compA.internKpi.pdfWeekHeader'), 20, y)
         y += 5
         d.weeks.forEach((w) => {
           if (y > 275) {
@@ -225,7 +254,9 @@ export default function InternKpi() {
   }
 
   if (loading)
-    return <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>Chargement des KPIs...</p>
+    return (
+      <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>{t('compA.internKpi.loading')}</p>
+    )
 
   // Stats globales
   const totalInterns = data.length
@@ -266,7 +297,7 @@ export default function InternKpi() {
                 transition: 'all 0.2s',
               }}
             >
-              {s === 'ACTIF' ? 'Actifs' : s === 'TERMINE' ? 'Termines' : 'Tous'}
+              {filterLabel(s)}
             </button>
           ))}
         </div>
@@ -334,24 +365,24 @@ export default function InternKpi() {
       <div className="ticket-stats" style={{ marginBottom: 20 }}>
         <div className="ticket-stat-card">
           <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 22 }}>{totalInterns}</span>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Stagiaires</span>
+          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{t('compA.internKpi.statInterns')}</span>
         </div>
         <div className="ticket-stat-card">
           <span style={{ color: '#22c55e', fontWeight: 700, fontSize: 22 }}>{totalReportsAll}</span>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Rapports total</span>
+          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{t('compA.internKpi.csvReports')}</span>
         </div>
         <div className="ticket-stat-card">
           <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 22 }}>{avgValidation}%</span>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Validation moy.</span>
+          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{t('compA.internKpi.statAvgValidation')}</span>
         </div>
         <div className="ticket-stat-card">
           <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: 22 }}>{avgRegularite}%</span>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Regularite moy.</span>
+          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{t('compA.internKpi.statAvgRegularity')}</span>
         </div>
         {alertCount > 0 && (
           <div className="ticket-stat-card" style={{ borderColor: '#ef4444' }}>
             <span style={{ color: '#ef4444', fontWeight: 700, fontSize: 22 }}>{alertCount}</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Alertes inactivite</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{t('compA.internKpi.statAlerts')}</span>
           </div>
         )}
       </div>
@@ -369,7 +400,7 @@ export default function InternKpi() {
               marginBottom: 16,
             }}
           >
-            Vue comparée
+            {t('compA.internKpi.compareView')}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {data.map((d) => {
@@ -418,7 +449,7 @@ export default function InternKpi() {
                     {/* Validation */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, width: 60, flexShrink: 0 }}>
-                        Validation
+                        {t('compA.internKpi.barValidation')}
                       </span>
                       <div
                         style={{
@@ -446,7 +477,7 @@ export default function InternKpi() {
                     {/* Régularité */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, width: 60, flexShrink: 0 }}>
-                        Régularité
+                        {t('compA.internKpi.barRegularity')}
                       </span>
                       <div
                         style={{
@@ -474,7 +505,7 @@ export default function InternKpi() {
                     {/* Progression stage */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, width: 60, flexShrink: 0 }}>
-                        Stage
+                        {t('compA.internKpi.barInternship')}
                       </span>
                       <div
                         style={{
@@ -510,26 +541,26 @@ export default function InternKpi() {
 
       {/* Tableau KPI par stagiaire */}
       {data.length === 0 ? (
-        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>
-          Aucun stagiaire pour ce filtre
-        </p>
+        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>{t('compA.internKpi.empty')}</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                {[
-                  'Stagiaire',
-                  'Poste',
-                  'Rapports',
-                  'Valides',
-                  'Attente',
-                  'Taux',
-                  'Taches',
-                  'Regularite',
-                  'Dernier rapport',
-                  'Progression',
-                ].map((h) => (
+                {(
+                  [
+                    'compA.internKpi.thIntern',
+                    'compA.internKpi.thRole',
+                    'compA.internKpi.thReports',
+                    'compA.internKpi.thValid',
+                    'compA.internKpi.thPending',
+                    'compA.internKpi.thRate',
+                    'compA.internKpi.thTasks',
+                    'compA.internKpi.thRegularity',
+                    'compA.internKpi.thLastReport',
+                    'compA.internKpi.thProgress',
+                  ] as const
+                ).map((h) => (
                   <th
                     key={h}
                     style={{
@@ -542,7 +573,7 @@ export default function InternKpi() {
                       letterSpacing: '0.5px',
                     }}
                   >
-                    {h}
+                    {t(h)}
                   </th>
                 ))}
               </tr>
@@ -671,7 +702,7 @@ export default function InternKpi() {
                             color: '#ef4444',
                           }}
                         >
-                          {k.daysSinceLastReport}j
+                          {t('compA.internKpi.daysShort', { n: k.daysSinceLastReport ?? 0 })}
                         </span>
                       )}
                       {alertLevel === 'warning' && (
@@ -685,12 +716,14 @@ export default function InternKpi() {
                             color: '#f59e0b',
                           }}
                         >
-                          {k.daysSinceLastReport}j
+                          {t('compA.internKpi.daysShort', { n: k.daysSinceLastReport ?? 0 })}
                         </span>
                       )}
                       {alertLevel === 'ok' && (
                         <span style={{ color: '#22c55e', fontSize: 12 }}>
-                          {k.daysSinceLastReport === 0 ? 'Auj.' : `${k.daysSinceLastReport}j`}
+                          {k.daysSinceLastReport === 0
+                            ? t('compA.internKpi.today')
+                            : t('compA.internKpi.daysShort', { n: k.daysSinceLastReport ?? 0 })}
                         </span>
                       )}
                       {alertLevel === 'none' && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>—</span>}
@@ -742,7 +775,7 @@ export default function InternKpi() {
                       }}
                     >
                       <h4 style={{ margin: 0, color: 'var(--primary)', fontSize: 14 }}>
-                        Detail hebdomadaire — {d.intern.name}
+                        {t('compA.internKpi.weeklyDetail', { name: d.intern.name })}
                       </h4>
                       <button
                         onClick={(e) => {
@@ -760,20 +793,25 @@ export default function InternKpi() {
                           color: 'var(--primary)',
                         }}
                       >
-                        Voir fiche
+                        {t('compA.internKpi.viewProfile')}
                       </button>
                     </div>
 
                     {/* Infos rapides */}
                     <div style={{ display: 'flex', gap: 20, marginBottom: 14, flexWrap: 'wrap' }}>
                       <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-                        Stage : {fmtDate(d.intern.dateDebut)} → {fmtDate(d.intern.dateFin)}
+                        {t('compA.internKpi.internshipRange', {
+                          start: fmtDate(d.intern.dateDebut),
+                          end: fmtDate(d.intern.dateFin),
+                        })}
                       </span>
                       {d.intern.tuteur && (
-                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Tuteur : {d.intern.tuteur}</span>
+                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                          {t('compA.internKpi.pdfTutor', { name: d.intern.tuteur })}
+                        </span>
                       )}
                       <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-                        Fichiers joints : {d.kpis.totalAttachments}
+                        {t('compA.internKpi.attachedFiles', { n: d.kpis.totalAttachments })}
                       </span>
                     </div>
 
@@ -821,9 +859,11 @@ export default function InternKpi() {
                               />
                             </div>
                             <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{w.reports}</div>
-                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>rapports</div>
+                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>
+                              {t('compA.internKpi.reportsLabel')}
+                            </div>
                             <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, marginTop: 2 }}>
-                              {w.taches} taches
+                              {t('compA.internKpi.tasksCount', { n: w.taches })}
                             </div>
                             <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9, marginTop: 4 }}>
                               {w.weekLabel}

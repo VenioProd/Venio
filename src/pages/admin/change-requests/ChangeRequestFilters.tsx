@@ -1,3 +1,4 @@
+import { useI18n } from '../../../context/I18nContext'
 import type { AdminChangeRequest } from '../../../types/changeRequest.types'
 import { ADMIN_STATUS_CONFIG, ADMIN_STATUS_ORDER } from './types'
 
@@ -14,6 +15,7 @@ interface ChangeRequestFiltersProps {
  * d'appel supplémentaire, et aucune option qui ne mènerait à zéro résultat.
  */
 const ChangeRequestFilters = ({ status, client, project, changeRequests, onChange }: ChangeRequestFiltersProps) => {
+  const { t } = useI18n()
   const clients = new Map<string, string>()
   const projects = new Map<string, string>()
   for (const request of changeRequests) {
@@ -25,27 +27,27 @@ const ChangeRequestFilters = ({ status, client, project, changeRequests, onChang
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '16px 0 24px' }}>
       <select
         className="portal-input"
-        aria-label="Filtrer par statut"
+        aria-label={t('changeReq.filters.byStatus')}
         value={status}
         onChange={(event) => onChange({ status: event.target.value })}
         style={{ width: 'auto', minWidth: 180 }}
       >
-        <option value="all">Tous les statuts</option>
+        <option value="all">{t('changeReq.filters.allStatuses')}</option>
         {ADMIN_STATUS_ORDER.map((value) => (
           <option key={value} value={value}>
-            {ADMIN_STATUS_CONFIG[value].label}
+            {t(ADMIN_STATUS_CONFIG[value].labelKey)}
           </option>
         ))}
       </select>
 
       <select
         className="portal-input"
-        aria-label="Filtrer par client"
+        aria-label={t('changeReq.filters.byClient')}
         value={client}
         onChange={(event) => onChange({ client: event.target.value })}
         style={{ width: 'auto', minWidth: 180 }}
       >
-        <option value="all">Tous les clients</option>
+        <option value="all">{t('changeReq.filters.allClients')}</option>
         {[...clients.entries()].map(([id, label]) => (
           <option key={id} value={id}>
             {label}
@@ -55,12 +57,12 @@ const ChangeRequestFilters = ({ status, client, project, changeRequests, onChang
 
       <select
         className="portal-input"
-        aria-label="Filtrer par projet"
+        aria-label={t('changeReq.filters.byProject')}
         value={project}
         onChange={(event) => onChange({ project: event.target.value })}
         style={{ width: 'auto', minWidth: 180 }}
       >
-        <option value="all">Tous les projets</option>
+        <option value="all">{t('changeReq.filters.allProjects')}</option>
         {[...projects.entries()].map(([id, label]) => (
           <option key={id} value={id}>
             {label}

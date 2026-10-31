@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { translate } from '../../../i18n'
 import { apiFetch } from '../../../lib/api'
 import { createEmptyInternForm, internFormFromIntern, type AdminUser, type Intern, type InternFormData } from './types'
 
@@ -62,7 +63,7 @@ export function useInternManagement({ confirm }: UseInternManagementOptions) {
       resetForm()
       loadInterns()
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Erreur')
+      alert(err instanceof Error ? err.message : translate('intern.error.generic'))
     } finally {
       setSubmitting(false)
     }
@@ -95,7 +96,7 @@ export function useInternManagement({ confirm }: UseInternManagementOptions) {
       resetForm()
       loadInterns()
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Erreur')
+      alert(err instanceof Error ? err.message : translate('intern.error.generic'))
     } finally {
       setSubmitting(false)
     }
@@ -134,8 +135,8 @@ export function useInternManagement({ confirm }: UseInternManagementOptions) {
   const handleDeleteIntern = useCallback(
     async (internId: string) => {
       const ok = await confirm({
-        message: 'Supprimer definitivement ce stagiaire et tous ses rapports ?',
-        title: 'Suppression',
+        message: translate('intern.delete.confirmIntern'),
+        title: translate('intern.delete.title'),
         variant: 'danger',
       })
       if (!ok) return
@@ -153,9 +154,9 @@ export function useInternManagement({ confirm }: UseInternManagementOptions) {
     setResendingCredentials(internId)
     try {
       await apiFetch(`/api/admin/interns/${internId}/resend-credentials`, { method: 'POST' })
-      alert('Nouveaux identifiants envoyes par email')
+      alert(translate('intern.credentials.sent'))
     } catch (err: unknown) {
-      alert((err as Error).message || "Erreur lors de l'envoi")
+      alert((err as Error).message || translate('intern.error.sendFailed'))
     } finally {
       setResendingCredentials(null)
     }

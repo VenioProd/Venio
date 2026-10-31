@@ -1,5 +1,8 @@
 import { apiDownload } from '../../../lib/api'
 import { WorkspaceOverlayPortal } from '../../../components/WorkspaceOverlayPortal'
+import { useI18n } from '../../../context/I18nContext'
+import { intlLocale, translate, type MessageKey } from '../../../i18n'
+import { formatFileSize, formatShortDate } from './eduFormat'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FolderOpen,
@@ -23,10 +26,6 @@ import {
   updateDocument,
   deleteDocument,
   documentDownloadUrl,
-  formatFileSize,
-  formatDate,
-  DOCUMENT_CATEGORY_LABEL,
-  DOCUMENT_STATUS_LABEL,
   type EducationDocument,
   type EducationDocumentCategory,
   type EducationDocumentStatus,
@@ -59,11 +58,29 @@ const CATEGORY_ORDER: EducationDocumentCategory[] = [
 
 const STATUS_ORDER: EducationDocumentStatus[] = ['PUBLISHED', 'DRAFT', 'ARCHIVED']
 
+const CATEGORY_LABEL_KEYS = {
+  school_document: 'eduA.docs.category.schoolDocument',
+  student_submission: 'eduA.docs.category.studentSubmission',
+  assignment_submission: 'eduA.docs.category.assignmentSubmission',
+  exam_subject: 'eduA.docs.category.examSubject',
+  assignment_correction: 'eduA.docs.category.assignmentCorrection',
+  teaching_resource: 'eduA.docs.category.teachingResource',
+  administrative: 'eduA.docs.category.administrative',
+  other: 'eduA.docs.category.other',
+} as const satisfies Record<EducationDocumentCategory, MessageKey>
+
+const STATUS_LABEL_KEYS = {
+  DRAFT: 'eduA.docs.status.draft',
+  PUBLISHED: 'eduA.docs.status.published',
+  ARCHIVED: 'eduA.docs.status.archived',
+} as const satisfies Record<EducationDocumentStatus, MessageKey>
+
 interface DocumentsViewProps {
   classes: EducationClass[]
 }
 
 export function DocumentsView({ classes }: DocumentsViewProps) {
+  const { t, locale } = useI18n()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<EducationDocumentCategory | ''>('')
   const [status, setStatus] = useState<EducationDocumentStatus | ''>('')
@@ -86,8 +103,8 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
     classes.forEach((c) => {
       if (c.school) set.add(c.school)
     })
-    return Array.from(set).sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [classes])
+    return Array.from(set).sort((a, b) => a.localeCompare(b, intlLocale(locale)))
+  }, [classes, locale])
 
   const refresh = useCallback(
     async (overrides: Partial<ListDocumentsParams> = {}) => {
@@ -112,7 +129,7 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
         setCategoryCounts(r.categoryCounts || {})
       } catch (err) {
         if (serial === requestId.current)
-          setError(err instanceof Error ? err.message : 'Impossible de charger les documents')
+          setError(err instanceof Error ? err.message : translate('eduA.docs.loadError'))
       } finally {
         if (serial === requestId.current) setLoading(false)
       }
@@ -140,12 +157,12 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce document ? (suppression réversible côté base)')) return
+    if (!confirm(t('eduA.docs.deleteConfirm'))) return
     try {
       await deleteDocument(id)
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Suppression impossible')
+      setError(err instanceof Error ? err.message : t('eduA.common.deleteFailed'))
     }
   }
 
@@ -165,7 +182,7 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
       link.remove()
       URL.revokeObjectURL(href)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Téléchargement impossible')
+      setError(err instanceof Error ? err.message : t('eduA.docs.downloadFailed'))
     }
   }
 
@@ -173,21 +190,18 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
     <div>
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <h1 className="edu-h1">Documents</h1>
-          <p className="edu-sub">
-            Base documentaire pédagogique. {total} document{total > 1 ? 's' : ''} indexé{total > 1 ? 's' : ''} sur cette
-            vue.
-          </p>
+          <h1 className="edu-h1">{t('eduA.docs.title')}</h1>
+          <p className="edu-sub">{t('eduA.docs.subtitle', { count: total })}</p>
         </div>
         <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
-          <button className="edu-btn ghost" onClick={() => refresh()} title="Rafraîchir">
-            <RefreshCw size={14} /> Rafraîchir
+          <button className="edu-btn ghost" onClick={() => refresh()} title={t('eduA.docs.refresh')}>
+            <RefreshCw size={14} /> {t('eduA.docs.refresh')}
           </button>
           <button className="edu-btn ghost" onClick={() => setShowCreate('url')}>
-            <Link2 size={14} /> Ajouter une URL
+            <Link2 size={14} /> {t('eduA.docs.addUrl')}
           </button>
           <button className="edu-btn" onClick={() => setShowCreate('file')}>
-            <Upload size={14} /> Importer un fichier
+            <Upload size={14} /> {t('eduA.docs.importFile')}
           </button>
         </div>
       </div>
@@ -202,7 +216,7 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
           <span className="edu-doc-counter-value">
             {Object.values(categoryCounts).reduce((a, b) => a + (b || 0), 0)}
           </span>
-          <span className="edu-doc-counter-label">Tous</span>
+          <span className="edu-doc-counter-label">{t('eduA.docs.counterAll')}</span>
         </button>
         {CATEGORY_ORDER.map((cat) => (
           <button
@@ -212,7 +226,7 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
             onClick={() => setCategory(category === cat ? '' : cat)}
           >
             <span className="edu-doc-counter-value">{categoryCounts[cat] ?? 0}</span>
-            <span className="edu-doc-counter-label">{DOCUMENT_CATEGORY_LABEL[cat]}</span>
+            <span className="edu-doc-counter-label">{t(CATEGORY_LABEL_KEYS[cat])}</span>
           </button>
         ))}
       </div>
@@ -225,7 +239,7 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
             className="edu-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher (titre, nom de fichier, description, tag)…"
+            placeholder={t('eduA.docs.searchPlaceholder')}
           />
         </div>
         <select
@@ -233,15 +247,15 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
           value={status}
           onChange={(e) => setStatus(e.target.value as EducationDocumentStatus | '')}
         >
-          <option value="">Tous statuts</option>
+          <option value="">{t('eduA.docs.allStatuses')}</option>
           {STATUS_ORDER.map((s) => (
             <option key={s} value={s}>
-              {DOCUMENT_STATUS_LABEL[s]}
+              {t(STATUS_LABEL_KEYS[s])}
             </option>
           ))}
         </select>
         <select className="edu-select" value={school} onChange={(e) => setSchool(e.target.value)}>
-          <option value="">Toutes écoles</option>
+          <option value="">{t('eduA.docs.allSchools')}</option>
           {schools.map((s) => (
             <option key={s} value={s}>
               {s}
@@ -249,7 +263,7 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
           ))}
         </select>
         <select className="edu-select" value={classId} onChange={(e) => setClassId(e.target.value)}>
-          <option value="">Toutes classes</option>
+          <option value="">{t('eduA.docs.allClasses')}</option>
           {classes.map((c) => (
             <option key={c._id} value={c._id}>
               {c.name}
@@ -261,12 +275,12 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
           className="edu-input"
           value={tag}
           onChange={(e) => setTag(e.target.value)}
-          placeholder="Tag exact (ex. examen)"
+          placeholder={t('eduA.docs.tagPlaceholder')}
           style={{ maxWidth: 180 }}
         />
         {(search || category || status || school || classId || tag) && (
-          <button className="edu-btn ghost" onClick={resetFilters} title="Réinitialiser les filtres">
-            <Filter size={13} /> Réinitialiser
+          <button className="edu-btn ghost" onClick={resetFilters} title={t('eduA.docs.resetFilters')}>
+            <Filter size={13} /> {t('eduA.docs.reset')}
           </button>
         )}
       </div>
@@ -275,29 +289,27 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
         <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
           {error}
           <button className="edu-btn ghost" style={{ marginLeft: 12 }} onClick={() => refresh()}>
-            Réessayer
+            {t('eduA.common.retry')}
           </button>
         </div>
       )}
 
       {/* Table dense */}
       {loading && items.length === 0 ? (
-        <div className="edu-sub">Chargement…</div>
+        <div className="edu-sub">{t('eduA.docs.loading')}</div>
       ) : items.length === 0 ? (
         <div className="edu-empty">
           <div className="edu-empty-icon">
             <FolderOpen size={20} />
           </div>
-          <div>Aucun document pour ces critères.</div>
-          <div className="edu-empty-sub">
-            Importe un fichier (PDF, image, document) ou ajoute une URL pour démarrer la base documentaire.
-          </div>
+          <div>{t('eduA.docs.emptyTitle')}</div>
+          <div className="edu-empty-sub">{t('eduA.docs.emptyText')}</div>
           <div className="edu-row" style={{ marginTop: 12, justifyContent: 'center' }}>
             <button className="edu-btn" onClick={() => setShowCreate('file')}>
-              <Upload size={13} /> Importer
+              <Upload size={13} /> {t('eduA.docs.import')}
             </button>
             <button className="edu-btn ghost" onClick={() => setShowCreate('url')}>
-              <Link2 size={13} /> URL
+              <Link2 size={13} /> {t('eduA.docs.urlShort')}
             </button>
           </div>
         </div>
@@ -306,14 +318,14 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
           <table className="edu-table edu-doc-table">
             <thead>
               <tr>
-                <th style={{ width: '32%' }}>Document</th>
-                <th>Catégorie</th>
-                <th>Statut</th>
-                <th>École / Classe</th>
-                <th>Tags</th>
-                <th>Date</th>
-                <th>Taille</th>
-                <th aria-label="Actions"></th>
+                <th style={{ width: '32%' }}>{t('eduA.docs.col.document')}</th>
+                <th>{t('eduA.docs.field.category')}</th>
+                <th>{t('eduA.docs.col.status')}</th>
+                <th>{t('eduA.docs.col.schoolClass')}</th>
+                <th>{t('eduA.docs.col.tags')}</th>
+                <th>{t('eduA.docs.col.date')}</th>
+                <th>{t('eduA.docs.col.size')}</th>
+                <th aria-label={t('eduA.docs.col.actions')}></th>
               </tr>
             </thead>
             <tbody>
@@ -326,7 +338,7 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
                         <FileText size={14} className="edu-doc-title-icon" aria-hidden />
                         <div style={{ minWidth: 0 }}>
                           <div className="edu-doc-title-main" title={doc.title || doc.originalName}>
-                            {doc.title || doc.originalName || 'Sans titre'}
+                            {doc.title || doc.originalName || t('eduA.docs.untitled')}
                           </div>
                           {doc.description && (
                             <div className="edu-doc-title-sub" title={doc.description}>
@@ -342,11 +354,11 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
                       </div>
                     </td>
                     <td>
-                      <span className="edu-pill">{DOCUMENT_CATEGORY_LABEL[doc.category]}</span>
+                      <span className="edu-pill">{t(CATEGORY_LABEL_KEYS[doc.category])}</span>
                     </td>
                     <td>
                       <span className={`edu-pill edu-doc-status edu-doc-status-${doc.status.toLowerCase()}`}>
-                        {DOCUMENT_STATUS_LABEL[doc.status]}
+                        {t(STATUS_LABEL_KEYS[doc.status])}
                       </span>
                     </td>
                     <td>
@@ -369,19 +381,31 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
                         </div>
                       )}
                     </td>
-                    <td style={{ fontSize: 12.5 }}>{formatDate(doc.documentDate || doc.updatedAt)}</td>
+                    <td style={{ fontSize: 12.5 }}>{formatShortDate(doc.documentDate || doc.updatedAt)}</td>
                     <td style={{ fontSize: 12.5 }}>
-                      {doc.url && !doc.storagePath ? <span title={doc.url}>URL</span> : formatFileSize(doc.size)}
+                      {doc.url && !doc.storagePath ? (
+                        <span title={doc.url}>{t('eduA.docs.urlShort')}</span>
+                      ) : (
+                        formatFileSize(doc.size)
+                      )}
                     </td>
                     <td>
                       <div className="edu-row" style={{ gap: 2, justifyContent: 'flex-end' }}>
-                        <button className="edu-btn-icon" title="Ouvrir / Télécharger" onClick={() => handleOpen(doc)}>
+                        <button
+                          className="edu-btn-icon"
+                          title={t('eduA.docs.openDownload')}
+                          onClick={() => handleOpen(doc)}
+                        >
                           {doc.url && !doc.storagePath ? <ExternalLink size={14} /> : <Download size={14} />}
                         </button>
-                        <button className="edu-btn-icon" title="Modifier" onClick={() => setEditing(doc)}>
+                        <button className="edu-btn-icon" title={t('common.edit')} onClick={() => setEditing(doc)}>
                           <Pencil size={14} />
                         </button>
-                        <button className="edu-btn-icon" title="Supprimer" onClick={() => handleDelete(doc._id)}>
+                        <button
+                          className="edu-btn-icon"
+                          title={t('common.delete')}
+                          onClick={() => handleDelete(doc._id)}
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -401,17 +425,15 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
             disabled={loading || page === 0}
             onClick={() => setPage((value) => value - 1)}
           >
-            Précédent
+            {t('common.previous')}
           </button>
-          <span>
-            Page {page + 1} sur {Math.ceil(total / 100)}
-          </span>
+          <span>{t('eduA.docs.pageOf', { page: page + 1, pages: Math.ceil(total / 100) })}</span>
           <button
             className="edu-btn ghost"
             disabled={loading || (page + 1) * 100 >= total}
             onClick={() => setPage((value) => value + 1)}
           >
-            Suivant
+            {t('common.next')}
           </button>
         </div>
       )}
@@ -458,6 +480,7 @@ function DocumentCreateDrawer({
   onClose: () => void
   onCreated: () => void
 }) {
+  const { t } = useI18n()
   const [file, setFile] = useState<File | null>(null)
   const [url, setUrl] = useState('')
   const [form, setForm] = useState<
@@ -496,20 +519,20 @@ function DocumentCreateDrawer({
       }
       if (mode === 'file') {
         if (!file) {
-          setError('Sélectionne un fichier (max 25 Mo).')
+          setError(t('eduA.docs.fileRequired'))
           return
         }
         await uploadDocument(file, payload)
       } else {
         if (!url.trim()) {
-          setError('URL requise.')
+          setError(t('eduA.docs.urlRequired'))
           return
         }
         await createDocumentFromUrl({ ...payload, url: url.trim() })
       }
       onCreated()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Création impossible')
+      setError(err instanceof Error ? err.message : t('eduA.docs.createFailed'))
     } finally {
       setSaving(false)
     }
@@ -521,16 +544,16 @@ function DocumentCreateDrawer({
       <div className="edu-drawer">
         <div className="edu-drawer-head">
           <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-            {mode === 'file' ? 'Importer un fichier' : 'Ajouter une URL'}
+            {mode === 'file' ? t('eduA.docs.importFile') : t('eduA.docs.addUrl')}
           </h2>
-          <button className="edu-btn-icon" onClick={onClose} aria-label="Fermer">
+          <button className="edu-btn-icon" onClick={onClose} aria-label={t('common.close')}>
             <X size={18} />
           </button>
         </div>
         <div className="edu-drawer-body">
           {mode === 'file' ? (
             <div className="edu-form-group">
-              <label>Fichier (PDF, image, document — 25 Mo max)</label>
+              <label>{t('eduA.docs.fileLabel')}</label>
               <input type="file" className="edu-input" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
               {file && (
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
@@ -540,7 +563,7 @@ function DocumentCreateDrawer({
             </div>
           ) : (
             <div className="edu-form-group">
-              <label>URL du document</label>
+              <label>{t('eduA.docs.urlLabel')}</label>
               <input
                 className="edu-input"
                 value={url}
@@ -552,18 +575,18 @@ function DocumentCreateDrawer({
           )}
 
           <div className="edu-form-group">
-            <label>Titre</label>
+            <label>{t('eduA.docs.field.title')}</label>
             <input
               className="edu-input"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder={file?.name || 'Titre du document'}
+              placeholder={file?.name || t('eduA.docs.titlePlaceholder')}
             />
           </div>
 
           <div className="edu-grid-2">
             <div className="edu-form-group">
-              <label>Catégorie</label>
+              <label>{t('eduA.docs.field.category')}</label>
               <select
                 className="edu-select"
                 value={form.category}
@@ -571,13 +594,13 @@ function DocumentCreateDrawer({
               >
                 {CATEGORY_ORDER.map((c) => (
                   <option key={c} value={c}>
-                    {DOCUMENT_CATEGORY_LABEL[c]}
+                    {t(CATEGORY_LABEL_KEYS[c])}
                   </option>
                 ))}
               </select>
             </div>
             <div className="edu-form-group">
-              <label>Statut</label>
+              <label>{t('eduA.docs.col.status')}</label>
               <select
                 className="edu-select"
                 value={form.status}
@@ -585,7 +608,7 @@ function DocumentCreateDrawer({
               >
                 {STATUS_ORDER.map((s) => (
                   <option key={s} value={s}>
-                    {DOCUMENT_STATUS_LABEL[s]}
+                    {t(STATUS_LABEL_KEYS[s])}
                   </option>
                 ))}
               </select>
@@ -594,7 +617,7 @@ function DocumentCreateDrawer({
 
           <div className="edu-grid-2">
             <div className="edu-form-group">
-              <label>École</label>
+              <label>{t('eduA.docs.field.school')}</label>
               <input
                 className="edu-input"
                 list="edu-doc-schools-create"
@@ -608,7 +631,7 @@ function DocumentCreateDrawer({
               </datalist>
             </div>
             <div className="edu-form-group">
-              <label>Classe (optionnel)</label>
+              <label>{t('eduA.docs.field.classOptional')}</label>
               <select
                 className="edu-select"
                 value={form.classId}
@@ -626,22 +649,22 @@ function DocumentCreateDrawer({
           </div>
 
           <div className="edu-form-group">
-            <label>Description</label>
+            <label>{t('eduA.docs.field.description')}</label>
             <textarea
               className="edu-textarea"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Contexte, consigne, notes internes…"
+              placeholder={t('eduA.docs.descriptionPlaceholder')}
             />
           </div>
 
           <div className="edu-form-group">
-            <label>Tags (séparés par des virgules)</label>
+            <label>{t('eduA.docs.field.tags')}</label>
             <input
               className="edu-input"
               value={form.tags}
               onChange={(e) => setForm({ ...form, tags: e.target.value })}
-              placeholder="ex. examen, BTS, 2025"
+              placeholder={t('eduA.docs.tagsPlaceholder')}
             />
           </div>
 
@@ -653,10 +676,10 @@ function DocumentCreateDrawer({
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose} disabled={saving}>
-            Annuler
+            {t('common.cancel')}
           </button>
           <button className="edu-btn" onClick={submit} disabled={saving}>
-            {saving ? 'Enregistrement…' : mode === 'file' ? 'Importer' : 'Ajouter'}
+            {saving ? t('eduA.common.saving') : mode === 'file' ? t('eduA.docs.import') : t('common.add')}
           </button>
         </div>
       </div>
@@ -678,6 +701,7 @@ function DocumentEditDrawer({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useI18n()
   const [form, setForm] = useState({
     title: doc.title,
     description: doc.description,
@@ -714,7 +738,7 @@ function DocumentEditDrawer({
       })
       onSaved()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Enregistrement impossible')
+      setError(err instanceof Error ? err.message : t('eduA.docs.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -726,30 +750,30 @@ function DocumentEditDrawer({
       <div className="edu-drawer">
         <div className="edu-drawer-head">
           <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
-            Modifier le document
+            {t('eduA.docs.editTitle')}
           </h2>
-          <button className="edu-btn-icon" onClick={onClose} aria-label="Fermer">
+          <button className="edu-btn-icon" onClick={onClose} aria-label={t('common.close')}>
             <X size={18} />
           </button>
         </div>
         <div className="edu-drawer-body">
           <div className="edu-doc-edit-meta">
             <div>
-              <strong>Fichier :</strong> {doc.originalName || '—'}
+              <strong>{t('eduA.docs.meta.file')}</strong> {doc.originalName || '—'}
             </div>
             <div>
-              <strong>Taille :</strong> {formatFileSize(doc.size)}
+              <strong>{t('eduA.docs.meta.size')}</strong> {formatFileSize(doc.size)}
             </div>
             <div>
-              <strong>Type :</strong> {doc.mimeType || '—'}
+              <strong>{t('eduA.docs.meta.type')}</strong> {doc.mimeType || '—'}
             </div>
             <div>
-              <strong>Ajouté :</strong> {formatDate(doc.createdAt, true)}
+              <strong>{t('eduA.docs.meta.added')}</strong> {formatShortDate(doc.createdAt, true)}
             </div>
           </div>
 
           <div className="edu-form-group">
-            <label>Titre</label>
+            <label>{t('eduA.docs.field.title')}</label>
             <input
               className="edu-input"
               value={form.title}
@@ -759,7 +783,7 @@ function DocumentEditDrawer({
 
           <div className="edu-grid-2">
             <div className="edu-form-group">
-              <label>Catégorie</label>
+              <label>{t('eduA.docs.field.category')}</label>
               <select
                 className="edu-select"
                 value={form.category}
@@ -767,13 +791,13 @@ function DocumentEditDrawer({
               >
                 {CATEGORY_ORDER.map((c) => (
                   <option key={c} value={c}>
-                    {DOCUMENT_CATEGORY_LABEL[c]}
+                    {t(CATEGORY_LABEL_KEYS[c])}
                   </option>
                 ))}
               </select>
             </div>
             <div className="edu-form-group">
-              <label>Statut</label>
+              <label>{t('eduA.docs.col.status')}</label>
               <select
                 className="edu-select"
                 value={form.status}
@@ -781,7 +805,7 @@ function DocumentEditDrawer({
               >
                 {STATUS_ORDER.map((s) => (
                   <option key={s} value={s}>
-                    {DOCUMENT_STATUS_LABEL[s]}
+                    {t(STATUS_LABEL_KEYS[s])}
                   </option>
                 ))}
               </select>
@@ -790,7 +814,7 @@ function DocumentEditDrawer({
 
           <div className="edu-grid-2">
             <div className="edu-form-group">
-              <label>École</label>
+              <label>{t('eduA.docs.field.school')}</label>
               <input
                 className="edu-input"
                 list="edu-doc-schools-edit"
@@ -804,7 +828,7 @@ function DocumentEditDrawer({
               </datalist>
             </div>
             <div className="edu-form-group">
-              <label>Classe</label>
+              <label>{t('eduA.docs.field.class')}</label>
               <select
                 className="edu-select"
                 value={form.classId}
@@ -823,7 +847,7 @@ function DocumentEditDrawer({
 
           <div className="edu-grid-2">
             <div className="edu-form-group">
-              <label>Date du document</label>
+              <label>{t('eduA.docs.field.documentDate')}</label>
               <input
                 type="date"
                 className="edu-input"
@@ -832,7 +856,7 @@ function DocumentEditDrawer({
               />
             </div>
             <div className="edu-form-group">
-              <label>Échéance (optionnel)</label>
+              <label>{t('eduA.docs.field.dueDateOptional')}</label>
               <input
                 type="date"
                 className="edu-input"
@@ -843,7 +867,7 @@ function DocumentEditDrawer({
           </div>
 
           <div className="edu-form-group">
-            <label>Description</label>
+            <label>{t('eduA.docs.field.description')}</label>
             <textarea
               className="edu-textarea"
               value={form.description}
@@ -852,7 +876,7 @@ function DocumentEditDrawer({
           </div>
 
           <div className="edu-form-group">
-            <label>Tags (séparés par des virgules)</label>
+            <label>{t('eduA.docs.field.tags')}</label>
             <input
               className="edu-input"
               value={form.tags}
@@ -861,7 +885,7 @@ function DocumentEditDrawer({
           </div>
 
           <div className="edu-form-group">
-            <label>URL externe (si document hébergé ailleurs)</label>
+            <label>{t('eduA.docs.field.externalUrl')}</label>
             <input
               className="edu-input"
               value={form.url}
@@ -878,10 +902,10 @@ function DocumentEditDrawer({
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose} disabled={saving}>
-            Annuler
+            {t('common.cancel')}
           </button>
           <button className="edu-btn" onClick={save} disabled={saving}>
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
+            {saving ? t('eduA.common.saving') : t('common.save')}
           </button>
         </div>
       </div>

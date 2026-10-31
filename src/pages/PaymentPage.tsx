@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { apiFetch } from '../lib/api'
-import { formatMoney } from './admin/accounting/projects/money'
+import { useI18n } from '../context/I18nContext'
+import { formatMoney } from '../i18n/format'
 import './PaymentPage.css'
 
 export default function PaymentPage({ result }: { result?: 'success' | 'cancel' }) {
@@ -11,6 +12,7 @@ export default function PaymentPage({ result }: { result?: 'success' | 'cancel' 
 }
 
 function PaymentContent({ token, result }: { token?: string; result?: 'success' | 'cancel' }) {
+  const { t } = useI18n()
   const [invoice, setInvoice] = useState<{ number: string; payerName: string; remainingTtcCents: number } | null>(null)
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
@@ -40,7 +42,7 @@ function PaymentContent({ token, result }: { token?: string; result?: 'success' 
       })
       window.location.assign(response.url)
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Le paiement est indisponible.')
+      setError(error instanceof Error ? error.message : t('pubForms.payment.unavailable'))
       sending.current = false
       setPending(false)
     }
@@ -48,7 +50,7 @@ function PaymentContent({ token, result }: { token?: string; result?: 'success' 
   return (
     <main className="payment-page">
       <Helmet>
-        <title>Paiement de facture · Venio</title>
+        <title>{t('pubForms.payment.pageTitle')}</title>
         <meta name="robots" content="noindex, nofollow" />
         <meta name="referrer" content="no-referrer" />
       </Helmet>
@@ -56,29 +58,29 @@ function PaymentContent({ token, result }: { token?: string; result?: 'success' 
         <p>VENIO</p>
         {result === 'success' && (
           <>
-            <h1>Paiement transmis</h1>
-            <p>La confirmation de votre paiement est en cours. Vous pouvez fermer cette page.</p>
+            <h1>{t('pubForms.payment.sentTitle')}</h1>
+            <p>{t('pubForms.payment.sentText')}</p>
           </>
         )}
         {result === 'cancel' && (
           <>
-            <h1>Paiement interrompu</h1>
-            <p>Vous pouvez revenir à la facture pour consulter son solde et reprendre le paiement.</p>
-            <Link to={`/payer/${token}`}>Revenir à la facture</Link>
+            <h1>{t('pubForms.payment.cancelledTitle')}</h1>
+            <p>{t('pubForms.payment.cancelledText')}</p>
+            <Link to={`/payer/${token}`}>{t('pubForms.payment.backToInvoice')}</Link>
           </>
         )}
         {!result && (
           <>
-            <h1>Régler votre facture</h1>
-            {!invoice && !error && <p role="status">Chargement de la facture…</p>}
+            <h1>{t('pubForms.payment.payTitle')}</h1>
+            {!invoice && !error && <p role="status">{t('pubForms.payment.loadingInvoice')}</p>}
             {invoice && (
               <>
                 <h2>{invoice.number}</h2>
                 <p>{invoice.payerName}</p>
-                <p className="payment-amount">{formatMoney(invoice.remainingTtcCents)}</p>
-                <p>Montant restant à payer TTC</p>
+                <p className="payment-amount">{formatMoney(invoice.remainingTtcCents / 100)}</p>
+                <p>{t('pubForms.payment.remaining')}</p>
                 <button disabled={pending} onClick={() => void pay()}>
-                  {pending ? 'Ouverture du paiement…' : 'Payer par carte'}
+                  {pending ? t('pubForms.payment.opening') : t('pubForms.payment.payByCard')}
                 </button>
               </>
             )}

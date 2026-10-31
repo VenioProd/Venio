@@ -4,7 +4,14 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useMessaging } from '../context/MessagingContext'
 import { NAVIGATION } from '../lib/rbac'
-import { DEFAULT_OPEN_ZONES, getFooterNavigation, getVisibleNavigationZones } from '../lib/adminNavigation'
+import {
+  DEFAULT_OPEN_ZONES,
+  getFooterNavigation,
+  getNavigationLabel,
+  getVisibleNavigationZones,
+  getZoneLabel,
+} from '../lib/adminNavigation'
+import { useI18n } from '../context/I18nContext'
 import { trackAdminEvent } from '../lib/adminAnalytics'
 import {
   ChevronDown,
@@ -60,6 +67,7 @@ interface NavItem {
 }
 
 interface NavSection {
+  id: string
   label: string
   items: NavItem[]
 }
@@ -101,10 +109,11 @@ const ICONS: Record<(typeof NAVIGATION)[number]['id'], LucideIcon> = {
 
 function getVisibleSections(user: ReturnType<typeof useAuth>['user']): NavSection[] {
   return getVisibleNavigationZones(user).map((zone) => ({
-    label: zone.id,
+    id: zone.id,
+    label: getZoneLabel(zone.id),
     items: zone.items.map((item) => ({
       to: item.screen,
-      label: item.label,
+      label: getNavigationLabel(item),
       icon: ICONS[item.id],
       end: item.id === 'home',
     })),
@@ -119,6 +128,7 @@ export interface AdminSidebarProps {
 
 const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSidebarProps) => {
   const { user, logout } = useAuth()
+  const { t } = useI18n()
   const { conversations } = useMessaging()
   const navigate = useNavigate()
   const location = useLocation()
@@ -218,31 +228,31 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
   // Zone contenant la page active : elle reste dépliée même si l'utilisateur
   // l'avait refermée, pour que l'item courant soit toujours visible.
   const activeZone = useMemo(() => {
-    let bestLabel = ''
+    let bestId = ''
     let bestLength = -1
     for (const section of visibleSections) {
       for (const item of section.items) {
         const matches = item.to === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(item.to)
         if (matches && item.to.length > bestLength) {
           bestLength = item.to.length
-          bestLabel = section.label
+          bestId = section.id
         }
       }
     }
-    return bestLabel
+    return bestId
   }, [visibleSections, location.pathname])
 
   const navSections = (
     <>
       {visibleSections.map((section) => {
-        const isOpen = collapsed || openZones.has(section.label) || section.label === activeZone
+        const isOpen = collapsed || openZones.has(section.id) || section.id === activeZone
         return (
-          <div key={section.label} className={`admin-sb-section${isOpen ? ' open' : ''}`}>
+          <div key={section.id} className={`admin-sb-section${isOpen ? ' open' : ''}`}>
             <button
               type="button"
               className="admin-sb-section-header"
               aria-expanded={isOpen}
-              onClick={() => toggleZone(section.label)}
+              onClick={() => toggleZone(section.id)}
             >
               <span className="admin-sb-section-label">{section.label}</span>
               <ChevronDown size={13} className="admin-sb-section-chevron" aria-hidden />
@@ -270,7 +280,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                       {item.to === '/admin/messages' && unreadTotal > 0 && (
                         <span
                           className="admin-sb-badge"
-                          aria-label={`${unreadTotal} message${unreadTotal > 1 ? 's' : ''} non lu${unreadTotal > 1 ? 's' : ''}`}
+                          aria-label={t('shell.nav.unreadMessages', { count: unreadTotal })}
                         >
                           {unreadTotal > 99 ? '99+' : unreadTotal}
                         </span>
@@ -278,7 +288,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                       {item.to === '/admin/decisions' && pendingDecisionsCount > 0 && (
                         <span
                           className="admin-sb-badge"
-                          aria-label={`${pendingDecisionsCount} décision${pendingDecisionsCount > 1 ? 's' : ''} en attente`}
+                          aria-label={t('shell.nav.pendingDecisions', { count: pendingDecisionsCount })}
                         >
                           {pendingDecisionsCount > 99 ? '99+' : pendingDecisionsCount}
                         </span>
@@ -286,7 +296,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                       {item.to === '/admin/demandes-clients' && changeRequestsToQualify > 0 && (
                         <span
                           className="admin-sb-badge"
-                          aria-label={`${changeRequestsToQualify} demande${changeRequestsToQualify > 1 ? 's' : ''} à qualifier`}
+                          aria-label={t('shell.nav.requestsToQualify', { count: changeRequestsToQualify })}
                         >
                           {changeRequestsToQualify > 99 ? '99+' : changeRequestsToQualify}
                         </span>
@@ -305,18 +315,18 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
   // ---- Sidebar desktop ----
   return (
     <>
-      <aside className={`admin-sidebar${collapsed ? ' collapsed' : ''}`} aria-label="Navigation admin">
+      <aside className={`admin-sidebar${collapsed ? ' collapsed' : ''}`} aria-label={t('shell.nav.adminAria')}>
         <button
           type="button"
           className="admin-sb-brand"
           onClick={() => navigate('/admin')}
-          aria-label="Accueil Venio Admin"
+          aria-label={t('shell.nav.adminHome')}
         >
           <span className="admin-sb-logo">V</span>
           <span className="admin-sb-brand-name">Venio Admin</span>
         </button>
 
-        <nav className="admin-sb-scroll" aria-label="Navigation principale">
+        <nav className="admin-sb-scroll" aria-label={t('shell.nav.mainAria')}>
           {navSections}
         </nav>
 
@@ -328,7 +338,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
             size={28}
           />
           <div className="admin-sb-user-info">
-            <div className="admin-sb-user-name">{user?.name || user?.email || 'Utilisateur'}</div>
+            <div className="admin-sb-user-name">{user?.name || user?.email || t('shell.nav.userFallback')}</div>
             <div className="admin-sb-user-role">{user?.jobTitle || user?.role}</div>
           </div>
         </div>
@@ -341,35 +351,40 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                 key={item.id}
                 type="button"
                 className="admin-sb-footer-btn"
-                title={item.label}
+                title={getNavigationLabel(item)}
                 onClick={() => navigate(item.screen)}
               >
                 <Icon size={15} aria-hidden />
-                <span className="admin-sb-label">{item.label}</span>
+                <span className="admin-sb-label">{getNavigationLabel(item)}</span>
               </button>
             )
           })}
           <button
             type="button"
             className="admin-sb-footer-btn"
-            title="Mon profil"
+            title={t('shell.nav.profile')}
             onClick={() => navigate('/admin/profil')}
           >
             <User size={15} aria-hidden />
-            <span className="admin-sb-label">Mon profil</span>
+            <span className="admin-sb-label">{t('shell.nav.profile')}</span>
           </button>
           <button
             type="button"
             className="admin-sb-footer-btn"
-            title="Mon relevé"
+            title={t('shell.nav.statement')}
             onClick={() => navigate('/admin/mon-releve')}
           >
             <User size={15} aria-hidden />
-            <span className="admin-sb-label">Mon relevé</span>
+            <span className="admin-sb-label">{t('shell.nav.statement')}</span>
           </button>
-          <button type="button" className="admin-sb-footer-btn danger" title="Se déconnecter" onClick={handleLogout}>
+          <button
+            type="button"
+            className="admin-sb-footer-btn danger"
+            title={t('shell.nav.logoutTitle')}
+            onClick={handleLogout}
+          >
             <LogOut size={15} aria-hidden />
-            <span className="admin-sb-label">Déconnexion</span>
+            <span className="admin-sb-label">{t('auth.logout')}</span>
           </button>
         </div>
       </aside>
@@ -382,7 +397,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
             <aside
               ref={drawerRef}
               className="admin-sb-drawer"
-              aria-label="Navigation mobile"
+              aria-label={t('shell.nav.mobileAria')}
               role="dialog"
               aria-modal="true"
               tabIndex={-1}
@@ -396,7 +411,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                     onDrawerClose?.()
                     navigate('/admin')
                   }}
-                  aria-label="Accueil Venio Admin"
+                  aria-label={t('shell.nav.adminHome')}
                 >
                   <span className="admin-sb-logo">V</span>
                   <span className="admin-sb-brand-name">Venio Admin</span>
@@ -406,12 +421,12 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                   type="button"
                   className="admin-sb-drawer-close"
                   onClick={onDrawerClose}
-                  aria-label="Fermer le menu de navigation"
+                  aria-label={t('shell.nav.closeMenu')}
                 >
                   <X size={18} />
                 </button>
               </div>
-              <nav className="admin-sb-drawer-body" aria-label="Navigation mobile">
+              <nav className="admin-sb-drawer-body" aria-label={t('shell.nav.mobileAria')}>
                 {navSections}
               </nav>
               <div className="admin-sb-drawer-footer">
@@ -423,7 +438,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                     size={28}
                   />
                   <div className="admin-sb-user-info">
-                    <div className="admin-sb-user-name">{user?.name || user?.email || 'Utilisateur'}</div>
+                    <div className="admin-sb-user-name">{user?.name || user?.email || t('shell.nav.userFallback')}</div>
                     <div className="admin-sb-user-role">{user?.jobTitle || user?.role}</div>
                   </div>
                 </div>
@@ -440,7 +455,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                       }}
                     >
                       <Icon size={15} aria-hidden />
-                      <span>{item.label}</span>
+                      <span>{getNavigationLabel(item)}</span>
                     </button>
                   )
                 })}
@@ -453,7 +468,7 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                   }}
                 >
                   <User size={15} aria-hidden />
-                  <span>Mon profil</span>
+                  <span>{t('shell.nav.profile')}</span>
                 </button>
                 <button
                   type="button"
@@ -464,11 +479,11 @@ const AdminSidebar = ({ collapsed, drawerOpen = false, onDrawerClose }: AdminSid
                   }}
                 >
                   <User size={15} aria-hidden />
-                  <span>Mon relevé</span>
+                  <span>{t('shell.nav.statement')}</span>
                 </button>
                 <button type="button" className="admin-sb-footer-btn danger" onClick={handleLogout}>
                   <LogOut size={15} aria-hidden />
-                  <span>Déconnexion</span>
+                  <span>{t('auth.logout')}</span>
                 </button>
               </div>
             </aside>

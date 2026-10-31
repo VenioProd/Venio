@@ -20,6 +20,7 @@ import {
   type DevIssueStatus,
   type DevIssueType,
 } from '../../../services/dev'
+import { useI18n } from '../../../context/I18nContext'
 import { formatRelative } from './helpers'
 import GithubLinkPanel from './GithubLinkPanel'
 import AgentLaunchControl from './AgentLaunchControl'
@@ -61,6 +62,7 @@ export default function IssueDetailPanel({
   onDeleteComment,
   onDeleteIssue,
 }: Props) {
+  const { t } = useI18n()
   const [commentKind, setCommentKind] = useState<DevIssueCommentKind>('NOTE')
   const [commentContext, setCommentContext] = useState('')
   const executionProfile: DevIssueExecutionProfile = issue.executionProfile ?? {
@@ -83,7 +85,7 @@ export default function IssueDetailPanel({
           {typeof issue.project === 'object' ? issue.project.key : ''}-{issue.number} ·{' '}
           {issue.reporter?.name || issue.reporter?.email || ''}
         </span>
-        <button className="dev-detail-close" onClick={onClose} aria-label="Fermer">
+        <button className="dev-detail-close" onClick={onClose} aria-label={t('common.close')}>
           <X size={16} />
         </button>
       </div>
@@ -97,7 +99,7 @@ export default function IssueDetailPanel({
         />
 
         <div className="dev-detail-meta">
-          <span className="dev-detail-meta-label">Statut</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.status')}</span>
           <span className="dev-detail-meta-value">
             <select
               disabled={!canManage}
@@ -112,7 +114,7 @@ export default function IssueDetailPanel({
             </select>
           </span>
 
-          <span className="dev-detail-meta-label">Priorité</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.priority')}</span>
           <span className="dev-detail-meta-value">
             <select
               disabled={!canManage}
@@ -127,7 +129,7 @@ export default function IssueDetailPanel({
             </select>
           </span>
 
-          <span className="dev-detail-meta-label">Type</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.type')}</span>
           <span className="dev-detail-meta-value">
             <select
               disabled={!canManage}
@@ -142,11 +144,11 @@ export default function IssueDetailPanel({
             </select>
           </span>
 
-          <span className="dev-detail-meta-label">Labels</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.labels')}</span>
           <span className="dev-detail-meta-value">
             <input
               disabled={!canManage}
-              placeholder="virgules pour séparer"
+              placeholder={t('devA.detail.labelsPlaceholder')}
               defaultValue={issue.labels.join(', ')}
               onBlur={(e) => {
                 const labels = e.target.value
@@ -158,7 +160,7 @@ export default function IssueDetailPanel({
             />
           </span>
 
-          <span className="dev-detail-meta-label">Échéance</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.dueDate')}</span>
           <span className="dev-detail-meta-value">
             <input
               type="date"
@@ -172,7 +174,7 @@ export default function IssueDetailPanel({
             />
           </span>
 
-          <span className="dev-detail-meta-label">Estimation</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.estimate')}</span>
           <span className="dev-detail-meta-value">
             <input
               type="number"
@@ -188,18 +190,18 @@ export default function IssueDetailPanel({
             />
           </span>
 
-          <span className="dev-detail-meta-label">Cycle</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.cycle')}</span>
           <span className="dev-detail-meta-value">
             <input
               disabled={!canManage}
               value={issue.cycle ?? ''}
-              placeholder="Sprint / vague"
+              placeholder={t('devA.detail.cyclePlaceholder')}
               onChange={(e) => setIssue((p) => (p ? { ...p, cycle: e.target.value || null } : p))}
               onBlur={() => canManage && onPatch(issue._id, { cycle: issue.cycle || null })}
             />
           </span>
 
-          <span className="dev-detail-meta-label">Agent</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.agent')}</span>
           <span className="dev-detail-meta-value">
             <input
               disabled={!canManage}
@@ -210,12 +212,12 @@ export default function IssueDetailPanel({
             />
           </span>
 
-          <span className="dev-detail-meta-label">Modèle créateur</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.creatorModel')}</span>
           <span className="dev-detail-meta-value" style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
-            {issue.createdByModel || 'Non renseigné'}
+            {issue.createdByModel || t('devA.workspace.creatorModelUnset')}
           </span>
 
-          <span className="dev-detail-meta-label">Modèle conseillé</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.recommendedModel')}</span>
           <span className="dev-detail-meta-value">
             <select
               disabled={!canManage}
@@ -225,7 +227,7 @@ export default function IssueDetailPanel({
               }
               onBlur={() => canManage && onPatch(issue._id, { executionProfile: issue.executionProfile })}
             >
-              <option value="">Auto / non renseigné</option>
+              <option value="">{t('devA.detail.autoUnset')}</option>
               {Object.entries(DEV_AI_MODEL_LABEL).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -234,7 +236,7 @@ export default function IssueDetailPanel({
             </select>
           </span>
 
-          <span className="dev-detail-meta-label">Raisonnement</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.reasoning')}</span>
           <span className="dev-detail-meta-value">
             <select
               disabled={!canManage}
@@ -244,7 +246,7 @@ export default function IssueDetailPanel({
               }
               onBlur={() => canManage && onPatch(issue._id, { executionProfile: issue.executionProfile })}
             >
-              <option value="">Auto / non renseigné</option>
+              <option value="">{t('devA.detail.autoUnset')}</option>
               {Object.entries(DEV_REASONING_EFFORT_LABEL).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -253,12 +255,12 @@ export default function IssueDetailPanel({
             </select>
           </span>
 
-          <span className="dev-detail-meta-label">Blocage</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.blocker')}</span>
           <span className="dev-detail-meta-value">
             <input
               disabled={!canManage}
               value={issue.blockedReason ?? ''}
-              placeholder="Raison du blocage"
+              placeholder={t('devA.detail.blockerPlaceholder')}
               onChange={(e) => setIssue((p) => (p ? { ...p, blockedReason: e.target.value || null } : p))}
               onBlur={() => canManage && onPatch(issue._id, { blockedReason: issue.blockedReason || null })}
             />
@@ -269,7 +271,7 @@ export default function IssueDetailPanel({
             <input
               disabled={!canManage}
               value={issue.external?.linearIdentifier ?? ''}
-              placeholder="VEN-123 / ID Linear"
+              placeholder={t('devA.detail.linearPlaceholder')}
               onChange={(e) =>
                 setIssue((p) =>
                   p
@@ -288,7 +290,7 @@ export default function IssueDetailPanel({
             />
           </span>
 
-          <span className="dev-detail-meta-label">Créée</span>
+          <span className="dev-detail-meta-label">{t('devA.detail.created')}</span>
           <span className="dev-detail-meta-value" style={{ fontSize: 12.5, color: 'var(--ink-dim)' }}>
             {formatRelative(issue.createdAt)}
           </span>
@@ -303,20 +305,20 @@ export default function IssueDetailPanel({
 
         <textarea
           className="dev-detail-description"
-          placeholder="Description / contexte / liens GitHub…"
+          placeholder={t('devA.detail.descriptionPlaceholder')}
           disabled={!canManage}
           value={issue.description}
           onChange={(e) => setIssue((p) => (p ? { ...p, description: e.target.value } : p))}
           onBlur={() => canManage && onPatch(issue._id, { description: issue.description })}
         />
 
-        <div className="dev-detail-section">Brief d'exécution IA</div>
+        <div className="dev-detail-section">{t('devA.detail.briefHeading')}</div>
         {(
           [
-            ['context', 'Contexte utile à l’agent', 'Contraintes, historique, décisions déjà prises…'],
-            ['executionPlan', 'Plan d’exécution', 'Étapes attendues, périmètre et hors-périmètre…'],
-            ['verificationPlan', 'Validation attendue', 'Tests, CI, smoke test, preuve de sortie…'],
-            ['handoff', 'Handoff attendu', 'État final, références et prochaine action…'],
+            ['context', t('devA.detail.briefContext'), t('devA.detail.briefContextPlaceholder')],
+            ['executionPlan', t('devA.detail.briefPlan'), t('devA.detail.briefPlanPlaceholder')],
+            ['verificationPlan', t('devA.detail.briefVerification'), t('devA.detail.briefVerificationPlaceholder')],
+            ['handoff', t('devA.detail.briefHandoff'), t('devA.detail.briefHandoffPlaceholder')],
           ] as const
         ).map(([field, label, placeholder]) => (
           <label key={field} className="dev-detail-meta-label" style={{ display: 'block', marginTop: 10 }}>
@@ -335,7 +337,7 @@ export default function IssueDetailPanel({
 
         {typeof issue.project === 'object' && (
           <div className="dev-detail-section">
-            Agent cadré
+            {t('devA.detail.framedAgent')}
             <div style={{ marginTop: 8 }}>
               <AgentLaunchControl
                 projectId={issue.project._id}
@@ -348,18 +350,18 @@ export default function IssueDetailPanel({
           </div>
         )}
 
-        <div className="dev-detail-section">Commentaires ({comments.length})</div>
+        <div className="dev-detail-section">{t('devA.detail.commentsHeading', { count: comments.length })}</div>
         <div className="dev-comments">
           {comments.map((c) => (
             <div key={c._id} className="dev-comment">
               <div className="dev-comment-meta">
                 <span>
-                  {DEV_ISSUE_COMMENT_KIND_LABEL[c.kind] || 'Note'} · {c.author?.name || c.author?.email || 'Inconnu'} ·{' '}
-                  {formatRelative(c.createdAt)}
+                  {DEV_ISSUE_COMMENT_KIND_LABEL[c.kind] || DEV_ISSUE_COMMENT_KIND_LABEL.NOTE} ·{' '}
+                  {c.author?.name || c.author?.email || t('devA.detail.unknownAuthor')} · {formatRelative(c.createdAt)}
                 </span>
                 {(canManage || c.author?._id === user?._id) && (
                   <button className="dev-comment-delete" onClick={() => onDeleteComment(c._id)}>
-                    supprimer
+                    {t('devA.detail.deleteComment')}
                   </button>
                 )}
               </div>
@@ -367,7 +369,9 @@ export default function IssueDetailPanel({
               <div style={{ whiteSpace: 'pre-wrap' }}>{c.body}</div>
             </div>
           ))}
-          {comments.length === 0 && <div style={{ color: 'var(--ink-faint)', fontSize: 12.5 }}>Aucun commentaire</div>}
+          {comments.length === 0 && (
+            <div style={{ color: 'var(--ink-faint)', fontSize: 12.5 }}>{t('devA.detail.noComments')}</div>
+          )}
         </div>
 
         {canManage && (
@@ -383,11 +387,11 @@ export default function IssueDetailPanel({
               <input
                 value={commentContext}
                 onChange={(e) => setCommentContext(e.target.value)}
-                placeholder="Contexte court (optionnel)"
+                placeholder={t('devA.detail.commentContextPlaceholder')}
               />
             </div>
             <textarea
-              placeholder="Fait, décision, risque, preuve ou handoff…"
+              placeholder={t('devA.detail.commentPlaceholder')}
               value={commentDraft}
               onChange={(e) => setCommentDraft(e.target.value)}
             />
@@ -400,7 +404,7 @@ export default function IssueDetailPanel({
                 }}
                 disabled={!commentDraft.trim()}
               >
-                Commenter
+                {t('devA.detail.comment')}
               </button>
             </div>
           </div>
@@ -410,7 +414,7 @@ export default function IssueDetailPanel({
           <div className="dev-danger-zone">
             <button className="dev-danger-btn" onClick={() => onDeleteIssue(issue._id)}>
               <Trash2 size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-              Supprimer l'issue
+              {t('devA.detail.deleteIssue')}
             </button>
           </div>
         )}

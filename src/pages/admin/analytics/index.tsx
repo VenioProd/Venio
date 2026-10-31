@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import ProjectSection from './ProjectSection'
 import PublicSiteSection from './PublicSiteSection'
@@ -13,6 +14,7 @@ import '../../../styles/analytics.css'
 
 export default function Analytics() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const canViewCrm = hasPermission(user, PERMISSIONS.VIEW_CRM)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [publicSiteData, setPublicSiteData] = useState<PublicSiteAnalyticsData | null>(null)
@@ -40,7 +42,7 @@ export default function Analytics() {
     return (
       <div className="portal-container">
         <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
-          Chargement des statistiques...
+          {t('adminTech.analytics.loading')}
         </div>
       </div>
     )
@@ -49,7 +51,7 @@ export default function Analytics() {
   if (!data) {
     return (
       <div className="portal-container">
-        <div className="admin-error">Erreur chargement des statistiques</div>
+        <div className="admin-error">{t('adminTech.analytics.loadError')}</div>
       </div>
     )
   }
@@ -58,12 +60,12 @@ export default function Analytics() {
     <div className="portal-container">
       <div className="portal-card">
         <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
+          <Link to="/admin">{t('nav.admin')}</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Statistiques</span>
+          <span style={{ color: 'var(--text-primary)' }}>{t('adminTech.analytics.breadcrumb')}</span>
         </div>
         <div className="admin-header">
-          <h1>Statistiques & Reporting</h1>
+          <h1>{t('adminTech.analytics.title')}</h1>
         </div>
       </div>
 

@@ -10,7 +10,8 @@ import {
   type BetaScenario,
   type BetaTemplate,
 } from '../../../services/beta'
-import { SCENARIO_STATUS_LABEL, scenarioTone, sortScenariosByAttention } from './helpers'
+import { useI18n } from '../../../context/I18nContext'
+import { SCENARIO_STATUS_LABEL_KEY, scenarioTone, sortScenariosByAttention } from './helpers'
 
 interface Props {
   campaignId: string
@@ -24,6 +25,7 @@ interface DraftStep {
 }
 
 export default function ScenarioPanel({ campaignId, scenarios, onChanged }: Props) {
+  const { t } = useI18n()
   const [templates, setTemplates] = useState<BetaTemplate[]>([])
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -38,12 +40,12 @@ export default function ScenarioPanel({ campaignId, scenarios, onChanged }: Prop
     <div className="beta-scenarios">
       <div className="beta-scenarios-toolbar">
         <button type="button" className="beta-btn beta-btn-primary" onClick={() => setAdding(true)}>
-          <Plus size={14} aria-hidden /> Ajouter une démarche
+          <Plus size={14} aria-hidden /> {t('beta.scenarios.add')}
         </button>
 
         {templates.length > 0 && (
           <label className="beta-inline-field">
-            Partir d’une trame
+            {t('beta.scenarios.fromTemplate')}
             <select
               defaultValue=""
               onChange={async (event) => {
@@ -53,7 +55,7 @@ export default function ScenarioPanel({ campaignId, scenarios, onChanged }: Prop
                 onChanged()
               }}
             >
-              <option value="">Choisir…</option>
+              <option value="">{t('beta.admin.choose')}</option>
               {templates.map((template) => (
                 <option key={template._id} value={template._id}>
                   {template.name}
@@ -68,14 +70,14 @@ export default function ScenarioPanel({ campaignId, scenarios, onChanged }: Prop
             type="button"
             className="beta-btn"
             onClick={async () => {
-              const name = window.prompt('Nom de la trame à enregistrer')
+              const name = window.prompt(t('beta.scenarios.templateName'))
               if (!name) return
               await createTemplate({ name, fromCampaign: campaignId })
               const { templates: loaded } = await listTemplates()
               setTemplates(loaded)
             }}
           >
-            <Copy size={14} aria-hidden /> Enregistrer comme trame
+            <Copy size={14} aria-hidden /> {t('beta.scenarios.saveAsTemplate')}
           </button>
         )}
       </div>
@@ -91,9 +93,7 @@ export default function ScenarioPanel({ campaignId, scenarios, onChanged }: Prop
         />
       )}
 
-      {scenarios.length === 0 && !adding && (
-        <p className="beta-muted">Aucune démarche. Décrivez ce que les testeurs doivent essayer.</p>
-      )}
+      {scenarios.length === 0 && !adding && <p className="beta-muted">{t('beta.scenarios.empty')}</p>}
 
       <ul className="beta-scenario-list">
         {sortScenariosByAttention(scenarios).map((scenario) => (
@@ -112,7 +112,7 @@ export default function ScenarioPanel({ campaignId, scenarios, onChanged }: Prop
               <>
                 <header>
                   <span className={`beta-badge beta-badge-${scenarioTone(scenario.summaryStatus)}`}>
-                    {SCENARIO_STATUS_LABEL[scenario.summaryStatus]}
+                    {t(SCENARIO_STATUS_LABEL_KEY[scenario.summaryStatus])}
                   </span>
                   <span className="beta-scenario-id">{scenario.identifier}</span>
                   <h3>{scenario.title}</h3>
@@ -122,14 +122,14 @@ export default function ScenarioPanel({ campaignId, scenarios, onChanged }: Prop
                       className="beta-btn beta-btn-ghost"
                       onClick={() => setEditingId(scenario._id)}
                     >
-                      Modifier
+                      {t('common.edit')}
                     </button>
                     <button
                       type="button"
                       className="beta-btn beta-btn-ghost"
-                      aria-label={`Archiver ${scenario.title}`}
+                      aria-label={t('beta.scenarios.archiveAria', { title: scenario.title })}
                       onClick={async () => {
-                        if (!window.confirm(`Archiver « ${scenario.title} » ?`)) return
+                        if (!window.confirm(t('beta.scenarios.archiveConfirm', { title: scenario.title }))) return
                         await archiveScenario(scenario._id)
                         onChanged()
                       }}
@@ -165,6 +165,7 @@ interface EditorProps {
 }
 
 function ScenarioEditor({ initial, onCancel, onSubmit }: EditorProps) {
+  const { t } = useI18n()
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [steps, setSteps] = useState<DraftStep[]>(
@@ -190,43 +191,41 @@ function ScenarioEditor({ initial, onCancel, onSubmit }: EditorProps) {
       }}
     >
       <label>
-        Ce que le testeur doit faire
+        {t('beta.scenarios.whatToDo')}
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="Demander un devis depuis la page contact"
+          placeholder={t('beta.scenarios.whatToDoPlaceholder')}
           required
         />
       </label>
       <label>
-        Précisions
+        {t('beta.scenarios.details')}
         <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={2} />
       </label>
 
       <fieldset className="beta-steps-editor">
-        <legend>Étapes guidées</legend>
-        <p className="beta-muted beta-hint">
-          Facultatif, mais précieux pour un testeur qui découvre le produit : il vous dira à quelle étape ça casse.
-        </p>
+        <legend>{t('beta.scenarios.guidedSteps')}</legend>
+        <p className="beta-muted beta-hint">{t('beta.scenarios.guidedStepsHint')}</p>
         {steps.map((step, index) => (
           <div key={index} className="beta-step-row">
             <span className="beta-step-order">{index + 1}</span>
             <input
               value={step.instruction}
               onChange={(event) => updateStep(index, { instruction: event.target.value })}
-              placeholder="Ouvrir /contact"
-              aria-label={`Étape ${index + 1}, action`}
+              placeholder={t('beta.scenarios.stepActionPlaceholder')}
+              aria-label={t('beta.scenarios.stepActionAria', { number: index + 1 })}
             />
             <input
               value={step.expected}
               onChange={(event) => updateStep(index, { expected: event.target.value })}
-              placeholder="Le formulaire s’affiche"
-              aria-label={`Étape ${index + 1}, résultat attendu`}
+              placeholder={t('beta.scenarios.stepExpectedPlaceholder')}
+              aria-label={t('beta.scenarios.stepExpectedAria', { number: index + 1 })}
             />
             <button
               type="button"
               className="beta-btn beta-btn-ghost"
-              aria-label={`Retirer l’étape ${index + 1}`}
+              aria-label={t('beta.scenarios.removeStepAria', { number: index + 1 })}
               onClick={() => setSteps((current) => current.filter((_, i) => i !== index))}
             >
               <Trash2 size={13} aria-hidden />
@@ -238,16 +237,16 @@ function ScenarioEditor({ initial, onCancel, onSubmit }: EditorProps) {
           className="beta-btn"
           onClick={() => setSteps((current) => [...current, { instruction: '', expected: '' }])}
         >
-          <Plus size={13} aria-hidden /> Étape
+          <Plus size={13} aria-hidden /> {t('beta.scenarios.addStep')}
         </button>
       </fieldset>
 
       <div className="beta-modal-actions">
         <button type="button" className="beta-btn" onClick={onCancel}>
-          Annuler
+          {t('common.cancel')}
         </button>
         <button type="submit" className="beta-btn beta-btn-primary" disabled={saving || !title.trim()}>
-          <Save size={14} aria-hidden /> {saving ? 'Enregistrement…' : 'Enregistrer'}
+          <Save size={14} aria-hidden /> {saving ? t('beta.scenarios.saving') : t('common.save')}
         </button>
       </div>
     </form>

@@ -6,7 +6,9 @@ import { apiFetch } from '../../lib/api'
 import { SkeletonRow } from '../../components/Skeleton'
 import SubsidiaryFormDrawer from './subsidiaries/SubsidiaryFormDrawer'
 import type { Subsidiary, SubsidiaryPerson } from '../../types/subsidiary.types'
-import { HEALTH_COLORS, HEALTH_LABELS, STATUS_LABELS, STATUS_COLORS } from '../../types/subsidiary.types'
+import { HEALTH_COLORS, STATUS_COLORS } from '../../types/subsidiary.types'
+import { HEALTH_LABEL_KEYS, STATUS_LABEL_KEYS } from './subsidiaries/labels'
+import { useI18n } from '../../context/I18nContext'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 import './Subsidiaries.css'
@@ -56,6 +58,7 @@ function Delta({ delta }: { delta: number }) {
 }
 
 export default function SubsidiaryList() {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [subsidiaries, setSubsidiaries] = useState<Subsidiary[]>([])
   const [admins, setAdmins] = useState<SubsidiaryPerson[]>([])
@@ -92,15 +95,13 @@ export default function SubsidiaryList() {
     <div className="portal-container">
       <div className="admin-page-header">
         <div>
-          <h1>Filiales</h1>
-          <p className="admin-page-subtitle">
-            Vue portefeuille · les business internes du groupe Venio · réservé super admin
-          </p>
+          <h1>{t('orgs.subsidiary.list.title')}</h1>
+          <p className="admin-page-subtitle">{t('orgs.subsidiary.list.subtitle')}</p>
         </div>
         <div className="admin-quick-actions">
           <button type="button" className="portal-button" onClick={() => setShowForm((v) => !v)}>
             <Plus size={15} style={{ verticalAlign: -2, marginRight: 5 }} />
-            Nouvelle filiale
+            {t('orgs.subsidiary.list.newButton')}
           </button>
         </div>
       </div>
@@ -108,19 +109,19 @@ export default function SubsidiaryList() {
       {!loading && subsidiaries.length > 0 && (
         <div className="sub-summary">
           <div className="sub-summary__item">
-            <div className="sub-summary__label">Filiales</div>
+            <div className="sub-summary__label">{t('orgs.subsidiary.list.summaryCount')}</div>
             <div className="sub-summary__value">{subsidiaries.length}</div>
           </div>
           <div className="sub-summary__item">
-            <div className="sub-summary__label">Actives</div>
+            <div className="sub-summary__label">{t('orgs.subsidiary.list.summaryActive')}</div>
             <div className="sub-summary__value">{activeCount}</div>
           </div>
           <div className="sub-summary__item">
-            <div className="sub-summary__label">CA cumulé / mois</div>
+            <div className="sub-summary__label">{t('orgs.subsidiary.list.summaryRevenue')}</div>
             <div className="sub-summary__value">{formatCompactEUR(totalCa)}</div>
           </div>
           <div className="sub-summary__item">
-            <div className="sub-summary__label">Effectif total</div>
+            <div className="sub-summary__label">{t('orgs.subsidiary.list.summaryHeadcount')}</div>
             <div className="sub-summary__value">{totalHeadcount}</div>
           </div>
         </div>
@@ -148,9 +149,7 @@ export default function SubsidiaryList() {
       ) : subsidiaries.length === 0 && !showForm ? (
         <div className="admin-empty-state" style={{ marginTop: 32 }}>
           <Building2 size={32} className="admin-empty-state-icon" />
-          <p className="admin-empty-state-text">
-            Aucune filiale pour l’instant. Crée la première (Yumi, Arrow, Jiraya…).
-          </p>
+          <p className="admin-empty-state-text">{t('orgs.subsidiary.list.empty')}</p>
         </div>
       ) : (
         <div className="sub-grid">
@@ -185,7 +184,7 @@ export default function SubsidiaryList() {
                     <span
                       className="sub-dot"
                       style={{ background: HEALTH_COLORS[s.health] }}
-                      title={HEALTH_LABELS[s.health]}
+                      title={t(HEALTH_LABEL_KEYS[s.health])}
                     />
                   </div>
 
@@ -194,7 +193,7 @@ export default function SubsidiaryList() {
                       className="sub-status-pill"
                       style={{ borderColor: STATUS_COLORS[s.status], color: STATUS_COLORS[s.status] }}
                     >
-                      {STATUS_LABELS[s.status]}
+                      {t(STATUS_LABEL_KEYS[s.status])}
                     </span>
                     {s.tags?.slice(0, 2).map((t) => (
                       <span key={t} className="admin-tag">
@@ -205,17 +204,17 @@ export default function SubsidiaryList() {
 
                   <div className="sub-card__kpis">
                     <div>
-                      <div className="sub-kpi__label">CA / mois</div>
+                      <div className="sub-kpi__label">{t('orgs.subsidiary.list.kpiRevenue')}</div>
                       <div className="sub-kpi__value">
                         {formatCompactEUR(s.kpis?.caMtd ?? 0)} <Delta delta={s.kpis?.caMtdDelta ?? 0} />
                       </div>
                     </div>
                     <div>
-                      <div className="sub-kpi__label">Marge</div>
+                      <div className="sub-kpi__label">{t('orgs.subsidiary.list.kpiMargin')}</div>
                       <div className="sub-kpi__value">{s.kpis?.margin ?? 0}%</div>
                     </div>
                     <div>
-                      <div className="sub-kpi__label">Équipe</div>
+                      <div className="sub-kpi__label">{t('orgs.subsidiary.list.kpiTeam')}</div>
                       <div className="sub-kpi__value">{headcount}</div>
                     </div>
                   </div>
@@ -239,7 +238,7 @@ export default function SubsidiaryList() {
           })}
 
           <button className="sub-card sub-card--add" onClick={() => setShowForm(true)}>
-            <Plus size={18} /> Ajouter une filiale
+            <Plus size={18} /> {t('orgs.subsidiary.list.addButton')}
           </button>
         </div>
       )}

@@ -157,3 +157,10 @@
     display: none;
   }
 }
+
+/* Sélecteur de langue de la barre du haut */
+.client-shell-topbar .language-select {
+  align-self: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}

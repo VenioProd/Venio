@@ -1,13 +1,25 @@
+import { translate } from '../i18n'
+
 export const OFFER_IDS = ['vitrine', 'essentiel', 'business', 'ecommerce', 'plateforme'] as const
 
 export type OfferId = (typeof OFFER_IDS)[number]
 
 export const OFFER_LABELS: Record<OfferId, string> = {
-  vitrine: 'Vitrine',
-  essentiel: 'Essentiel',
-  business: 'Business',
-  ecommerce: 'E-commerce',
-  plateforme: 'Plateforme',
+  get vitrine() {
+    return translate('pubHome.proofs.vitrine')
+  },
+  get essentiel() {
+    return translate('pubHome.proofs.essentiel')
+  },
+  get business() {
+    return translate('pubHome.proofs.business')
+  },
+  get ecommerce() {
+    return translate('pubHome.proofs.ecommerce')
+  },
+  get plateforme() {
+    return translate('pubHome.proofs.plateforme')
+  },
 }
 
 export interface PublicCaseStudy {

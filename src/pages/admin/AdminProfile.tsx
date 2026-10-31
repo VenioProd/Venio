@@ -1,21 +1,25 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import { apiFetch, apiUpload } from '../../lib/api'
 import NotificationSettings from '../../components/NotificationSettings'
 import NotificationPreferencesPanel from '../../components/NotificationPreferencesPanel'
 import UserAvatar from '../../components/UserAvatar'
 import AvatarCropModal from '../../components/AvatarCropModal'
+import LanguageSelect from '../../components/LanguageSelect'
 import '../espace-client/ClientPortal.css'
 
-const ROLE_LABELS: Record<string, { label: string; color: string }> = {
-  SUPER_ADMIN: { label: 'Super Admin', color: '#0ea5e9' },
-  ADMIN: { label: 'Commercial', color: '#0284c7' },
-  VIEWER: { label: 'Lecteur', color: '#64748b' },
+const ROLE_LABELS: Record<string, { labelKey: MessageKey; color: string }> = {
+  SUPER_ADMIN: { labelKey: 'adminAccess.profile.roleSuperAdmin', color: '#0ea5e9' },
+  ADMIN: { labelKey: 'adminAccess.profile.roleSales', color: '#0284c7' },
+  VIEWER: { labelKey: 'adminAccess.profile.roleViewer', color: '#64748b' },
 }
 
 const AdminProfile = () => {
   const { user, refreshUser } = useAuth()
+  const { t } = useI18n()
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -49,10 +53,10 @@ const AdminProfile = () => {
         body: JSON.stringify(form),
       })
       await refreshUser()
-      setSuccess('Profil mis a jour avec succes')
+      setSuccess(t('adminAccess.profile.profileUpdated'))
       setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur lors de la mise a jour')
+      setError((err as Error).message || t('adminAccess.profile.updateFailed'))
     } finally {
       setSaving(false)
     }
@@ -62,11 +66,11 @@ const AdminProfile = () => {
     e.preventDefault()
     setPasswordError('')
     if (passwordForm.newPassword.length < 6) {
-      setPasswordError('Le mot de passe doit contenir au moins 6 caracteres')
+      setPasswordError(t('adminAccess.profile.passwordTooShort'))
       return
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError('Les mots de passe ne correspondent pas')
+      setPasswordError(t('adminAccess.profile.passwordMismatch'))
       return
     }
     setSavingPassword(true)
@@ -80,10 +84,10 @@ const AdminProfile = () => {
       })
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
       setShowPasswords({ current: false, new: false, confirm: false })
-      setSuccess('Mot de passe modifie avec succes')
+      setSuccess(t('adminAccess.profile.passwordChanged'))
       setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
-      setPasswordError((err as Error).message || 'Erreur lors du changement de mot de passe')
+      setPasswordError((err as Error).message || t('adminAccess.profile.passwordChangeFailed'))
     } finally {
       setSavingPassword(false)
     }
@@ -95,12 +99,12 @@ const AdminProfile = () => {
     setAvatarError('')
     const allowed = ['image/jpeg', 'image/png', 'image/webp']
     if (!allowed.includes(file.type)) {
-      setAvatarError('Format non supporté. Utilisez JPEG, PNG ou WebP.')
+      setAvatarError(t('adminAccess.profile.avatarBadFormat'))
       e.target.value = ''
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      setAvatarError("L'image dépasse 10 Mo.")
+      setAvatarError(t('adminAccess.profile.avatarTooLarge'))
       e.target.value = ''
       return
     }
@@ -117,10 +121,10 @@ const AdminProfile = () => {
       formData.append('avatar', blob, 'avatar.jpg')
       await apiUpload('/api/auth/avatar', formData)
       await refreshUser()
-      setSuccess('Photo de profil mise à jour')
+      setSuccess(t('adminAccess.profile.avatarUpdated'))
       setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
-      setAvatarError((err as Error).message || "Erreur lors de l'upload")
+      setAvatarError((err as Error).message || t('adminAccess.profile.avatarUploadFailed'))
     } finally {
       setAvatarUploading(false)
     }
@@ -134,16 +138,19 @@ const AdminProfile = () => {
     try {
       await apiFetch('/api/auth/avatar', { method: 'DELETE' })
       await refreshUser()
-      setSuccess('Photo de profil supprimée')
+      setSuccess(t('adminAccess.profile.avatarDeleted'))
       setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
-      setAvatarError((err as Error).message || 'Erreur lors de la suppression')
+      setAvatarError((err as Error).message || t('adminAccess.profile.avatarDeleteFailed'))
     } finally {
       setAvatarUploading(false)
     }
   }
 
-  const roleInfo = ROLE_LABELS[user?.role || ''] || { label: user?.role, color: '#64748b' }
+  const knownRole = ROLE_LABELS[user?.role || '']
+  const roleInfo = knownRole
+    ? { label: t(knownRole.labelKey), color: knownRole.color }
+    : { label: user?.role, color: '#64748b' }
 
   const passwordToggleStyle: React.CSSProperties = {
     position: 'absolute',
@@ -166,12 +173,12 @@ const AdminProfile = () => {
           to="/admin"
           style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}
         >
-          ← Retour au tableau de bord
+          {t('adminAccess.profile.backToDashboard')}
         </Link>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-        <h1 style={{ margin: 0 }}>Mon profil</h1>
+        <h1 style={{ margin: 0 }}>{t('adminAccess.profile.title')}</h1>
         <span
           style={{
             fontSize: '12px',
@@ -186,7 +193,7 @@ const AdminProfile = () => {
         </span>
       </div>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px' }}>
-        Gerez vos informations personnelles
+        {t('adminAccess.profile.subtitle')}
       </p>
 
       {success && (
@@ -207,7 +214,7 @@ const AdminProfile = () => {
       )}
 
       <div className="portal-card" style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Photo de profil</h2>
+        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>{t('adminAccess.profile.avatarHeading')}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <UserAvatar
             name={user?.name || user?.email || '?'}
@@ -231,7 +238,7 @@ const AdminProfile = () => {
                 opacity: avatarUploading ? 0.6 : 1,
               }}
             >
-              {avatarUploading ? 'Upload...' : 'Modifier la photo'}
+              {avatarUploading ? t('adminAccess.profile.avatarUploading') : t('adminAccess.profile.avatarChange')}
             </label>
             <input
               id="avatar-upload"
@@ -257,17 +264,19 @@ const AdminProfile = () => {
                   fontWeight: 600,
                 }}
               >
-                Supprimer la photo
+                {t('adminAccess.profile.avatarRemove')}
               </button>
             )}
             {avatarError && <p style={{ color: '#ef4444', fontSize: '13px', margin: 0 }}>{avatarError}</p>}
-            <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: 0 }}>JPEG, PNG ou WebP · 10 Mo max</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: 0 }}>
+              {t('adminAccess.profile.avatarHint')}
+            </p>
           </div>
         </div>
       </div>
 
       <div className="portal-card" style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Informations generales</h2>
+        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>{t('adminAccess.profile.generalHeading')}</h2>
         <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label
@@ -279,7 +288,7 @@ const AdminProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Nom complet
+              {t('adminAccess.profile.fullName')}
             </label>
             <input
               className="portal-input"
@@ -299,7 +308,7 @@ const AdminProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Email
+              {t('adminAccess.profile.email')}
             </label>
             <input
               className="portal-input"
@@ -320,7 +329,7 @@ const AdminProfile = () => {
                   marginBottom: '6px',
                 }}
               >
-                Telephone
+                {t('adminAccess.profile.phone')}
               </label>
               <input
                 className="portal-input"
@@ -340,7 +349,7 @@ const AdminProfile = () => {
                   marginBottom: '6px',
                 }}
               >
-                Site web
+                {t('adminAccess.profile.website')}
               </label>
               <input
                 className="portal-input"
@@ -353,9 +362,14 @@ const AdminProfile = () => {
           </div>
           {error && <p style={{ color: '#ef4444', fontSize: '14px' }}>{error}</p>}
           <button className="portal-button" type="submit" disabled={saving} style={{ alignSelf: 'flex-start' }}>
-            {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+            {saving ? t('adminAccess.profile.saving') : t('adminAccess.profile.saveChanges')}
           </button>
         </form>
+      </div>
+
+      <div className="portal-card" style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>{t('common.language')}</h2>
+        <LanguageSelect />
       </div>
 
       <div style={{ marginBottom: '24px' }}>
@@ -367,7 +381,7 @@ const AdminProfile = () => {
       </div>
 
       <div className="portal-card">
-        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Changer le mot de passe</h2>
+        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>{t('adminAccess.profile.passwordHeading')}</h2>
         <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label
@@ -379,7 +393,7 @@ const AdminProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Mot de passe actuel
+              {t('adminAccess.profile.currentPassword')}
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -394,7 +408,7 @@ const AdminProfile = () => {
                 type="button"
                 onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
                 style={passwordToggleStyle}
-                aria-label={showPasswords.current ? 'Masquer' : 'Afficher'}
+                aria-label={showPasswords.current ? t('adminAccess.profile.hide') : t('adminAccess.profile.show')}
               >
                 {showPasswords.current ? '🙈' : '👁'}
               </button>
@@ -410,7 +424,7 @@ const AdminProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Nouveau mot de passe
+              {t('adminAccess.profile.newPassword')}
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -426,7 +440,7 @@ const AdminProfile = () => {
                 type="button"
                 onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
                 style={passwordToggleStyle}
-                aria-label={showPasswords.new ? 'Masquer' : 'Afficher'}
+                aria-label={showPasswords.new ? t('adminAccess.profile.hide') : t('adminAccess.profile.show')}
               >
                 {showPasswords.new ? '🙈' : '👁'}
               </button>
@@ -442,7 +456,7 @@ const AdminProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Confirmer le nouveau mot de passe
+              {t('adminAccess.profile.confirmPassword')}
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -457,7 +471,7 @@ const AdminProfile = () => {
                 type="button"
                 onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
                 style={passwordToggleStyle}
-                aria-label={showPasswords.confirm ? 'Masquer' : 'Afficher'}
+                aria-label={showPasswords.confirm ? t('adminAccess.profile.hide') : t('adminAccess.profile.show')}
               >
                 {showPasswords.confirm ? '🙈' : '👁'}
               </button>
@@ -465,7 +479,7 @@ const AdminProfile = () => {
           </div>
           {passwordError && <p style={{ color: '#ef4444', fontSize: '14px' }}>{passwordError}</p>}
           <button className="portal-button" type="submit" disabled={savingPassword} style={{ alignSelf: 'flex-start' }}>
-            {savingPassword ? 'Modification...' : 'Changer le mot de passe'}
+            {savingPassword ? t('adminAccess.profile.changing') : t('adminAccess.profile.passwordHeading')}
           </button>
         </form>
       </div>

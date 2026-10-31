@@ -1,3 +1,5 @@
+import { useI18n } from '../../../context/I18nContext'
+
 interface Props {
   secret: string
   tokenName: string
@@ -7,6 +9,7 @@ interface Props {
 }
 
 export default function SecretRevealModal({ secret, tokenName, copied, onCopy, onClose }: Props) {
+  const { t } = useI18n()
   return (
     <div className="confirm-modal-overlay" onClick={onClose}>
       <div
@@ -17,7 +20,7 @@ export default function SecretRevealModal({ secret, tokenName, copied, onCopy, o
         aria-modal="true"
       >
         <div className="confirm-modal__header">
-          <h2 className="confirm-modal__title">🔑 Token créé : {tokenName}</h2>
+          <h2 className="confirm-modal__title">{t('adminTech.agentTokens.createdTitle', { name: tokenName })}</h2>
         </div>
         <div className="confirm-modal__body">
           <p
@@ -30,8 +33,7 @@ export default function SecretRevealModal({ secret, tokenName, copied, onCopy, o
               borderRadius: 6,
             }}
           >
-            ⚠️ Ce secret ne sera plus jamais affiché. Copiez-le maintenant et stockez-le
-            dans un gestionnaire de secrets (1Password, Bitwarden…).
+            {t('adminTech.agentTokens.secretWarning')}
           </p>
           <div
             style={{
@@ -46,13 +48,8 @@ export default function SecretRevealModal({ secret, tokenName, copied, onCopy, o
           >
             {secret}
           </div>
-          <button
-            type="button"
-            onClick={onCopy}
-            className="portal-button"
-            style={{ marginTop: 12, width: '100%' }}
-          >
-            {copied ? '✓ Copié' : '📋 Copier le secret'}
+          <button type="button" onClick={onCopy} className="portal-button" style={{ marginTop: 12, width: '100%' }}>
+            {copied ? t('adminTech.agentTokens.copied') : t('adminTech.agentTokens.copySecret')}
           </button>
         </div>
         <div className="confirm-modal__footer">
@@ -61,7 +58,7 @@ export default function SecretRevealModal({ secret, tokenName, copied, onCopy, o
             className="confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--info"
             onClick={onClose}
           >
-            J'ai copié, fermer
+            {t('adminTech.agentTokens.copiedClose')}
           </button>
         </div>
       </div>

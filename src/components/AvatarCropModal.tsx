@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useI18n } from '../context/I18nContext'
 
 const CANVAS_SIZE = 300
 
@@ -9,6 +10,7 @@ interface AvatarCropModalProps {
 }
 
 const AvatarCropModal = ({ file, onConfirm, onCancel }: AvatarCropModalProps) => {
+  const { t } = useI18n()
   const [imgUrl, setImgUrl] = useState<string | null>(null)
   const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null)
   const [imgNatural, setImgNatural] = useState({ w: 0, h: 0 })
@@ -52,7 +54,9 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }: AvatarCropModalProps) =>
     setOffset(clamp(dragStart.current.ox + dx, dragStart.current.oy + dy, scale))
   }
 
-  const handleMouseUp = () => { dragging.current = false }
+  const handleMouseUp = () => {
+    dragging.current = false
+  }
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
@@ -60,7 +64,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }: AvatarCropModalProps) =>
     const minScale = Math.max(CANVAS_SIZE / imgNatural.w, CANVAS_SIZE / imgNatural.h)
     const next = Math.min(4, Math.max(minScale, scale - e.deltaY * 0.001))
     setScale(next)
-    setOffset(prev => clamp(prev.x, prev.y, next))
+    setOffset((prev) => clamp(prev.x, prev.y, next))
   }
 
   const handleConfirm = () => {
@@ -75,7 +79,13 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }: AvatarCropModalProps) =>
     const sw = imgEl.naturalWidth * scale
     const sh = imgEl.naturalHeight * scale
     ctx.drawImage(imgEl, (CANVAS_SIZE - sw) / 2 + offset.x, (CANVAS_SIZE - sh) / 2 + offset.y, sw, sh)
-    canvas.toBlob(blob => { if (blob) onConfirm(blob) }, 'image/jpeg', 0.92)
+    canvas.toBlob(
+      (blob) => {
+        if (blob) onConfirm(blob)
+      },
+      'image/jpeg',
+      0.92,
+    )
   }
 
   const sw = imgNatural.w * scale
@@ -84,24 +94,35 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }: AvatarCropModalProps) =>
   const imgY = (CANVAS_SIZE - sh) / 2 + offset.y
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      background: 'rgba(0,0,0,0.8)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{
-        background: 'var(--bg-card, #1e1e2e)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '16px',
-        padding: '28px 24px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px',
-        boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
-      }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        background: 'rgba(0,0,0,0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        style={{
+          background: 'var(--bg-card, #1e1e2e)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '16px',
+          padding: '28px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '18px',
+          boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
+        }}
+      >
         <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-primary, #fff)' }}>
-          Cadrer la photo
+          {t('shared.avatarCrop.title')}
         </h2>
         <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted, #888)', textAlign: 'center' }}>
-          Glissez pour repositionner · Molette pour zoomer
+          {t('shared.avatarCrop.hint')}
         </p>
 
         <div
@@ -115,7 +136,9 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }: AvatarCropModalProps) =>
             border: '2px solid var(--primary, #0ea5e9)',
             background: 'rgba(255,255,255,0.04)',
             userSelect: 'none',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -126,7 +149,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }: AvatarCropModalProps) =>
           {imgUrl && imgEl ? (
             <img
               src={imgUrl}
-              alt="aperçu recadrage"
+              alt={t('shared.avatarCrop.previewAlt')}
               draggable={false}
               style={{
                 position: 'absolute',
@@ -138,9 +161,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }: AvatarCropModalProps) =>
               }}
             />
           ) : (
-            <span style={{ fontSize: '13px', color: 'var(--text-muted, #888)' }}>
-              Chargement...
-            </span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted, #888)' }}>{t('common.loading')}</span>
           )}
         </div>
 
@@ -159,7 +180,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }: AvatarCropModalProps) =>
               fontWeight: 600,
             }}
           >
-            Annuler
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -176,7 +197,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }: AvatarCropModalProps) =>
               fontWeight: 600,
             }}
           >
-            Confirmer
+            {t('common.confirm')}
           </button>
         </div>
       </div>

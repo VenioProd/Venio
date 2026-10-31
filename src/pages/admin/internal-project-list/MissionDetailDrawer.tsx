@@ -1,5 +1,8 @@
 import type React from 'react'
 import type { ReactNode } from 'react'
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate } from '../../../i18n/format'
+import { MISSION_STATUS_KEYS, labelFor } from './labels'
 import type { Mission } from './types'
 
 interface AnyFn {
@@ -47,6 +50,7 @@ interface Props {
 }
 
 export default function MissionDetailDrawer({ ctx }: Props) {
+  const { t } = useI18n()
   const {
     missions,
     selectedMission,
@@ -82,7 +86,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
   } = ctx
   const m = missions.find((x) => x._id === selectedMission)
   if (!m) return null
-  const SL: Record<string, string> = { A_FAIRE: 'À faire', EN_COURS: 'En cours', TERMINE: 'Terminée' }
+  const statusLabel = (status: string) => labelFor(t, MISSION_STATUS_KEYS, status)
   const SC: Record<string, string> = { A_FAIRE: '#fde047', EN_COURS: 'var(--primary)', TERMINE: '#6ee7b7' }
   const SBg: Record<string, string> = {
     A_FAIRE: 'rgba(234,179,8,0.12)',
@@ -199,7 +203,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                       color: '#f87171',
                     }}
                   >
-                    ⚠ En retard
+                    {t('projA.common.overdue')}
                   </span>
                 )}
               </div>
@@ -255,7 +259,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                 border: `1px solid ${SBo[m.status]}`,
               }}
             >
-              {SL[m.status]}
+              {statusLabel(m.status)}
             </span>
             {(['A_FAIRE', 'EN_COURS', 'TERMINE'] as const)
               .filter((v) => v !== m.status)
@@ -275,7 +279,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                     transition: 'all .15s',
                   }}
                 >
-                  {SL[v]}
+                  {statusLabel(v)}
                 </button>
               ))}
             {m.dueDate && (
@@ -287,15 +291,14 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                   fontWeight: isOverdue ? 600 : 400,
                 }}
               >
-                📅{' '}
-                {new Date(m.dueDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                📅 {formatDate(m.dueDate, { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
             )}
           </div>
         </div>
 
         {/* ── PROGRESSION GLOBALE ── */}
-        <Section icon="📊" title="Progression globale">
+        <Section icon="📊" title={t('projA.drawer.overallProgress')}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div
               style={{ flex: 1, height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}
@@ -340,8 +343,9 @@ export default function MissionDetailDrawer({ ctx }: Props) {
           </div>
           {totalSteps > 0 && (
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>
-              {doneCount}/{totalSteps} étapes ·{' '}
-              {(m.deliverables || []).length > 0 && `${delivDone}/${(m.deliverables || []).length} livrables`}
+              {t('projA.drawer.stepsCount', { done: doneCount, total: totalSteps })} ·{' '}
+              {(m.deliverables || []).length > 0 &&
+                t('projA.drawer.deliverablesCount', { done: delivDone, total: (m.deliverables || []).length })}
             </div>
           )}
         </Section>
@@ -356,7 +360,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
             return (
               <Section
                 icon="👥"
-                title="Avancement par membre"
+                title={t('projA.drawer.memberProgress')}
                 badge={
                   blockedCount > 0 ? (
                     <span
@@ -369,7 +373,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                         color: '#f87171',
                       }}
                     >
-                      🚫 {blockedCount} bloqué{blockedCount > 1 ? 's' : ''}
+                      {t('projA.drawer.blockedCount', { count: blockedCount })}
                     </span>
                   ) : undefined
                 }
@@ -475,7 +479,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                   padding: '1px 6px',
                                 }}
                               >
-                                Moi
+                                {t('projA.drawer.me')}
                               </span>
                             )}
                             {p.blocked && (
@@ -490,7 +494,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                   fontWeight: 600,
                                 }}
                               >
-                                🚫 Bloqué
+                                {t('projA.drawer.blocked')}
                               </span>
                             )}
                             {!p.blocked && (
@@ -504,12 +508,12 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                   border: `1px solid ${SBo[p.status] || 'rgba(255,255,255,0.1)'}`,
                                 }}
                               >
-                                {SL[p.status] || p.status}
+                                {statusLabel(p.status)}
                               </span>
                             )}
                             {isBehind && !p.blocked && (
                               <span
-                                title="Contribution en retard sur le groupe"
+                                title={t('projA.drawer.behindGroup')}
                                 style={{
                                   fontSize: 11,
                                   padding: '2px 6px',
@@ -519,7 +523,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                   color: '#fbbf24',
                                 }}
                               >
-                                ⚠ En retard
+                                {t('projA.common.overdue')}
                               </span>
                             )}
                           </div>
@@ -599,7 +603,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                   border: `1px solid ${myStepsDone === mySteps.length ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)'}`,
                                 }}
                               >
-                                ✅ {myStepsDone}/{mySteps.length} étapes perso
+                                {t('projA.drawer.personalSteps', { done: myStepsDone, total: mySteps.length })}
                               </span>
                             )}
                             {commonSteps.length > 0 && (
@@ -613,7 +617,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                   border: '1px solid rgba(255,255,255,0.06)',
                                 }}
                               >
-                                {commonDone}/{commonSteps.length} communes
+                                {t('projA.drawer.sharedSteps', { done: commonDone, total: commonSteps.length })}
                               </span>
                             )}
                             {myDelivs.length > 0 && (
@@ -630,7 +634,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                   border: `1px solid ${myDelivsDone === myDelivs.length ? 'rgba(14, 165, 233, 0.2)' : 'rgba(255,255,255,0.06)'}`,
                                 }}
                               >
-                                📦 {myDelivsDone}/{myDelivs.length} livrables
+                                {t('projA.drawer.personalDeliverables', { done: myDelivsDone, total: myDelivs.length })}
                               </span>
                             )}
                             {mySteps.length === 0 &&
@@ -638,7 +642,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                               myDelivs.length === 0 &&
                               (m.steps || []).length === 0 && (
                                 <span style={{ fontSize: 11, color: 'rgba(165,180,207,0.35)', fontStyle: 'italic' }}>
-                                  Aucune étape définie
+                                  {t('projA.common.noStepDefined')}
                                 </span>
                               )}
                           </div>
@@ -665,7 +669,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                     transition: 'all .15s',
                                   }}
                                 >
-                                  {SL[v]}
+                                  {statusLabel(v)}
                                 </button>
                               ))}
                               {/* Bouton Bloqué */}
@@ -690,7 +694,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                   transition: 'all .15s',
                                 }}
                               >
-                                {p.blocked ? '🚫 Débloqué' : '🚫 Signaler blocage'}
+                                {p.blocked ? t('projA.drawer.unblock') : t('projA.drawer.reportBlocker')}
                               </button>
                             </div>
                           )}
@@ -714,7 +718,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                                     blockedReason: e.target.value,
                                   })
                                 }
-                                placeholder="Décris le blocage pour que l'équipe puisse aider…"
+                                placeholder={t('projA.drawer.blockerPlaceholder')}
                                 rows={2}
                                 style={{
                                   width: '100%',
@@ -737,7 +741,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                               <p
                                 style={{ fontSize: 12, color: 'rgba(248,113,113,0.5)', margin: 0, fontStyle: 'italic' }}
                               >
-                                Aucune raison précisée
+                                {t('projA.drawer.noReason')}
                               </p>
                             )}
                           </div>
@@ -753,7 +757,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
         {/* ── ÉTAPES ── */}
         <Section
           icon="✅"
-          title="Étapes"
+          title={t('projA.drawer.steps')}
           badge={
             totalSteps > 0 ? (
               <span
@@ -850,7 +854,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                             padding: '1px 6px',
                           }}
                         >
-                          En attente
+                          {t('projA.drawer.stepPending')}
                         </span>
                         {isSuperAdmin && (
                           <button
@@ -875,7 +879,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                               cursor: 'pointer',
                             }}
                           >
-                            ✓ Valider
+                            {t('projA.drawer.validate')}
                           </button>
                         )}
                       </>
@@ -899,7 +903,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                         defaultValue={step.description || ''}
                         key={`desc-${step._id}`}
                         onBlur={(e) => handleStepDescUpdate(m._id, m.internalProject?._id, m, step._id, e.target.value)}
-                        placeholder="Ajouter des détails, notes, contexte…"
+                        placeholder={t('projA.drawer.stepNotesPlaceholder')}
                         rows={3}
                         style={{
                           width: '100%',
@@ -921,13 +925,13 @@ export default function MissionDetailDrawer({ ctx }: Props) {
               )
             })
           ) : (
-            <p style={{ fontSize: 13, color: 'rgba(165,180,207,0.3)', margin: 0 }}>Aucune étape définie</p>
+            <p style={{ fontSize: 13, color: 'rgba(165,180,207,0.3)', margin: 0 }}>{t('projA.common.noStepDefined')}</p>
           )}
           {isSuperAdmin && (
             <div style={{ marginTop: 10 }}>
               {(m.assignedTo || []).length > 1 && (
                 <div style={{ display: 'flex', gap: 5, marginBottom: 7, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Pour :</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t('projA.drawer.forLabel')}</span>
                   <button
                     type="button"
                     onClick={() => setStepAssigneeInputs((s) => ({ ...s, [m._id]: '' }))}
@@ -941,7 +945,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                       cursor: 'pointer',
                     }}
                   >
-                    Tous
+                    {t('projA.drawer.everyone')}
                   </button>
                   {(m.assignedTo || []).map((a) => (
                     <button
@@ -996,7 +1000,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                         stepAssigneeInputs[m._id] || undefined,
                       )
                   }}
-                  placeholder="Nouvelle étape…"
+                  placeholder={t('projA.drawer.newStepPlaceholder')}
                   style={{ fontSize: 13, padding: '6px 10px', flex: 1 }}
                 />
                 <button
@@ -1031,7 +1035,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
         {/* ── LIVRABLES ── */}
         <Section
           icon="📦"
-          title="Livrables attendus"
+          title={t('projA.drawer.deliverables')}
           badge={
             (m.deliverables || []).length > 0 ? (
               <span
@@ -1050,7 +1054,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
           }
         >
           {(m.deliverables || []).length === 0 ? (
-            <p style={{ fontSize: 13, color: 'rgba(165,180,207,0.3)', margin: 0 }}>Aucun livrable défini</p>
+            <p style={{ fontSize: 13, color: 'rgba(165,180,207,0.3)', margin: 0 }}>{t('projA.drawer.noDeliverable')}</p>
           ) : (
             (m.deliverables || []).map((d) => {
               const da = d.assignedTo ? (m.assignedTo || []).find((a) => a._id === d.assignedTo) : null
@@ -1147,7 +1151,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
             <div style={{ marginTop: 8 }}>
               {(m.assignedTo || []).length > 1 && (
                 <div style={{ display: 'flex', gap: 5, marginBottom: 7, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Pour :</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t('projA.drawer.forLabel')}</span>
                   <button
                     type="button"
                     onClick={() =>
@@ -1166,7 +1170,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                       cursor: 'pointer',
                     }}
                   >
-                    Tous
+                    {t('projA.drawer.everyone')}
                   </button>
                   {(m.assignedTo || []).map((a) => (
                     <button
@@ -1229,7 +1233,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleDeliverableAdd(m._id, m.internalProject?._id, m)
                   }}
-                  placeholder="Livrable attendu…"
+                  placeholder={t('projA.drawer.newDeliverablePlaceholder')}
                   style={{ fontSize: 13, padding: '6px 10px', flex: 1 }}
                 />
                 <button
@@ -1257,7 +1261,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                     [m._id]: { ...(s[m._id] || { title: '', assignedTo: '' }), description: e.target.value },
                   }))
                 }
-                placeholder="Description optionnelle"
+                placeholder={t('projA.drawer.deliverableDescPlaceholder')}
                 style={{ fontSize: 12, padding: '5px 10px', width: '100%', marginTop: 5, boxSizing: 'border-box' }}
               />
             </div>
@@ -1265,9 +1269,11 @@ export default function MissionDetailDrawer({ ctx }: Props) {
         </Section>
 
         {/* ── FICHIERS ── */}
-        <Section icon="📎" title="Fichiers">
+        <Section icon="📎" title={t('projA.common.files')}>
           {(m.files?.length ?? 0) === 0 ? (
-            <p style={{ fontSize: 13, color: 'rgba(165,180,207,0.3)', margin: '0 0 10px' }}>Aucun fichier joint</p>
+            <p style={{ fontSize: 13, color: 'rgba(165,180,207,0.3)', margin: '0 0 10px' }}>
+              {t('projA.drawer.noFile')}
+            </p>
           ) : (
             <div style={{ marginBottom: 10 }}>
               {m.files.map((f) => (
@@ -1309,7 +1315,9 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                     {f.originalName}
                   </span>
                   <span style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0 }}>
-                    {f.size > 1048576 ? `${(f.size / 1048576).toFixed(1)} Mo` : `${Math.round(f.size / 1024)} Ko`}
+                    {f.size > 1048576
+                      ? t('projA.drawer.sizeMb', { size: (f.size / 1048576).toFixed(1) })
+                      : t('projA.drawer.sizeKb', { size: Math.round(f.size / 1024) })}
                   </span>
                   <button
                     type="button"
@@ -1325,7 +1333,7 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                       flexShrink: 0,
                     }}
                   >
-                    Ouvrir
+                    {t('projA.drawer.open')}
                   </button>
                   {isSuperAdmin && (
                     <button
@@ -1384,14 +1392,14 @@ export default function MissionDetailDrawer({ ctx }: Props) {
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              {uploadingMission === m._id ? 'Envoi…' : 'Joindre un fichier'}
+              {uploadingMission === m._id ? t('projA.drawer.uploading') : t('projA.common.attachFile')}
             </button>
           </div>
         </Section>
 
         {/* ── DEADLINE (SA uniquement) ── */}
         {isSuperAdmin && (
-          <Section icon="📅" title="Modifier la deadline">
+          <Section icon="📅" title={t('projA.drawer.editDeadline')}>
             <input
               type="date"
               defaultValue={m.dueDate ? m.dueDate.substring(0, 10) : ''}

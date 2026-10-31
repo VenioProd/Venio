@@ -8,6 +8,7 @@ import { ToastProvider } from './context/ToastContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
 import type { ColorAccent } from './context/ThemeContext'
 import { I18nProvider } from './context/I18nContext'
+import { translate } from './i18n'
 import { useAuth } from './context/AuthContext'
 import RequirePermission from './components/RequirePermission'
 import { ADMIN_ROLES, PERMISSIONS } from './lib/permissions'
@@ -205,14 +206,14 @@ function AppShell() {
             <Suspense
               fallback={
                 <div role="status" style={{ padding: 32 }}>
-                  Chargement…
+                  {translate('shell.app.loading')}
                 </div>
               }
             >
               <Suspense
                 fallback={
                   <div role="status" style={{ padding: 32 }}>
-                    Chargement…
+                    {translate('shell.app.loading')}
                   </div>
                 }
               >

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import type { InteractionKind, LogInteractionInput } from '../../../types/interaction.types'
+import { useI18n } from '../../../context/I18nContext'
 import { LOGGABLE_KINDS } from './constants'
 
 interface InteractionComposerProps {
@@ -19,6 +20,7 @@ function nowForInput(): string {
  * consigné le jeudi doit rester daté de mardi.
  */
 const InteractionComposer: React.FC<InteractionComposerProps> = ({ busy, onSubmit }) => {
+  const { t } = useI18n()
   const [kind, setKind] = useState<InteractionKind>('CALL')
   const [occurredAt, setOccurredAt] = useState<string>(nowForInput)
   const [body, setBody] = useState('')
@@ -42,7 +44,7 @@ const InteractionComposer: React.FC<InteractionComposerProps> = ({ busy, onSubmi
       }}
     >
       <div className="interaction-composer-head">
-        <div className="interaction-kind-picker" role="group" aria-label="Type d'échange">
+        <div className="interaction-kind-picker" role="group" aria-label={t('compB.interaction.kindGroup')}>
           {LOGGABLE_KINDS.map((option) => (
             <button
               key={option.key}
@@ -50,12 +52,12 @@ const InteractionComposer: React.FC<InteractionComposerProps> = ({ busy, onSubmi
               className={kind === option.key ? 'active' : ''}
               onClick={() => setKind(option.key)}
             >
-              {option.label}
+              {t(option.labelKey)}
             </button>
           ))}
         </div>
         <label className="interaction-composer-date">
-          <span>Date</span>
+          <span>{t('compB.interaction.date')}</span>
           <input
             type="datetime-local"
             className="portal-input"
@@ -69,14 +71,14 @@ const InteractionComposer: React.FC<InteractionComposerProps> = ({ busy, onSubmi
         className="portal-input"
         rows={3}
         maxLength={20000}
-        placeholder={kind === 'NOTE' ? "Ce qu'il faut retenir…" : "Ce qui s'est dit…"}
+        placeholder={kind === 'NOTE' ? t('compB.interaction.notePlaceholder') : t('compB.interaction.bodyPlaceholder')}
         value={body}
         onChange={(event) => setBody(event.target.value)}
       />
 
       <div className="interaction-composer-actions">
         <button type="submit" className="portal-button" disabled={busy || !body.trim()}>
-          {busy ? 'Enregistrement…' : 'Consigner'}
+          {busy ? t('compB.interaction.saving') : t('compB.interaction.log')}
         </button>
       </div>
     </form>

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../../../lib/api'
+import { useI18n } from '../../../../context/I18nContext'
+import { translate, type MessageKey } from '../../../../i18n'
 import { parseMoney } from './money'
-import { ACCOUNTING, ActionForm, dateInput, errorText, Field, labels, methodOptions, today, write } from './shared'
+import { ACCOUNTING, ActionForm, dateInput, errorText, Field, labelFor, methodOptions, today, write } from './shared'
 import SearchSelect from './SearchSelect'
 import type { BillingContact, Finance, Installment, Payer } from './types'
 
@@ -16,19 +18,19 @@ interface FinanceOptions {
   subsidiaries: { _id: string; name: string }[]
   phases: { _id: string; title: string; order: number }[]
 }
-const contactFields: [keyof BillingContact, string][] = [
-  ['name', 'Nom de facturation'],
-  ['email', 'E-mail de facturation'],
-  ['addressLine1', 'Adresse'],
-  ['addressLine2', 'Complément d’adresse'],
-  ['postalCode', 'Code postal'],
-  ['city', 'Ville'],
-  ['country', 'Pays'],
-  ['siret', 'SIRET'],
-  ['vatNumber', 'Numéro de TVA'],
+const contactFields: [keyof BillingContact, MessageKey][] = [
+  ['name', 'accProjects.config.contactName'],
+  ['email', 'accProjects.config.contactEmail'],
+  ['addressLine1', 'accProjects.config.contactAddress'],
+  ['addressLine2', 'accProjects.config.contactAddress2'],
+  ['postalCode', 'accProjects.config.contactPostalCode'],
+  ['city', 'accProjects.config.contactCity'],
+  ['country', 'accProjects.config.contactCountry'],
+  ['siret', 'accProjects.config.contactSiret'],
+  ['vatNumber', 'accProjects.config.contactVatNumber'],
 ]
 const newInstallment = (): InstallmentDraft => ({
-  label: 'Solde',
+  label: translate('accProjects.config.defaultInstallmentLabel'),
   percent: '100',
   trigger: { kind: 'DATE', dueDate: today(), phase: null },
 })
@@ -43,7 +45,7 @@ const newPayer = (clientId?: string): PayerDraft => ({
 })
 function percentage(value: string) {
   const bp = parseMoney(value, true)
-  if (bp > 10000) throw new Error('Un pourcentage ne peut pas dépasser 100 %.')
+  if (bp > 10000) throw new Error(translate('accProjects.config.percentTooHigh'))
   return bp
 }
 
@@ -60,6 +62,7 @@ export default function FinanceConfiguration({
   canManage: boolean
   onSaved: () => Promise<void>
 }) {
+  const { t } = useI18n()
   const [options, setOptions] = useState<FinanceOptions | null>(null)
   const [optionsError, setOptionsError] = useState('')
   useEffect(() => {
@@ -79,9 +82,9 @@ export default function FinanceConfiguration({
     }
   }, [projectId])
   const optionsStatus = optionsError
-    ? `Chargement des options impossible : ${optionsError}`
+    ? t('accProjects.config.optionsError', { error: optionsError })
     : !options
-      ? 'Chargement des options…'
+      ? t('accProjects.config.optionsLoading')
       : undefined
   const clientOptions =
     options?.clients.map((client) => ({
@@ -98,7 +101,7 @@ export default function FinanceConfiguration({
     options?.phases.map((phase) => ({
       value: phase._id,
       label: phase.title,
-      hint: `Rang ${phase.order + 1}`,
+      hint: t('accProjects.config.phaseRank', { rank: phase.order + 1 }),
     })) || []
   const [mode, setMode] = useState(finance?.mode || 'FORFAIT')
   const [contract, setContract] = useState(
@@ -137,7 +140,7 @@ export default function FinanceConfiguration({
   const fields = (
     <>
       <div className="pf-grid">
-        <Field label="Mode">
+        <Field label={t('accProjects.cols.mode')}>
           <select
             value={mode}
             onChange={(event) => {
@@ -147,17 +150,17 @@ export default function FinanceConfiguration({
               if (next === 'ECHEANCIER' && installments.length < 2)
                 setInstallments([
                   { ...(installments[0] || newInstallment()), percent: '50' },
-                  { ...newInstallment(), label: 'Solde', percent: '50' },
+                  { ...newInstallment(), percent: '50' },
                 ])
             }}
           >
-            <option value="FORFAIT">Forfait</option>
-            <option value="ECHEANCIER">Échéancier</option>
-            <option value="ABONNEMENT">Abonnement</option>
+            <option value="FORFAIT">{labelFor(t, 'FORFAIT')}</option>
+            <option value="ECHEANCIER">{labelFor(t, 'ECHEANCIER')}</option>
+            <option value="ABONNEMENT">{labelFor(t, 'ABONNEMENT')}</option>
           </select>
         </Field>
         {mode !== 'ABONNEMENT' && (
-          <Field label="Total du contrat HT (€)">
+          <Field label={t('accProjects.config.contractTotal')}>
             <input
               required
               inputMode="decimal"
@@ -166,27 +169,27 @@ export default function FinanceConfiguration({
             />
           </Field>
         )}
-        <Field label="TVA (%)">
+        <Field label={t('accProjects.config.vatPercent')}>
           <input required inputMode="decimal" value={vat} onChange={(event) => setVat(event.target.value)} />
         </Field>
-        <Field label="Activation de la répartition">
+        <Field label={t('accProjects.config.shareActivation')}>
           <input type="date" value={activation} onChange={(event) => setActivation(event.target.value)} />
         </Field>
       </div>
       {mode !== 'ABONNEMENT' && (
         <div>
-          <h3>Échéances</h3>
+          <h3>{t('accProjects.config.installments')}</h3>
           {installments.map((item, index) => (
             <div className="pf-record" key={item._id || `new-${index}`}>
               <div className="pf-grid">
-                <Field label="Libellé">
+                <Field label={t('accProjects.cols.label')}>
                   <input
                     required
                     value={item.label}
                     onChange={(event) => updateInstallment(index, { label: event.target.value })}
                   />
                 </Field>
-                <Field label="Part du contrat (%)">
+                <Field label={t('accProjects.config.contractShare')}>
                   <input
                     required
                     inputMode="decimal"
@@ -195,19 +198,19 @@ export default function FinanceConfiguration({
                     readOnly={mode === 'FORFAIT'}
                   />
                 </Field>
-                <Field label="Déclencheur">
+                <Field label={t('accProjects.config.trigger')}>
                   <select
                     value={item.trigger.kind}
                     onChange={(event) =>
                       updateInstallment(index, { trigger: { kind: event.target.value, dueDate: null, phase: null } })
                     }
                   >
-                    <option value="DATE">Date</option>
-                    <option value="MILESTONE">Jalon livré</option>
+                    <option value="DATE">{t('accProjects.cols.date')}</option>
+                    <option value="MILESTONE">{t('accProjects.config.triggerMilestone')}</option>
                   </select>
                 </Field>
                 {item.trigger.kind === 'DATE' && (
-                  <Field label="Date de déclenchement">
+                  <Field label={t('accProjects.config.triggerDate')}>
                     <input
                       type="date"
                       required
@@ -220,7 +223,7 @@ export default function FinanceConfiguration({
                 )}
                 {item.trigger.kind === 'MILESTONE' && (
                   <SearchSelect
-                    label="Jalon du projet"
+                    label={t('accProjects.config.projectMilestone')}
                     required
                     disabled={!canManage}
                     status={optionsStatus}
@@ -236,7 +239,7 @@ export default function FinanceConfiguration({
                   className="portal-button secondary"
                   onClick={() => setInstallments(installments.filter((_, i) => i !== index))}
                 >
-                  Retirer cette échéance
+                  {t('accProjects.config.removeInstallment')}
                 </button>
               )}
             </div>
@@ -247,16 +250,16 @@ export default function FinanceConfiguration({
               className="portal-button secondary"
               onClick={() => setInstallments([...installments, { ...newInstallment(), label: '', percent: '' }])}
             >
-              Ajouter une échéance
+              {t('accProjects.config.addInstallment')}
             </button>
           )}
         </div>
       )}
       {mode === 'ABONNEMENT' && (
         <div>
-          <h3>Abonnement</h3>
+          <h3>{labelFor(t, 'ABONNEMENT')}</h3>
           <div className="pf-grid">
-            <Field label="Montant HT par période (€)">
+            <Field label={t('accProjects.config.amountPerPeriod')}>
               <input
                 required
                 inputMode="decimal"
@@ -264,19 +267,19 @@ export default function FinanceConfiguration({
                 onChange={(event) => setSubscription({ ...subscription, amount: event.target.value })}
               />
             </Field>
-            <Field label="Périodicité">
+            <Field label={t('accProjects.config.periodicity')}>
               <select
                 value={subscription.period}
                 onChange={(event) => setSubscription({ ...subscription, period: event.target.value })}
               >
                 {['MONTHLY', 'QUARTERLY', 'YEARLY'].map((period) => (
                   <option key={period} value={period}>
-                    {labels[period]}
+                    {labelFor(t, period)}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="Date de début">
+            <Field label={t('accProjects.config.startDate')}>
               <input
                 type="date"
                 required
@@ -284,7 +287,7 @@ export default function FinanceConfiguration({
                 onChange={(event) => setSubscription({ ...subscription, startDate: event.target.value })}
               />
             </Field>
-            <Field label="Date de fin (facultative)">
+            <Field label={t('accProjects.config.endDate')}>
               <input
                 type="date"
                 value={subscription.endDate}
@@ -295,24 +298,24 @@ export default function FinanceConfiguration({
         </div>
       )}
       <div>
-        <h3>Payeurs</h3>
+        <h3>{t('accProjects.config.payers')}</h3>
         {payers.map((payer, index) => (
           <div className="pf-record" key={payer._id || `new-${index}`}>
-            <h4>Payeur {index + 1}</h4>
+            <h4>{t('accProjects.config.payerN', { n: index + 1 })}</h4>
             <div className="pf-grid">
-              <Field label="Type">
+              <Field label={t('accProjects.cols.type')}>
                 <select
                   value={payer.kind}
                   onChange={(event) => updatePayer(index, { kind: event.target.value, user: null, subsidiary: null })}
                 >
-                  <option value="CLIENT">Client</option>
-                  <option value="THIRD_PARTY">Tiers</option>
-                  <option value="SUBSIDIARY">Filiale</option>
+                  <option value="CLIENT">{t('accProjects.config.payerClient')}</option>
+                  <option value="THIRD_PARTY">{t('accProjects.config.payerThirdParty')}</option>
+                  <option value="SUBSIDIARY">{t('accProjects.config.payerSubsidiary')}</option>
                 </select>
               </Field>
               {payer.kind === 'CLIENT' && (
                 <SearchSelect
-                  label="Client payeur"
+                  label={t('accProjects.config.payerClientSelect')}
                   required
                   disabled={!canManage}
                   status={optionsStatus}
@@ -323,7 +326,7 @@ export default function FinanceConfiguration({
               )}
               {payer.kind === 'SUBSIDIARY' && (
                 <SearchSelect
-                  label="Filiale payeuse"
+                  label={t('accProjects.config.payerSubsidiarySelect')}
                   required
                   disabled={!canManage}
                   status={optionsStatus}
@@ -332,7 +335,7 @@ export default function FinanceConfiguration({
                   onChange={(subsidiary) => updatePayer(index, { subsidiary })}
                 />
               )}
-              <Field label="Quote-part (%)">
+              <Field label={t('accProjects.config.payerShare')}>
                 <input
                   required
                   inputMode="decimal"
@@ -340,7 +343,7 @@ export default function FinanceConfiguration({
                   onChange={(event) => updatePayer(index, { percent: event.target.value })}
                 />
               </Field>
-              <Field label="Payeur principal (reçoit les centimes restants)">
+              <Field label={t('accProjects.config.payerPrincipal')}>
                 <input
                   type="radio"
                   name="principal"
@@ -348,20 +351,20 @@ export default function FinanceConfiguration({
                   onChange={() => setPayers(payers.map((item, i) => ({ ...item, isPrincipal: i === index })))}
                 />
               </Field>
-              <Field label="Moyen de paiement">
+              <Field label={t('accProjects.config.paymentMethod')}>
                 <select
                   value={payer.paymentMethod}
                   onChange={(event) => updatePayer(index, { paymentMethod: event.target.value })}
                 >
                   {methodOptions.map((method) => (
                     <option key={method} value={method}>
-                      {labels[method]}
+                      {labelFor(t, method)}
                     </option>
                   ))}
                 </select>
               </Field>
               {contactFields.map(([field, label]) => (
-                <Field label={label} key={field}>
+                <Field label={t(label)} key={field}>
                   <input
                     type={field === 'email' ? 'email' : 'text'}
                     required={payer.kind === 'THIRD_PARTY' && field === 'name'}
@@ -379,7 +382,7 @@ export default function FinanceConfiguration({
                 type="button"
                 onClick={() => setPayers(payers.filter((_, i) => i !== index))}
               >
-                Retirer ce payeur
+                {t('accProjects.config.removePayer')}
               </button>
             )}
           </div>
@@ -390,7 +393,7 @@ export default function FinanceConfiguration({
             type="button"
             onClick={() => setPayers([...payers, { ...newPayer(), isPrincipal: false, percent: '' }])}
           >
-            Ajouter un payeur
+            {t('accProjects.config.addPayer')}
           </button>
         )}
       </div>
@@ -398,11 +401,8 @@ export default function FinanceConfiguration({
   )
   return (
     <section className="accounting-card">
-      <h2>Configuration financière</h2>
-      <p className="pf-status">
-        Après facturation, les éléments du contrat peuvent être figés. Tout refus du serveur est affiché lors de
-        l’enregistrement.
-      </p>
+      <h2>{t('accProjects.config.title')}</h2>
+      <p className="pf-status">{t('accProjects.config.intro')}</p>
       {!canManage && (
         <fieldset disabled className="pf-readonly">
           {fields}
@@ -410,14 +410,14 @@ export default function FinanceConfiguration({
       )}
       {canManage && (
         <ActionForm
-          label="Enregistrer la configuration"
+          label={t('accProjects.config.save')}
           onSaved={onSaved}
           submit={(_, key) => {
             const parsedPayers = payers.map(({ percent, ...payer }) => ({ ...payer, shareBp: percentage(percent) }))
             if (parsedPayers.reduce((sum, payer) => sum + payer.shareBp, 0) !== 10000)
-              throw new Error('Les quotes-parts des payeurs doivent totaliser 100 %.')
+              throw new Error(t('accProjects.config.payerSharesTotal'))
             if (parsedPayers.filter((payer) => payer.isPrincipal).length !== 1)
-              throw new Error('Choisissez exactement un payeur principal.')
+              throw new Error(t('accProjects.config.onePrincipal'))
             let parsedInstallments: Installment[] = []
             if (mode !== 'ABONNEMENT') {
               parsedInstallments = installments.map(({ percent, ...item }) => ({
@@ -425,9 +425,9 @@ export default function FinanceConfiguration({
                 percentBp: percentage(percent),
               }))
               if (parsedInstallments.reduce((sum, item) => sum + item.percentBp, 0) !== 10000)
-                throw new Error('Les échéances doivent totaliser 100 %.')
+                throw new Error(t('accProjects.config.installmentsTotal'))
               if (mode === 'ECHEANCIER' && parsedInstallments.length < 2)
-                throw new Error('Un échéancier exige au moins deux échéances.')
+                throw new Error(t('accProjects.config.scheduleMinTwo'))
             }
             return write(
               `${ACCOUNTING}/projects/${projectId}/finance`,

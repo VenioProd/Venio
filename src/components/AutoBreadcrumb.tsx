@@ -1,4 +1,6 @@
 import { useLocation, Link } from 'react-router-dom'
+import { useI18n } from '../context/I18nContext'
+import type { MessageKey } from '../i18n'
 import './Breadcrumb.css'
 
 /**
@@ -9,51 +11,54 @@ import './Breadcrumb.css'
  */
 
 interface SegmentMapping {
-  label: string
+  labelKey: MessageKey
   to: string | null
 }
 
 const SEGMENT_LABELS: Record<string, SegmentMapping> = {
-  admin: { label: 'Admin', to: '/admin' },
-  'comptes-clients': { label: 'Clients', to: '/admin/comptes-clients' },
-  'comptes-admin': { label: 'Admins', to: '/admin/comptes-admin' },
-  crm: { label: 'CRM', to: '/admin/crm' },
-  comptabilite: { label: 'Comptabilité', to: '/admin/comptabilite' },
-  ecritures: { label: 'Écritures', to: '/admin/comptabilite/ecritures' },
-  'grand-livre': { label: 'Grand livre', to: '/admin/comptabilite/grand-livre' },
-  balance: { label: 'Balance', to: '/admin/comptabilite/balance' },
-  bilan: { label: 'Bilan', to: '/admin/comptabilite/bilan' },
-  resultat: { label: 'Compte de résultat', to: '/admin/comptabilite/resultat' },
-  tva: { label: 'TVA', to: '/admin/comptabilite/tva' },
-  fec: { label: 'FEC', to: '/admin/comptabilite/fec' },
-  lettrage: { label: 'Lettrage', to: '/admin/comptabilite/lettrage' },
-  'plan-comptable': { label: 'Plan comptable', to: '/admin/comptabilite/plan-comptable' },
-  beneficiaires: { label: 'Bénéficiaires', to: '/admin/comptabilite/beneficiaires' },
-  'modeles-repartition': { label: 'Modèles de répartition', to: '/admin/comptabilite/modeles-repartition' },
-  'mon-releve': { label: 'Mon relevé', to: '/admin/mon-releve' },
-  journaux: { label: 'Journaux', to: '/admin/comptabilite/journaux' },
-  parametres: { label: 'Paramètres', to: null },
-  'sources-externes': { label: 'Sources externes', to: '/admin/comptabilite/sources-externes' },
-  'file-attente': { label: "File d'attente", to: '/admin/comptabilite/file-attente' },
-  audit: { label: 'Audit', to: null },
-  projets: { label: 'Projets', to: null },
-  gestion: { label: 'Gestion', to: '/admin/gestion' },
-  qualiopi: { label: 'Qualiopi', to: '/admin/qualiopi' },
-  tickets: { label: 'Tickets', to: '/admin/tickets' },
-  stagiaires: { label: 'Équipe', to: '/admin/stagiaires' },
-  'projets-internes': { label: 'Projets internes', to: '/admin/projets-internes' },
-  ressources: { label: 'Ressources', to: '/admin/ressources' },
-  'acces-outils': { label: 'Accès outils', to: '/admin/acces-outils' },
-  'mes-rapports': { label: 'Mes rapports', to: '/admin/mes-rapports' },
-  'arrow-prospection': { label: 'Arrow prospection', to: '/admin/arrow-prospection' },
-  analytics: { label: 'Analytics', to: '/admin/analytics' },
-  calendrier: { label: 'Calendrier', to: '/admin/calendrier' },
-  templates: { label: 'Templates', to: '/admin/templates' },
-  emails: { label: 'Emails', to: '/admin/emails' },
-  guide: { label: 'Guide', to: '/admin/guide' },
-  profil: { label: 'Profil', to: '/admin/profil' },
-  nouveau: { label: 'Nouveau', to: null },
-  nouvelle: { label: 'Nouvelle', to: null },
+  admin: { labelKey: 'shell.breadcrumb.admin', to: '/admin' },
+  'comptes-clients': { labelKey: 'shell.breadcrumb.clientAccounts', to: '/admin/comptes-clients' },
+  'comptes-admin': { labelKey: 'shell.breadcrumb.adminAccounts', to: '/admin/comptes-admin' },
+  crm: { labelKey: 'shell.breadcrumb.crm', to: '/admin/crm' },
+  comptabilite: { labelKey: 'shell.breadcrumb.accounting', to: '/admin/comptabilite' },
+  ecritures: { labelKey: 'shell.breadcrumb.entries', to: '/admin/comptabilite/ecritures' },
+  'grand-livre': { labelKey: 'shell.breadcrumb.generalLedger', to: '/admin/comptabilite/grand-livre' },
+  balance: { labelKey: 'shell.breadcrumb.trialBalance', to: '/admin/comptabilite/balance' },
+  bilan: { labelKey: 'shell.breadcrumb.balanceSheet', to: '/admin/comptabilite/bilan' },
+  resultat: { labelKey: 'shell.breadcrumb.incomeStatement', to: '/admin/comptabilite/resultat' },
+  tva: { labelKey: 'shell.breadcrumb.vat', to: '/admin/comptabilite/tva' },
+  fec: { labelKey: 'shell.breadcrumb.fec', to: '/admin/comptabilite/fec' },
+  lettrage: { labelKey: 'shell.breadcrumb.reconciliation', to: '/admin/comptabilite/lettrage' },
+  'plan-comptable': { labelKey: 'shell.breadcrumb.chartOfAccounts', to: '/admin/comptabilite/plan-comptable' },
+  beneficiaires: { labelKey: 'shell.breadcrumb.beneficiaries', to: '/admin/comptabilite/beneficiaires' },
+  'modeles-repartition': {
+    labelKey: 'shell.breadcrumb.allocationTemplates',
+    to: '/admin/comptabilite/modeles-repartition',
+  },
+  'mon-releve': { labelKey: 'shell.breadcrumb.myStatement', to: '/admin/mon-releve' },
+  journaux: { labelKey: 'shell.breadcrumb.journals', to: '/admin/comptabilite/journaux' },
+  parametres: { labelKey: 'shell.breadcrumb.settings', to: null },
+  'sources-externes': { labelKey: 'shell.breadcrumb.externalSources', to: '/admin/comptabilite/sources-externes' },
+  'file-attente': { labelKey: 'shell.breadcrumb.queue', to: '/admin/comptabilite/file-attente' },
+  audit: { labelKey: 'shell.breadcrumb.audit', to: null },
+  projets: { labelKey: 'shell.breadcrumb.projects', to: null },
+  gestion: { labelKey: 'shell.breadcrumb.management', to: '/admin/gestion' },
+  qualiopi: { labelKey: 'shell.breadcrumb.qualiopi', to: '/admin/qualiopi' },
+  tickets: { labelKey: 'shell.breadcrumb.tickets', to: '/admin/tickets' },
+  stagiaires: { labelKey: 'shell.breadcrumb.team', to: '/admin/stagiaires' },
+  'projets-internes': { labelKey: 'shell.breadcrumb.internalProjects', to: '/admin/projets-internes' },
+  ressources: { labelKey: 'shell.breadcrumb.resources', to: '/admin/ressources' },
+  'acces-outils': { labelKey: 'shell.breadcrumb.toolAccess', to: '/admin/acces-outils' },
+  'mes-rapports': { labelKey: 'shell.breadcrumb.myReports', to: '/admin/mes-rapports' },
+  'arrow-prospection': { labelKey: 'shell.breadcrumb.arrowProspecting', to: '/admin/arrow-prospection' },
+  analytics: { labelKey: 'shell.breadcrumb.analytics', to: '/admin/analytics' },
+  calendrier: { labelKey: 'shell.breadcrumb.calendar', to: '/admin/calendrier' },
+  templates: { labelKey: 'shell.breadcrumb.templates', to: '/admin/templates' },
+  emails: { labelKey: 'shell.breadcrumb.emails', to: '/admin/emails' },
+  guide: { labelKey: 'shell.breadcrumb.guide', to: '/admin/guide' },
+  profil: { labelKey: 'shell.breadcrumb.profile', to: '/admin/profil' },
+  nouveau: { labelKey: 'shell.breadcrumb.newMasculine', to: null },
+  nouvelle: { labelKey: 'shell.breadcrumb.newFeminine', to: null },
 }
 
 function isObjectIdLike(segment: string): boolean {
@@ -74,6 +79,7 @@ export interface AutoBreadcrumbProps {
 }
 
 const AutoBreadcrumb = ({ extra = [] }: AutoBreadcrumbProps) => {
+  const { t } = useI18n()
   const location = useLocation()
   const segments = location.pathname.split('/').filter(Boolean)
 
@@ -89,13 +95,13 @@ const AutoBreadcrumb = ({ extra = [] }: AutoBreadcrumbProps) => {
     path += `/${seg}`
 
     if (isObjectIdLike(seg) || isNumericId(seg)) {
-      crumbs.push({ label: 'Détail', to: null })
+      crumbs.push({ label: t('shell.breadcrumb.detail'), to: null })
       continue
     }
 
     const mapping = SEGMENT_LABELS[seg]
     if (mapping) {
-      crumbs.push({ label: mapping.label, to: mapping.to || path })
+      crumbs.push({ label: t(mapping.labelKey), to: mapping.to || path })
     } else {
       crumbs.push({
         label: seg.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase()),
@@ -109,7 +115,7 @@ const AutoBreadcrumb = ({ extra = [] }: AutoBreadcrumbProps) => {
   if (crumbs.length === 0) return null
 
   return (
-    <nav className="breadcrumb" aria-label="Fil d'Ariane">
+    <nav className="breadcrumb" aria-label={t('shell.breadcrumb.ariaLabel')}>
       <ol className="breadcrumb-list">
         {crumbs.map((c, i) => {
           const isLast = i === crumbs.length - 1

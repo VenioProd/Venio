@@ -1,0 +1,52 @@
+// Domaines privés (admin, espace client, bêta) : chargés à la demande, voir loadLazyMessages().
+import accAccounts from './accAccounts'
+import accProjects from './accProjects'
+import accVat from './accVat'
+import adminAccess from './adminAccess'
+import adminOps from './adminOps'
+import adminTech from './adminTech'
+import beta from './beta'
+import changeReq from './changeReq'
+import client from './client'
+import compA from './compA'
+import compB from './compB'
+import crm from './crm'
+import devA from './devA'
+import devB from './devB'
+import eduA from './eduA'
+import eduB from './eduB'
+import eduC from './eduC'
+import eduD from './eduD'
+import intern from './intern'
+import orgs from './orgs'
+import projA from './projA'
+import projB from './projB'
+import projects from './projects'
+
+const messages = {
+  ...accAccounts,
+  ...accProjects,
+  ...accVat,
+  ...adminAccess,
+  ...adminOps,
+  ...adminTech,
+  ...beta,
+  ...changeReq,
+  ...client,
+  ...compA,
+  ...compB,
+  ...crm,
+  ...devA,
+  ...devB,
+  ...eduA,
+  ...eduB,
+  ...eduC,
+  ...eduD,
+  ...intern,
+  ...orgs,
+  ...projA,
+  ...projB,
+  ...projects,
+}
+
+export default messages

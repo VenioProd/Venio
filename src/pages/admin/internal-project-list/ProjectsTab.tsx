@@ -1,12 +1,8 @@
 import type { CSSProperties } from 'react'
+import { useI18n } from '../../../context/I18nContext'
+import { formatDate } from '../../../i18n/format'
+import { POLE_KEYS, PRIORITY_KEYS, PROJECT_FILTER_STATUS_KEYS, labelFor } from './labels'
 import type { Project } from './types'
-
-const STATUS_LABELS: Record<string, string> = {
-  EN_COURS: 'En cours',
-  EN_ATTENTE: 'En attente',
-  TERMINE: 'Terminé',
-  ARCHIVE: 'Archivé',
-}
 
 const STATUS_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   EN_COURS: { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.35)', text: '#6ee7b7' },
@@ -32,17 +28,18 @@ interface Props {
 }
 
 export default function ProjectsTab({ loading, projects, isSuperAdmin, onOpenProject, onEdit, onDelete }: Props) {
+  const { t } = useI18n()
   return (
     <div style={{ marginTop: 20 }}>
       {loading ? (
         <div className="portal-card">
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Chargement...</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t('common.loading')}</p>
         </div>
       ) : projects.length === 0 ? (
         <div className="portal-card">
           <div className="admin-empty-state">
             <div className="admin-empty-state-icon">🏗️</div>
-            <p className="admin-empty-state-text">Aucun projet interne</p>
+            <p className="admin-empty-state-text">{t('projA.projects.empty')}</p>
           </div>
         </div>
       ) : (
@@ -88,7 +85,7 @@ export default function ProjectsTab({ loading, projects, isSuperAdmin, onOpenPro
                       color: statusColor.text,
                     }}
                   >
-                    {STATUS_LABELS[project.status] || project.status}
+                    {labelFor(t, PROJECT_FILTER_STATUS_KEYS, project.status)}
                   </span>
                 </div>
                 <h3 className="client-card-name" style={{ marginBottom: 4 }}>
@@ -124,7 +121,7 @@ export default function ProjectsTab({ loading, projects, isSuperAdmin, onOpenPro
                           color: 'var(--primary)',
                         }}
                       >
-                        {pole}
+                        {labelFor(t, POLE_KEYS, pole)}
                       </span>
                     ))}
                   </div>
@@ -161,11 +158,11 @@ export default function ProjectsTab({ loading, projects, isSuperAdmin, onOpenPro
                       fontWeight: 600,
                     }}
                   >
-                    ● {project.priority.charAt(0) + project.priority.slice(1).toLowerCase()}
+                    ● {labelFor(t, PRIORITY_KEYS, project.priority)}
                   </span>
                   {project.endDate && (
                     <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 'auto' }}>
-                      Fin : {new Date(project.endDate).toLocaleDateString('fr-FR')}
+                      {t('projA.projects.endDate', { date: formatDate(project.endDate) })}
                     </span>
                   )}
                 </div>
@@ -175,7 +172,7 @@ export default function ProjectsTab({ loading, projects, isSuperAdmin, onOpenPro
                   onClick={(event) => event.stopPropagation()}
                 >
                   <button className="admin-card-btn admin-card-btn--edit" type="button" onClick={() => onEdit(project)}>
-                    Modifier
+                    {t('common.edit')}
                   </button>
                   {isSuperAdmin && (
                     <button
@@ -183,7 +180,7 @@ export default function ProjectsTab({ loading, projects, isSuperAdmin, onOpenPro
                       type="button"
                       onClick={() => onDelete(project._id)}
                     >
-                      Supprimer
+                      {t('common.delete')}
                     </button>
                   )}
                 </div>

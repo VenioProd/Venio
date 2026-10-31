@@ -4,6 +4,9 @@ import { deleteMessage, downloadMessageAttachment, editMessage, toggleReaction }
 import type { InternalMessage, InternalMessageAttachment } from '../../../types/messaging.types'
 import PromptModal from '../../PromptModal'
 import AttachmentLightbox from './AttachmentLightbox'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
+import { formatDate, formatTime } from '../../../i18n/format'
 
 interface MessageListProps {
   messages: InternalMessage[]
@@ -14,18 +17,18 @@ interface MessageListProps {
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉', '🙏']
 
 function formatHour(value: string): string {
-  return new Date(value).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return formatTime(value, { hour: '2-digit', minute: '2-digit' })
 }
 
 function formatDateLabel(value: string): string {
   const date = new Date(value)
   const now = new Date()
   const sameDay = date.toDateString() === now.toDateString()
-  if (sameDay) return "Aujourd'hui"
+  if (sameDay) return translate('compB.msg.today')
   const yesterday = new Date(now)
   yesterday.setDate(now.getDate() - 1)
-  if (date.toDateString() === yesterday.toDateString()) return 'Hier'
-  return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  if (date.toDateString() === yesterday.toDateString()) return translate('compB.msg.yesterday')
+  return formatDate(date, { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function getInitials(name: string): string {
@@ -49,7 +52,12 @@ function hashHue(value: string): number {
 
 function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return ''
-  const units = ['o', 'Ko', 'Mo', 'Go']
+  const units = [
+    translate('compB.fileUnit.b'),
+    translate('compB.fileUnit.kb'),
+    translate('compB.fileUnit.mb'),
+    translate('compB.fileUnit.gb'),
+  ]
   let size = bytes
   let index = 0
   while (size >= 1024 && index < units.length - 1) {
@@ -95,12 +103,24 @@ function ImageThumb({ messageId, index, attachment, onOpen }: ImageThumbProps) {
   }, [messageId, index])
 
   return (
-    <button type="button" className="messaging-attachment-thumb" onClick={onOpen} aria-label={`Ouvrir ${attachment.originalName}`}>
+    <button
+      type="button"
+      className="messaging-attachment-thumb"
+      onClick={onOpen}
+      aria-label={translate('compB.msg.openFile', { name: attachment.originalName })}
+    >
       {url && !errored ? (
         <img src={url} alt={attachment.originalName} loading="lazy" />
       ) : (
         <span className="messaging-attachment-thumb-placeholder" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
             <circle cx="8.5" cy="8.5" r="1.5" />
             <polyline points="21 15 16 10 5 21" />
@@ -123,6 +143,7 @@ interface EditState {
 }
 
 export default function MessageList({ messages, typingUsers, onReplaceMessage }: MessageListProps) {
+  const { t } = useI18n()
   const { user } = useAuth()
   const endRef = useRef<HTMLDivElement>(null)
   const [openActionsId, setOpenActionsId] = useState<string | null>(null)
@@ -142,12 +163,19 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
     return (
       <div className="messaging-empty">
         <div className="messaging-empty-glyph" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </div>
-        <h2>Aucun message</h2>
-        <p>Lancez la conversation, vos coéquipiers recevront une notification.</p>
+        <h2>{t('compB.msg.emptyTitle')}</h2>
+        <p>{t('compB.msg.emptyText')}</p>
       </div>
     )
   }
@@ -181,7 +209,9 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
               {!sameSenderAsPrevious ? (
                 <div
                   className="messaging-avatar"
-                  style={{ background: `linear-gradient(135deg, hsl(${hue} 80% 55%), hsl(${(hue + 40) % 360} 70% 45%))` }}
+                  style={{
+                    background: `linear-gradient(135deg, hsl(${hue} 80% 55%), hsl(${(hue + 40) % 360} 70% 45%))`,
+                  }}
                   aria-hidden="true"
                 >
                   {getInitials(message.sender.name)}
@@ -196,13 +226,15 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                   <div className="messaging-message-meta">
                     <strong>{message.sender.name}</strong>
                     <span className="messaging-message-time">{formatHour(message.createdAt)}</span>
-                    {message.editedAt && <span className="messaging-message-tag">modifié</span>}
-                    {message.deletedAt && <span className="messaging-message-tag danger">supprimé</span>}
+                    {message.editedAt && <span className="messaging-message-tag">{t('compB.msg.edited')}</span>}
+                    {message.deletedAt && (
+                      <span className="messaging-message-tag danger">{t('compB.msg.deleted')}</span>
+                    )}
                   </div>
                 )}
                 <div className="messaging-bubble">
                   {message.deletedAt ? (
-                    <p className="messaging-bubble-deleted">Ce message a été supprimé.</p>
+                    <p className="messaging-bubble-deleted">{t('compB.msg.deletedBody')}</p>
                   ) : (
                     <p>{message.content}</p>
                   )}
@@ -241,7 +273,14 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                                 onClick={() => openLightbox(message._id, message.attachments, idx)}
                               >
                                 <span className="messaging-attachment-icon" aria-hidden="true">
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                                     <polyline points="14 2 14 8 20 8" />
                                   </svg>
@@ -249,7 +288,7 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                                 <span className="messaging-attachment-body">
                                   <span className="messaging-attachment-name">{att.originalName}</span>
                                   <span className="messaging-attachment-meta">
-                                    {att.mimeType?.split('/').pop()?.toUpperCase() || 'FICHIER'}
+                                    {att.mimeType?.split('/').pop()?.toUpperCase() || t('compB.msg.file')}
                                     {att.size ? ` · ${formatFileSize(att.size)}` : ''}
                                   </span>
                                 </span>
@@ -284,10 +323,18 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                     <button
                       type="button"
                       className="messaging-message-toggle"
-                      aria-label="Réagir"
+                      aria-label={t('compB.msg.react')}
                       onClick={() => setOpenActionsId((value) => (value === message._id ? null : message._id))}
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <circle cx="12" cy="12" r="10" />
                         <path d="M8 14s1.5 2 4 2 4-2 4-2" />
                         <line x1="9" y1="9" x2="9.01" y2="9" />
@@ -319,9 +366,17 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                               setEditState({ messageId: message._id, initialValue: message.content })
                               setOpenActionsId(null)
                             }}
-                            aria-label="Modifier"
+                            aria-label={t('common.edit')}
                           >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
                               <path d="M12 20h9" />
                               <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z" />
                             </svg>
@@ -333,9 +388,17 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
                               onReplaceMessage(await deleteMessage(message._id))
                               setOpenActionsId(null)
                             }}
-                            aria-label="Supprimer"
+                            aria-label={t('common.delete')}
                           >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
                               <polyline points="3 6 5 6 21 6" />
                               <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                               <path d="M10 11v6" />
@@ -355,9 +418,11 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
       {typingNames.length > 0 && (
         <div className="messaging-typing" aria-live="polite">
           <span className="messaging-typing-dots" aria-hidden="true">
-            <span /><span /><span />
+            <span />
+            <span />
+            <span />
           </span>
-          <span>{typingNames.join(', ')} écrit…</span>
+          <span>{t('compB.msg.typing', { count: typingNames.length, names: typingNames.join(', ') })}</span>
         </div>
       )}
       <div ref={endRef} />
@@ -373,10 +438,10 @@ export default function MessageList({ messages, typingUsers, onReplaceMessage }:
 
       <PromptModal
         isOpen={!!editState}
-        title="Modifier le message"
+        title={t('compB.msg.editTitle')}
         initialValue={editState?.initialValue || ''}
-        placeholder="Contenu du message"
-        confirmLabel="Enregistrer"
+        placeholder={t('compB.msg.editPlaceholder')}
+        confirmLabel={t('common.save')}
         multiline
         maxLength={4000}
         onConfirm={async (content) => {

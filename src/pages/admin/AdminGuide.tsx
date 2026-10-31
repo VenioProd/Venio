@@ -1,75 +1,80 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
 interface GuideSection {
   id: string
   icon: string
-  title: string
+  title: MessageKey
   content: React.ReactNode
 }
 
-const Section = ({ section, isOpen, toggle }: { section: GuideSection; isOpen: boolean; toggle: () => void }) => (
-  <div
-    style={{
-      background: 'var(--bg-tertiary)',
-      border: '1px solid var(--border-color)',
-      borderRadius: 12,
-      overflow: 'hidden',
-      transition: 'border-color 0.2s',
-    }}
-  >
-    <button
-      onClick={toggle}
+const Section = ({ section, isOpen, toggle }: { section: GuideSection; isOpen: boolean; toggle: () => void }) => {
+  const { t } = useI18n()
+  return (
+    <div
       style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '18px 20px',
-        background: 'transparent',
-        border: 'none',
-        cursor: 'pointer',
-        color: 'var(--text-primary)',
-        fontSize: 16,
-        fontWeight: 600,
-        textAlign: 'left',
+        background: 'var(--bg-tertiary)',
+        border: '1px solid var(--border-color)',
+        borderRadius: 12,
+        overflow: 'hidden',
+        transition: 'border-color 0.2s',
       }}
     >
-      <span style={{ fontSize: 20, flexShrink: 0 }}>{section.icon}</span>
-      <span style={{ flex: 1 }}>{section.title}</span>
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--text-muted)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      <button
+        onClick={toggle}
         style={{
-          transition: 'transform 0.2s',
-          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '18px 20px',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          color: 'var(--text-primary)',
+          fontSize: 16,
+          fontWeight: 600,
+          textAlign: 'left',
         }}
       >
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-    </button>
-    {isOpen && (
-      <div
-        style={{
-          padding: '0 20px 20px',
-          color: 'var(--text-secondary)',
-          fontSize: 14,
-          lineHeight: 1.7,
-        }}
-      >
-        {section.content}
-      </div>
-    )}
-  </div>
-)
+        <span style={{ fontSize: 20, flexShrink: 0 }}>{section.icon}</span>
+        <span style={{ flex: 1 }}>{t(section.title)}</span>
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--text-muted)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            transition: 'transform 0.2s',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div
+          style={{
+            padding: '0 20px 20px',
+            color: 'var(--text-secondary)',
+            fontSize: 14,
+            lineHeight: 1.7,
+          }}
+        >
+          {section.content}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const Kbd = ({ children }: { children: React.ReactNode }) => (
   <span
@@ -87,336 +92,348 @@ const Kbd = ({ children }: { children: React.ReactNode }) => (
   </span>
 )
 
-const sections: GuideSection[] = [
+type Key = MessageKey
+
+/** Une entrée de liste : texte simple, « libellé : texte », libellé + sous-liste, ou l'enchaînement des étapes CRM. */
+type GuideItem = Key | [Key, Key] | { label: Key; sub: Key[] } | 'stages'
+
+/** Un bloc de contenu : intertitre, liste ou ligne d'accès (les chemins sont repérés par [[…]]). */
+type GuideBlock = { heading: Key } | { list: GuideItem[] } | { access: Key }
+
+interface GuideSectionDef {
+  id: string
+  icon: string
+  title: Key
+  blocks: GuideBlock[]
+}
+
+const STAGES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
+
+/** Découpe un texte sur les marqueurs [[…]] et met en forme chaque segment repéré. */
+const Rich = ({ text }: { text: string }) => (
+  <>{text.split(/\[\[(.+?)\]\]/g).map((part, i) => (i % 2 === 1 ? <Kbd key={i}>{part}</Kbd> : part))}</>
+)
+
+const GuideEntry = ({ label, children }: { label: string; children?: React.ReactNode }) => (
+  <>
+    <strong>{label}</strong>
+    {children}
+  </>
+)
+
+const sectionDefs: GuideSectionDef[] = [
   {
     id: 'dashboard',
     icon: '\u{1F4CA}',
-    title: '1. Dashboard',
-    content: (
-      <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li>Vue d'ensemble de l'activite : nombre de projets actifs, clients, taches en cours, chiffre d'affaires</li>
-        <li>Graphiques de progression (projets, CA mensuel)</li>
-        <li>Taches urgentes et en retard mises en avant</li>
-        <li>Derniers leads CRM chauds avec temperature et budget</li>
-        <li>Briefs de mission actifs (stagiaires/equipe)</li>
-        <li>Alertes CRM : leads inactifs, relances a faire</li>
-        <li>Acces rapide aux projets, clients et factures depuis les widgets</li>
-      </ul>
-    ),
+    title: 'adminOps.guide.dashboard.title',
+    blocks: [
+      {
+        list: [
+          'adminOps.guide.dashboard.i1',
+          'adminOps.guide.dashboard.i2',
+          'adminOps.guide.dashboard.i3',
+          'adminOps.guide.dashboard.i4',
+          'adminOps.guide.dashboard.i5',
+          'adminOps.guide.dashboard.i6',
+          'adminOps.guide.dashboard.i7',
+        ],
+      },
+    ],
   },
   {
     id: 'clients',
     icon: '\u{1F465}',
-    title: '2. Gestion des clients',
-    content: (
-      <>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>Comptes clients</p>
-        <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-          <li>
-            <strong>Creer un client</strong> : nom, email, entreprise, telephone, adresse, notes internes
-          </li>
-          <li>
-            <strong>Modifier / Archiver</strong> : cliquer sur la fiche client pour editer ou archiver le compte
-          </li>
-          <li>
-            <strong>Fiche client complete</strong> : onglets Contacts, Notes, Facturation, Cloud (fichiers partages),
-            Livrables
-          </li>
-          <li>
-            <strong>Se connecter en tant que</strong> : bouton <Kbd>Impersonation</Kbd> pour visualiser l'espace client
-            exactement comme le client le voit
-          </li>
-          <li>
-            <strong>Reinitialisation mot de passe</strong> : genere un lien unique a envoyer au client
-          </li>
-          <li>Recherche et filtrage par statut (actif / archive), entreprise, date de creation</li>
-        </ul>
-        <p style={{ margin: '0 0 4px', color: 'var(--text-muted)', fontSize: 13 }}>
-          Acces : <Kbd>/admin/comptes-clients</Kbd>
-        </p>
-      </>
-    ),
+    title: 'adminOps.guide.clients.title',
+    blocks: [
+      { heading: 'adminOps.guide.clients.heading' },
+      {
+        list: [
+          ['adminOps.guide.clients.createLabel', 'adminOps.guide.clients.createBody'],
+          ['adminOps.guide.clients.editLabel', 'adminOps.guide.clients.editBody'],
+          ['adminOps.guide.clients.recordLabel', 'adminOps.guide.clients.recordBody'],
+          ['adminOps.guide.clients.impersonateLabel', 'adminOps.guide.clients.impersonateBody'],
+          ['adminOps.guide.clients.resetLabel', 'adminOps.guide.clients.resetBody'],
+          'adminOps.guide.clients.search',
+        ],
+      },
+      { access: 'adminOps.guide.clients.access' },
+    ],
   },
   {
     id: 'crm',
     icon: '\u{1F4C8}',
-    title: '3. CRM / Pipeline commercial',
-    content: (
-      <>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>Pipeline de vente</p>
-        <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-          <li>
-            <strong>Etapes du pipeline</strong> :{' '}
-            {['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
-              .map((s) => <Kbd key={s}>{s}</Kbd>)
-              .reduce((acc: React.ReactNode[], el, i) => [...acc, i > 0 ? ' \u2192 ' : '', el], [])}
-          </li>
-          <li>
-            <strong>Drag & drop</strong> : deplacer un lead d'une colonne a l'autre en Kanban
-          </li>
-          <li>
-            <strong>Conversion automatique</strong> : quand un lead passe en <Kbd>WON</Kbd>, un compte client est cree
-            automatiquement
-          </li>
-          <li>
-            <strong>Scoring</strong> : score calcule selon budget, temperature, interactions et delai
-          </li>
-          <li>
-            <strong>Temperature</strong> : froid, tiede, chaud, brulant
-          </li>
-          <li>
-            <strong>Alertes</strong> : notification quand un lead est inactif depuis X jours
-          </li>
-          <li>
-            <strong>Assignation round-robin</strong> : repartition automatique des leads entre commerciaux
-          </li>
-        </ul>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>Parametres CRM</p>
-        <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-          <li>Personnaliser les colonnes du pipeline, les sources, les temperatures</li>
-          <li>Configurer le seuil d'inactivite pour les alertes</li>
-          <li>Activer/desactiver le round-robin</li>
-          <li>Definir les permissions CRM par commercial</li>
-        </ul>
-        <p style={{ margin: '0 0 4px', color: 'var(--text-muted)', fontSize: 13 }}>
-          Acces : <Kbd>/admin/crm</Kbd> | Parametres : <Kbd>/admin/crm/parametres</Kbd>
-        </p>
-      </>
-    ),
+    title: 'adminOps.guide.crm.title',
+    blocks: [
+      { heading: 'adminOps.guide.crm.pipelineHeading' },
+      {
+        list: [
+          'stages',
+          ['adminOps.guide.crm.dragLabel', 'adminOps.guide.crm.dragBody'],
+          ['adminOps.guide.crm.convertLabel', 'adminOps.guide.crm.convertBody'],
+          ['adminOps.guide.crm.scoringLabel', 'adminOps.guide.crm.scoringBody'],
+          ['adminOps.guide.crm.temperatureLabel', 'adminOps.guide.crm.temperatureBody'],
+          ['adminOps.guide.crm.alertsLabel', 'adminOps.guide.crm.alertsBody'],
+          ['adminOps.guide.crm.roundRobinLabel', 'adminOps.guide.crm.roundRobinBody'],
+        ],
+      },
+      { heading: 'adminOps.guide.crm.settingsHeading' },
+      {
+        list: ['adminOps.guide.crm.s1', 'adminOps.guide.crm.s2', 'adminOps.guide.crm.s3', 'adminOps.guide.crm.s4'],
+      },
+      { access: 'adminOps.guide.crm.access' },
+    ],
   },
   {
     id: 'projects',
     icon: '\u{1F4C1}',
-    title: '4. Projets',
-    content: (
-      <>
-        <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-          <li>
-            <strong>Creer un projet</strong> : titre, client associe, description, date de debut/fin, budget
-          </li>
-          <li>
-            <strong>Sections</strong> : organiser le contenu du projet en sections (ex: Maquettes, Dev, Recettage)
-          </li>
-          <li>
-            <strong>Items de contenu</strong> : ajouter des items dans chaque section (texte, lien, fichier)
-          </li>
-          <li>
-            <strong>Taches</strong> :
-            <ul>
-              <li>Creer des taches avec titre, description, priorite (P1/P2/P3), assignation, deadline</li>
-              <li>Pieces jointes sur les taches (images, documents)</li>
-              <li>Statuts : A faire, En cours, En revue, Termine</li>
-              <li>Vue Kanban et vue tableau</li>
-            </ul>
-          </li>
-          <li>
-            <strong>Suivi de progression</strong> : barre de progression automatique basee sur les taches terminees
-          </li>
-          <li>
-            <strong>PDF recapitulatif</strong> : generer un document PDF avec l'etat du projet, les taches et le suivi
-          </li>
-          <li>Le client voit son projet dans son espace (sections, livrables, taches)</li>
-        </ul>
-        <p style={{ margin: '0 0 4px', color: 'var(--text-muted)', fontSize: 13 }}>
-          Acces : <Kbd>/admin/projets</Kbd> | Creer : <Kbd>/admin/projets/nouveau</Kbd>
-        </p>
-      </>
-    ),
+    title: 'adminOps.guide.projects.title',
+    blocks: [
+      {
+        list: [
+          ['adminOps.guide.projects.createLabel', 'adminOps.guide.projects.createBody'],
+          ['adminOps.guide.projects.sectionsLabel', 'adminOps.guide.projects.sectionsBody'],
+          ['adminOps.guide.projects.itemsLabel', 'adminOps.guide.projects.itemsBody'],
+          {
+            label: 'adminOps.guide.projects.tasksLabel',
+            sub: [
+              'adminOps.guide.projects.tasks1',
+              'adminOps.guide.projects.tasks2',
+              'adminOps.guide.projects.tasks3',
+              'adminOps.guide.projects.tasks4',
+            ],
+          },
+          ['adminOps.guide.projects.progressLabel', 'adminOps.guide.projects.progressBody'],
+          ['adminOps.guide.projects.pdfLabel', 'adminOps.guide.projects.pdfBody'],
+          'adminOps.guide.projects.clientView',
+        ],
+      },
+      { access: 'adminOps.guide.projects.access' },
+    ],
   },
   {
     id: 'billing',
     icon: '\u{1F4B3}',
-    title: '5. Facturation',
-    content: (
-      <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li>
-          <strong>Devis</strong> : creer un devis avec lignes de prestation, quantite, prix unitaire
-        </li>
-        <li>
-          <strong>Factures</strong> : convertir un devis en facture ou creer directement
-        </li>
-        <li>
-          <strong>Numerotation automatique</strong> : format configurable (ex: FAC-2026-001)
-        </li>
-        <li>
-          <strong>Calcul TVA</strong> : TVA 20% par defaut, modifiable par ligne
-        </li>
-        <li>
-          <strong>Statuts</strong> : Brouillon, Envoye, Paye, En retard, Annule
-        </li>
-        <li>
-          <strong>Export PDF</strong> : telecharger le devis ou la facture en PDF
-        </li>
-        <li>Les factures sont visibles par le client dans son espace (onglet Facturation)</li>
-      </ul>
-    ),
+    title: 'adminOps.guide.billing.title',
+    blocks: [
+      {
+        list: [
+          ['adminOps.guide.billing.quotesLabel', 'adminOps.guide.billing.quotesBody'],
+          ['adminOps.guide.billing.invoicesLabel', 'adminOps.guide.billing.invoicesBody'],
+          ['adminOps.guide.billing.numberingLabel', 'adminOps.guide.billing.numberingBody'],
+          ['adminOps.guide.billing.vatLabel', 'adminOps.guide.billing.vatBody'],
+          ['adminOps.guide.billing.statusLabel', 'adminOps.guide.billing.statusBody'],
+          ['adminOps.guide.billing.pdfLabel', 'adminOps.guide.billing.pdfBody'],
+          'adminOps.guide.billing.clientView',
+        ],
+      },
+    ],
   },
   {
     id: 'tickets',
     icon: '\u{1F3AB}',
-    title: '6. Tickets internes',
-    content: (
-      <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li>
-          <strong>Types</strong> : Question, Demande, Probleme technique
-        </li>
-        <li>
-          <strong>Priorites</strong> : Basse, Normale, Haute, Urgente
-        </li>
-        <li>
-          <strong>Workflow</strong> : Ouvert &rarr; En cours &rarr; Resolu &rarr; Archive
-        </li>
-        <li>
-          <strong>Reponses</strong> : fil de discussion avec pieces jointes
-        </li>
-        <li>
-          <strong>Archivage</strong> : archiver les tickets resolus pour garder l'historique
-        </li>
-        <li>
-          <strong>KPIs</strong> : temps moyen de resolution, tickets par statut, par priorite
-        </li>
-        <li>Bouton flottant (FAB) pour creer un ticket rapidement depuis n'importe quelle page</li>
-      </ul>
-    ),
+    title: 'adminOps.guide.tickets.title',
+    blocks: [
+      {
+        list: [
+          ['adminOps.guide.tickets.typesLabel', 'adminOps.guide.tickets.typesBody'],
+          ['adminOps.guide.tickets.prioritiesLabel', 'adminOps.guide.tickets.prioritiesBody'],
+          ['adminOps.guide.tickets.workflowLabel', 'adminOps.guide.tickets.workflowBody'],
+          ['adminOps.guide.tickets.repliesLabel', 'adminOps.guide.tickets.repliesBody'],
+          ['adminOps.guide.tickets.archiveLabel', 'adminOps.guide.tickets.archiveBody'],
+          ['adminOps.guide.tickets.kpiLabel', 'adminOps.guide.tickets.kpiBody'],
+          'adminOps.guide.tickets.fab',
+        ],
+      },
+    ],
   },
   {
     id: 'team',
     icon: '\u{1F469}\u200D\u{1F4BB}',
-    title: "7. Gestion d'equipe",
-    content: (
-      <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li>
-          <strong>Tableau de gestion</strong> : liste des stagiaires / membres d'equipe avec statut, poste, periode
-        </li>
-        <li>
-          <strong>Briefs de mission</strong> :
-          <ul>
-            <li>Creer un brief avec intitule, contexte, objectifs, outils, deadline</li>
-            <li>Priorite P1 / P2 / P3</li>
-            <li>Suivi du statut : En attente, En cours, Termine</li>
-          </ul>
-        </li>
-        <li>
-          <strong>Suivi des outils</strong> : quels outils sont attribues a chaque membre (Figma, Notion, etc.)
-        </li>
-        <li>
-          <strong>Fiches</strong> : informations de contact, convention, notes internes
-        </li>
-        <li>Vue Kanban, Gantt et tableau disponibles</li>
-      </ul>
-    ),
+    title: 'adminOps.guide.team.title',
+    blocks: [
+      {
+        list: [
+          ['adminOps.guide.team.tableLabel', 'adminOps.guide.team.tableBody'],
+          {
+            label: 'adminOps.guide.team.briefsLabel',
+            sub: ['adminOps.guide.team.briefs1', 'adminOps.guide.team.briefs2', 'adminOps.guide.team.briefs3'],
+          },
+          ['adminOps.guide.team.toolsLabel', 'adminOps.guide.team.toolsBody'],
+          ['adminOps.guide.team.recordsLabel', 'adminOps.guide.team.recordsBody'],
+          'adminOps.guide.team.views',
+        ],
+      },
+    ],
   },
   {
     id: 'qualiopi',
     icon: '\u2705',
-    title: '8. Qualiopi',
-    content: (
-      <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li>
-          <strong>Indicateurs qualite</strong> : suivi des 32 indicateurs Qualiopi
-        </li>
-        <li>Pour chaque indicateur : statut (conforme / non conforme / en cours), preuves, commentaires</li>
-        <li>
-          <strong>Questionnaires de satisfaction</strong> :
-          <ul>
-            <li>Creer et envoyer des questionnaires aux clients/stagiaires</li>
-            <li>Reponses collectees et consultables</li>
-            <li>Statistiques de satisfaction</li>
-          </ul>
-        </li>
-        <li>Tableau de bord qualite avec taux de conformite global</li>
-      </ul>
-    ),
+    title: 'adminOps.guide.qualiopi.title',
+    blocks: [
+      {
+        list: [
+          ['adminOps.guide.qualiopi.indicatorsLabel', 'adminOps.guide.qualiopi.indicatorsBody'],
+          'adminOps.guide.qualiopi.perIndicator',
+          {
+            label: 'adminOps.guide.qualiopi.surveysLabel',
+            sub: [
+              'adminOps.guide.qualiopi.surveys1',
+              'adminOps.guide.qualiopi.surveys2',
+              'adminOps.guide.qualiopi.surveys3',
+            ],
+          },
+          'adminOps.guide.qualiopi.dashboard',
+        ],
+      },
+    ],
   },
   {
     id: 'messaging',
     icon: '\u{1F4AC}',
-    title: '9. Messagerie',
-    content: (
-      <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li>
-          <strong>Messages par projet</strong> : chaque projet dispose d'un fil de discussion
-        </li>
-        <li>Communication directe entre admin et client</li>
-        <li>Pieces jointes possibles dans les messages</li>
-        <li>Notifications en temps reel (cloche dans la barre de navigation)</li>
-        <li>Historique complet conserve dans le projet</li>
-        <li>Le client repond depuis son espace client</li>
-      </ul>
-    ),
+    title: 'adminOps.guide.messaging.title',
+    blocks: [
+      {
+        list: [
+          ['adminOps.guide.messaging.projectLabel', 'adminOps.guide.messaging.projectBody'],
+          'adminOps.guide.messaging.direct',
+          'adminOps.guide.messaging.attachments',
+          'adminOps.guide.messaging.notifications',
+          'adminOps.guide.messaging.history',
+          'adminOps.guide.messaging.clientReply',
+        ],
+      },
+    ],
   },
   {
     id: 'admins',
     icon: '\u{1F6E1}\uFE0F',
-    title: '10. Comptes admin',
-    content: (
-      <>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>Roles disponibles</p>
-        <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-          <li>
-            <Kbd>Super Admin</Kbd> : acces total, peut gerer les autres admins et les permissions
-          </li>
-          <li>
-            <Kbd>Contributeur</Kbd> : acces aux projets, clients, CRM (selon permissions)
-          </li>
-          <li>
-            <Kbd>RH</Kbd> : acces a la gestion d'equipe, Qualiopi, briefs
-          </li>
-          <li>
-            <Kbd>Lecture seule</Kbd> : consultation uniquement, aucune modification
-          </li>
-        </ul>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>Fonctionnalites</p>
-        <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
-          <li>
-            <strong>Permissions personnalisees</strong> : pour chaque admin, definir finement les droits (voir clients,
-            editer projets, gerer CRM, etc.)
-          </li>
-          <li>
-            <strong>Impersonation</strong> : se connecter en tant qu'un autre admin pour diagnostiquer un probleme
-          </li>
-          <li>
-            <strong>2FA</strong> : desactivee sur cette instance (variable <Kbd>MFA_ENABLED</Kbd>)
-          </li>
-          <li>
-            <strong>Journal d'audit</strong> : toutes les actions sont tracees (connexion, modification, suppression)
-          </li>
-        </ul>
-        <p style={{ margin: '0 0 4px', color: 'var(--text-muted)', fontSize: 13 }}>
-          Acces : <Kbd>/admin/comptes-admin</Kbd>
-        </p>
-      </>
-    ),
+    title: 'adminOps.guide.admins.title',
+    blocks: [
+      { heading: 'adminOps.guide.admins.rolesHeading' },
+      {
+        list: [
+          'adminOps.guide.admins.roleSuper',
+          'adminOps.guide.admins.roleContributor',
+          'adminOps.guide.admins.roleHr',
+          'adminOps.guide.admins.roleViewer',
+        ],
+      },
+      { heading: 'adminOps.guide.admins.featuresHeading' },
+      {
+        list: [
+          ['adminOps.guide.admins.permissionsLabel', 'adminOps.guide.admins.permissionsBody'],
+          ['adminOps.guide.admins.impersonationLabel', 'adminOps.guide.admins.impersonationBody'],
+          ['adminOps.guide.admins.mfaLabel', 'adminOps.guide.admins.mfaBody'],
+          ['adminOps.guide.admins.auditLabel', 'adminOps.guide.admins.auditBody'],
+        ],
+      },
+      { access: 'adminOps.guide.admins.access' },
+    ],
   },
   {
     id: 'settings',
     icon: '\u2699\uFE0F',
-    title: '11. Parametres',
-    content: (
-      <ul style={{ margin: 0, paddingLeft: 20 }}>
-        <li>
-          <strong>Profil</strong> : modifier nom, telephone, entreprise, site web
-        </li>
-        <li>
-          <strong>Mot de passe</strong> : changer le mot de passe (ancien + nouveau + confirmation)
-        </li>
-        <li>
-          <strong>Theme</strong> : basculer entre mode sombre et mode clair
-        </li>
-        <li>
-          <strong>Notifications</strong> : configurer les notifications email et in-app (nouveaux messages, taches
-          assignees, leads, tickets)
-        </li>
-        <li>
-          <strong>Sauvegardes</strong> : exporter les donnees (clients, projets, factures) en format JSON ou CSV
-        </li>
-        <li>Les parametres sont propres a chaque compte admin</li>
-      </ul>
-    ),
+    title: 'adminOps.guide.settings.title',
+    blocks: [
+      {
+        list: [
+          ['adminOps.guide.settings.profileLabel', 'adminOps.guide.settings.profileBody'],
+          ['adminOps.guide.settings.passwordLabel', 'adminOps.guide.settings.passwordBody'],
+          ['adminOps.guide.settings.themeLabel', 'adminOps.guide.settings.themeBody'],
+          ['adminOps.guide.settings.notificationsLabel', 'adminOps.guide.settings.notificationsBody'],
+          ['adminOps.guide.settings.backupsLabel', 'adminOps.guide.settings.backupsBody'],
+          'adminOps.guide.settings.perAccount',
+        ],
+      },
+    ],
   },
 ]
 
+const GuideContent = ({ blocks }: { blocks: GuideBlock[] }) => {
+  const { t } = useI18n()
+  const listMargin = blocks.length === 1 ? 0 : '0 0 12px'
+
+  const renderItem = (item: GuideItem, index: number) => {
+    if (item === 'stages') {
+      return (
+        <li key={index}>
+          <GuideEntry label={t('adminOps.guide.crm.stagesLabel')}>
+            {t('adminOps.guide.labelSep')}
+            {STAGES.map((s) => <Kbd key={s}>{s}</Kbd>).reduce(
+              (acc: React.ReactNode[], el, i) => [...acc, i > 0 ? ' \u2192 ' : '', el],
+              [],
+            )}
+          </GuideEntry>
+        </li>
+      )
+    }
+    if (typeof item === 'string') {
+      return (
+        <li key={index}>
+          <Rich text={t(item)} />
+        </li>
+      )
+    }
+    if (Array.isArray(item)) {
+      return (
+        <li key={index}>
+          <GuideEntry label={t(item[0])}>
+            {t('adminOps.guide.labelSep')}
+            <Rich text={t(item[1])} />
+          </GuideEntry>
+        </li>
+      )
+    }
+    return (
+      <li key={index}>
+        <GuideEntry label={t(item.label)}>
+          {t('adminOps.guide.labelColon')}
+          <ul>
+            {item.sub.map((key) => (
+              <li key={key}>{t(key)}</li>
+            ))}
+          </ul>
+        </GuideEntry>
+      </li>
+    )
+  }
+
+  return (
+    <>
+      {blocks.map((block, i) => {
+        if ('heading' in block) {
+          return (
+            <p key={i} style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {t(block.heading)}
+            </p>
+          )
+        }
+        if ('list' in block) {
+          return (
+            <ul key={i} style={{ margin: listMargin, paddingLeft: 20 }}>
+              {block.list.map(renderItem)}
+            </ul>
+          )
+        }
+        return (
+          <p key={i} style={{ margin: '0 0 4px', color: 'var(--text-muted)', fontSize: 13 }}>
+            <Rich text={t(block.access)} />
+          </p>
+        )
+      })}
+    </>
+  )
+}
+
+const sections: GuideSection[] = sectionDefs.map((def) => ({
+  id: def.id,
+  icon: def.icon,
+  title: def.title,
+  content: <GuideContent blocks={def.blocks} />,
+}))
+
 const AdminGuide = () => {
+  const { t } = useI18n()
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
 
   const toggle = (id: string) => setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }))
@@ -439,7 +456,7 @@ const AdminGuide = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>Guide d'utilisation</span>
+          <span style={{ color: 'var(--text-primary)' }}>{t('adminOps.guide.breadcrumb')}</span>
         </div>
 
         <div
@@ -453,9 +470,9 @@ const AdminGuide = () => {
           }}
         >
           <div>
-            <h1 style={{ margin: 0, fontSize: 24, color: 'var(--text-primary)' }}>Guide d'utilisation — Admin</h1>
+            <h1 style={{ margin: 0, fontSize: 24, color: 'var(--text-primary)' }}>{t('adminOps.guide.title')}</h1>
             <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>
-              Toutes les fonctionnalites de l'espace administrateur Venio expliquees section par section.
+              {t('adminOps.guide.subtitle')}
             </p>
           </div>
           <button
@@ -472,7 +489,7 @@ const AdminGuide = () => {
               whiteSpace: 'nowrap',
             }}
           >
-            {allOpen ? 'Tout replier' : 'Tout deplier'}
+            {allOpen ? t('adminOps.guide.collapseAll') : t('adminOps.guide.expandAll')}
           </button>
         </div>
 
@@ -499,8 +516,8 @@ const AdminGuide = () => {
             lineHeight: 1.6,
           }}
         >
-          <strong style={{ color: 'var(--text-secondary)' }}>Besoin d'aide ?</strong> Utilisez le bouton de ticket
-          flottant en bas a droite pour signaler un probleme ou poser une question a l'equipe technique.
+          <strong style={{ color: 'var(--text-secondary)' }}>{t('adminOps.guide.helpLabel')}</strong>
+          {t('adminOps.guide.helpText')}
         </div>
       </div>
     </div>
