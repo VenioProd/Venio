@@ -32,9 +32,9 @@ export function isRepLead(repId: Id, lead: { externalRep?: unknown }): boolean {
 }
 
 /**
- * Commercial crédité de chaque client. Un client est « issu » d'un lead quand
- * le lead le désigne et qu'il a été créé après lui : un compte déjà client
- * rattaché à un nouveau lead ne rapporte rien. Plusieurs leads : le plus ancien.
+ * Commercial crédité de chaque client : le titulaire actuel du lead dont la
+ * conversion a créé le compte (`User.originLead`). Un lead rattaché ensuite au
+ * même compte, par exemple un doublon retrouvé par son email, ne rapporte rien.
  */
 export async function attributeClients(
   clientIds: Id[],
@@ -42,22 +42,19 @@ export async function attributeClients(
 ): Promise<Map<string, { rep: Types.ObjectId; lead: Types.ObjectId }>> {
   const result = new Map<string, { rep: Types.ObjectId; lead: Types.ObjectId }>()
   if (clientIds.length === 0) return result
-  const ids = clientIds.map(objectId)
-  const [clients, leads] = await Promise.all([
-    User.find({ _id: { $in: ids }, role: 'CLIENT' })
-      .select('createdAt')
-      .session(session)
-      .lean(),
-    Lead.find({ clientAccountId: { $in: ids }, externalRep: { $ne: null } })
-      .select('clientAccountId externalRep createdAt')
-      .sort({ createdAt: 1, _id: 1 })
-      .session(session)
-      .lean(),
-  ])
+  const clients = await User.find({ _id: { $in: clientIds.map(objectId) }, role: 'CLIENT', originLead: { $ne: null } })
+    .select('originLead')
+    .session(session)
+    .lean()
+  const leads = await Lead.find({
+    _id: { $in: clients.map((client) => client.originLead) },
+    externalRep: { $ne: null },
+  })
+    .select('externalRep')
+    .session(session)
+    .lean()
   for (const client of clients) {
-    const origin = leads.find(
-      (lead) => String(lead.clientAccountId) === String(client._id) && lead.createdAt <= client.createdAt,
-    )
+    const origin = leads.find((lead) => String(lead._id) === String(client.originLead))
     if (origin) result.set(String(client._id), { rep: origin.externalRep!, lead: origin._id as Types.ObjectId })
   }
   return result
@@ -65,13 +62,11 @@ export async function attributeClients(
 
 /** Clients signés crédités à ce commercial, avec le lead d'origine. */
 export async function repClients(repId: Id): Promise<Map<string, Types.ObjectId>> {
-  const candidates = await Lead.distinct('clientAccountId', { ...repLeadFilter(repId), clientAccountId: { $ne: null } })
-  const attributed = await attributeClients(candidates as Types.ObjectId[])
-  const owned = new Map<string, Types.ObjectId>()
-  for (const [clientId, origin] of attributed) {
-    if (String(origin.rep) === String(repId)) owned.set(clientId, origin.lead)
-  }
-  return owned
+  const leadIds = await Lead.distinct('_id', repLeadFilter(repId))
+  const clients = await User.find({ role: 'CLIENT', originLead: { $in: leadIds } })
+    .select('originLead')
+    .lean()
+  return new Map(clients.map((client) => [String(client._id), client.originLead as Types.ObjectId]))
 }
 
 /** Arrondi au centime le plus proche, demi vers le haut ; base positive. */

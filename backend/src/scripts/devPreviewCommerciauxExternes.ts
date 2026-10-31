@@ -82,6 +82,7 @@ const client = await User.create({
   email: 'paul@fournil.example.test',
   passwordHash,
   role: 'CLIENT',
+  originLead: signed._id,
 })
 await Lead.updateOne({ _id: signed._id }, { clientAccountId: client._id })
 const project = await Project.create({ name: 'Site Fournil', client: client._id, status: 'EN_COURS' })

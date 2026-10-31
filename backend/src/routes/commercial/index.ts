@@ -54,7 +54,8 @@ function toRepLead(lead: ILead) {
     budget: lead.budget,
     nextActionAt: lead.nextActionAt,
     lastContactAt: lead.lastContactAt,
-    notes: lead.notes,
+    // Après le passage, l'équipe reprend les notes : l'externe ne voit plus que les siennes.
+    notes: lead.closingHandoff ? (lead.closingHandoff.repNotes ?? '') : lead.notes,
     serviceType: lead.serviceType,
     leadTemperature: lead.leadTemperature,
     lostReason: lead.lostReason,
@@ -368,7 +369,9 @@ router.post(
       // Conditionnel sur closingHandoff : deux clics simultanés ne transmettent qu'une fois.
       const handedOff = await Lead.findOneAndUpdate(
         { _id: lead._id, ...repLeadFilter(repId), closingHandoff: null },
-        { $set: { closingHandoff: { at: new Date(), to: closer, by: repId }, assignedTo: closer } },
+        {
+          $set: { closingHandoff: { at: new Date(), to: closer, by: repId, repNotes: lead.notes }, assignedTo: closer },
+        },
         { new: true },
       )
       if (!handedOff) {
