@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 
 type ArrowPilotageSection = 'goals' | 'scorecard' | 'decisions' | 'cadence'
 
@@ -13,11 +14,27 @@ interface Props {
   onSave: () => void
 }
 
-export default function ArrowSectionEditorModal({ section, draft, setDraft, defaults, labels, saving, onClose, onSave }: Props) {
+export default function ArrowSectionEditorModal({
+  section,
+  draft,
+  setDraft,
+  defaults,
+  labels,
+  saving,
+  onClose,
+  onSave,
+}: Props) {
+  const { t } = useI18n()
   return (
     <>
       <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1001, backdropFilter: 'blur(3px)' }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.55)',
+          zIndex: 1001,
+          backdropFilter: 'blur(3px)',
+        }}
         onClick={onClose}
       />
       <div
@@ -36,13 +53,21 @@ export default function ArrowSectionEditorModal({ section, draft, setDraft, defa
           boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 16,
+            marginBottom: 16,
+          }}
+        >
           <div>
             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-              Modifier · {labels[section]}
+              {t('projA.editor.title', { label: labels[section] })}
             </h3>
             <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-              Une ligne par élément. Décisions : date | titre | décision | responsable. Cadre : titre | contenu.
+              {t('projA.editor.help')}
             </p>
           </div>
           <button
@@ -74,14 +99,14 @@ export default function ArrowSectionEditorModal({ section, draft, setDraft, defa
             type="button"
             onClick={() => setDraft(defaults[section].join('\n'))}
           >
-            Restaurer le modèle
+            {t('projA.editor.restore')}
           </button>
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="portal-button secondary" type="button" onClick={onClose}>
-              Annuler
+              {t('common.cancel')}
             </button>
             <button className="portal-button" type="button" onClick={onSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : 'Enregistrer'}
+              {saving ? t('projA.common.saving') : t('common.save')}
             </button>
           </div>
         </div>

@@ -4,6 +4,9 @@ import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
+import { useI18n } from '../../context/I18nContext'
+import type { MessageKey } from '../../i18n'
+import { formatDateTime } from '../../i18n/format'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 import { emptyForm, type Member, type Project } from './internal-project-list/types'
@@ -16,53 +19,63 @@ import MissionsTab from './internal-project-list/MissionsTab'
 import { InternalProjectListProvider } from './internal-project-list/Context'
 import ProjectsTab from './internal-project-list/ProjectsTab'
 import { useMissions } from './internal-project-list/useMissions'
+import { MISSION_STATUS_KEYS, PROJECT_FILTER_STATUS_KEYS } from './internal-project-list/labels'
 
 const ENTITIES = ['Venio', 'Creatio', 'Decisio', 'Formatio', 'Arrow']
 const POLES = ['Dev', 'Design', 'Marketing', 'Communication', 'Commercial', 'Direction', 'RH', 'Formation']
 
-const STATUS_LABELS: Record<string, string> = {
-  EN_COURS: 'En cours',
-  EN_ATTENTE: 'En attente',
-  TERMINE: 'Terminé',
-  ARCHIVE: 'Archivé',
-}
-const DEFAULT_ARROW_PILOTAGE = {
-  goals: [
-    'Valider le cas d’usage prioritaire avec 5 retours utilisateurs',
-    'Stabiliser le workflow MVP de bout en bout',
-    'Transformer les apprentissages en décisions produit',
-  ],
+const DEFAULT_ARROW_PILOTAGE_KEYS = {
+  goals: ['projA.pilot.default.goal1', 'projA.pilot.default.goal2', 'projA.pilot.default.goal3'],
   scorecard: [
-    'Workflow principal cadré',
-    'Missions de validation créées',
-    'Blocages visibles',
-    'Premiers livrables suivis',
+    'projA.pilot.default.score1',
+    'projA.pilot.default.score2',
+    'projA.pilot.default.score3',
+    'projA.pilot.default.score4',
   ],
-  decisions: [
-    'Cette semaine | Premier workflow Arrow | Concentrer le suivi sur un scénario utilisateur principal avant d’élargir. | Produit',
-    'À trancher | Critère MVP | Définir le seuil minimum pour considérer le prototype testable. | Équipe',
-    'À revoir | Cible prioritaire | Réévaluer après les premiers tests et objections récurrentes. | Direction',
-  ],
+  decisions: ['projA.pilot.default.decision1', 'projA.pilot.default.decision2', 'projA.pilot.default.decision3'],
   cadence: [
-    'Lundi | Priorités, responsables, livrable attendu.',
-    'Mercredi | Blocages, arbitrages, ajustements.',
-    'Vendredi | Résultats, apprentissages, décisions.',
-    'Règle | Chaque semaine livre un résultat ou un apprentissage validé.',
+    'projA.pilot.default.cadence1',
+    'projA.pilot.default.cadence2',
+    'projA.pilot.default.cadence3',
+    'projA.pilot.default.cadence4',
   ],
+} as const satisfies Record<string, readonly MessageKey[]>
+
+type ArrowPilotageSection = keyof typeof DEFAULT_ARROW_PILOTAGE_KEYS
+type Translate = (key: MessageKey) => string
+type ArrowPilotage = Record<ArrowPilotageSection, string[]>
+
+/** Contenu par défaut, dans la langue active (les sections jamais modifiées suivent la langue). */
+function defaultArrowPilotage(t: Translate): ArrowPilotage {
+  return {
+    goals: DEFAULT_ARROW_PILOTAGE_KEYS.goals.map((key) => t(key)),
+    scorecard: DEFAULT_ARROW_PILOTAGE_KEYS.scorecard.map((key) => t(key)),
+    decisions: DEFAULT_ARROW_PILOTAGE_KEYS.decisions.map((key) => t(key)),
+    cadence: DEFAULT_ARROW_PILOTAGE_KEYS.cadence.map((key) => t(key)),
+  }
 }
 
-type ArrowPilotage = typeof DEFAULT_ARROW_PILOTAGE
-type ArrowPilotageSection = keyof typeof DEFAULT_ARROW_PILOTAGE
+/** Sections renvoyées par l'API, complétées par le contenu par défaut. */
+function mergeArrowPilotage(data: Partial<ArrowPilotage> | null, t: Translate): ArrowPilotage {
+  const defaults = defaultArrowPilotage(t)
+  return {
+    goals: Array.isArray(data?.goals) ? data.goals : defaults.goals,
+    scorecard: Array.isArray(data?.scorecard) ? data.scorecard : defaults.scorecard,
+    decisions: Array.isArray(data?.decisions) ? data.decisions : defaults.decisions,
+    cadence: Array.isArray(data?.cadence) ? data.cadence : defaults.cadence,
+  }
+}
 
-const ARROW_SECTION_LABELS: Record<ArrowPilotageSection, string> = {
-  goals: 'Objectif de la semaine',
-  scorecard: 'Scorecard',
-  decisions: 'Journal des décisions',
-  cadence: 'Cadre de suivi',
+const ARROW_SECTION_LABEL_KEYS: Record<ArrowPilotageSection, MessageKey> = {
+  goals: 'projA.pilot.section.goals',
+  scorecard: 'projA.pilot.section.scorecard',
+  decisions: 'projA.pilot.section.decisions',
+  cadence: 'projA.pilot.section.cadence',
 }
 
 export default function InternalProjectList() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const { showToast } = useToast()
   const navigate = useNavigate()
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
@@ -116,7 +129,8 @@ export default function InternalProjectList() {
     handleMissionProgressUpdate,
     handleMissionDateUpdate,
   } = useMissions({ viewTab, showToast })
-  const [arrowPilotage, setArrowPilotage] = useState<ArrowPilotage>(DEFAULT_ARROW_PILOTAGE)
+  const [arrowPilotageData, setArrowPilotageData] = useState<Partial<ArrowPilotage> | null>(null)
+  const arrowPilotage = mergeArrowPilotage(arrowPilotageData, t)
   const [editingArrowSection, setEditingArrowSection] = useState<ArrowPilotageSection | null>(null)
   const [arrowSectionDraft, setArrowSectionDraft] = useState('')
   const [savingArrowPilotage, setSavingArrowPilotage] = useState(false)
@@ -124,16 +138,11 @@ export default function InternalProjectList() {
   const loadArrowPilotage = useCallback(async () => {
     try {
       const data = await apiFetch<Partial<ArrowPilotage>>('/api/admin/arrow-pilotage')
-      setArrowPilotage({
-        goals: Array.isArray(data.goals) ? data.goals : DEFAULT_ARROW_PILOTAGE.goals,
-        scorecard: Array.isArray(data.scorecard) ? data.scorecard : DEFAULT_ARROW_PILOTAGE.scorecard,
-        decisions: Array.isArray(data.decisions) ? data.decisions : DEFAULT_ARROW_PILOTAGE.decisions,
-        cadence: Array.isArray(data.cadence) ? data.cadence : DEFAULT_ARROW_PILOTAGE.cadence,
-      })
+      setArrowPilotageData(data)
     } catch {
-      showToast('Pilotage Arrow indisponible pour le moment', 'error')
+      showToast(t('projA.list.pilotUnavailable'), 'error')
     }
-  }, [showToast])
+  }, [showToast, t])
 
   useEffect(() => {
     loadArrowPilotage()
@@ -156,17 +165,12 @@ export default function InternalProjectList() {
         method: 'PATCH',
         body: JSON.stringify({ section: editingArrowSection, values: lines }),
       })
-      setArrowPilotage({
-        goals: Array.isArray(data.goals) ? data.goals : DEFAULT_ARROW_PILOTAGE.goals,
-        scorecard: Array.isArray(data.scorecard) ? data.scorecard : DEFAULT_ARROW_PILOTAGE.scorecard,
-        decisions: Array.isArray(data.decisions) ? data.decisions : DEFAULT_ARROW_PILOTAGE.decisions,
-        cadence: Array.isArray(data.cadence) ? data.cadence : DEFAULT_ARROW_PILOTAGE.cadence,
-      })
+      setArrowPilotageData(data)
       setEditingArrowSection(null)
       setArrowSectionDraft('')
-      showToast('Section Arrow mise à jour', 'success')
+      showToast(t('projA.list.sectionUpdated'), 'success')
     } catch {
-      showToast('Impossible d’enregistrer la section Arrow', 'error')
+      showToast(t('projA.list.sectionSaveError'), 'error')
     } finally {
       setSavingArrowPilotage(false)
     }
@@ -200,7 +204,7 @@ export default function InternalProjectList() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) {
-      showToast('Le nom est requis', 'error')
+      showToast(t('projA.list.nameRequired'), 'error')
       return
     }
     setSaving(true)
@@ -210,7 +214,7 @@ export default function InternalProjectList() {
         tags: form.tags
           ? form.tags
               .split(',')
-              .map((t) => t.trim())
+              .map((tag) => tag.trim())
               .filter(Boolean)
           : [],
         startDate: form.startDate || null,
@@ -221,17 +225,17 @@ export default function InternalProjectList() {
           method: 'PATCH',
           body: JSON.stringify(body),
         })
-        showToast('Projet mis à jour', 'success')
+        showToast(t('projA.list.projectUpdated'), 'success')
       } else {
         await apiFetch('/api/admin/internal-projects', { method: 'POST', body: JSON.stringify(body) })
-        showToast('Projet créé', 'success')
+        showToast(t('projA.list.projectCreated'), 'success')
       }
       setShowForm(false)
       setEditTarget(null)
       setForm({ ...emptyForm })
       load()
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('common.error'), 'error')
     } finally {
       setSaving(false)
     }
@@ -258,11 +262,11 @@ export default function InternalProjectList() {
     if (!deleteTarget) return
     try {
       await apiFetch(`/api/admin/internal-projects/${deleteTarget}`, { method: 'DELETE' })
-      showToast('Projet supprimé', 'success')
+      showToast(t('projA.list.projectDeleted'), 'success')
       setDeleteTarget(null)
       load()
     } catch (err: any) {
-      showToast(err.message || 'Erreur', 'error')
+      showToast(err.message || t('common.error'), 'error')
     }
   }
 
@@ -296,9 +300,9 @@ export default function InternalProjectList() {
     })
     .slice(0, 4)
   const arrowMissionsByStatus = [
-    { value: 'A_FAIRE', label: 'À faire', color: '#fde047' },
-    { value: 'EN_COURS', label: 'En cours', color: '#0ea5e9' },
-    { value: 'TERMINE', label: 'Terminé', color: '#6ee7b7' },
+    { value: 'A_FAIRE', label: t(MISSION_STATUS_KEYS.A_FAIRE), color: '#fde047' },
+    { value: 'EN_COURS', label: t(MISSION_STATUS_KEYS.EN_COURS), color: '#0ea5e9' },
+    { value: 'TERMINE', label: t('projA.status.project.done'), color: '#6ee7b7' },
   ].map((status) => ({
     ...status,
     missions: arrowMissions.filter((m) => m.status === status.value),
@@ -317,6 +321,13 @@ export default function InternalProjectList() {
     const [title = '', text = ''] = line.split('|').map((part) => part.trim())
     return { title, text }
   })
+
+  const arrowSectionLabels: Record<ArrowPilotageSection, string> = {
+    goals: t(ARROW_SECTION_LABEL_KEYS.goals),
+    scorecard: t(ARROW_SECTION_LABEL_KEYS.scorecard),
+    decisions: t(ARROW_SECTION_LABEL_KEYS.decisions),
+    cadence: t(ARROW_SECTION_LABEL_KEYS.cadence),
+  }
 
   const ctx = {
     viewTab,
@@ -361,7 +372,15 @@ export default function InternalProjectList() {
     isAdminRole: isSuperAdmin,
     admins,
     navigate,
-    formatDateTime: (d: string) => new Date(d).toLocaleString('fr-FR'),
+    formatDateTime: (d: string) =>
+      formatDateTime(d, {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
   }
 
   return (
@@ -371,10 +390,10 @@ export default function InternalProjectList() {
           <div className="admin-breadcrumb">
             <Link to="/admin">Admin</Link>
             <span>/</span>
-            <span style={{ color: 'var(--text-primary)' }}>Projets internes</span>
+            <span style={{ color: 'var(--text-primary)' }}>{t('projA.list.title')}</span>
           </div>
           <div className="admin-header">
-            <h1>Projets internes</h1>
+            <h1>{t('projA.list.title')}</h1>
             <div className="admin-actions portal-actions-reveal">
               <button
                 className="portal-button portal-action-link"
@@ -398,7 +417,7 @@ export default function InternalProjectList() {
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
                 </span>
-                <span className="portal-action-label">Nouveau projet</span>
+                <span className="portal-action-label">{t('projA.list.newProject')}</span>
               </button>
             </div>
           </div>
@@ -435,7 +454,7 @@ export default function InternalProjectList() {
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
               </svg>
-              Pilotage Arrow
+              {t('projA.list.tabArrow')}
             </button>
 
             <button
@@ -452,7 +471,7 @@ export default function InternalProjectList() {
                 transition: 'all .15s',
               }}
             >
-              Projets
+              {t('projA.list.tabProjects')}
             </button>
 
             <button
@@ -486,7 +505,7 @@ export default function InternalProjectList() {
                 <circle cx="12" cy="12" r="10" />
                 <circle cx="12" cy="12" r="4" />
               </svg>
-              Missions internes
+              {t('projA.list.tabMissions')}
             </button>
 
             {viewTab === 'missions' && (
@@ -512,7 +531,7 @@ export default function InternalProjectList() {
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                Créer une mission
+                {t('projA.common.createMission')}
               </button>
             )}
 
@@ -543,7 +562,7 @@ export default function InternalProjectList() {
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                Projet Arrow
+                {t('projA.list.arrowProject')}
               </button>
             )}
           </div>
@@ -557,10 +576,10 @@ export default function InternalProjectList() {
                 className="portal-input"
                 style={{ minWidth: 140, fontSize: 13, padding: '6px 10px' }}
               >
-                <option value="all">Tous les statuts</option>
-                {Object.entries(STATUS_LABELS).map(([v, l]) => (
+                <option value="all">{t('projA.list.allStatuses')}</option>
+                {Object.entries(PROJECT_FILTER_STATUS_KEYS).map(([v, key]) => (
                   <option key={v} value={v}>
-                    {l}
+                    {t(key)}
                   </option>
                 ))}
               </select>
@@ -570,7 +589,7 @@ export default function InternalProjectList() {
                 className="portal-input"
                 style={{ minWidth: 140, fontSize: 13, padding: '6px 10px' }}
               >
-                <option value="all">Toutes entités</option>
+                <option value="all">{t('projA.list.allEntities')}</option>
                 {ENTITIES.map((e) => (
                   <option key={e} value={e}>
                     {e}
@@ -634,8 +653,8 @@ export default function InternalProjectList() {
             section={editingArrowSection}
             draft={arrowSectionDraft}
             setDraft={setArrowSectionDraft}
-            defaults={DEFAULT_ARROW_PILOTAGE}
-            labels={ARROW_SECTION_LABELS}
+            defaults={defaultArrowPilotage(t)}
+            labels={arrowSectionLabels}
             saving={savingArrowPilotage}
             onClose={() => setEditingArrowSection(null)}
             onSave={saveArrowSection}
@@ -683,10 +702,10 @@ export default function InternalProjectList() {
 
         <ConfirmModal
           isOpen={deleteTarget !== null}
-          title="Supprimer le projet"
-          message="Supprimer ce projet interne ? Cette action est irréversible."
-          confirmLabel="Supprimer"
-          cancelLabel="Annuler"
+          title={t('projA.list.deleteTitle')}
+          message={t('projA.list.deleteMessage')}
+          confirmLabel={t('common.delete')}
+          cancelLabel={t('common.cancel')}
           variant="danger"
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
