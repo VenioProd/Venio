@@ -43,6 +43,7 @@ const ZONE_BY_NAVIGATION_ID: Partial<Record<NavigationId, AdminNavigationZone>> 
   'activity-center': 'Pilotage',
   messages: 'Pilotage',
   crm: 'Clients & projets',
+  'external-sales': 'Clients & projets',
   clients: 'Clients & projets',
   arrow: 'Clients & projets',
   projects: 'Clients & projets',
@@ -117,7 +118,7 @@ export interface RoleCockpit {
   priorities: NavigationId[]
 }
 
-const ROLE_COCKPITS: Record<Exclude<UserRole, 'CLIENT'>, RoleCockpit> = {
+const ROLE_COCKPITS: Record<Exclude<UserRole, 'CLIENT' | 'COMMERCIAL_EXTERNE'>, RoleCockpit> = {
   SUPER_ADMIN: {
     title: 'Arbitrages et santé de l’organisation',
     description: 'Décidez des priorités, surveillez les signaux transverses et accédez à la console système.',
@@ -167,7 +168,7 @@ const DEFAULT_COCKPIT: RoleCockpit = {
 }
 
 export function getRoleCockpit(user: User | null): RoleCockpit {
-  if (!user || user.role === 'CLIENT') return DEFAULT_COCKPIT
+  if (!user || user.role === 'CLIENT' || user.role === 'COMMERCIAL_EXTERNE') return DEFAULT_COCKPIT
   return ROLE_COCKPITS[user.role] || DEFAULT_COCKPIT
 }
 

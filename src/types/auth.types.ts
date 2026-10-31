@@ -1,6 +1,7 @@
 export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'COMPTABLE' | 'RH' | 'COMMERCIAL' | 'VIEWER' | 'STAGIAIRE'
 export type ClientRole = 'CLIENT'
-export type UserRole = AdminRole | ClientRole
+export type ExternalSalesRole = 'COMMERCIAL_EXTERNE'
+export type UserRole = AdminRole | ClientRole | ExternalSalesRole
 
 export type Permission =
   | 'manage_admins'
@@ -39,6 +40,7 @@ export type Permission =
   | 'manage_education'
   | 'view_webhooks'
   | 'manage_webhooks'
+  | 'manage_external_sales'
 
 export interface User {
   _id: string

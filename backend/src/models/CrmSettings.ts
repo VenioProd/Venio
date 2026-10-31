@@ -71,6 +71,12 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
     escalationManagerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 
     // ═══════════════════════════════════════════════════════════════
+    // COMMERCIAUX EXTERNES
+    // ═══════════════════════════════════════════════════════════════
+    // Reçoit les dossiers « prêts à closer ». Vide : les super-admins.
+    defaultCloserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+
+    // ═══════════════════════════════════════════════════════════════
     // MOTIFS DE PERTE
     // ═══════════════════════════════════════════════════════════════
     lostReasons: {

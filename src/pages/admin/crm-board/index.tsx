@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
 import { exportToCsv } from '../../../lib/exportCsv'
 import { logInteraction } from '../../../services/interactions'
@@ -317,6 +317,15 @@ const CrmBoard = () => {
     })
     return leads
   }, [columns])
+
+  // Les notifications pointent /admin/crm/leads/:leadId : la fiche s'ouvre une fois le pipeline chargé.
+  const { leadId: linkedLeadId } = useParams()
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (!linkedLeadId) return
+    const linked = allLeads.find((lead) => lead._id === linkedLeadId)
+    if (linked) setExpandedLead(linked)
+  }, [linkedLeadId, allLeads])
 
   // Filtered & sorted leads for table view
   const filteredLeads = useMemo(() => {
@@ -898,7 +907,10 @@ const CrmBoard = () => {
             admins={admins}
             canManageCrm={canManageCrm}
             converting={converting}
-            onClose={() => setExpandedLead(null)}
+            onClose={() => {
+              setExpandedLead(null)
+              if (linkedLeadId) navigate('/admin/crm', { replace: true })
+            }}
             onLeadChange={setExpandedLead}
             onUpdateLead={handleUpdateLead}
             onConvertToClient={handleConvertToClient}

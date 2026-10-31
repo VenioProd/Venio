@@ -1,6 +1,16 @@
 // ─── User ───
 export type UserRole =
-  'CLIENT' | 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'RH' | 'COMMERCIAL' | 'COMPTABLE' | 'VIEWER' | 'STAGIAIRE' | 'AGENT'
+  | 'CLIENT'
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'MANAGER'
+  | 'RH'
+  | 'COMMERCIAL'
+  | 'COMPTABLE'
+  | 'VIEWER'
+  | 'STAGIAIRE'
+  | 'COMMERCIAL_EXTERNE'
+  | 'AGENT'
 export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'RH' | 'COMMERCIAL' | 'COMPTABLE' | 'VIEWER' | 'STAGIAIRE'
 export type ClientStatus = 'PROSPECT' | 'ACTIF' | 'EN_PAUSE' | 'CLOS' | 'ARCHIVE'
 export type OnboardingStatus = 'A_FAIRE' | 'EN_COURS' | 'TERMINE'
@@ -113,6 +123,7 @@ export type NotificationType =
   | 'QUOTE_PROPOSAL_SIGNED'
   | 'CRM_LEAD_CREATED'
   | 'CRM_LEAD_ASSIGNED'
+  | 'CRM_LEAD_READY_TO_CLOSE'
   | 'CRM_LEAD_STATUS_CHANGED'
   | 'CRM_LEAD_CONVERTED'
   // Dev workspace
@@ -251,6 +262,8 @@ export type AuditAction =
   | 'WEBHOOK_ENDPOINT_ROTATE'
   | 'WEBHOOK_TEST_SENT'
   | 'WEBHOOK_DELIVERY_REPLAY'
+  | 'EXTERNAL_SALES_REASSIGN'
+  | 'EXTERNAL_SALES_COMMISSIONS_PAID'
 
 // ─── Agent (API Bearer + scopes) ───
 export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'
@@ -305,6 +318,7 @@ export type Permission =
   // ── Webhooks sortants ──
   | 'view_webhooks'
   | 'manage_webhooks'
+  | 'manage_external_sales'
 
 // ─── Accounting ───
 export type AccountType = 'ACTIF' | 'PASSIF' | 'CHARGE' | 'PRODUIT' | 'CAPITAUX' | 'SPECIAL'

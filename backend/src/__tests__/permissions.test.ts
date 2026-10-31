@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { PERMISSIONS, ADMIN_ROLES, isAdminRole, hasPermission, getPermissionsForRole } from '../lib/permissions.js'
+import {
+  PERMISSIONS,
+  ADMIN_ROLES,
+  isAdminRole,
+  hasPermission,
+  getPermissionsForRole,
+  resolvePermissions,
+} from '../lib/permissions.js'
 
 describe('permissions module', () => {
   describe('PERMISSIONS constant', () => {
@@ -51,6 +58,8 @@ describe('permissions module', () => {
         // Webhooks sortants
         'VIEW_WEBHOOKS',
         'MANAGE_WEBHOOKS',
+        // Commerciaux externes
+        'MANAGE_EXTERNAL_SALES',
       ]
       expect(Object.keys(PERMISSIONS)).toEqual(expectedKeys)
     })
@@ -127,6 +136,14 @@ describe('permissions module', () => {
 
     it('VIEWER should not have VIEW_CRM', () => {
       expect(hasPermission('VIEWER', PERMISSIONS.VIEW_CRM)).toBe(false)
+    })
+
+    it("COMMERCIAL_EXTERNE n'a aucune permission admin, même octroyée", () => {
+      for (const perm of Object.values(PERMISSIONS)) {
+        expect(hasPermission('COMMERCIAL_EXTERNE', perm)).toBe(false)
+      }
+      expect(resolvePermissions('COMMERCIAL_EXTERNE', ['view_crm', 'manage_admins'], [])).toEqual([])
+      expect(isAdminRole('COMMERCIAL_EXTERNE')).toBe(false)
     })
 
     it('CLIENT should have no permissions', () => {

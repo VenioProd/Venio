@@ -17,6 +17,7 @@ const roleLabels: Record<string, string> = {
   COMMERCIAL: 'Commercial',
   VIEWER: 'Lecture seule',
   STAGIAIRE: 'Stagiaire',
+  COMMERCIAL_EXTERNE: 'Commercial externe',
 }
 
 const permissionLabels: Record<string, string> = {
@@ -345,6 +346,7 @@ const AdminEdit = () => {
                 { value: 'COMMERCIAL', label: 'Commercial' },
                 { value: 'VIEWER', label: 'Lecture seule' },
                 { value: 'STAGIAIRE', label: 'Stagiaire' },
+                { value: 'COMMERCIAL_EXTERNE', label: 'Commercial externe' },
               ]}
             />
           </div>

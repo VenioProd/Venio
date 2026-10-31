@@ -112,6 +112,7 @@ export interface ICrmSettings extends Document {
   escalationThresholdDays: number
   escalationAction: EscalationAction
   escalationManagerId: Types.ObjectId | null
+  defaultCloserId: Types.ObjectId | null
   lostReasons: string[]
   scoringEnabled: boolean
   scoringWeights: IScoringWeights

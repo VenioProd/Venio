@@ -58,6 +58,8 @@ export const PERMISSIONS: Record<string, Permission> = {
   // ── Webhooks sortants ──
   VIEW_WEBHOOKS: 'view_webhooks',
   MANAGE_WEBHOOKS: 'manage_webhooks',
+  // ── Commerciaux externes : tableau, réattribution, commissions ──
+  MANAGE_EXTERNAL_SALES: 'manage_external_sales',
 }
 
 const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
@@ -190,11 +192,17 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_TICKETS,
     PERMISSIONS.CREATE_TICKETS,
   ]),
+  // Le commercial externe n'atteint aucune route admin : son espace a ses
+  // propres routes (/api/commercial), cloisonnées par lib/externalSales.ts.
+  COMMERCIAL_EXTERNE: new Set<Permission>(),
   CLIENT: new Set<Permission>(),
   // Agents (API Bearer tokens) n'héritent d'aucune permission par rôle ;
   // leurs accès sont contrôlés par les scopes de l'AgentToken.
   AGENT: new Set<Permission>(),
 }
+
+/** Comptes gérés depuis l'écran Équipe : l'équipe interne et les commerciaux externes. */
+export const STAFF_ROLES: UserRole[] = [...ADMIN_ROLES, 'COMMERCIAL_EXTERNE']
 
 export function isAdminRole(role: UserRole): role is AdminRole {
   return (ADMIN_ROLES as string[]).includes(role)
@@ -231,6 +239,8 @@ export function resolvePermissions(
   // An API agent is authorized exclusively by its PAT scopes, never by the
   // human-admin RBAC matrix nor by ad-hoc permission grants.
   if (role === 'AGENT') return []
+  // Un octroi ponctuel ne doit pas ouvrir une route admin à un externe.
+  if (role === 'COMMERCIAL_EXTERNE') return []
   const base = new Set(getPermissionsForRole(role))
   for (const p of grantedPermissions) base.add(p as Permission)
   for (const p of deniedPermissions) base.delete(p as Permission)

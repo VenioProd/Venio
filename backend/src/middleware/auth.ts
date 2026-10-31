@@ -62,6 +62,24 @@ function isBearerAllowed(path: string, method: string): boolean {
 }
 
 /**
+ * Le commercial externe n'a accès qu'à son espace. Liste blanche ici, en un
+ * seul point, plutôt qu'un contrôle par routeur : une route qui ne vérifie que
+ * l'authentification (ou qu'on ajoutera plus tard) lui reste fermée.
+ */
+const EXTERNAL_SALES_ALLOWED_PREFIXES = ['/api/auth', '/api/commercial']
+
+function isExternalSalesAllowed(path: string): boolean {
+  const normalized = path.toLowerCase()
+  return EXTERNAL_SALES_ALLOWED_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))
+}
+
+function rejectsExternalSales(role: string, path: string, res: Response): boolean {
+  if (role !== 'COMMERCIAL_EXTERNE' || isExternalSalesAllowed(path)) return false
+  res.status(403).json({ error: 'Forbidden' })
+  return true
+}
+
+/**
  * `undefined` : pas d'en-tête Authorization, on retombe sur le cookie.
  * `null` : en-tête présent mais inexploitable.
  */
@@ -93,6 +111,7 @@ export default async function auth(req: Request, res: Response, next: NextFuncti
       return
     }
     req.user = payload
+    if (rejectsExternalSales(payload.role, path, res)) return
     if (payload.mfaEnrollmentOnly && !MFA_ENROLLMENT_ALLOWED_PATHS.has(path)) {
       res.status(403).json({ error: 'MFA_SETUP_REQUIRED', message: 'Configurez la MFA avant de continuer.' })
       return
@@ -131,6 +150,7 @@ async function authenticateBearer(
       })
       return
     }
+    if (rejectsExternalSales(payload.role, path, res)) return
     req.user = payload
     next()
   } catch {

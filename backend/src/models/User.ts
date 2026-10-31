@@ -28,6 +28,7 @@ const userSchema = new mongoose.Schema<IUser>(
         'COMPTABLE',
         'VIEWER',
         'STAGIAIRE',
+        'COMMERCIAL_EXTERNE',
         'AGENT',
       ],
       required: true,

@@ -21,6 +21,15 @@
         "backend/src/scripts/devPreviewComptaProjets.ts"
       ],
       "port": 3000
+    },
+    {
+      "name": "backend-commerciaux-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "tsx",
+        "backend/src/scripts/devPreviewCommerciauxExternes.ts"
+      ],
+      "port": 3000
     }
   ]
 }

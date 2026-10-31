@@ -8,7 +8,7 @@ import Project from '../../models/Project.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
 import QuoteTemplate from '../../models/QuoteTemplate.js'
 import Lead from '../../models/Lead.js'
-import { canReadLead } from '../../lib/crmScope.js'
+import { canReadLead, leadScopeFilter, readsWholeCrm } from '../../lib/crmScope.js'
 import { loadQuotePortfolio } from '../../lib/quotePortfolio.js'
 import type { IQuoteProposal } from '../../types/models/index.js'
 import { buildBillingDocumentForProposal } from '../../lib/quoteSignature.js'
@@ -21,6 +21,17 @@ import { lockProject } from '../../lib/projectWriteLock.js'
 
 const router = express.Router()
 
+/**
+ * Un devis rattaché à un projet suit l'accès au projet ; un devis sur un lead
+ * seul suit le périmètre CRM de ce lead. Sans l'un ni l'autre, personne.
+ */
+async function canReadProposal(req: Request, proposal: { project?: unknown; leadId?: unknown }): Promise<boolean> {
+  if (proposal.project) return canReadProject(req.user!, String(proposal.project))
+  if (!proposal.leadId) return false
+  const lead = await Lead.findById(proposal.leadId).select('assignedTo createdBy').lean()
+  return Boolean(lead) && canReadLead(req, lead!)
+}
+
 router.use(auth)
 router.use(requireAdmin)
 
@@ -29,13 +40,13 @@ router.use(async (req, res, next) => {
     if (req.method === 'GET' || req.method === 'HEAD') return next()
     const id = decodeURIComponent(req.path.split('/')[1] ?? '')
     const proposal = mongoose.isObjectIdOrHexString(id)
-      ? await QuoteProposal.findById(id).select('project').lean()
+      ? await QuoteProposal.findById(id).select('project leadId').lean()
       : null
-    const projectIds = [proposal?.project, req.body?.project].filter(Boolean)
-    for (const projectId of projectIds) {
-      if (!(await canReadProject(req.user!, String(projectId)))) {
-        return res.status(404).json({ error: 'Projet non trouvé' })
-      }
+    if (proposal && !(await canReadProposal(req, proposal))) {
+      return res.status(404).json({ error: 'Proposition non trouvée' })
+    }
+    if (req.body?.project && !(await canReadProject(req.user!, String(req.body.project)))) {
+      return res.status(404).json({ error: 'Projet non trouvé' })
     }
     return next()
   } catch (err) {
@@ -132,8 +143,12 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const ids = await readableProjectIds(req.user!)
-      const filter: Record<string, unknown> =
-        ids === null ? {} : { $and: [{ $or: [{ project: null }, { project: { $in: ids } }] }] }
+      const leadOnly = readsWholeCrm(req)
+        ? { project: null }
+        : { project: null, leadId: { $in: await Lead.distinct('_id', leadScopeFilter(req)) } }
+      const filter: Record<string, unknown> = {
+        $and: [{ $or: [ids === null ? { project: { $ne: null } } : { project: { $in: ids } }, leadOnly] }],
+      }
       if (req.query.project) filter.project = String(req.query.project)
       if (req.query.lead) filter.leadId = String(req.query.lead)
       const proposals = await QuoteProposal.find(filter).sort({ createdAt: -1 }).lean()
@@ -152,7 +167,7 @@ router.get(
     try {
       if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Identifiant invalide' })
       const proposal = await QuoteProposal.findById(req.params.id).lean()
-      if (!proposal || (proposal.project && !(await canReadProject(req.user!, String(proposal.project)))))
+      if (!proposal || !(await canReadProposal(req, proposal)))
         return res.status(404).json({ error: 'Proposition non trouvée' })
       return res.json({ proposal })
     } catch (err) {
