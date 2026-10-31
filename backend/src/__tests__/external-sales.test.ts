@@ -303,6 +303,21 @@ describe('commissions sur l’encaissé', () => {
     expect(totals).toEqual({ collectedHtCents: 50000, dueCents: 5000, paidCents: 0 })
   })
 
+  it('ne crée plus de commission après la désactivation, sans toucher au dû ni aux remboursements', async () => {
+    const leadId = await createLead(repA, 'Atelier Alpha')
+    const { invoiceId } = await signClient(leadId, 'alpha')
+    const before = await pay(invoiceId, 60000)
+    await User.updateOne({ _id: repA.id }, { isActive: false })
+
+    await pay(invoiceId, 30000)
+    await refund(before.payment._id, 12000)
+    const lines = await SalesCommission.find({ rep: repA.id }).sort({ createdAt: 1 })
+    expect(lines.map((line) => [line.kind, line.amountCents, line.status])).toEqual([
+      ['PAYMENT', 5000, 'DUE'],
+      ['REFUND', -1000, 'DUE'],
+    ])
+  })
+
   it('arrondit au centime et ramène un remboursement intégral à zéro', async () => {
     expect(commissionCents(33333)).toBe(3333)
     expect(commissionCents(33335)).toBe(3334)

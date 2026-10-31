@@ -84,6 +84,9 @@ export async function recordCommission(payment: IProjectPayment, invoice: IBilli
   if (payment.kind === 'PAYMENT') {
     const origin = (await attributeClients([invoice.client], session)).get(String(invoice.client))
     if (!origin) return null
+    // Désactivé, l'externe ne touche plus rien sur les encaissements à venir ;
+    // ses commissions déjà constatées, et leurs remboursements, suivent leur cours.
+    if (!(await User.exists({ _id: origin.rep, isActive: true }).session(session))) return null
     const [commission] = await SalesCommission.create(
       [
         {
