@@ -8,6 +8,8 @@ import {
   type DevAgentRunResult,
 } from '../../../services/dev'
 import { useAuth } from '../../../context/AuthContext'
+import { useI18n } from '../../../context/I18nContext'
+import { translate } from '../../../i18n'
 import './AgentLaunchControl.css'
 
 interface AgentLaunchControlProps {
@@ -29,11 +31,10 @@ function newIdempotencyKey(): string {
 function errorMessage(error: unknown): string {
   if (error instanceof ApiError && error.payload && typeof error.payload === 'object') {
     const payload = error.payload as { error?: unknown; status?: unknown }
-    if (payload.status === 'BRIDGE_UNAVAILABLE')
-      return 'Le bridge est devenu indisponible : aucun lancement n’a été simulé.'
+    if (payload.status === 'BRIDGE_UNAVAILABLE') return translate('devB.agent.bridgeUnavailable')
     if (typeof payload.error === 'string') return payload.error
   }
-  return error instanceof Error ? error.message : 'Le lancement n’a pas pu être préparé.'
+  return error instanceof Error ? error.message : translate('devB.agent.prepareFailed')
 }
 
 /**
@@ -51,6 +52,7 @@ export default function AgentLaunchControl({
   onLaunched,
 }: AgentLaunchControlProps) {
   const { user } = useAuth()
+  const { t } = useI18n()
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
   const [availability, setAvailability] = useState<DevAgentLaunchAvailability | null | undefined>(suppliedAvailability)
   const [open, setOpen] = useState(false)
@@ -110,9 +112,9 @@ export default function AgentLaunchControl({
         type="button"
         className={`agent-launch-button${compact ? ' compact' : ''}`}
         onClick={() => setOpen(true)}
-        title={`Préparer ${availability.target.agent} / ${availability.target.model}`}
+        title={t('devB.agent.prepareTitle', { agent: availability.target.agent, model: availability.target.model })}
       >
-        <Bot size={compact ? 12 : 14} /> Lancer l’agent
+        <Bot size={compact ? 12 : 14} /> {t('devB.agent.launch')}
       </button>
 
       {open && (
@@ -127,31 +129,31 @@ export default function AgentLaunchControl({
             <header className="agent-launch-header">
               <div>
                 <span className="agent-launch-kicker">
-                  <ShieldCheck size={13} /> Lancement cadré
+                  <ShieldCheck size={13} /> {t('devB.agent.scoped')}
                 </span>
-                <h2 id="agent-launch-title">Confirmer la tâche agent</h2>
+                <h2 id="agent-launch-title">{t('devB.agent.confirmTitle')}</h2>
               </div>
-              <button type="button" className="agent-launch-close" onClick={close} aria-label="Fermer">
+              <button type="button" className="agent-launch-close" onClick={close} aria-label={t('common.close')}>
                 <X size={16} />
               </button>
             </header>
 
             {result ? (
               <div className="agent-launch-result" role="status">
-                <strong>Exécution {result.status.toLowerCase()}</strong>
+                <strong>{t('devB.agent.execution', { status: result.status.toLowerCase() })}</strong>
                 <span>
-                  ID : <code>{result.executionId}</code>
+                  {t('devB.agent.idLabel')} <code>{result.executionId}</code>
                 </span>
-                {result.replayed && <span>Réponse idempotente réutilisée.</span>}
+                {result.replayed && <span>{t('devB.agent.replayed')}</span>}
                 <button type="button" className="agent-launch-button" onClick={close}>
-                  Fermer
+                  {t('common.close')}
                 </button>
               </div>
             ) : (
               <>
                 <dl className="agent-launch-scope">
                   <div>
-                    <dt>Agent</dt>
+                    <dt>{t('devB.agent.dtAgent')}</dt>
                     <dd>
                       {availability.target.agent} · {availability.target.model}
                     </dd>
@@ -164,19 +166,22 @@ export default function AgentLaunchControl({
                   </div>
                   {recommendationId && (
                     <div>
-                      <dt>Origine</dt>
-                      <dd>Recommandation vérifiée côté serveur</dd>
+                      <dt>{t('devB.agent.dtOrigin')}</dt>
+                      <dd>{t('devB.agent.originValue')}</dd>
                     </div>
                   )}
                   <div>
-                    <dt>Périmètre</dt>
+                    <dt>{t('devB.agent.dtScope')}</dt>
                     <dd>
-                      {availability.scope.repository} · branche {availability.scope.baseBranch}
+                      {t('devB.agent.scopeValue', {
+                        repository: availability.scope.repository,
+                        branch: availability.scope.baseBranch,
+                      })}
                     </dd>
                   </div>
                 </dl>
                 <div className="agent-launch-limits">
-                  <strong>Limites appliquées</strong>
+                  <strong>{t('devB.agent.limits')}</strong>
                   <ul>
                     {availability.limitations.map((limitation) => (
                       <li key={limitation}>{limitation}</li>
@@ -190,16 +195,16 @@ export default function AgentLaunchControl({
                 )}
                 <footer className="agent-launch-actions">
                   <button type="button" className="agent-launch-cancel" onClick={close} disabled={submitting}>
-                    Annuler
+                    {t('common.cancel')}
                   </button>
                   <button type="button" className="agent-launch-button primary" onClick={submit} disabled={submitting}>
                     {submitting ? (
                       <>
-                        <LoaderCircle size={14} className="agent-launch-spin" /> Préparation…
+                        <LoaderCircle size={14} className="agent-launch-spin" /> {t('devB.agent.preparing')}
                       </>
                     ) : (
                       <>
-                        <Play size={14} /> Confirmer le lancement
+                        <Play size={14} /> {t('devB.agent.confirmLaunch')}
                       </>
                     )}
                   </button>
