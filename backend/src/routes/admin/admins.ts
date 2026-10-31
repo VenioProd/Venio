@@ -5,8 +5,8 @@ import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requireAnyPermission, requirePermission } from '../../middleware/role.js'
 import User from '../../models/User.js'
-import { ADMIN_ROLES, PERMISSIONS, getPermissionsForRole } from '../../lib/permissions.js'
-import type { AdminRole } from '../../types/enums.js'
+import { ADMIN_ROLES, PERMISSIONS, STAFF_ROLES, getPermissionsForRole } from '../../lib/permissions.js'
+import type { UserRole } from '../../types/enums.js'
 import { triggerAutomations } from '../../automation/trigger.js'
 import { sendAdminCredentials, sendPasswordResetEmail } from '../../lib/email.js'
 import { resetTokens } from '../auth.js'
@@ -21,6 +21,7 @@ const router = express.Router()
 router.use(auth)
 router.use(requireAdmin)
 
+// L'équipe interne ; les commerciaux externes ont leur propre écran.
 const adminFilter = { role: { $in: ADMIN_ROLES } }
 
 async function countSuperAdmins(): Promise<number> {
@@ -62,7 +63,7 @@ router.post(
       }
 
       const nextRole = role ? role : 'ADMIN'
-      if (!ADMIN_ROLES.includes(nextRole)) {
+      if (!STAFF_ROLES.includes(nextRole)) {
         return res.status(400).json({ error: 'Invalid role' })
       }
       if (nextRole === 'SUPER_ADMIN' && req.user!.role !== 'SUPER_ADMIN') {
@@ -127,7 +128,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await User.findById(req.params.userId).select('-passwordHash')
-      if (!user || !ADMIN_ROLES.includes(user.role as AdminRole)) {
+      if (!user || !STAFF_ROLES.includes(user.role as UserRole)) {
         return res.status(404).json({ error: 'Admin not found' })
       }
       return res.json({ user })
@@ -141,7 +142,7 @@ router.patch(
   '/:userId',
   requirePermission(PERMISSIONS.MANAGE_ADMINS),
   body('isAssociate').optional().isBoolean({ strict: true }).withMessage('Statut associé invalide'),
-  body('role').optional().isIn(ADMIN_ROLES).withMessage('Rôle invalide'),
+  body('role').optional().isIn(STAFF_ROLES).withMessage('Rôle invalide'),
   body('password').optional().isLength({ min: 6 }).withMessage('Mot de passe: minimum 6 caractères'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -152,7 +153,7 @@ router.patch(
 
       const { name, role, password } = req.body || {}
       const user = await User.findById(req.params.userId)
-      if (!user || !ADMIN_ROLES.includes(user.role as AdminRole)) {
+      if (!user || !STAFF_ROLES.includes(user.role as UserRole)) {
         return res.status(404).json({ error: 'Admin not found' })
       }
       const oldIsAssociate = user.isAssociate ?? false
@@ -164,7 +165,7 @@ router.patch(
       let revokeSessions = false
 
       if (role) {
-        if (!ADMIN_ROLES.includes(role)) {
+        if (!STAFF_ROLES.includes(role)) {
           return res.status(400).json({ error: 'Invalid role' })
         }
         if (role === 'SUPER_ADMIN' && req.user!.role !== 'SUPER_ADMIN') {
@@ -343,7 +344,7 @@ router.delete(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await User.findById(req.params.userId)
-      if (!user || !ADMIN_ROLES.includes(user.role as AdminRole)) {
+      if (!user || !STAFF_ROLES.includes(user.role as UserRole)) {
         return res.status(404).json({ error: 'Admin not found' })
       }
 
@@ -378,7 +379,7 @@ router.post(
         return res.status(400).json({ error: 'Le mot de passe est requis pour envoyer les identifiants.' })
       }
       const user = await User.findById(req.params.userId)
-      if (!user || !ADMIN_ROLES.includes(user.role as AdminRole)) {
+      if (!user || !STAFF_ROLES.includes(user.role as UserRole)) {
         return res.status(404).json({ error: 'Admin not found' })
       }
       const result = await sendAdminCredentials({
@@ -419,7 +420,7 @@ router.post(
       })
 
       const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
-      const loginPath = ADMIN_ROLES.includes(user.role as any) ? '/admin/login' : '/espace-client/login'
+      const loginPath = STAFF_ROLES.includes(user.role as UserRole) ? '/admin/login' : '/espace-client/login'
       const resetUrl = `${baseUrl}${loginPath}?reset=${token}`
 
       const emailResult = await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl })
@@ -442,7 +443,7 @@ router.post(
       }
 
       const user = await User.findById(req.params.userId)
-      if (!user || !ADMIN_ROLES.includes(user.role as AdminRole)) {
+      if (!user || !STAFF_ROLES.includes(user.role as UserRole)) {
         return res.status(404).json({ error: 'Administrateur introuvable' })
       }
 

@@ -55,6 +55,11 @@ const roleMeta: Record<string, { label: string; description: string }> = {
     label: 'Stagiaire',
     description: 'Projets et tâches assignés, CRM, messagerie interne, tickets.',
   },
+  COMMERCIAL_EXTERNE: {
+    label: 'Commercial externe',
+    description:
+      'Ses propres leads, ses clients signés et ses commissions, rien d\u2019autre. Il transmet les dossiers prêts à closer et ne fait pas de devis.',
+  },
 }
 
 const permissionLabels: Record<string, string> = {
@@ -75,6 +80,7 @@ const permissionLabels: Record<string, string> = {
   [PERMISSIONS.VIEW_TICKETS]: 'Lecture des tickets',
   [PERMISSIONS.CREATE_TICKETS]: 'Creation de tickets',
   [PERMISSIONS.MANAGE_TICKETS]: 'Gestion des tickets',
+  [PERMISSIONS.MANAGE_EXTERNAL_SALES]: 'Pilotage des commerciaux externes',
 }
 
 const allPermissions = Object.values(PERMISSIONS)
@@ -106,8 +112,10 @@ const AdminNew = () => {
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
 
   const availableRoles = useMemo(() => {
-    return ADMIN_ROLES.filter((role) => role !== 'SUPER_ADMIN' || isSuperAdmin)
+    return [...ADMIN_ROLES.filter((role) => role !== 'SUPER_ADMIN' || isSuperAdmin), 'COMMERCIAL_EXTERNE']
   }, [isSuperAdmin])
+  // L'externe n'a aucun droit admin : son espace est fixe, rien à personnaliser.
+  const isExternal = form.role === 'COMMERCIAL_EXTERNE'
 
   const roleDefaults = useMemo(() => getPermissionsForRole(form.role), [form.role])
 
@@ -177,7 +185,7 @@ const AdminNew = () => {
     setLoading(true)
     try {
       const payload: Record<string, unknown> = { ...form }
-      if (customMode && form.role !== 'SUPER_ADMIN') {
+      if (customMode && form.role !== 'SUPER_ADMIN' && !isExternal) {
         payload.customPermissions = customPermissions
       }
       const data = await apiFetch<{ user: User }>('/api/admin/admins', {
@@ -365,7 +373,7 @@ const AdminNew = () => {
             <p style={{ marginTop: 8, color: 'var(--text-muted)', fontSize: 13 }}>
               {roleMeta[form.role]?.description || 'Sélectionnez un rôle.'}
             </p>
-            {isSuperAdmin && form.role !== 'SUPER_ADMIN' && (
+            {isSuperAdmin && form.role !== 'SUPER_ADMIN' && !isExternal && (
               <div style={{ marginTop: 12 }}>
                 <label
                   style={{
@@ -382,7 +390,7 @@ const AdminNew = () => {
                 </label>
               </div>
             )}
-            {customMode && form.role !== 'SUPER_ADMIN' ? (
+            {isExternal ? null : customMode && form.role !== 'SUPER_ADMIN' ? (
               <div style={{ marginTop: 12 }}>
                 <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 8 }}>
                   Droits personnalisés

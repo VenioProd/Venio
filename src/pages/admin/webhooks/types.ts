@@ -107,6 +107,7 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   BILLING_DOCUMENT_PAID: 'Document de facturation payé',
   CRM_LEAD_CREATED: 'Lead créé',
   CRM_LEAD_ASSIGNED: 'Lead assigné',
+  CRM_LEAD_READY_TO_CLOSE: 'Lead prêt à closer',
   CRM_LEAD_STATUS_CHANGED: 'Statut de lead modifié',
   CRM_LEAD_CONVERTED: 'Lead converti',
   DEV_ISSUE_ASSIGNED: 'Issue dev assignée',

@@ -91,6 +91,8 @@ import adminMessagingRoutes from './routes/admin/messaging.js'
 import adminHealthRoutes from './routes/admin/health.js'
 import adminActivityCenterRoutes from './routes/admin/activityCenter.js'
 import adminWorkspaceRoutes from './routes/admin/workspace.js'
+import commercialRoutes from './routes/commercial/index.js'
+import adminExternalSalesRoutes from './routes/admin/externalSales.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientProjectPhaseRoutes from './routes/client/projectPhases.js'
 import clientMessageRoutes from './routes/client/messages.js'
@@ -104,6 +106,7 @@ import bcrypt from 'bcryptjs'
 import User from './models/User.js'
 import StripeEvent from './models/StripeEvent.js'
 import InvoicePaymentLink from './models/InvoicePaymentLink.js'
+import SalesCommission from './models/SalesCommission.js'
 import { startScheduler } from './lib/crmScheduler.js'
 import { initAutomationEngine } from './automation/index.js'
 import { startSubscriptionInvoiceScheduler } from './lib/projectFinance/subscriptionScheduler.js'
@@ -342,6 +345,9 @@ app.use('/api/mobile/interactions', mobileInteractionRoutes)
 app.use('/api/mobile/sales-targets', mobileSalesTargetRoutes)
 app.use('/api/admin/sales-targets', adminSalesTargetRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
+// Commerciaux externes : leur espace, et son pilotage côté équipe.
+app.use('/api/commercial', commercialRoutes)
+app.use('/api/admin/external-sales', adminExternalSalesRoutes)
 app.use('/api/admin/interactions', adminInteractionRoutes)
 app.use('/api/admin/notifications', adminNotificationRoutes)
 app.use('/api/admin/dashboard', adminDashboardRoutes)
@@ -508,7 +514,8 @@ app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, re
 mongoose
   .connect(mongoUri)
   .then(async () => {
-    await Promise.all([StripeEvent.init(), InvoicePaymentLink.init()])
+    // Écrites dans les transactions d'encaissement : collection et index doivent préexister.
+    await Promise.all([StripeEvent.init(), InvoicePaymentLink.init(), SalesCommission.init()])
     // Bootstrap SUPER_ADMIN — idempotent, vérifié à chaque démarrage.
     // Note : les migrations one-shot historiques (unset plainPassword, fix slug:null)
     // ont été sorties vers backend/scripts/migrations/. Voir le README de ce dossier.

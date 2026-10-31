@@ -7,7 +7,7 @@ import path from 'path'
 import { body, validationResult } from 'express-validator'
 import User from '../models/User.js'
 import AuditLog from '../models/AuditLog.js'
-import { ADMIN_ROLES, resolvePermissions } from '../lib/permissions.js'
+import { ADMIN_ROLES, STAFF_ROLES, resolvePermissions } from '../lib/permissions.js'
 import { sendPasswordResetEmail } from '../lib/email.js'
 import auth from '../middleware/auth.js'
 import { avatarsDir } from './avatars.js'
@@ -319,9 +319,7 @@ router.post(
       }
 
       const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
-      const loginPath = ADMIN_ROLES.includes(user.role as (typeof ADMIN_ROLES)[number])
-        ? '/admin/login'
-        : '/espace-client/login'
+      const loginPath = STAFF_ROLES.includes(user.role) ? '/admin/login' : '/espace-client/login'
       const resetUrl = `${baseUrl}${loginPath}?reset=${token}`
 
       await sendPasswordResetEmail({

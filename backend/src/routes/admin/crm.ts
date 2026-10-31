@@ -956,6 +956,19 @@ router.patch(
       delete updates.createdAt
       delete updates.updatedAt
 
+      // Le closer reçoit les dossiers des externes : un membre actif de l'équipe, ou personne.
+      if (updates.defaultCloserId !== undefined) {
+        const closerId = updates.defaultCloserId || null
+        const closer =
+          closerId && mongoose.isObjectIdOrHexString(closerId)
+            ? await User.exists({ _id: closerId, role: { $in: ADMIN_ROLES }, isActive: true })
+            : null
+        if (closerId && !closer) {
+          return res.status(400).json({ error: 'Le closer doit être un membre actif de l’équipe' })
+        }
+        updates.defaultCloserId = closerId
+      }
+
       const settings = await CrmSettings.updateSettings(updates)
       return res.json({ settings })
     } catch (err) {

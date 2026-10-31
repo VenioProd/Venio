@@ -98,6 +98,9 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'WEBHOOK_ENDPOINT_ROTATE',
         'WEBHOOK_TEST_SENT',
         'WEBHOOK_DELIVERY_REPLAY',
+        // ── Commerciaux externes ──
+        'EXTERNAL_SALES_REASSIGN',
+        'EXTERNAL_SALES_COMMISSIONS_PAID',
       ],
     },
     ip: { type: String, default: '' },

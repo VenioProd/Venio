@@ -33,10 +33,10 @@ export default function CrmSettings() {
       const [settingsRes, adminsRes] = await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         apiFetch<{ settings?: Record<string, any> }>('/api/admin/crm/settings'),
-        apiFetch<{ admins?: AdminUser[] }>('/api/admin/admins'),
+        apiFetch<{ users?: AdminUser[] }>('/api/admin/admins'),
       ])
       setSettings(settingsRes.settings || null)
-      setAdmins(adminsRes.admins || [])
+      setAdmins(adminsRes.users || [])
     } catch (err: unknown) {
       console.error('Error fetching CRM settings:', err)
       setMessage({ type: 'error', text: 'Erreur lors du chargement des paramètres' })
@@ -53,7 +53,7 @@ export default function CrmSettings() {
     if (!canManage) return
 
     const prev = settings?.[key]
-    setSettings((s) => s ? { ...s, [key]: value } : s)
+    setSettings((s) => (s ? { ...s, [key]: value } : s))
 
     try {
       setSaving(true)
@@ -64,7 +64,7 @@ export default function CrmSettings() {
       setMessage({ type: 'success', text: 'Paramètre mis à jour' })
       setTimeout(() => setMessage(null), 2000)
     } catch (err: unknown) {
-      setSettings((s) => s ? { ...s, [key]: prev } : s)
+      setSettings((s) => (s ? { ...s, [key]: prev } : s))
       setMessage({ type: 'error', text: 'Erreur lors de la mise à jour' })
     } finally {
       setSaving(false)
@@ -100,7 +100,10 @@ export default function CrmSettings() {
   }
 
   const handleRecipientsChange = async (value: string) => {
-    const emails = value.split(',').map((e) => e.trim()).filter(Boolean)
+    const emails = value
+      .split(',')
+      .map((e) => e.trim())
+      .filter(Boolean)
     await updateSetting('weeklyReportRecipients', emails)
   }
 
@@ -126,7 +129,16 @@ export default function CrmSettings() {
     <div className="portal-container crm-page-container">
       <div className="portal-header">
         <Link to="/admin/crm" className="portal-back-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="15 18 9 12 15 6" />
           </svg>
           Retour au CRM
@@ -134,14 +146,10 @@ export default function CrmSettings() {
         <h1>Configuration des automatisations CRM</h1>
       </div>
 
-      {message && (
-        <div className={`crm-settings-message crm-settings-message-${message.type}`}>
-          {message.text}
-        </div>
-      )}
+      {message && <div className={`crm-settings-message crm-settings-message-${message.type}`}>{message.text}</div>}
 
       <div className="crm-settings-grid">
-        <AssignmentSection {...sectionProps} />
+        <AssignmentSection {...sectionProps} admins={admins} />
         <QualificationSection {...sectionProps} />
         <StatusSection {...sectionProps} />
         <NotificationsSection {...sectionProps} />

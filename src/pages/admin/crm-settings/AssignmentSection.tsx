@@ -1,8 +1,9 @@
 import React from 'react'
 import type { SectionProps } from './types'
 import { AUTOMATION_CATEGORIES } from './constants'
+import CustomSelect from '../../../components/admin/CustomSelect'
 
-const AssignmentSection: React.FC<SectionProps> = ({ settings, canManage, updateSetting }) => (
+const AssignmentSection: React.FC<SectionProps> = ({ settings, canManage, updateSetting, admins = [] }) => (
   <section className="crm-settings-section">
     <div className="crm-settings-section-header">
       {AUTOMATION_CATEGORIES.find((c) => c.id === 'assignment')?.icon}
@@ -23,6 +24,25 @@ const AssignmentSection: React.FC<SectionProps> = ({ settings, canManage, update
         />
         <span className="crm-toggle-slider" />
       </label>
+    </div>
+
+    <div className="crm-settings-item">
+      <div className="crm-settings-item-info">
+        <h3>Closer par défaut</h3>
+        <p>
+          Reçoit les dossiers que les commerciaux externes marquent « prêts à closer ». Sans closer, ils vont aux
+          super-admins.
+        </p>
+      </div>
+      <CustomSelect
+        className="crm-settings-select"
+        value={settings.defaultCloserId || ''}
+        onChange={(v) => updateSetting('defaultCloserId', v || null)}
+        options={[
+          { value: '', label: 'Super-admins' },
+          ...admins.map((a) => ({ value: a._id, label: `${a.name} (${a.email})` })),
+        ]}
+      />
     </div>
   </section>
 )

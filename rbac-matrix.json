@@ -10,6 +10,7 @@
       "COMPTABLE",
       "VIEWER",
       "STAGIAIRE",
+      "COMMERCIAL_EXTERNE",
       "CLIENT",
       "AGENT"
     ]
@@ -54,7 +55,8 @@
     "VIEW_EDUCATION": "view_education",
     "MANAGE_EDUCATION": "manage_education",
     "VIEW_WEBHOOKS": "view_webhooks",
-    "MANAGE_WEBHOOKS": "manage_webhooks"
+    "MANAGE_WEBHOOKS": "manage_webhooks",
+    "MANAGE_EXTERNAL_SALES": "manage_external_sales"
   },
   "rolePermissions": {
     "SUPER_ADMIN": [
@@ -97,7 +99,8 @@
       "view_change_requests",
       "manage_change_requests",
       "view_webhooks",
-      "manage_webhooks"
+      "manage_webhooks",
+      "manage_external_sales"
     ],
     "ADMIN": [
       "manage_clients",
@@ -226,6 +229,7 @@
       "view_tickets",
       "create_tickets"
     ],
+    "COMMERCIAL_EXTERNE": [],
     "CLIENT": [],
     "AGENT": []
   },
@@ -276,6 +280,14 @@
       "screen": "/admin/crm",
       "label": "CRM",
       "permission": "view_crm",
+      "roles": []
+    },
+    {
+      "id": "external-sales",
+      "section": "Principal",
+      "screen": "/admin/commerciaux-externes",
+      "label": "Commerciaux externes",
+      "permission": "manage_external_sales",
       "roles": []
     },
     {

@@ -17,6 +17,7 @@ import { assertCents, moneyError, toCents } from './money.js'
 import { allocatePayment, beneficiaryStatement, cumulativeHt, refundRegularisation, ruleVersionAt } from './rules.js'
 import { projectCostLines } from './settlements.js'
 import { expireInvoiceCheckout } from '../stripe/checkoutSession.js'
+import { recordCommission } from '../externalSales.js'
 
 function conflict(message: string) {
   const error = moneyError(message)
@@ -313,6 +314,8 @@ async function recordMovement(
     } else if (after > 0) invoice.status = 'PARTIALLY_PAID'
     else invoice.status = invoice.sentAt ? 'SENT' : 'ISSUED'
     await invoice.save({ session })
+    // Même transaction que l'encaissement : pas de commission sans mouvement, ni l'inverse.
+    await recordCommission(payment, invoice, session)
     return { payment, alreadyExisted: false, paidInvoice: !wasPaid && invoice.status === 'PAID' ? invoice : null }
   }
   // Une collision d'index (même clé envoyée deux fois en même temps, première numérotation

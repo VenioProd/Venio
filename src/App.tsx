@@ -66,6 +66,17 @@ const ClientChangeRequestNew = lazy(() => import('./pages/espace-client/ChangeRe
 const ClientChangeRequestDetail = lazy(() => import('./pages/espace-client/ChangeRequestDetail'))
 const ClientBilling = lazy(() => import('./pages/espace-client/Billing'))
 
+// Espace commercial externe
+const CommercialSpace = lazy(() => import('./pages/commercial/CommercialSpace'))
+const CommercialLeads = lazy(() => import('./pages/commercial/CommercialLeads'))
+const CommercialLeadDetail = lazy(() => import('./pages/commercial/CommercialLeadDetail'))
+const CommercialClients = lazy(() =>
+  import('./pages/commercial/CommercialEarnings').then((module) => ({ default: module.CommercialClients })),
+)
+const CommercialCommissions = lazy(() =>
+  import('./pages/commercial/CommercialEarnings').then((module) => ({ default: module.CommercialCommissions })),
+)
+
 // Lazy-loaded: Admin
 const AdminShell = lazy(() => import('./components/AdminShell'))
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
@@ -82,6 +93,7 @@ const ProjectForm = lazy(() => import('./pages/admin/project-form'))
 const AdminProjectDetail = lazy(() => import('./pages/admin/ProjectDetail'))
 const CrmBoard = lazy(() => import('./pages/admin/CrmBoard'))
 const CrmSettings = lazy(() => import('./pages/admin/crm-settings'))
+const ExternalSales = lazy(() => import('./pages/admin/ExternalSales'))
 const TemplateList = lazy(() => import('./pages/admin/TemplateList'))
 const Analytics = lazy(() => import('./pages/admin/analytics'))
 const Calendar = lazy(() => import('./pages/admin/Calendar'))
@@ -164,7 +176,10 @@ function AppShell() {
   // L'espace testeur est une surface privée derrière un jeton : il relève de la
   // charte Portail au même titre que l'admin et l'espace client.
   const isPortal =
-    location.pathname.startsWith('/admin') || location.pathname.startsWith('/espace-client') || isPrivateLinkSpace
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/espace-client') ||
+    location.pathname.startsWith('/commercial') ||
+    isPrivateLinkSpace
   // Seule source de vérité du « on est sur le site public » : thème Monolithe
   // et socle de conversion s'y accrochent tous les deux.
   const isPublicSite = !isPortal && !isPublicQuestionnaire && !isPrivateLinkSpace
@@ -272,6 +287,21 @@ function AppShell() {
                     <Route path="projets/:id" element={<ClientProjectDetail />} />
                     <Route path="projets/:projectId/propositions/:proposalId" element={<ClientQuoteProposal />} />
                     <Route path="projets/:projectId/facturation" element={<ClientBilling />} />
+                  </Route>
+
+                  {/* Espace commercial externe : connexion par /admin/login */}
+                  <Route
+                    path="/commercial"
+                    element={
+                      <ProtectedRoute role="COMMERCIAL_EXTERNE" redirectTo="/admin/login">
+                        <CommercialSpace />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<CommercialLeads />} />
+                    <Route path="leads/:id" element={<CommercialLeadDetail />} />
+                    <Route path="clients" element={<CommercialClients />} />
+                    <Route path="commissions" element={<CommercialCommissions />} />
                   </Route>
 
                   {/* Admin */}
@@ -432,6 +462,22 @@ function AppShell() {
                       element={
                         <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
                           <CrmBoard />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="crm/leads/:leadId"
+                      element={
+                        <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
+                          <CrmBoard />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="commerciaux-externes"
+                      element={
+                        <RequirePermission permission={PERMISSIONS.MANAGE_EXTERNAL_SALES} redirectTo="/admin">
+                          <ExternalSales />
                         </RequirePermission>
                       }
                     />

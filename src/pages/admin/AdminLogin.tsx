@@ -28,6 +28,10 @@ const AdminLogin = () => {
   if (user?.role && isAdminRole(user.role)) {
     return <Navigate to="/admin" replace />
   }
+  // Les commerciaux externes se connectent ici et rejoignent leur espace.
+  if (user?.role === 'COMMERCIAL_EXTERNE') {
+    return <Navigate to="/commercial" replace />
+  }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -42,6 +46,10 @@ const AdminLogin = () => {
       }
       if (result.mfaEnrollmentRequired) {
         navigate('/admin/mfa-setup', { replace: true })
+        return
+      }
+      if (result.user?.role === 'COMMERCIAL_EXTERNE') {
+        navigate('/commercial', { replace: true })
         return
       }
       if (!result.user || !isAdminRole(result.user.role)) {

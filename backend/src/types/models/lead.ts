@@ -22,6 +22,8 @@ export interface ILead extends Document {
   createdBy: Types.ObjectId | null
   statusChangedAt: Date | null
   clientAccountId: Types.ObjectId | null
+  externalRep: Types.ObjectId | null
+  closingHandoff: { at: Date; to: Types.ObjectId | null; by: Types.ObjectId } | null
   score: number | null
   lostReason: string
   lostComment: string
@@ -36,6 +38,26 @@ export interface ILeadActivity extends Document {
   label: string
   payload: Record<string, unknown>
   actorId: Types.ObjectId | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+// ─── SalesCommission ───
+export interface ISalesCommission extends Document {
+  rep: Types.ObjectId
+  lead: Types.ObjectId
+  client: Types.ObjectId
+  project: Types.ObjectId
+  invoice: Types.ObjectId
+  payment: Types.ObjectId
+  kind: 'PAYMENT' | 'REFUND'
+  baseHtCents: number
+  rateBp: number
+  amountCents: number
+  receivedAt: Date
+  status: 'DUE' | 'PAID'
+  paidAt: Date | null
+  paidBy: Types.ObjectId | null
   createdAt: Date
   updatedAt: Date
 }

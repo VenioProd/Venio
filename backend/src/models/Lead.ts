@@ -38,6 +38,20 @@ const leadSchema = new mongoose.Schema<ILead>(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     statusChangedAt: { type: Date, default: null },
     clientAccountId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    // Commercial externe crédité du lead : son seul accès au CRM passe par ce champ.
+    externalRep: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    // Passage de main au closer ; le commercial externe garde la lecture.
+    closingHandoff: {
+      type: new mongoose.Schema(
+        {
+          at: { type: Date, required: true },
+          to: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+          by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
     score: { type: Number, default: null }, // Lead scoring (0-100)
     // Motif de perte : exigé par l'interface, accepté vide par l'API pour ne
     // pas casser l'agent ni les automatisations qui passent des leads à LOST.
@@ -74,6 +88,7 @@ leadSchema.index({ status: 1, priority: 1 })
 leadSchema.index({ assignedTo: 1, nextActionAt: 1 })
 leadSchema.index({ company: 1 })
 leadSchema.index({ clientAccountId: 1 })
+leadSchema.index({ externalRep: 1, updatedAt: -1 })
 leadSchema.index({ score: -1 }) // Index for sorting by score
 leadSchema.index({ status: 1, createdAt: -1 }) // Cohortes du pilotage
 
