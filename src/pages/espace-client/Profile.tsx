@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useI18n } from '../../context/I18nContext'
+import LanguageSelect from '../../components/LanguageSelect'
 import { apiFetch, apiUpload } from '../../lib/api'
 import NotificationSettings from '../../components/NotificationSettings'
 import NotificationPreferencesPanel from '../../components/NotificationPreferencesPanel'
@@ -9,6 +11,7 @@ import AvatarCropModal from '../../components/AvatarCropModal'
 import './ClientPortal.css'
 
 const ClientProfile = () => {
+  const { t } = useI18n()
   const { user, refreshUser } = useAuth()
   const [form, setForm] = useState({
     name: user?.name || '',
@@ -41,10 +44,10 @@ const ClientProfile = () => {
         body: JSON.stringify(form),
       })
       await refreshUser()
-      setSuccess('Profil mis à jour avec succès')
+      setSuccess(t('client.profile.updated'))
       setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur lors de la mise à jour')
+      setError((err as Error).message || t('client.profile.updateError'))
     } finally {
       setSaving(false)
     }
@@ -54,11 +57,11 @@ const ClientProfile = () => {
     e.preventDefault()
     setPasswordError('')
     if (passwordForm.newPassword.length < 6) {
-      setPasswordError('Le mot de passe doit contenir au moins 6 caractères')
+      setPasswordError(t('client.profile.passwordTooShort'))
       return
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError('Les mots de passe ne correspondent pas')
+      setPasswordError(t('client.profile.passwordMismatch'))
       return
     }
     setSavingPassword(true)
@@ -71,10 +74,10 @@ const ClientProfile = () => {
         }),
       })
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-      setSuccess('Mot de passe modifié avec succès')
+      setSuccess(t('client.profile.passwordChanged'))
       setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
-      setPasswordError((err as Error).message || 'Erreur lors du changement de mot de passe')
+      setPasswordError((err as Error).message || t('client.profile.passwordError'))
     } finally {
       setSavingPassword(false)
     }
@@ -86,12 +89,12 @@ const ClientProfile = () => {
     setAvatarError('')
     const allowed = ['image/jpeg', 'image/png', 'image/webp']
     if (!allowed.includes(file.type)) {
-      setAvatarError('Format non supporté. Utilisez JPEG, PNG ou WebP.')
+      setAvatarError(t('client.profile.avatarFormat'))
       e.target.value = ''
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      setAvatarError("L'image dépasse 10 Mo.")
+      setAvatarError(t('client.profile.avatarTooLarge'))
       e.target.value = ''
       return
     }
@@ -108,10 +111,10 @@ const ClientProfile = () => {
       formData.append('avatar', blob, 'avatar.jpg')
       await apiUpload('/api/auth/avatar', formData)
       await refreshUser()
-      setSuccess('Photo de profil mise à jour')
+      setSuccess(t('client.profile.avatarUploaded'))
       setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
-      setAvatarError((err as Error).message || "Erreur lors de l'upload")
+      setAvatarError((err as Error).message || t('client.profile.avatarUploadError'))
     } finally {
       setAvatarUploading(false)
     }
@@ -125,10 +128,10 @@ const ClientProfile = () => {
     try {
       await apiFetch('/api/auth/avatar', { method: 'DELETE' })
       await refreshUser()
-      setSuccess('Photo de profil supprimée')
+      setSuccess(t('client.profile.avatarDeleted'))
       setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
-      setAvatarError((err as Error).message || 'Erreur lors de la suppression')
+      setAvatarError((err as Error).message || t('client.profile.avatarDeleteError'))
     } finally {
       setAvatarUploading(false)
     }
@@ -141,13 +144,13 @@ const ClientProfile = () => {
           to="/espace-client"
           style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}
         >
-          ← Retour au tableau de bord
+          {t('client.profile.back')}
         </Link>
       </div>
 
-      <h1 style={{ marginBottom: '8px' }}>Mon profil</h1>
+      <h1 style={{ marginBottom: '8px' }}>{t('client.profile.title')}</h1>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px' }}>
-        Gérez vos informations personnelles
+        {t('client.profile.subtitle')}
       </p>
 
       {success && (
@@ -168,7 +171,7 @@ const ClientProfile = () => {
       )}
 
       <div className="portal-card" style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Photo de profil</h2>
+        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>{t('client.profile.photoTitle')}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <UserAvatar
             name={user?.name || user?.email || '?'}
@@ -192,7 +195,7 @@ const ClientProfile = () => {
                 opacity: avatarUploading ? 0.6 : 1,
               }}
             >
-              {avatarUploading ? 'Upload...' : 'Modifier la photo'}
+              {avatarUploading ? t('client.profile.uploading') : t('client.profile.changePhoto')}
             </label>
             <input
               id="avatar-upload"
@@ -218,17 +221,17 @@ const ClientProfile = () => {
                   fontWeight: 600,
                 }}
               >
-                Supprimer la photo
+                {t('client.profile.removePhoto')}
               </button>
             )}
             {avatarError && <p style={{ color: '#ef4444', fontSize: '13px', margin: 0 }}>{avatarError}</p>}
-            <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: 0 }}>JPEG, PNG ou WebP · 10 Mo max</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: 0 }}>{t('client.profile.photoHint')}</p>
           </div>
         </div>
       </div>
 
       <div className="portal-card" style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Informations générales</h2>
+        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>{t('client.profile.generalTitle')}</h2>
         <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label
@@ -240,7 +243,7 @@ const ClientProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Nom complet
+              {t('client.profile.fullName')}
             </label>
             <input
               className="portal-input"
@@ -260,11 +263,11 @@ const ClientProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Email
+              {t('client.profile.email')}
             </label>
             <input className="portal-input" type="email" value={user?.email || ''} disabled style={{ opacity: 0.5 }} />
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              L'email ne peut pas être modifié. Contactez votre administrateur.
+              {t('client.profile.emailLocked')}
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -278,7 +281,7 @@ const ClientProfile = () => {
                   marginBottom: '6px',
                 }}
               >
-                Téléphone
+                {t('client.profile.phone')}
               </label>
               <input
                 className="portal-input"
@@ -298,7 +301,7 @@ const ClientProfile = () => {
                   marginBottom: '6px',
                 }}
               >
-                Site web
+                {t('client.profile.website')}
               </label>
               <input
                 className="portal-input"
@@ -319,7 +322,7 @@ const ClientProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Entreprise
+              {t('client.profile.company')}
             </label>
             <input
               className="portal-input"
@@ -330,9 +333,17 @@ const ClientProfile = () => {
           </div>
           {error && <p style={{ color: '#ef4444', fontSize: '14px' }}>{error}</p>}
           <button className="portal-button" type="submit" disabled={saving} style={{ alignSelf: 'flex-start' }}>
-            {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+            {saving ? t('client.profile.saving') : t('client.profile.saveChanges')}
           </button>
         </form>
+      </div>
+
+      <div className="portal-card" style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>{t('common.language')}</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '0 0 16px' }}>
+          {t('client.profile.languageHint')}
+        </p>
+        <LanguageSelect />
       </div>
 
       <div style={{ marginBottom: '24px' }}>
@@ -344,7 +355,7 @@ const ClientProfile = () => {
       </div>
 
       <div className="portal-card">
-        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Changer le mot de passe</h2>
+        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>{t('client.profile.passwordTitle')}</h2>
         <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label
@@ -356,7 +367,7 @@ const ClientProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Mot de passe actuel
+              {t('client.profile.currentPassword')}
             </label>
             <input
               className="portal-input"
@@ -376,7 +387,7 @@ const ClientProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Nouveau mot de passe
+              {t('client.profile.newPassword')}
             </label>
             <input
               className="portal-input"
@@ -397,7 +408,7 @@ const ClientProfile = () => {
                 marginBottom: '6px',
               }}
             >
-              Confirmer le nouveau mot de passe
+              {t('client.profile.confirmPassword')}
             </label>
             <input
               className="portal-input"
@@ -409,7 +420,7 @@ const ClientProfile = () => {
           </div>
           {passwordError && <p style={{ color: '#ef4444', fontSize: '14px' }}>{passwordError}</p>}
           <button className="portal-button" type="submit" disabled={savingPassword} style={{ alignSelf: 'flex-start' }}>
-            {savingPassword ? 'Modification...' : 'Changer le mot de passe'}
+            {savingPassword ? t('client.profile.changing') : t('client.profile.passwordTitle')}
           </button>
         </form>
       </div>

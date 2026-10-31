@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
 import { apiFetch } from '../../lib/api'
 import { createChangeRequest } from '../../services/changeRequests'
 import type { ChangeRequestPriority } from '../../types/changeRequest.types'
@@ -14,6 +15,7 @@ interface ProjectOption {
 }
 
 const ChangeRequestNew = () => {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [projects, setProjects] = useState<ProjectOption[]>([])
   const [title, setTitle] = useState('')
@@ -34,9 +36,9 @@ const ChangeRequestNew = () => {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setError('')
-    if (!title.trim()) return setError('Un titre est nécessaire pour identifier votre demande.')
-    if (!description.trim()) return setError('Décrivez votre demande pour que nous puissions la qualifier.')
-    if (files.length > MAX_FILES) return setError(`${MAX_FILES} fichiers au maximum.`)
+    if (!title.trim()) return setError(t('client.crNew.titleRequired'))
+    if (!description.trim()) return setError(t('client.crNew.descriptionRequired'))
+    if (files.length > MAX_FILES) return setError(t('client.crNew.maxFiles', { count: MAX_FILES }))
 
     setSubmitting(true)
     try {
@@ -50,7 +52,7 @@ const ChangeRequestNew = () => {
       })
       navigate(`/espace-client/demandes/${changeRequest._id}`)
     } catch (err) {
-      setError((err as Error).message || 'Envoi impossible')
+      setError((err as Error).message || t('client.crNew.sendError'))
       setSubmitting(false)
     }
   }
@@ -58,13 +60,10 @@ const ChangeRequestNew = () => {
   return (
     <div className="portal-container">
       <Link to="/espace-client/demandes" className="portal-link">
-        ← Vos demandes
+        {t('client.crNew.backToList')}
       </Link>
-      <h1 style={{ marginTop: 16 }}>Nouvelle demande</h1>
-      <p style={{ color: 'var(--text-secondary)', maxWidth: 640 }}>
-        Une retouche, une évolution ? Décrivez-la : nous la qualifions et vous indiquons si elle entre dans votre
-        contrat de maintenance ou si elle fait l’objet d’un devis.
-      </p>
+      <h1 style={{ marginTop: 16 }}>{t('client.crNew.heading')}</h1>
+      <p style={{ color: 'var(--text-secondary)', maxWidth: 640 }}>{t('client.crNew.intro')}</p>
 
       {error && (
         <p role="alert" style={{ color: 'var(--mono-danger, #ff5c5c)' }}>
@@ -74,41 +73,41 @@ const ChangeRequestNew = () => {
 
       <form onSubmit={handleSubmit} className="portal-card" style={{ display: 'grid', gap: 20, maxWidth: 720 }}>
         <label style={{ display: 'grid', gap: 8 }}>
-          <span>Titre de la demande *</span>
+          <span>{t('client.crNew.titleLabel')}</span>
           <input
             className="portal-input"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Ex. Corriger le formulaire de contact"
+            placeholder={t('client.crNew.titlePlaceholder')}
           />
         </label>
 
         <label style={{ display: 'grid', gap: 8 }}>
-          <span>Décrivez votre demande *</span>
+          <span>{t('client.crNew.descriptionLabel')}</span>
           <textarea
             className="portal-input"
             rows={6}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            placeholder="Ce que vous souhaitez obtenir, et pourquoi."
+            placeholder={t('client.crNew.descriptionPlaceholder')}
           />
         </label>
 
         <label style={{ display: 'grid', gap: 8 }}>
-          <span>Page concernée</span>
+          <span>{t('client.crNew.pageLabel')}</span>
           <input
             className="portal-input"
             type="url"
             value={pageUrl}
             onChange={(event) => setPageUrl(event.target.value)}
-            placeholder="https://votre-site.fr/la-page"
+            placeholder={t('client.crNew.pagePlaceholder')}
           />
         </label>
 
         <label style={{ display: 'grid', gap: 8 }}>
-          <span>Projet</span>
+          <span>{t('client.crNew.projectLabel')}</span>
           <select className="portal-input" value={projectId} onChange={(event) => setProjectId(event.target.value)}>
-            <option value="">Aucun projet / site en maintenance</option>
+            <option value="">{t('client.crNew.noProject')}</option>
             {projects.map((project) => (
               <option key={project._id} value={project._id}>
                 {project.name}
@@ -118,22 +117,20 @@ const ChangeRequestNew = () => {
         </label>
 
         <label style={{ display: 'grid', gap: 8 }}>
-          <span>Priorité</span>
+          <span>{t('client.crNew.priorityLabel')}</span>
           <select
             className="portal-input"
             value={priority}
             onChange={(event) => setPriority(event.target.value as ChangeRequestPriority)}
           >
-            <option value="BASSE">Basse</option>
-            <option value="NORMALE">Normale</option>
-            <option value="HAUTE">Haute</option>
+            <option value="BASSE">{t('client.crPriority.low')}</option>
+            <option value="NORMALE">{t('client.crPriority.normal')}</option>
+            <option value="HAUTE">{t('client.crPriority.high')}</option>
           </select>
         </label>
 
         <label style={{ display: 'grid', gap: 8 }}>
-          <span>
-            Pièces jointes — {MAX_FILES} fichiers max, {MAX_FILE_SIZE_MB} Mo chacun
-          </span>
+          <span>{t('client.crNew.attachments', { maxFiles: MAX_FILES, maxSize: MAX_FILE_SIZE_MB })}</span>
           <input
             className="portal-input"
             type="file"
@@ -148,7 +145,7 @@ const ChangeRequestNew = () => {
         </label>
 
         <button type="submit" className="portal-badge" disabled={submitting} style={{ padding: '12px 20px' }}>
-          {submitting ? 'Envoi…' : 'Envoyer la demande'}
+          {submitting ? t('client.crNew.sending') : t('client.crNew.submit')}
         </button>
       </form>
     </div>

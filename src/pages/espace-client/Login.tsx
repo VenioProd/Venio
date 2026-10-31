@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { useI18n } from '../../context/I18nContext'
 import { useAuth } from '../../context/AuthContext'
 import { apiFetch } from '../../lib/api'
 import { isAdminRole } from '../../lib/permissions'
@@ -8,6 +9,7 @@ import './ClientPortal.css'
 type Mode = 'login' | 'forgot' | 'reset'
 
 const ClientLogin = () => {
+  const { t } = useI18n()
   const { user, login } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -47,7 +49,7 @@ const ClientLogin = () => {
       }
       navigate(returnTo || '/espace-client', { replace: true })
     } catch (err: unknown) {
-      setError((err as Error).message || 'Connexion impossible')
+      setError((err as Error).message || t('client.login.signInError'))
     } finally {
       setLoading(false)
     }
@@ -65,7 +67,7 @@ const ClientLogin = () => {
       })
       setSuccess(data.message)
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur')
+      setError((err as Error).message || t('client.login.genericError'))
     } finally {
       setLoading(false)
     }
@@ -81,10 +83,10 @@ const ClientLogin = () => {
         method: 'POST',
         body: JSON.stringify({ token: resetToken, password: newPassword }),
       })
-      setSuccess(data.message + ' Vous pouvez maintenant vous connecter.')
+      setSuccess(`${data.message} ${t('client.login.resetDone')}`)
       setMode('login')
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur')
+      setError((err as Error).message || t('client.login.genericError'))
     } finally {
       setLoading(false)
     }
@@ -95,13 +97,13 @@ const ClientLogin = () => {
       <div className="portal-card">
         {mode === 'login' && (
           <>
-            <h1>Espace client</h1>
-            <p>Connectez-vous pour acceder a vos projets.</p>
+            <h1>{t('client.login.title')}</h1>
+            <p>{t('client.login.intro')}</p>
             <form onSubmit={handleLogin} className="portal-list">
               <input
                 className="portal-input"
                 type="email"
-                placeholder="Email"
+                placeholder={t('client.login.emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -110,7 +112,7 @@ const ClientLogin = () => {
                 <input
                   className="portal-input"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Mot de passe"
+                  placeholder={t('client.login.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -120,11 +122,19 @@ const ClientLogin = () => {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   style={{
-                    position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.4)',
-                    cursor: 'pointer', fontSize: '16px', padding: '4px', lineHeight: 1,
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'rgba(255, 255, 255, 0.4)',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    padding: '4px',
+                    lineHeight: 1,
                   }}
-                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  aria-label={showPassword ? t('client.login.hidePassword') : t('client.login.showPassword')}
                 >
                   {showPassword ? '🙈' : '👁'}
                 </button>
@@ -132,15 +142,26 @@ const ClientLogin = () => {
               {error && <p style={{ color: '#ef4444' }}>{error}</p>}
               {success && <p style={{ color: '#22c55e' }}>{success}</p>}
               <button className="portal-button" type="submit" disabled={loading}>
-                {loading ? 'Connexion...' : 'Se connecter'}
+                {loading ? t('client.login.signingIn') : t('client.login.signIn')}
               </button>
               <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px' }}>
                 <button
                   type="button"
-                  onClick={() => { setMode('forgot'); setError(''); setSuccess('') }}
-                  style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '14px', textDecoration: 'none' }}
+                  onClick={() => {
+                    setMode('forgot')
+                    setError('')
+                    setSuccess('')
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary)',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    textDecoration: 'none',
+                  }}
                 >
-                  Mot de passe oublie ?
+                  {t('client.login.forgotLink')}
                 </button>
               </p>
             </form>
@@ -149,13 +170,13 @@ const ClientLogin = () => {
 
         {mode === 'forgot' && (
           <>
-            <h1>Mot de passe oublie</h1>
-            <p>Entrez votre email, nous vous enverrons un lien de reinitialisation.</p>
+            <h1>{t('client.login.forgotTitle')}</h1>
+            <p>{t('client.login.forgotIntro')}</p>
             <form onSubmit={handleForgotPassword} className="portal-list">
               <input
                 className="portal-input"
                 type="email"
-                placeholder="Email"
+                placeholder={t('client.login.emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -163,15 +184,25 @@ const ClientLogin = () => {
               {error && <p style={{ color: '#ef4444' }}>{error}</p>}
               {success && <p style={{ color: '#22c55e' }}>{success}</p>}
               <button className="portal-button" type="submit" disabled={loading}>
-                {loading ? 'Envoi...' : 'Envoyer le lien'}
+                {loading ? t('client.login.sending') : t('client.login.sendLink')}
               </button>
               <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px' }}>
                 <button
                   type="button"
-                  onClick={() => { setMode('login'); setError(''); setSuccess('') }}
-                  style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '14px' }}
+                  onClick={() => {
+                    setMode('login')
+                    setError('')
+                    setSuccess('')
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary)',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                  }}
                 >
-                  Retour a la connexion
+                  {t('client.login.backToSignIn')}
                 </button>
               </p>
             </form>
@@ -180,13 +211,13 @@ const ClientLogin = () => {
 
         {mode === 'reset' && (
           <>
-            <h1>Nouveau mot de passe</h1>
-            <p>Choisissez votre nouveau mot de passe.</p>
+            <h1>{t('client.login.resetTitle')}</h1>
+            <p>{t('client.login.resetIntro')}</p>
             <form onSubmit={handleResetPassword} className="portal-list">
               <input
                 className="portal-input"
                 type="password"
-                placeholder="Nouveau mot de passe (6 caracteres minimum)"
+                placeholder={t('client.login.newPasswordPlaceholder')}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
@@ -195,7 +226,7 @@ const ClientLogin = () => {
               {error && <p style={{ color: '#ef4444' }}>{error}</p>}
               {success && <p style={{ color: '#22c55e' }}>{success}</p>}
               <button className="portal-button" type="submit" disabled={loading}>
-                {loading ? 'Reinitialisation...' : 'Reinitialiser'}
+                {loading ? t('client.login.resetting') : t('client.login.reset')}
               </button>
             </form>
           </>
