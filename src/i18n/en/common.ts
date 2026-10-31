@@ -1,4 +1,11 @@
-const en: Record<string, string> = {
+import type fr from '../fr/common'
+
+const en: Record<keyof typeof fr, string> = {
+  // SEO
+  'seo.defaultTitle': 'Custom website design in Paris | Venio',
+  'seo.defaultDescription':
+    'Digital studio in Paris. Custom websites, consulting and brand identity — concrete work made for you, no off-the-shelf templates. Let’s talk about your project.',
+
   // Navigation
   'nav.home': 'Home',
   'nav.services': 'Websites',
@@ -38,6 +45,7 @@ const en: Record<string, string> = {
   'common.next': 'Next',
   'common.previous': 'Previous',
   'common.close': 'Close',
+  'common.language': 'Language',
   'common.yes': 'Yes',
   'common.no': 'No',
 

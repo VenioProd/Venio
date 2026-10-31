@@ -1,12 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import locales from '../i18n'
+import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { AuthContext } from './AuthContext'
+import locales, { formatMessage, setActiveLocale, type Locale, type MessageKey, type MessageParams } from '../i18n'
 import { apiFetch } from '../lib/api'
 
-export type Locale = 'fr' | 'en'
+export type { Locale, MessageKey, MessageParams }
 
 const STORAGE_KEY = 'venio-lang'
 
-function getInitialLocale(): Locale {
+function readStoredLocale(): Locale {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'fr' || stored === 'en') return stored
@@ -19,56 +20,68 @@ function getInitialLocale(): Locale {
 interface I18nContextValue {
   locale: Locale
   setLocale: (locale: Locale) => void
-  t: (key: string) => string
+  t: (key: MessageKey, params?: MessageParams) => string
 }
 
-const I18nContext = createContext<I18nContextValue | null>(null)
+function makeTranslator(locale: Locale): I18nContextValue['t'] {
+  return (key, params) => {
+    const template = locales[locale]?.[key] ?? locales.fr[key] ?? key
+    return formatMessage(template, params, locale)
+  }
+}
+
+// Outside a provider (isolated component tests) the UI stays in French.
+const fallbackValue: I18nContextValue = { locale: 'fr', setLocale: () => {}, t: makeTranslator('fr') }
+
+const I18nContext = createContext<I18nContextValue>(fallbackValue)
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(getInitialLocale)
+  const [locale, setLocaleState] = useState<Locale>(readStoredLocale)
+  const auth = useContext(AuthContext)
+  const user = auth?.user ?? null
+  const isSignedIn = user !== null
+  const isSignedInRef = useRef(isSignedIn)
+  isSignedInRef.current = isSignedIn
+  setActiveLocale(locale)
 
-  // Keep <html lang> in sync with locale
   useEffect(() => {
     document.documentElement.lang = locale
   }, [locale])
 
-  const setLocale = useCallback((newLocale: Locale) => {
-    setLocaleState(newLocale)
+  // The account preference wins once the session is known.
+  const accountLocale = user?.locale
+  useEffect(() => {
+    if (accountLocale === 'fr' || accountLocale === 'en') setLocaleState(accountLocale)
+  }, [accountLocale])
+
+  const setLocale = useCallback((next: Locale) => {
+    setLocaleState(next)
     try {
-      localStorage.setItem(STORAGE_KEY, newLocale)
+      localStorage.setItem(STORAGE_KEY, next)
     } catch {
       // localStorage may not be available
     }
-    // The server accepts this only when an HttpOnly browser session is active.
-    apiFetch('/api/auth/locale', {
-      method: 'PATCH',
-      body: JSON.stringify({ locale: newLocale }),
-    }).catch(() => {})
+    // Signed-out visitors only keep the choice locally (venio-lang); a PATCH would 401.
+    if (isSignedInRef.current) {
+      apiFetch('/api/auth/locale', {
+        method: 'PATCH',
+        body: JSON.stringify({ locale: next }),
+      }).catch(() => {})
+    }
   }, [])
 
-  const t = useCallback(
-    (key: string): string => {
-      const translations = locales[locale]
-      if (translations && key in translations) {
-        return translations[key]
-      }
-      // Fallback: try French, then return the key itself
-      const fallback = locales.fr
-      if (fallback && key in fallback) {
-        return fallback[key]
-      }
-      return key
-    },
-    [locale],
-  )
-
+  const t = useMemo(() => makeTranslator(locale), [locale])
   const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t])
 
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
+  // Re-mount the tree on a language switch so that components which only format
+  // dates/numbers through the module-level helpers refresh too.
+  return (
+    <I18nContext.Provider value={value}>
+      <Fragment key={locale}>{children}</Fragment>
+    </I18nContext.Provider>
+  )
 }
 
 export function useI18n(): I18nContextValue {
-  const ctx = useContext(I18nContext)
-  if (!ctx) throw new Error('useI18n must be used within I18nProvider')
-  return ctx
+  return useContext(I18nContext)
 }
