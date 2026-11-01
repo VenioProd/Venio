@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import React, { useEffect, useState, useCallback } from 'react'
 import { Settings, Check } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
@@ -16,6 +17,7 @@ import {
 } from './widgets/registry'
 import { getLayout, saveLayout } from '../../../services/workspace'
 import type { WidgetConfig } from '../../../types/workspace.types'
+import '../AdminPortal.css'
 import './MonEspace.css'
 
 function greeting(): string {
@@ -62,29 +64,30 @@ export default function MonEspace() {
 
   if (loading)
     return (
-      <div className="mon-espace">
+      <div className="mon-espace pilotage-page">
         <p className="subtitle">{t('adminAccess.monEspace.loading')}</p>
       </div>
     )
 
   return (
-    <div className="mon-espace">
-      <div className="mon-espace__header">
-        <h1 className="mon-espace__hello">
-          {greeting()} {user?.name} 👋
-        </h1>
-        <button className="btn-secondary" onClick={() => setEditing((e) => !e)}>
-          {editing ? (
-            <>
-              <Check size={16} /> {t('adminAccess.monEspace.done')}
-            </>
-          ) : (
-            <>
-              <Settings size={16} /> {t('adminAccess.monEspace.customize')}
-            </>
-          )}
-        </button>
-      </div>
+    <div className="mon-espace pilotage-page">
+      <PageHeader
+        eyebrow={t('adminOps.pilotage.zone.overview')}
+        title={`${greeting()} ${user?.name || ''}`}
+        actions={
+          <button className="portal-button secondary" onClick={() => setEditing((e) => !e)}>
+            {editing ? (
+              <>
+                <Check size={16} /> {t('adminAccess.monEspace.done')}
+              </>
+            ) : (
+              <>
+                <Settings size={16} /> {t('adminAccess.monEspace.customize')}
+              </>
+            )}
+          </button>
+        }
+      />
 
       <RoleCockpitFocus />
 

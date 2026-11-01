@@ -1,4 +1,3 @@
-import { ACCENT, STATUS, categoricalAt } from '../../../lib/chartColors'
 import { formatMoney } from '../../../i18n/format'
 import type { MessageKey } from '../../../i18n'
 
@@ -55,10 +54,10 @@ export const PRIORITY_LABEL_KEYS = {
  * peu prioritaire n'est pas une bonne nouvelle.
  */
 export const PRIORITY_COLORS: Record<string, string> = {
-  BASSE: STATUS.neutral,
-  NORMALE: ACCENT,
-  HAUTE: STATUS.warning,
-  URGENTE: STATUS.critical,
+  BASSE: 'var(--text-muted)',
+  NORMALE: 'var(--primary)',
+  HAUTE: 'var(--warning)',
+  URGENTE: 'var(--critical)',
 }
 
 /**
@@ -69,11 +68,11 @@ export const PRIORITY_COLORS: Record<string, string> = {
  * la troisième ».
  */
 export const STATUS_COLORS: Record<string, string> = {
-  A_FAIRE: categoricalAt(0),
-  EN_COURS: categoricalAt(1),
-  EN_REVIEW: categoricalAt(2),
-  EN_ATTENTE: categoricalAt(3),
-  TERMINE: categoricalAt(4),
+  A_FAIRE: 'var(--cat-1)',
+  EN_COURS: 'var(--cat-2)',
+  EN_REVIEW: 'var(--cat-3)',
+  EN_ATTENTE: 'var(--cat-4)',
+  TERMINE: 'var(--cat-5)',
 }
 
 export const MONTH_LABEL_KEYS = [

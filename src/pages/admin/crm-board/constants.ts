@@ -12,20 +12,20 @@ export interface CrmOption {
 }
 
 export const CRM_STATUSES: CrmOption[] = [
-  { key: 'LEAD', labelKey: 'crm.status.lead', color: '#6366f1' },
-  { key: 'QUALIFIED', labelKey: 'crm.status.qualified', color: '#0ea5e9' },
-  { key: 'CONTACTED', labelKey: 'crm.status.contacted', color: '#8b5cf6' },
-  { key: 'DEMO', labelKey: 'crm.status.demo', color: '#f59e0b' },
-  { key: 'PROPOSAL', labelKey: 'crm.status.proposal', color: '#f97316' },
-  { key: 'WON', labelKey: 'crm.status.won', color: '#22c55e' },
-  { key: 'LOST', labelKey: 'crm.status.lost', color: '#ef4444' },
+  { key: 'LEAD', labelKey: 'crm.status.lead', color: 'var(--cat-2)' },
+  { key: 'QUALIFIED', labelKey: 'crm.status.qualified', color: 'var(--primary)' },
+  { key: 'CONTACTED', labelKey: 'crm.status.contacted', color: 'var(--cat-2)' },
+  { key: 'DEMO', labelKey: 'crm.status.demo', color: 'var(--warning)' },
+  { key: 'PROPOSAL', labelKey: 'crm.status.proposal', color: 'var(--cat-3)' },
+  { key: 'WON', labelKey: 'crm.status.won', color: 'var(--good)' },
+  { key: 'LOST', labelKey: 'crm.status.lost', color: 'var(--critical)' },
 ]
 
 export const CRM_PRIORITIES: CrmOption[] = [
-  { key: 'BASSE', labelKey: 'crm.priority.low', color: '#64748b' },
-  { key: 'NORMALE', labelKey: 'crm.priority.normal', color: '#0ea5e9' },
-  { key: 'HAUTE', labelKey: 'crm.priority.high', color: '#f59e0b' },
-  { key: 'URGENTE', labelKey: 'crm.priority.urgent', color: '#ef4444' },
+  { key: 'BASSE', labelKey: 'crm.priority.low', color: 'var(--text-muted)' },
+  { key: 'NORMALE', labelKey: 'crm.priority.normal', color: 'var(--primary)' },
+  { key: 'HAUTE', labelKey: 'crm.priority.high', color: 'var(--warning)' },
+  { key: 'URGENTE', labelKey: 'crm.priority.urgent', color: 'var(--critical)' },
 ]
 
 // i18n-ignore : valeurs métier envoyées à l'API (le libellé affiché passe par SOURCE_LABEL_KEYS)
@@ -73,18 +73,18 @@ export function labelOfValue(
 // Projet / produit concerné par un lead. Les leads historiques n'en ont pas
 // (project vide) : l'interface affiche alors « — ».
 export const CRM_PROJECTS: CrmOption[] = [
-  { key: 'ARTOSERA', labelKey: 'crm.project.artosera', color: '#ec4899' },
-  { key: 'VIGNO', labelKey: 'crm.project.vigno', color: '#22c55e' },
-  { key: 'ARROW', labelKey: 'crm.project.arrow', color: '#0ea5e9' },
-  { key: 'VENIO', labelKey: 'crm.project.venio', color: '#8b5cf6' },
-  { key: 'AUTRE', labelKey: 'crm.project.other', color: '#64748b' },
+  { key: 'ARTOSERA', labelKey: 'crm.project.artosera', color: 'var(--critical)' },
+  { key: 'VIGNO', labelKey: 'crm.project.vigno', color: 'var(--good)' },
+  { key: 'ARROW', labelKey: 'crm.project.arrow', color: 'var(--primary)' },
+  { key: 'VENIO', labelKey: 'crm.project.venio', color: 'var(--cat-2)' },
+  { key: 'AUTRE', labelKey: 'crm.project.other', color: 'var(--text-muted)' },
 ]
 
 export const CRM_TEMPERATURES: CrmOption[] = [
-  { key: 'FROID', labelKey: 'crm.temperature.cold', color: '#64748b' },
-  { key: 'TIEDE', labelKey: 'crm.temperature.warm', color: '#f59e0b' },
-  { key: 'CHAUD', labelKey: 'crm.temperature.hot', color: '#f97316' },
-  { key: 'TRES_CHAUD', labelKey: 'crm.temperature.veryHot', color: '#ef4444' },
+  { key: 'FROID', labelKey: 'crm.temperature.cold', color: 'var(--text-muted)' },
+  { key: 'TIEDE', labelKey: 'crm.temperature.warm', color: 'var(--warning)' },
+  { key: 'CHAUD', labelKey: 'crm.temperature.hot', color: 'var(--cat-3)' },
+  { key: 'TRES_CHAUD', labelKey: 'crm.temperature.veryHot', color: 'var(--critical)' },
 ]
 
 export const STATUS_MAP: Record<string, CrmOption> = Object.fromEntries(CRM_STATUSES.map((s) => [s.key, s]))
@@ -137,18 +137,18 @@ export const getLeadAlerts = (
   if (thresholds.coldEnabled && lead.lastContactAt) {
     const days = daysSince(lead.lastContactAt)
     if (days >= thresholds.coldDays) {
-      alerts.push({ type: 'cold', label: translate('crm.alert.cold', { days }), color: '#64748b' })
+      alerts.push({ type: 'cold', label: translate('crm.alert.cold', { days }), color: 'var(--text-muted)' })
     }
   }
 
   if (thresholds.overdueEnabled && lead.nextActionAt && new Date(lead.nextActionAt) < new Date()) {
-    alerts.push({ type: 'overdue', label: translate('crm.alert.overdue'), color: '#ef4444' })
+    alerts.push({ type: 'overdue', label: translate('crm.alert.overdue'), color: 'var(--critical)' })
   }
 
   if (thresholds.staleEnabled && lead.statusChangedAt) {
     const days = daysSince(lead.statusChangedAt)
     if (days >= thresholds.staleDays) {
-      alerts.push({ type: 'stale', label: translate('crm.alert.stale', { days }), color: '#f59e0b' })
+      alerts.push({ type: 'stale', label: translate('crm.alert.stale', { days }), color: 'var(--warning)' })
     }
   }
 

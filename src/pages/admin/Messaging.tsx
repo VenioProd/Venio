@@ -1,3 +1,5 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './AdminPortal.css'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ConversationHeader from '../../components/admin/messaging/ConversationHeader'
@@ -93,150 +95,153 @@ function MessagingSurface() {
   }
 
   return (
-    <div className={`messaging-page mobile-view-${mobileView}`}>
-      <ConversationSidebar
-        conversations={conversations}
-        users={users}
-        activeConversationId={activeConversationId}
-        onSelect={selectConversation}
-        onCreateChannel={async (name, visibility) => {
-          const conversation = await createChannel({ name, visibility })
-          await refreshConversations()
-          selectConversation(conversation._id)
-        }}
-        onOpenDirect={async (userId) => {
-          try {
-            const conversation = await openDirectConversation(userId)
+    <div className="pilotage-page messaging-workspace">
+      <PageHeader eyebrow={t('adminOps.pilotage.zone.inbox')} title={t('compB.msg.title')} />
+      <div className={`messaging-page mobile-view-${mobileView}`}>
+        <ConversationSidebar
+          conversations={conversations}
+          users={users}
+          activeConversationId={activeConversationId}
+          onSelect={selectConversation}
+          onCreateChannel={async (name, visibility) => {
+            const conversation = await createChannel({ name, visibility })
             await refreshConversations()
             selectConversation(conversation._id)
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : t('adminAccess.messaging.unknownError')
-            showToast(msg, 'error')
-          }
-        }}
-      />
-      <main className="messaging-main">
-        <ConversationHeader
-          conversation={activeConversation}
-          connected={connected}
-          onBack={backToSidebar}
-          onToggleSearch={() => setShowSearch((value) => !value)}
-          searchActive={showSearch}
+          }}
+          onOpenDirect={async (userId) => {
+            try {
+              const conversation = await openDirectConversation(userId)
+              await refreshConversations()
+              selectConversation(conversation._id)
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : t('adminAccess.messaging.unknownError')
+              showToast(msg, 'error')
+            }
+          }}
         />
-        {showSearch && (
-          <div className="messaging-search">
-            <div className="messaging-search-field">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-              <input
-                ref={searchInputRef}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={t('adminAccess.messaging.searchPlaceholder')}
-              />
-              {query.length > 0 && (
-                <button
-                  type="button"
-                  className="messaging-search-clear"
-                  onClick={() => setQuery('')}
-                  aria-label={t('adminAccess.messaging.clearSearch')}
-                >
-                  ×
-                </button>
-              )}
-            </div>
-            {results.length > 0 && (
-              <div className="messaging-search-results">
-                {results.map((result) => {
-                  const q = query.trim().toLowerCase()
-                  const matchingAttachment = result.attachments?.find((att) =>
-                    att.originalName.toLowerCase().includes(q),
-                  )
-                  return (
-                    <button
-                      key={result._id}
-                      type="button"
-                      onClick={() => {
-                        selectConversation(String(result.conversation))
-                        setQuery('')
-                      }}
-                    >
-                      <strong>{result.sender.name}</strong>
-                      <span>{result.content}</span>
-                      {matchingAttachment && (
-                        <span className="messaging-search-result-attachment">
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
-                          >
-                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.4 18.21a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                          </svg>
-                          {matchingAttachment.originalName}
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-            {query.trim().length >= 2 && results.length === 0 && (
-              <div className="messaging-search-empty">{t('adminAccess.messaging.noResults')}</div>
-            )}
-          </div>
-        )}
-        <section className="messaging-thread">
-          {!activeConversation ? (
-            <div className="messaging-empty">
-              <div className="messaging-empty-glyph" aria-hidden="true">
+        <main className="messaging-main">
+          <ConversationHeader
+            conversation={activeConversation}
+            connected={connected}
+            onBack={backToSidebar}
+            onToggleSearch={() => setShowSearch((value) => !value)}
+            searchActive={showSearch}
+          />
+          {showSearch && (
+            <div className="messaging-search">
+              <div className="messaging-search-field">
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="1.5"
+                  strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
                 </svg>
+                <input
+                  ref={searchInputRef}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={t('adminAccess.messaging.searchPlaceholder')}
+                />
+                {query.length > 0 && (
+                  <button
+                    type="button"
+                    className="messaging-search-clear"
+                    onClick={() => setQuery('')}
+                    aria-label={t('adminAccess.messaging.clearSearch')}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
-              <h2>{t('adminAccess.messaging.noConversationTitle')}</h2>
-              <p>{t('adminAccess.messaging.noConversationText')}</p>
+              {results.length > 0 && (
+                <div className="messaging-search-results">
+                  {results.map((result) => {
+                    const q = query.trim().toLowerCase()
+                    const matchingAttachment = result.attachments?.find((att) =>
+                      att.originalName.toLowerCase().includes(q),
+                    )
+                    return (
+                      <button
+                        key={result._id}
+                        type="button"
+                        onClick={() => {
+                          selectConversation(String(result.conversation))
+                          setQuery('')
+                        }}
+                      >
+                        <strong>{result.sender.name}</strong>
+                        <span>{result.content}</span>
+                        {matchingAttachment && (
+                          <span className="messaging-search-result-attachment">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.4 18.21a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                            </svg>
+                            {matchingAttachment.originalName}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              {query.trim().length >= 2 && results.length === 0 && (
+                <div className="messaging-search-empty">{t('adminAccess.messaging.noResults')}</div>
+              )}
             </div>
-          ) : loading ? (
-            <div className="messaging-empty">
-              <div className="messaging-spinner" aria-hidden="true" />
-              <p>{t('adminAccess.messaging.loadingConversation')}</p>
-            </div>
-          ) : (
-            <MessageList messages={messages} typingUsers={typingUsers} onReplaceMessage={replaceMessage} />
           )}
-        </section>
-        <MessageComposer
-          conversationId={activeConversationId}
-          users={users}
-          onSend={sendMessage}
-          onUploaded={async () => {
-            if (activeConversationId) await loadMessages(activeConversationId)
-            await refreshConversations()
-          }}
-          onTyping={emitTyping}
-        />
-      </main>
+          <section className="messaging-thread">
+            {!activeConversation ? (
+              <div className="messaging-empty">
+                <div className="messaging-empty-glyph" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <h2>{t('adminAccess.messaging.noConversationTitle')}</h2>
+                <p>{t('adminAccess.messaging.noConversationText')}</p>
+              </div>
+            ) : loading ? (
+              <div className="messaging-empty">
+                <div className="messaging-spinner" aria-hidden="true" />
+                <p>{t('adminAccess.messaging.loadingConversation')}</p>
+              </div>
+            ) : (
+              <MessageList messages={messages} typingUsers={typingUsers} onReplaceMessage={replaceMessage} />
+            )}
+          </section>
+          <MessageComposer
+            conversationId={activeConversationId}
+            users={users}
+            onSend={sendMessage}
+            onUploaded={async () => {
+              if (activeConversationId) await loadMessages(activeConversationId)
+              await refreshConversations()
+            }}
+            onTyping={emitTyping}
+          />
+        </main>
+      </div>
     </div>
   )
 }

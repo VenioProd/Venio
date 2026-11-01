@@ -48,7 +48,7 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({ data }) => {
         <div className="analytics-kpi">
           <span className="analytics-kpi-label">{t('adminTech.analytics.tasks')}</span>
           <span className="analytics-kpi-value">{totalTasks}</span>
-          <span className="analytics-kpi-sub" style={data.overdueTaskCount > 0 ? { color: '#ef4444' } : {}}>
+          <span className="analytics-kpi-sub" style={data.overdueTaskCount > 0 ? { color: 'var(--critical)' } : {}}>
             {t('adminTech.analytics.overdueCount', { count: data.overdueTaskCount })}
           </span>
         </div>
@@ -59,7 +59,7 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({ data }) => {
             <span className="analytics-kpi-sub">
               {t('adminTech.analytics.thisMonth', { amount: formatEur(data.monthlyRevenue ?? 0) })}
               {revenueChange !== 0 && (
-                <span style={{ color: revenueChange > 0 ? '#22c55e' : '#ef4444', marginLeft: 6 }}>
+                <span style={{ color: revenueChange > 0 ? 'var(--good)' : 'var(--critical)', marginLeft: 6 }}>
                   {revenueChange > 0 ? '+' : ''}
                   {revenueChange}%
                 </span>

@@ -1,3 +1,4 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listAdminClients } from '../../services/adminClients'
@@ -43,17 +44,17 @@ const TABLE_COLUMN_KEYS: MessageKey[] = [
 ]
 
 const STATUS_COLORS: Record<string, string> = {
-  ACTIF: '#22c55e',
+  ACTIF: 'var(--good)',
   PROSPECT: 'var(--primary)',
-  EN_PAUSE: '#f59e0b',
-  CLOS: '#64748b',
-  ARCHIVE: '#475569',
+  EN_PAUSE: 'var(--warning)',
+  CLOS: 'var(--text-muted)',
+  ARCHIVE: 'var(--text-muted)',
 }
 
 const HEALTH_COLORS: Record<string, string> = {
-  BON: '#22c55e',
-  ATTENTION: '#f59e0b',
-  CRITIQUE: '#ef4444',
+  BON: 'var(--good)',
+  ATTENTION: 'var(--warning)',
+  CRITIQUE: 'var(--critical)',
 }
 
 const STATUS_LABEL_KEYS: Record<string, MessageKey> = {
@@ -134,81 +135,79 @@ const ClientAccountList = () => {
   }
 
   return (
-    <div className="portal-container">
+    <div className="portal-container pilotage-page client-accounts-page">
       <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('adminAccess.clients.breadcrumb')}</span>
-        </div>
-        <div className="admin-header">
-          <h1>{t('adminAccess.clients.breadcrumb')}</h1>
-          <div className="admin-actions portal-actions-reveal">
-            <button
-              className="portal-button secondary portal-action-link"
-              type="button"
-              title={t('adminAccess.clients.exportCsv')}
-              onClick={() => {
-                const headers = [
-                  t('adminAccess.clients.csvName'),
-                  t('adminAccess.clients.csvCompany'),
-                  t('adminAccess.clients.csvEmail'),
-                  t('adminAccess.clients.csvService'),
-                  t('adminAccess.clients.csvStatus'),
-                  t('adminAccess.clients.csvHealth'),
-                  t('adminAccess.clients.csvOwner'),
-                ]
-                const rows = clients.map((c) => [
-                  c.name || '',
-                  c.companyName || '',
-                  c.email || '',
-                  c.serviceType || '',
-                  statusLabel(c.status) || c.status || '',
-                  healthLabel(c.healthStatus) || '',
-                  c.ownerAdminId?.name || t('adminAccess.clients.unassignedCsv'),
-                ])
-                exportToCsv('clients.csv', headers, rows)
-              }}
-            >
-              <span className="portal-action-icon" aria-hidden>
-                <svg
-                  viewBox="0 0 24 24"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              </span>
-              <span className="portal-action-label">{t('adminAccess.clients.exportCsv')}</span>
-            </button>
-            <Link
-              className="portal-button portal-action-link"
-              to="/admin/comptes-clients/nouveau"
-              title={t('adminAccess.clients.newAccount')}
-            >
-              <span className="portal-action-icon" aria-hidden>
-                <svg
-                  viewBox="0 0 24 24"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="16" />
-                  <line x1="8" y1="12" x2="16" y2="12" />
-                </svg>
-              </span>
-              <span className="portal-action-label">{t('adminAccess.clients.newAccount')}</span>
-            </Link>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.pilotage.zone.commercial')}
+          title={t('adminAccess.clients.breadcrumb')}
+          actions={
+            <div className="admin-actions portal-actions-reveal">
+              <button
+                className="portal-button secondary portal-action-link"
+                type="button"
+                title={t('adminAccess.clients.exportCsv')}
+                onClick={() => {
+                  const headers = [
+                    t('adminAccess.clients.csvName'),
+                    t('adminAccess.clients.csvCompany'),
+                    t('adminAccess.clients.csvEmail'),
+                    t('adminAccess.clients.csvService'),
+                    t('adminAccess.clients.csvStatus'),
+                    t('adminAccess.clients.csvHealth'),
+                    t('adminAccess.clients.csvOwner'),
+                  ]
+                  const rows = clients.map((c) => [
+                    c.name || '',
+                    c.companyName || '',
+                    c.email || '',
+                    c.serviceType || '',
+                    statusLabel(c.status) || c.status || '',
+                    healthLabel(c.healthStatus) || '',
+                    c.ownerAdminId?.name || t('adminAccess.clients.unassignedCsv'),
+                  ])
+                  exportToCsv('clients.csv', headers, rows)
+                }}
+              >
+                <span className="portal-action-icon" aria-hidden>
+                  <svg
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </span>
+                <span className="portal-action-label">{t('adminAccess.clients.exportCsv')}</span>
+              </button>
+              <Link
+                className="portal-button portal-action-link"
+                to="/admin/comptes-clients/nouveau"
+                title={t('adminAccess.clients.newAccount')}
+              >
+                <span className="portal-action-icon" aria-hidden>
+                  <svg
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="16" />
+                    <line x1="8" y1="12" x2="16" y2="12" />
+                  </svg>
+                </span>
+                <span className="portal-action-label">{t('adminAccess.clients.newAccount')}</span>
+              </Link>
+            </div>
+          }
+        />
 
         <div className="portal-grid">
           <input
@@ -268,13 +267,13 @@ const ClientAccountList = () => {
                   onClick={() => setViewMode(v)}
                   style={{
                     padding: '6px 14px',
-                    borderRadius: 8,
+                    borderRadius: 'var(--r-md)',
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: 'pointer',
                     border: 'none',
-                    background: viewMode === v ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
-                    color: viewMode === v ? '#fff' : 'rgba(255,255,255,0.5)',
+                    background: viewMode === v ? 'var(--primary)' : 'var(--border-color)',
+                    color: viewMode === v ? 'var(--text-primary)' : 'var(--text-secondary)',
                     transition: 'all 0.2s',
                   }}
                 >
@@ -286,7 +285,7 @@ const ClientAccountList = () => {
             {viewMode === 'cards' ? (
               <div className="client-cards-grid">
                 {clients.map((client) => {
-                  const statusColor = STATUS_COLORS[client.status] || '#64748b'
+                  const statusColor = STATUS_COLORS[client.status] || 'var(--text-muted)'
                   return (
                     <Link
                       key={client._id}
@@ -298,8 +297,8 @@ const ClientAccountList = () => {
                         <div
                           className="client-card-avatar"
                           style={{
-                            background: `linear-gradient(135deg, ${statusColor}28, ${statusColor}14)`,
-                            borderColor: `${statusColor}40`,
+                            background: `linear-gradient(135deg, color-mix(in srgb, ${statusColor} 16%, transparent), color-mix(in srgb, ${statusColor} 8%, transparent))`,
+                            borderColor: `color-mix(in srgb, ${statusColor} 25%, transparent)`,
                             color: statusColor,
                           }}
                         >
@@ -307,7 +306,7 @@ const ClientAccountList = () => {
                         </div>
                         <span
                           className="client-card-health"
-                          style={{ background: HEALTH_COLORS[client.healthStatus || ''] || '#64748b' }}
+                          style={{ background: HEALTH_COLORS[client.healthStatus || ''] || 'var(--text-muted)' }}
                           title={t('adminAccess.clients.healthTitle', {
                             health: healthLabel(client.healthStatus) || t('adminAccess.clients.na'),
                           })}
@@ -337,21 +336,21 @@ const ClientAccountList = () => {
               </div>
             ) : (
               /* ── VUE LISTE ── */
-              <div className="portal-card" style={{ overflow: 'hidden' }}>
+              <div className="portal-card client-accounts-table">
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                       {TABLE_COLUMN_KEYS.map((h) => (
                         <th
                           key={h}
                           style={{
                             padding: '10px 16px',
                             textAlign: 'left',
-                            color: 'rgba(255,255,255,0.4)',
+                            color: 'var(--text-muted)',
                             fontWeight: 600,
                             fontSize: 11,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
+                            textTransform: 'none',
+                            letterSpacing: 'normal',
                           }}
                         >
                           {t(h)}
@@ -361,14 +360,14 @@ const ClientAccountList = () => {
                   </thead>
                   <tbody>
                     {clients.map((client) => {
-                      const statusColor = STATUS_COLORS[client.status] || '#64748b'
-                      const healthColor = HEALTH_COLORS[client.healthStatus || ''] || '#64748b'
+                      const statusColor = STATUS_COLORS[client.status] || 'var(--text-muted)'
+                      const healthColor = HEALTH_COLORS[client.healthStatus || ''] || 'var(--text-muted)'
                       return (
                         <tr
                           key={client._id}
-                          style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }}
+                          style={{ borderBottom: '1px solid var(--bg-card)', cursor: 'pointer' }}
                           onClick={() => (window.location.href = `/admin/comptes-clients/${client._id}`)}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           {/* Client */}
@@ -378,9 +377,9 @@ const ClientAccountList = () => {
                                 style={{
                                   width: 32,
                                   height: 32,
-                                  borderRadius: 8,
-                                  background: `${statusColor}22`,
-                                  border: `1px solid ${statusColor}40`,
+                                  borderRadius: 'var(--r-md)',
+                                  background: `color-mix(in srgb, ${statusColor} 13%, transparent)`,
+                                  border: `1px solid color-mix(in srgb, ${statusColor} 25%, transparent)`,
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -393,11 +392,11 @@ const ClientAccountList = () => {
                                 {(client.companyName || client.name || '?').charAt(0).toUpperCase()}
                               </div>
                               <div>
-                                <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+                                <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
                                   {client.companyName || client.name}
                                 </div>
                                 {client.companyName && client.companyName !== client.name && (
-                                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{client.name}</div>
+                                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{client.name}</div>
                                 )}
                               </div>
                             </div>
@@ -406,7 +405,7 @@ const ClientAccountList = () => {
                           <td
                             style={{
                               padding: '12px 16px',
-                              color: 'rgba(255,255,255,0.45)',
+                              color: 'var(--text-muted)',
                               maxWidth: 200,
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -420,12 +419,12 @@ const ClientAccountList = () => {
                             <span
                               style={{
                                 padding: '3px 10px',
-                                borderRadius: 6,
+                                borderRadius: 'var(--r-sm)',
                                 fontSize: 11,
                                 fontWeight: 600,
-                                background: `${statusColor}18`,
+                                background: `color-mix(in srgb, ${statusColor} 9%, transparent)`,
                                 color: statusColor,
-                                border: `1px solid ${statusColor}35`,
+                                border: `1px solid color-mix(in srgb, ${statusColor} 21%, transparent)`,
                               }}
                             >
                               {statusLabel(client.status) || client.status || '—'}
@@ -451,11 +450,11 @@ const ClientAccountList = () => {
                             </div>
                           </td>
                           {/* Service */}
-                          <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.5)' }}>
+                          <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>
                             {client.serviceType || '—'}
                           </td>
                           {/* Responsable */}
-                          <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.4)' }}>
+                          <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>
                             {client.ownerAdminId?.name || t('adminAccess.clients.unassigned')}
                           </td>
                         </tr>

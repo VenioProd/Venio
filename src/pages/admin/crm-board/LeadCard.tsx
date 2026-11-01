@@ -14,6 +14,7 @@ interface LeadCardProps {
   converting: string | null
   onUpdateLead: (leadId: string, patch: Record<string, unknown>) => Promise<void>
   onConvertToClient: (lead: Lead) => void
+  onOpenDetail: (lead: Lead) => void
   onDragStart: (event: React.DragEvent<HTMLDivElement>, leadId: string) => void
 }
 
@@ -26,6 +27,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
   onUpdateLead,
   onConvertToClient,
   onDragStart,
+  onOpenDetail,
 }) => {
   const { t } = useI18n()
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
@@ -41,7 +43,9 @@ const LeadCard: React.FC<LeadCardProps> = ({
       draggable
       onDragStart={(e) => onDragStart(e, lead._id)}
     >
-      <p className="crm-card-title">{lead.company}</p>
+      <button type="button" className="crm-card-title" onClick={() => onOpenDetail(lead)}>
+        {lead.company}
+      </button>
       <p className="crm-card-meta">{lead.contactName || t('crm.card.contactMissing')}</p>
       {alerts.length > 0 && (
         <div className="crm-card-alerts">
@@ -63,13 +67,16 @@ const LeadCard: React.FC<LeadCardProps> = ({
           </span>
         )}
         {lead.priority && (
-          <span className="crm-badge">
+          <span
+            className="crm-badge crm-card-priority"
+            style={{ '--priority-color': PRIORITY_MAP[lead.priority]?.color } as React.CSSProperties}
+          >
             {PRIORITY_MAP[lead.priority] ? t(PRIORITY_MAP[lead.priority].labelKey) : lead.priority}
           </span>
         )}
         {lead.source && <span className="crm-badge">{labelOfValue(t, SOURCE_LABEL_KEYS, lead.source)}</span>}
         {lead.budget != null && (
-          <span className="crm-badge">{formatMoney(lead.budget, 'EUR', { maximumFractionDigits: 2 })}</span>
+          <span className="crm-card-amount">{formatMoney(lead.budget, 'EUR', { maximumFractionDigits: 2 })}</span>
         )}
       </div>
       <div className="crm-card-row crm-card-assignee" style={{ marginTop: 8 }}>

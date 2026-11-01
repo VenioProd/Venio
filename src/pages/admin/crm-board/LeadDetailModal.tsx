@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
@@ -37,12 +37,57 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   onConvertToClient,
 }) => {
   const { t } = useI18n()
+  const drawerRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  useEffect(() => {
+    closeRef.current = onClose
+  }, [onClose])
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null
+    const panel = drawerRef.current
+    panel?.focus()
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeRef.current()
+      if (event.key !== 'Tab' || !panel) return
+      const controls = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex="0"]',
+        ),
+      ).filter((element) => element.getClientRects().length > 0)
+      const first = controls[0]
+      const last = controls[controls.length - 1]
+      if (!first) {
+        event.preventDefault()
+        return
+      }
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === panel)) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      previous?.focus()
+    }
+  }, [])
   return (
-    <div className="crm-modal-overlay" onClick={onClose}>
-      <div className="crm-modal crm-modal-wide" onClick={(e) => e.stopPropagation()}>
+    <div className="crm-modal-overlay crm-detail-overlay" onClick={onClose}>
+      <div
+        className="crm-modal crm-detail-drawer"
+        ref={drawerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="crm-detail-title"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="crm-modal-header">
-          <h2>{t('crm.detail.title', { company: lead.company })}</h2>
-          <button className="crm-modal-close" onClick={onClose}>
+          <h2 id="crm-detail-title">{t('crm.detail.title', { company: lead.company })}</h2>
+          <button aria-label={t('common.close')} className="crm-modal-close" onClick={onClose}>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -78,12 +123,12 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   style={{
                     display: 'inline-block',
                     padding: '2px 10px',
-                    borderRadius: 999,
+                    borderRadius: 'var(--r-pill)',
                     fontSize: 12,
                     fontWeight: 600,
                     color: PROJECT_MAP[lead.project || ''].color,
-                    background: `${PROJECT_MAP[lead.project || ''].color}22`,
-                    border: `1px solid ${PROJECT_MAP[lead.project || ''].color}55`,
+                    background: `color-mix(in srgb, ${PROJECT_MAP[lead.project || ''].color} 12%, transparent)`,
+                    border: `1px solid color-mix(in srgb, ${PROJECT_MAP[lead.project || ''].color} 30%, transparent)`,
                   }}
                 >
                   {t(PROJECT_MAP[lead.project || ''].labelKey)}
@@ -241,7 +286,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 <Link
                   to={`/admin/comptes-clients/${lead.clientAccountId}`}
                   className="portal-button"
-                  style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' }}
+
                   onClick={onClose}
                 >
                   {t('crm.detail.viewClient')}
@@ -250,7 +295,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 <button
                   type="button"
                   className="portal-button"
-                  style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' }}
+
                   disabled={converting === lead._id}
                   onClick={async () => {
                     await onConvertToClient(lead)

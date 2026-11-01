@@ -1,3 +1,4 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, FolderKanban, Users, TrendingUp, Plus, ShieldCheck, Receipt, GitBranch } from 'lucide-react'
@@ -238,29 +239,28 @@ const SuperAdminDashboard = () => {
   }, [data, t])
 
   return (
-    <div className="portal-container">
-      <div className="admin-page-header">
-        <div>
-          <h1>{t('adminOps.superDash.title')}</h1>
-          <p className="admin-page-subtitle">
-            {t('adminOps.superDash.subtitle', {
-              user: user?.name || user?.email || '',
-              time: data ? formatTime(data.generatedAt) : '',
-            })}
-          </p>
-        </div>
-        <div className="admin-quick-actions">
-          <PeriodSelector value={period} onChange={setPeriod} />
-          <button
-            type="button"
-            className="portal-button secondary"
-            onClick={() => setRefresh((r) => r + 1)}
-            disabled={loading}
-          >
-            {t('adminOps.superDash.refresh')}
-          </button>
-        </div>
-      </div>
+    <div className="portal-container pilotage-page super-dashboard">
+      <PageHeader
+        eyebrow={t('adminOps.pilotage.zone.overview')}
+        title={t('adminOps.superDash.title')}
+        subtitle={t('adminOps.superDash.subtitle', {
+          user: user?.name || user?.email || '',
+          time: data ? formatTime(data.generatedAt) : '',
+        })}
+        actions={
+          <div className="admin-quick-actions">
+            <PeriodSelector value={period} onChange={setPeriod} />
+            <button
+              type="button"
+              className="portal-button secondary"
+              onClick={() => setRefresh((r) => r + 1)}
+              disabled={loading}
+            >
+              {t('adminOps.superDash.refresh')}
+            </button>
+          </div>
+        }
+      />
 
       {loading && !data ? (
         <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>

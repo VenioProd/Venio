@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch, apiUpload } from '../../../lib/api'
@@ -87,44 +88,50 @@ const MyReports = () => {
 
   if (loading)
     return (
-      <div className="portal-container" style={{ textAlign: 'center', color: '#fff' }}>
+      <div
+        className="portal-container pilotage-page reports-page"
+        style={{ textAlign: 'center', color: 'var(--text-primary)' }}
+      >
         {t('common.loading')}
       </div>
     )
 
   return (
-    <div className="portal-container">
+    <div className="portal-container pilotage-page reports-page">
       {ConfirmDialog}
       {preview && <DocPreviewModal url={preview.url} name={preview.name} onClose={() => setPreview(null)} />}
 
-      <div className="ticket-hero">
-        <div className="ticket-hero-content">
-          <Link to="/admin" className="ticket-back-btn">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            {t('adminOps.reports.backToDashboard')}
-          </Link>
-          <h1 className="ticket-hero-title">{t('adminOps.reports.title')}</h1>
-          <p className="ticket-hero-subtitle">{t('adminOps.reports.subtitle')}</p>
-        </div>
-        <button className="ticket-new-btn" onClick={() => setShowForm(!showForm)}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          {t('adminOps.reports.newReport')}
-        </button>
-      </div>
+      <PageHeader
+        eyebrow={t('adminOps.pilotage.zone.overview')}
+        title={t('adminOps.reports.title')}
+        subtitle={t('adminOps.reports.subtitle')}
+        actions={
+          <>
+            <Link to="/admin" className="portal-button secondary pilotage-back-link">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              {t('adminOps.reports.backToDashboard')}
+            </Link>
+            <button className="portal-button" onClick={() => setShowForm(!showForm)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              {t('adminOps.reports.newReport')}
+            </button>
+          </>
+        }
+      />
 
       {/* Formulaire */}
       {showForm && (
@@ -160,7 +167,7 @@ const MyReports = () => {
             <div className="ticket-form-field">
               <label>
                 {t('adminOps.reports.attachmentsLabel')}{' '}
-                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 400 }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 400 }}>
                   {t('adminOps.reports.attachmentsHint')}
                 </span>
               </label>
@@ -182,29 +189,29 @@ const MyReports = () => {
                   e.currentTarget.style.borderColor = 'var(--primary)'
                 }}
                 onDragLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                  e.currentTarget.style.borderColor = 'var(--line-strong)'
                 }}
                 onDrop={(e) => {
                   e.preventDefault()
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                  e.currentTarget.style.borderColor = 'var(--line-strong)'
                   if (e.dataTransfer.files) setReportFiles([...reportFiles, ...Array.from(e.dataTransfer.files)])
                 }}
                 style={{
-                  border: '2px dashed rgba(255,255,255,0.1)',
-                  borderRadius: 10,
+                  border: '2px dashed var(--line-strong)',
+                  borderRadius: 'var(--r-md)',
                   padding: '20px 16px',
                   textAlign: 'center',
                   cursor: 'pointer',
                   transition: 'border-color 0.2s, background 0.2s',
-                  background: 'rgba(255,255,255,0.02)',
+                  background: 'var(--bg-card)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.4)'
-                  e.currentTarget.style.background = 'rgba(14, 165, 233, 0.04)'
+                  e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--primary) 40%, transparent)'
+                  e.currentTarget.style.background = 'color-mix(in srgb, var(--primary) 4%, transparent)'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
+                  e.currentTarget.style.borderColor = 'var(--line-strong)'
+                  e.currentTarget.style.background = 'var(--bg-card)'
                 }}
               >
                 <svg
@@ -212,7 +219,7 @@ const MyReports = () => {
                   height="24"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#0ea5e9"
+                  stroke="var(--primary)"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -225,7 +232,7 @@ const MyReports = () => {
                 <div style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600 }}>
                   {t('adminOps.reports.dropPrompt')}
                 </div>
-                <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 4 }}>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>
                   {t('adminOps.reports.dropFormats')}
                 </div>
               </div>
@@ -238,22 +245,29 @@ const MyReports = () => {
                         key={i}
                         style={{
                           padding: '6px 10px',
-                          borderRadius: 6,
-                          background: 'rgba(14, 165, 233, 0.06)',
-                          border: '1px solid rgba(14, 165, 233, 0.15)',
-                          color: 'rgba(255,255,255,0.8)',
+                          borderRadius: 'var(--r-sm)',
+                          background: 'color-mix(in srgb, var(--primary) 6%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--primary) 15%, transparent)',
+                          color: 'var(--text-secondary)',
                           fontSize: 12,
                           display: 'flex',
                           alignItems: 'center',
                           gap: 8,
                         }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="var(--primary)"
+                          strokeWidth="2"
+                        >
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                           <polyline points="14 2 14 8 20 8" />
                         </svg>
                         {f.name}
-                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>
                           {t('adminOps.reports.fileSize', { size: sizeMo })}
                         </span>
                         <button
@@ -264,7 +278,7 @@ const MyReports = () => {
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: '#ef4444',
+                            color: 'var(--critical)',
                             cursor: 'pointer',
                             fontSize: 16,
                             lineHeight: 1,
@@ -300,13 +314,19 @@ const MyReports = () => {
       {/* Liste des rapports */}
       <div className="ticket-list">
         {reports.length === 0 && (
-          <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>
-            {t('adminOps.reports.empty')}
-          </p>
+          <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>{t('adminOps.reports.empty')}</p>
         )}
         {reports.map((report) => {
           const expanded = expandedReport === report._id
-          const sCfg = REPORT_STATUS_CONFIG[report.status]
+          const sCfg = {
+            ...REPORT_STATUS_CONFIG[report.status],
+            color:
+              report.status === 'VALIDE'
+                ? 'var(--good)'
+                : report.status === 'SOUMIS'
+                  ? 'var(--primary)'
+                  : 'var(--warning)',
+          }
           return (
             <div key={report._id} className="ticket-card" style={{ borderLeft: `3px solid ${sCfg.color}` }}>
               <div
@@ -315,24 +335,24 @@ const MyReports = () => {
                 style={{ cursor: 'pointer' }}
               >
                 <div style={{ flex: 1 }}>
-                  <span style={{ color: '#fff', fontWeight: 600 }}>{formatDate(report.date)}</span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{formatDate(report.date)}</span>
                   {report.taches.length > 0 && (
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 10 }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 10 }}>
                       {t('adminOps.reports.taskCount', { count: report.taches.length })}
                     </span>
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   {report.attachments.length > 0 && (
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>📎 {report.attachments.length}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>📎 {report.attachments.length}</span>
                   )}
                   <span
                     style={{
                       padding: '2px 8px',
-                      borderRadius: 4,
+                      borderRadius: 'var(--r-pill)',
                       fontSize: 11,
                       fontWeight: 600,
-                      background: sCfg.color + '22',
+                      background: `color-mix(in srgb, ${sCfg.color} 12%, transparent)`,
                       color: sCfg.color,
                     }}
                   >
@@ -340,7 +360,7 @@ const MyReports = () => {
                   </span>
                   <span
                     style={{
-                      color: 'rgba(255,255,255,0.3)',
+                      color: 'var(--text-muted)',
                       transform: expanded ? 'rotate(180deg)' : 'none',
                       transition: 'transform 0.2s',
                     }}
@@ -350,14 +370,14 @@ const MyReports = () => {
                 </div>
               </div>
               {expanded && (
-                <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-color)' }}>
                   <div style={{ marginBottom: 12 }}>
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                       {t('adminOps.reports.summaryLabel')}
                     </span>
                     <p
                       style={{
-                        color: 'rgba(255,255,255,0.8)',
+                        color: 'var(--text-secondary)',
                         fontSize: 14,
                         margin: '4px 0 0',
                         whiteSpace: 'pre-wrap',
@@ -370,12 +390,12 @@ const MyReports = () => {
 
                   {report.taches.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
-                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                         {t('adminOps.reports.tasksDoneLabel')}
                       </span>
                       <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
                         {report.taches.map((t, i) => (
-                          <li key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>
+                          <li key={i} style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 4 }}>
                             {t}
                           </li>
                         ))}
@@ -385,7 +405,7 @@ const MyReports = () => {
 
                   {report.attachments.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
-                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                         {t('adminOps.reports.attachmentsLabel')}
                       </span>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
@@ -400,8 +420,8 @@ const MyReports = () => {
                             }
                             style={{
                               padding: '6px 10px',
-                              borderRadius: 6,
-                              background: 'rgba(255,255,255,0.04)',
+                              borderRadius: 'var(--r-sm)',
+                              background: 'var(--bg-card)',
                               color: 'var(--primary)',
                               fontSize: 12,
                               border: 'none',
@@ -412,9 +432,7 @@ const MyReports = () => {
                             }}
                           >
                             {isImage(f.mimetype) ? '🖼️' : '📄'} {f.originalName}
-                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>
-                              ({formatFileSize(f.size)})
-                            </span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
                           </button>
                         ))}
                       </div>
@@ -425,8 +443,8 @@ const MyReports = () => {
                     <div
                       style={{
                         padding: '10px 14px',
-                        borderRadius: 6,
-                        background: 'rgba(14, 165, 233, 0.08)',
+                        borderRadius: 'var(--r-sm)',
+                        background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
                         marginBottom: 12,
                         borderLeft: '3px solid var(--primary)',
                       }}
@@ -434,14 +452,14 @@ const MyReports = () => {
                       <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>
                         {t('adminOps.reports.adminComment')}
                       </span>
-                      <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '4px 0 0' }}>
                         {report.commentaireAdmin}
                       </p>
                     </div>
                   )}
 
                   {report.status === 'VALIDE' && report.validePar && (
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
                       {t('adminOps.reports.validatedBy', { name: report.validePar.name })}
                       {report.valideAt
                         ? t('adminOps.reports.validatedOn', { date: formatDateTime(report.valideAt) })
@@ -453,7 +471,7 @@ const MyReports = () => {
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button
                         className="ticket-back-btn"
-                        style={{ fontSize: 12, color: '#ef4444' }}
+                        style={{ fontSize: 12, color: 'var(--critical)' }}
                         onClick={() => handleDelete(report._id)}
                       >
                         {t('common.delete')}

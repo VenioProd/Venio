@@ -1,3 +1,4 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ApiError, apiDownload, apiFetch, apiUpload } from '../../lib/api'
@@ -134,7 +135,7 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
           display: 'flex',
           flexDirection: 'column',
           background: 'var(--bg-card, var(--surface-raised))',
-          borderRadius: 16,
+          borderRadius: 'var(--r-lg)',
           overflow: 'hidden',
           boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
         }}
@@ -146,7 +147,7 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 16px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: '1px solid var(--border-color)',
             flexShrink: 0,
           }}
         >
@@ -171,9 +172,9 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
                 alignItems: 'center',
                 gap: 6,
                 padding: '6px 12px',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 8,
+                background: 'var(--border-color)',
+                border: '1px solid var(--line-strong)',
+                borderRadius: 'var(--r-md)',
                 cursor: 'pointer',
                 color: 'var(--text-secondary)',
                 fontSize: 13,
@@ -190,11 +191,11 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'rgba(239,68,68,0.12)',
+                background: 'color-mix(in srgb, var(--critical) 12%, transparent)',
                 border: 'none',
-                borderRadius: 8,
+                borderRadius: 'var(--r-md)',
                 cursor: 'pointer',
-                color: '#ef4444',
+                color: 'var(--critical)',
               }}
             >
               <X size={16} />
@@ -206,7 +207,7 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
           style={{
             flex: 1,
             overflow: 'auto',
-            background: '#000',
+            background: 'var(--bg-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -248,10 +249,10 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
                 onClick={() => forceDownload(preview.objectUrl, preview.name)}
                 style={{
                   padding: '10px 24px',
-                  background: 'var(--primary,#7c3aed)',
-                  color: '#fff',
+                  background: 'var(--primary)',
+                  color: 'var(--text-primary)',
                   border: 'none',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-md)',
                   cursor: 'pointer',
                   fontWeight: 600,
                   fontSize: 14,
@@ -269,10 +270,10 @@ function FilePreviewModal({ preview, onClose }: { preview: FilePreview; onClose:
 }
 
 const PRIORITY_COLORS: Record<DecisionPriority, string> = {
-  BASSE: '#64748b',
-  NORMALE: '#0ea5e9',
-  HAUTE: '#f59e0b',
-  URGENTE: '#ef4444',
+  BASSE: 'var(--text-muted)',
+  NORMALE: 'var(--primary)',
+  HAUTE: 'var(--warning)',
+  URGENTE: 'var(--critical)',
 }
 
 const CATEGORIES: DecisionCategory[] = ['BUDGET', 'EMBAUCHE', 'PROJET', 'PARTENARIAT', 'AUTRE']
@@ -284,18 +285,18 @@ const STATUS_META: Record<
 > = {
   APPROVED: {
     label: 'adminOps.decisions.statusApproved',
-    color: '#10b981',
-    background: 'rgba(16,185,129,0.08)',
+    color: 'var(--good)',
+    background: 'color-mix(in srgb, var(--good) 8%, transparent)',
   },
   REJECTED: {
     label: 'adminOps.decisions.statusRejected',
-    color: '#ef4444',
-    background: 'rgba(239,68,68,0.08)',
+    color: 'var(--critical)',
+    background: 'color-mix(in srgb, var(--critical) 8%, transparent)',
   },
   IMPROVEMENT: {
     label: 'adminOps.decisions.statusImprovement',
-    color: '#f59e0b',
-    background: 'rgba(245,158,11,0.1)',
+    color: 'var(--warning)',
+    background: 'color-mix(in srgb, var(--warning) 10%, transparent)',
   },
 }
 
@@ -478,19 +479,20 @@ export default function DecisionsList() {
   }
 
   return (
-    <div className="portal-container">
-      <div className="admin-page-header">
-        <div>
-          <h1>{t('adminOps.decisions.title')}</h1>
-          <p className="admin-page-subtitle">{t('adminOps.decisions.subtitle')}</p>
-        </div>
-        <div className="admin-quick-actions">
-          <button type="button" className="portal-button" onClick={() => setShowCreate(true)}>
-            <Plus size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-            {t('adminOps.decisions.newDecision')}
-          </button>
-        </div>
-      </div>
+    <div className="portal-container pilotage-page decisions-page">
+      <PageHeader
+        eyebrow={t('adminOps.pilotage.zone.overview')}
+        title={t('adminOps.decisions.title')}
+        subtitle={t('adminOps.decisions.subtitle')}
+        actions={
+          <div className="admin-quick-actions">
+            <button type="button" className="portal-button" onClick={() => setShowCreate(true)}>
+              <Plus size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+              {t('adminOps.decisions.newDecision')}
+            </button>
+          </div>
+        }
+      />
 
       {/* Onglets */}
       <div style={{ display: 'flex', gap: 6, marginTop: 18, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -510,7 +512,7 @@ export default function DecisionsList() {
       {loading ? (
         <p style={{ color: 'var(--text-muted)' }}>{t('adminOps.decisions.loading')}</p>
       ) : error ? (
-        <p style={{ color: '#ef4444' }}>{error}</p>
+        <p style={{ color: 'var(--critical)' }}>{error}</p>
       ) : decisions.length === 0 ? (
         <div className="admin-stat-card" style={{ textAlign: 'center', padding: 32 }}>
           <p style={{ color: 'var(--text-muted)', margin: 0 }}>{t('adminOps.decisions.empty')}</p>
@@ -524,15 +526,7 @@ export default function DecisionsList() {
             const deadlineDate = d.deadline ? new Date(d.deadline) : null
             const overdue = deadlineDate && deadlineDate < new Date() && d.status === 'PENDING'
             return (
-              <div
-                key={d._id}
-                style={{
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 10,
-                  padding: 14,
-                  background: 'rgba(255,255,255,0.02)',
-                }}
-              >
+              <div key={d._id} className="decision-card">
                 <div className="decision-card-layout">
                   <span
                     title={d.priority in PRIORITY_LABEL_KEYS ? t(PRIORITY_LABEL_KEYS[d.priority]) : d.priority}
@@ -580,7 +574,7 @@ export default function DecisionsList() {
                       {deadlineDate && (
                         <span
                           style={{
-                            color: overdue ? '#ef4444' : undefined,
+                            color: overdue ? 'var(--critical)' : undefined,
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: 4,
@@ -622,7 +616,7 @@ export default function DecisionsList() {
                         style={{
                           marginTop: 12,
                           paddingTop: 12,
-                          borderTop: '1px solid rgba(255,255,255,0.06)',
+                          borderTop: '1px solid var(--border-color)',
                           display: 'flex',
                           flexDirection: 'column',
                           gap: 10,
@@ -634,7 +628,7 @@ export default function DecisionsList() {
                             <div
                               style={{
                                 fontSize: 11,
-                                textTransform: 'uppercase',
+                                textTransform: 'none',
                                 color: 'var(--text-muted)',
                                 marginBottom: 4,
                               }}
@@ -649,7 +643,7 @@ export default function DecisionsList() {
                             <div
                               style={{
                                 fontSize: 11,
-                                textTransform: 'uppercase',
+                                textTransform: 'none',
                                 color: 'var(--text-muted)',
                                 marginBottom: 4,
                               }}
@@ -668,7 +662,7 @@ export default function DecisionsList() {
                             <div
                               style={{
                                 fontSize: 11,
-                                textTransform: 'uppercase',
+                                textTransform: 'none',
                                 color: 'var(--text-muted)',
                                 marginBottom: 4,
                               }}
@@ -684,7 +678,7 @@ export default function DecisionsList() {
                             <div
                               style={{
                                 fontSize: 11,
-                                textTransform: 'uppercase',
+                                textTransform: 'none',
                                 color: 'var(--text-muted)',
                                 marginBottom: 4,
                               }}
@@ -698,10 +692,10 @@ export default function DecisionsList() {
                                   style={{
                                     fontSize: 12,
                                     padding: '2px 8px',
-                                    borderRadius: 12,
-                                    background: 'rgba(14, 165, 233, 0.12)',
+                                    borderRadius: 'var(--r-lg)',
+                                    background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
                                     color: 'var(--primary)',
-                                    border: '1px solid rgba(14, 165, 233, 0.25)',
+                                    border: '1px solid color-mix(in srgb, var(--primary) 25%, transparent)',
                                   }}
                                 >
                                   {typeof r === 'string' ? r : r.name || r.email}
@@ -716,7 +710,7 @@ export default function DecisionsList() {
                             <div
                               style={{
                                 fontSize: 11,
-                                textTransform: 'uppercase',
+                                textTransform: 'none',
                                 color: 'var(--text-muted)',
                                 marginBottom: 4,
                               }}
@@ -735,9 +729,9 @@ export default function DecisionsList() {
                                     alignItems: 'center',
                                     gap: 6,
                                     fontSize: 12,
-                                    background: 'rgba(255,255,255,0.04)',
-                                    border: '1px solid rgba(255,255,255,0.08)',
-                                    borderRadius: 6,
+                                    background: 'var(--bg-card)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--r-sm)',
                                     padding: '4px 8px',
                                     cursor: 'pointer',
                                     color: 'var(--primary)',
@@ -770,15 +764,15 @@ export default function DecisionsList() {
                           <div
                             style={{
                               padding: 10,
-                              borderRadius: 8,
-                              background: 'rgba(255,255,255,0.03)',
-                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: 'var(--r-md)',
+                              background: 'var(--bg-card)',
+                              border: '1px solid var(--border-color)',
                             }}
                           >
                             <div
                               style={{
                                 fontSize: 11,
-                                textTransform: 'uppercase',
+                                textTransform: 'none',
                                 color: 'var(--text-muted)',
                                 marginBottom: 6,
                               }}
@@ -834,14 +828,14 @@ export default function DecisionsList() {
                           <div
                             style={{
                               padding: 10,
-                              borderRadius: 8,
+                              borderRadius: 'var(--r-md)',
                               background: STATUS_META[d.status].background,
                             }}
                           >
                             <div
                               style={{
                                 fontSize: 11,
-                                textTransform: 'uppercase',
+                                textTransform: 'none',
                                 color: STATUS_META[d.status].color,
                                 marginBottom: 4,
                               }}
@@ -873,7 +867,12 @@ export default function DecisionsList() {
                         <button
                           type="button"
                           className="portal-button"
-                          style={{ background: '#10b981', borderColor: '#10b981', padding: '6px 12px', fontSize: 12 }}
+                          style={{
+                            background: 'var(--good)',
+                            borderColor: 'var(--good)',
+                            padding: '6px 12px',
+                            fontSize: 12,
+                          }}
                           disabled={actingId === d._id}
                           onClick={() => handleApprove(d._id)}
                         >
@@ -883,7 +882,12 @@ export default function DecisionsList() {
                         <button
                           type="button"
                           className="portal-button secondary"
-                          style={{ padding: '6px 12px', fontSize: 12, color: '#f59e0b', borderColor: '#f59e0b' }}
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: 12,
+                            color: 'var(--warning)',
+                            borderColor: 'var(--warning)',
+                          }}
                           disabled={actingId === d._id}
                           onClick={() => handleImprove(d._id)}
                         >
@@ -893,7 +897,12 @@ export default function DecisionsList() {
                         <button
                           type="button"
                           className="portal-button secondary"
-                          style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444', borderColor: '#ef4444' }}
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: 12,
+                            color: 'var(--critical)',
+                            borderColor: 'var(--critical)',
+                          }}
                           disabled={actingId === d._id}
                           onClick={() => handleReject(d._id)}
                         >

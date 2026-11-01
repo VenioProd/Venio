@@ -1,3 +1,4 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchActivitySummary, type ActivitySummary } from '../../services/activityCenter'
@@ -29,35 +30,24 @@ export default function ActivityCenter() {
   }, [load])
 
   return (
-    <div className="portal-container">
-      <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 24px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'start',
-            justifyContent: 'space-between',
-            gap: 16,
-            flexWrap: 'wrap',
-            marginBottom: 28,
-          }}
-        >
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-              {t('adminOps.activity.title')}
-            </h1>
-            {data && (
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '5px 0 0' }}>
-                {t('adminOps.activity.updated', {
-                  date: formatDate(data.checkedAt, { dateStyle: 'short', timeStyle: 'short' }),
-                  limit: data.limit,
-                })}
-              </p>
-            )}
-          </div>
-          <button className="portal-button secondary" onClick={() => void load()} disabled={loading}>
-            {loading ? t('adminOps.common.loading') : t('adminOps.common.refresh')}
-          </button>
-        </div>
+    <div className="portal-container pilotage-page activity-page">
+      <div className="activity-content">
+        <PageHeader
+          eyebrow={t('adminOps.pilotage.zone.inbox')}
+          title={t('adminOps.activity.title')}
+          subtitle={
+            data &&
+            t('adminOps.activity.updated', {
+              date: formatDate(data.checkedAt, { dateStyle: 'short', timeStyle: 'short' }),
+              limit: data.limit,
+            })
+          }
+          actions={
+            <button className="portal-button secondary" onClick={() => void load()} disabled={loading}>
+              {loading ? t('adminOps.common.loading') : t('adminOps.common.refresh')}
+            </button>
+          }
+        />
         {error && (
           <div className="admin-error" role="alert">
             {error}
@@ -65,17 +55,9 @@ export default function ActivityCenter() {
         )}
         {loading && !data && <p style={{ color: 'var(--text-muted)' }}>{t('adminOps.common.loading')}</p>}
         {data && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+          <div className="activity-grid">
             {data.sections.map((section) => (
-              <section
-                key={section.key}
-                style={{
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 12,
-                  padding: 20,
-                }}
-              >
+              <section key={section.key} className="activity-section">
                 <div
                   style={{
                     display: 'flex',

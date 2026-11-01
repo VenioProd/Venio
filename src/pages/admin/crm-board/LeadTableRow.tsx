@@ -146,7 +146,9 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
           <span
             className="crm-temperature-badge"
             style={
-              { '--temp-color': TEMPERATURE_MAP[lead.leadTemperature || '']?.color || '#f59e0b' } as React.CSSProperties
+              {
+                '--temp-color': TEMPERATURE_MAP[lead.leadTemperature || '']?.color || 'var(--warning)',
+              } as React.CSSProperties
             }
           >
             {TEMPERATURE_MAP[lead.leadTemperature || '']

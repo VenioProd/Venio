@@ -1,27 +1,19 @@
 .mon-espace {
-  padding: 24px;
+  padding: 0;
+  min-width: 0;
+  font: 13.5px/1.5 var(--font-body);
 }
-.mon-espace__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-.mon-espace__hello {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--primary);
-}
-
 .role-cockpit-focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  margin: 0 0 20px;
+  gap: 16px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--surface-shadow);
+  margin: 0 0 16px;
   padding: 16px;
   border: 1px solid var(--border-color);
-  background: var(--bg-card);
+  background: var(--surface-glass);
 }
 
 .role-cockpit-focus__intro {
@@ -50,7 +42,7 @@
 .role-cockpit-focus__eyebrow {
   color: var(--primary) !important;
   font-size: 0.68rem !important;
-  font-weight: 800;
+  font-weight: 500;
   letter-spacing: normal;
   text-transform: none;
 }
@@ -70,7 +62,8 @@
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   text-decoration: none;
-  font-size: 0.78rem;
+  border-radius: var(--r-pill);
+  font-size: 13px;
 }
 
 .role-cockpit-focus__action:hover,
@@ -81,12 +74,15 @@
 
 .bento-grid {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-auto-rows: 72px;
-  gap: 16px;
+  gap: 12px;
 }
 .bento-tile {
-  background: var(--bg-card);
+  background: var(--surface-glass);
+  box-shadow: var(--surface-shadow);
+  backdrop-filter: blur(12px);
+  min-width: 0;
   border: 1px solid var(--border-color);
   border-radius: var(--r-lg);
   overflow: hidden;
@@ -186,7 +182,7 @@
 }
 .widget-input {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card-hover);
   border: 1px solid var(--border-color);
   border-radius: var(--r-md);
   padding: 6px 10px;
@@ -225,7 +221,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--bg-card);
 }
 .widget-task__check {
   background: transparent;
@@ -386,7 +382,7 @@
   min-height: 52px;
   padding: 8px 22px 8px 8px;
   border-radius: var(--r-md);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-card);
   font-size: 11px;
 }
 .shortcut a {
@@ -439,7 +435,7 @@
   padding: 6px 4px;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--bg-card);
   cursor: pointer;
   text-align: left;
 }
@@ -498,13 +494,6 @@
   font-weight: 600;
 }
 
-.mon-espace__drawer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
-  align-items: center;
-}
 .mon-espace__drawer .chip {
   background: rgba(var(--primary-rgb), 0.12);
   border: 1px solid rgba(var(--primary-rgb), 0.3);
@@ -523,4 +512,53 @@
 }
 .mon-espace .subtitle {
   color: var(--text-secondary);
+}
+
+/* Valeurs du cockpit : alignement stable et lisible. */
+.mon-espace :is(.widget-count, .clock-time, .pomodoro-time, .kpi-card b) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.mon-espace .admin-page-header__row {
+  flex-wrap: wrap;
+}
+.admin-hub-panel .mon-espace .admin-page-header__row > div:first-child {
+  display: none;
+}
+.admin-hub-panel .mon-espace .admin-page-header {
+  margin-bottom: 12px;
+}
+.admin-hub-panel .mon-espace .admin-page-header__row {
+  justify-content: flex-end;
+  padding-bottom: 0;
+}
+.mon-espace__drawer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--surface-glass);
+}
+@media (max-width: 600px) {
+  .mon-espace :is(.role-cockpit-focus, .bento-tile__body) {
+    padding: 12px;
+  }
+  .mon-espace .role-cockpit-focus__actions {
+    width: 100%;
+  }
+  .mon-espace .role-cockpit-focus__action {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .mon-espace .shortcuts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mon-espace .shortcuts-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -1,5 +1,5 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useI18n } from '../../../context/I18nContext'
@@ -40,7 +40,7 @@ export default function Analytics() {
 
   if (loading) {
     return (
-      <div className="portal-container">
+      <div className="portal-container pilotage-page analytics-page">
         <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
           {t('adminTech.analytics.loading')}
         </div>
@@ -50,24 +50,15 @@ export default function Analytics() {
 
   if (!data) {
     return (
-      <div className="portal-container">
+      <div className="portal-container pilotage-page analytics-page">
         <div className="admin-error">{t('adminTech.analytics.loadError')}</div>
       </div>
     )
   }
 
   return (
-    <div className="portal-container">
-      <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">{t('nav.admin')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('adminTech.analytics.breadcrumb')}</span>
-        </div>
-        <div className="admin-header">
-          <h1>{t('adminTech.analytics.title')}</h1>
-        </div>
-      </div>
+    <div className="portal-container pilotage-page analytics-page">
+      <PageHeader eyebrow={t('adminOps.pilotage.zone.overview')} title={t('adminTech.analytics.title')} />
 
       <ProjectSection data={data} />
 

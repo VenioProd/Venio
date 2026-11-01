@@ -1,6 +1,19 @@
 import type fr from '../fr/adminOps'
 
 const en: Record<keyof typeof fr, string> = {
+  'adminOps.pilotage.zone.overview': 'Overview',
+  'adminOps.pilotage.zone.commercial': 'Sales',
+  'adminOps.pilotage.zone.inbox': 'Inbox',
+  'adminOps.pilotage.digest.title': 'Decisions to make',
+  'adminOps.pilotage.digest.all': 'All decisions',
+  'adminOps.pilotage.digest.loading': 'Loading decisions…',
+  'adminOps.pilotage.digest.error': 'Unable to load decisions.',
+  'adminOps.pilotage.digest.retry': 'Try again',
+  'adminOps.pilotage.digest.empty': 'No pending decisions.',
+  'adminOps.pilotage.digest.urgent': 'Urgent',
+  'adminOps.pilotage.digest.high': 'High priority',
+  'adminOps.pilotage.pipeline.empty': 'No opportunities at this stage.',
+  'adminOps.pilotage.pipeline.total': 'Total budget: {amount}',
   'adminOps.guide.labelSep': ': ',
   'adminOps.guide.labelColon': ':',
   'adminOps.guide.title': 'User guide — Admin',

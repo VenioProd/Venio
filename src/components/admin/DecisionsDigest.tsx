@@ -1,3 +1,4 @@
+import { useI18n } from '../../context/I18nContext'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
@@ -11,6 +12,7 @@ interface PendingDecision {
 }
 
 export default function DecisionsDigest() {
+  const { t } = useI18n()
   const [decisions, setDecisions] = useState<PendingDecision[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -37,15 +39,16 @@ export default function DecisionsDigest() {
     <section className="admin-decisions-digest" aria-labelledby="decisions-digest-title">
       <div className="admin-decisions-digest__heading">
         <h2 id="decisions-digest-title">
-          À arbitrer {!loading && !error && <span className="admin-decisions-digest__count">({decisions.length})</span>}
+          {t('adminOps.pilotage.digest.title')}{' '}
+          {!loading && !error && <span className="admin-decisions-digest__count">({decisions.length})</span>}
         </h2>
-        <Link to="/admin/decisions">Toutes les décisions</Link>
+        <Link to="/admin/decisions">{t('adminOps.pilotage.digest.all')}</Link>
       </div>
       {loading ? (
-        <p role="status">Chargement des décisions…</p>
+        <p role="status">{t('adminOps.pilotage.digest.loading')}</p>
       ) : error ? (
         <p role="alert">
-          Impossible de charger les décisions.{' '}
+          {t('adminOps.pilotage.digest.error')}{' '}
           <button
             type="button"
             onClick={() => {
@@ -54,11 +57,11 @@ export default function DecisionsDigest() {
               setAttempt((value) => value + 1)
             }}
           >
-            Réessayer
+            {t('adminOps.pilotage.digest.retry')}
           </button>
         </p>
       ) : decisions.length === 0 ? (
-        <p>Aucune décision en attente.</p>
+        <p>{t('adminOps.pilotage.digest.empty')}</p>
       ) : (
         <ul>
           {decisions.map((decision) => (
@@ -66,7 +69,9 @@ export default function DecisionsDigest() {
               <Link to="/admin/decisions">{decision.title}</Link>
               {['HAUTE', 'URGENTE'].includes(decision.priority) && (
                 <span className="admin-decisions-digest__meta">
-                  {decision.priority === 'URGENTE' ? 'Urgente' : 'Priorité haute'}
+                  {decision.priority === 'URGENTE'
+                    ? t('adminOps.pilotage.digest.urgent')
+                    : t('adminOps.pilotage.digest.high')}
                 </span>
               )}
             </li>

@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
@@ -112,7 +113,7 @@ export default function CrmSettings() {
 
   if (loading) {
     return (
-      <div className="portal-container crm-page-container">
+      <div className="portal-container crm-page-container pilotage-page crm-settings-page">
         <div className="portal-loading">{t('common.loading')}</div>
       </div>
     )
@@ -120,7 +121,7 @@ export default function CrmSettings() {
 
   if (!settings) {
     return (
-      <div className="portal-container crm-page-container">
+      <div className="portal-container crm-page-container pilotage-page crm-settings-page">
         <div className="portal-error">{t('crm.settings.cannotLoad')}</div>
       </div>
     )
@@ -129,25 +130,28 @@ export default function CrmSettings() {
   const sectionProps = { settings, canManage, updateSetting }
 
   return (
-    <div className="portal-container crm-page-container">
-      <div className="portal-header">
-        <Link to="/admin/crm" className="portal-back-link">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          {t('crm.settings.backToCrm')}
-        </Link>
-        <h1>{t('crm.settings.title')}</h1>
-      </div>
+    <div className="portal-container crm-page-container pilotage-page crm-settings-page">
+      <PageHeader
+        eyebrow={t('adminOps.pilotage.zone.commercial')}
+        title={t('crm.settings.title')}
+        actions={
+          <Link to="/admin/crm" className="portal-button secondary">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            {t('crm.settings.backToCrm')}
+          </Link>
+        }
+      />
 
       {message && <div className={`crm-settings-message crm-settings-message-${message.type}`}>{message.text}</div>}
 

@@ -1,3 +1,4 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
@@ -139,17 +140,16 @@ const ClientAccountNew = () => {
 
   if (createdClient) {
     return (
-      <div className="portal-container">
-        <div className="portal-card">
-          <div className="admin-breadcrumb">
-            <Link to="/admin">Admin</Link>
-            <span>/</span>
-            <Link to="/admin/crm/comptes">{t('adminAccess.clientNew.breadcrumbList')}</Link>
-            <span>/</span>
-            <span style={{ color: 'var(--text-primary)' }}>{t('adminAccess.clientNew.breadcrumbCreated')}</span>
-          </div>
-          <h1>{t('adminAccess.clientNew.createdTitle')}</h1>
-        </div>
+      <div className="portal-container pilotage-page client-new-page">
+        <PageHeader
+          eyebrow={t('adminOps.pilotage.zone.commercial')}
+          title={t('adminAccess.clientNew.createdTitle')}
+          actions={
+            <Link className="portal-button secondary" to="/admin/crm/comptes">
+              {t('adminAccess.clientNew.breadcrumbList')}
+            </Link>
+          }
+        />
 
         <div className="portal-card" style={{ marginTop: 24 }}>
           <div style={{ padding: '8px 0' }}>
@@ -162,7 +162,7 @@ const ClientAccountNew = () => {
             <div
               style={{
                 background: 'var(--bg-tertiary)',
-                borderRadius: 10,
+                borderRadius: 'var(--r-md)',
                 padding: 20,
                 border: '1px solid var(--border-color)',
                 marginBottom: 20,
@@ -170,13 +170,27 @@ const ClientAccountNew = () => {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('adminAccess.clientNew.email')}</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                <span
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 14,
+                  }}
+                >
                   {createdClient.email}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('adminAccess.clientNew.password')}</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                <span
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 14,
+                  }}
+                >
                   {createdClient.password}
                 </span>
               </div>
@@ -209,17 +223,16 @@ const ClientAccountNew = () => {
   }
 
   return (
-    <div className="portal-container">
-      <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <Link to="/admin/crm/comptes">{t('adminAccess.clientNew.breadcrumbList')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('adminAccess.clientNew.breadcrumbNew')}</span>
-        </div>
-        <h1>{t('adminAccess.clientNew.title')}</h1>
-      </div>
+    <div className="portal-container pilotage-page client-new-page">
+      <PageHeader
+        eyebrow={t('adminOps.pilotage.zone.commercial')}
+        title={t('adminAccess.clientNew.title')}
+        actions={
+          <Link className="portal-button secondary" to="/admin/crm/comptes">
+            {t('adminAccess.clientNew.breadcrumbList')}
+          </Link>
+        }
+      />
 
       <div className="portal-card" style={{ marginTop: 24 }}>
         <form className="portal-list" onSubmit={handleSubmit}>

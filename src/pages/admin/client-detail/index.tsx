@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
@@ -276,72 +277,75 @@ const ClientAccountDetail = () => {
   }
 
   return (
-    <div className="portal-container">
-      <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <Link to="/admin/crm/comptes">{t('adminAccess.clientDetail.breadcrumbList')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>
-            {client?.companyName || client?.name || t('adminAccess.clientDetail.loading')}
-          </span>
-        </div>
-
-        {client && (
-          <div className="admin-header" style={{ marginBottom: 16 }}>
-            <div>
-              <h1 style={{ marginBottom: 8 }}>
-                {client.companyName || client.name || t('adminAccess.clientDetail.companyMissing')}
-              </h1>
+    <div className="portal-container pilotage-page client-detail-page">
+      <PageHeader
+        eyebrow={t('adminOps.pilotage.zone.commercial')}
+        title={client?.companyName || client?.name || t('adminAccess.clientDetail.loading')}
+        subtitle={
+          client && (
+            <>
               {client.serviceType && (
-                <p style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontWeight: 600 }}>
-                  {t('adminAccess.clientDetail.serviceLine', { service: client.serviceType })}
-                </p>
-              )}
-              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
-                {t('adminAccess.clientDetail.contactLine', { name: client.name })}
-              </p>
-              <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>{client.email}</p>
-            </div>
-            <div className="admin-actions">
-              <Link
-                className="portal-button portal-action-link"
-                to={`/admin/projets/nouveau?clientId=${userId}`}
-                title={t('adminAccess.clientDetail.addProject')}
-              >
-                <span className="portal-action-icon" aria-hidden>
-                  <svg
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                    stroke="currentColor"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="16" />
-                    <line x1="8" y1="12" x2="16" y2="12" />
-                  </svg>
-                </span>
-                <span className="portal-action-label">{t('adminAccess.clientDetail.addProject')}</span>
-              </Link>
-              {canArchive && (
-                <button
-                  type="button"
-                  className="portal-button secondary"
-                  onClick={handleArchiveToggle}
-                  disabled={saving}
+                <span
+                  className="client-detail-meta"
+                  style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontWeight: 600 }}
                 >
-                  {client.status === 'ARCHIVE'
-                    ? t('adminAccess.clientDetail.reactivate')
-                    : t('adminAccess.clientDetail.archive')}
-                </button>
+                  {t('adminAccess.clientDetail.serviceLine', { service: client.serviceType })}
+                </span>
               )}
-            </div>
-          </div>
-        )}
-      </div>
+              <span className="client-detail-meta" style={{ color: 'var(--text-secondary)', margin: 0 }}>
+                {t('adminAccess.clientDetail.contactLine', { name: client.name })}
+              </span>
+              <span className="client-detail-meta" style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                {client.email}
+              </span>
+            </>
+          )
+        }
+        actions={
+          client && (
+            <>
+              <div className="admin-actions">
+                <Link
+                  className="portal-button portal-action-link"
+                  to={`/admin/projets/nouveau?clientId=${userId}`}
+                  title={t('adminAccess.clientDetail.addProject')}
+                >
+                  <span className="portal-action-icon" aria-hidden>
+                    <svg
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="16" />
+                      <line x1="8" y1="12" x2="16" y2="12" />
+                    </svg>
+                  </span>
+                  <span className="portal-action-label">{t('adminAccess.clientDetail.addProject')}</span>
+                </Link>
+                {canArchive && (
+                  <button
+                    type="button"
+                    className="portal-button secondary"
+                    onClick={handleArchiveToggle}
+                    disabled={saving}
+                  >
+                    {client.status === 'ARCHIVE'
+                      ? t('adminAccess.clientDetail.reactivate')
+                      : t('adminAccess.clientDetail.archive')}
+                  </button>
+                )}
+              </div>
+              <Link className="portal-button secondary" to="/admin/crm/comptes">
+                {t('adminAccess.clientDetail.breadcrumbList')}
+              </Link>
+            </>
+          )
+        }
+      />
 
       <div className="admin-tabs" style={{ marginTop: 20 }}>
         {TABS.map((tab) => (
@@ -418,7 +422,7 @@ const ClientAccountDetail = () => {
             <div
               style={{
                 background: 'var(--bg-tertiary)',
-                borderRadius: 10,
+                borderRadius: 'var(--r-md)',
                 padding: 20,
                 border: '1px solid var(--border-color)',
                 marginBottom: 16,
@@ -426,7 +430,14 @@ const ClientAccountDetail = () => {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('adminAccess.clientDetail.email')}</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                <span
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 14,
+                  }}
+                >
                   {client?.email}
                 </span>
               </div>
@@ -434,7 +445,9 @@ const ClientAccountDetail = () => {
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                   {t('adminAccess.clientDetail.newPassword')}
                 </span>
-                <span style={{ color: 'var(--primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                <span
+                  style={{ color: 'var(--primary)', fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: 14 }}
+                >
                   {generatedPassword}
                 </span>
               </div>

@@ -1,3 +1,4 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -102,16 +103,16 @@ const PROJECT_STATUS_KEYS: Record<string, MessageKey> = {
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
-  BASSE: '#64748b',
-  NORMALE: '#38bdf8',
-  HAUTE: '#f59e0b',
-  URGENTE: '#ef4444',
+  BASSE: 'var(--text-muted)',
+  NORMALE: 'var(--primary)',
+  HAUTE: 'var(--warning)',
+  URGENTE: 'var(--critical)',
 }
 
 const BRIEF_PRIORITY_COLORS: Record<string, string> = {
-  P1: '#ef4444',
-  P2: '#f59e0b',
-  P3: '#64748b',
+  P1: 'var(--critical)',
+  P2: 'var(--warning)',
+  P3: 'var(--text-muted)',
 }
 
 const DASHBOARD_PREFS_KEY = 'venio-admin-command-dashboard-prefs-v1'
@@ -261,7 +262,7 @@ function Kpi({
 function TaskLine({ task }: { task: Task & { project?: { _id: string; name: string } } }) {
   const { t } = useI18n()
   const statusKey = TASK_STATUS_KEYS[task.status]
-  const color = PRIORITY_COLORS[task.priority] || '#38bdf8'
+  const color = PRIORITY_COLORS[task.priority] || 'var(--primary)'
   return (
     <Link to={`/admin/projets/${task.project?._id || task.project}?tab=tasks`} className="admin-command-line">
       <span className="admin-command-dot" style={{ background: color }} />
@@ -276,7 +277,7 @@ function TaskLine({ task }: { task: Task & { project?: { _id: string; name: stri
 }
 
 function BriefLine({ brief }: { brief: DashBrief }) {
-  const color = BRIEF_PRIORITY_COLORS[brief.briefPriority] || '#64748b'
+  const color = BRIEF_PRIORITY_COLORS[brief.briefPriority] || 'var(--text-muted)'
   return (
     <Link to="/admin/projets/clients?view=briefs" className="admin-command-line">
       <span className="admin-command-dot" style={{ background: color }} />
@@ -296,7 +297,7 @@ function BriefLine({ brief }: { brief: DashBrief }) {
 function ProjectLine({ project }: { project: Project & { client?: { _id: string; name: string } } }) {
   const { t } = useI18n()
   const statusKey = PROJECT_STATUS_KEYS[project.status]
-  const color = PRIORITY_COLORS[project.priority || 'NORMALE'] || '#38bdf8'
+  const color = PRIORITY_COLORS[project.priority || 'NORMALE'] || 'var(--primary)'
   return (
     <Link to={`/admin/projets/${project._id}`} className="admin-command-line">
       <span className="admin-command-dot" style={{ background: color }} />
@@ -312,7 +313,12 @@ function ProjectLine({ project }: { project: Project & { client?: { _id: string;
 function InternalProjectLine({ project }: { project: InternalProjectSummary }) {
   const { t } = useI18n()
   const statusKey = PROJECT_STATUS_KEYS[project.status]
-  const tone = project.status === 'EN_COURS' ? '#22c55e' : project.status === 'EN_ATTENTE' ? '#f59e0b' : '#64748b'
+  const tone =
+    project.status === 'EN_COURS'
+      ? 'var(--good)'
+      : project.status === 'EN_ATTENTE'
+        ? 'var(--warning)'
+        : 'var(--text-muted)'
   return (
     <Link to={`/admin/projets-internes/${project._id}`} className="admin-command-line">
       <span className="admin-command-dot" style={{ background: tone }} />
@@ -336,7 +342,7 @@ function MissionLine({ mission }: { mission: MissionSummary }) {
     <Link to="/admin/projets/clients?view=missions" className="admin-command-line">
       <span
         className="admin-command-dot"
-        style={{ background: mission.status === 'EN_COURS' ? '#38bdf8' : '#f59e0b' }}
+        style={{ background: mission.status === 'EN_COURS' ? 'var(--primary)' : 'var(--warning)' }}
       />
       <span className="admin-command-line__main">
         <strong>{mission.title}</strong>
@@ -488,36 +494,36 @@ export default function AdminDashboard() {
   }, [data, t])
 
   return (
-    <div className={`portal-container admin-command-dashboard ${prefs.density === 'compact' ? 'compact' : ''}`}>
-      <div className="admin-command-header">
-        <div>
-          <span className="admin-command-eyebrow">{t('adminAccess.dashboard.eyebrow')}</span>
-          <h1>{t('adminAccess.dashboard.title')}</h1>
-          <p>
-            {t('adminAccess.dashboard.headerMeta', {
-              name: user?.name || user?.email || t('adminAccess.dashboard.adminFallback'),
-              source: data?.cockpitMeta?.source || 'api/admin/dashboard',
-              freshness: formatFreshness(data?.cockpitMeta?.generatedAt || data?.generatedAt),
-            })}
-          </p>
-        </div>
-        <div className="admin-command-actions">
-          <button className="portal-button secondary" onClick={() => setRefresh((r) => r + 1)} disabled={loading}>
-            <RefreshCw size={14} />
-            {t('adminAccess.dashboard.refresh')}
-          </button>
-          <button className="portal-button secondary" onClick={() => setCustomizeOpen(true)}>
-            <Settings2 size={14} />
-            {t('adminAccess.dashboard.customize')}
-          </button>
-          {canEditProjects && (
-            <Link className="portal-button" to="/admin/projets/nouveau">
-              <Plus size={14} />
-              {t('adminAccess.dashboard.newProject')}
-            </Link>
-          )}
-        </div>
-      </div>
+    <div
+      className={`portal-container pilotage-page admin-command-dashboard ${prefs.density === 'compact' ? 'compact' : ''}`}
+    >
+      <PageHeader
+        eyebrow={t('adminAccess.dashboard.eyebrow')}
+        title={t('adminAccess.dashboard.title')}
+        subtitle={t('adminAccess.dashboard.headerMeta', {
+          name: user?.name || user?.email || t('adminAccess.dashboard.adminFallback'),
+          source: data?.cockpitMeta?.source || 'api/admin/dashboard',
+          freshness: formatFreshness(data?.cockpitMeta?.generatedAt || data?.generatedAt),
+        })}
+        actions={
+          <div className="admin-command-actions">
+            <button className="portal-button secondary" onClick={() => setRefresh((r) => r + 1)} disabled={loading}>
+              <RefreshCw size={14} />
+              {t('adminAccess.dashboard.refresh')}
+            </button>
+            <button className="portal-button secondary" onClick={() => setCustomizeOpen(true)}>
+              <Settings2 size={14} />
+              {t('adminAccess.dashboard.customize')}
+            </button>
+            {canEditProjects && (
+              <Link className="portal-button" to="/admin/projets/nouveau">
+                <Plus size={14} />
+                {t('adminAccess.dashboard.newProject')}
+              </Link>
+            )}
+          </div>
+        }
+      />
 
       {loading && !data ? (
         <div className="admin-command-loading">

@@ -1,3 +1,5 @@
+import { STATUS_MAP } from './crm-board/constants'
+import PageHeader from '../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import CustomSelect from '../../components/admin/CustomSelect'
@@ -116,27 +118,23 @@ const ExternalSales = () => {
   ]
 
   return (
-    <div className="portal-container">
-      <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">{t('commercial.admin.breadcrumb')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('commercial.admin.title')}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <h1 style={{ margin: 0 }}>{t('commercial.admin.title')}</h1>
+    <div className="portal-container pilotage-page external-sales-page">
+      <PageHeader
+        eyebrow={t('adminOps.pilotage.zone.commercial')}
+        title={t('commercial.admin.title')}
+        actions={
           <Link className="portal-button" to="/admin/comptes-admin/nouveau">
             {t('commercial.admin.invite')}
           </Link>
-        </div>
-        <p className="commercial-muted">
-          {t('commercial.admin.ruleBefore', { rate: formatNumber(rateBp / 100) })}{' '}
-          <Link className="commercial-link" to="/admin/crm/settings">
-            {t('commercial.admin.ruleLink')}
-          </Link>
-          .
-        </p>
-      </div>
+        }
+      />
+      <p className="commercial-muted">
+        {t('commercial.admin.ruleBefore', { rate: formatNumber(rateBp / 100) })}{' '}
+        <Link className="commercial-link" to="/admin/crm/settings">
+          {t('commercial.admin.ruleLink')}
+        </Link>
+        .
+      </p>
 
       {error && <div className="admin-error">{error}</div>}
       {info && <div className="admin-success">{info}</div>}
@@ -365,7 +363,14 @@ function LeadsTable({
                 {lead.contactName && <div className="commercial-muted">{lead.contactName}</div>}
               </td>
               <td>
-                {t(STATUS_LABEL_KEYS[lead.status])}
+                <span
+                  className="commercial-status-chip"
+                  style={
+                    { '--status-color': STATUS_MAP[lead.status]?.color || 'var(--text-muted)' } as React.CSSProperties
+                  }
+                >
+                  {t(STATUS_LABEL_KEYS[lead.status])}
+                </span>
                 {lead.closingHandoff && (
                   <div className="commercial-muted">
                     {t('commercial.admin.handedOffOn', { date: formatDay(lead.closingHandoff.at) })}

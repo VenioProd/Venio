@@ -9,7 +9,7 @@
   --msg-radius-sm: var(--r-md);
   --msg-border: var(--border-color);
   --msg-border-strong: var(--accent-border);
-  --msg-panel: var(--bg-card);
+  --msg-panel: var(--surface-glass);
   --msg-panel-soft: var(--bg-card-hover);
   --msg-panel-strong: var(--bg-primary);
   --msg-text: var(--text-primary);
@@ -22,13 +22,14 @@
   position: relative;
   display: grid;
   grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
-  gap: 18px;
-  height: calc(100vh - 44px - env(safe-area-inset-top, 0px));
+  gap: 12px;
+  min-width: 0;
+  height: max(480px, calc(100dvh - 240px));
   margin: 0 auto;
-  padding: 18px clamp(8px, 1.5vw, 24px);
+  padding: 0;
   max-width: 1600px;
   color: var(--msg-text);
-  background: var(--bg-secondary);
+  background: transparent;
   overflow: hidden;
 }
 
@@ -44,7 +45,8 @@
   background: var(--msg-panel);
   border: 1px solid var(--msg-border);
   border-radius: var(--r-lg);
-  box-shadow: none;
+  box-shadow: var(--surface-shadow);
+  backdrop-filter: blur(12px);
   overflow: hidden;
 }
 
@@ -2038,8 +2040,7 @@
     grid-template-columns: 1fr;
     gap: 0;
     padding: 0;
-    height: calc(100vh - 44px - env(safe-area-inset-top, 0px));
-    height: calc(100dvh - 44px - env(safe-area-inset-top, 0px));
+    height: max(420px, calc(100dvh - 240px));
     border-radius: var(--r-hair); /* plein ecran : quasi net, l'echelle ne s'applique pas a un bord d'ecran */
     overflow: hidden;
   }
@@ -2321,7 +2322,7 @@
    Light theme overrides
    ============================================================ */
 [data-theme='light'] .messaging-page {
-  --msg-panel: var(--bg-card);
+  --msg-panel: var(--surface-glass);
   --msg-panel-soft: var(--bg-card-hover);
   --msg-panel-strong: var(--bg-primary);
   --msg-text: var(--text-primary);
@@ -2518,5 +2519,31 @@
   }
   .attachment-preview-iframe {
     height: 70vh;
+  }
+}
+
+.messaging-workspace {
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-hub-panel .messaging-workspace .messaging-sidebar-title {
+  display: none;
+}
+.admin-hub-panel .messaging-workspace .messaging-sidebar-top {
+  justify-content: flex-end;
+  padding: 10px 12px;
+}
+.messaging-page
+  :is(.messaging-conversation-time, .messaging-conversation-badge, .messaging-sidebar-count, .messaging-message-time) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.messaging-page :is(.messaging-bubble, .messaging-message-content) {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 768px) {
+  .messaging-page .messaging-sidebar,
+  .messaging-page .messaging-main {
+    border-radius: var(--r-lg);
   }
 }

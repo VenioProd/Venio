@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
@@ -444,20 +445,12 @@ const CrmBoard = () => {
 
   return (
     <CrmThresholdsContext.Provider value={worklist?.thresholds ?? DEFAULT_WORKLIST_THRESHOLDS}>
-      <div className="portal-container crm-page-container">
-        <div className="portal-card">
-          <div className="admin-breadcrumb">
-            <Link to="/admin">{t('crm.page.admin')}</Link>
-            <span>/</span>
-            <span style={{ color: 'var(--text-primary)' }}>{t('crm.page.title')}</span>
-          </div>
-          <div className="admin-header">
-            <div>
-              <h1>{t('crm.page.title')}</h1>
-              <p style={{ color: 'var(--text-muted)', margin: '8px 0 0 0', fontSize: '15px' }}>
-                {t('crm.page.subtitleLeads')}
-              </p>
-            </div>
+      <div className="portal-container crm-page-container pilotage-page pipeline-page">
+        <PageHeader
+          eyebrow={t('adminOps.pilotage.zone.commercial')}
+          title={t('crm.page.title')}
+          subtitle={t('crm.page.subtitleLeads')}
+          actions={
             <div className="admin-actions portal-actions-reveal" style={{ gap: 8 }}>
               {/* View toggle */}
               <div className="crm-view-toggle">
@@ -587,8 +580,8 @@ const CrmBoard = () => {
                 </Link>
               )}
             </div>
-          </div>
-        </div>
+          }
+        />
 
         {error && (
           <div className="admin-error" style={{ marginTop: 24 }}>
@@ -663,6 +656,7 @@ const CrmBoard = () => {
                   onConvertToClient={handleConvertToClient}
                   onDrop={handleDrop}
                   onDragStart={handleDragStart}
+                  onOpenDetail={setExpandedLead}
                 />
               ))}
             </div>

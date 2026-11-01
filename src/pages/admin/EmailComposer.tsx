@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import PageHeader from '../../components/admin/ui/PageHeader'
+import { useEffect, useState, useRef } from 'react'
 import { apiFetch } from '../../lib/api'
 import { useToast } from '../../context/ToastContext'
 import { useI18n } from '../../context/I18nContext'
@@ -160,111 +161,82 @@ export default function EmailComposer() {
   }
 
   return (
-    <div className="portal-container">
+    <div className="portal-container pilotage-page email-composer-page">
       {/* ── Header ── */}
-      <div className="ticket-hero" style={{ marginBottom: 24 }}>
-        <div className="ticket-hero-content">
-          <Link to="/admin" className="ticket-back-btn">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            {t('common.back')}
-          </Link>
-          <h1 className="ticket-hero-title" style={{ marginTop: 8 }}>
-            {t('adminOps.email.title')}
-          </h1>
-          <p className="ticket-hero-subtitle">
-            {t('adminOps.email.subtitle')}
-            {fromEmail && (
-              <span
-                style={{
-                  marginLeft: 10,
-                  padding: '2px 10px',
-                  borderRadius: 20,
-                  background: 'rgba(var(--primary-rgb), 0.12)',
-                  border: '1px solid rgba(var(--primary-rgb), 0.25)',
-                  color: 'var(--primary-light)',
-                  fontSize: 12,
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                }}
+      <PageHeader
+        eyebrow={t('adminOps.pilotage.zone.inbox')}
+        title={t('adminOps.email.title')}
+        subtitle={t('adminOps.email.subtitle')}
+        actions={
+          <>
+            <Link className="portal-button secondary pilotage-back-link" to="/admin">
+              {t('common.back')}
+            </Link>
+            {fromEmail && <span className="email-sender-chip">{t('adminOps.email.from', { email: fromEmail })}</span>}
+            <div className="email-send-actions">
+              {totalSelected > 0 && (
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                  <EmphasizedCount
+                    text={t('adminOps.email.recipientCount', { count: totalSelected })}
+                    count={totalSelected}
+                  />
+                </span>
+              )}
+              <button
+                className="portal-button"
+                onClick={handleSend}
+                disabled={sending || totalSelected === 0 || !subject.trim() || !body.trim()}
+                style={{ opacity: sending || totalSelected === 0 || !subject.trim() || !body.trim() ? 0.4 : 1 }}
               >
-                {t('adminOps.email.from', { email: fromEmail })}
-              </span>
-            )}
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {totalSelected > 0 && (
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-              <EmphasizedCount
-                text={t('adminOps.email.recipientCount', { count: totalSelected })}
-                count={totalSelected}
-              />
-            </span>
-          )}
-          <button
-            className="ticket-new-btn"
-            onClick={handleSend}
-            disabled={sending || totalSelected === 0 || !subject.trim() || !body.trim()}
-            style={{ opacity: sending || totalSelected === 0 || !subject.trim() || !body.trim() ? 0.4 : 1 }}
-          >
-            {sending ? (
-              <>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ animation: 'spin 1s linear infinite' }}
-                >
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </svg>
-                {t('adminOps.email.sending')}
-              </>
-            ) : (
-              <>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-                {t('adminOps.email.send')}
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+                {sending ? (
+                  <>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ animation: 'spin 1s linear infinite' }}
+                    >
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                    {t('adminOps.email.sending')}
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="22" y1="2" x2="11" y2="13" />
+                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
+                    {t('adminOps.email.send')}
+                  </>
+                )}
+              </button>
+            </div>
+          </>
+        }
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, alignItems: 'start' }}>
+      <div className="email-composer-grid">
         {/* ── Panneau destinataires ── */}
         <div className="portal-card" style={{ padding: 0, overflow: 'hidden' }}>
           {/* Header du panel */}
           <div
             style={{
               padding: '16px 20px',
-              borderBottom: '1px solid rgba(255,255,255,0.07)',
+              borderBottom: '1px solid var(--border-color)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -275,14 +247,13 @@ export default function EmailComposer() {
             </span>
             <span
               style={{
-                background: totalSelected > 0 ? 'rgba(var(--primary-rgb), 0.15)' : 'rgba(255,255,255,0.06)',
+                background: totalSelected > 0 ? 'rgba(var(--primary-rgb), 0.15)' : 'var(--border-color)',
                 color: totalSelected > 0 ? 'var(--primary-light)' : 'var(--ink-ghost)',
-                borderRadius: 20,
+                borderRadius: 'var(--r-pill)',
                 padding: '2px 10px',
                 fontSize: 12,
                 fontWeight: 700,
-                border:
-                  totalSelected > 0 ? '1px solid rgba(var(--primary-rgb), 0.3)' : '1px solid rgba(255,255,255,0.1)',
+                border: totalSelected > 0 ? '1px solid rgba(var(--primary-rgb), 0.3)' : '1px solid var(--line-strong)',
               }}
             >
               {t('adminOps.email.selectedCount', { count: totalSelected })}
@@ -307,7 +278,7 @@ export default function EmailComposer() {
                 style={{
                   width: '100%',
                   padding: '7px 0',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-md)',
                   border: '1px solid rgba(var(--primary-rgb), 0.25)',
                   background: 'rgba(var(--primary-rgb), 0.06)',
                   color: 'var(--primary-light)',
@@ -354,13 +325,13 @@ export default function EmailComposer() {
                           alignItems: 'center',
                           gap: 10,
                           padding: '9px 12px',
-                          borderRadius: 10,
+                          borderRadius: 'var(--r-md)',
                           cursor: 'pointer',
                           textAlign: 'left',
-                          background: selected ? 'rgba(var(--primary-rgb), 0.12)' : 'rgba(255,255,255,0.03)',
+                          background: selected ? 'rgba(var(--primary-rgb), 0.12)' : 'var(--bg-card)',
                           border: selected
                             ? '1px solid rgba(var(--primary-rgb), 0.35)'
-                            : '1px solid rgba(255,255,255,0.07)',
+                            : '1px solid var(--border-color)',
                           transition: 'all 0.15s',
                           width: '100%',
                         }}
@@ -372,13 +343,13 @@ export default function EmailComposer() {
                             height: 32,
                             borderRadius: '50%',
                             flexShrink: 0,
-                            background: selected ? 'rgba(var(--primary-rgb), 0.25)' : 'rgba(255,255,255,0.08)',
+                            background: selected ? 'rgba(var(--primary-rgb), 0.25)' : 'var(--border-color)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: 13,
                             fontWeight: 700,
-                            color: selected ? 'var(--primary-light)' : 'rgba(255,255,255,0.6)',
+                            color: selected ? 'var(--primary-light)' : 'var(--text-secondary)',
                             transition: 'all 0.15s',
                           }}
                         >
@@ -389,7 +360,7 @@ export default function EmailComposer() {
                             style={{
                               fontSize: 13,
                               fontWeight: 600,
-                              color: selected ? 'var(--ink-body)' : 'rgba(255,255,255,0.7)',
+                              color: selected ? 'var(--ink-body)' : 'var(--text-secondary)',
                               display: 'flex',
                               alignItems: 'center',
                               gap: 6,
@@ -400,10 +371,10 @@ export default function EmailComposer() {
                               <span
                                 style={{
                                   fontSize: 10,
-                                  background: 'rgba(14, 165, 233, 0.15)',
+                                  background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
                                   color: 'var(--primary)',
                                   padding: '1px 5px',
-                                  borderRadius: 4,
+                                  borderRadius: 'var(--r-sm)',
                                   fontWeight: 600,
                                 }}
                               >
@@ -411,7 +382,7 @@ export default function EmailComposer() {
                               </span>
                             )}
                           </div>
-                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{r.email}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{r.email}</div>
                         </div>
                         {/* Indicateur sélection */}
                         <div
@@ -420,8 +391,8 @@ export default function EmailComposer() {
                             height: 18,
                             borderRadius: '50%',
                             flexShrink: 0,
-                            background: selected ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
-                            border: selected ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                            background: selected ? 'var(--primary)' : 'var(--border-color)',
+                            border: selected ? 'none' : '1px solid var(--line-strong)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -434,7 +405,7 @@ export default function EmailComposer() {
                               height="10"
                               viewBox="0 0 24 24"
                               fill="none"
-                              stroke="#fff"
+                              stroke="var(--text-primary)"
                               strokeWidth="3"
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -451,15 +422,15 @@ export default function EmailComposer() {
             )}
 
             {/* Adresse externe */}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 12 }}>
               <div
                 style={{
                   fontSize: 11,
-                  color: 'rgba(255,255,255,0.3)',
+                  color: 'var(--text-muted)',
                   marginBottom: 6,
                   fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
+                  textTransform: 'none',
+                  letterSpacing: 'normal',
                 }}
               >
                 {t('adminOps.email.externalAddress')}
@@ -479,7 +450,7 @@ export default function EmailComposer() {
                   onClick={addCustomEmail}
                   style={{
                     padding: '10px 14px',
-                    borderRadius: 8,
+                    borderRadius: 'var(--r-md)',
                     border: 'none',
                     background: 'rgba(var(--primary-rgb), 0.15)',
                     color: 'var(--primary-light)',
@@ -502,7 +473,7 @@ export default function EmailComposer() {
                         alignItems: 'center',
                         gap: 4,
                         padding: '3px 8px',
-                        borderRadius: 20,
+                        borderRadius: 'var(--r-pill)',
                         background: 'rgba(var(--primary-rgb), 0.1)',
                         border: '1px solid rgba(var(--primary-rgb), 0.25)',
                         fontSize: 11,
@@ -516,7 +487,7 @@ export default function EmailComposer() {
                           background: 'none',
                           border: 'none',
                           cursor: 'pointer',
-                          color: 'rgba(255,255,255,0.3)',
+                          color: 'var(--text-muted)',
                           padding: 0,
                           lineHeight: 1,
                           fontSize: 14,
@@ -555,9 +526,9 @@ export default function EmailComposer() {
               <label
                 style={{
                   fontSize: 12,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  color: 'rgba(255,255,255,0.5)',
+                  textTransform: 'none',
+                  letterSpacing: 'normal',
+                  color: 'var(--text-secondary)',
                   fontWeight: 600,
                 }}
               >
@@ -593,8 +564,8 @@ export default function EmailComposer() {
                 style={{
                   minHeight: 200,
                   padding: '18px 20px',
-                  borderRadius: 10,
-                  background: '#07080f',
+                  borderRadius: 'var(--r-md)',
+                  background: 'var(--bg-secondary)',
                   border: '1px solid rgba(var(--primary-rgb), 0.15)',
                   fontSize: 14,
                   color: 'var(--ink-soft)',
@@ -622,9 +593,9 @@ export default function EmailComposer() {
                       style={{
                         display: 'inline-block',
                         padding: '10px 22px',
-                        borderRadius: 8,
-                        background: 'linear-gradient(135deg, var(--primary), #3b82f6)',
-                        color: '#fff',
+                        borderRadius: 'var(--r-md)',
+                        background: 'linear-gradient(135deg, var(--primary), var(--primary))',
+                        color: 'var(--text-primary)',
                         fontWeight: 600,
                         fontSize: 13,
                       }}
@@ -655,7 +626,7 @@ export default function EmailComposer() {
                 onChange={(e) => setShowCta(e.target.checked)}
                 style={{ accentColor: 'var(--primary)', width: 14, height: 14 }}
               />
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
                 {t('adminOps.email.ctaToggle')}
               </span>
             </label>
@@ -701,11 +672,11 @@ export default function EmailComposer() {
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                 </svg>
                 {t('adminOps.email.resultsTitle')}
-                <span style={{ marginLeft: 'auto', fontSize: 13, color: '#22c55e', fontWeight: 600 }}>
+                <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--good)', fontWeight: 600 }}>
                   {results.filter((r) => r.success).length} ✓
                 </span>
                 {results.filter((r) => !r.success).length > 0 && (
-                  <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>
+                  <span style={{ fontSize: 13, color: 'var(--critical)', fontWeight: 600 }}>
                     {results.filter((r) => !r.success).length} ✗
                   </span>
                 )}
@@ -719,16 +690,22 @@ export default function EmailComposer() {
                       alignItems: 'center',
                       gap: 10,
                       padding: '7px 12px',
-                      borderRadius: 8,
-                      background: r.success ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)',
-                      border: `1px solid ${r.success ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                      borderRadius: 'var(--r-md)',
+                      background: r.success
+                        ? 'color-mix(in srgb, var(--good) 6%, transparent)'
+                        : 'color-mix(in srgb, var(--critical) 6%, transparent)',
+                      border: `1px solid ${r.success ? 'color-mix(in srgb, var(--good) 20%, transparent)' : 'color-mix(in srgb, var(--critical) 20%, transparent)'}`,
                     }}
                   >
-                    <span style={{ fontSize: 13, color: r.success ? '#22c55e' : '#ef4444', fontWeight: 700 }}>
+                    <span
+                      style={{ fontSize: 13, color: r.success ? 'var(--good)' : 'var(--critical)', fontWeight: 700 }}
+                    >
                       {r.success ? '✓' : '✗'}
                     </span>
-                    <span style={{ flex: 1, fontSize: 13, color: r.success ? '#86efac' : '#fca5a5' }}>{r.email}</span>
-                    {r.error && <span style={{ color: '#f87171', fontSize: 11 }}>{r.error}</span>}
+                    <span style={{ flex: 1, fontSize: 13, color: r.success ? 'var(--good)' : 'var(--critical)' }}>
+                      {r.email}
+                    </span>
+                    {r.error && <span style={{ color: 'var(--critical)', fontSize: 11 }}>{r.error}</span>}
                   </div>
                 ))}
               </div>
