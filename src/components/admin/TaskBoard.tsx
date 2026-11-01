@@ -16,6 +16,9 @@ import {
   deleteAttachment,
 } from '../../services/adminTasks'
 import ConfirmModal from '../ConfirmModal'
+import { useMultiSelect } from './ui/useMultiSelect'
+import { RowCheckbox } from './ui/RowCheckbox'
+import TaskBulkBar from './TaskBulkBar'
 import type { Task, TaskStatus, TaskPriority, TaskComment, TaskAttachment } from '../../types/task.types'
 import type { AdminUser } from '../../types/crm.types'
 import { useI18n } from '../../context/I18nContext'
@@ -71,6 +74,12 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
   const [commentLoading, setCommentLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Cartes visibles dans l'ordre des colonnes : maj+clic prend la plage telle qu'affichée.
+  const visibleTasks = TASK_COLUMNS.flatMap((column) =>
+    tasks.filter((task) => task.status === column.key).sort((a, b) => a.order - b.order),
+  )
+  const select = useMultiSelect(visibleTasks, (task) => task._id)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -281,6 +290,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
   return (
     <div className="task-board-wrapper">
       {error && <div className="admin-error">{error}</div>}
+      {canManage && <TaskBulkBar select={select} assignees={admins} onDone={load} allowArchive />}
 
       <div className="task-board">
         {TASK_COLUMNS.map((column) => {
@@ -314,6 +324,7 @@ const TaskBoard = ({ projectId }: TaskBoardProps) => {
                   style={{ cursor: 'pointer' }}
                 >
                   <div className="task-card-header">
+                    {canManage && <RowCheckbox id={task._id} name={task.title} select={select} />}
                     <span className="task-card-title">{task.title}</span>
                     {canManage && (
                       <button

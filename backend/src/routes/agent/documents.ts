@@ -11,6 +11,7 @@ import User from '../../models/User.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
+import { BulkItemError, parseBulkIds, runBulk } from '../../lib/bulk.js'
 
 /**
  * Routes agent pour les Documents (fichiers binaires liés à un projet).
@@ -226,6 +227,42 @@ router.get(
     }
   }
 )
+
+// ───────────────────────────────────────────────────────────────────────────
+// POST /documents/bulk — suppression groupée (≤ 200 ids), même effet que
+// DELETE /documents/:id. Body : { ids, action: 'delete' }. Scope write:documents.
+// ───────────────────────────────────────────────────────────────────────────
+
+router.post('/documents/bulk', requireScope('write:documents'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = parseBulkIds(req.body?.ids)
+    if (!parsed.ok) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
+    if (req.body?.action !== 'delete') {
+      return respondError(res, 400, 'VALIDATION_ERROR', 'action doit valoir delete')
+    }
+    const result = await runBulk(parsed.ids, async (id) => {
+      const doc = await Document.findById(id)
+      if (!doc) throw new BulkItemError('Document introuvable')
+      const absPath = path.resolve(process.cwd(), doc.storagePath)
+      await Document.deleteOne({ _id: doc._id })
+      if (absPath.startsWith(uploadsRoot())) {
+        try {
+          await fs.unlink(absPath)
+        } catch (err) {
+          if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+        }
+      }
+    })
+    res.locals.audit = {
+      entityType: 'Document',
+      summary: `Suppression groupée de ${parsed.ids.length} document(s) : ${result.succeeded.length} réussi(s), ${result.failed.length} échec(s)`,
+      extra: { bulk: true, action: 'delete', ...result },
+    }
+    res.json(result)
+  } catch (err) {
+    next(err)
+  }
+})
 
 // ───────────────────────────────────────────────────────────────────────────
 // DELETE /documents/:id — supprime DB + fichier (best-effort)

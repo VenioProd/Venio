@@ -8,6 +8,7 @@ import User from '../../models/User.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
+import { applyTaskBulk, parseTaskBulkBody } from '../../lib/taskBulk.js'
 
 /**
  * Routes agent pour les Tasks et leurs commentaires.
@@ -96,6 +97,30 @@ router.get('/tasks', requireScope('read:tasks'), async (req: Request, res: Respo
     ])
 
     res.json(paginatedResponse(items, pag, total))
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * POST /tasks/bulk — action groupée (≤ 200 ids) : delete | archive | unarchive | update.
+ * Même scope que les routes unitaires (write:tasks). Réponse : { succeeded, failed }.
+ * Déclarée avant les routes /tasks/:id pour ne jamais être prise pour un identifiant.
+ */
+router.post('/tasks/bulk', requireScope('write:tasks'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = parseTaskBulkBody(req.body)
+    if (!parsed.ok) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
+    if (parsed.patch.assignee && !(await User.exists({ _id: parsed.patch.assignee }))) {
+      return respondError(res, 422, 'INVALID_ASSIGNEE', 'assignee introuvable')
+    }
+    const result = await applyTaskBulk(parsed, { deleteComments: true })
+    res.locals.audit = {
+      entityType: 'Task',
+      summary: `Action groupée "${parsed.action}" sur ${parsed.ids.length} tâche(s) : ${result.succeeded.length} réussie(s), ${result.failed.length} échec(s)`,
+      extra: { bulk: true, action: parsed.action, patch: parsed.patch, ...result },
+    }
+    res.json(result)
   } catch (err) {
     next(err)
   }

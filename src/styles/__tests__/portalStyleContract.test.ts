@@ -28,6 +28,7 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8')
 /** Feuilles couvertes par la charte, y compris les styles métier du lot C. */
 export const PORTAL_STYLESHEETS = [
   'src/components/admin/ui/AdminHub.css',
+  'src/components/admin/ui/BulkActionBar.css',
   'src/components/AdminCommandPalette.css',
   'src/components/AdminShell.css',
   'src/components/AdminSystemTokens.css',

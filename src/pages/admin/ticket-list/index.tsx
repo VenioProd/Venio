@@ -7,6 +7,8 @@ import { useI18n } from '../../../context/I18nContext'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG } from './types'
 import type { Ticket, KpiData } from './types'
 import TicketCard from './TicketCard'
+import TicketBulkBar from './TicketBulkBar'
+import { useMultiSelect } from '../../../components/admin/ui/useMultiSelect'
 import TicketDetail from './TicketDetail'
 import TicketStats from './TicketStats'
 import TicketFilters from './TicketFilters'
@@ -183,6 +185,13 @@ const TicketList = () => {
   )
   const filteredResolved = applyExtraFilters(resolvedTickets)
 
+  // Actions groupées : les routes unitaires de statut, d'archivage et de suppression sont réservées au SUPER_ADMIN.
+  const canBulk = user?.role === 'SUPER_ADMIN'
+  const visibleTickets =
+    activeTab === 'tickets' ? filteredActive : activeTab === 'resolus' ? filteredResolved : activeTab === 'archives' ? archivedTickets : []
+  const select = useMultiSelect(visibleTickets, (tk) => tk._id)
+  const rowSelect = canBulk ? select : undefined
+
   const renderFilePreview = (files: File[]) => {
     if (files.length === 0) return null
     return (
@@ -244,7 +253,18 @@ const TicketList = () => {
           )}
         </div>
 
-        {preview && <DocPreviewModal url={preview.url} name={preview.name} onClose={() => setPreview(null)} />}
+        {canBulk && activeTab !== 'kpi' && (
+        <TicketBulkBar
+          select={select}
+          archived={activeTab === 'archives'}
+          onDone={async () => {
+            await load()
+            await loadArchived()
+          }}
+        />
+      )}
+
+      {preview && <DocPreviewModal url={preview.url} name={preview.name} onClose={() => setPreview(null)} />}
       </div>
     )
   }
@@ -461,6 +481,7 @@ const TicketList = () => {
                   onUnarchive={handleUnarchive}
                   onDelete={handleDelete}
                   onPreview={setPreview}
+                  select={rowSelect}
                 />
               ))
             )}
@@ -505,6 +526,7 @@ const TicketList = () => {
                 onUnarchive={handleUnarchive}
                 onDelete={handleDelete}
                 onPreview={setPreview}
+                select={rowSelect}
               />
             ))
           )}
@@ -549,6 +571,7 @@ const TicketList = () => {
                 onUnarchive={handleUnarchive}
                 onDelete={handleDelete}
                 onPreview={setPreview}
+                select={rowSelect}
               />
             ))
           )}

@@ -1,0 +1,145 @@
+/* Barre d'actions groupées. Annonce vocale visible des seuls lecteurs d'écran. */
+.bulk-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.bulk-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 240;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 14px;
+  background: var(--surface-bar);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--surface-shadow);
+  backdrop-filter: blur(16px);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+.bulk-bar__count {
+  flex: none;
+  padding-right: 4px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bulk-bar__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.bulk-bar__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-bar__btn,
+.bulk-bar__select,
+.bulk-bar__input {
+  min-height: 44px;
+  padding: 0 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.bulk-bar__btn:hover:not(:disabled),
+.bulk-bar__select:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+}
+.bulk-bar__btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+.bulk-bar__btn--danger {
+  border-color: #f472b6;
+  color: #f472b6;
+}
+.bulk-bar__btn:disabled,
+.bulk-bar__select:disabled,
+.bulk-bar__input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.bulk-bar__btn:focus-visible,
+.bulk-bar__select:focus-visible,
+.bulk-bar__input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Case à cocher de ligne : cible tactile de 44 px autour d'une case de 18 px. */
+.bulk-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -12px 0;
+  cursor: pointer;
+}
+.bulk-check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+.bulk-check input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Mobile : pleine largeur, au-dessus de la barre de navigation basse (64 px + zone sûre). */
+@media (max-width: 767px) {
+  .bulk-bar {
+    left: 0;
+    right: 0;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    transform: none;
+    flex-wrap: wrap;
+    max-width: 100vw;
+    padding: 10px 16px;
+    border-left: 0;
+    border-right: 0;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+  .bulk-bar__actions {
+    flex: 1 1 100%;
+    order: 3;
+  }
+  .bulk-bar__btn--ghost {
+    margin-left: auto;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bulk-bar {
+    animation: bulk-bar-in 160ms ease-out;
+  }
+  @keyframes bulk-bar-in {
+    from {
+      opacity: 0;
+    }
+  }
+}

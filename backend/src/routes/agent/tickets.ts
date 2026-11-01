@@ -6,6 +6,7 @@ import User from '../../models/User.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
+import { applyTicketBulk, parseTicketBulkBody } from '../../lib/ticketBulk.js'
 
 /**
  * Routes agent pour les InternalTicket (tickets internes : question/demande/
@@ -66,6 +67,26 @@ router.get('/tickets', requireScope('read:tickets'), async (req: Request, res: R
       InternalTicket.countDocuments(filter),
     ])
     res.json(paginatedResponse(items, pag, total))
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * POST /tickets/bulk — action groupée (≤ 200 ids) : delete | archive | unarchive | update { status }.
+ * Même scope que les routes unitaires (write:tickets). Réponse : { succeeded, failed }.
+ */
+router.post('/tickets/bulk', requireScope('write:tickets'), async (req, res, next) => {
+  try {
+    const parsed = parseTicketBulkBody(req.body)
+    if (!parsed.ok) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
+    const result = await applyTicketBulk(parsed)
+    res.locals.audit = {
+      entityType: 'InternalTicket',
+      summary: `Action groupée "${parsed.action}" sur ${parsed.ids.length} ticket(s) : ${result.succeeded.length} réussi(s), ${result.failed.length} échec(s)`,
+      extra: { bulk: true, action: parsed.action, patch: parsed.patch, ...result },
+    }
+    res.json(result)
   } catch (err) {
     next(err)
   }

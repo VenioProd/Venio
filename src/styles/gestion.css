@@ -1444,3 +1444,10 @@ html.theme-portail .gestion-inline-select option {
     min-width: 0;
   }
 }
+
+/* Actions groupées : colonne de cases à cocher. */
+.gestion-table .gestion-cell-select {
+  width: 44px;
+  padding-inline: 4px;
+  text-align: center;
+}

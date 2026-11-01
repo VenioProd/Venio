@@ -15,6 +15,7 @@ import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
 import { sendTicketReplyEmail } from '../../lib/email.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
+import { applyTicketBulk, parseTicketBulkBody } from '../../lib/ticketBulk.js'
 
 const router = express.Router()
 router.use(auth)
@@ -479,6 +480,31 @@ router.patch('/:id/unarchive', requirePermission(PERMISSIONS.MANAGE_TICKETS), as
     res.status(500).json({ error: 'Erreur serveur' })
   }
 })
+
+// POST /api/admin/tickets/bulk — { ids, action: delete|archive|unarchive|update, patch?: { status } }
+// Mêmes droits que les routes unitaires : MANAGE_TICKETS et SUPER_ADMIN.
+router.post(
+  '/bulk',
+  requirePermission(PERMISSIONS.MANAGE_TICKETS),
+  idempotentRequest,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!
+      if (user.role !== 'SUPER_ADMIN') {
+        return res.status(403).json({ error: 'Seuls les super admins peuvent agir en masse sur les tickets' })
+      }
+      const parsed = parseTicketBulkBody(req.body)
+      if (!parsed.ok) return res.status(400).json({ error: parsed.error })
+      const result = await applyTicketBulk(parsed, {
+        uploadsDir,
+        actor: { id: user.id, name: user.name, email: user.email },
+      })
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // DELETE /api/admin/tickets/:id
 router.delete('/:id', requirePermission(PERMISSIONS.MANAGE_TICKETS), async (req: Request, res: Response) => {

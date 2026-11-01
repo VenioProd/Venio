@@ -63,6 +63,7 @@ import { withArtoseraSiteCorsBypass } from './lib/artosera/origin.js'
 import adminTicketRoutes from './routes/admin/tickets.js'
 import adminChangeRequestRoutes from './routes/admin/changeRequests.js'
 import adminGestionRoutes from './routes/admin/gestion.js'
+import adminTaskBulkRoutes from './routes/admin/tasksBulk.js'
 import adminBriefRoutes from './routes/admin/briefs.js'
 import adminToolAccessRoutes from './routes/admin/toolAccess.js'
 import adminAutomationRoutes from './routes/admin/automations.js'
@@ -368,6 +369,7 @@ app.use('/api/public/analytics', publicAnalyticsRoutes)
 app.use('/api/admin/tickets', adminTicketRoutes)
 app.use('/api/admin/change-requests', adminChangeRequestRoutes)
 app.use('/api/admin/gestion', adminGestionRoutes)
+app.use('/api/admin/tasks', adminTaskBulkRoutes)
 app.use('/api/admin/briefs', adminBriefRoutes)
 app.use('/api/admin/tool-access', auth, requireMfa, adminToolAccessRoutes)
 app.use('/api/admin/automations', adminAutomationRoutes)

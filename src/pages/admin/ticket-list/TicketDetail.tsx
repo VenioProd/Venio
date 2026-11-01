@@ -3,6 +3,8 @@ import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG, formatDate, formatFile
 import type { Ticket, TicketFile } from './types'
 import UserAvatar from '../../../components/UserAvatar'
 import { useI18n } from '../../../context/I18nContext'
+import type { MultiSelect } from '../../../components/admin/ui/useMultiSelect'
+import { RowCheckbox } from '../../../components/admin/ui/RowCheckbox'
 
 interface TicketDetailProps {
   ticket: Ticket
@@ -21,6 +23,8 @@ interface TicketDetailProps {
   onUnarchive: (ticketId: string) => void
   onDelete: (ticketId: string) => void
   onPreview: (preview: { url: string; name: string }) => void
+  /** Sélection multiple de la liste ; absente quand les actions groupées sont indisponibles. */
+  select?: MultiSelect
 }
 
 const TicketDetail: React.FC<TicketDetailProps> = ({
@@ -40,6 +44,7 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
   onUnarchive,
   onDelete,
   onPreview,
+  select,
 }) => {
   const { t } = useI18n()
   const replyFileRef = useRef<HTMLInputElement>(null)
@@ -115,6 +120,7 @@ const TicketDetail: React.FC<TicketDetailProps> = ({
     <div className={`ticket-card ${isExpanded ? 'expanded' : ''}`}>
       <div className="ticket-card-header" onClick={onToggleExpand}>
         <div className="ticket-card-left">
+          {select && <RowCheckbox id={ticket._id} name={ticket.title} select={select} />}
           <span className="ticket-category-badge" style={{ background: cat.color }}>
             {t(cat.labelKey)}
           </span>

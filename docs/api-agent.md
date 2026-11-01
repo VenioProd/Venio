@@ -199,6 +199,38 @@ Réponse :
 | 2FA              | `/users/:id/2fa`                 | `read:2fa`           | `manage:2fa`           |
 | Users            | `/users`                         | `read:users`         | `write:users`          |
 
+### Actions groupées (`/bulk`)
+
+Trois endpoints appliquent une action à plusieurs ressources en une requête. Ils
+exigent le **même scope d'écriture** que les routes unitaires (aucun scope nouveau)
+et l'en-tête `Idempotency-Key`, comme toute mutation.
+
+| Endpoint                       | Scope             | Actions                                                  |
+|--------------------------------|-------------------|----------------------------------------------------------|
+| `POST /tasks/bulk`             | `write:tasks`     | `delete`, `archive`, `unarchive`, `update`               |
+| `POST /tickets/bulk`           | `write:tickets`   | `delete`, `archive`, `unarchive`, `update` (`status`)    |
+| `POST /documents/bulk`         | `write:documents` | `delete`                                                 |
+
+```http
+POST /api/v1/agent/tasks/bulk
+Authorization: Bearer vno_pat_...
+Idempotency-Key: <uuid>
+
+{ "ids": ["<ObjectId>", "..."], "action": "update",
+  "patch": { "status": "EN_COURS", "priority": "HAUTE", "assignee": "<userId>|null", "dueDate": "2026-12-01|null" } }
+```
+
+- `ids` : 1 à 200 ObjectId. Un identifiant mal formé refuse toute la requête (`400 VALIDATION_ERROR`) : rien n'est appliqué.
+- `patch` : obligatoire pour `update`, interdit sinon ; une clé inconnue est refusée. Tâches : `status`, `priority`, `assignee`, `dueDate` (`null` efface). Tickets : `status` seulement.
+- Réponse `200` : `{ "succeeded": ["<id>"], "failed": [{ "id": "<id>", "error": "..." }] }`. Un élément introuvable est reporté dans `failed` sans interrompre le lot : le succès est partiel, jamais tout-ou-rien.
+- Mêmes effets de bord que le DELETE / PATCH unitaire de l'API agent (suppression des commentaires de tâche, du fichier d'un document) ; une seule entrée d'audit `AGENT_API_MUTATION` résume le lot (`extra.succeeded`, `extra.failed`).
+- Ces routes sont déclarées avant `/:id` ; un rejeu avec la même clé et le même corps renvoie la réponse d'origine, un corps différent donne `409 IDEMPOTENCY_CONFLICT`.
+
+Côté interface admin (JWT, hors API agent), les mêmes actions existent sous
+`POST /api/admin/tasks/bulk` et `POST /api/admin/tickets/bulk`, avec les droits
+des routes unitaires (`manage_tasks` + accès au projet de chaque tâche ;
+`manage_tickets` + SUPER_ADMIN pour les tickets) évalués élément par élément.
+
 La prospection des établissements Arrow utilise désormais les leads du CRM
 principal (`/leads`, `project: "ARROW"`), avec `read:crm` / `write:crm`.
 Les scopes Arrow restent réservés au pilotage.

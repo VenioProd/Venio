@@ -1,5 +1,8 @@
-import { useState, useRef } from 'react'
-import { apiDownload, apiUpload } from '../../lib/api'
+import { useState, useRef, useEffect } from 'react'
+import { apiDownload, apiFetch, apiUpload } from '../../lib/api'
+import { useMultiSelect } from './ui/useMultiSelect'
+import { RowCheckbox, SelectAllCheckbox } from './ui/RowCheckbox'
+import TaskBulkBar from './TaskBulkBar'
 import type { Task, TaskStatus, TaskPriority, TaskAttachment } from '../../types/task.types'
 import { useI18n } from '../../context/I18nContext'
 import { formatDate } from '../../i18n/format'
@@ -42,6 +45,16 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
   const [uploading, setUploading] = useState(false)
   const [showCompleted, setShowCompleted] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [admins, setAdmins] = useState<{ _id: string; name: string }[]>([])
+
+  // Actions groupées : réservées à qui peut modifier (le serveur revérifie chaque tâche).
+  const bulkEnabled = !readOnly
+  useEffect(() => {
+    if (!bulkEnabled) return
+    apiFetch<{ users?: { _id: string; name: string }[] }>('/api/admin/admins')
+      .then((res) => setAdmins(res.users ?? []))
+      .catch(() => setAdmins([]))
+  }, [bulkEnabled])
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -90,6 +103,8 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
   const isCompleted = (t: Task) => t.status === 'TERMINE' || t.status === 'VALIDE' || (readOnly && t.progress === 100)
   const activeTasks = sortTasks(tasks.filter((t) => !isCompleted(t)))
   const completedTasks = sortTasks(tasks.filter((t) => isCompleted(t)))
+  // « Tout cocher » ne vaut que pour les lignes affichées : la section des terminées est repliée par défaut.
+  const select = useMultiSelect(showCompleted ? [...activeTasks, ...completedTasks] : activeTasks, (task) => task._id)
 
   const getProjectName = (task: Task) => {
     if (typeof task.project === 'object' && task.project?.name) return task.project.name
@@ -167,6 +182,11 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
           onClick={() => toggleExpand(task._id)}
           style={{ cursor: 'pointer' }}
         >
+          {bulkEnabled && (
+            <td className="gestion-cell-select">
+              <RowCheckbox id={task._id} name={task.title} select={select} />
+            </td>
+          )}
           <td className="gestion-cell-title">
             <span className="gestion-expand-icon">{expanded ? '▾' : '▸'}</span>
             {task.title}
@@ -265,7 +285,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
         </tr>
         {expanded && (
           <tr key={`${task._id}-details`} className="gestion-details-row">
-            <td colSpan={8}>
+            <td colSpan={bulkEnabled ? 9 : 8}>
               <div className="gestion-task-details">
                 {task.description && (
                   <div className="gestion-detail-section">
@@ -339,9 +359,15 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
 
   return (
     <div className="gestion-table-wrap">
+      {bulkEnabled && <TaskBulkBar select={select} assignees={admins} onDone={() => onRefresh?.()} />}
       <table className="gestion-table">
         <thead>
           <tr>
+            {bulkEnabled && (
+              <th className="gestion-cell-select">
+                <SelectAllCheckbox select={select} />
+              </th>
+            )}
             <th onClick={() => handleSort('title')}>
               {t('compA.gTable.thTask')}
               {sortArrow('title')}
@@ -373,7 +399,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
         <tbody>
           {activeTasks.length === 0 && completedTasks.length === 0 ? (
             <tr>
-              <td colSpan={8} className="gestion-empty">
+              <td colSpan={bulkEnabled ? 9 : 8} className="gestion-empty">
                 {t('compA.gTable.noTask')}
               </td>
             </tr>
@@ -381,7 +407,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
             <>
               {activeTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="gestion-empty">
+                  <td colSpan={bulkEnabled ? 9 : 8} className="gestion-empty">
                     {t('compA.gTable.noActiveTask')}
                   </td>
                 </tr>
@@ -403,6 +429,7 @@ export default function GestionTable({ tasks, loading, onUpdate, getProjectId, r
             <table className="gestion-table gestion-table-completed">
               <thead>
                 <tr>
+                  {bulkEnabled && <th className="gestion-cell-select" />}
                   <th>{t('compA.gTable.thTask')}</th>
                   <th>{t('compA.gTable.thProject')}</th>
                   <th>{t('compA.gTable.thAssignee')}</th>
