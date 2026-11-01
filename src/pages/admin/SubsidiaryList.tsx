@@ -1,132 +1,99 @@
-import { subsidiaryLogo } from '../../lib/subsidiaryLogo'
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Building2, Plus, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
-import { SkeletonRow } from '../../components/Skeleton'
-import SubsidiaryFormDrawer from './subsidiaries/SubsidiaryFormDrawer'
-import type { Subsidiary, SubsidiaryPerson } from '../../types/subsidiary.types'
-import { HEALTH_COLORS, STATUS_COLORS } from '../../types/subsidiary.types'
-import { HEALTH_LABEL_KEYS, STATUS_LABEL_KEYS } from './subsidiaries/labels'
 import { useI18n } from '../../context/I18nContext'
-import '../espace-client/ClientPortal.css'
-import './AdminPortal.css'
+import { subsidiaryLogo } from '../../lib/subsidiaryLogo'
+import type { Subsidiary, SubsidiaryPerson } from '../../types/subsidiary.types'
+import { STATUS_LABEL_KEYS, HEALTH_LABEL_KEYS } from './subsidiaries/labels'
+import { dossierKey } from './subsidiary-detail/SectionEditor'
+import SubsidiaryFormDrawer from './subsidiaries/SubsidiaryFormDrawer'
 import './Subsidiaries.css'
-
-function initials(name: string): string {
-  return name.trim().slice(0, 2).toUpperCase() || '?'
-}
-
-function hexToRgb(hex: string): string {
-  const m = hex.replace('#', '')
-  const full =
-    m.length === 3
-      ? m
-          .split('')
-          .map((c) => c + c)
-          .join('')
-      : m
-  const n = parseInt(full, 16)
-  if (Number.isNaN(n)) return '14, 165, 233'
-  return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`
-}
-
-function formatCompactEUR(n: number): string {
-  if (!n) return '0 €'
-  if (Math.abs(n) >= 1000) return `${Math.round(n / 1000)} k€`
-  return `${Math.round(n)} €`
-}
-
-function Delta({ delta }: { delta: number }) {
-  if (delta > 0)
-    return (
-      <span className="sub-kpi__delta sub-kpi__delta--up">
-        <TrendingUp size={11} style={{ verticalAlign: -1 }} /> +{delta}%
-      </span>
-    )
-  if (delta < 0)
-    return (
-      <span className="sub-kpi__delta sub-kpi__delta--down">
-        <TrendingDown size={11} style={{ verticalAlign: -1 }} /> {delta}%
-      </span>
-    )
-  return (
-    <span className="sub-kpi__delta sub-kpi__delta--flat">
-      <Minus size={11} style={{ verticalAlign: -1 }} />
-    </span>
-  )
-}
+import './subsidiary-detail/Dossier.css'
 
 export default function SubsidiaryList() {
   const { t } = useI18n()
-  const navigate = useNavigate()
   const [subsidiaries, setSubsidiaries] = useState<Subsidiary[]>([])
   const [admins, setAdmins] = useState<SubsidiaryPerson[]>([])
   const [entities, setEntities] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [showForm, setShowForm] = useState(false)
-
   const load = useCallback(() => {
     setLoading(true)
+    setError(false)
     apiFetch<{ subsidiaries: Subsidiary[] }>('/api/admin/subsidiaries')
-      .then((d) => setSubsidiaries(d.subsidiaries || []))
-      .catch(() => {})
+      .then((data) => setSubsidiaries(data.subsidiaries || []))
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [])
-
   useEffect(() => {
     load()
     apiFetch<{ users: SubsidiaryPerson[] }>('/api/admin/admins')
-      .then((d) => setAdmins(d.users || []))
+      .then((data) => setAdmins(data.users || []))
       .catch(() => {})
     apiFetch<{ entities: string[] }>('/api/admin/subsidiaries/meta')
-      .then((d) => setEntities(d.entities || []))
+      .then((data) => setEntities(data.entities || []))
       .catch(() => {})
   }, [load])
-
-  const totalCa = subsidiaries.reduce((acc, s) => acc + (s.kpis?.caMtd ?? 0), 0)
-  const totalHeadcount = subsidiaries.reduce(
-    (acc, s) => acc + (s.headcount ?? s.team?.length ?? s.kpis?.headcount ?? 0),
-    0,
-  )
-  const activeCount = subsidiaries.filter((s) => s.status === 'ACTIVE').length
-
   return (
-    <div className="portal-container">
-      <div className="admin-page-header">
+    <div className="platform-dossier">
+      <div className="dossier-hero-heading">
         <div>
-          <h1>{t('orgs.subsidiary.list.title')}</h1>
-          <p className="admin-page-subtitle">{t('orgs.subsidiary.list.subtitle')}</p>
+          <span className="dossier-eyebrow">Venio / {t(dossierKey('platformDossier'))}</span>
+          <h1>{t(dossierKey('listTitle'))}</h1>
+          <p>{t(dossierKey('listSubtitle'))}</p>
         </div>
-        <div className="admin-quick-actions">
-          <button type="button" className="portal-button" onClick={() => setShowForm((v) => !v)}>
-            <Plus size={15} style={{ verticalAlign: -2, marginRight: 5 }} />
-            {t('orgs.subsidiary.list.newButton')}
-          </button>
-        </div>
+        <button type="button" onClick={() => setShowForm(true)}>
+          + {t('orgs.subsidiary.list.newButton')}
+        </button>
       </div>
-
-      {!loading && subsidiaries.length > 0 && (
-        <div className="sub-summary">
-          <div className="sub-summary__item">
-            <div className="sub-summary__label">{t('orgs.subsidiary.list.summaryCount')}</div>
-            <div className="sub-summary__value">{subsidiaries.length}</div>
-          </div>
-          <div className="sub-summary__item">
-            <div className="sub-summary__label">{t('orgs.subsidiary.list.summaryActive')}</div>
-            <div className="sub-summary__value">{activeCount}</div>
-          </div>
-          <div className="sub-summary__item">
-            <div className="sub-summary__label">{t('orgs.subsidiary.list.summaryRevenue')}</div>
-            <div className="sub-summary__value">{formatCompactEUR(totalCa)}</div>
-          </div>
-          <div className="sub-summary__item">
-            <div className="sub-summary__label">{t('orgs.subsidiary.list.summaryHeadcount')}</div>
-            <div className="sub-summary__value">{totalHeadcount}</div>
-          </div>
+      {loading ? (
+        <p role="status">{t(dossierKey('loading'))}</p>
+      ) : error ? (
+        <p role="alert">{t(dossierKey('listError'))}</p>
+      ) : !subsidiaries.length ? (
+        <p>{t('orgs.subsidiary.list.empty')}</p>
+      ) : (
+        <div className="platform-grid">
+          {subsidiaries.map((sub) => (
+            <article key={sub._id} className="platform-card">
+              <div className="platform-card-top">
+                {subsidiaryLogo(sub) && <img className="dossier-logo" src={subsidiaryLogo(sub)} alt="" />}
+                <h2>
+                  <Link to={`/admin/filiales/${sub._id}`}>{sub.name} ↗</Link>
+                </h2>
+              </div>
+              <p>{sub.tagline || sub.sector || '—'}</p>
+              <div className="dossier-actions">
+                <span className={`dossier-chip ${sub.status}`}>{t(STATUS_LABEL_KEYS[sub.status])}</span>
+                <span className={`dossier-chip ${sub.health}`}>{t(HEALTH_LABEL_KEYS[sub.health])}</span>
+              </div>
+              <div className="dossier-metrics">
+                <div>
+                  <span>{t(dossierKey('clients'))}</span>
+                  <strong>{sub.indicators?.signedClients ?? 0}</strong>
+                </div>
+                <div>
+                  <span>{t(dossierKey('prospects'))}</span>
+                  <strong>{sub.indicators?.hotProspects ?? 0}</strong>
+                </div>
+              </div>
+              <div className="dossier-actions">
+                {sub.nextcloud?.url && (
+                  <a className="dossier-button" href={sub.nextcloud.url} target="_blank" rel="noopener noreferrer">
+                    {t(dossierKey('nextcloud'))} ↗
+                  </a>
+                )}
+                {sub.devProject && (
+                  <Link className="dossier-button" to={`/admin/dev?project=${sub.devProject}`}>
+                    {t(dossierKey('dev'))} ↗
+                  </Link>
+                )}
+              </div>
+            </article>
+          ))}
         </div>
       )}
-
       {showForm && (
         <SubsidiaryFormDrawer
           initial={null}
@@ -138,109 +105,6 @@ export default function SubsidiaryList() {
           }}
           onClose={() => setShowForm(false)}
         />
-      )}
-
-      {loading ? (
-        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonRow key={i} />
-          ))}
-        </div>
-      ) : subsidiaries.length === 0 && !showForm ? (
-        <div className="admin-empty-state" style={{ marginTop: 32 }}>
-          <Building2 size={32} className="admin-empty-state-icon" />
-          <p className="admin-empty-state-text">{t('orgs.subsidiary.list.empty')}</p>
-        </div>
-      ) : (
-        <div className="sub-grid">
-          {subsidiaries.map((s) => {
-            const headcount = s.headcount ?? s.team?.length ?? s.kpis?.headcount ?? 0
-            const obj = s.objective
-            const objPct = obj && obj.target ? Math.min(100, Math.round((obj.current / obj.target) * 100)) : 0
-            return (
-              <button
-                key={s._id}
-                className="sub-card"
-                style={{
-                  ['--sub-accent' as string]: s.accentColor,
-                  ['--sub-accent-rgb' as string]: hexToRgb(s.accentColor),
-                }}
-                onClick={() => navigate(`/admin/filiales/${s._id}`)}
-              >
-                <div className="sub-card__band" />
-                <div className="sub-card__body">
-                  <div className="sub-card__head">
-                    <div className="sub-logo" style={{ background: subsidiaryLogo(s) ? 'transparent' : s.accentColor }}>
-                      {subsidiaryLogo(s) ? (
-                        <img src={subsidiaryLogo(s)} alt={s.name} className="sub-logo__img" />
-                      ) : (
-                        initials(s.name)
-                      )}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="sub-card__title">{s.name}</div>
-                      <div className="sub-card__sector">{s.sector || '—'}</div>
-                    </div>
-                    <span
-                      className="sub-dot"
-                      style={{ background: HEALTH_COLORS[s.health] }}
-                      title={t(HEALTH_LABEL_KEYS[s.health])}
-                    />
-                  </div>
-
-                  <div className="sub-card__footer">
-                    <span
-                      className="sub-status-pill"
-                      style={{ borderColor: STATUS_COLORS[s.status], color: STATUS_COLORS[s.status] }}
-                    >
-                      {t(STATUS_LABEL_KEYS[s.status])}
-                    </span>
-                    {s.tags?.slice(0, 2).map((t) => (
-                      <span key={t} className="admin-tag">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="sub-card__kpis">
-                    <div>
-                      <div className="sub-kpi__label">{t('orgs.subsidiary.list.kpiRevenue')}</div>
-                      <div className="sub-kpi__value">
-                        {formatCompactEUR(s.kpis?.caMtd ?? 0)} <Delta delta={s.kpis?.caMtdDelta ?? 0} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="sub-kpi__label">{t('orgs.subsidiary.list.kpiMargin')}</div>
-                      <div className="sub-kpi__value">{s.kpis?.margin ?? 0}%</div>
-                    </div>
-                    <div>
-                      <div className="sub-kpi__label">{t('orgs.subsidiary.list.kpiTeam')}</div>
-                      <div className="sub-kpi__value">{headcount}</div>
-                    </div>
-                  </div>
-
-                  {obj && obj.label ? (
-                    <div className="sub-card__objective">
-                      <div className="sub-card__objective-row">
-                        <span>{obj.label}</span>
-                        <span>
-                          {obj.current} / {obj.target} {obj.unit}
-                        </span>
-                      </div>
-                      <div className="sub-progress">
-                        <span style={{ width: `${objPct}%` }} />
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </button>
-            )
-          })}
-
-          <button className="sub-card sub-card--add" onClick={() => setShowForm(true)}>
-            <Plus size={18} /> {t('orgs.subsidiary.list.addButton')}
-          </button>
-        </div>
       )}
     </div>
   )

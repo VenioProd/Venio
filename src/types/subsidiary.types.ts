@@ -94,7 +94,65 @@ export interface LinkedProject {
   updatedAt: string
 }
 
-export interface Subsidiary {
+export interface SubsidiaryDossier {
+  nextcloud?: { path: string; url: string }
+  devProject?: string | null
+  leadProject?: '' | 'ARTOSERA' | 'VIGNO' | 'ARROW' | 'VENIO' | 'AUTRE'
+  target?: string
+  valueProposition?: string
+  salesPitch?: string
+  features?: { name: string; description: string; status: 'LIVE' | 'BETA' | 'EN_COURS' | 'PREVUE'; category: string }[]
+  pricing?: {
+    label: string
+    kind: 'ABONNEMENT' | 'ONBOARDING' | 'SETUP' | 'OPTION' | 'LICENCE' | 'AUTRE'
+    amount: number
+    period: 'MOIS' | 'AN' | 'UNIQUE' | 'PAR_UTILISATEUR_MOIS'
+    notes: string
+  }[]
+  competitors?: {
+    name: string
+    url: string
+    positioning: string
+    pricingNote: string
+    strengths: string
+    weaknesses: string
+  }[]
+  objections?: { question: string; answer: string }[]
+  pilotage?: { goals: string[]; scorecard: string[]; decisions: string[]; cadence: string[] }
+  indicators?: {
+    signedClients: number
+    hotProspects: number
+    weightedPipeline: number | null
+    estimatedMrr: number | null
+  }
+  hotProspects?: SubsidiaryCrmLead[]
+  signedClients?: SubsidiaryCrmLead[]
+  devSummary?: {
+    _id: string
+    key: string
+    name: string
+    href: string
+    counts: { open: number; inProgress: number; done: number }
+    issues: { _id: string; identifier: string; title: string; status: string; href: string }[]
+  } | null
+}
+export interface SubsidiaryCrmLead {
+  _id: string
+  company: string
+  contactName: string
+  status?: string
+  budget: number | null
+  nextActionAt?: string
+  assignedTo?: SubsidiaryPerson | null
+  leadTemperature?: string
+  score?: number
+  serviceType?: string
+  signedAt?: string | null
+  clientAccountId?: SubsidiaryPerson | null
+  href: string
+  clientHref?: string | null
+}
+export interface Subsidiary extends SubsidiaryDossier {
   _id: string
   name: string
   slug: string

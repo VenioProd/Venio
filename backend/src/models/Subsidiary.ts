@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { LEAD_PROJECTS } from './Lead.js'
 
 /**
  * Filiale — business interne du groupe Venio (Yumi, Arrow, Jiraya…).
@@ -108,7 +109,115 @@ export interface ISubsidiaryDocument {
   uploadedAt: Date
 }
 
-export interface ISubsidiary {
+export const FEATURE_STATUSES = ['LIVE', 'BETA', 'EN_COURS', 'PREVUE'] as const
+export const PRICING_KINDS = ['ABONNEMENT', 'ONBOARDING', 'SETUP', 'OPTION', 'LICENCE', 'AUTRE'] as const
+export const PRICING_PERIODS = ['MOIS', 'AN', 'UNIQUE', 'PAR_UTILISATEUR_MOIS'] as const
+export interface ISubsidiaryFeature {
+  name: string
+  description: string
+  status: (typeof FEATURE_STATUSES)[number]
+  category: string
+}
+export interface ISubsidiaryPricing {
+  label: string
+  kind: (typeof PRICING_KINDS)[number]
+  amount: number
+  period: (typeof PRICING_PERIODS)[number]
+  notes: string
+}
+export interface ISubsidiaryCompetitor {
+  name: string
+  url: string
+  positioning: string
+  pricingNote: string
+  strengths: string
+  weaknesses: string
+}
+export interface ISubsidiaryPilotage {
+  goals: string[]
+  scorecard: string[]
+  decisions: string[]
+  cadence: string[]
+}
+export interface ISubsidiaryDossier {
+  nextcloud: { path: string; url: string }
+  devProject: mongoose.Types.ObjectId | null
+  features: ISubsidiaryFeature[]
+  pricing: ISubsidiaryPricing[]
+  competitors: ISubsidiaryCompetitor[]
+  leadProject: (typeof LEAD_PROJECTS)[number] | ''
+  target: string
+  valueProposition: string
+  salesPitch: string
+  objections: { question: string; answer: string }[]
+  pilotage: ISubsidiaryPilotage
+}
+
+// Empty URLs are allowed for drafts; populated URLs must use a web protocol.
+export function isWebUrl(value: string): boolean {
+  if (!value) return true
+  try {
+    return ['http:', 'https:'].includes(new URL(value).protocol)
+  } catch {
+    return false
+  }
+}
+const text = (maxlength: number) => ({ type: String, default: '', trim: true, maxlength })
+const webUrl = { ...text(2000), validate: { validator: isWebUrl, message: 'URL HTTP/HTTPS invalide' } }
+const listSchema = (fields: Record<string, unknown>) => new mongoose.Schema(fields, { _id: false })
+const lines = () => ({
+  type: [{ type: String, maxlength: 4000 }],
+  default: [],
+  validate: { validator: (v: string[]) => v.length <= 200, message: 'Maximum 200 entrées' },
+})
+const dossierFields = {
+  nextcloud: { path: text(1000), url: webUrl },
+  devProject: { type: mongoose.Schema.Types.ObjectId, ref: 'DevProject', default: null },
+  features: {
+    type: [
+      listSchema({
+        name: { ...text(160), required: true },
+        description: text(4000),
+        status: { type: String, enum: FEATURE_STATUSES, default: 'PREVUE' },
+        category: text(120),
+      }),
+    ],
+    default: [],
+  },
+  pricing: {
+    type: [
+      listSchema({
+        label: { ...text(160), required: true },
+        kind: { type: String, enum: PRICING_KINDS, default: 'ABONNEMENT' },
+        amount: { type: Number, min: 0, max: 1e12, default: 0 },
+        period: { type: String, enum: PRICING_PERIODS, default: 'MOIS' },
+        notes: text(4000),
+      }),
+    ],
+    default: [],
+  },
+  competitors: {
+    type: [
+      listSchema({
+        name: { ...text(160), required: true },
+        url: webUrl,
+        positioning: text(4000),
+        pricingNote: text(2000),
+        strengths: text(4000),
+        weaknesses: text(4000),
+      }),
+    ],
+    default: [],
+  },
+  leadProject: { type: String, enum: ['', ...LEAD_PROJECTS], default: '' as const },
+  target: text(6000),
+  valueProposition: text(6000),
+  salesPitch: text(6000),
+  objections: { type: [listSchema({ question: { ...text(1000), required: true }, answer: text(6000) })], default: [] },
+  pilotage: { goals: lines(), scorecard: lines(), decisions: lines(), cadence: lines() },
+}
+
+export interface ISubsidiary extends ISubsidiaryDossier {
   name: string
   slug: string
   tagline: string
@@ -218,6 +327,7 @@ const alertSchema = new mongoose.Schema<ISubsidiaryAlert>(
 
 const schema = new mongoose.Schema<ISubsidiary>(
   {
+    ...dossierFields,
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, lowercase: true, trim: true },
     tagline: { type: String, default: '' },

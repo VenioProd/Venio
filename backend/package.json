@@ -23,6 +23,8 @@
     "provision:consultant:dry": "tsx src/scripts/provisionExternalConsultant.ts --dry-run",
     "test": "vitest run",
     "test:watch": "vitest",
+    "migrate:arrow-pilotage": "tsx src/scripts/migrateArrowPilotageToSubsidiary.ts",
+    "migrate:arrow-pilotage:dry": "tsx src/scripts/migrateArrowPilotageToSubsidiary.ts --dry-run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
