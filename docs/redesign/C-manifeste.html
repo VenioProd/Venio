@@ -1,0 +1,1417 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Venio — L’atelier</title>
+<meta name="description" content="Venio, atelier de conseil à Paris : stratégie, communication et plateformes métier sur mesure. Penser, dire, construire. Chaque étape produit un document que vous gardez.">
+<meta name="theme-color" content="#F2EEE4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script>
+  /* Avant le premier rendu : on sait si le JS tourne et si le visiteur accepte le mouvement. */
+  document.documentElement.classList.add('js');
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('motion');
+</script>
+<style>
+/* ==========================================================================
+   PROPOSITION C — « MANIFESTE · L’atelier »
+   Affiche néo-suisse cinétique. Quatre couleurs, une grotesque variable,
+   un fond qui change de couleur à chaque section.
+   ========================================================================== */
+:root {
+  --paper: #F2EEE4;
+  --ink: #0D0D0C;
+  --blue: #1F3BFF;
+  --verm: #FF3B1A;
+
+  /* Thème courant : piloté par html[data-t] (JS) ou par chaque section (sans JS). */
+  --bg: var(--paper);
+  --fg: var(--ink);
+  --acc: var(--verm);
+  --blk: var(--blue);
+  --on-blk: var(--paper);
+
+  --display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  --gut: clamp(16px, 3.2vw, 48px);
+  --nav: 58px;
+  --ease: cubic-bezier(.2, .8, .1, 1);
+  --rule: 2px solid var(--fg);
+}
+html[data-t="blue"], html:not(.js) [data-theme="blue"] { --bg: var(--blue); --fg: var(--paper); --acc: var(--ink);   --blk: var(--verm); --on-blk: var(--ink); }
+html[data-t="verm"], html:not(.js) [data-theme="verm"] { --bg: var(--verm); --fg: var(--ink);   --acc: var(--paper); --blk: var(--blue); --on-blk: var(--paper); }
+html[data-t="ink"],  html:not(.js) [data-theme="ink"]  { --bg: var(--ink);  --fg: var(--paper); --acc: var(--verm);  --blk: var(--blue); --on-blk: var(--paper); }
+html:not(.js) [data-theme] { background: var(--bg); color: var(--fg); }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html.motion { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--display);
+  font-size: 17px;
+  line-height: 1.5;
+  font-variation-settings: "wdth" 100;
+  overflow-x: hidden;
+  transition: background-color .7s var(--ease), color .7s var(--ease);
+  -webkit-font-smoothing: antialiased;
+}
+@supports (overflow: clip) { body { overflow-x: clip; } }
+::selection { background: var(--verm); color: var(--ink); }
+a { color: inherit; }
+img, svg { display: block; max-width: 100%; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
+
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip { position: fixed; left: 12px; top: -80px; z-index: 100; background: var(--ink); color: var(--paper); padding: 10px 16px; font-family: var(--mono); font-size: 13px; text-decoration: none; }
+.skip:focus { top: 12px; }
+
+.mono { font-family: var(--mono); font-size: 12px; font-weight: 400; letter-spacing: .05em; text-transform: uppercase; line-height: 1.4; }
+.wrap { padding-inline: var(--gut); max-width: 1680px; margin-inline: auto; }
+.sec { position: relative; padding-block: clamp(80px, 12vw, 170px); }
+.sec-head {
+  display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  border-top: var(--rule); padding-top: 12px; margin-bottom: clamp(36px, 6vw, 80px);
+}
+.h-xl {
+  margin: 0;
+  font-weight: 860;
+  font-size: clamp(2.5rem, 7.6vw, 7.4rem);
+  line-height: .9;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+.h-xl em { font-style: normal; color: var(--acc); }
+.lede { font-size: clamp(1.1rem, 1.6vw, 1.4rem); line-height: 1.4; max-width: 38ch; margin: 0; }
+
+/* Lettres découpées par le JS : chacune porte sa propre largeur et sa graisse. */
+.wd { display: inline-block; white-space: nowrap; }
+.ch { display: inline-block; font-variation-settings: "wdth" var(--w, 100), "wght" var(--g, 860); }
+
+/* ---------- Boutons ---------- */
+.btn {
+  --b-bg: var(--fg); --b-fg: var(--bg); --b-bd: var(--fg);
+  display: inline-flex; align-items: center; gap: .7em;
+  padding: 1.05em 1.5em;
+  border: 2px solid var(--b-bd); border-radius: 999px;
+  background: var(--b-bg); color: var(--b-fg);
+  font-family: var(--display); font-weight: 750; font-size: 1rem; line-height: 1;
+  text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: background-color .25s, color .25s, border-color .25s;
+  will-change: transform;
+}
+.btn:hover { --b-bg: var(--blk); --b-fg: var(--on-blk); --b-bd: var(--blk); }
+.btn--ghost { --b-bg: transparent; --b-fg: var(--fg); }
+.btn .arr { display: inline-block; transition: transform .3s var(--ease); }
+.btn:hover .arr { transform: translateX(4px); }
+.btn-row > * { min-width: 0; }
+@media (max-width: 480px) { .btn { white-space: normal; line-height: 1.15; } }
+.btn-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.trust { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 18px 0 0; padding: 0; list-style: none; }
+.trust li::before { content: "✓ "; color: var(--acc); }
+
+/* ---------- Navigation ---------- */
+.nav {
+  position: fixed; inset: 0 0 auto; z-index: 60; height: var(--nav);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding-inline: var(--gut);
+  background: var(--bg); color: var(--fg);
+  border-bottom: var(--rule);
+  transition: background-color .7s var(--ease), color .7s var(--ease), border-color .7s var(--ease);
+}
+.logo { display: flex; align-items: baseline; gap: 10px; text-decoration: none; }
+.logo b { font-weight: 900; font-size: 22px; letter-spacing: -.02em; font-variation-settings: "wdth" 125; }
+.nav-links { display: flex; gap: clamp(14px, 2vw, 28px); list-style: none; margin: 0; padding: 0; }
+.nav-links a { text-decoration: none; position: relative; }
+.nav-links a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 2px; background: currentColor; transform: scaleX(0); transform-origin: right; transition: transform .35s var(--ease); }
+.nav-links a:hover::after { transform: scaleX(1); transform-origin: left; }
+.nav .btn { padding: .7em 1.1em; font-size: 14px; --b-bg: var(--blk); --b-fg: var(--on-blk); --b-bd: var(--blk); }
+.nav .btn:hover { --b-bg: var(--fg); --b-fg: var(--bg); --b-bd: var(--fg); }
+.nav-prog { position: absolute; left: 0; right: 0; bottom: -2px; height: 4px; background: var(--acc); transform-origin: left; transform: scaleX(var(--prog, 0)); }
+@media (max-width: 859px) { .nav-links { display: none; } .logo .mono { display: none; } }
+
+/* ==========================================================================
+   01 · HERO — l’affiche
+   ========================================================================== */
+.hero {
+  position: relative; overflow: hidden;
+  min-height: 100vh; min-height: 100svh;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 32px;
+  padding-top: calc(var(--nav) + clamp(18px, 3vw, 40px));
+  padding-bottom: clamp(28px, 4vw, 56px);
+}
+.hero-top { display: flex; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; }
+.hero-top span:first-child::before { content: ""; display: inline-block; width: .7em; height: .7em; background: var(--verm); margin-right: .6em; vertical-align: -.05em; }
+.hero-title {
+  margin: 0; position: relative; z-index: 2;
+  font-weight: 860;
+  font-size: clamp(3.1rem, min(11vw, 15.5vh), 14rem);
+  line-height: .86;
+  letter-spacing: -.045em;
+  max-width: 15ch;
+}
+.hero-title .blk { color: var(--blue); }
+.strike { position: relative; display: inline-block; }
+.strike::after {
+  content: ""; position: absolute; left: -.03em; right: -.03em; top: 54%;
+  height: .075em; background: var(--verm); transform-origin: left;
+}
+.motion .strike::after { transform: scaleX(0); animation: draw .9s var(--ease) forwards; animation-delay: var(--sd, 1.3s); }
+@keyframes draw { to { transform: scaleX(1); } }
+.motion .hero-title .ch { animation: chIn 1s var(--ease) backwards; animation-delay: calc(var(--i) * 22ms + .1s); }
+@keyframes chIn { from { opacity: 0; transform: translateY(.35em); font-variation-settings: "wdth" 62, "wght" 200; } }
+
+.hero-foot {
+  position: relative; z-index: 3;
+  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 32px; align-items: end;
+}
+.hero-foot .lede { max-width: 44ch; margin-bottom: 26px; }
+.motion .hero-foot > * { animation: up .9s var(--ease) .7s backwards; }
+@keyframes up { from { opacity: 0; transform: translateY(24px); } }
+.badge-link { justify-self: end; width: clamp(120px, 13vw, 190px); aspect-ratio: 1; display: block; border-radius: 50%; text-decoration: none; }
+.badge { width: 100%; height: 100%; overflow: visible; }
+.badge .ring { transform-origin: 100px 100px; transform: rotate(var(--rot, 0deg)); }
+.badge-link:hover .core { fill: var(--verm); }
+
+/* Autocollants déplaçables */
+.stickers { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.stk {
+  --x: 0px; --y: 0px; --r: 0deg; --s: 1;
+  position: absolute; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none;
+  cursor: grab;
+  transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(var(--s));
+  transition: transform .25s var(--ease), box-shadow .25s;
+  font-family: var(--mono); font-weight: 600; font-size: 13px; line-height: 1.25; letter-spacing: .02em; text-transform: uppercase;
+  padding: 14px 16px; border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.stk.is-drag { cursor: grabbing; --s: 1.07; transition: box-shadow .25s; box-shadow: 10px 12px 0 var(--ink); }
+.stk--a { background: var(--blue); color: var(--paper); --r: -6deg; top: 16%; right: 5%; }
+.stk--b { background: var(--verm); color: var(--ink); --r: 9deg; top: 47%; right: 21%; width: 118px; height: 118px; border-radius: 50%; display: grid; place-items: center; text-align: center; padding: 10px; }
+.stk--c { background: var(--paper); color: var(--ink); --r: -3deg; top: 61%; right: 4%; }
+.stk--d { background: var(--ink); color: var(--paper); --r: 4deg; top: 30%; right: 3%; max-width: 230px; box-shadow: 4px 4px 0 var(--verm); }
+.stk-hint { position: absolute; right: var(--gut); bottom: 8px; z-index: 3; opacity: .7; }
+@media (max-width: 859px) {
+  .hero-foot { grid-template-columns: 1fr; }
+  .badge-link { display: none; }
+  .stickers { position: relative; inset: auto; display: flex; flex-wrap: wrap; gap: 14px 12px; padding-top: 4px; order: 3; }
+  .stk { position: relative; top: auto !important; right: auto !important; font-size: 11.5px; padding: 11px 12px; }
+  .stk--b { width: 92px; height: 92px; }
+  .stk--d { max-width: 210px; }
+  .stk-hint { position: static; order: 4; }
+}
+
+/* ==========================================================================
+   Rubans croisés (marquee)
+   ========================================================================== */
+.tapes { position: relative; height: clamp(150px, 19vw, 260px); overflow: hidden; }
+.tape {
+  position: absolute; left: -6%; width: 112%;
+  overflow: hidden; white-space: nowrap;
+  border-block: 2px solid var(--ink);
+  font-weight: 860; text-transform: uppercase; letter-spacing: -.01em;
+  font-size: clamp(1.35rem, 3.5vw, 3.1rem); line-height: 1; padding: .32em 0;
+}
+.tape--a { top: 16%; background: var(--ink); color: var(--paper); transform: rotate(-3deg); z-index: 2; }
+.tape--b { top: 50%; background: var(--verm); color: var(--ink); transform: rotate(2.2deg); }
+.tape-track { display: inline-flex; will-change: transform; }
+.tape-seq { display: inline-flex; flex: none; }
+.tape-seq span { padding-inline: .45em; }
+.tape-seq i { font-style: normal; font-variation-settings: "wdth" 62; padding-inline: .1em; }
+.tape--a .tape-seq i { color: var(--verm); }
+
+/* ==========================================================================
+   02 · TRIPTYQUE ÉPINGLÉ — Penser → Dire → Construire
+   ========================================================================== */
+.tri { position: relative; }
+.tri-head {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px 20px;
+  padding: 14px var(--gut); border-block: var(--rule);
+}
+.tri-index { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.ti {
+  border: 2px solid var(--fg); background: transparent; border-radius: 999px; cursor: pointer;
+  padding: 6px 12px; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
+  transition: background-color .3s, color .3s;
+}
+.ti[aria-current="step"] { background: var(--fg); color: var(--bg); }
+.tri-index .sep { font-family: var(--mono); }
+.tri-count { justify-self: end; }
+.tri-panel { position: relative; padding: clamp(56px, 9vw, 120px) var(--gut); }
+.tri-verb {
+  margin: 0; overflow: hidden;
+  font-weight: 900; text-transform: uppercase; white-space: nowrap;
+  font-size: clamp(2.6rem, 11vw, 12rem); line-height: .8; letter-spacing: -.04em;
+  padding-block: .06em .02em;
+}
+.tri-verb .ch { --g: 900; }
+.tri-body {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(20px, 2.4vw, 40px);
+  margin-top: clamp(24px, 3.4vw, 48px);
+}
+.tri-lead { grid-column: 1 / span 5; }
+.tri-list { grid-column: 6 / span 4; }
+.tri-meta { grid-column: 10 / span 3; display: flex; flex-direction: column; gap: 18px; }
+.pole-tag {
+  display: inline-block; background: var(--blk); color: var(--on-blk);
+  padding: 6px 10px; margin-bottom: 16px;
+}
+.tri-lead h4 { margin: 0 0 12px; font-weight: 820; font-size: clamp(1.7rem, min(3.3vw, 5.6vh), 3.3rem); line-height: .98; letter-spacing: -.025em; }
+.tri-lead p { margin: 0; max-width: 46ch; font-size: clamp(1rem, 1.2vw, 1.12rem); }
+.tri-list ol { list-style: none; margin: 0; padding: 0; counter-reset: k; }
+.tri-list li { counter-increment: k; border-top: var(--rule); padding: 12px 0 14px; display: grid; grid-template-columns: 2.6em 1fr; }
+.tri-list li::before { content: "0" counter(k); font-family: var(--mono); font-size: 12px; padding-top: 4px; }
+.tri-list b { display: block; font-weight: 780; font-size: 1.12rem; line-height: 1.15; }
+.tri-list span { display: block; opacity: .82; font-size: .95rem; line-height: 1.35; margin-top: 2px; }
+.meta-box { border: var(--rule); padding: 12px 14px; }
+.meta-box p { margin: 6px 0 0; line-height: 1.35; }
+.meta-box--nope { border-style: dashed; }
+.tri-meta .btn { align-self: flex-start; white-space: normal; line-height: 1.15; }
+.tri-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: color-mix(in srgb, var(--fg) 18%, transparent); display: none; }
+.tri-bar i { position: absolute; inset: 0; background: var(--fg); transform-origin: left; transform: scaleX(0); }
+
+/* Révélation lettre à lettre (masque) */
+.motion .tri-verb .ch { transform: translateY(108%); transition: transform .8s var(--ease); transition-delay: calc(var(--i) * 40ms); }
+.motion .tri-panel.is-on .tri-verb .ch { transform: none; }
+.motion .tri-body > * { transition: opacity .6s var(--ease), transform .6s var(--ease); transition-delay: calc(.2s + var(--d, 0) * .09s); }
+.motion .tri-panel:not(.is-on) .tri-body > * { opacity: 0; transform: translateY(24px); transition-delay: 0s; }
+
+/* Mode épinglé (grand écran, mouvement accepté) */
+.tri.is-pin { height: 390vh; }
+.tri.is-pin .tri-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; display: flex; flex-direction: column; padding-top: var(--nav); }
+.tri.is-pin .tri-head { border-top: 0; }
+.tri.is-pin .tri-stage { position: relative; flex: 1; }
+.tri.is-pin .tri-panel { position: absolute; inset: 0; padding: clamp(18px, 3.4vh, 44px) var(--gut) clamp(24px, 4vh, 52px); display: flex; flex-direction: column; justify-content: space-between; visibility: hidden; transition: visibility 0s .8s; }
+.tri.is-pin .tri-panel.is-on { visibility: visible; transition-delay: 0s; }
+.tri.is-pin .tri-panel.is-past .tri-verb .ch { transform: translateY(-108%); transition-delay: calc(var(--i) * 25ms); }
+.tri.is-pin .tri-body { margin-top: 0; }
+.tri.is-pin .tri-bar { display: block; }
+
+@media (max-width: 1023px) {
+  .tri-lead { grid-column: 1 / -1; }
+  .tri-list { grid-column: 1 / span 7; }
+  .tri-meta { grid-column: 8 / -1; }
+}
+@media (max-width: 759px) {
+  .tri-head { grid-template-columns: 1fr; justify-items: start; }
+  .tri-index { justify-content: flex-start; }
+  .tri-count { display: none; }
+  .tri-list, .tri-meta { grid-column: 1 / -1; }
+}
+
+/* ==========================================================================
+   03 · CE QU’ON COUPE
+   ========================================================================== */
+.cuts-intro { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px 48px; align-items: end; margin-bottom: clamp(36px, 5vw, 64px); }
+.cuts { list-style: none; margin: 0; padding: 0; border-bottom: var(--rule); }
+.cut {
+  display: grid; grid-template-columns: minmax(0, 1.25fr) 64px minmax(0, 1fr); align-items: center; gap: 12px 24px;
+  border-top: var(--rule); padding: clamp(14px, 2vw, 26px) 0;
+}
+.cut-before, .cut-after { font-weight: 820; font-size: clamp(1.45rem, 3.4vw, 3.2rem); line-height: 1; letter-spacing: -.025em; }
+.cut-before { justify-self: start; text-decoration: none; }
+.cut-before span, .vow--no li span {
+  background: linear-gradient(var(--verm), var(--verm)) no-repeat 0 58% / 100% .12em;
+  -webkit-box-decoration-break: slice; box-decoration-break: slice;
+  transition: background-size .9s var(--ease);
+}
+.cut-before span { opacity: .6; }
+.cut-arrow { font-family: var(--mono); font-size: 22px; color: var(--verm); }
+.cut-after { color: var(--blue); font-variation-settings: "wdth" 112; transition: opacity .6s var(--ease) .45s, font-variation-settings .9s var(--ease) .45s; }
+.motion .cut:not(.in) .cut-before span { background-size: 0% .12em; }
+.motion .cut:not(.in) .cut-after { opacity: 0; font-variation-settings: "wdth" 62; }
+@media (max-width: 759px) {
+  .cuts-intro { grid-template-columns: 1fr; }
+  .cut { grid-template-columns: 1fr; gap: 6px; }
+  .cut-arrow { display: none; }
+  .cut-after::before { content: "→ "; color: var(--verm); }
+}
+
+/* ==========================================================================
+   04 · DIAGNOSTIC
+   ========================================================================== */
+.diag-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(32px, 5vw, 80px); align-items: start; }
+.diag-side .lede { margin-top: 24px; }
+.diag-steps { display: flex; gap: 8px; margin-top: 32px; }
+.diag-steps span { flex: 1; height: 8px; border: 2px solid var(--fg); transition: background-color .4s; }
+.diag-steps span.on { background: var(--fg); }
+.diag-note { margin-top: 18px; opacity: .85; max-width: 46ch; }
+.qz {
+  background: var(--paper); color: var(--ink);
+  border: 2px solid var(--ink); box-shadow: 12px 12px 0 var(--ink);
+  padding: clamp(20px, 3vw, 40px);
+  min-height: 460px;
+  --fg: var(--ink); --bg: var(--paper); --acc: var(--verm); --blk: var(--blue); --on-blk: var(--paper);
+}
+.qz-body { transition: opacity .25s, transform .25s var(--ease); }
+.qz-body.out { opacity: 0; transform: translateX(-16px); }
+.qz-q { margin: 10px 0 24px; font-weight: 820; font-size: clamp(1.6rem, 2.8vw, 2.5rem); line-height: 1.02; letter-spacing: -.02em; outline: none; }
+.qz-a { display: grid; gap: 12px; }
+.qa {
+  display: grid; grid-template-columns: 2.4em 1fr; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 16px 18px; border: 2px solid var(--ink); background: var(--paper); color: var(--ink); cursor: pointer;
+  font-family: var(--display); font-size: 1.08rem; font-weight: 560; line-height: 1.3;
+  transition: transform .2s var(--ease), box-shadow .2s var(--ease), background-color .2s, color .2s;
+}
+.qa .k { display: grid; place-items: center; width: 2.2em; height: 2.2em; border: 2px solid currentColor; border-radius: 50%; font-family: var(--mono); font-size: 13px; font-weight: 600; }
+.qa:hover, .qa:focus-visible { background: var(--blue); color: var(--paper); transform: translate(-4px, -4px); box-shadow: 4px 4px 0 var(--ink); }
+.qz-back { margin-top: 18px; background: none; border: 0; padding: 4px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+.res { padding: clamp(18px, 2.4vw, 30px); border: 2px solid var(--ink); }
+.res--S { background: var(--blue); color: var(--paper); --bg: var(--blue); --fg: var(--paper); --acc: var(--ink); --blk: var(--verm); --on-blk: var(--ink); }
+.res--C { background: var(--verm); color: var(--ink); --bg: var(--verm); --fg: var(--ink); --acc: var(--paper); --blk: var(--blue); --on-blk: var(--paper); }
+.res--P { background: var(--ink); color: var(--paper); --bg: var(--ink); --fg: var(--paper); --acc: var(--verm); --blk: var(--blue); --on-blk: var(--paper); }
+.res-verb { margin: 8px 0 14px; font-weight: 900; text-transform: uppercase; white-space: nowrap; line-height: .8; letter-spacing: -.04em; font-size: clamp(3rem, 7vw, 6rem); overflow: hidden; padding-top: .05em; }
+.res-verb .ch { --g: 900; }
+.motion .res-verb .ch { animation: chUp .8s var(--ease) backwards; animation-delay: calc(var(--i) * 45ms); }
+@keyframes chUp { from { transform: translateY(105%); } }
+.res h3 { margin: 0 0 10px; font-size: clamp(1.4rem, 2.2vw, 2rem); line-height: 1.05; letter-spacing: -.015em; font-weight: 800; }
+.res p { margin: 0 0 12px; }
+.res-bars { display: grid; gap: 6px; margin: 18px 0; }
+.res-bar { display: grid; grid-template-columns: 9.5em 1fr 1.6em; align-items: center; gap: 10px; }
+.res-bar .track { height: 10px; border: 2px solid currentColor; position: relative; }
+.res-bar .track i { position: absolute; inset: 0; background: currentColor; transform-origin: left; transform: scaleX(var(--v)); transition: transform .9s var(--ease) .3s; }
+.res .btn-row { margin-top: 18px; }
+.res .btn--ghost { --b-fg: var(--fg); --b-bd: var(--fg); }
+.res-fine { margin-top: 14px !important; opacity: .85; font-size: .92rem; }
+@media (max-width: 959px) { .diag-grid { grid-template-columns: minmax(0, 1fr); } .qz { min-height: 0; box-shadow: 8px 8px 0 var(--ink); } }
+@media (max-width: 480px) { .res-bar { grid-template-columns: 9em 1fr 2.2em; font-size: 10.5px; letter-spacing: 0; } .qz { padding: 14px; } }
+
+/* ==========================================================================
+   05 · MÉTHODE — accordéon d’affiches
+   ========================================================================== */
+.steps { list-style: none; margin: 0; padding: 0; display: flex; height: clamp(480px, 70vh, 660px); border: var(--rule); }
+.step {
+  position: relative; flex: 1 1 0; min-width: 0; overflow: hidden;
+  border-left: var(--rule);
+  padding: clamp(16px, 1.8vw, 26px);
+  display: flex; flex-direction: column; justify-content: space-between;
+  transition: flex-grow .7s var(--ease), background-color .45s, color .45s;
+  cursor: pointer;
+}
+.step:first-child { border-left: 0; }
+.step.is-open { flex-grow: 3.4; background: var(--verm); color: var(--ink); cursor: default; }
+.step-n { font-weight: 900; font-size: clamp(3rem, 6.4vw, 6.6rem); line-height: .8; letter-spacing: -.04em; font-variation-settings: "wdth" 62; transition: font-variation-settings .7s var(--ease); }
+.step.is-open .step-n { font-variation-settings: "wdth" 125; }
+.step-h { margin: 0; }
+.step-b {
+  all: unset; cursor: pointer; display: block;
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-weight: 860; text-transform: uppercase; letter-spacing: -.01em;
+  font-size: clamp(1.8rem, 3vw, 3.2rem); line-height: .9;
+}
+.step-b:focus-visible { outline: 3px solid var(--acc); outline-offset: 4px; }
+.step-d {
+  position: absolute; left: calc(clamp(16px, 1.8vw, 26px) + clamp(3rem, 4.4vw, 4.6rem)); right: clamp(16px, 1.8vw, 26px); bottom: clamp(16px, 1.8vw, 26px);
+  min-width: 270px;
+  opacity: 0; transform: translateY(14px); transition: opacity .35s, transform .35s var(--ease);
+  pointer-events: none;
+}
+.step.is-open .step-d { opacity: 1; transform: none; transition-delay: .3s; pointer-events: auto; }
+.step-d p { margin: 0 0 14px; font-size: 1.05rem; line-height: 1.4; max-width: 40ch; }
+.step-d ul { list-style: none; margin: 0; padding: 0; border-top: 2px solid currentColor; }
+.step-d li { padding: 8px 0; border-bottom: 1px solid currentColor; font-weight: 650; }
+.step-d li::before { content: "→ "; font-family: var(--mono); }
+.factors { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 24px 48px; margin-top: clamp(48px, 7vw, 96px); align-items: start; }
+.factors h3 { margin: 0; font-weight: 840; font-size: clamp(1.8rem, 3.4vw, 3rem); line-height: .98; letter-spacing: -.025em; }
+.factors h3 em { font-style: normal; color: var(--acc); }
+.factor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: var(--rule); border-left: var(--rule); }
+.factor-grid div { border-right: var(--rule); border-bottom: var(--rule); padding: 16px; transition: background-color .3s, color .3s; }
+.factor-grid div:hover { background: var(--fg); color: var(--bg); }
+.factor-grid b { display: block; font-size: 1.15rem; font-weight: 780; margin-bottom: 4px; }
+.factors .note { margin: 14px 0 0; opacity: .85; max-width: 52ch; }
+@media (max-width: 899px) {
+  .steps { display: block; height: auto; border: 0; border-top: var(--rule); }
+  .step { border-left: 0; border-bottom: var(--rule); cursor: default; display: grid; grid-template-columns: auto 1fr; gap: 6px 20px; align-items: start; }
+  .step.is-open { background: transparent; color: inherit; }
+  .step-n { font-size: 3.2rem; grid-row: span 2; }
+  .step-b { writing-mode: horizontal-tb; transform: none; font-size: 1.9rem; cursor: default; }
+  .step-d { position: static; opacity: 1; transform: none; min-width: 0; pointer-events: auto; }
+  .factors { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) { .factor-grid { grid-template-columns: 1fr; } }
+
+/* ==========================================================================
+   06 · RÉALISATIONS
+   ========================================================================== */
+.real-top { display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; margin-bottom: clamp(28px, 4vw, 48px); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { border: 2px solid var(--fg); background: transparent; border-radius: 999px; padding: 8px 14px; cursor: pointer; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; transition: background-color .25s, color .25s; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.pjs { list-style: none; margin: 0; padding: 0; border-bottom: var(--rule); }
+.pj a {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: grid; grid-template-columns: 3.4em minmax(0, 1.25fr) minmax(0, 1fr) 2em; align-items: center; gap: 12px 24px;
+  padding: clamp(14px, 1.8vw, 24px) 0; border-top: var(--rule); text-decoration: none;
+  transition: color .35s, padding .45s var(--ease);
+}
+.pj a::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--pc, var(--blue)); transform: scaleY(0); transform-origin: bottom; transition: transform .45s var(--ease); }
+.pj a:hover, .pj a:focus-visible { color: var(--pt, var(--paper)); padding-inline: 16px; }
+.pj a:hover::before, .pj a:focus-visible::before { transform: scaleY(1); }
+.pj-n { font-family: var(--mono); font-size: 12px; }
+.pj-t { font-weight: 860; font-size: clamp(1.9rem, 5vw, 4.6rem); line-height: .95; letter-spacing: -.035em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variation-settings: "wdth" 100; transition: font-variation-settings .5s var(--ease); }
+.pj a:hover .pj-t, .pj a:focus-visible .pj-t { font-variation-settings: "wdth" 116; }
+.pj-m { display: flex; flex-direction: column; gap: 4px; }
+.pj-m .desc { font-size: .95rem; line-height: 1.35; opacity: .85; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pj-go { font-size: 1.6rem; justify-self: end; transition: transform .35s var(--ease); }
+.pj a:hover .pj-go { transform: translate(4px, -4px) rotate(0deg); }
+.pj[hidden] { display: none; }
+.pv {
+  position: fixed; left: 0; top: 0; z-index: 70; pointer-events: none;
+  width: 300px; height: 210px; padding: 16px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  border: 2px solid var(--ink); box-shadow: 8px 8px 0 var(--ink);
+  opacity: 0; transition: opacity .25s;
+}
+.pv.on { opacity: 1; }
+.pv-t { font-weight: 900; font-size: 46px; line-height: .85; letter-spacing: -.04em; font-variation-settings: "wdth" 70; word-break: break-word; }
+.real-foot { margin-top: 28px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: center; }
+@media (max-width: 759px) {
+  .pj a { grid-template-columns: 2.4em minmax(0, 1fr) 1.4em; }
+  .pj-m { grid-column: 2 / 3; }
+  .pj-go { grid-row: 1; grid-column: 3; }
+  .pj a:hover, .pj a:focus-visible { padding-inline: 8px; }
+}
+
+/* ==========================================================================
+   07 · ENGAGEMENTS
+   ========================================================================== */
+.vows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin-top: clamp(40px, 6vw, 80px); border: var(--rule); }
+.vow { padding: clamp(18px, 2.6vw, 36px); }
+.vow + .vow { border-left: var(--rule); }
+.vow h3 { margin: 0 0 16px; display: flex; justify-content: space-between; align-items: center; font-weight: 860; font-size: clamp(1.6rem, 2.8vw, 2.6rem); letter-spacing: -.02em; line-height: 1; }
+.vow h3 span { font-family: var(--mono); font-size: 1.4rem; }
+.vow ul { list-style: none; margin: 0; padding: 0; }
+.vow li { border-top: 2px solid var(--fg); padding: 12px 0; font-size: clamp(1.1rem, 1.6vw, 1.4rem); font-weight: 640; line-height: 1.2; }
+.vow--no li span { background-image: linear-gradient(var(--fg), var(--fg)); background-size: 100% 3px; transition-delay: calc(var(--k) * .12s + .2s); }
+.motion .vow--no:not(.in) li span { background-size: 0% 3px; }
+.vow--yes { background: var(--ink); color: var(--paper); }
+.vow--yes li { border-color: var(--paper); }
+.vow--yes li::before { content: "✓ "; color: var(--verm); }
+.guar-head { display: flex; justify-content: space-between; align-items: end; gap: 16px 40px; flex-wrap: wrap; margin-top: clamp(64px, 9vw, 120px); margin-bottom: 28px; }
+.guar-head h3 { margin: 0; font-weight: 860; font-size: clamp(1.9rem, 4vw, 3.6rem); line-height: .95; letter-spacing: -.03em; max-width: 18ch; }
+.guar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2vw, 28px); list-style: none; margin: 0; padding: 0; }
+.guar li {
+  background: var(--paper); color: var(--ink); border: 2px solid var(--ink); box-shadow: 8px 8px 0 var(--ink);
+  padding: clamp(18px, 2.2vw, 28px); display: flex; flex-direction: column; gap: 12px;
+  transition: transform .35s var(--ease), box-shadow .35s var(--ease);
+}
+.guar li:hover { transform: translate(-4px, -4px) rotate(-.6deg); box-shadow: 12px 12px 0 var(--ink); }
+.guar .num { font-weight: 900; font-size: 3.4rem; line-height: .8; color: var(--blue); font-variation-settings: "wdth" 62; }
+.guar h4 { margin: 0; font-size: 1.35rem; line-height: 1.1; font-weight: 800; letter-spacing: -.01em; }
+.guar p { margin: 0; line-height: 1.45; }
+@media (max-width: 899px) {
+  .vows { grid-template-columns: 1fr; }
+  .vow + .vow { border-left: 0; border-top: var(--rule); }
+  .guar { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
+   08 · CONTACT — l’affiche finale
+   ========================================================================== */
+.end { padding-top: 0; padding-bottom: 0; overflow: hidden; }
+.end-tape { border-bottom: var(--rule); overflow: hidden; white-space: nowrap; font-family: var(--mono); text-transform: uppercase; font-size: 13px; letter-spacing: .06em; padding: 12px 0; }
+.end-tape .tape-seq span { padding-inline: 1.2em; }
+.end-big {
+  margin: clamp(40px, 7vw, 100px) 0 0; white-space: nowrap;
+  font-weight: 900; line-height: .8; letter-spacing: -.05em;
+  font-size: clamp(4rem, 19vw, 24rem);
+}
+.end-big .ch { --g: 900; }
+.end-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px 48px; align-items: center; margin-top: clamp(28px, 4vw, 56px); }
+.end-row .lede { max-width: 46ch; }
+.orb {
+  width: clamp(170px, 18vw, 250px); aspect-ratio: 1; border-radius: 50%;
+  display: grid; place-items: center; text-align: center; text-decoration: none;
+  background: var(--verm); color: var(--ink); border: 2px solid var(--ink);
+  font-weight: 820; font-size: clamp(1.05rem, 1.4vw, 1.3rem); line-height: 1.1; padding: 20px;
+  box-shadow: 8px 8px 0 var(--ink);
+  transition: background-color .3s, color .3s, box-shadow .3s;
+  will-change: transform;
+}
+.orb:hover { background: var(--paper); }
+.orb .arr { display: block; font-size: 1.8em; margin-top: 6px; }
+.foot { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; margin-top: clamp(56px, 8vw, 110px); padding-top: 18px; border-top: var(--rule); }
+.foot h4 { margin: 0 0 10px; }
+.foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.foot a { text-decoration: none; }
+.foot a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.colophon { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; padding: 22px 0 28px; margin-top: 36px; border-top: 1px solid var(--fg); }
+@media (max-width: 859px) {
+  .end-row { grid-template-columns: 1fr; }
+  .orb { justify-self: start; }
+  .foot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------- Révélations au défilement ---------- */
+.motion .rv { opacity: 0; transform: translateY(32px); transition: opacity .9s var(--ease), transform .9s var(--ease); transition-delay: calc(var(--d, 0) * .08s); }
+.motion .rv.in { opacity: 1; transform: none; }
+
+/* ---------- Curseur ---------- */
+.cur { position: fixed; left: 0; top: 0; z-index: 90; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fff; mix-blend-mode: difference; pointer-events: none; transition: width .3s var(--ease), height .3s var(--ease), margin .3s var(--ease), opacity .3s; opacity: 0; }
+.cur.on { opacity: 1; }
+.cur.big { width: 54px; height: 54px; margin: -27px 0 0 -27px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; transition-duration: .001ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Aller au contenu</a>
+
+<header class="nav" role="banner">
+  <a class="logo" href="/" aria-label="Venio, accueil"><b>VENIO</b><span class="mono">L’atelier · Paris</span></a>
+  <nav aria-label="Navigation principale">
+    <ul class="nav-links mono">
+      <li><a href="#poles">Pôles</a></li>
+      <li><a href="#diagnostic">Diagnostic</a></li>
+      <li><a href="#methode">Méthode</a></li>
+      <li><a href="#realisations">Réalisations</a></li>
+      <li><a href="/a-propos">L’atelier</a></li>
+    </ul>
+  </nav>
+  <a class="btn" href="/contact" data-mag><span>Décrire mon besoin</span><span class="arr" aria-hidden="true">→</span></a>
+  <span class="nav-prog" aria-hidden="true"></span>
+</header>
+
+<main id="main">
+
+<!-- ===================== 01 · HERO ===================== -->
+<section class="hero wrap" data-theme="paper" aria-labelledby="hero-title">
+  <div class="hero-top mono">
+    <span>Venio — atelier de conseil, Paris</span>
+    <span>Stratégie / Communication / Plateformes métier</span>
+  </div>
+
+  <h1 class="hero-title" id="hero-title" data-split data-distort>
+    Le marché est saturé de <span class="blk"><span class="strike" style="--sd:1.3s">promesses</span> <span class="strike" style="--sd:1.6s">creuses.</span></span>
+  </h1>
+
+  <div class="stickers" aria-label="Autocollants, déplaçables à la souris, au doigt ou aux flèches du clavier">
+    <div class="stk stk--a" tabindex="0" role="note">Le code vous appartient</div>
+    <div class="stk stk--b" tabindex="0" role="note">Pas de template</div>
+    <div class="stk stk--c" tabindex="0" role="note">Devis écrit · sans engagement</div>
+    <div class="stk stk--d" tabindex="0" role="note">On vous dit aussi quand ce n’est pas la bonne porte</div>
+  </div>
+
+  <div class="hero-foot">
+    <div>
+      <p class="lede">Venio existe pour faire le reste&nbsp;: <strong>clarifier, décider, construire.</strong> Stratégie, communication et plateformes métier, dans un même atelier. Chaque étape produit un document que vous gardez.</p>
+      <div class="btn-row">
+        <a class="btn" href="#diagnostic" data-mag><span>Trouver par où commencer</span><span class="arr" aria-hidden="true">↓</span></a>
+        <a class="btn btn--ghost" href="/contact"><span>Décrire mon besoin</span><span class="arr" aria-hidden="true">→</span></a>
+      </div>
+      <ul class="trust mono" aria-label="Nos engagements de contact">
+        <li>Sans engagement</li><li>Réponse sous 48&nbsp;h ouvrées</li><li>Devis écrit</li>
+      </ul>
+    </div>
+    <a class="badge-link" href="#poles" aria-label="Découvrir les trois pôles">
+      <svg class="badge" viewBox="0 0 200 200" aria-hidden="true">
+        <defs><path id="ringPath" d="M100,100 m-80,0 a80,80 0 1,1 160,0 a80,80 0 1,1 -160,0"/></defs>
+        <circle class="core" cx="100" cy="100" r="99" style="fill:var(--blue);transition:fill .3s"/>
+        <g class="ring">
+          <text style="fill:var(--paper);font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:1px">
+            <textPath href="#ringPath" textLength="500" lengthAdjust="spacing">PENSER ✦ DIRE ✦ CONSTRUIRE ✦ L’ATELIER VENIO ✦ PARIS ✦</textPath>
+          </text>
+        </g>
+        <text x="100" y="118" text-anchor="middle" style="fill:var(--paper);font-family:var(--display);font-size:54px;font-weight:900">↓</text>
+      </svg>
+    </a>
+  </div>
+  <p class="stk-hint mono" aria-hidden="true">↖ Ces autocollants se décollent</p>
+</section>
+
+<!-- ===================== Rubans ===================== -->
+<div class="tapes" data-theme="paper" aria-hidden="true">
+  <div class="tape tape--a"><div class="tape-track" data-dir="-1"><div class="tape-seq">
+    <span>Stratégie</span><i>✦</i><span>Communication</span><i>✦</i><span>Plateformes métier</span><i>✦</i><span>Sans template</span><i>✦</i><span>Paris</span><i>✦</i>
+  </div></div></div>
+  <div class="tape tape--b"><div class="tape-track" data-dir="1"><div class="tape-seq">
+    <span>Penser</span><i>→</i><span>Dire</span><i>→</i><span>Construire</span><i>✦</i><span>Le code vous appartient</span><i>✦</i>
+  </div></div></div>
+</div>
+
+<!-- ===================== 02 · TRIPTYQUE ===================== -->
+<section class="tri" id="poles" aria-labelledby="tri-title">
+  <div class="tri-sticky">
+    <div class="tri-head">
+      <h2 class="mono" id="tri-title" style="margin:0">(01) Trois pôles, un atelier</h2>
+      <div class="tri-index" role="group" aria-label="Aller à un pôle">
+        <button class="ti" type="button" data-go="0" aria-current="step">Penser</button><span class="sep" aria-hidden="true">→</span>
+        <button class="ti" type="button" data-go="1">Dire</button><span class="sep" aria-hidden="true">→</span>
+        <button class="ti" type="button" data-go="2">Construire</button>
+      </div>
+      <span class="tri-count mono" aria-hidden="true">01 / 03</span>
+    </div>
+
+    <div class="tri-stage">
+      <!-- PENSER · Stratégie -->
+      <article class="tri-panel is-on" data-theme="blue" data-i="0" aria-labelledby="v0">
+        <h3 class="tri-verb" id="v0" data-split data-fit data-maxvh="34">Penser</h3>
+        <div class="tri-body">
+          <div class="tri-lead" style="--d:0">
+            <span class="pole-tag mono">Pôle 01 → Stratégie</span>
+            <h4>Savoir ce qui compte, avant de dépenser.</h4>
+            <p>Ce que vous dites, à qui, où, et ce que ça coûte. Ce qui marche, ce qui coûte cher pour rien, et les décisions à prendre dans l’ordre.</p>
+          </div>
+          <div class="tri-list" style="--d:1">
+            <ol>
+              <li><div><b>Diagnostic</b><span>Un état des lieux écrit.</span></div></li>
+              <li><div><b>Positionnement</b><span>Une phrase que vos clients répètent.</span></div></li>
+              <li><div><b>Marque</b><span>Un nom, une voix, un système.</span></div></li>
+            </ol>
+          </div>
+          <div class="tri-meta" style="--d:2">
+            <div class="meta-box"><span class="mono">Livré</span><p>État des lieux écrit, que vous gardez.</p></div>
+            <div class="meta-box meta-box--nope"><span class="mono">Inutile si</span><p>Vous savez déjà quoi faire et cherchez quelqu’un pour le valider.</p></div>
+            <a class="btn" href="/contact?besoin=flou"><span>En parler</span><span class="arr" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </article>
+
+      <!-- DIRE · Communication -->
+      <article class="tri-panel" data-theme="verm" data-i="1" aria-labelledby="v1">
+        <h3 class="tri-verb" id="v1" data-split data-fit data-maxvh="34">Dire</h3>
+        <div class="tri-body">
+          <div class="tri-lead" style="--d:0">
+            <span class="pole-tag mono">Pôle 02 → Communication</span>
+            <h4>Un plan de communication qui tient.</h4>
+            <p>Positionnement, messages, canaux, rythme, budget. Et la liste de ce qu’on arrête. Cinq prestations qui vivent seules, et s’enchaînent si le diagnostic le justifie.</p>
+          </div>
+          <div class="tri-list" style="--d:1">
+            <ol>
+              <li><div><b>Plan de communication</b><span>Canaux, rythme, budget.</span></div></li>
+              <li><div><b>Contenus &amp; réseaux</b><span>Une ligne éditoriale tenable.</span></div></li>
+              <li><div><b>Acquisition &amp; mesure</b><span>Trois chiffres, chaque mois.</span></div></li>
+            </ol>
+          </div>
+          <div class="tri-meta" style="--d:2">
+            <div class="meta-box"><span class="mono">Livré</span><p>Plan et calendrier, ligne éditoriale, tableau de suivi mensuel.</p></div>
+            <div class="meta-box meta-box--nope"><span class="mono">Inutile si</span><p>Personne chez vous ne peut y consacrer deux heures par semaine.</p></div>
+            <a class="btn" href="/conseil-communication"><span>Conseil en communication</span><span class="arr" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </article>
+
+      <!-- CONSTRUIRE · Plateformes métier -->
+      <article class="tri-panel" data-theme="ink" data-i="2" aria-labelledby="v2">
+        <h3 class="tri-verb" id="v2" data-split data-fit data-maxvh="34">Construire</h3>
+        <div class="tri-body">
+          <div class="tri-lead" style="--d:0">
+            <span class="pole-tag mono">Pôle 03 → Plateformes métier</span>
+            <h4>L’outil que le tableur ne fait plus.</h4>
+            <p>Sites, espaces clients, outils internes&nbsp;: écrits de zéro, construits autour de votre façon de travailler, repris par vos équipes quand elles veulent.</p>
+          </div>
+          <div class="tri-list" style="--d:1">
+            <ol>
+              <li><div><b>Sites sur mesure</b><span>Vitrine, Essentiel, Business, Boutique en ligne.</span></div></li>
+              <li><div><b>Espaces clients</b><span>Comptes, accès, paiement en ligne.</span></div></li>
+              <li><div><b>Outils internes</b><span>Connectés à vos outils existants.</span></div></li>
+            </ol>
+          </div>
+          <div class="tri-meta" style="--d:2">
+            <div class="meta-box"><span class="mono">Livré</span><p>Un code documenté, qui vous appartient. N’importe quel développeur peut reprendre après nous.</p></div>
+            <div class="meta-box meta-box--nope"><span class="mono">Inutile si</span><p>Un logiciel du marché couvre déjà l’essentiel. On vous dira lequel.</p></div>
+            <a class="btn" href="/contact?besoin=outil"><span>Décrire mon outil</span><span class="arr" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </article>
+    </div>
+    <div class="tri-bar" aria-hidden="true"><i></i></div>
+  </div>
+</section>
+
+<!-- ===================== 03 · CE QU’ON COUPE ===================== -->
+<section class="sec wrap" id="coupes" data-theme="paper" aria-labelledby="cuts-title">
+  <div class="sec-head mono"><span>(02) Ce qu’on coupe</span><span>Exemples</span></div>
+  <div class="cuts-intro">
+    <h2 class="h-xl rv" id="cuts-title">Moins, <em>mais tenu.</em></h2>
+    <p class="lede rv" style="--d:1">La plupart des communications ne servent à rien. Ce n’est pas une fatalité&nbsp;: on clarifie ce que vous dites, on choisit où le dire, et on coupe ce qui ne rapporte pas.</p>
+  </div>
+  <ul class="cuts">
+    <li class="cut"><s class="cut-before"><span>Cinq réseaux sociaux tenus à moitié</span></s><span class="cut-arrow" aria-hidden="true">→</span><span class="cut-after">Deux, tenus.</span></li>
+    <li class="cut"><s class="cut-before"><span>Une plaquette de 24 pages</span></s><span class="cut-arrow" aria-hidden="true">→</span><span class="cut-after">Une page claire.</span></li>
+    <li class="cut"><s class="cut-before"><span>Trente indicateurs dans un tableau</span></s><span class="cut-arrow" aria-hidden="true">→</span><span class="cut-after">Trois, regardés.</span></li>
+    <li class="cut"><s class="cut-before"><span>« Solutions innovantes »</span></s><span class="cut-arrow" aria-hidden="true">→</span><span class="cut-after">Ce que vous faites.</span></li>
+  </ul>
+</section>
+
+<!-- ===================== 04 · DIAGNOSTIC ===================== -->
+<section class="sec wrap" id="diagnostic" data-theme="blue" aria-labelledby="diag-title">
+  <div class="sec-head mono"><span>(03) Diagnostic express</span><span>Trois questions · une minute</span></div>
+  <div class="diag-grid">
+    <div class="diag-side">
+      <h2 class="h-xl rv" id="diag-title">Quelle porte <em>pousser&nbsp;?</em></h2>
+      <p class="lede rv" style="--d:1">Trois questions pour savoir par quel pôle commencer. Et, comme pour chaque prestation, quand ce n’est pas le bon.</p>
+      <div class="diag-steps" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
+      <p class="diag-note mono rv" style="--d:2">Rien n’est envoyé. Vos réponses restent dans votre navigateur.</p>
+    </div>
+    <div class="qz rv" style="--d:1">
+      <div class="qz-body" id="qz-body">
+        <p class="mono">Diagnostic</p>
+        <p class="qz-q">Le diagnostic interactif a besoin de JavaScript.</p>
+        <p>Décrivez votre besoin en quelques lignes&nbsp;: on vous oriente sous 48&nbsp;h ouvrées.</p>
+        <a class="btn" href="/contact"><span>Décrire mon besoin</span><span class="arr" aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 05 · MÉTHODE ===================== -->
+<section class="sec wrap" id="methode" data-theme="ink" aria-labelledby="meth-title">
+  <div class="sec-head mono"><span>(04) Méthode</span><span>Sans brouillard</span></div>
+  <h2 class="h-xl rv" id="meth-title" style="max-width:14ch;margin-bottom:clamp(36px,5vw,64px)">Cinq étapes. <em>Des livrables nommés.</em></h2>
+  <ol class="steps">
+    <li class="step is-open" data-step="0">
+      <span class="step-n" aria-hidden="true">01</span>
+      <h3 class="step-h"><button class="step-b" type="button" aria-expanded="true" aria-controls="sd0">Cadrer</button></h3>
+      <div class="step-d" id="sd0">
+        <p>Un atelier de lancement, puis une restitution sous 2 à 5 jours ouvrés.</p>
+        <ul><li>Note de cadrage</li><li>Périmètre priorisé</li><li>Hypothèses, dépendances et planning</li></ul>
+      </div>
+    </li>
+    <li class="step" data-step="1">
+      <span class="step-n" aria-hidden="true">02</span>
+      <h3 class="step-h"><button class="step-b" type="button" aria-expanded="false" aria-controls="sd1">Concevoir</button></h3>
+      <div class="step-d" id="sd1">
+        <p>Validation par jalon&nbsp;; les retours sont regroupés pour garder le rythme.</p>
+        <ul><li>Architecture des contenus</li><li>Parcours clés</li><li>Direction visuelle et maquettes</li></ul>
+      </div>
+    </li>
+    <li class="step" data-step="2">
+      <span class="step-n" aria-hidden="true">03</span>
+      <h3 class="step-h"><button class="step-b" type="button" aria-expanded="false" aria-controls="sd2">Construire</button></h3>
+      <div class="step-d" id="sd2">
+        <p>Point d’avancement hebdomadaire pendant la production.</p>
+        <ul><li>Site ou produit développé</li><li>Intégrations prévues au périmètre</li><li>Environnement de recette</li></ul>
+      </div>
+    </li>
+    <li class="step" data-step="3">
+      <span class="step-n" aria-hidden="true">04</span>
+      <h3 class="step-h"><button class="step-b" type="button" aria-expanded="false" aria-controls="sd3">Recetter</button></h3>
+      <div class="step-d" id="sd3">
+        <p>Une phase de recette guidée avant la mise en ligne.</p>
+        <ul><li>Liste de vérifications</li><li>Corrections de recette</li><li>Plan de mise en ligne</li></ul>
+      </div>
+    </li>
+    <li class="step" data-step="4">
+      <span class="step-n" aria-hidden="true">05</span>
+      <h3 class="step-h"><button class="step-b" type="button" aria-expanded="false" aria-controls="sd4">Transmettre</button></h3>
+      <div class="step-d" id="sd4">
+        <p>Passation à la livraison&nbsp;; suivi continu uniquement si le webmastering est retenu.</p>
+        <ul><li>Accès et documentation utile</li><li>Prise en main</li><li>Cadre de support, si souscrit</li></ul>
+      </div>
+    </li>
+  </ol>
+
+  <div class="factors">
+    <div class="rv">
+      <p class="mono" style="margin:0 0 12px">Ce qui fait varier le délai</p>
+      <h3>Le calendrier dépend <em>surtout de vous.</em></h3>
+      <p class="note">Les délais sont des repères pour un projet dont les contenus et les validations arrivent à temps. Le calendrier commence réellement quand le périmètre et les contenus sont prêts.</p>
+    </div>
+    <div class="factor-grid rv" style="--d:1">
+      <div><b>Les contenus</b>Textes et photos fournis ou à produire</div>
+      <div><b>Les validations</b>Une personne qui décide, ou un comité</div>
+      <div><b>Les intégrations</b>Paiement, CRM, outils existants</div>
+      <div><b>Le périmètre</b>Ce qui s’ajoute en cours de route</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 06 · RÉALISATIONS ===================== -->
+<section class="sec wrap" id="realisations" data-theme="paper" aria-labelledby="real-title">
+  <div class="sec-head mono"><span>(05) Réalisations</span><span><span id="pj-count">08</span> en ligne</span></div>
+  <div class="real-top">
+    <h2 class="h-xl rv" id="real-title" style="max-width:13ch">Ça tourne. <em>Allez voir.</em></h2>
+    <div class="chips rv" role="group" aria-label="Filtrer les réalisations" style="--d:1">
+      <button class="chip" type="button" data-f="all" aria-pressed="true">Tout</button>
+      <button class="chip" type="button" data-f="site" aria-pressed="false">Sites &amp; marques</button>
+      <button class="chip" type="button" data-f="produit" aria-pressed="false">Produits</button>
+    </div>
+  </div>
+  <ul class="pjs" aria-live="polite">
+    <li class="pj" data-cat="site"><a href="https://formatio.paris/" target="_blank" rel="noopener noreferrer" data-c="blue" data-dom="formatio.paris" data-eb="Formation professionnelle">
+      <span class="pj-n">01</span><span class="pj-t">Formatio</span>
+      <span class="pj-m"><span class="mono">Formation professionnelle · Site</span><span class="desc">Une présence premium et rassurante pour présenter l’expertise, la méthode et les parcours.</span></span>
+      <span class="pj-go" aria-hidden="true">↗</span><span class="sr-only">(nouvel onglet)</span></a></li>
+    <li class="pj" data-cat="site"><a href="https://absys.school/" target="_blank" rel="noopener noreferrer" data-c="verm" data-dom="absys.school" data-eb="École · Enseignement supérieur">
+      <span class="pj-n">02</span><span class="pj-t">Absys</span>
+      <span class="pj-m"><span class="mono">Enseignement supérieur · Identité &amp; site</span><span class="desc">Une identité élégante et institutionnelle pour installer une jeune école dans un univers de confiance.</span></span>
+      <span class="pj-go" aria-hidden="true">↗</span><span class="sr-only">(nouvel onglet)</span></a></li>
+    <li class="pj" data-cat="site"><a href="https://decisio.paris/" target="_blank" rel="noopener noreferrer" data-c="ink" data-dom="decisio.paris" data-eb="Communication juridique · B2B">
+      <span class="pj-n">03</span><span class="pj-t">Decisio</span>
+      <span class="pj-m"><span class="mono">Communication juridique · B2B</span><span class="desc">Une présence dédiée aux professionnels du droit, pour rendre l’offre et le conseil immédiatement lisibles.</span></span>
+      <span class="pj-go" aria-hidden="true">↗</span><span class="sr-only">(nouvel onglet)</span></a></li>
+    <li class="pj" data-cat="site"><a href="https://cauchemar.me/" target="_blank" rel="noopener noreferrer" data-c="verm" data-dom="cauchemar.me" data-eb="Agence créative">
+      <span class="pj-n">04</span><span class="pj-t">Cauchemar</span>
+      <span class="pj-m"><span class="mono">Agence créative · Concept de marque</span><span class="desc">Une marque qui assume son contraste&nbsp;: inquiétante au premier regard, rassurante dans le fond.</span></span>
+      <span class="pj-go" aria-hidden="true">↗</span><span class="sr-only">(nouvel onglet)</span></a></li>
+    <li class="pj" data-cat="produit"><a href="https://yumicv.com/" target="_blank" rel="noopener noreferrer" data-c="blue" data-dom="yumicv.com" data-eb="Produit RH · SaaS">
+      <span class="pj-n">05</span><span class="pj-t">Yumi</span>
+      <span class="pj-m"><span class="mono">Produit RH · SaaS</span><span class="desc">Un créateur de CV pensé à la fois pour les humains et les logiciels de recrutement.</span></span>
+      <span class="pj-go" aria-hidden="true">↗</span><span class="sr-only">(nouvel onglet)</span></a></li>
+    <li class="pj" data-cat="produit"><a href="https://game.susanoo.app/" target="_blank" rel="noopener noreferrer" data-c="ink" data-dom="game.susanoo.app" data-eb="EdTech · Simulation">
+      <span class="pj-n">06</span><span class="pj-t">Jiraya</span>
+      <span class="pj-m"><span class="mono">EdTech · Plateforme temps réel</span><span class="desc">Des business games compétitifs&nbsp;: décider, mesurer et affronter les autres en temps réel.</span></span>
+      <span class="pj-go" aria-hidden="true">↗</span><span class="sr-only">(nouvel onglet)</span></a></li>
+    <li class="pj" data-cat="produit"><a href="https://simulator.absys.school/" target="_blank" rel="noopener noreferrer" data-c="blue" data-dom="simulator.absys.school" data-eb="EdTech · Simulation">
+      <span class="pj-n">07</span><span class="pj-t">Absys Simulator</span>
+      <span class="pj-m"><span class="mono">EdTech · UX applicative</span><span class="desc">Une plateforme de simulation pédagogique pour décider, suivre et analyser.</span></span>
+      <span class="pj-go" aria-hidden="true">↗</span><span class="sr-only">(nouvel onglet)</span></a></li>
+    <li class="pj" data-cat="produit"><a href="https://temporary.susanoo.app/hanami/" target="_blank" rel="noopener noreferrer" data-c="verm" data-dom="susanoo.app/hanami" data-eb="Expérience éditoriale">
+      <span class="pj-n">08</span><span class="pj-t">Hanami</span>
+      <span class="pj-m"><span class="mono">Expérience éditoriale · Prototype</span><span class="desc">Une exploration produit&nbsp;: curation par humeur, navigation conçue comme un magazine vivant.</span></span>
+      <span class="pj-go" aria-hidden="true">↗</span><span class="sr-only">(nouvel onglet)</span></a></li>
+  </ul>
+  <div class="real-foot">
+    <p class="mono" style="margin:0">Nos propres logiciels tournent aussi tous les jours&nbsp;: formation, RH, comptabilité, acquisition.</p>
+    <a class="btn btn--ghost" href="/realisations"><span>Toutes les réalisations</span><span class="arr" aria-hidden="true">→</span></a>
+  </div>
+</section>
+
+<!-- ===================== 07 · ENGAGEMENTS ===================== -->
+<section class="sec wrap" id="engagements" data-theme="verm" aria-labelledby="vow-title">
+  <div class="sec-head mono"><span>(06) Manifeste</span><span>Ce qui change avec nous</span></div>
+  <h2 class="h-xl rv" id="vow-title" style="max-width:17ch">On préfère perdre un client <em>que perdre en crédibilité.</em></h2>
+
+  <div class="vows">
+    <div class="vow vow--no rv">
+      <h3>Ce qu’on refuse <span aria-hidden="true">✕</span></h3>
+      <ul>
+        <li style="--k:0"><span>Le jargon marketing vide</span></li>
+        <li style="--k:1"><span>Les promesses qu’on ne peut pas tenir</span></li>
+        <li style="--k:2"><span>Les tendances suivies par mimétisme</span></li>
+        <li style="--k:3"><span>Les stratégies sans objectif concret</span></li>
+      </ul>
+    </div>
+    <div class="vow vow--yes rv" style="--d:1">
+      <h3>Ce qu’on assume <span aria-hidden="true">✓</span></h3>
+      <ul>
+        <li>Dire non quand un projet ne sert à rien</li>
+        <li>Choisir les projets qu’on prend</li>
+        <li>Faire une chose à fond plutôt que tout à moitié</li>
+        <li>Vous laisser repartir avec tout ce qu’on a produit</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="guar-head">
+    <h3 class="rv">Trois choses qu’on vous garantit, et que vous pouvez vérifier.</h3>
+    <p class="mono rv" style="--d:1;margin:0">Elles figurent dans nos contrats,<br>pas seulement sur cette page.</p>
+  </div>
+  <ol class="guar">
+    <li class="rv"><span class="num" aria-hidden="true">01</span><h4>Un site clair, que vos clients comprennent tout de suite</h4><p>On dessine vos pages à partir de ce que vous avez à dire. Pas un modèle tout fait dans lequel on glisse vos textes.</p></li>
+    <li class="rv" style="--d:1"><span class="num" aria-hidden="true">02</span><h4>Votre site vous appartient vraiment</h4><p>Si un jour vous travaillez avec quelqu’un d’autre, tout part avec vous. N’importe quel développeur peut reprendre le travail après nous.</p></li>
+    <li class="rv" style="--d:2"><span class="num" aria-hidden="true">03</span><h4>Rien n’est impossible parce que «&nbsp;l’outil ne le permet pas&nbsp;»</h4><p>On code sur mesure. Ce que vous demandez, on peut le faire. On vous dira quand même si ça ne sert à rien.</p></li>
+  </ol>
+</section>
+
+<!-- ===================== 08 · CONTACT ===================== -->
+<section class="sec end" id="contact" data-theme="blue" aria-labelledby="end-title">
+  <div class="end-tape" aria-hidden="true"><div class="tape-track" data-dir="-1" data-speed=".6"><div class="tape-seq">
+    <span>Sans engagement</span><span>✦</span><span>Réponse sous 48 h ouvrées</span><span>✦</span><span>Devis écrit</span><span>✦</span><span>Le code vous appartient</span><span>✦</span>
+  </div></div></div>
+  <div class="wrap">
+    <h2 class="end-big" id="end-title" data-split data-fit data-distort>Parlons-en.</h2>
+    <div class="end-row">
+      <p class="lede">Décrivez votre besoin en quelques lignes. On vous répond sous 48&nbsp;h ouvrées, avec un devis écrit si on peut vous aider. Et si ce n’est pas pour nous, on vous le dit aussi.</p>
+      <a class="orb" href="/contact" data-mag><span>Décrire mon besoin<span class="arr" aria-hidden="true">→</span></span></a>
+    </div>
+
+    <footer class="foot" role="contentinfo">
+      <div>
+        <h4 class="mono">Pôles</h4>
+        <ul>
+          <li><a href="/contact?besoin=flou">Stratégie</a></li>
+          <li><a href="/conseil-communication">Communication</a></li>
+          <li><a href="/services/sites">Sites &amp; plateformes</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="mono">L’atelier</h4>
+        <ul>
+          <li><a href="/methode">Méthode</a></li>
+          <li><a href="/realisations">Réalisations</a></li>
+          <li><a href="/a-propos">À propos</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="mono">Pôles spécialisés</h4>
+        <ul>
+          <li><a href="https://decisio.paris" target="_blank" rel="noopener noreferrer">Decisio ↗</a></li>
+          <li><a href="https://creatio.paris" target="_blank" rel="noopener noreferrer">Creatio ↗</a></li>
+          <li><a href="https://formatio.paris" target="_blank" rel="noopener noreferrer">Formatio ↗</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="mono">Contact</h4>
+        <ul>
+          <li><a href="/contact">Décrire mon besoin</a></li>
+          <li><a href="#diagnostic">Diagnostic express</a></li>
+        </ul>
+      </div>
+    </footer>
+    <div class="colophon mono">
+      <span>© 2026 Venio · Paris</span>
+      <span>Maquette de refonte — proposition C «&nbsp;Manifeste&nbsp;»</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div class="pv" aria-hidden="true"><span class="mono pv-e"></span><span class="pv-t"></span><span class="mono pv-d"></span></div>
+
+<script>
+(() => {
+  'use strict';
+  const d = document, root = d.documentElement;
+  const RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FINE = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const $ = (s, c = d) => c.querySelector(s);
+  const $$ = (s, c = d) => Array.from(c.querySelectorAll(s));
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const COLORS = { blue: ['#1F3BFF', '#F2EEE4'], verm: ['#FF3B1A', '#0D0D0C'], ink: ['#0D0D0C', '#F2EEE4'], paper: ['#F2EEE4', '#0D0D0C'] };
+
+  /* ---------- Découpage en lettres (garde les balises internes) ---------- */
+  function split(el) {
+    if (el.dataset.done) return;
+    el.dataset.done = '1';
+    el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
+    let i = 0;
+    const walk = (node) => {
+      Array.from(node.childNodes).forEach((n) => {
+        if (n.nodeType === 3) {
+          const frag = d.createDocumentFragment();
+          n.textContent.split(/(\s+)/).forEach((part) => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(d.createTextNode(' ')); return; }
+            const wd = d.createElement('span');
+            wd.className = 'wd';
+            for (const c of part) {
+              const s = d.createElement('span');
+              s.className = 'ch';
+              s.textContent = c;
+              s.style.setProperty('--i', i++);
+              wd.appendChild(s);
+            }
+            frag.appendChild(wd);
+          });
+          n.replaceWith(frag);
+        } else if (n.nodeType === 1) walk(n);
+      });
+    };
+    walk(el);
+    Array.from(el.childNodes).forEach((n) => { if (n.nodeType === 1) n.setAttribute('aria-hidden', 'true'); });
+  }
+  $$('[data-split]').forEach(split);
+
+  /* ---------- Texte ajusté à la largeur (affiche) ---------- */
+  function fit(el) {
+    const parent = el.parentElement;
+    if (!parent || !parent.offsetWidth) return;
+    const cs = getComputedStyle(parent);
+    const avail = parent.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    el.style.fontSize = '100px';
+    el.style.display = 'inline-block';
+    const w = el.getBoundingClientRect().width;
+    el.style.display = '';
+    if (!w) return;
+    let size = 100 * avail / w * 0.985;
+    const vh = parseFloat(el.dataset.maxvh);
+    if (vh && tri.classList.contains('is-pin')) size = Math.min(size, innerHeight * vh / 100);
+    el.style.fontSize = Math.floor(size) + 'px';
+  }
+  const fitAll = () => $$('[data-fit]').forEach(fit);
+
+  /* ---------- Triptyque épinglé ---------- */
+  const tri = $('.tri');
+  const panels = $$('.tri-panel');
+  const tis = $$('.ti');
+  const triBar = $('.tri-bar i');
+  const triCount = $('.tri-count');
+  let pinned = false, stage = 0;
+
+  function setStage(s) {
+    if (s === stage && panels[s].classList.contains('is-on')) return;
+    stage = s;
+    panels.forEach((p, i) => {
+      if (pinned) { p.classList.toggle('is-on', i === s); p.classList.toggle('is-past', i < s); }
+    });
+    tis.forEach((b, i) => b.setAttribute('aria-current', i === s ? 'step' : 'false'));
+    triCount.textContent = '0' + (s + 1) + ' / 03';
+  }
+  function setPin() {
+    const want = !RM && innerWidth >= 760 && innerHeight >= 560;
+    if (want === pinned && tri.classList.contains('is-pin') === want) return;
+    pinned = want;
+    tri.classList.toggle('is-pin', want);
+    if (!want) panels.forEach((p) => { p.classList.add('is-on'); p.classList.remove('is-past'); });
+    else { panels.forEach((p) => p.classList.remove('is-on', 'is-past')); stage = -1; }
+  }
+  // Sans épinglage, chaque panneau se révèle quand il entre à l’écran.
+  if (!RM) panels.forEach((p, i) => { if (i) p.classList.remove('is-on'); });
+  tis.forEach((b) => b.addEventListener('click', () => {
+    const i = +b.dataset.go;
+    if (pinned) {
+      const top = tri.getBoundingClientRect().top + scrollY;
+      const span = tri.offsetHeight - innerHeight;
+      scrollTo({ top: top + span * (i + 0.5) / 3, behavior: RM ? 'auto' : 'smooth' });
+    } else panels[i].scrollIntoView({ behavior: RM ? 'auto' : 'smooth' });
+  }));
+
+  /* ---------- Thème de page, progression, épinglage : une seule lecture du défilement ---------- */
+  const themed = $$('[data-theme]');
+  let theme = '';
+  function onScroll() {
+    const vh = innerHeight, mid = vh * 0.45;
+    const max = root.scrollHeight - vh;
+    root.style.setProperty('--prog', max > 0 ? (scrollY / max).toFixed(4) : 0);
+    let t = null;
+    if (pinned) {
+      const r = tri.getBoundingClientRect();
+      const p = clamp(-r.top / (r.height - vh), 0, 1);
+      setStage(Math.min(2, Math.floor(p * 3)));
+      triBar.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+      if (r.top <= mid && r.bottom > mid) t = panels[stage].dataset.theme;
+    }
+    if (!t) {
+      for (const el of themed) {
+        if (pinned && el.classList.contains('tri-panel')) continue;
+        const r = el.getBoundingClientRect();
+        if (r.top <= mid && r.bottom > mid) {
+          t = el.dataset.theme;
+          if (!pinned && el.classList.contains('tri-panel')) setStage(+el.dataset.i);
+          break;
+        }
+      }
+    }
+    if (t && t !== theme) {
+      theme = t;
+      root.dataset.t = t;
+      const m = d.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute('content', COLORS[t][0]);
+    }
+  }
+
+  /* ---------- Révélations ---------- */
+  if ('IntersectionObserver' in window && !RM) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        if (e.target.classList.contains('tri-panel')) { if (!pinned) e.target.classList.add('is-on'); return; }
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { threshold: 0.2, rootMargin: '0px 0px -8% 0px' });
+    $$('.rv, .cut, .vow--no, .tri-panel').forEach((el) => io.observe(el));
+  } else {
+    $$('.rv, .cut, .vow--no').forEach((el) => el.classList.add('in'));
+    panels.forEach((p) => p.classList.add('is-on'));
+  }
+
+  /* ---------- Rubans : vitesse et sens suivent le défilement ---------- */
+  const tracks = $$('.tape-track').map((tr) => {
+    const seq = tr.firstElementChild;
+    const box = tr.parentElement;
+    let guard = 0;
+    while (tr.scrollWidth < box.clientWidth * 2 + seq.offsetWidth && guard++ < 12) {
+      const c = seq.cloneNode(true);
+      c.setAttribute('aria-hidden', 'true');
+      tr.appendChild(c);
+    }
+    return { tr, seq, w: seq.offsetWidth, x: 0, dir: +tr.dataset.dir || -1, speed: +tr.dataset.speed || 1 };
+  });
+
+  /* ---------- Lettres qui se déforment sous le curseur ---------- */
+  const distorts = $$('[data-distort]').map((el) => ({ el, chars: $$('.ch', el).map((c) => ({ c, cx: 0, cy: 0, w: 100, g: 860 })) }));
+  const REST_W = 100, REST_G = 860;
+  function measureDistort() {
+    distorts.forEach((D) => {
+      D.chars.forEach((o) => { o.c.style.removeProperty('--w'); o.c.style.removeProperty('--g'); o.w = REST_W; o.g = REST_G; });
+      const r0 = D.el.getBoundingClientRect();
+      D.chars.forEach((o) => {
+        const r = o.c.getBoundingClientRect();
+        o.cx = r.left + r.width / 2 - r0.left;
+        o.cy = r.top + r.height / 2 - r0.top;
+      });
+      D.rest = (D.chars[0] && parseFloat(getComputedStyle(D.chars[0].c).getPropertyValue('--g'))) || REST_G;
+      D.chars.forEach((o) => { o.g = D.rest; });
+    });
+  }
+
+  /* ---------- Pointeur ---------- */
+  const mouse = { x: -9999, y: -9999, in: false };
+  if (FINE && !RM) {
+    addEventListener('pointermove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.in = true; }, { passive: true });
+    d.addEventListener('pointerleave', () => { mouse.in = false; mouse.x = mouse.y = -9999; });
+  }
+  const mags = FINE && !RM ? $$('[data-mag]').map((el) => ({ el, x: 0, y: 0 })) : [];
+  const cur = FINE && !RM ? d.body.appendChild(Object.assign(d.createElement('div'), { className: 'cur' })) : null;
+  if (cur) {
+    cur.setAttribute('aria-hidden', 'true');
+    d.addEventListener('pointerover', (e) => cur.classList.toggle('big', !!e.target.closest('a, button, .stk, .step')));
+  }
+  const curPos = { x: -100, y: -100 };
+
+  /* ---------- Boucle d’animation ---------- */
+  const badge = $('.badge .ring');
+  let lastY = scrollY, vel = 0, sdir = 1, t0 = performance.now();
+  function loop(now) {
+    const dt = Math.min(48, now - t0) / 16.67; t0 = now;
+    const dy = scrollY - lastY; lastY = scrollY;
+    if (dy) sdir = dy > 0 ? 1 : -1;
+    vel = lerp(vel, Math.abs(dy), 0.12);
+
+    tracks.forEach((T) => {
+      T.x += T.dir * sdir * (1.1 + Math.min(vel, 80) * 0.35) * T.speed * dt;
+      T.x = ((T.x % T.w) + T.w) % T.w - T.w;
+      T.tr.style.transform = 'translate3d(' + T.x.toFixed(2) + 'px,0,0)';
+    });
+    if (badge) badge.style.setProperty('--rot', (scrollY * 0.25 + now * 0.008) % 360 + 'deg');
+
+    distorts.forEach((D) => {
+      const r0 = D.el.getBoundingClientRect();
+      if (r0.bottom < 0 || r0.top > innerHeight) return;
+      const R = Math.max(160, Math.min(340, r0.height * 0.55));
+      D.chars.forEach((o) => {
+        let tw = REST_W, tg = D.rest;
+        if (mouse.in) {
+          const dist = Math.hypot(mouse.x - (r0.left + o.cx), mouse.y - (r0.top + o.cy));
+          const f = Math.pow(clamp(1 - dist / R, 0, 1), 1.4);
+          tw = REST_W - (REST_W - 62) * f;
+          tg = D.rest - (D.rest - 220) * f;
+        }
+        const nw = lerp(o.w, tw, 0.16), ng = lerp(o.g, tg, 0.16);
+        if (Math.abs(nw - o.w) > 0.05 || Math.abs(ng - o.g) > 0.3) {
+          o.w = nw; o.g = ng;
+          o.c.style.setProperty('--w', nw.toFixed(1));
+          o.c.style.setProperty('--g', ng.toFixed(0));
+        }
+      });
+    });
+
+    mags.forEach((M) => {
+      const r = M.el.getBoundingClientRect();
+      const cx = r.left + r.width / 2 - M.x, cy = r.top + r.height / 2 - M.y;
+      const dx = mouse.x - cx, dy2 = mouse.y - cy;
+      const near = Math.abs(dx) < r.width / 2 + 70 && Math.abs(dy2) < r.height / 2 + 70;
+      M.x = lerp(M.x, near ? dx * 0.3 : 0, 0.15);
+      M.y = lerp(M.y, near ? dy2 * 0.38 : 0, 0.15);
+      M.el.style.transform = Math.abs(M.x) + Math.abs(M.y) > 0.1 ? 'translate(' + M.x.toFixed(1) + 'px,' + M.y.toFixed(1) + 'px)' : '';
+    });
+
+    if (cur) {
+      curPos.x = lerp(curPos.x, mouse.x, 0.3); curPos.y = lerp(curPos.y, mouse.y, 0.3);
+      cur.style.transform = 'translate(' + curPos.x.toFixed(1) + 'px,' + curPos.y.toFixed(1) + 'px)';
+      cur.classList.toggle('on', mouse.in);
+    }
+    pvStep();
+    onScroll();
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- Autocollants déplaçables ---------- */
+  const hero = $('.hero');
+  let zTop = 10;
+  $$('.stk').forEach((s) => {
+    let drag = null;
+    s._x = 0; s._y = 0;
+    const move = (nx, ny) => {
+      const h = hero.getBoundingClientRect();
+      const r = s.getBoundingClientRect();
+      const bx = r.left - s._x, by = r.top - s._y;
+      s._x = clamp(nx, h.left - bx + 4, h.right - bx - r.width - 4);
+      s._y = clamp(ny, h.top - by + 4, h.bottom - by - r.height - 4);
+      s.style.setProperty('--x', s._x + 'px');
+      s.style.setProperty('--y', s._y + 'px');
+    };
+    s.addEventListener('pointerdown', (e) => {
+      s.setPointerCapture(e.pointerId);
+      drag = { sx: e.clientX, sy: e.clientY, ox: s._x, oy: s._y };
+      s.classList.add('is-drag');
+      s.style.zIndex = ++zTop;
+    });
+    s.addEventListener('pointermove', (e) => { if (drag) move(drag.ox + e.clientX - drag.sx, drag.oy + e.clientY - drag.sy); });
+    const end = () => { drag = null; s.classList.remove('is-drag'); };
+    s.addEventListener('pointerup', end);
+    s.addEventListener('pointercancel', end);
+    s.addEventListener('keydown', (e) => {
+      const k = { ArrowLeft: [-16, 0], ArrowRight: [16, 0], ArrowUp: [0, -16], ArrowDown: [0, 16] }[e.key];
+      if (!k) return;
+      e.preventDefault();
+      s.style.zIndex = ++zTop;
+      move(s._x + k[0], s._y + k[1]);
+    });
+  });
+
+  /* ---------- Diagnostic express ---------- */
+  const Q = [
+    { q: 'Aujourd’hui, ce qui coince, c’est plutôt…', a: [
+      ['On fait beaucoup de choses, sans savoir lesquelles comptent.', 'S'],
+      ['On a des choses à dire, mais personne ne les entend.', 'C'],
+      ['Nos outils ne suivent plus : tableurs, ressaisies, copier-coller.', 'P'] ] },
+    { q: 'Dans un mois, vous aimeriez avoir entre les mains…', a: [
+      ['Un état des lieux, et les décisions à prendre dans l’ordre.', 'S'],
+      ['Un plan : quoi dire, où, à quel rythme, pour quel budget.', 'C'],
+      ['Un outil en ligne, construit autour de notre façon de travailler.', 'P'] ] },
+    { q: 'Chez vous, qui va porter le sujet ?', a: [
+      ['La direction : il faut trancher.', 'S'],
+      ['Quelqu’un qui peut y consacrer deux heures par semaine.', 'C'],
+      ['Les équipes qui s’en serviront tous les jours.', 'P'] ] },
+  ];
+  const R = {
+    S: { verb: 'Penser', pole: 'Stratégie', title: 'Commencez par un état des lieux écrit.',
+      text: 'Ce qui marche, ce qui coûte cher pour rien, et les décisions à prendre dans l’ordre. Ensuite seulement, on parle de moyens.',
+      nope: 'Vous savez déjà quoi faire et cherchez quelqu’un pour le valider.', href: '/contact?besoin=flou', cta: 'Demander un état des lieux' },
+    C: { verb: 'Dire', pole: 'Communication', title: 'Il vous faut un plan de communication qui tient.',
+      text: 'Positionnement, messages, canaux, rythme, budget. Et la liste de ce qu’on arrête.',
+      nope: 'Votre offre elle-même n’est pas arrêtée. On commence par là.', href: '/contact?besoin=com', cta: 'Parler de mon plan' },
+    P: { verb: 'Construire', pole: 'Plateformes métier', title: 'Il vous faut l’outil que le tableur ne fait plus.',
+      text: 'Construit autour de votre façon de travailler, repris par vos équipes quand elles veulent. Le code vous appartient.',
+      nope: 'Un logiciel du marché couvre déjà l’essentiel. On vous dira lequel.', href: '/contact?besoin=outil', cta: 'Décrire mon outil' },
+  };
+  const NAMES = { S: 'Stratégie', C: 'Communication', P: 'Plateformes' };
+  const qzBody = $('#qz-body');
+  const dots = $$('.diag-steps span');
+  let qi = 0, answers = [];
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const nb = (s) => s.replace(/ ([:;?!])/g, ' $1');
+
+  function renderQ() {
+    dots.forEach((dEl, i) => dEl.classList.toggle('on', i <= Math.min(qi, 2)));
+    if (qi >= Q.length) return renderResult();
+    const item = Q[qi];
+    qzBody.innerHTML =
+      '<p class="mono">Question ' + (qi + 1) + ' / ' + Q.length + '</p>' +
+      '<h3 class="qz-q" tabindex="-1">' + esc(nb(item.q)) + '</h3>' +
+      '<div class="qz-a">' + item.a.map((a, i) =>
+        '<button class="qa" type="button" data-k="' + a[1] + '"><span class="k" aria-hidden="true">' + 'ABC'[i] + '</span><span>' + esc(nb(a[0])) + '</span></button>').join('') + '</div>' +
+      (qi > 0 ? '<button class="qz-back mono" type="button" data-back>← Question précédente</button>' : '');
+  }
+  function renderResult() {
+    const sc = { S: 0, C: 0, P: 0 };
+    answers.forEach((k) => sc[k]++);
+    const order = ['S', 'C', 'P'].sort((a, b) => sc[b] - sc[a]);
+    const top = order[0], tied = order.filter((k) => sc[k] === sc[top]);
+    const r = R[top];
+    let note = '';
+    if (tied.length > 1) note = tied.includes('S')
+      ? 'Vos réponses penchent de plusieurs côtés : dans le doute, on commence par cadrer.'
+      : 'Vos réponses hésitent entre deux pôles : on tranchera ensemble au premier échange.';
+    qzBody.innerHTML =
+      '<div class="res res--' + top + '">' +
+      '<p class="mono" style="margin:0">Par où commencer · pôle ' + esc(r.pole) + '</p>' +
+      '<p class="res-verb" data-fit aria-hidden="true">' + r.verb + '</p>' +
+      '<h3 tabindex="-1" class="qz-q" style="margin:0 0 10px;font-size:clamp(1.4rem,2.2vw,2rem)">' + esc(r.title) + '</h3>' +
+      '<p>' + esc(r.text) + '</p>' +
+      (note ? '<p class="mono">' + esc(nb(note)) + '</p>' : '') +
+      '<div class="res-bars mono" aria-label="Répartition de vos réponses">' + ['S', 'C', 'P'].map((k) =>
+        '<div class="res-bar"><span>' + NAMES[k] + '</span><span class="track"><i style="--v:0" data-v="' + (sc[k] / 3) + '"></i></span><span>' + sc[k] + '/3</span></div>').join('') + '</div>' +
+      '<p><span class="mono">Inutile si · </span>' + esc(r.nope) + '</p>' +
+      '<div class="btn-row"><a class="btn" href="' + r.href + '"><span>' + esc(r.cta) + '</span><span class="arr" aria-hidden="true">→</span></a>' +
+      '<button class="btn btn--ghost" type="button" data-restart><span>Recommencer</span></button></div>' +
+      '<p class="res-fine">Un repère indicatif, pas un verdict&nbsp;: au premier échange, on vous dit si ce n’est pas la bonne porte.</p>' +
+      '</div>';
+    const verb = $('.res-verb', qzBody);
+    split(verb); fit(verb);
+    requestAnimationFrame(() => requestAnimationFrame(() => $$('.res-bar i', qzBody).forEach((i) => i.style.setProperty('--v', i.dataset.v))));
+  }
+  function swap(fn) {
+    if (RM) { fn(); focusQ(); return; }
+    qzBody.classList.add('out');
+    setTimeout(() => { fn(); qzBody.classList.remove('out'); focusQ(); }, 220);
+  }
+  const focusQ = () => { const h = $('.qz-q', qzBody); if (h) h.focus({ preventScroll: true }); };
+  qzBody.addEventListener('click', (e) => {
+    const a = e.target.closest('.qa'), back = e.target.closest('[data-back]'), rs = e.target.closest('[data-restart]');
+    if (a) { answers[qi] = a.dataset.k; qi++; answers.length = qi; swap(renderQ); }
+    else if (back) { qi = Math.max(0, qi - 1); swap(renderQ); }
+    else if (rs) { qi = 0; answers = []; swap(renderQ); }
+  });
+  renderQ();
+
+  /* ---------- Méthode : accordéon d’affiches ---------- */
+  const steps = $$('.step');
+  const mqStack = window.matchMedia('(max-width: 899px)');
+  function openStep(i) {
+    if (mqStack.matches) return;
+    steps.forEach((s, k) => { s.classList.toggle('is-open', k === i); $('.step-b', s).setAttribute('aria-expanded', k === i ? 'true' : 'false'); });
+  }
+  function syncSteps() {
+    if (mqStack.matches) steps.forEach((s) => $('.step-b', s).setAttribute('aria-expanded', 'true'));
+    else openStep(Math.max(0, steps.findIndex((s) => s.classList.contains('is-open'))));
+  }
+  steps.forEach((s, i) => {
+    s.addEventListener('mouseenter', () => { if (FINE) openStep(i); });
+    s.addEventListener('click', () => openStep(i));
+    $('.step-b', s).addEventListener('focus', () => openStep(i));
+  });
+  syncSteps();
+
+  /* ---------- Réalisations : filtres + aperçu qui suit le curseur ---------- */
+  const chips = $$('.chip'), pjs = $$('.pj'), count = $('#pj-count');
+  chips.forEach((c) => c.addEventListener('click', () => {
+    const f = c.dataset.f;
+    chips.forEach((x) => x.setAttribute('aria-pressed', x === c ? 'true' : 'false'));
+    let n = 0;
+    pjs.forEach((p) => { const show = f === 'all' || p.dataset.cat === f; p.hidden = !show; if (show) n++; });
+    count.textContent = String(n).padStart(2, '0');
+  }));
+  pjs.forEach((p) => {
+    const a = p.firstElementChild, c = COLORS[a.dataset.c] || COLORS.blue;
+    a.style.setProperty('--pc', c[0]);
+    a.style.setProperty('--pt', c[1]);
+  });
+  const pv = $('.pv');
+  const pvS = { x: 0, y: 0, r: 0, on: false };
+  if (FINE && !RM) {
+    pjs.forEach((p) => {
+      const a = p.firstElementChild;
+      a.addEventListener('mouseenter', () => {
+        const alt = a.dataset.c === 'ink' ? COLORS.verm : a.dataset.c === 'verm' ? COLORS.ink : COLORS.verm;
+        pv.style.background = alt[0]; pv.style.color = alt[1];
+        $('.pv-t', pv).textContent = $('.pj-t', a).textContent;
+        $('.pv-e', pv).textContent = a.dataset.eb;
+        $('.pv-d', pv).textContent = '↗ ' + a.dataset.dom;
+        if (!pvS.on) { pvS.x = mouse.x + 28; pvS.y = mouse.y - 105; }
+        pvS.on = true; pv.classList.add('on');
+      });
+      a.addEventListener('mouseleave', () => { pvS.on = false; pv.classList.remove('on'); });
+    });
+  }
+  function pvStep() {
+    if (!pvS.on) return;
+    const tx = clamp(mouse.x + 28, 8, innerWidth - 310), ty = clamp(mouse.y - 105, 8, innerHeight - 220);
+    const px = pvS.x;
+    pvS.x = lerp(pvS.x, tx, 0.18); pvS.y = lerp(pvS.y, ty, 0.18);
+    pvS.r = lerp(pvS.r, clamp((pvS.x - px) * 0.6, -10, 10), 0.2);
+    pv.style.transform = 'translate(' + pvS.x.toFixed(1) + 'px,' + pvS.y.toFixed(1) + 'px) rotate(' + pvS.r.toFixed(2) + 'deg)';
+  }
+
+  /* ---------- Mise en route ---------- */
+  function layout() { setPin(); fitAll(); measureDistort(); syncSteps(); onScroll(); tracks.forEach((T) => { T.w = T.seq.offsetWidth || T.w; }); }
+  layout();
+  let rz;
+  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(layout, 150); });
+  if (d.fonts && d.fonts.ready) d.fonts.ready.then(layout);
+  // Le titre du hero entre en scène lettre à lettre : on remesure une fois posé.
+  setTimeout(measureDistort, 2600);
+  addEventListener('load', layout);
+
+  if (RM) {
+    let tick = false;
+    addEventListener('scroll', () => { if (!tick) { tick = true; requestAnimationFrame(() => { onScroll(); tick = false; }); } }, { passive: true });
+  } else requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
