@@ -2,12 +2,15 @@ import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import NeedStart from '../components/qualification/NeedStart'
-import { InstrumentRings } from '../components/graphics'
+import { HeroBackdrop } from '../components/systeme'
 import Faq from '../components/conversion/Faq'
 import { METHODE_FAQ } from '../content/faq'
 import { useI18n } from '../context/I18nContext'
 import type { MessageKey } from '../i18n'
 import { useEffect, useRef } from 'react'
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
+import { useReveal } from '../hooks/useReveal'
+import '../styles/monolithe-pages.css'
 import './Methode.css'
 
 const STEPS = [
@@ -58,14 +61,12 @@ const FACTORS = [
 /** Allume chaque nœud quand son étape atteint le tiers haut de l'écran. */
 const useLitNodes = () => {
   const listRef = useRef<HTMLOListElement>(null)
+  const reduced = usePrefersReducedMotion()
 
   useEffect(() => {
     const items = Array.from(listRef.current?.querySelectorAll<HTMLElement>('li[data-step]') ?? [])
     const lightAll = () => items.forEach((el) => el.classList.add('is-lit'))
-    if (
-      typeof IntersectionObserver === 'undefined' ||
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    ) {
+    if (typeof IntersectionObserver === 'undefined' || reduced) {
       lightAll()
       return
     }
@@ -82,17 +83,18 @@ const useLitNodes = () => {
     )
     items.forEach((el) => io.observe(el))
     return () => io.disconnect()
-  }, [])
+  }, [reduced])
 
   return listRef
 }
 
 const Methode = () => {
   const { t } = useI18n()
+  useReveal('.sy-secondary .sy-rv', 'is-in')
   const timelineRef = useLitNodes()
 
   return (
-    <div className="mt-page">
+    <div className="mt-page sy-secondary">
       <SEO
         title={t('pubHome.method.seoTitle')}
         description={t('pubHome.method.seoDescription')}
@@ -100,26 +102,26 @@ const Methode = () => {
       />
       <StructuredData type="method" />
 
-      <section className="mt-hero">
-        <InstrumentRings />
-        <div className="mt-shell mt-hero-body">
-          <p className="mt-eyebrow">{t('nav.method')}</p>
-          <h1>
+      <section className="mt-hero sy-secondary-hero">
+        <HeroBackdrop />
+        <div className="mt-shell mt-hero-body sy-wrap">
+          <p className="mt-eyebrow sy-eyebrow">{t('nav.method')}</p>
+          <h1 className="sy-secondary-title">
             {t('pubHome.method.title')} <span>{t('pubHome.method.titleAccent')}</span>
           </h1>
-          <p className="mt-lede">{t('pubHome.method.lede')}</p>
+          <p className="mt-lede sy-secondary-lede">{t('pubHome.method.lede')}</p>
         </div>
       </section>
 
       <section className="mt-band mt-band--flush">
-        <div className="mt-shell">
+        <div className="mt-shell sy-wrap">
           <ol className="mt-timeline" ref={timelineRef}>
             {STEPS.map((step, index) => (
               <li key={step.number} data-step={step.number} style={{ ['--i' as string]: index }}>
                 <span className="mt-node" aria-hidden="true">
                   {step.number}
                 </span>
-                <div className="mt-step">
+                <div className="mt-step sy-glass">
                   <h2>{t(step.title)}</h2>
                   <p className="mt-cad">{t(step.cadence)}</p>
                   <h3 className="mt-lab">{t('pubHome.method.deliverables')}</h3>
@@ -136,20 +138,23 @@ const Methode = () => {
       </section>
 
       <section className="mt-band">
-        <div className="mt-shell mt-split">
+        <div className="mt-shell mt-split sy-wrap sy-rv">
           <div>
-            <p className="mt-eyebrow">{t('pubHome.method.delayEyebrow')}</p>
+            <p className="mt-eyebrow sy-eyebrow">{t('pubHome.method.delayEyebrow')}</p>
             <h2 className="mt-h2">
               {t('pubHome.method.delayTitle')} <span>{t('pubHome.method.delayTitleAccent')}</span>
             </h2>
             <p className="mt-sub">{t('pubHome.method.delaySub')}</p>
             <p className="mt-sub">
               <Link className="mt-link" to="/services/sites">
-                {t('pubHome.method.delayLink')} <span aria-hidden="true">→</span>
+                {t('pubHome.method.delayLink')}{' '}
+                <span className="sy-arr" aria-hidden="true">
+                  →
+                </span>
               </Link>
             </p>
           </div>
-          <div className="mt-plate">
+          <div className="mt-plate sy-glass">
             {FACTORS.map((factor) => (
               <p key={factor.title}>
                 <b>{t(factor.title)}</b>
@@ -161,7 +166,7 @@ const Methode = () => {
       </section>
 
       <section className="mt-band">
-        <div className="mt-shell">
+        <div className="mt-shell sy-wrap">
           <Faq items={METHODE_FAQ} />
         </div>
       </section>

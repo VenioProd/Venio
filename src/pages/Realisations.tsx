@@ -4,11 +4,13 @@ import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import ProofRadar from '../components/home/ProofRadar'
 import NeedStart from '../components/qualification/NeedStart'
-import { InstrumentRings } from '../components/graphics'
+import { HeroBackdrop } from '../components/systeme'
 import { PORTFOLIO_PROJECTS, type PortfolioCategory } from '../content/portfolioProjects'
 import { useI18n } from '../context/I18nContext'
 import type { MessageKey } from '../i18n'
 import { useSpotlight } from '../hooks/useSpotlight'
+import { useReveal } from '../hooks/useReveal'
+import '../styles/monolithe-pages.css'
 import './Realisations.css'
 
 type Filter = 'all' | PortfolioCategory
@@ -27,13 +29,14 @@ const CATEGORY_LABEL: Record<PortfolioCategory, MessageKey> = {
 const Realisations = () => {
   const { t } = useI18n()
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
+  useReveal('.sy-secondary .sy-rv', 'is-in', activeFilter)
   const gridRef = useSpotlight<HTMLDivElement>()
   const projects =
     activeFilter === 'all' ? PORTFOLIO_PROJECTS : PORTFOLIO_PROJECTS.filter((p) => p.category === activeFilter)
   const total = String(PORTFOLIO_PROJECTS.length).padStart(2, '0')
 
   return (
-    <main className="rl-page">
+    <main className="rl-page sy-secondary">
       <SEO
         title={t('pubHome.work.seoTitle')}
         description={t('pubHome.work.seoDescription')}
@@ -41,15 +44,15 @@ const Realisations = () => {
       />
       <StructuredData type="realisations" />
 
-      <section className="rl-hero">
-        <InstrumentRings />
-        <div className="rl-shell rl-hero-body">
-          <p className="rl-eyebrow">{t('nav.realisations')}</p>
-          <h1>
+      <section className="rl-hero sy-secondary-hero">
+        <HeroBackdrop />
+        <div className="rl-shell rl-hero-body sy-wrap">
+          <p className="rl-eyebrow sy-eyebrow">{t('nav.realisations')}</p>
+          <h1 className="sy-secondary-title">
             {t('pubHome.work.title')} <span>{t('pubHome.work.titleAccent')}</span>
           </h1>
           <div className="rl-hero-bottom">
-            <p className="rl-lede">{t('pubHome.work.lede')}</p>
+            <p className="rl-lede sy-secondary-lede">{t('pubHome.work.lede')}</p>
             <dl className="rl-stats" aria-label={t('pubHome.work.statsLabel')}>
               <div>
                 <dt>{total}</dt>
@@ -69,13 +72,13 @@ const Realisations = () => {
       </section>
 
       <section className="rl-band rl-band--radar">
-        <div className="rl-shell">
+        <div className="rl-shell sy-wrap sy-rv">
           <ProofRadar />
         </div>
       </section>
 
       <section className="rl-band">
-        <div className="rl-shell">
+        <div className="rl-shell sy-wrap">
           <div className="rl-filters" role="group" aria-label={t('pubHome.work.filtersLabel')}>
             {FILTERS.map((filter) => (
               <button
@@ -92,12 +95,16 @@ const Realisations = () => {
 
           <div className="rl-grid" ref={gridRef} aria-live="polite">
             {projects.map((project, index) => (
-              <article className="rl-card vn-spot" key={project.slug} style={{ ['--i' as string]: index }}>
+              <article
+                className="rl-card vn-spot sy-glass sy-rv"
+                key={project.slug}
+                style={{ ['--i' as string]: index }}
+              >
                 <a
                   className="rl-cover"
                   href={project.url}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   tabIndex={-1}
                   aria-hidden="true"
                 >
@@ -115,8 +122,11 @@ const Realisations = () => {
                       <li key={tag}>{tag}</li>
                     ))}
                   </ul>
-                  <a className="rl-link" href={project.url} target="_blank" rel="noreferrer">
-                    {project.linkLabel} <span aria-hidden="true">↗</span>
+                  <a className="rl-link" href={project.url} target="_blank" rel="noopener noreferrer">
+                    {project.linkLabel}{' '}
+                    <span className="sy-arr" aria-hidden="true">
+                      ↗
+                    </span>
                   </a>
                 </div>
               </article>
@@ -125,7 +135,10 @@ const Realisations = () => {
 
           <p className="rl-more">
             <Link to="/contact">
-              {t('pubHome.work.more')} <span aria-hidden="true">→</span>
+              {t('pubHome.work.more')}{' '}
+              <span className="sy-arr" aria-hidden="true">
+                →
+              </span>
             </Link>
           </p>
         </div>

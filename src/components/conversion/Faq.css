@@ -17,12 +17,12 @@ html.theme-monolithe .mc-faq-title {
      Une question posée en capitales se lit mal : le socle impose sa casse. */
   text-transform: none;
   margin: 0;
-  font-family: var(--font-heading);
+  font-family: var(--sy-sans);
   font-size: clamp(26px, 3.6vw, 44px);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.05;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
+  letter-spacing: -0.045em;
+  color: var(--sy-tx);
 }
 
 html.theme-monolithe .mc-faq-list {
@@ -33,11 +33,20 @@ html.theme-monolithe .mc-faq-list {
 html.theme-monolithe .mc-faq-item {
   overflow: hidden;
   padding: 0;
+  border: 1px solid var(--sy-line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition:
+    border-color 0.25s,
+    background 0.25s;
 }
 
 html.theme-monolithe .mc-faq-item[open] {
-  border-color: var(--accent-border);
-  background: var(--accent-surface);
+  border-color: rgba(var(--primary-light-rgb), 0.3);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.07), rgba(167, 139, 250, 0.025));
 }
 
 /* <summary> est le bouton d'ouverture : il porte déjà le nom
@@ -57,12 +66,12 @@ html.theme-monolithe .mc-faq-q-text {
   justify-content: space-between;
   gap: var(--mc-sp-s);
   margin: 0;
-  font-family: var(--font-heading);
+  font-family: var(--sy-sans);
   font-size: clamp(15px, 1.5vw, 18px);
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.35;
-  color: var(--text-primary);
-  transition: color 0.25s var(--mc-ease);
+  color: var(--sy-tx);
+  transition: color 0.25s var(--sy-ease);
 }
 
 html.theme-monolithe .mc-faq-q::-webkit-details-marker {
@@ -70,13 +79,13 @@ html.theme-monolithe .mc-faq-q::-webkit-details-marker {
 }
 
 html.theme-monolithe .mc-faq-q:hover .mc-faq-q-text {
-  color: var(--primary);
+  color: var(--sy-sky);
 }
 
 html.theme-monolithe .mc-faq-q:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--sy-sky);
   outline-offset: -2px;
-  border-radius: var(--r-card);
+  border-radius: 18px;
 }
 
 /* Le chevron est décoratif : l'état réel est porté par <details>. */
@@ -86,7 +95,7 @@ html.theme-monolithe .mc-faq-sign {
   height: 14px;
   margin-top: 4px;
   position: relative;
-  color: var(--primary);
+  color: var(--sy-sky);
 }
 
 html.theme-monolithe .mc-faq-sign::before,
@@ -96,7 +105,7 @@ html.theme-monolithe .mc-faq-sign::after {
   inset: 50% 0 auto 0;
   height: 1.5px;
   background: currentColor;
-  transition: transform 0.25s var(--mc-ease);
+  transition: transform 0.25s var(--sy-ease);
 }
 
 html.theme-monolithe .mc-faq-sign::after {
@@ -108,12 +117,13 @@ html.theme-monolithe .mc-faq-item[open] .mc-faq-sign::after {
 }
 
 html.theme-monolithe .mc-faq-a {
+  font-weight: 400;
   margin: 0;
   padding: 0 var(--mc-sp-m) var(--mc-sp-m);
   max-width: 72ch;
   font-size: clamp(14px, 1.3vw, 16px);
   line-height: 1.65;
-  color: var(--text-secondary);
+  color: var(--sy-mut);
 }
 
 @media (max-width: 640px) {
@@ -133,7 +143,7 @@ html.theme-monolithe .mc-faq-a {
    lui (moteur trop ancien), rien ne casse : l'accordéon s'ouvre d'un coup,
    comme aujourd'hui. */
 
-html.theme-monolithe {
+html.theme-monolithe .mc-faq-item {
   interpolate-size: allow-keywords;
 }
 
@@ -142,8 +152,8 @@ html.theme-monolithe .mc-faq-item::details-content {
   overflow: hidden;
   opacity: 0;
   transition:
-    block-size 0.3s var(--mc-ease),
-    opacity 0.3s var(--mc-ease),
+    block-size 0.3s var(--sy-ease),
+    opacity 0.3s var(--sy-ease),
     content-visibility 0.3s allow-discrete;
 }
 
@@ -153,6 +163,7 @@ html.theme-monolithe .mc-faq-item[open]::details-content {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .mc-faq-item,
   html.theme-monolithe .mc-faq-q-text,
   html.theme-monolithe .mc-faq-sign::before,
   html.theme-monolithe .mc-faq-sign::after {
@@ -162,4 +173,11 @@ html.theme-monolithe .mc-faq-item[open]::details-content {
   html.theme-monolithe .mc-faq-item::details-content {
     transition: none;
   }
+}
+
+html.theme-monolithe .mc-faq-head .mc-eyebrow {
+  font-family: var(--sy-mono);
+  color: var(--sy-mut);
+  font-weight: 400;
+  letter-spacing: 0.14em;
 }

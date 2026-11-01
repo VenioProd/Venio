@@ -6,11 +6,12 @@ import ServiceOfferLinks from '../components/ServiceOfferLinks'
 import Faq from '../components/conversion/Faq'
 import TrustLine from '../components/conversion/TrustLine'
 import NeedStart from '../components/qualification/NeedStart'
-import { FormulaThumb, InstrumentRings, useSpotlight, type FormulaKind } from '../components/graphics'
+import { FormulaThumb, useSpotlight, type FormulaKind } from '../components/graphics'
 import { SITES_FAQ } from '../content/faq'
 import { useI18n } from '../context/I18nContext'
 import type { MessageKey } from '../i18n'
 import { useReveal } from '../hooks/useReveal'
+import { HeroBackdrop } from '../components/systeme'
 import '../styles/monolithe-pages.css'
 import '../styles/refonte-pages.css'
 
@@ -69,11 +70,11 @@ const FORMULAS: Formula[] = [
 
 const ServicesSites: React.FC = () => {
   const { t } = useI18n()
-  useReveal('.mp-page .mp-reveal', 'mp-visible')
+  useReveal('.sy-secondary .sy-rv', 'is-in')
   const tiersRef = useSpotlight<HTMLDivElement>()
 
   return (
-    <div className="mp-page">
+    <div className="mp-page sy-secondary">
       <SEO
         title={t('pubHome.sites.seoTitle')}
         description={t('pubHome.sites.seoDescription')}
@@ -81,17 +82,14 @@ const ServicesSites: React.FC = () => {
       />
       <StructuredData type="service-sites" />
 
-      <section className="rp-hero">
-        <InstrumentRings />
-        <div className="mp-container">
-          <p className="rp-mono rp-eb">
-            <i aria-hidden="true" />
-            {t('pubHome.sites.heroEyebrow')}
-          </p>
-          <h1 className="rp-h1">
+      <section className="rp-hero sy-secondary-hero">
+        <HeroBackdrop />
+        <div className="mp-container sy-wrap">
+          <p className="rp-mono rp-eb sy-eyebrow">{t('pubHome.sites.heroEyebrow')}</p>
+          <h1 className="rp-h1 sy-secondary-title">
             {t('pubHome.sites.title')} <span className="rp-acc vn-shine">{t('pubHome.sites.titleAccent')}</span>
           </h1>
-          <p className="rp-lede">{t('pubHome.sites.lede')}</p>
+          <p className="rp-lede sy-secondary-lede">{t('pubHome.sites.lede')}</p>
           <div className="rp-ctas vn-fx">
             <Link to="/contact?besoin=site" className="mc-btn mc-btn--primary" data-analytics-cta="sites_hero_besoin">
               {t('pubHome.cta.describeNeed')}
@@ -107,13 +105,10 @@ const ServicesSites: React.FC = () => {
       </section>
 
       <section className="rp-sec">
-        <div className="mp-container mp-reveal">
-          <p className="rp-mono rp-eb">
-            <i aria-hidden="true" />
-            {t('pubHome.sites.versusEyebrow')}
-          </p>
+        <div className="mp-container sy-rv sy-wrap">
+          <p className="rp-mono rp-eb sy-eyebrow">{t('pubHome.sites.versusEyebrow')}</p>
           <div className="rp-versus">
-            <div className="rp-vs-col rp-vs-no">
+            <div className="rp-vs-col rp-vs-no sy-glass">
               <span className="rp-mono">{t('pubHome.sites.vsNoLabel')}</span>
               <h3>{t('pubHome.sites.vsNoTitle')}</h3>
               <ul>
@@ -125,7 +120,7 @@ const ServicesSites: React.FC = () => {
             <div className="rp-vs-mid" aria-hidden="true">
               <span>VS</span>
             </div>
-            <div className="rp-vs-col rp-vs-yes">
+            <div className="rp-vs-col rp-vs-yes sy-glass">
               <span className="rp-mono rp-acc">Venio</span>
               <h3>{t('pubHome.sites.vsYesTitle')}</h3>
               <ul>
@@ -139,18 +134,15 @@ const ServicesSites: React.FC = () => {
       </section>
 
       <section id="formules" className="rp-sec">
-        <div className="mp-container mp-reveal">
-          <p className="rp-mono rp-eb">
-            <i aria-hidden="true" />
-            {t('pubHome.sites.formulasEyebrow')}
-          </p>
+        <div className="mp-container sy-rv sy-wrap">
+          <p className="rp-mono rp-eb sy-eyebrow">{t('pubHome.sites.formulasEyebrow')}</p>
           <h2>
             {t('pubHome.sites.formulasTitle')} <span className="rp-acc">{t('pubHome.sites.formulasTitleAccent')}</span>
           </h2>
           <p className="rp-sub">{t('pubHome.sites.formulasSub')}</p>
           <div className="rp-tiers" ref={tiersRef}>
             {FORMULAS.map((f) => (
-              <article key={f.kind} className="rp-tier vn-spot">
+              <article key={f.kind} className="rp-tier vn-spot sy-glass">
                 <FormulaThumb kind={f.kind} />
                 <span className="rp-mono">{t(f.label)}</span>
                 <h3>{t(f.title)}</h3>
@@ -161,7 +153,10 @@ const ServicesSites: React.FC = () => {
                   ))}
                 </ul>
                 <Link to={f.to} className="rp-go" data-analytics-cta={`sites_formule_${f.kind}`}>
-                  {t('pubHome.sites.formulaGo')}
+                  {t('pubHome.sites.formulaGo').replace(/\s*→$/, '')}{' '}
+                  <span className="sy-arr" aria-hidden="true">
+                    →
+                  </span>
                 </Link>
               </article>
             ))}
@@ -171,13 +166,13 @@ const ServicesSites: React.FC = () => {
       </section>
 
       <section className="rp-see-also">
-        <div className="mp-container">
+        <div className="mp-container sy-wrap">
           <ServiceOfferLinks currentPath="/services/sites" />
         </div>
       </section>
 
       <section className="rp-faq-sec">
-        <div className="mp-container mp-reveal">
+        <div className="mp-container sy-rv sy-wrap">
           <Faq items={SITES_FAQ} />
         </div>
       </section>

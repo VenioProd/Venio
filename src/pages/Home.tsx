@@ -1,190 +1,91 @@
-import { Fragment, useEffect, useState, type CSSProperties } from 'react'
+import { Fragment, useEffect, useId, useRef, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
-import { GrainOverlay } from '../components/BrutalDeco'
-import { useReveal } from '../hooks/useReveal'
-import { useSpotlight } from '../hooks/useSpotlight'
-import { InstrumentRings, LineIcon, type LineIconName } from '../components/graphics'
-import TierDial, { type HomeTier } from '../components/home/TierDial'
-import ProofRadar from '../components/home/ProofRadar'
-import DualCta from '../components/conversion/DualCta'
 import TrustLine from '../components/conversion/TrustLine'
 import Faq from '../components/conversion/Faq'
 import NeedStart from '../components/qualification/NeedStart'
+import {
+  HeroBackdrop,
+  HeroFlow,
+  TiltStage,
+  FeatureSection,
+  RoadmapMock,
+  CommunicationMock,
+  PlatformMock,
+  FormulaGrid,
+  Guarantees,
+  MethodSteps,
+  RefsStrip,
+} from '../components/systeme'
 import { HOME_FAQ } from '../content/faq'
 import { useI18n } from '../context/I18nContext'
-import type { MessageKey } from '../i18n'
-import '../styles/monolithe-home.css'
+import { useReveal } from '../hooks/useReveal'
+import './Home.css'
 
-type TierN = 1 | 2 | 3 | 4 | 5
-
-const TIER_DEFS: { n: TierN; num: string; thumb: HomeTier['thumb']; icon: HomeTier['icon']; featured: boolean }[] = [
-  { n: 1, num: '01', thumb: 'vitrine', icon: 'vitrine', featured: false },
-  { n: 2, num: '02', thumb: 'essentiel', icon: 'essentiel', featured: false },
-  { n: 3, num: '03', thumb: 'business', icon: 'business', featured: true },
-  { n: 4, num: '04', thumb: 'boutique', icon: 'ecommerce', featured: false },
-  { n: 5, num: '05', thumb: 'mesure', icon: 'plateforme', featured: false },
-]
-
-const ARGUMENTS = [
-  { num: '01', titre: 'pubHome.home.arg1Title', texte: 'pubHome.home.arg1Text' },
-  { num: '02', titre: 'pubHome.home.arg2Title', texte: 'pubHome.home.arg2Text' },
-  { num: '03', titre: 'pubHome.home.arg3Title', texte: 'pubHome.home.arg3Text' },
-] as const satisfies readonly { num: string; titre: MessageKey; texte: MessageKey }[]
-
-/* Quatre métiers hors formules. Le conseil marketing ouvre la liste : il a sa
-   propre page. Les trois autres ouvrent le formulaire de contact avec le
-   besoin déjà coché (?besoin=). */
-const METIERS = [
-  {
-    num: '01',
-    nom: 'pubHome.home.job1Name',
-    to: '/conseil-communication',
-    icon: 'megaphone',
-    nouveau: true,
-    titre: 'pubHome.home.job1Title',
-    texte: 'pubHome.home.job1Text',
-    inutile: 'pubHome.home.job1Nope',
-  },
-  {
-    num: '02',
-    nom: 'pubHome.home.job2Name',
-    to: '/contact?besoin=flou',
-    icon: 'doc',
-    nouveau: false,
-    titre: 'pubHome.home.job2Title',
-    texte: 'pubHome.home.job2Text',
-    inutile: 'pubHome.home.job2Nope',
-  },
-  {
-    num: '03',
-    nom: 'pubHome.home.job3Name',
-    to: '/contact?besoin=marque',
-    icon: 'glyph',
-    nouveau: false,
-    titre: 'pubHome.home.job3Title',
-    texte: 'pubHome.home.job3Text',
-    inutile: 'pubHome.home.job3Nope',
-  },
-  {
-    num: '04',
-    nom: 'pubHome.home.job4Name',
-    to: '/contact?besoin=outil',
-    icon: 'code',
-    nouveau: false,
-    titre: 'pubHome.home.job4Title',
-    texte: 'pubHome.home.job4Text',
-    inutile: 'pubHome.home.job4Nope',
-  },
-] as const satisfies readonly {
-  num: string
-  nom: MessageKey
-  to: string
-  icon: LineIconName
-  nouveau: boolean
-  titre: MessageKey
-  texte: MessageKey
-  inutile: MessageKey
-}[]
-
-/* Les trois temps d'un projet ; l'étape active avance toute seule. */
-const ETAPES = [
-  { num: '01', titre: 'pubHome.home.step1Title', detail: 'pubHome.home.step1Detail', pole: 'pubHome.home.step1Pole' },
-  { num: '02', titre: 'pubHome.home.step2Title', detail: 'pubHome.home.step2Detail', pole: 'pubHome.home.step2Pole' },
-  { num: '03', titre: 'pubHome.home.step3Title', detail: 'pubHome.home.step3Detail', pole: 'pubHome.home.step3Pole' },
-] as const satisfies readonly { num: string; titre: MessageKey; detail: MessageKey; pole: MessageKey }[]
-
-/** Mots du titre : chacun monte de derrière un masque, au chargement. */
-const Mots = ({ texte, depart, accent = false }: { texte: string; depart: number; accent?: boolean }) => {
-  const mots = texte.split(' ')
+/** Chaque mot monte derrière son masque sans interrompre la phrase accessible. */
+function TitleWords({ text, start = 0, accent = false }: { text: string; start?: number; accent?: boolean }) {
   return (
     <>
-      {mots.map((mot, k) => {
-        const i = { '--i': depart + k } as CSSProperties
-        return (
-          <Fragment key={`${mot}-${k}`}>
-            <span className="mh-w">
-              <span className="mh-w-in" style={i}>
-                {accent ? (
-                  <span className="vn-shine" style={i}>
-                    {mot}
-                  </span>
-                ) : (
-                  mot
-                )}
-              </span>
+      {text.split(' ').map((word, index) => (
+        <Fragment key={`${word}-${index}`}>
+          {index > 0 && ' '}
+          <span className="sy-home-word">
+            <span
+              className={`sy-home-word__inner${accent ? ' sy-gt' : ''}`}
+              style={{ '--i': start + index } as CSSProperties}
+            >
+              {word}
             </span>
-            {k < mots.length - 1 && ' '}
-          </Fragment>
-        )
-      })}
+          </span>
+        </Fragment>
+      ))}
     </>
   )
 }
 
-/* Plaque « Un projet Venio » : un fil lumineux relie les trois temps et
-   l'étape active passe de l'une à la suivante. Coupé si le visiteur demande
-   moins de mouvement : l'étape du milieu reste alors allumée. */
-const ProjectPlate = () => {
+export default function Home() {
   const { t } = useI18n()
-  const [live, setLive] = useState(1)
+  const uid = useId()
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const lead = t('pubHome.sys.h1Lead')
+  const accent = t('pubHome.sys.h1Accent')
+  const methodTitleId = `${uid}-method`
+  const platformsTitleId = `${uid}-platforms`
+
+  useReveal('.sy-home .sy-rv', 'is-in')
 
   useEffect(() => {
-    if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const id = window.setInterval(() => setLive((i) => (i + 1) % ETAPES.length), 2700)
-    return () => window.clearInterval(id)
-  }, [])
+    const title = titleRef.current
+    if (!title) return
+    let disposed = false
+    // Un même dégradé traverse tous les mots, y compris après un retour à la ligne.
+    const paintTitle = () => {
+      if (disposed) return
+      const bounds = title.getBoundingClientRect()
+      if (!bounds.width) return
+      const words = Array.from(title.querySelectorAll<HTMLElement>('.sy-gt')).map((word) => ({
+        word,
+        left: word.getBoundingClientRect().left - bounds.left,
+      }))
+      words.forEach(({ word, left }) => {
+        word.style.backgroundSize = `${bounds.width}px 100%`
+        word.style.backgroundPosition = `${-left}px 0`
+      })
+    }
+    paintTitle()
+    window.addEventListener('resize', paintTitle)
+    void document.fonts?.ready.then(paintTitle)
+    document.fonts?.addEventListener?.('loadingdone', paintTitle)
+    return () => {
+      disposed = true
+      window.removeEventListener('resize', paintTitle)
+      document.fonts?.removeEventListener?.('loadingdone', paintTitle)
+    }
+  }, [lead, accent])
 
   return (
-    <div className="mh-pj vn-spot mh-intro" style={{ '--mh-i': 2 } as CSSProperties}>
-      <div className="mh-pj-head">
-        <span className="mh-mono">{t('pubHome.home.plateTitle')}</span>
-        <span className="mh-mono">01 · 02 · 03</span>
-      </div>
-      <div className="mh-pj-body">
-        <span className="mh-pj-wire" aria-hidden="true">
-          <i />
-        </span>
-        <ol className="mh-pj-list">
-          {ETAPES.map((e, k) => (
-            <li key={e.num} className={k === live ? 'mh-pj-row is-live' : 'mh-pj-row'}>
-              <span className="mh-pj-node">{e.num}</span>
-              <div>
-                <b>{t(e.titre)}</b>
-                <p className="mh-mono">{t(e.detail)}</p>
-              </div>
-              <span className="mh-mono">{t(e.pole)}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </div>
-  )
-}
-
-const Home = () => {
-  const { t } = useI18n()
-  const tiers: HomeTier[] = TIER_DEFS.map((d) => ({
-    num: d.num,
-    name: t(`pubHome.home.tier${d.n}Name`),
-    thumb: d.thumb,
-    icon: d.icon,
-    tag: t(`pubHome.home.tier${d.n}Tag`),
-    pourQui: t(`pubHome.home.tier${d.n}Who`),
-    incl: [t(`pubHome.home.tier${d.n}Incl1`), t(`pubHome.home.tier${d.n}Incl2`), t(`pubHome.home.tier${d.n}Incl3`)],
-    featured: d.featured,
-  }))
-  const titre = t('pubHome.home.titleMain')
-  // Même observateur que les autres pages publiques. Le hero, lui, ne passe
-  // pas par là : son entrée est une animation au chargement, jamais
-  // conditionnée à un observateur qui pourrait ne pas se déclencher.
-  useReveal('.mh-home .mh-reveal', 'mh-visible')
-  // Halo qui suit la souris sur les panneaux marqués .vn-spot.
-  const rootRef = useSpotlight<HTMLDivElement>()
-
-  return (
-    <div className="mh-home" ref={rootRef}>
+    <div className="sy-home">
       <SEO
         title={t('pubHome.home.seoTitle')}
         description={t('pubHome.home.seoDescription')}
@@ -192,161 +93,151 @@ const Home = () => {
       />
       <StructuredData type="home" />
 
-      {/* ─── 01 · HERO ─── */}
-      <section id="mh-releve">
-        <InstrumentRings />
-        <GrainOverlay opacity={0.035} />
-        <div className="mh-container mh-releve-grid">
-          <div className="mh-releve-text vn-fx">
-            <p className="mh-eyebrow mh-mono mh-intro" style={{ '--mh-i': 0 } as CSSProperties}>
-              <i aria-hidden="true" /> {t('pubHome.home.heroEyebrow')}
-            </p>
-            <h1 className="mh-releve-title">
-              <Mots texte={titre} depart={0} />{' '}
-              <Mots texte={t('pubHome.home.titleAccent')} depart={titre.split(' ').length} accent />
-            </h1>
-            <p className="mh-releve-sub mh-intro" style={{ '--mh-i': 2 } as CSSProperties}>
-              {t('pubHome.home.heroSub')}
-            </p>
-
-            <div className="mh-intro" style={{ '--mh-i': 3 } as CSSProperties}>
-              <DualCta align="start" />
-              <TrustLine />
-            </div>
-          </div>
-
-          <ProjectPlate />
-        </div>
-      </section>
-
-      {/* ─── 02 · CADRAN DES CINQ FORMULES ─── */}
-      <section id="mh-paliers">
-        <div className="mh-container">
-          <header className="mh-band-head mh-reveal">
-            <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> {t('pubHome.home.paliersEyebrow')}
-            </p>
-            <h2>
-              {t('pubHome.home.paliersTitle')} <span className="vn-shine">{t('pubHome.home.paliersTitleAccent')}</span>
-            </h2>
-            <p className="mh-band-note">{t('pubHome.home.paliersNote')}</p>
-          </header>
-
-          <div className="mh-reveal">
-            <TierDial tiers={tiers} />
-          </div>
-
-          <p className="mh-band-foot mh-reveal">
-            <Link className="mh-link" to="/services/sites">
-              {t('pubHome.home.paliersLink')} <span aria-hidden="true">→</span>
-            </Link>
+      <section className="sy-home-hero" aria-labelledby={`${uid}-hero`}>
+        <HeroBackdrop canvas />
+        <div className="sy-wrap sy-home-hero__intro">
+          <p className="sy-home-kicker sy-home-fade" style={{ '--i': 0 } as CSSProperties}>
+            <i aria-hidden="true" />
+            {t('pubHome.sys.kicker')}
           </p>
-        </div>
-      </section>
-
-      {/* ─── 03 · AU-DELÀ DU SITE ─── */}
-      <section id="mh-metiers">
-        <div className="mh-container">
-          <header className="mh-band-head mh-reveal">
-            <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> {t('pubHome.home.metiersEyebrow')}
-            </p>
-            <h2>
-              {t('pubHome.home.metiersTitle')} <span className="vn-shine">{t('pubHome.home.metiersTitleAccent')}</span>
-            </h2>
-            <p className="mh-band-note">{t('pubHome.home.metiersNote')}</p>
-          </header>
-
-          <div className="mh-jobs">
-            {METIERS.map((m, i) => (
-              <Link
-                key={m.num}
-                to={m.to}
-                className={`mh-job vn-spot mh-reveal${m.nouveau ? ' mh-job--feat' : ''}`}
-                style={{ '--mh-i': i } as CSSProperties}
-              >
-                <span className="mh-job-head">
-                  <LineIcon name={m.icon} delay={i * 80} />
-                  {m.nouveau && <span className="mh-tag">{t('pubHome.home.jobNew')}</span>}
-                </span>
-                <span className="mh-mono mh-job-num">
-                  {m.num} · {t(m.nom)}
-                </span>
-                <h3>{t(m.titre)}</h3>
-                <p>{t(m.texte)}</p>
-                <div className="mh-job-nope">
-                  <span className="mh-mono">{t('pubHome.cta.nope')}</span>
-                  <p>{t(m.inutile)}</p>
-                </div>
-                <span className="mh-job-go">
-                  {t('pubHome.home.jobGo')} <span aria-hidden="true">→</span>
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 04 · RADAR DES RÉALISATIONS ─── */}
-      <section id="mh-preuve">
-        <div className="mh-container">
-          <header className="mh-band-head mh-reveal">
-            <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> {t('pubHome.home.preuveEyebrow')}
-            </p>
-            <h2>
-              {t('pubHome.home.preuveTitle')} <span className="vn-shine">{t('pubHome.home.preuveTitleAccent')}</span>
-            </h2>
-          </header>
-
-          <div className="mh-reveal">
-            <ProofRadar />
-          </div>
-
-          <p className="mh-band-foot mh-reveal">
-            <Link className="mh-link" to="/realisations">
-              {t('pubHome.home.preuveLink')} <span aria-hidden="true">→</span>
-            </Link>
+          <h1 id={`${uid}-hero`} ref={titleRef} className="sy-home-h1" aria-label={`${lead} ${accent}`}>
+            <TitleWords text={lead} /> <TitleWords text={accent} start={lead.split(' ').length} accent />
+          </h1>
+          <p className="sy-home-lede sy-home-fade" style={{ '--i': 1 } as CSSProperties}>
+            {t('pubHome.sys.lede')}
           </p>
-        </div>
-      </section>
-
-      {/* ─── 05 · TROIS ENGAGEMENTS OPPOSABLES ─── */}
-      <section id="mh-engagements">
-        <div className="mh-container">
-          <header className="mh-band-head mh-reveal">
-            <p className="mh-eyebrow mh-mono">
-              <i aria-hidden="true" /> {t('pubHome.home.engEyebrow')}
-            </p>
-            <h2>
-              {t('pubHome.home.engTitle')} <span className="vn-shine">{t('pubHome.home.engTitleAccent')}</span>
-            </h2>
-            <p className="mh-band-note">{t('pubHome.home.engNote')}</p>
-          </header>
-
-          <div className="mh-specs">
-            {ARGUMENTS.map((a, i) => (
-              <article key={a.num} className="mh-spec mh-reveal" style={{ '--mh-i': i } as CSSProperties}>
-                <span className="mh-mono mh-spec-num">{a.num}</span>
-                <h3>{t(a.titre)}</h3>
-                <p>{t(a.texte)}</p>
-              </article>
-            ))}
+          <div className="sy-home-ctas sy-home-fade" style={{ '--i': 2 } as CSSProperties}>
+            <Link className="sy-btn sy-btn--primary" to="/contact">
+              {t('pubHome.sys.ctaPrimary')}
+              <span className="sy-arr" aria-hidden="true">
+                →
+              </span>
+            </Link>
+            <a className="sy-btn" href="#strategie">
+              {t('pubHome.sys.ctaSecondary')}
+            </a>
+          </div>
+          <div className="sy-home-trust sy-home-fade" style={{ '--i': 3 } as CSSProperties}>
+            <TrustLine />
           </div>
         </div>
+        <div className="sy-wrap sy-home-fade" style={{ '--i': 4 } as CSSProperties}>
+          <HeroFlow />
+        </div>
       </section>
 
-      {/* ─── 06 · QUESTIONS FRÉQUENTES ─── */}
-      <section id="mh-faq">
-        <div className="mh-container mh-reveal">
+      <div className="sy-sec sy-wrap">
+        <FeatureSection
+          id="strategie"
+          color="#a78bfa"
+          eyebrow={t('pubHome.sys.stratEyebrow')}
+          title={t('pubHome.sys.stratTitle')}
+          accent={t('pubHome.sys.stratAccent')}
+          sub={t('pubHome.sys.stratSub')}
+          chips={[t('pubHome.sys.stratChip1'), t('pubHome.sys.stratChip2'), t('pubHome.sys.stratChip3')]}
+          delivered={t('pubHome.sys.stratDelivered')}
+          notFor={t('pubHome.sys.stratNotFor')}
+          cta={{ to: '/contact?besoin=flou', label: t('pubHome.sys.stratCta') }}
+          visual={
+            <TiltStage glow="#a78bfa" caption={t('pubHome.sys.illustration')}>
+              <RoadmapMock />
+            </TiltStage>
+          }
+        />
+      </div>
+
+      <div className="sy-sec sy-wrap">
+        <FeatureSection
+          id="communication"
+          color="#38bdf8"
+          reverse
+          tag={t('pubHome.sys.newTag')}
+          eyebrow={t('pubHome.sys.comEyebrow')}
+          title={t('pubHome.sys.comTitle')}
+          accent={t('pubHome.sys.comAccent')}
+          sub={t('pubHome.sys.comSub')}
+          chips={[
+            t('pubHome.sys.comChip1'),
+            t('pubHome.sys.comChip2'),
+            t('pubHome.sys.comChip3'),
+            t('pubHome.sys.comChip4'),
+          ]}
+          delivered={t('pubHome.sys.comDelivered')}
+          notFor={t('pubHome.sys.comNotFor')}
+          cta={{ to: '/conseil-communication', label: t('pubHome.sys.comCta') }}
+          visual={
+            <TiltStage glow="#38bdf8" caption={t('pubHome.sys.illustration')}>
+              <CommunicationMock />
+            </TiltStage>
+          }
+        />
+      </div>
+
+      <section id="plateformes" className="sy-sec" aria-labelledby={platformsTitleId}>
+        <div className="sy-wrap">
+          <FeatureSection
+            id="plateformes-offre"
+            titleId={platformsTitleId}
+            color="#5eead4"
+            eyebrow={t('pubHome.sys.platEyebrow')}
+            title={t('pubHome.sys.platTitle')}
+            accent={t('pubHome.sys.platAccent')}
+            sub={t('pubHome.sys.platSub')}
+            chips={[
+              t('pubHome.sys.platChip1'),
+              t('pubHome.sys.platChip2'),
+              t('pubHome.sys.platChip3'),
+              t('pubHome.sys.platChip4'),
+            ]}
+            delivered={t('pubHome.sys.platDelivered')}
+            notFor={t('pubHome.sys.platNotFor')}
+            cta={{ to: '/contact?besoin=outil', label: t('pubHome.sys.platCta') }}
+            visual={
+              <TiltStage glow="#5eead4" caption={t('pubHome.sys.illustration')}>
+                <PlatformMock />
+              </TiltStage>
+            }
+          />
+          <FormulaGrid />
+        </div>
+      </section>
+
+      <div className="sy-sec sy-wrap sy-home-guarantees">
+        <Guarantees />
+      </div>
+
+      <section id="methode" className="sy-sec sy-wrap" aria-labelledby={methodTitleId}>
+        <header className="sy-head">
+          <p className="sy-eyebrow sy-rv">{t('pubHome.sys.methodEyebrow')}</p>
+          <h2 id={methodTitleId} className="sy-h2 sy-rv" style={{ '--d': 1 } as CSSProperties}>
+            {t('pubHome.sys.methodTitle')} <span className="sy-gt">{t('pubHome.sys.methodAccent')}</span>
+          </h2>
+          <p className="sy-sub sy-rv" style={{ '--d': 2 } as CSSProperties}>
+            {t('pubHome.sys.methodSub')}
+          </p>
+        </header>
+        <MethodSteps />
+        <p className="sy-home-method-link sy-rv">
+          <Link className="sy-btn sy-btn--sm" to="/methode">
+            {t('pubHome.sys.methodLink')}
+            <span className="sy-arr" aria-hidden="true">
+              →
+            </span>
+          </Link>
+        </p>
+      </section>
+
+      <div className="sy-sec sy-wrap sy-home-refs">
+        <RefsStrip />
+      </div>
+
+      <section id="faq" className="sy-sec sy-wrap sy-home-faq" aria-label={t('pubHome.conversion.faqEyebrow')}>
+        <div className="sy-rv">
           <Faq items={HOME_FAQ} />
         </div>
       </section>
 
-      {/* NeedStart : entrée du formulaire de qualification, à la place de l'ancien « appel de trente minutes ». */}
-      <NeedStart />
+      <NeedStart preset="home" />
     </div>
   )
 }
-
-export default Home

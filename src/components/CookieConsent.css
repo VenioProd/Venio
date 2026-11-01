@@ -110,3 +110,95 @@
     justify-content: center;
   }
 }
+
+/* La bannière reste inchangée dans les espaces privés. */
+html.theme-monolithe .cookie-banner {
+  padding: 18px max(16px, calc((100vw - var(--sy-max)) / 2));
+  background: rgba(7, 9, 18, 0.92);
+  border-top: 1px solid var(--sy-line-2);
+  -webkit-backdrop-filter: saturate(160%) blur(20px);
+  backdrop-filter: saturate(160%) blur(20px);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.4);
+  animation-name: sy-cookie-in;
+  animation-timing-function: var(--sy-ease);
+}
+html.theme-monolithe .cookie-banner-content {
+  max-width: var(--sy-max);
+}
+html.theme-monolithe .cookie-banner-content p {
+  font-weight: 400;
+  color: var(--sy-mut);
+  font-family: var(--sy-sans);
+}
+html.theme-monolithe .cookie-banner-content a {
+  color: var(--sy-sky);
+  text-underline-offset: 3px;
+}
+html.theme-monolithe .cookie-btn {
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid var(--sy-line-2);
+  border-radius: 999px;
+  font: 500 12px/1.4 var(--sy-mono);
+  letter-spacing: -0.02em;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+html.theme-monolithe .cookie-btn--accept {
+  background: #f4f6fb;
+  border-color: transparent;
+  color: #05060b;
+  box-shadow: 0 10px 30px -12px rgba(125, 211, 252, 0.4);
+}
+html.theme-monolithe .cookie-btn--accept:hover {
+  background: #fff;
+  box-shadow: 0 10px 35px -10px rgba(125, 211, 252, 0.6);
+}
+html.theme-monolithe .cookie-btn--refuse {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--sy-tx);
+}
+html.theme-monolithe .cookie-btn--refuse:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.26);
+  color: var(--sy-tx);
+}
+html.theme-monolithe .cookie-banner :is(a, button):focus-visible {
+  outline: 2px solid var(--sy-sky);
+  outline-offset: 4px;
+}
+@keyframes sy-cookie-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 767px) {
+  html.theme-monolithe .cookie-banner {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (max-width: 640px) {
+  html.theme-monolithe .cookie-banner-actions {
+    gap: 8px;
+  }
+  html.theme-monolithe .cookie-btn {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .cookie-banner {
+    animation: none;
+  }
+  html.theme-monolithe .cookie-btn {
+    transition: none;
+  }
+}

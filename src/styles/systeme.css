@@ -1,0 +1,368 @@
+/* ═══════════════════════════════════════════
+   Charte SYSTÈME — primitives partagées du site public
+   Préfixe de classe : sy-. Scopé sur html.theme-monolithe (posé par
+   App.tsx sur les routes publiques) : aucun effet sur l'admin ni
+   l'espace client. Les composants de src/components/systeme et toutes
+   les pages publiques lisent ces tokens ; rien n'est dupliqué ailleurs.
+   ═══════════════════════════════════════════ */
+
+@property --sy-ang {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+html.theme-monolithe {
+  --sy-bg: #04050a;
+  --sy-bg-2: #0a0c14;
+  --sy-line: rgba(255, 255, 255, 0.08);
+  --sy-line-2: rgba(255, 255, 255, 0.14);
+  --sy-tx: #eef0f7;
+  --sy-mut: #9aa1b4;
+  --sy-dim: #646b80;
+  --sy-vio: #a78bfa;
+  --sy-sky: #38bdf8;
+  --sy-teal: #5eead4;
+  --sy-mint: #34d399;
+  --sy-amber: #fbbf24;
+  --sy-rose: #f472b6;
+  --sy-grad: linear-gradient(92deg, #c4b5fd 0%, #7dd3fc 45%, #5eead4 100%);
+  --sy-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sy-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sy-ease: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --sy-r: 22px;
+  --sy-max: 1200px;
+  --sy-gut: 24px;
+
+  /* Le socle de conversion lit sa police mono ici. */
+  --mc-mono: var(--sy-mono);
+}
+
+@media (max-width: 640px) {
+  html.theme-monolithe {
+    --sy-gut: 16px;
+  }
+}
+
+html.theme-monolithe body {
+  font-family: var(--sy-sans);
+  color: var(--sy-tx);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html.theme-monolithe ::selection {
+  background: rgba(125, 211, 252, 0.3);
+}
+
+html.theme-monolithe :focus-visible {
+  outline: 2px solid var(--sy-sky);
+  outline-offset: 3px;
+}
+
+/* Titres : la base globale (index.css) les met en capitales grasses ; la
+   charte Système les veut en casse normale, graisse 600, interlettrage serré.
+   :where() garde une spécificité minimale : les règles des pages priment. */
+:where(html.theme-monolithe) :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--sy-sans);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-transform: none;
+}
+
+/* Corps de texte : index.css pose une graisse 800 sur tous les paragraphes. */
+:where(html.theme-monolithe) p {
+  font-family: var(--sy-sans);
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+/* ── Mise en page ───────────────────────────────────────────── */
+
+html.theme-monolithe .sy-wrap {
+  width: 100%;
+  max-width: calc(var(--sy-max) + var(--sy-gut) * 2);
+  margin-inline: auto;
+  padding-inline: var(--sy-gut);
+}
+
+html.theme-monolithe .sy-sec {
+  position: relative;
+  padding-top: clamp(96px, 11vw, 130px);
+}
+
+html.theme-monolithe .sy-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* ── Typographie ────────────────────────────────────────────── */
+
+html.theme-monolithe .sy-gt {
+  background: var(--sy-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+html.theme-monolithe .sy-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--sy-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sy-mut);
+}
+
+html.theme-monolithe .sy-eyebrow::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--c, var(--sy-sky));
+  box-shadow: 0 0 14px var(--c, var(--sy-sky));
+}
+
+html.theme-monolithe .sy-h2 {
+  margin: 16px 0 0;
+  font-family: var(--sy-sans);
+  font-size: clamp(32px, 4.6vw, 58px);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  color: var(--sy-tx);
+}
+
+html.theme-monolithe .sy-sub {
+  margin: 14px 0 0;
+  font-size: clamp(15.5px, 1.4vw, 18px);
+  line-height: 1.55;
+  color: var(--sy-mut);
+}
+
+html.theme-monolithe .sy-mono {
+  font-family: var(--sy-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Surfaces ───────────────────────────────────────────────── */
+
+html.theme-monolithe .sy-glass {
+  position: relative;
+  border-radius: var(--sy-r);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  border: 1px solid var(--sy-line);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 30px 60px -40px rgba(0, 0, 0, 0.8);
+}
+
+html.theme-monolithe .sy-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+html.theme-monolithe .sy-chips > * {
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--sy-line-2);
+  color: #d5d9e6;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+html.theme-monolithe .sy-tag {
+  display: inline-block;
+  font-family: var(--sy-mono);
+  font-size: 10.5px;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #04050a;
+  background: var(--sy-grad);
+}
+
+/* ── Boutons (pilules) ──────────────────────────────────────── */
+
+html.theme-monolithe .sy-btn,
+html.theme-monolithe .mc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 1px solid var(--sy-line-2);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--sy-tx);
+  font-family: var(--sy-sans);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 0.25s var(--sy-ease),
+    box-shadow 0.3s,
+    background 0.3s,
+    border-color 0.3s,
+    color 0.3s;
+}
+
+html.theme-monolithe .sy-btn:hover,
+html.theme-monolithe .mc-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.26);
+  color: var(--sy-tx);
+}
+
+html.theme-monolithe .sy-btn:active,
+html.theme-monolithe .mc-btn:active {
+  transform: scale(0.98);
+}
+
+html.theme-monolithe .sy-btn--primary,
+html.theme-monolithe .mc-btn--primary {
+  color: #05060b;
+  background: #f4f6fb;
+  border-color: transparent;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.4) inset,
+    0 10px 40px -10px rgba(125, 211, 252, 0.55);
+}
+
+html.theme-monolithe .sy-btn--primary:hover,
+html.theme-monolithe .mc-btn--primary:hover {
+  color: #05060b;
+  background: #fff;
+  border-color: transparent;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+    0 14px 50px -8px rgba(125, 211, 252, 0.75),
+    0 0 0 6px rgba(125, 211, 252, 0.12);
+}
+
+html.theme-monolithe .sy-btn--sm {
+  min-height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+html.theme-monolithe .mc-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+html.theme-monolithe .sy-arr {
+  display: inline-block;
+  transition: transform 0.25s var(--sy-ease);
+}
+
+html.theme-monolithe a:hover > .sy-arr,
+html.theme-monolithe button:hover > .sy-arr {
+  transform: translateX(3px);
+}
+
+/* ── Effets partagés (repris des composants vn-) ────────────── */
+
+/* Mots accentués : dégradé violet → ciel → menthe. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  html.theme-monolithe .vn-shine {
+    background: var(--sy-grad);
+    background-size: 100% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: none;
+  }
+}
+
+/* Halo qui suit la souris : liseré lumineux + lueur intérieure. */
+html.theme-monolithe .vn-spot::before {
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(56, 189, 248, 0.1), transparent 50%);
+}
+
+html.theme-monolithe .vn-spot::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(
+    380px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(125, 211, 252, 0.75),
+    rgba(167, 139, 250, 0.35) 35%,
+    transparent 65%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s;
+  pointer-events: none;
+  z-index: 2;
+}
+
+html.theme-monolithe .vn-spot:hover::after {
+  opacity: 1;
+}
+
+/* Socle de conversion : cartes et pastilles en verre fumé. */
+html.theme-monolithe .mc-card {
+  border-color: var(--sy-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+}
+
+/* ── Apparition au scroll ───────────────────────────────────── */
+
+html.theme-monolithe .sy-rv {
+  opacity: 0;
+  transform: translateY(28px);
+  filter: blur(6px);
+  transition:
+    opacity 1s var(--sy-ease),
+    transform 1s var(--sy-ease),
+    filter 1s var(--sy-ease);
+  transition-delay: calc(var(--d, 0) * 90ms);
+}
+
+html.theme-monolithe .sy-rv.is-in {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .sy-rv {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+
+  html.theme-monolithe .sy-btn,
+  html.theme-monolithe .mc-btn,
+  html.theme-monolithe .sy-arr {
+    transition: none;
+  }
+}
