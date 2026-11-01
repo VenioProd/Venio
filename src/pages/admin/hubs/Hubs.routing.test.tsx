@@ -104,7 +104,7 @@ const cases = [
     hub: 'inbox',
     legacy: '/admin/centre-activite',
     to: '/admin/inbox/activite',
-    visible: ['Activité'],
+    visible: ['Activité', 'Notifications'],
     grant: [],
     deny: ['view_messaging'],
   },

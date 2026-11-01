@@ -65,6 +65,8 @@ export interface INotification extends Document {
   message: string
   link: string
   isRead: boolean
+  /** Date d'archivage ; absente ou null = notification active. */
+  archivedAt?: Date | null
   metadata: Record<string, unknown>
   createdAt: Date
   updatedAt: Date

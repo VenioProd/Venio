@@ -8,6 +8,11 @@ import { useToast } from '../../context/ToastContext'
 import { useI18n } from '../../context/I18nContext'
 import { translate, type MessageKey } from '../../i18n'
 import { formatDate } from '../../i18n/format'
+import BulkActionBar, { type BulkAction } from '../../components/admin/ui/BulkActionBar'
+import QuickSelect from '../../components/admin/ui/QuickSelect'
+import { RowCheckbox } from '../../components/admin/ui/RowCheckbox'
+import { useBulkRunner, type BulkResult } from '../../components/admin/ui/useBulkRunner'
+import { useMultiSelect } from '../../components/admin/ui/useMultiSelect'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -300,7 +305,7 @@ const STATUS_META: Record<
   },
 }
 
-type Tab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPROVEMENT' | 'MINE'
+type Tab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPROVEMENT' | 'MINE' | 'ARCHIVED'
 
 const TABS: { key: Tab; label: MessageKey }[] = [
   { key: 'PENDING', label: 'adminOps.decisions.tabPending' },
@@ -308,6 +313,7 @@ const TABS: { key: Tab; label: MessageKey }[] = [
   { key: 'IMPROVEMENT', label: 'adminOps.decisions.tabImprovement' },
   { key: 'REJECTED', label: 'adminOps.decisions.tabRejected' },
   { key: 'MINE', label: 'adminOps.decisions.tabMine' },
+  { key: 'ARCHIVED', label: 'bulk.view.archived' },
 ]
 
 // Les valeurs (BUDGET, BASSE…) sont envoyées à l'API : seul le libellé affiché est traduit.
@@ -376,6 +382,8 @@ export default function DecisionsList() {
       const params = new URLSearchParams()
       if (tab === 'MINE') {
         params.set('mine', 'true')
+      } else if (tab === 'ARCHIVED') {
+        params.set('archived', 'true')
       } else {
         params.set('status', tab)
       }
@@ -398,6 +406,41 @@ export default function DecisionsList() {
   useEffect(() => {
     loadDecisions()
   }, [loadDecisions])
+
+  // Sélection groupée : seules les décisions que l'on peut supprimer (auteur ou SUPER_ADMIN) sont cochables.
+  const canBulk = useCallback(
+    (d: Decision) => user?.role === 'SUPER_ADMIN' || (!!currentUserId && getSubmitterId(d) === currentUserId),
+    [user?.role, currentUserId],
+  )
+  const selectable = useMemo(() => decisions.filter(canBulk), [decisions, canBulk])
+  const select = useMultiSelect(selectable, (d) => d._id)
+  const { deselect } = select
+  const handleBulkDone = useCallback(
+    async (result: BulkResult) => {
+      deselect(result.succeeded)
+      await loadDecisions()
+    },
+    [deselect, loadDecisions],
+  )
+  const bulk = useBulkRunner({ endpoint: '/api/admin/decisions/bulk', onDone: handleBulkDone })
+  const bulkIds = useMemo(() => [...select.selected], [select.selected])
+  const quickFilters = useMemo(() => {
+    const limit = Date.now() - 30 * 24 * 60 * 60 * 1000
+    return [
+      { id: 'decided', label: t('bulk.quick.decided'), ids: selectable.filter((d) => d.status !== 'PENDING').map((d) => d._id) },
+      {
+        id: 'older30',
+        label: t('bulk.quick.older30'),
+        ids: selectable.filter((d) => new Date(d.createdAt).getTime() < limit).map((d) => d._id),
+      },
+    ]
+  }, [selectable, t])
+  const bulkActions: BulkAction[] = [
+    tab === 'ARCHIVED'
+      ? { id: 'unarchive', label: t('bulk.action.unarchive'), onSelect: () => bulk.run(bulkIds, 'unarchive') }
+      : { id: 'archive', label: t('bulk.action.archive'), onSelect: () => bulk.run(bulkIds, 'archive') },
+    { id: 'delete', label: t('bulk.action.delete'), danger: true, onSelect: () => bulk.run(bulkIds, 'delete') },
+  ]
 
   const handleApprove = async (id: string) => {
     setActingId(id)
@@ -509,6 +552,8 @@ export default function DecisionsList() {
         ))}
       </div>
 
+      {!loading && !error && <QuickSelect select={select} filters={quickFilters} total={selectable.length} />}
+
       {loading ? (
         <p style={{ color: 'var(--text-muted)' }}>{t('adminOps.decisions.loading')}</p>
       ) : error ? (
@@ -528,6 +573,7 @@ export default function DecisionsList() {
             return (
               <div key={d._id} className="decision-card">
                 <div className="decision-card-layout">
+                  {canBulk(d) && <RowCheckbox id={d._id} name={d.title} select={select} />}
                   <span
                     title={d.priority in PRIORITY_LABEL_KEYS ? t(PRIORITY_LABEL_KEYS[d.priority]) : d.priority}
                     style={{
@@ -942,6 +988,8 @@ export default function DecisionsList() {
         />
       )}
       {preview && <FilePreviewModal preview={preview} onClose={closePreview} />}
+      <BulkActionBar count={select.count} actions={bulkActions} onClear={select.clear} busy={bulk.busy} />
+      {bulk.ConfirmDialog}
     </div>
   )
 }

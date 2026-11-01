@@ -10,6 +10,8 @@ export interface MultiSelect {
   /** Tout cocher sur la page (ou tout décocher si tout est déjà coché). */
   toggleAll: () => void
   selectAll: () => void
+  /** Remplace la sélection par ces identifiants (ceux qui ne sont pas affichés sont ignorés). */
+  selectIds: (ids: readonly string[]) => void
   clear: () => void
   /** Retire ces identifiants de la sélection (ex. ceux qu'une action groupée vient de traiter). */
   deselect: (ids: readonly string[]) => void
@@ -88,6 +90,15 @@ export function useMultiSelect<T>(items: readonly T[], getId: (item: T) => strin
 
   const selectAll = useCallback(() => setSelected(new Set(ids)), [ids])
 
+  const selectIds = useCallback(
+    (wanted: readonly string[]) => {
+      anchor.current = null
+      const visible = new Set(ids)
+      setSelected(new Set(wanted.filter((id) => visible.has(id))))
+    },
+    [ids],
+  )
+
   const allSelected = ids.length > 0 && ids.every((id) => selected.has(id))
   const toggleAll = useCallback(() => {
     anchor.current = null
@@ -116,6 +127,7 @@ export function useMultiSelect<T>(items: readonly T[], getId: (item: T) => strin
     toggle,
     toggleAll,
     selectAll,
+    selectIds,
     clear,
     deselect,
     allSelected,
