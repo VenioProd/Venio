@@ -4,6 +4,7 @@ import { ADMIN_HUBS } from '../../../lib/adminHubs'
 
 const Messaging = lazy(() => import('../Messaging'))
 const ActivityCenter = lazy(() => import('../ActivityCenter'))
+const NotificationsCenter = lazy(() => import('../NotificationsCenter'))
 const EmailComposer = lazy(() => import('../EmailComposer'))
 
 export default function InboxHub() {
@@ -13,6 +14,7 @@ export default function InboxHub() {
       panels={{
         conversations: <Messaging />,
         activite: <ActivityCenter />,
+        notifications: <NotificationsCenter />,
         'envoi-groupe': <EmailComposer />,
       }}
     />

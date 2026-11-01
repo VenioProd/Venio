@@ -234,6 +234,7 @@ const fr = {
   'shell.hub.inbox.subtitle': 'Conversations, activité et envois groupés.',
   'shell.hub.inbox.conversations': 'Conversations',
   'shell.hub.inbox.activite': 'Activité',
+  'shell.hub.inbox.notifications': 'Notifications',
   'shell.hub.inbox.envoi-groupe': 'Envoi groupé',
   'shell.hub.analytics.title': 'Analytics',
   'shell.hub.analytics.eyebrow': 'Pilotage',

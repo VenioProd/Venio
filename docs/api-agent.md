@@ -203,7 +203,7 @@ Réponse :
 
 ### Actions groupées (`/bulk`)
 
-Trois endpoints appliquent une action à plusieurs ressources en une requête. Ils
+Quatre endpoints appliquent une action à plusieurs ressources en une requête. Ils
 exigent le **même scope d'écriture** que les routes unitaires (aucun scope nouveau)
 et l'en-tête `Idempotency-Key`, comme toute mutation.
 
@@ -212,6 +212,7 @@ et l'en-tête `Idempotency-Key`, comme toute mutation.
 | `POST /tasks/bulk`             | `write:tasks`     | `delete`, `archive`, `unarchive`, `update`               |
 | `POST /tickets/bulk`           | `write:tickets`   | `delete`, `archive`, `unarchive`, `update` (`status`)    |
 | `POST /documents/bulk`         | `write:documents` | `delete`                                                 |
+| `POST /notifications/bulk`     | `write:notifications` | `read`, `unread`, `archive`, `unarchive`, `delete`   |
 
 ```http
 POST /api/v1/agent/tasks/bulk
@@ -228,10 +229,17 @@ Idempotency-Key: <uuid>
 - Mêmes effets de bord que le DELETE / PATCH unitaire de l'API agent (suppression des commentaires de tâche, du fichier d'un document) ; une seule entrée d'audit `AGENT_API_MUTATION` résume le lot (`extra.succeeded`, `extra.failed`).
 - Ces routes sont déclarées avant `/:id` ; un rejeu avec la même clé et le même corps renvoie la réponse d'origine, un corps différent donne `409 IDEMPOTENCY_CONFLICT`.
 
+**Notifications** : `POST /notifications/bulk` n'accepte ni `patch` ni autre action que celles du tableau. Comme `PATCH` et `DELETE /notifications/:id` côté agent, il agit sur n'importe quel destinataire (aucune restriction supplémentaire). `archive` / `unarchive` posent ou retirent `archivedAt` ; une notification archivée n'apparaît plus dans la cloche ni dans le compteur de non lues de son destinataire. `GET /notifications` accepte `archived=true|false` pour filtrer. Un `read`/`unread` ne rejoue aucun effet de bord (la route unitaire n'en a pas).
+
 Côté interface admin (JWT, hors API agent), les mêmes actions existent sous
 `POST /api/admin/tasks/bulk` et `POST /api/admin/tickets/bulk`, avec les droits
 des routes unitaires (`manage_tasks` + accès au projet de chaque tâche ;
 `manage_tickets` + SUPER_ADMIN pour les tickets) évalués élément par élément.
+Complètent cette liste `POST /api/admin/notifications/bulk` (une notification n'appartient
+qu'à son destinataire, même pour un SUPER_ADMIN ; `POST /api/admin/notifications/delete-read`
+supprime les lues de l'utilisateur connecté) et `POST /api/admin/decisions/bulk`
+(`archive`, `unarchive`, `delete` : l'auteur de la décision ou un SUPER_ADMIN, comme le
+`DELETE` unitaire). Les décisions n'ont pas d'API agent, donc pas d'équivalent ici.
 
 La prospection des établissements Arrow utilise désormais les leads du CRM
 principal (`/leads`, `project: "ARROW"`), avec `read:crm` / `write:crm`.

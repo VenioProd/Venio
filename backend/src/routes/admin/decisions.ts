@@ -8,6 +8,8 @@ import { requireAdmin, requireSuperAdmin } from '../../middleware/role.js'
 import Decision from '../../models/Decision.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
+import idempotentRequest from '../../middleware/idempotentRequest.js'
+import { BulkItemError, parseBulkIds, runBulk } from '../../lib/bulk.js'
 
 const router = express.Router()
 router.use(auth)
@@ -75,8 +77,8 @@ async function notifyDecision(
 // GET /api/admin/decisions
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { status, mine } = req.query
-    const filter: Record<string, unknown> = {}
+    const { status, mine, archived } = req.query
+    const filter: Record<string, unknown> = { archivedAt: archived === 'true' ? { $ne: null } : null }
     if (typeof status === 'string') filter.status = status
     if (mine === 'true') filter.submittedBy = req.user!.id
 
@@ -88,6 +90,34 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       .populate('recipients', 'name email')
 
     return res.json({ decisions: decisions.map(serializeDecision) })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// POST /api/admin/decisions/bulk — { ids (≤ 200), action: archive|unarchive|delete }
+// Mêmes droits que le DELETE unitaire, évalués décision par décision : l'auteur ou un SUPER_ADMIN.
+// (Aucun archivage unitaire n'existait : il est offert à ceux qui peuvent supprimer, jamais à d'autres.)
+router.post('/bulk', idempotentRequest, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = parseBulkIds(req.body?.ids)
+    if (!parsed.ok) return res.status(400).json({ error: parsed.error })
+    const action = req.body?.action
+    if (action !== 'archive' && action !== 'unarchive' && action !== 'delete') {
+      return res.status(400).json({ error: 'action doit valoir archive, unarchive, delete' })
+    }
+    const isSuper = req.user!.role === 'SUPER_ADMIN'
+    const result = await runBulk(parsed.ids, async (id) => {
+      const decision = await Decision.findById(id)
+      if (!decision) throw new BulkItemError('Décision introuvable')
+      if (!isSuper && String(decision.submittedBy) !== req.user!.id) throw new BulkItemError('Accès refusé')
+      if (action === 'delete') await decision.deleteOne()
+      else {
+        decision.archivedAt = action === 'archive' ? new Date() : null
+        await decision.save()
+      }
+    })
+    return res.json(result)
   } catch (err) {
     return next(err)
   }

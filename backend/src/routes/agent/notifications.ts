@@ -6,6 +6,7 @@ import User from '../../models/User.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
+import { applyNotificationBulk, parseNotificationBulkBody } from '../../lib/notificationBulk.js'
 
 /**
  * Routes agent pour les Notifications utilisateur.
@@ -18,6 +19,7 @@ import { respondError } from './_middleware/errors.js'
  *   - PATCH /notifications/:id { isRead }
  *   - POST /notifications/mark-all-read { recipient }
  *   - DELETE /notifications/:id
+ *   - POST /notifications/bulk { ids, action: read|unread|archive|unarchive|delete }
  */
 
 const router = express.Router()
@@ -58,6 +60,8 @@ router.get(
         filter.type = req.query.type
       }
       if (req.query.unreadOnly === 'true') filter.isRead = false
+      if (req.query.archived === 'true') filter.archivedAt = { $ne: null }
+      else if (req.query.archived === 'false') filter.archivedAt = null
 
       const [items, total] = await Promise.all([
         Notification.find(filter)
@@ -130,6 +134,31 @@ router.patch(
         after: notif.toObject(),
       }
       res.json(notif.toObject())
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+/**
+ * POST /notifications/bulk — action groupée (≤ 200 ids) : read | unread | archive | unarchive | delete.
+ * Même scope que les routes unitaires (write:notifications). Réponse : { succeeded, failed }.
+ * Déclarée avant les routes /notifications/:id.
+ */
+router.post(
+  '/notifications/bulk',
+  requireScope('write:notifications'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsed = parseNotificationBulkBody(req.body)
+      if (!parsed.ok) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
+      const result = await applyNotificationBulk(parsed)
+      res.locals.audit = {
+        entityType: 'Notification',
+        summary: `Action groupée "${parsed.action}" sur ${parsed.ids.length} notification(s) : ${result.succeeded.length} réussie(s), ${result.failed.length} échec(s)`,
+        extra: { bulk: true, action: parsed.action, ...result },
+      }
+      res.json(result)
     } catch (err) {
       next(err)
     }

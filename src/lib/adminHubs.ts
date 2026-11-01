@@ -23,6 +23,12 @@ export const ADMIN_HUBS = {
     tabs: [
       { id: 'conversations', labelKey: 'shell.hub.inbox.conversations', to: '/admin/inbox/conversations', modules: ['messages'] },
       { id: 'activite', labelKey: 'shell.hub.inbox.activite', to: '/admin/inbox/activite', modules: ['activity-center'] },
+      {
+        id: 'notifications',
+        labelKey: 'shell.hub.inbox.notifications',
+        to: '/admin/inbox/notifications',
+        modules: ['messages', 'activity-center', 'emails'],
+      },
       { id: 'envoi-groupe', labelKey: 'shell.hub.inbox.envoi-groupe', to: '/admin/inbox/envoi-groupe', modules: ['emails'] },
     ],
   },

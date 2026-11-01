@@ -9,7 +9,7 @@ export interface BulkResult {
   failed: { id: string; error: string }[]
 }
 
-export type BulkActionName = 'delete' | 'archive' | 'unarchive' | 'update'
+export type BulkActionName = 'delete' | 'archive' | 'unarchive' | 'update' | 'read' | 'unread'
 
 export interface UseBulkRunnerOptions {
   /** Ex. `/api/admin/tasks/bulk`. */

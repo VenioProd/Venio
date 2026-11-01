@@ -234,6 +234,7 @@ const en: Record<keyof typeof fr, string> = {
   'shell.hub.inbox.subtitle': 'Conversations, activity and bulk emails.',
   'shell.hub.inbox.conversations': 'Conversations',
   'shell.hub.inbox.activite': 'Activity',
+  'shell.hub.inbox.notifications': 'Notifications',
   'shell.hub.inbox.envoi-groupe': 'Bulk send',
   'shell.hub.analytics.title': 'Analytics',
   'shell.hub.analytics.eyebrow': 'Overview',

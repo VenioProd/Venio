@@ -143,3 +143,33 @@
     }
   }
 }
+
+/* Raccourcis de sélection rapide (tout, les lues, plus vieilles que 30 j…). */
+.bulk-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.bulk-quick__btn {
+  min-height: 44px;
+  padding: 0 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.bulk-quick__btn:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+}
+.bulk-quick__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.bulk-quick__btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

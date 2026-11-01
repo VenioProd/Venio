@@ -49,12 +49,14 @@ const notificationSchema = new mongoose.Schema<INotification>(
     message: { type: String, default: '' },
     link: { type: String, default: '' },
     isRead: { type: Boolean, default: false },
+    archivedAt: { type: Date, default: null },
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   { timestamps: true },
 )
 
 notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 })
+notificationSchema.index({ recipient: 1, archivedAt: 1, createdAt: -1 })
 notificationSchema.index(
   { recipient: 1, 'metadata.dedupeKey': 1 },
   {

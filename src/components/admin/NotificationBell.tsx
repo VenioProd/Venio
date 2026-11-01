@@ -100,6 +100,17 @@ const NotificationBell = ({ onNavigate }: NotificationBellProps) => {
               ))
             )}
           </div>
+          <button
+            type="button"
+            className="notif-mark-all notif-view-all"
+            onClick={() => {
+              navigate('/admin/inbox/notifications')
+              onNavigate?.()
+              setOpen(false)
+            }}
+          >
+            {t('bulk.notif.openAll')}
+          </button>
         </div>
       )}
     </div>

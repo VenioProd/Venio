@@ -292,3 +292,10 @@ html.theme-portail .notif-item-time {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+.notif-view-all {
+  width: 100%;
+  min-height: 44px;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}

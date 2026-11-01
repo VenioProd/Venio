@@ -29,6 +29,8 @@ export interface IDecision extends Document {
   deadline: Date | null
   attachments: IDecisionAttachment[]
   recipients: mongoose.Types.ObjectId[]
+  /** Date d'archivage ; null = décision active. */
+  archivedAt?: Date | null
   createdAt: Date
   updatedAt: Date
 }
@@ -75,6 +77,7 @@ const decisionSchema = new Schema<IDecision>(
       default: [],
     },
     recipients: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }],
+    archivedAt: { type: Date, default: null },
   },
   { timestamps: true }
 )
