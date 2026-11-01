@@ -43,14 +43,19 @@ export default function MissionSteps({
     <>
       {/* Étapes */}
       {(mission.steps?.length > 0 || isSuperAdmin) && (
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div
+          style={{
+            padding: '14px 16px',
+            borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <span
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '.5px',
+                textTransform: 'none',
+                letterSpacing: 'normal',
                 color: 'var(--text-secondary)',
               }}
             >
@@ -61,10 +66,10 @@ export default function MissionSteps({
                 style={{
                   fontSize: 11,
                   padding: '1px 7px',
-                  borderRadius: 8,
-                  background: 'rgba(16,185,129,0.1)',
-                  border: '1px solid rgba(16,185,129,0.2)',
-                  color: '#6ee7b7',
+                  borderRadius: 'var(--r-md)',
+                  background: 'color-mix(in srgb, var(--good) 10%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--good) 20%, transparent)',
+                  color: 'var(--good)',
                 }}
               >
                 {doneSteps}/{totalSteps}
@@ -72,12 +77,19 @@ export default function MissionSteps({
             )}
           </div>
           {totalSteps > 0 && (
-            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.07)', marginBottom: 8 }}>
+            <div
+              style={{
+                height: 3,
+                borderRadius: 'var(--r-hair)',
+                background: 'color-mix(in srgb, var(--text-primary) 7%, transparent)',
+                marginBottom: 8,
+              }}
+            >
               <div
                 style={{
                   height: '100%',
-                  borderRadius: 2,
-                  background: '#10b981',
+                  borderRadius: 'var(--r-hair)',
+                  background: 'var(--good)',
                   width: `${Math.round((doneSteps / totalSteps) * 100)}%`,
                   transition: 'width .3s',
                 }}
@@ -94,13 +106,13 @@ export default function MissionSteps({
                 key={step._id}
                 style={{
                   marginBottom: 5,
-                  borderRadius: 7,
+                  borderRadius: 'var(--r-md)',
                   background: step.done
-                    ? 'rgba(16,185,129,0.04)'
+                    ? 'color-mix(in srgb, var(--good) 4%, transparent)'
                     : step.waitingReview
-                      ? 'rgba(234,179,8,0.04)'
-                      : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${step.done ? 'rgba(16,185,129,0.15)' : step.waitingReview ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.05)'}`,
+                      ? 'color-mix(in srgb, var(--warning) 4%, transparent)'
+                      : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                  border: `1px solid ${step.done ? 'color-mix(in srgb, var(--good) 15%, transparent)' : step.waitingReview ? 'color-mix(in srgb, var(--warning) 20%, transparent)' : 'color-mix(in srgb, var(--text-primary) 5%, transparent)'}`,
                   overflow: 'hidden',
                 }}
               >
@@ -123,7 +135,7 @@ export default function MissionSteps({
                       cursor: step.waitingReview ? 'default' : 'pointer',
                       width: 14,
                       height: 14,
-                      accentColor: '#10b981',
+                      accentColor: 'var(--good)',
                       flexShrink: 0,
                     }}
                   />
@@ -134,8 +146,8 @@ export default function MissionSteps({
                         width: 16,
                         height: 16,
                         borderRadius: '50%',
-                        background: 'rgba(14, 165, 233, 0.15)',
-                        border: '1px solid rgba(14, 165, 233, 0.3)',
+                        background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -163,10 +175,10 @@ export default function MissionSteps({
                     <span
                       style={{
                         fontSize: 10,
-                        color: '#fde047',
-                        background: 'rgba(234,179,8,0.12)',
-                        border: '1px solid rgba(234,179,8,0.25)',
-                        borderRadius: 8,
+                        color: 'var(--warning)',
+                        background: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--warning) 25%, transparent)',
+                        borderRadius: 'var(--r-md)',
                         padding: '1px 5px',
                       }}
                     >
@@ -183,12 +195,12 @@ export default function MissionSteps({
                       }}
                       style={{
                         padding: '2px 7px',
-                        borderRadius: 7,
-                        border: '1px solid rgba(234,179,8,0.3)',
+                        borderRadius: 'var(--r-md)',
+                        border: '1px solid color-mix(in srgb, var(--warning) 30%, transparent)',
                         fontSize: 10,
                         cursor: 'pointer',
                         background: 'transparent',
-                        color: '#fde047',
+                        color: 'var(--warning)',
                       }}
                     >
                       {t('projB.detail.stepReview')}
@@ -204,12 +216,12 @@ export default function MissionSteps({
                       }}
                       style={{
                         padding: '2px 7px',
-                        borderRadius: 7,
-                        border: '1px solid rgba(16,185,129,0.3)',
+                        borderRadius: 'var(--r-md)',
+                        border: '1px solid color-mix(in srgb, var(--good) 30%, transparent)',
                         fontSize: 10,
                         cursor: 'pointer',
-                        background: 'rgba(16,185,129,0.1)',
-                        color: '#6ee7b7',
+                        background: 'color-mix(in srgb, var(--good) 10%, transparent)',
+                        color: 'var(--good)',
                         fontWeight: 600,
                       }}
                     >
@@ -226,7 +238,7 @@ export default function MissionSteps({
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: 'rgba(248,113,113,0.5)',
+                        color: 'color-mix(in srgb, var(--critical) 50%, transparent)',
                         cursor: 'pointer',
                         fontSize: 11,
                         padding: '0 2px',
@@ -249,7 +261,12 @@ export default function MissionSteps({
                   </span>
                 </div>
                 {isOpen && (
-                  <div style={{ padding: '0 10px 8px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div
+                    style={{
+                      padding: '0 10px 8px',
+                      borderTop: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    }}
+                  >
                     <textarea
                       defaultValue={step.description || ''}
                       key={`desc-${step._id}`}
@@ -261,9 +278,9 @@ export default function MissionSteps({
                         marginTop: 7,
                         fontSize: 12,
                         padding: '6px 9px',
-                        borderRadius: 5,
-                        border: '1px solid rgba(255,255,255,0.07)',
-                        background: 'rgba(255,255,255,0.03)',
+                        borderRadius: 'var(--r-sm)',
+                        border: '1px solid color-mix(in srgb, var(--text-primary) 7%, transparent)',
+                        background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                         color: 'var(--text-primary)',
                         resize: 'vertical',
                         lineHeight: 1.5,
@@ -285,10 +302,12 @@ export default function MissionSteps({
                     onClick={() => setStepAssigneeInputs((s) => ({ ...s, [mission._id]: '' }))}
                     style={{
                       padding: '2px 7px',
-                      borderRadius: 9,
-                      border: `1px solid ${!stepAssigneeInputs[mission._id] ? 'rgba(165,180,207,0.35)' : 'rgba(255,255,255,0.07)'}`,
-                      background: !stepAssigneeInputs[mission._id] ? 'rgba(165,180,207,0.08)' : 'transparent',
-                      color: !stepAssigneeInputs[mission._id] ? '#a5b4cf' : 'var(--text-secondary)',
+                      borderRadius: 'var(--r-md)',
+                      border: `1px solid ${!stepAssigneeInputs[mission._id] ? 'color-mix(in srgb, var(--text-secondary) 35%, transparent)' : 'color-mix(in srgb, var(--text-primary) 7%, transparent)'}`,
+                      background: !stepAssigneeInputs[mission._id]
+                        ? 'color-mix(in srgb, var(--text-secondary) 8%, transparent)'
+                        : 'transparent',
+                      color: !stepAssigneeInputs[mission._id] ? 'var(--text-secondary)' : 'var(--text-secondary)',
                       fontSize: 11,
                       cursor: 'pointer',
                     }}
@@ -307,10 +326,12 @@ export default function MissionSteps({
                         alignItems: 'center',
                         gap: 3,
                         padding: '2px 7px',
-                        borderRadius: 9,
-                        border: `1px solid ${stepAssigneeInputs[mission._id] === a._id ? 'rgba(14, 165, 233, 0.4)' : 'rgba(255,255,255,0.07)'}`,
+                        borderRadius: 'var(--r-md)',
+                        border: `1px solid ${stepAssigneeInputs[mission._id] === a._id ? 'color-mix(in srgb, var(--primary) 40%, transparent)' : 'color-mix(in srgb, var(--text-primary) 7%, transparent)'}`,
                         background:
-                          stepAssigneeInputs[mission._id] === a._id ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
+                          stepAssigneeInputs[mission._id] === a._id
+                            ? 'color-mix(in srgb, var(--primary) 10%, transparent)'
+                            : 'transparent',
                         color: stepAssigneeInputs[mission._id] === a._id ? 'var(--primary)' : 'var(--text-secondary)',
                         fontSize: 11,
                         cursor: 'pointer',
@@ -321,7 +342,7 @@ export default function MissionSteps({
                           width: 12,
                           height: 12,
                           borderRadius: '50%',
-                          background: 'rgba(165,180,207,0.1)',
+                          background: 'color-mix(in srgb, var(--text-secondary) 10%, transparent)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -368,9 +389,9 @@ export default function MissionSteps({
                   }}
                   style={{
                     padding: '5px 10px',
-                    borderRadius: 5,
-                    border: '1px solid rgba(14, 165, 233, 0.3)',
-                    background: 'rgba(14, 165, 233, 0.08)',
+                    borderRadius: 'var(--r-sm)',
+                    border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
+                    background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
                     color: 'var(--primary)',
                     fontSize: 14,
                     cursor: 'pointer',

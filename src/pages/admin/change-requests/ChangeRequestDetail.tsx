@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useI18n } from '../../../context/I18nContext'
@@ -21,6 +22,7 @@ import type { AdminChangeRequest } from '../../../types/changeRequest.types'
 import { ADMIN_PRIORITY_CONFIG, ADMIN_STATUS_CONFIG, formatAdminDate, formatAdminDateTime } from './types'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import '../Production.css'
 
 interface ProjectOption {
   _id: string
@@ -124,13 +126,13 @@ const AdminChangeRequestDetail = () => {
 
   if (error && !changeRequest)
     return (
-      <div className="portal-container">
+      <div className="portal-container production-page production-request-detail">
         <p role="alert">{error}</p>
       </div>
     )
   if (!changeRequest)
     return (
-      <div className="portal-container">
+      <div className="portal-container production-page production-request-detail">
         <div className="portal-spinner" />
       </div>
     )
@@ -139,27 +141,33 @@ const AdminChangeRequestDetail = () => {
   const priorityConfig = ADMIN_PRIORITY_CONFIG[changeRequest.priority]
 
   return (
-    <div className="portal-container">
+    <div className="portal-container production-page production-request-detail">
       {/* useConfirm renvoie un ÉLÉMENT JSX (ou null), pas un composant. */}
       {ConfirmDialog}
-      <Link to="/admin/demandes/clients" className="portal-link">
-        {t('changeReq.detail.back')}
-      </Link>
-
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 16, flexWrap: 'wrap' }}>
-        <h1 style={{ margin: 0 }}>{changeRequest.title}</h1>
-        <span className="portal-badge" style={{ color: status.color }}>
-          {t(status.labelKey)}
-        </span>
-      </div>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-        {t('changeReq.detail.meta', {
-          client: changeRequest.client?.companyName || changeRequest.client?.name || '',
-          project: changeRequest.project ? changeRequest.project.name : t('changeReq.list.noProject'),
-          priority: priorityConfig ? t(priorityConfig.labelKey) : '',
-          date: formatAdminDate(changeRequest.createdAt),
-        })}
-      </p>
+      <PageHeader
+        eyebrow={t('changeReq.list.eyebrow')}
+        title={changeRequest.title}
+        subtitle={
+          <>
+            <span className="production-status" style={{ color: status.color }}>
+              {t(status.labelKey)}
+            </span>
+            <span className="production-description">
+              {t('changeReq.detail.meta', {
+                client: changeRequest.client?.companyName || changeRequest.client?.name || '',
+                project: changeRequest.project ? changeRequest.project.name : t('changeReq.list.noProject'),
+                priority: priorityConfig ? t(priorityConfig.labelKey) : '',
+                date: formatAdminDate(changeRequest.createdAt),
+              })}
+            </span>
+          </>
+        }
+        actions={
+          <Link to="/admin/demandes/clients" className="portal-button secondary">
+            {t('changeReq.detail.back')}
+          </Link>
+        }
+      />
 
       {error && <p role="alert">{error}</p>}
 

@@ -1,5 +1,6 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useI18n } from '../../context/I18nContext'
 import type { MessageKey } from '../../i18n'
@@ -16,6 +17,7 @@ import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 import '../../styles/gestion.css'
+import './Production.css'
 
 type ViewMode = 'table' | 'kanban' | 'gantt' | 'kpi' | 'briefs'
 
@@ -149,15 +151,13 @@ export default function GestionBoard() {
   const showFilters = viewMode !== 'kpi' && viewMode !== 'briefs'
 
   return (
-    <div className="portal-container">
+    <div className="portal-container production-page production-list production-gestion">
       <div className="gestion-header">
-        <div className="gestion-header-top">
-          <Link to="/admin" className="ticket-back-btn">
-            {tr('adminAccess.board.back')}
-          </Link>
-          <h1 className="gestion-title">
-            {isSuperAdmin ? tr('adminAccess.board.titleSuper') : tr('adminAccess.board.titleMine')}
-          </h1>
+        <div className="production-header">
+          <PageHeader
+            eyebrow={tr('shell.navItem.projects')}
+            title={isSuperAdmin ? tr('adminAccess.board.titleSuper') : tr('adminAccess.board.titleMine')}
+          />
         </div>
 
         <div className="gestion-controls">

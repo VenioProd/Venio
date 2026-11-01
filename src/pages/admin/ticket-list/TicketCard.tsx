@@ -67,13 +67,27 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, isExpanded, onToggleExp
     <div className={`ticket-card ${isExpanded ? 'expanded' : ''}`}>
       <div className="ticket-card-header" onClick={handleExpand}>
         <div className="ticket-card-left">
-          <span className="ticket-category-badge" style={{ background: cat.color }}>
+          <span
+            className="ticket-category-badge"
+            style={{
+              color: cat.color,
+              background: `color-mix(in srgb, ${cat.color} 10%, transparent)`,
+              borderColor: `color-mix(in srgb, ${cat.color} 28%, transparent)`,
+            }}
+          >
             {t(cat.labelKey)}
           </span>
           <h3 className="ticket-card-title">{ticket.title}</h3>
         </div>
         <div className="ticket-card-right">
-          <span className="ticket-status-badge" style={{ color: st.color, borderColor: st.color }}>
+          <span
+            className="ticket-status-badge"
+            style={{
+              color: st.color,
+              borderColor: `color-mix(in srgb, ${st.color} 28%, transparent)`,
+              background: `color-mix(in srgb, ${st.color} 10%, transparent)`,
+            }}
+          >
             {t(st.labelKey)}
           </span>
           {ticket.replies.length > 0 && (

@@ -1,6 +1,6 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useConfirm } from '../../../hooks/useConfirm'
-import { Link } from 'react-router-dom'
 import { apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useI18n } from '../../../context/I18nContext'
@@ -12,6 +12,7 @@ import TicketStats from './TicketStats'
 import TicketFilters from './TicketFilters'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import '../Production.css'
 import DocPreviewModal from '../../../components/DocPreviewModal'
 
 const TicketList = () => {
@@ -212,27 +213,13 @@ const TicketList = () => {
   // --- Vue NON-SUPER_ADMIN : bouton "+" flottant + formulaire simple ---
   if (!isSuperAdmin) {
     return (
-      <div className="portal-container">
-        <div className="ticket-hero">
-          <div className="ticket-hero-content">
-            <Link to="/admin" className="ticket-back-btn">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              {t('orgs.tickets.list.backToDashboard')}
-            </Link>
-            <h1 className="ticket-hero-title">{t('orgs.tickets.list.myRequestsTitle')}</h1>
-            <p className="ticket-hero-subtitle">{t('orgs.tickets.list.myRequestsSubtitle')}</p>
-          </div>
+      <div className="portal-container production-page production-list production-tickets">
+        <div className="production-header">
+          <PageHeader
+            eyebrow={t('shell.navItem.changeRequests')}
+            title={t('orgs.tickets.list.myRequestsTitle')}
+            subtitle={t('orgs.tickets.list.myRequestsSubtitle')}
+          />
         </div>
 
         {/* Liste des tickets de l'utilisateur */}
@@ -264,38 +251,26 @@ const TicketList = () => {
 
   // --- Vue SUPER_ADMIN : dashboard complet ---
   return (
-    <div className="portal-container">
+    <div className="portal-container production-page production-list production-tickets">
       {ConfirmDialog}
       {/* Header */}
-      <div className="ticket-hero">
-        <div className="ticket-hero-content">
-          <Link to="/admin" className="ticket-back-btn">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            {t('orgs.tickets.list.backToDashboard')}
-          </Link>
-          <h1 className="ticket-hero-title">{t('orgs.tickets.list.title')}</h1>
-          <p className="ticket-hero-subtitle">{t('orgs.tickets.list.subtitle')}</p>
-        </div>
-        {activeTab === 'tickets' && (
-          <button className="ticket-new-btn" onClick={() => setShowForm(!showForm)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            {t('orgs.tickets.list.newTicket')}
-          </button>
-        )}
+      <div className="production-header">
+        <PageHeader
+          eyebrow={t('shell.navItem.changeRequests')}
+          title={t('orgs.tickets.list.title')}
+          subtitle={t('orgs.tickets.list.subtitle')}
+          actions={
+            activeTab === 'tickets' && (
+              <button className="ticket-new-btn" onClick={() => setShowForm(!showForm)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                {t('orgs.tickets.list.newTicket')}
+              </button>
+            )
+          }
+        />
       </div>
 
       {/* Tabs */}

@@ -24,13 +24,12 @@ const ChangeRequestFilters = ({ status, client, project, changeRequests, onChang
   }
 
   return (
-    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '16px 0 24px' }}>
+    <div className="production-filters">
       <select
         className="portal-input"
         aria-label={t('changeReq.filters.byStatus')}
         value={status}
         onChange={(event) => onChange({ status: event.target.value })}
-        style={{ width: 'auto', minWidth: 180 }}
       >
         <option value="all">{t('changeReq.filters.allStatuses')}</option>
         {ADMIN_STATUS_ORDER.map((value) => (
@@ -45,7 +44,6 @@ const ChangeRequestFilters = ({ status, client, project, changeRequests, onChang
         aria-label={t('changeReq.filters.byClient')}
         value={client}
         onChange={(event) => onChange({ client: event.target.value })}
-        style={{ width: 'auto', minWidth: 180 }}
       >
         <option value="all">{t('changeReq.filters.allClients')}</option>
         {[...clients.entries()].map(([id, label]) => (
@@ -60,7 +58,6 @@ const ChangeRequestFilters = ({ status, client, project, changeRequests, onChang
         aria-label={t('changeReq.filters.byProject')}
         value={project}
         onChange={(event) => onChange({ project: event.target.value })}
-        style={{ width: 'auto', minWidth: 180 }}
       >
         <option value="all">{t('changeReq.filters.allProjects')}</option>
         {[...projects.entries()].map(([id, label]) => (

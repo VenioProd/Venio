@@ -1,12 +1,14 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, FlaskConical, Plus, Users } from 'lucide-react'
+import { AlertTriangle, Plus, Users } from 'lucide-react'
 import { listDevProjects, type DevProject } from '../../../services/dev'
 import { createCampaign, listCampaigns, type BetaCampaign, type BetaCampaignStatus } from '../../../services/beta'
 import { useI18n } from '../../../context/I18nContext'
 import { translate, type MessageKey } from '../../../i18n'
 import { formatRelative } from './helpers'
 import './Beta.css'
+import '../Production.css'
 
 const STATUS_LABEL_KEY = {
   DRAFT: 'beta.admin.statusDraft',
@@ -54,16 +56,18 @@ export default function BetaWorkspace() {
   )
 
   return (
-    <div className="beta-workspace">
-      <header className="beta-header">
-        <div className="beta-header-title">
-          <FlaskConical size={18} aria-hidden />
-          <h1>{t('beta.admin.title')}</h1>
-        </div>
-        <button type="button" className="beta-btn beta-btn-primary" onClick={() => setCreating(true)}>
-          <Plus size={14} aria-hidden /> {t('beta.admin.newCampaign')}
-        </button>
-      </header>
+    <div className="beta-workspace production-page production-list">
+      <div className="production-header">
+        <PageHeader
+          eyebrow={t('shell.navItem.dev')}
+          title={t('beta.admin.title')}
+          actions={
+            <button type="button" className="beta-btn beta-btn-primary" onClick={() => setCreating(true)}>
+              <Plus size={14} aria-hidden /> {t('beta.admin.newCampaign')}
+            </button>
+          }
+        />
+      </div>
 
       <nav className="beta-tabs" aria-label={t('beta.admin.filterAria')}>
         {FILTERS.map((entry) => (

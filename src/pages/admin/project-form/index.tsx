@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
@@ -17,6 +18,7 @@ import ProjectTypesSection from './ProjectTypesSection'
 import ProjectBudgetSection from './ProjectBudgetSection'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import '../Production.css'
 
 const ProjectForm = () => {
   const { t } = useI18n()
@@ -180,22 +182,12 @@ const ProjectForm = () => {
   }
 
   return (
-    <div className="portal-container">
-      <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('projects.form.breadcrumbNew')}</span>
-        </div>
-        <div className="admin-header">
-          <div>
-            <h1>{t('projects.form.heading')}</h1>
-            <p style={{ color: 'var(--text-muted)', margin: '8px 0 0 0', fontSize: '15px' }}>
-              {t('projects.form.headingText')}
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="portal-container production-page production-project-form">
+      <PageHeader
+        eyebrow={t('shell.navItem.projects')}
+        title={t('projects.form.heading')}
+        subtitle={t('projects.form.headingText')}
+      />
 
       <form onSubmit={handleSubmit}>
         {templates.length > 0 && (
@@ -258,18 +250,10 @@ const ProjectForm = () => {
         {/* Submit Section */}
         <div className="project-form-submit">
           <div className="admin-button-group" style={{ justifyContent: 'center' }}>
-            <button
-              className="portal-button"
-              type="submit"
-              style={{ minWidth: 200, fontSize: 16, padding: '14px 32px' }}
-            >
+            <button className="portal-button" type="submit">
               {t('projects.form.submit')}
             </button>
-            <Link
-              className="portal-button secondary"
-              to="/admin"
-              style={{ minWidth: 120, fontSize: 16, padding: '14px 32px' }}
-            >
+            <Link className="portal-button secondary" to="/admin">
               {t('projects.form.cancel')}
             </Link>
           </div>

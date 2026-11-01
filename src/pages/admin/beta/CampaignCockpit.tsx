@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, FileDown, Play, Square } from 'lucide-react'
@@ -16,6 +17,7 @@ import FindingsQueue from './FindingsQueue'
 import ScenarioPanel from './ScenarioPanel'
 import TesterPanel from './TesterPanel'
 import './Beta.css'
+import '../Production.css'
 
 type Tab = 'coverage' | 'findings' | 'scenarios' | 'testers'
 
@@ -77,38 +79,39 @@ export default function CampaignCockpit() {
   ).length
 
   return (
-    <div className="beta-workspace">
-      <header className="beta-header">
-        <div className="beta-header-title">
-          <Link to="/admin/dev/recette" className="beta-back" aria-label={t('beta.cockpit.backAria')}>
-            <ArrowLeft size={16} aria-hidden />
-          </Link>
-          <div>
-            <h1>{campaign.name}</h1>
-            {campaign.targetUrl && (
-              <a className="beta-muted" href={campaign.targetUrl} target="_blank" rel="noreferrer">
-                {campaign.targetUrl}
-              </a>
-            )}
+    <div className="beta-workspace production-page production-beta-detail">
+      <PageHeader
+        eyebrow={t('beta.admin.title')}
+        title={campaign.name}
+        subtitle={
+          campaign.targetUrl && (
+            <a className="beta-muted" href={campaign.targetUrl} target="_blank" rel="noreferrer">
+              {campaign.targetUrl}
+            </a>
+          )
+        }
+        actions={
+          <div className="beta-header-actions">
+            <Link to="/admin/dev/recette" className="beta-back" aria-label={t('beta.cockpit.backAria')}>
+              <ArrowLeft size={16} aria-hidden />
+            </Link>
+            <a className="beta-btn" href={campaignReportUrl(campaign._id)}>
+              <FileDown size={14} aria-hidden /> {t('beta.cockpit.report')}
+            </a>
+            <button type="button" className="beta-btn beta-btn-primary" onClick={toggleStatus}>
+              {campaign.status === 'RUNNING' ? (
+                <>
+                  <Square size={14} aria-hidden /> {t('beta.cockpit.close')}
+                </>
+              ) : (
+                <>
+                  <Play size={14} aria-hidden /> {t('beta.cockpit.open')}
+                </>
+              )}
+            </button>
           </div>
-        </div>
-        <div className="beta-header-actions">
-          <a className="beta-btn" href={campaignReportUrl(campaign._id)}>
-            <FileDown size={14} aria-hidden /> {t('beta.cockpit.report')}
-          </a>
-          <button type="button" className="beta-btn beta-btn-primary" onClick={toggleStatus}>
-            {campaign.status === 'RUNNING' ? (
-              <>
-                <Square size={14} aria-hidden /> {t('beta.cockpit.close')}
-              </>
-            ) : (
-              <>
-                <Play size={14} aria-hidden /> {t('beta.cockpit.open')}
-              </>
-            )}
-          </button>
-        </div>
-      </header>
+        }
+      />
 
       {campaign.status !== 'RUNNING' && (
         <p className="beta-banner">

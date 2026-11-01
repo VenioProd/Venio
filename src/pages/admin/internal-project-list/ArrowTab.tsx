@@ -33,8 +33,9 @@ export default function ArrowTab() {
       <div
         className="portal-card"
         style={{
-          border: '1px solid rgba(14, 165, 233,0.18)',
-          background: 'linear-gradient(135deg, rgba(14, 165, 233,0.08), rgba(14, 165, 233,0.04))',
+          border: '1px solid color-mix(in srgb, var(--primary) 18%, transparent)',
+          background:
+            'linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, transparent), color-mix(in srgb, var(--primary) 4%, transparent))',
         }}
       >
         <div
@@ -51,8 +52,8 @@ export default function ArrowTab() {
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '.7px',
+                textTransform: 'none',
+                letterSpacing: 'normal',
                 color: 'var(--primary)',
               }}
             >
@@ -81,26 +82,31 @@ export default function ArrowTab() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(140px, 1fr))', gap: 12 }}>
+      <div className="production-kpis production-arrow-kpis">
         {[
           {
             id: 'active',
             label: t('projA.arrow.cardActiveProjects'),
             value: arrowActiveProjects.length,
-            color: '#0ea5e9',
+            color: 'var(--primary)',
           },
-          { id: 'missions', label: t('projA.arrow.cardMissions'), value: arrowMissions.length, color: '#9b9b9b' },
+          {
+            id: 'missions',
+            label: t('projA.arrow.cardMissions'),
+            value: arrowMissions.length,
+            color: 'var(--text-secondary)',
+          },
           {
             id: 'completed',
             label: t('projA.arrow.cardCompleted'),
             value: arrowCompletedMissions.length,
-            color: '#6ee7b7',
+            color: 'var(--good)',
           },
           {
             id: 'blocked',
             label: t('projA.arrow.cardBlocked'),
             value: arrowBlockedMissions.length,
-            color: arrowBlockedMissions.length > 0 ? '#f87171' : '#9b9b9b',
+            color: arrowBlockedMissions.length > 0 ? 'var(--critical)' : 'var(--text-secondary)',
           },
         ].map((card) => (
           <button
@@ -122,18 +128,29 @@ export default function ArrowTab() {
               }
               setViewTab('missions')
             }}
-            style={{ padding: 16, textAlign: 'left', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}
+            style={{
+              padding: 16,
+              textAlign: 'left',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
+              cursor: 'pointer',
+            }}
           >
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>{card.label}</div>
             <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: card.color }}>{card.value}</div>
-            <div style={{ fontSize: 11, color: 'rgba(165,180,207,0.45)', marginTop: 8 }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: 'color-mix(in srgb, var(--text-secondary) 45%, transparent)',
+                marginTop: 8,
+              }}
+            >
               {t('projA.arrow.clickToOpen')}
             </div>
           </button>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr .9fr', gap: 18 }}>
+      <div className="production-arrow-columns">
         <div className="portal-card">
           <div
             style={{
@@ -159,9 +176,9 @@ export default function ArrowTab() {
                 fontSize: 12,
                 fontWeight: 700,
                 color: 'var(--primary)',
-                border: '1px solid rgba(14, 165, 233,0.25)',
-                background: 'rgba(14, 165, 233,0.08)',
-                borderRadius: 8,
+                border: '1px solid color-mix(in srgb, var(--primary) 25%, transparent)',
+                background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+                borderRadius: 'var(--r-md)',
                 padding: '5px 9px',
                 cursor: 'pointer',
               }}
@@ -180,9 +197,12 @@ export default function ArrowTab() {
                   gap: 10,
                   alignItems: 'flex-start',
                   padding: '10px 12px',
-                  borderRadius: 8,
-                  background: index === 0 ? 'rgba(14, 165, 233,0.08)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${index === 0 ? 'rgba(14, 165, 233,0.22)' : 'rgba(255,255,255,0.06)'}`,
+                  borderRadius: 'var(--r-md)',
+                  background:
+                    index === 0
+                      ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
+                      : 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                  border: `1px solid ${index === 0 ? 'color-mix(in srgb, var(--primary) 22%, transparent)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
@@ -191,13 +211,16 @@ export default function ArrowTab() {
                   style={{
                     width: 22,
                     height: 22,
-                    borderRadius: 6,
+                    borderRadius: 'var(--r-sm)',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
-                    background: index === 0 ? 'rgba(14, 165, 233,0.14)' : 'rgba(165,180,207,0.08)',
-                    color: index === 0 ? 'var(--primary)' : '#9b9b9b',
+                    background:
+                      index === 0
+                        ? 'color-mix(in srgb, var(--primary) 14%, transparent)'
+                        : 'color-mix(in srgb, var(--text-secondary) 8%, transparent)',
+                    color: index === 0 ? 'var(--primary)' : 'var(--text-secondary)',
                     fontSize: 12,
                     fontWeight: 700,
                   }}
@@ -230,9 +253,9 @@ export default function ArrowTab() {
                 fontSize: 12,
                 fontWeight: 700,
                 color: 'var(--primary)',
-                border: '1px solid rgba(14, 165, 233,0.25)',
-                background: 'rgba(14, 165, 233,0.08)',
-                borderRadius: 8,
+                border: '1px solid color-mix(in srgb, var(--primary) 25%, transparent)',
+                background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+                borderRadius: 'var(--r-md)',
                 padding: '5px 9px',
                 cursor: 'pointer',
               }}
@@ -258,7 +281,7 @@ export default function ArrowTab() {
                   justifyContent: 'space-between',
                   gap: 10,
                   padding: '9px 0',
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 5%, transparent)',
                   cursor: 'pointer',
                 }}
               >
@@ -268,10 +291,12 @@ export default function ArrowTab() {
                     fontSize: 11,
                     fontWeight: 700,
                     padding: '2px 8px',
-                    borderRadius: 12,
-                    color: state ? '#6ee7b7' : '#fbbf24',
-                    background: state ? 'rgba(16,185,129,0.1)' : 'rgba(251,191,36,0.1)',
-                    border: `1px solid ${state ? 'rgba(16,185,129,0.24)' : 'rgba(251,191,36,0.24)'}`,
+                    borderRadius: 'var(--r-md)',
+                    color: state ? 'var(--good)' : 'var(--warning)',
+                    background: state
+                      ? 'color-mix(in srgb, var(--good) 10%, transparent)'
+                      : 'color-mix(in srgb, var(--warning) 10%, transparent)',
+                    border: `1px solid ${state ? 'color-mix(in srgb, var(--good) 24%, transparent)' : 'color-mix(in srgb, var(--warning) 24%, transparent)'}`,
                   }}
                 >
                   {state ? 'OK' : t('projA.arrow.toScope')}
@@ -306,14 +331,14 @@ export default function ArrowTab() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(180px, 1fr))', gap: 12 }}>
+          <div className="production-arrow-cadence">
             {arrowMissionsByStatus.map((column) => (
               <div
                 key={column.value}
                 style={{
-                  borderRadius: 10,
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  background: 'rgba(255,255,255,0.02)',
+                  borderRadius: 'var(--r-md)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 7%, transparent)',
+                  background: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
                   padding: 12,
                 }}
               >
@@ -324,8 +349,8 @@ export default function ArrowTab() {
                     style={{
                       fontSize: 12,
                       fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '.5px',
+                      textTransform: 'none',
+                      letterSpacing: 'normal',
                       color: column.color,
                     }}
                   >
@@ -343,9 +368,9 @@ export default function ArrowTab() {
                         width: '100%',
                         textAlign: 'left',
                         padding: '10px 11px',
-                        borderRadius: 8,
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        background: 'rgba(255,255,255,0.03)',
+                        borderRadius: 'var(--r-md)',
+                        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                        background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                         cursor: 'pointer',
                       }}
                     >
@@ -365,8 +390,8 @@ export default function ArrowTab() {
                           style={{
                             flex: 1,
                             height: 4,
-                            borderRadius: 2,
-                            background: 'rgba(255,255,255,0.08)',
+                            borderRadius: 'var(--r-hair)',
+                            background: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
                             overflow: 'hidden',
                           }}
                         >
@@ -384,7 +409,13 @@ export default function ArrowTab() {
                     </button>
                   ))}
                   {column.missions.length === 0 && (
-                    <span style={{ fontSize: 13, color: 'rgba(165,180,207,0.35)', padding: '8px 0' }}>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        color: 'color-mix(in srgb, var(--text-secondary) 35%, transparent)',
+                        padding: '8px 0',
+                      }}
+                    >
                       {t('projA.arrow.emptyColumn')}
                     </span>
                   )}
@@ -395,7 +426,7 @@ export default function ArrowTab() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+      <div className="production-arrow-columns">
         <div className="portal-card">
           <h3 style={{ margin: '0 0 14px', fontSize: 16, color: 'var(--text-primary)' }}>
             {t('projA.arrow.nextActions')}
@@ -418,7 +449,7 @@ export default function ArrowTab() {
                     alignItems: 'center',
                     padding: '10px 0',
                     border: 0,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 5%, transparent)',
                     background: 'transparent',
                     cursor: 'pointer',
                     textAlign: 'left',
@@ -432,7 +463,13 @@ export default function ArrowTab() {
                       {m.internalProject?.name}
                     </span>
                   </span>
-                  <span style={{ fontSize: 12, color: isOverdue ? '#f87171' : '#9b9b9b', whiteSpace: 'nowrap' }}>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: isOverdue ? 'var(--critical)' : 'var(--text-secondary)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {m.dueDate ? formatDate(m.dueDate) : t('projA.common.noDate')}
                   </span>
                 </button>
@@ -461,9 +498,9 @@ export default function ArrowTab() {
                 fontSize: 12,
                 fontWeight: 700,
                 color: 'var(--primary)',
-                border: '1px solid rgba(14, 165, 233,0.25)',
-                background: 'rgba(14, 165, 233,0.08)',
-                borderRadius: 8,
+                border: '1px solid color-mix(in srgb, var(--primary) 25%, transparent)',
+                background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+                borderRadius: 'var(--r-md)',
                 padding: '5px 9px',
                 cursor: 'pointer',
               }}
@@ -479,9 +516,9 @@ export default function ArrowTab() {
                 onClick={() => openArrowSectionEditor('decisions')}
                 style={{
                   padding: '11px 12px',
-                  borderRadius: 8,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 'var(--r-md)',
+                  background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
@@ -514,9 +551,9 @@ export default function ArrowTab() {
               fontSize: 12,
               fontWeight: 700,
               color: 'var(--primary)',
-              border: '1px solid rgba(14, 165, 233,0.25)',
-              background: 'rgba(14, 165, 233,0.08)',
-              borderRadius: 8,
+              border: '1px solid color-mix(in srgb, var(--primary) 25%, transparent)',
+              background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+              borderRadius: 'var(--r-md)',
               padding: '5px 9px',
               cursor: 'pointer',
             }}
@@ -524,7 +561,7 @@ export default function ArrowTab() {
             {t('common.edit')}
           </button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 10 }}>
+        <div className="production-arrow-scorecards">
           {arrowCadence.map((item: any, index: number) => (
             <button
               key={`${item.title}-${index}`}
@@ -532,9 +569,9 @@ export default function ArrowTab() {
               onClick={() => openArrowSectionEditor('cadence')}
               style={{
                 padding: 12,
-                borderRadius: 8,
-                background: 'rgba(255,255,255,0.025)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 'var(--r-md)',
+                background: 'color-mix(in srgb, var(--text-primary) 2.5%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 cursor: 'pointer',
                 textAlign: 'left',
               }}

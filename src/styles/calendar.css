@@ -426,113 +426,74 @@
   }
 }
 
-/* ── Light Mode — neutralisée : mêmes jetons que le mode sombre (spec §12,
-   point ouvert 2, pas de miroir clair pour le portail). ── */
-[data-theme='light'] .calendar-header h2 {
-  color: var(--text-primary);
+/* Calendrier Système : la grille reste entière, le détail porte les libellés. */
+.production-calendar .calendar-page {
+  margin-top: 16px;
+  min-width: 0;
 }
-
-[data-theme='light'] .calendar-nav-btn {
-  border-color: var(--border-color);
+.production-calendar .calendar-header {
+  margin-bottom: 16px;
+  gap: 12px;
+}
+.production-calendar .calendar-header h2 {
+  font-size: 16px;
+  min-width: 0;
+  text-transform: none;
+}
+.production-calendar :is(.calendar-grid, .calendar-day-detail) {
+  background: var(--surface-glass);
+  box-shadow: var(--surface-shadow);
+}
+.production-calendar .calendar-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.production-calendar .calendar-day {
+  min-width: 0;
+}
+.production-calendar .calendar-day-header {
+  padding: 12px 4px;
+  font: 11px var(--font-mono);
+}
+.production-calendar :is(.calendar-day-number, .calendar-detail-meta) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.production-calendar .calendar-event {
+  border-radius: var(--r-sm);
+  font-size: 11px;
+}
+.production-calendar .calendar-detail-title {
+  font-size: 13.5px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.production-calendar :is(.calendar-nav-btn, .calendar-today-btn) {
+  border-radius: var(--r-pill);
+  min-height: 36px;
+}
+.production-calendar .calendar-legend {
   background: var(--bg-card);
-  color: var(--text-secondary);
+  font-size: 12px;
 }
-
-[data-theme='light'] .calendar-nav-btn:hover {
-  background: var(--bg-card-hover);
-  color: var(--text-primary);
-  border-color: var(--line-strong);
-}
-
-[data-theme='light'] .calendar-today-btn {
-  border-color: var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-secondary);
-}
-
-[data-theme='light'] .calendar-today-btn:hover {
-  background: var(--bg-card-hover);
-  color: var(--text-primary);
-  border-color: var(--line-strong);
-}
-
-[data-theme='light'] .calendar-grid {
-  border-color: var(--border-color);
-  background: var(--bg-card);
-}
-
-[data-theme='light'] .calendar-day-header {
-  color: var(--text-muted);
-  background: var(--bg-card);
-  border-bottom-color: var(--border-color);
-}
-
-[data-theme='light'] .calendar-day {
-  border-right-color: var(--border-color);
-  border-bottom-color: var(--border-color);
-}
-
-[data-theme='light'] .calendar-day:hover {
-  background: var(--bg-card-hover);
-}
-
-[data-theme='light'] .calendar-day-number {
-  color: var(--text-secondary);
-}
-
-[data-theme='light'] .calendar-event-more {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .calendar-day-detail {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-
-[data-theme='light'] .calendar-detail-header h3 {
-  color: var(--text-primary);
-}
-
-[data-theme='light'] .calendar-detail-close {
-  border-color: var(--border-color);
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .calendar-detail-close:hover {
-  color: var(--text-primary);
-  border-color: var(--line-strong);
-}
-
-[data-theme='light'] .calendar-detail-item {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-
-[data-theme='light'] .calendar-detail-item:hover {
-  background: var(--bg-card-hover);
-}
-
-[data-theme='light'] .calendar-detail-title {
-  color: var(--text-primary);
-}
-
-[data-theme='light'] .calendar-detail-meta {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .calendar-empty-state {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .calendar-loading {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .calendar-legend {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-
-[data-theme='light'] .calendar-legend-item {
-  color: var(--text-muted);
+@media (max-width: 640px) {
+  .production-calendar .calendar-header > div:last-child {
+    display: none;
+  }
+  .production-calendar .calendar-header h2 {
+    order: -1;
+    width: 100%;
+  }
+  .production-calendar :is(.calendar-nav-btn, .calendar-today-btn, .calendar-detail-close) {
+    min-height: 44px;
+  }
+  .production-calendar .calendar-nav-btn {
+    width: 44px;
+  }
+  .production-calendar .calendar-detail-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .production-calendar .calendar-detail-info {
+    flex-basis: calc(100% - 24px);
+  }
 }

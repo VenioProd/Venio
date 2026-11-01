@@ -54,7 +54,7 @@ export default function ProjectCreateModal({ form, setForm, error, saving, onSub
           <label>{t('devA.projectModal.colorLabel')}</label>
           <input type="color" value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} />
         </div>
-        {error && <div style={{ color: '#fca5a5', fontSize: 12.5, marginTop: 6 }}>{error}</div>}
+        {error && <div style={{ color: 'var(--critical)', fontSize: 12.5, marginTop: 6 }}>{error}</div>}
         <div className="dev-modal-actions">
           <button type="button" className="dev-btn subtle" onClick={onClose}>
             {t('common.cancel')}

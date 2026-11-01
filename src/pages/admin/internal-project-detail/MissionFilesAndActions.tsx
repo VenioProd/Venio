@@ -31,13 +31,18 @@ export default function MissionFilesAndActions({
   return (
     <>
       {/* Fichiers */}
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      <div
+        style={{
+          padding: '14px 16px',
+          borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)',
+        }}
+      >
         <div
           style={{
             fontSize: 11,
             fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '.5px',
+            textTransform: 'none',
+            letterSpacing: 'normal',
             color: 'var(--text-secondary)',
             marginBottom: 8,
           }}
@@ -54,9 +59,9 @@ export default function MissionFilesAndActions({
                   alignItems: 'center',
                   gap: 8,
                   padding: '6px 8px',
-                  borderRadius: 6,
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: 'var(--r-sm)',
+                  background: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 5%, transparent)',
                 }}
               >
                 <span style={{ fontSize: 13 }}>
@@ -97,7 +102,7 @@ export default function MissionFilesAndActions({
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: 'rgba(248,113,113,0.4)',
+                    color: 'color-mix(in srgb, var(--critical) 40%, transparent)',
                     cursor: 'pointer',
                     fontSize: 11,
                     padding: '0 2px',
@@ -131,9 +136,9 @@ export default function MissionFilesAndActions({
             gap: 5,
             fontSize: 12,
             padding: '5px 11px',
-            borderRadius: 7,
-            border: '1px solid rgba(165,180,207,0.18)',
-            background: 'rgba(255,255,255,0.03)',
+            borderRadius: 'var(--r-md)',
+            border: '1px solid color-mix(in srgb, var(--text-secondary) 18%, transparent)',
+            background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
             color: 'var(--text-secondary)',
             cursor: 'pointer',
           }}
@@ -158,8 +163,8 @@ export default function MissionFilesAndActions({
               onClick={() => handleMissionStatus(mission._id, v)}
               style={{
                 padding: '4px 10px',
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 'var(--r-md)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
                 fontSize: 12,
                 cursor: 'pointer',
                 background: 'transparent',
@@ -175,12 +180,12 @@ export default function MissionFilesAndActions({
             onClick={() => handleDeleteMission(mission._id)}
             style={{
               padding: '4px 10px',
-              borderRadius: 12,
-              border: '1px solid rgba(248,113,113,0.3)',
+              borderRadius: 'var(--r-md)',
+              border: '1px solid color-mix(in srgb, var(--critical) 30%, transparent)',
               fontSize: 12,
               cursor: 'pointer',
               background: 'transparent',
-              color: '#f87171',
+              color: 'var(--critical)',
               marginLeft: 'auto',
             }}
           >

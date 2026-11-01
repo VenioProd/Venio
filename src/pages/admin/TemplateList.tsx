@@ -1,5 +1,5 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { fetchTemplates, createTemplate, deleteTemplate } from '../../services/templates'
 import type { ProjectTemplate } from '../../types/template.types'
 import { useToast } from '../../context/ToastContext'
@@ -7,6 +7,7 @@ import { useI18n } from '../../context/I18nContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
+import './Production.css'
 
 export default function TemplateList() {
   const [templates, setTemplates] = useState<ProjectTemplate[]>([])
@@ -61,18 +62,18 @@ export default function TemplateList() {
   }
 
   return (
-    <div className="portal-container">
-      <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('adminAccess.templates.breadcrumb')}</span>
-        </div>
-        <div className="admin-header">
-          <h1>{t('adminAccess.templates.title')}</h1>
-          <button className="portal-button" onClick={() => setShowForm(!showForm)}>
-            {showForm ? t('common.cancel') : t('adminAccess.templates.newTemplate')}
-          </button>
+    <div className="portal-container production-page production-list production-templates">
+      <div className="portal-card production-intro">
+        <div className="production-header">
+          <PageHeader
+            eyebrow={t('shell.navItem.projects')}
+            title={t('adminAccess.templates.title')}
+            actions={
+              <button className="portal-button" onClick={() => setShowForm(!showForm)}>
+                {showForm ? t('common.cancel') : t('adminAccess.templates.newTemplate')}
+              </button>
+            }
+          />
         </div>
       </div>
 
@@ -140,8 +141,8 @@ export default function TemplateList() {
                     style={{
                       fontSize: 12,
                       padding: '8px 12px',
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      borderColor: 'rgba(239, 68, 68, 0.3)',
+                      background: 'color-mix(in srgb, var(--critical) 10%, transparent)',
+                      borderColor: 'color-mix(in srgb, var(--critical) 30%, transparent)',
                     }}
                   >
                     {t('common.delete')}

@@ -1,3 +1,4 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
@@ -5,6 +6,7 @@ import { useI18n } from '../../context/I18nContext'
 import type { MessageKey } from '../../i18n'
 import './AdminPortal.css'
 import '../../styles/calendar.css'
+import './Production.css'
 
 interface CalendarEvent {
   id: string
@@ -165,15 +167,10 @@ export default function Calendar() {
     : ''
 
   return (
-    <div className="portal-container">
-      <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('adminOps.calendar.title')}</span>
-        </div>
-        <div className="admin-header">
-          <h1>{t('adminOps.calendar.title')}</h1>
+    <div className="portal-container production-page production-list production-calendar">
+      <div className="portal-card production-intro">
+        <div className="production-header">
+          <PageHeader eyebrow={t('shell.navItem.calendar')} title={t('adminOps.calendar.title')} />
         </div>
       </div>
 

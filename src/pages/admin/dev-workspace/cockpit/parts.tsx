@@ -1,3 +1,4 @@
+import { STATUS_COLOR, PRIORITY_COLOR, TYPE_COLOR } from '../colors'
 import { useEffect, useState } from 'react'
 import {
   Activity,
@@ -40,11 +41,8 @@ import {
   YAxis,
 } from 'recharts'
 import {
-  PRIORITY_COLOR,
   PRIORITY_LABEL,
-  STATUS_COLOR,
   STATUS_LABEL,
-  TYPE_COLOR,
   TYPE_LABEL,
   type DevCiStatus,
   type DevCockpitActivityEvent,

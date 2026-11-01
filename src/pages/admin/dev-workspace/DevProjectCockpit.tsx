@@ -1,3 +1,5 @@
+import { STATUS_COLOR, PRIORITY_COLOR, TYPE_COLOR } from './colors'
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
@@ -37,12 +39,9 @@ import {
   fetchDevProjectIntelligence,
   fetchDevProjectLargeFiles,
   updateDevProject,
-  PRIORITY_COLOR,
   PRIORITY_LABEL,
-  STATUS_COLOR,
   STATUS_LABEL,
   STATUS_ORDER,
-  TYPE_COLOR,
   TYPE_LABEL,
   type DevCiStatus,
   type DevCockpit,
@@ -65,6 +64,7 @@ import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import { FinancialChart } from '../../../components/dashboard'
 import RecommendationsPanel from './RecommendationsPanel'
 import './DevProjectCockpit.css'
+import '../Production.css'
 
 import { formatBytes, formatNumber, formatRelative, formatShortDate, userInitial } from './cockpit/helpers'
 import { withStrong } from './cockpit/rich'
@@ -299,13 +299,12 @@ const DevProjectCockpit = () => {
   const HealthIcon = HEALTH_META[health].icon
 
   return (
-    <div className="cockpit-page" style={{ ['--accent' as never]: project.color }}>
-      <header className="cockpit-header">
-        <div className="cockpit-header-left">
-          <button className="cockpit-back" onClick={() => navigate('/admin/dev/workspace')} title={t('devB.cockpit.backTitle')}>
-            <ArrowLeft size={14} />
-          </button>
-          <div className="cockpit-header-id">
+    <div className="cockpit-page production-page" style={{ ['--accent' as never]: project.color }}>
+      <PageHeader
+        eyebrow={t('shell.navItem.dev')}
+        title={project.name}
+        subtitle={
+          <span className="cockpit-header-id">
             <span className="cockpit-project-key">{project.key}</span>
             <span
               className="cockpit-project-status"
@@ -313,34 +312,45 @@ const DevProjectCockpit = () => {
             >
               {project.status}
             </span>
-          </div>
-          <h1 className="cockpit-title">{project.name}</h1>
-        </div>
-        <div className="cockpit-header-actions">
-          <button className="cockpit-btn subtle" onClick={load} title={t('devB.common.refresh')}>
-            <RefreshCw size={12} /> {t('devB.common.refresh')}
-          </button>
-          <button className="cockpit-btn subtle" onClick={() => navigate(`/admin/dev/workspace?project=${project._id}`)}>
-            <ListChecks size={12} /> {t('devB.cockpit.seeIssues')}
-          </button>
-          <button
-            className="cockpit-btn subtle"
-            onClick={() => navigate(`/admin/dev/workspace?project=${project._id}`)}
-            title={t('devB.cockpit.openInWorkspace')}
-          >
-            <ExternalLink size={12} /> Workspace
-          </button>
-          {canManage && (
+          </span>
+        }
+        actions={
+          <div className="cockpit-header-actions">
             <button
-              className="cockpit-btn primary"
+              className="cockpit-back"
               onClick={() => navigate('/admin/dev/workspace')}
-              title={t('devB.cockpit.newIssueTitle')}
+              title={t('devB.cockpit.backTitle')}
             >
-              <Plus size={12} /> {t('devB.cockpit.newIssue')}
+              <ArrowLeft size={14} />
             </button>
-          )}
-        </div>
-      </header>
+            <button className="cockpit-btn subtle" onClick={load} title={t('devB.common.refresh')}>
+              <RefreshCw size={12} /> {t('devB.common.refresh')}
+            </button>
+            <button
+              className="cockpit-btn subtle"
+              onClick={() => navigate(`/admin/dev/workspace?project=${project._id}`)}
+            >
+              <ListChecks size={12} /> {t('devB.cockpit.seeIssues')}
+            </button>
+            <button
+              className="cockpit-btn subtle"
+              onClick={() => navigate(`/admin/dev/workspace?project=${project._id}`)}
+              title={t('devB.cockpit.openInWorkspace')}
+            >
+              <ExternalLink size={12} /> Workspace
+            </button>
+            {canManage && (
+              <button
+                className="cockpit-btn primary"
+                onClick={() => navigate('/admin/dev/workspace')}
+                title={t('devB.cockpit.newIssueTitle')}
+              >
+                <Plus size={12} /> {t('devB.cockpit.newIssue')}
+              </button>
+            )}
+          </div>
+        }
+      />
 
       {/* KPI strip — ordered by actionability: santé, blocages, urgentes, en retard,
          then secondary signals (issues totales, vélocité, récent). */}

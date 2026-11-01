@@ -174,31 +174,31 @@ const TicketStats: React.FC<TicketStatsProps> = ({ kpi, kpiPeriod, setKpiPeriod 
           <span className="ticket-kpi-label">{t('orgs.tickets.stats.created')}</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#22c55e' }}>
+          <span className="ticket-kpi-value" style={{ color: 'var(--good)' }}>
             {kpi.resolved}
           </span>
           <span className="ticket-kpi-label">{t('orgs.tickets.stats.resolved')}</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#f59e0b' }}>
+          <span className="ticket-kpi-value" style={{ color: 'var(--warning)' }}>
             {kpi.open + kpi.inProgress}
           </span>
           <span className="ticket-kpi-label">{t('orgs.tickets.stats.pending')}</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#ffffff' }}>
+          <span className="ticket-kpi-value" style={{ color: 'var(--text-primary)' }}>
             {kpi.totalReplies}
           </span>
           <span className="ticket-kpi-label">{t('orgs.tickets.stats.repliesGiven')}</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#0284c7' }}>
+          <span className="ticket-kpi-value" style={{ color: 'var(--primary)' }}>
             {kpi.resolutionRate}%
           </span>
           <span className="ticket-kpi-label">{t('orgs.tickets.stats.resolutionRate')}</span>
         </div>
         <div className="ticket-kpi-card">
-          <span className="ticket-kpi-value" style={{ color: '#9b9b9b' }}>
+          <span className="ticket-kpi-value" style={{ color: 'var(--text-secondary)' }}>
             {kpi.avgResponseTime !== null ? `${kpi.avgResponseTime}h` : '—'}
           </span>
           <span className="ticket-kpi-label">{t('orgs.tickets.stats.avgFirstResponse')}</span>

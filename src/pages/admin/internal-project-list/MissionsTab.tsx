@@ -72,9 +72,12 @@ export default function MissionsTab() {
                     flex: '1 1 160px',
                     minWidth: 160,
                     padding: '14px 16px',
-                    borderRadius: 10,
-                    background: entry.blockedCount > 0 ? 'rgba(248,113,113,0.04)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${entry.blockedCount > 0 ? 'rgba(248,113,113,0.2)' : 'rgba(255,255,255,0.07)'}`,
+                    borderRadius: 'var(--r-md)',
+                    background:
+                      entry.blockedCount > 0
+                        ? 'color-mix(in srgb, var(--critical) 4%, transparent)'
+                        : 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                    border: `1px solid ${entry.blockedCount > 0 ? 'color-mix(in srgb, var(--critical) 20%, transparent)' : 'color-mix(in srgb, var(--text-primary) 7%, transparent)'}`,
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -83,14 +86,17 @@ export default function MissionsTab() {
                         width: 28,
                         height: 28,
                         borderRadius: '50%',
-                        background: entry.blockedCount > 0 ? 'rgba(248,113,113,0.15)' : 'rgba(165,180,207,0.12)',
-                        border: `1px solid ${entry.blockedCount > 0 ? 'rgba(248,113,113,0.35)' : 'rgba(165,180,207,0.2)'}`,
+                        background:
+                          entry.blockedCount > 0
+                            ? 'color-mix(in srgb, var(--critical) 15%, transparent)'
+                            : 'color-mix(in srgb, var(--text-secondary) 12%, transparent)',
+                        border: `1px solid ${entry.blockedCount > 0 ? 'color-mix(in srgb, var(--critical) 35%, transparent)' : 'color-mix(in srgb, var(--text-secondary) 20%, transparent)'}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: 12,
                         fontWeight: 700,
-                        color: entry.blockedCount > 0 ? '#f87171' : '#a5b4cf',
+                        color: entry.blockedCount > 0 ? 'var(--critical)' : 'var(--text-secondary)',
                         flexShrink: 0,
                       }}
                     >
@@ -110,7 +116,7 @@ export default function MissionsTab() {
                       {entry.name}
                     </span>
                     {entry.blockedCount > 0 && (
-                      <span style={{ fontSize: 10, color: '#f87171', flexShrink: 0 }}>🚫</span>
+                      <span style={{ fontSize: 10, color: 'var(--critical)', flexShrink: 0 }}>🚫</span>
                     )}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -121,18 +127,24 @@ export default function MissionsTab() {
                       style={{
                         fontSize: 12,
                         fontWeight: 700,
-                        color: entry.avgProgress === 100 ? '#6ee7b7' : 'var(--primary)',
+                        color: entry.avgProgress === 100 ? 'var(--good)' : 'var(--primary)',
                       }}
                     >
                       {entry.avgProgress}%
                     </span>
                   </div>
-                  <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
+                  <div
+                    style={{
+                      height: 4,
+                      borderRadius: 'var(--r-hair)',
+                      background: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+                    }}
+                  >
                     <div
                       style={{
                         height: '100%',
-                        borderRadius: 2,
-                        background: entry.avgProgress === 100 ? '#10b981' : 'var(--primary)',
+                        borderRadius: 'var(--r-hair)',
+                        background: entry.avgProgress === 100 ? 'var(--good)' : 'var(--primary)',
                         width: `${entry.avgProgress}%`,
                         transition: 'width .3s',
                       }}
@@ -156,10 +168,10 @@ export default function MissionsTab() {
           </div>
         </div>
       ) : (
-        <div className="portal-card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="portal-card production-table-scroll" style={{ padding: 0 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <tr style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)' }}>
                 {[
                   t('projA.missions.colProject'),
                   t('projA.missions.colMission'),
@@ -178,8 +190,8 @@ export default function MissionsTab() {
                       color: 'var(--text-secondary)',
                       fontWeight: 700,
                       fontSize: 11,
-                      textTransform: 'uppercase',
-                      letterSpacing: '.6px',
+                      textTransform: 'none',
+                      letterSpacing: 'normal',
                     }}
                   >
                     {h}
@@ -190,19 +202,19 @@ export default function MissionsTab() {
             <tbody>
               {missions.map((m) => {
                 const statusBg: Record<string, string> = {
-                  A_FAIRE: 'rgba(234,179,8,0.12)',
-                  EN_COURS: 'rgba(14, 165, 233, 0.12)',
-                  TERMINE: 'rgba(16,185,129,0.12)',
+                  A_FAIRE: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+                  EN_COURS: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                  TERMINE: 'color-mix(in srgb, var(--good) 12%, transparent)',
                 }
                 const statusBorder: Record<string, string> = {
-                  A_FAIRE: 'rgba(234,179,8,0.3)',
-                  EN_COURS: 'rgba(14, 165, 233, 0.3)',
-                  TERMINE: 'rgba(16,185,129,0.3)',
+                  A_FAIRE: 'color-mix(in srgb, var(--warning) 30%, transparent)',
+                  EN_COURS: 'color-mix(in srgb, var(--primary) 30%, transparent)',
+                  TERMINE: 'color-mix(in srgb, var(--good) 30%, transparent)',
                 }
                 const statusColor: Record<string, string> = {
-                  A_FAIRE: '#fde047',
+                  A_FAIRE: 'var(--warning)',
                   EN_COURS: 'var(--primary)',
-                  TERMINE: '#6ee7b7',
+                  TERMINE: 'var(--good)',
                 }
                 const isOverdue = m.dueDate && m.status !== 'TERMINE' && new Date(m.dueDate) < new Date()
                 const doneCount = m.steps?.filter((s) => s.done).length ?? 0
@@ -214,9 +226,9 @@ export default function MissionsTab() {
                     <tr
                       key={m._id}
                       style={{
-                        borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)',
                         cursor: 'pointer',
-                        background: isSelected ? 'rgba(14, 165, 233, 0.04)' : 'transparent',
+                        background: isSelected ? 'color-mix(in srgb, var(--primary) 4%, transparent)' : 'transparent',
                         transition: 'background .15s',
                       }}
                       onClick={() => setSelectedMission(m._id)}
@@ -237,10 +249,10 @@ export default function MissionsTab() {
                               style={{
                                 fontSize: 10,
                                 padding: '1px 5px',
-                                borderRadius: 6,
-                                background: 'rgba(234,179,8,0.12)',
-                                border: '1px solid rgba(234,179,8,0.3)',
-                                color: '#fde047',
+                                borderRadius: 'var(--r-sm)',
+                                background: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--warning) 30%, transparent)',
+                                color: 'var(--warning)',
                                 whiteSpace: 'nowrap',
                               }}
                             >
@@ -274,14 +286,14 @@ export default function MissionsTab() {
                                     width: 24,
                                     height: 24,
                                     borderRadius: '50%',
-                                    background: 'rgba(165,180,207,0.15)',
-                                    border: '1px solid rgba(165,180,207,0.2)',
+                                    background: 'color-mix(in srgb, var(--text-secondary) 15%, transparent)',
+                                    border: '1px solid color-mix(in srgb, var(--text-secondary) 20%, transparent)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     fontSize: 11,
                                     fontWeight: 700,
-                                    color: '#a5b4cf',
+                                    color: 'var(--text-secondary)',
                                     flexShrink: 0,
                                   }}
                                 >
@@ -302,10 +314,11 @@ export default function MissionsTab() {
                               fontSize: 12,
                               fontWeight: 600,
                               padding: '3px 9px',
-                              borderRadius: 20,
-                              color: statusColor[m.status] || '#a5b4cf',
-                              background: statusBg[m.status] || 'rgba(255,255,255,0.05)',
-                              border: `1px solid ${statusBorder[m.status] || 'rgba(255,255,255,0.1)'}`,
+                              borderRadius: 'var(--r-pill)',
+                              color: statusColor[m.status] || 'var(--text-secondary)',
+                              background:
+                                statusBg[m.status] || 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
+                              border: `1px solid ${statusBorder[m.status] || 'color-mix(in srgb, var(--text-primary) 10%, transparent)'}`,
                               whiteSpace: 'nowrap',
                             }}
                           >
@@ -320,8 +333,8 @@ export default function MissionsTab() {
                                 onClick={() => handleMissionStatusUpdate(m._id, m.internalProject?._id, v)}
                                 style={{
                                   padding: '2px 8px',
-                                  borderRadius: 10,
-                                  border: '1px solid rgba(255,255,255,0.12)',
+                                  borderRadius: 'var(--r-md)',
+                                  border: '1px solid color-mix(in srgb, var(--text-primary) 12%, transparent)',
                                   fontSize: 12,
                                   cursor: 'pointer',
                                   background: 'transparent',
@@ -365,10 +378,10 @@ export default function MissionsTab() {
                                 fontSize: 13,
                                 fontWeight: 700,
                                 padding: '2px 4px',
-                                borderRadius: 6,
-                                border: '1px solid rgba(255,255,255,0.12)',
-                                background: 'rgba(255,255,255,0.05)',
-                                color: (m.progress ?? 0) === 100 ? '#6ee7b7' : 'var(--primary)',
+                                borderRadius: 'var(--r-sm)',
+                                border: '1px solid color-mix(in srgb, var(--text-primary) 12%, transparent)',
+                                background: 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
+                                color: (m.progress ?? 0) === 100 ? 'var(--good)' : 'var(--primary)',
                                 textAlign: 'center',
                                 cursor: 'text',
                                 marginLeft: 'auto',
@@ -377,12 +390,18 @@ export default function MissionsTab() {
                             />
                             <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 2 }}>%</span>
                           </div>
-                          <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
+                          <div
+                            style={{
+                              height: 4,
+                              borderRadius: 'var(--r-hair)',
+                              background: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+                            }}
+                          >
                             <div
                               style={{
                                 height: '100%',
-                                borderRadius: 2,
-                                background: (m.progress ?? 0) === 100 ? '#10b981' : 'var(--primary)',
+                                borderRadius: 'var(--r-hair)',
+                                background: (m.progress ?? 0) === 100 ? 'var(--good)' : 'var(--primary)',
                                 width: `${m.progress ?? 0}%`,
                                 transition: 'width .3s',
                               }}
@@ -441,9 +460,9 @@ export default function MissionsTab() {
                               alignItems: 'center',
                               gap: 4,
                               padding: '3px 8px',
-                              borderRadius: 6,
-                              border: '1px solid rgba(165,180,207,0.2)',
-                              background: 'rgba(255,255,255,0.04)',
+                              borderRadius: 'var(--r-sm)',
+                              border: '1px solid color-mix(in srgb, var(--text-secondary) 20%, transparent)',
+                              background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                               color: 'var(--text-secondary)',
                               fontSize: 12,
                               cursor: 'pointer',
@@ -470,7 +489,7 @@ export default function MissionsTab() {
                         <span
                           style={{
                             fontSize: 13,
-                            color: isOverdue ? '#f87171' : 'var(--text-secondary)',
+                            color: isOverdue ? 'var(--critical)' : 'var(--text-secondary)',
                             fontWeight: isOverdue ? 600 : 400,
                           }}
                         >

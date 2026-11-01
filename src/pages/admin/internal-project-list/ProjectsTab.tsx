@@ -5,17 +5,29 @@ import { POLE_KEYS, PRIORITY_KEYS, PROJECT_FILTER_STATUS_KEYS, labelFor } from '
 import type { Project } from './types'
 
 const STATUS_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  EN_COURS: { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.35)', text: '#6ee7b7' },
-  EN_ATTENTE: { bg: 'rgba(234, 179, 8, 0.12)', border: 'rgba(234, 179, 8, 0.4)', text: '#fde047' },
-  TERMINE: { bg: 'rgba(100, 116, 180, 0.12)', border: 'rgba(100, 116, 180, 0.35)', text: '#a5b4cf' },
-  ARCHIVE: { bg: 'rgba(100, 100, 100, 0.12)', border: 'rgba(100, 100, 100, 0.35)', text: '#9ca3af' },
+  EN_COURS: { bg: 'var(--accent-soft)', border: 'var(--accent-border)', text: 'var(--primary)' },
+  EN_ATTENTE: {
+    bg: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--warning) 40%, transparent)',
+    text: 'var(--warning)',
+  },
+  TERMINE: {
+    bg: 'var(--good-surface)',
+    border: 'color-mix(in srgb, var(--good) 28%, transparent)',
+    text: 'var(--good)',
+  },
+  ARCHIVE: {
+    bg: 'color-mix(in srgb, var(--text-secondary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--text-secondary) 35%, transparent)',
+    text: 'var(--text-secondary)',
+  },
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
-  BASSE: '#6ee7b7',
-  NORMALE: '#a5b4cf',
-  HAUTE: '#fbbf24',
-  URGENTE: '#f87171',
+  BASSE: 'var(--good)',
+  NORMALE: 'var(--text-secondary)',
+  HAUTE: 'var(--warning)',
+  URGENTE: 'var(--critical)',
 }
 
 interface Props {
@@ -66,9 +78,9 @@ export default function ProjectsTab({ loading, projects, isSuperAdmin, onOpenPro
                       fontSize: 11,
                       fontWeight: 600,
                       padding: '2px 8px',
-                      borderRadius: 4,
-                      background: 'rgba(14, 165, 233, 0.12)',
-                      border: '1px solid rgba(14, 165, 233, 0.3)',
+                      borderRadius: 'var(--r-sm)',
+                      background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
                       color: 'var(--primary)',
                     }}
                   >
@@ -79,7 +91,7 @@ export default function ProjectsTab({ loading, projects, isSuperAdmin, onOpenPro
                       fontSize: 11,
                       fontWeight: 600,
                       padding: '2px 8px',
-                      borderRadius: 4,
+                      borderRadius: 'var(--r-sm)',
                       background: statusColor.bg,
                       border: `1px solid ${statusColor.border}`,
                       color: statusColor.text,
@@ -115,9 +127,9 @@ export default function ProjectsTab({ loading, projects, isSuperAdmin, onOpenPro
                         style={{
                           fontSize: 11,
                           padding: '2px 7px',
-                          borderRadius: 12,
-                          background: 'rgba(14, 165, 233, 0.12)',
-                          border: '1px solid rgba(14, 165, 233, 0.3)',
+                          borderRadius: 'var(--r-md)',
+                          background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
                           color: 'var(--primary)',
                         }}
                       >
@@ -134,10 +146,10 @@ export default function ProjectsTab({ loading, projects, isSuperAdmin, onOpenPro
                         style={{
                           fontSize: 11,
                           padding: '2px 7px',
-                          borderRadius: 12,
-                          background: 'rgba(16,185,129,0.1)',
-                          border: '1px solid rgba(16,185,129,0.25)',
-                          color: '#6ee7b7',
+                          borderRadius: 'var(--r-md)',
+                          background: 'color-mix(in srgb, var(--good) 10%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--good) 25%, transparent)',
+                          color: 'var(--good)',
                         }}
                       >
                         {member.name.split(' ')[0]}

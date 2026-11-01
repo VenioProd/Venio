@@ -1,11 +1,13 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import React, { useEffect, useState } from 'react'
 import { useI18n } from '../../../context/I18nContext'
 import { useConfirm } from '../../../hooks/useConfirm'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useTabState } from '../../../hooks/useTabState'
 import { apiDownload, apiFetch, apiUpload } from '../../../lib/api'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import '../Production.css'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import type { Project, ProjectDocument, ProjectUpdate, ProjectSection, ProjectItem } from '../../../types/project.types'
@@ -443,24 +445,18 @@ const AdminProjectDetail = () => {
   }
 
   return (
-    <div className="portal-container">
+    <div className="portal-container production-page production-project-detail">
       {ConfirmDialog}
-      <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>
-            {project?.name || t('projects.detail.breadcrumbProject')}
-          </span>
-        </div>
-        {project && (
-          <div className="admin-header">
-            <div>
-              <h1 style={{ marginBottom: '8px' }}>{project.name}</h1>
-              <span className={`admin-badge ${getStatusBadgeClass(project.status)}`}>
-                {getStatusLabel(project.status)}
-              </span>
-            </div>
+      {project && (
+        <PageHeader
+          eyebrow={t('shell.navItem.projects')}
+          title={project.name}
+          subtitle={
+            <span className={`admin-badge ${getStatusBadgeClass(project.status)}`}>
+              {getStatusLabel(project.status)}
+            </span>
+          }
+          actions={
             <button
               className="admin-button secondary"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
@@ -495,9 +491,9 @@ const AdminProjectDetail = () => {
               </svg>
               {t('projects.detail.recapPdf')}
             </button>
-          </div>
-        )}
-      </div>
+          }
+        />
+      )}
 
       {error && (
         <div className="admin-error" style={{ marginTop: 24 }}>

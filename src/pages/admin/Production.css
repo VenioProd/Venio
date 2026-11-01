@@ -1,0 +1,500 @@
+/* Lot B · Production. Ces règles restent limitées aux pages métier du lot. */
+html.theme-portail .production-page {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--text-primary);
+  font: 13.5px/1.5 var(--font-body);
+}
+.production-page :where(section, article, form, div) {
+  min-width: 0;
+}
+.production-page :where(h1, h2, h3, p, a) {
+  overflow-wrap: anywhere;
+}
+html.theme-portail .production-page .admin-page-header {
+  margin-bottom: 20px;
+}
+.production-page .admin-page-header__row {
+  gap: 16px;
+  padding-bottom: 0;
+  align-items: flex-start;
+}
+.production-page .admin-page-header__row > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.production-page .admin-page-header__eyebrow {
+  margin-bottom: 8px;
+}
+.production-page .admin-page-header__subtitle {
+  margin-top: 10px;
+  font-size: 13px;
+}
+.production-page .admin-page-header__actions {
+  flex-shrink: 0;
+  gap: 8px;
+}
+.production-description {
+  display: block;
+  margin-top: 8px;
+  max-width: 72ch;
+  color: var(--text-secondary);
+}
+.production-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+html.theme-portail .production-page.production-list .production-intro {
+  padding: 0;
+  margin-bottom: 16px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+/* Le hub porte le titre. Seul le groupe de texte du PageHeader enfant disparaît.
+   Les actions restent dans une barre compacte en tête du panneau. */
+.admin-hub-panel .production-list .production-header .admin-page-header__row > div:first-child {
+  display: none;
+}
+html.theme-portail .admin-hub-panel .production-list .production-header .admin-page-header {
+  margin: 0;
+}
+.admin-hub-panel .production-list .production-header .admin-page-header__row {
+  gap: 0;
+  padding: 0;
+}
+.admin-hub-panel .production-list .production-header .admin-page-header__actions {
+  width: 100%;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+html.theme-portail .admin-hub-panel .production-page.portal-container {
+  min-height: 0;
+  padding: 16px 0 0;
+  margin: 0;
+}
+html.theme-portail .production-page :is(.portal-card, .admin-member-card) {
+  background: var(--surface-glass);
+  border-color: var(--border-color);
+  box-shadow: var(--surface-shadow);
+}
+html.theme-portail .production-page .admin-member-card {
+  padding: 16px;
+}
+html.theme-portail .production-page .admin-member-card:hover {
+  transform: none;
+  border-color: var(--line-strong);
+}
+html.theme-portail .production-page .admin-member-card::before {
+  display: none;
+}
+.production-page .admin-cards-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+}
+.production-page .client-card-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+.production-page :is(.admin-actions, .admin-button-group) {
+  flex-wrap: wrap;
+}
+.production-page :is(.portal-input, .portal-button, .admin-button) {
+  max-width: 100%;
+}
+.production-page :is(.production-number, input[type='number'], input[type='date'], input[type='datetime-local']) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.production-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.production-filters > .portal-input {
+  flex: 1 1 180px;
+  width: auto;
+}
+.production-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0;
+}
+.production-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font: 13px/1.4 var(--font-body);
+  cursor: pointer;
+}
+.production-tab:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+.production-tab.active {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--primary);
+}
+.production-page :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.production-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.production-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+}
+.production-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.production-arrow-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+html.theme-portail .production-page .production-kpi {
+  padding: 16px;
+}
+.production-kpi__value {
+  margin-bottom: 8px;
+  font: 500 28px/1.15 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.production-arrow-kpis > div > div:first-child {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.production-arrow-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 16px;
+}
+.production-arrow-cadence {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.production-arrow-scorecards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.production-page .production-table-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--surface-glass);
+}
+.production-page .production-table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.production-page .production-table-scroll th {
+  height: 38px;
+  font: 11px/1.4 var(--font-mono);
+  color: var(--text-muted);
+}
+.production-page .production-table-scroll td {
+  height: 44px;
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+.production-page .production-table-scroll tbody tr {
+  border-top: 1px solid var(--border-color);
+}
+.production-page .production-table-scroll tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+.production-request-table {
+  min-width: 700px;
+}
+.production-page .production-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.production-request-table td:last-child {
+  font: 11.5px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.production-page.production-request-detail .portal-card {
+  overflow-wrap: anywhere;
+}
+.production-page.production-request-detail .portal-list > .portal-card > div {
+  min-width: 0;
+}
+/* Fiches projet : sections de formulaire, contenu, phases, documents et missions. */
+html.theme-portail .production-project-form .project-form-container {
+  gap: 16px;
+}
+html.theme-portail .production-project-form .project-form-section {
+  padding: 20px;
+  border-color: var(--border-color);
+  background: var(--surface-glass);
+  box-shadow: var(--surface-shadow);
+}
+.production-project-form .project-form-section-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  box-shadow: none;
+  font-size: 18px;
+}
+.production-project-form .project-form-section-title {
+  font-size: 16px;
+}
+.production-project-form .project-form-section-subtitle {
+  font-size: 13px;
+}
+.production-project-form .project-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+}
+.production-project-form .project-form-submit {
+  padding: 20px;
+  background: var(--surface-glass);
+  border-color: var(--border-color);
+  box-shadow: var(--surface-shadow);
+}
+.production-project-form .project-form-submit .admin-button-group {
+  justify-content: flex-end !important;
+}
+.production-page.production-templates .admin-list-item {
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--surface-glass);
+}
+.production-page.production-templates .admin-list-item-title {
+  font-size: 14px;
+}
+/* Tickets : conservation des filtres, réponses, pièces jointes et statistiques. */
+html.theme-portail .production-tickets :is(.ticket-card, .ticket-stat-card, .ticket-kpi-card, .ticket-kpi-section) {
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--surface-glass);
+  box-shadow: var(--surface-shadow);
+}
+html.theme-portail .production-tickets .ticket-card.expanded {
+  border-color: var(--accent-border);
+}
+html.theme-portail .production-tickets .ticket-stat-card {
+  padding: 16px;
+}
+html.theme-portail .production-tickets :is(.ticket-card-header, .ticket-card-body) {
+  padding: 14px 16px;
+}
+html.theme-portail .production-tickets .ticket-card-title {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: normal;
+}
+html.theme-portail .production-tickets :is(.ticket-message, .ticket-reply p) {
+  font-size: 13px;
+  line-height: 1.6;
+}
+html.theme-portail .production-tickets :is(.ticket-message, .ticket-reply) {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+html.theme-portail .production-tickets :is(.ticket-stat-count, .ticket-kpi-value) {
+  font: 500 28px/1.2 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+html.theme-portail .production-tickets :is(.ticket-stat-label, .ticket-kpi-label) {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+html.theme-portail .production-tickets :is(.ticket-meta, .ticket-reply-header, .ticket-kpi-bar-count) {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+html.theme-portail .production-tickets :is(.ticket-category-badge, .ticket-status-badge) {
+  border: 1px solid;
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+html.theme-portail .production-tickets :is(.ticket-tab, .ticket-kpi-period-btn) {
+  border-radius: var(--r-pill);
+  font-size: 13px;
+}
+html.theme-portail .production-tickets .ticket-tab.active {
+  background: var(--accent-soft);
+  color: var(--primary);
+}
+html.theme-portail .production-tickets .ticket-tabs {
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+html.theme-portail .production-tickets :is(.ticket-new-btn, .ticket-submit-btn, .ticket-export-btn) {
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--pill-bg);
+  color: var(--pill-tx);
+  box-shadow: none;
+  font: 500 13px/1.4 var(--font-body);
+}
+html.theme-portail
+  .production-tickets
+  :is(.ticket-form-field input, .ticket-form-field textarea, .ticket-form-field select, .ticket-reply-form textarea) {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  font: 13.5px/1.5 var(--font-body);
+  color: var(--text-primary);
+}
+.production-tickets .ticket-card-left {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.production-tickets .ticket-card-right {
+  flex-wrap: wrap;
+}
+.production-tickets .ticket-attachment-file {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.production-tickets .ticket-attachment-img {
+  max-width: 100%;
+}
+@media (max-width: 960px) {
+  .production-arrow-kpis,
+  .production-arrow-scorecards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .production-arrow-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .production-page .admin-page-header__row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .production-page .admin-page-header__actions {
+    width: 100%;
+  }
+  .production-page .admin-page-header__actions :is(.admin-actions, .beta-header-actions, .cockpit-header-actions) {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .production-page.production-list .production-intro {
+    margin-bottom: 12px;
+  }
+  .production-form-grid,
+  .production-arrow-cadence {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .production-page .admin-list-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .production-page .admin-list-item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .production-page .production-tabs {
+    gap: 6px;
+  }
+  .production-tab {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+  .production-page .production-table-scroll table {
+    min-width: 640px;
+  }
+  .production-resources .production-intro input {
+    min-width: 0 !important;
+    width: 100%;
+  }
+  .production-project-form .project-form-section {
+    padding: 16px;
+  }
+  .production-project-form .project-form-section-header {
+    gap: 10px;
+  }
+  .production-project-form .project-form-submit .portal-button {
+    width: 100%;
+    min-width: 0 !important;
+  }
+  .production-tickets .ticket-card-header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .production-tickets .ticket-reply-form {
+    flex-wrap: wrap;
+  }
+  .production-tickets .ticket-reply-form textarea {
+    width: 100%;
+  }
+  .production-tickets :is(.ticket-kpi-grid, .ticket-kpi-sections) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  html.theme-portail
+    .production-page
+    :is(.portal-button, .admin-button, .ticket-new-btn, .ticket-submit-btn, .ticket-export-btn, .ticket-tab) {
+    min-height: 44px;
+  }
+}
+
+/* Les symboles et actions de fichiers gardent leur place dans les petits panneaux. */
+.production-resource-grid .portal-card > div:first-child > div {
+  align-items: flex-start;
+}
+.production-tickets .ticket-kpi-period {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.production-tickets .ticket-kpi-bar-row {
+  min-width: 0;
+}
+.production-project-form .project-form-submit {
+  border-radius: var(--r-lg);
+}
+@media (max-width: 640px) {
+  .production-page .admin-page-header__actions {
+    flex-shrink: 1;
+  }
+  .production-resources .production-preview-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}

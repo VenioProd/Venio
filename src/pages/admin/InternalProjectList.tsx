@@ -1,5 +1,6 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import { useState, useEffect, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -9,6 +10,7 @@ import type { MessageKey } from '../../i18n'
 import { formatDateTime } from '../../i18n/format'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
+import './Production.css'
 import { emptyForm, type Member, type Project } from './internal-project-list/types'
 import ArrowSectionEditorModal from './internal-project-list/ArrowSectionEditorModal'
 import ProjectFormDrawer from './internal-project-list/ProjectFormDrawer'
@@ -300,9 +302,9 @@ export default function InternalProjectList() {
     })
     .slice(0, 4)
   const arrowMissionsByStatus = [
-    { value: 'A_FAIRE', label: t(MISSION_STATUS_KEYS.A_FAIRE), color: '#fde047' },
-    { value: 'EN_COURS', label: t(MISSION_STATUS_KEYS.EN_COURS), color: '#0ea5e9' },
-    { value: 'TERMINE', label: t('projA.status.project.done'), color: '#6ee7b7' },
+    { value: 'A_FAIRE', label: t(MISSION_STATUS_KEYS.A_FAIRE), color: 'var(--warning)' },
+    { value: 'EN_COURS', label: t(MISSION_STATUS_KEYS.EN_COURS), color: 'var(--primary)' },
+    { value: 'TERMINE', label: t('projA.status.project.done'), color: 'var(--good)' },
   ].map((status) => ({
     ...status,
     missions: arrowMissions.filter((m) => m.status === status.value),
@@ -385,61 +387,49 @@ export default function InternalProjectList() {
 
   return (
     <InternalProjectListProvider value={ctx}>
-      <div className="portal-container">
-        <div className="portal-card">
-          <div className="admin-breadcrumb">
-            <Link to="/admin">Admin</Link>
-            <span>/</span>
-            <span style={{ color: 'var(--text-primary)' }}>{t('projA.list.title')}</span>
-          </div>
-          <div className="admin-header">
-            <h1>{t('projA.list.title')}</h1>
-            <div className="admin-actions portal-actions-reveal">
-              <button
-                className="portal-button portal-action-link"
-                type="button"
-                onClick={() => {
-                  setEditTarget(null)
-                  setForm({ ...emptyForm })
-                  setShowForm(true)
-                }}
-              >
-                <span className="portal-action-icon" aria-hidden>
-                  <svg
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                    stroke="currentColor"
+      <div className="portal-container production-page production-list production-internal-list">
+        <div className="portal-card production-intro">
+          <div className="production-header">
+            <PageHeader
+              eyebrow={t('shell.navItem.projects')}
+              title={t('projA.list.title')}
+              actions={
+                <div className="admin-actions portal-actions-reveal">
+                  <button
+                    className="portal-button portal-action-link"
+                    type="button"
+                    onClick={() => {
+                      setEditTarget(null)
+                      setForm({ ...emptyForm })
+                      setShowForm(true)
+                    }}
                   >
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                </span>
-                <span className="portal-action-label">{t('projA.list.newProject')}</span>
-              </button>
-            </div>
+                    <span className="portal-action-icon" aria-hidden>
+                      <svg
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                    </span>
+                    <span className="portal-action-label">{t('projA.list.newProject')}</span>
+                  </button>
+                </div>
+              }
+            />
           </div>
 
           {/* Tab bar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 20 }}>
+          <div className="production-tabs">
             <button
               onClick={() => setViewTab('arrow')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '7px 16px',
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: `1px solid ${viewTab === 'arrow' ? 'rgba(14, 165, 233, 0.55)' : 'rgba(14, 165, 233, 0.24)'}`,
-                background: viewTab === 'arrow' ? 'rgba(14, 165, 233, 0.12)' : 'rgba(14, 165, 233, 0.04)',
-                color: viewTab === 'arrow' ? 'var(--primary)' : 'rgba(14, 165, 233, 0.62)',
-                transition: 'all .15s',
-              }}
+              className={`production-tab ${viewTab === 'arrow' ? 'active' : ''}`}
+              aria-pressed={viewTab === 'arrow'}
             >
               <svg
                 width="13"
@@ -459,38 +449,16 @@ export default function InternalProjectList() {
 
             <button
               onClick={() => setViewTab('projects')}
-              style={{
-                padding: '7px 16px',
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: `1px solid ${viewTab === 'projects' ? 'rgba(14, 165, 233, 0.45)' : 'rgba(255,255,255,0.1)'}`,
-                background: viewTab === 'projects' ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
-                color: viewTab === 'projects' ? 'var(--primary)' : 'var(--text-secondary)',
-                transition: 'all .15s',
-              }}
+              className={`production-tab ${viewTab === 'projects' ? 'active' : ''}`}
+              aria-pressed={viewTab === 'projects'}
             >
               {t('projA.list.tabProjects')}
             </button>
 
             <button
               onClick={() => setViewTab('missions')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '7px 16px',
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: `1.5px solid ${viewTab === 'missions' ? 'rgba(234,179,8,0.6)' : 'rgba(234,179,8,0.28)'}`,
-                background: viewTab === 'missions' ? 'rgba(234,179,8,0.12)' : 'rgba(234,179,8,0.04)',
-                color: viewTab === 'missions' ? '#fde047' : 'rgba(253,224,71,0.55)',
-                boxShadow: viewTab === 'missions' ? '0 0 10px rgba(234,179,8,0.12)' : 'none',
-                transition: 'all .15s',
-              }}
+              className={`production-tab ${viewTab === 'missions' ? 'active' : ''}`}
+              aria-pressed={viewTab === 'missions'}
             >
               <svg
                 width="13"
@@ -517,13 +485,13 @@ export default function InternalProjectList() {
                   alignItems: 'center',
                   gap: 6,
                   padding: '7px 14px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-md)',
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  border: '1px solid rgba(16,185,129,0.4)',
-                  background: 'rgba(16,185,129,0.1)',
-                  color: '#6ee7b7',
+                  border: '1px solid color-mix(in srgb, var(--good) 40%, transparent)',
+                  background: 'color-mix(in srgb, var(--good) 10%, transparent)',
+                  color: 'var(--good)',
                   transition: 'all .15s',
                 }}
               >
@@ -548,12 +516,12 @@ export default function InternalProjectList() {
                   alignItems: 'center',
                   gap: 6,
                   padding: '7px 14px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-md)',
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  border: '1px solid rgba(14, 165, 233, 0.38)',
-                  background: 'rgba(14, 165, 233, 0.1)',
+                  border: '1px solid color-mix(in srgb, var(--primary) 38%, transparent)',
+                  background: 'color-mix(in srgb, var(--primary) 10%, transparent)',
                   color: 'var(--primary)',
                   transition: 'all .15s',
                 }}

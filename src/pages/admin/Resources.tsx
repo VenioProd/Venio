@@ -1,5 +1,5 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { ApiError, apiDownload, apiFetch } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -9,6 +9,7 @@ import { translate, type MessageKey } from '../../i18n'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
+import './Production.css'
 
 // i18n-ignore: valeurs de catégorie stockées et envoyées à l'API, traduites à l'affichage via CATEGORY_LABEL_KEYS
 const CATEGORIES = ['Présentation', 'Charte graphique', 'RH', 'Juridique', 'Commercial', 'Formation', 'Autre']
@@ -25,13 +26,41 @@ const CATEGORY_LABEL_KEYS: Record<string, MessageKey> = {
 
 // i18n-ignore: clés de catégorie (valeurs API), pas du texte affiché
 const CAT_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  Présentation: { bg: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.3)', text: '#0ea5e9' },
-  'Charte graphique': { bg: 'rgba(155,155,155,0.12)', border: 'rgba(155,155,155,0.3)', text: '#9b9b9b' },
-  RH: { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', text: '#6ee7b7' },
-  Juridique: { bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.3)', text: '#fde047' },
-  Commercial: { bg: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.3)', text: '#fb923c' },
-  Formation: { bg: 'rgba(2,132,199,0.12)', border: 'rgba(2,132,199,0.3)', text: '#0284c7' },
-  Autre: { bg: 'rgba(110,110,110,0.12)', border: 'rgba(110,110,110,0.3)', text: '#ffffff' },
+  Présentation: {
+    bg: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--primary) 30%, transparent)',
+    text: 'var(--primary)',
+  },
+  'Charte graphique': {
+    bg: 'color-mix(in srgb, var(--text-secondary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--text-secondary) 30%, transparent)',
+    text: 'var(--text-secondary)',
+  },
+  RH: {
+    bg: 'color-mix(in srgb, var(--good) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--good) 30%, transparent)',
+    text: 'var(--good)',
+  },
+  Juridique: {
+    bg: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--warning) 30%, transparent)',
+    text: 'var(--warning)',
+  },
+  Commercial: {
+    bg: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--warning) 30%, transparent)',
+    text: 'var(--warning)',
+  },
+  Formation: {
+    bg: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--primary) 30%, transparent)',
+    text: 'var(--primary)',
+  },
+  Autre: {
+    bg: 'color-mix(in srgb, var(--text-secondary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--text-secondary) 30%, transparent)',
+    text: 'var(--text-primary)',
+  },
 }
 
 function fileIcon(mime: string) {
@@ -221,36 +250,36 @@ export default function Resources() {
   )
 
   return (
-    <div className="portal-container">
-      <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">{t('nav.admin')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('adminTech.resources.breadcrumb')}</span>
-        </div>
-        <div className="admin-header">
-          <h1>{t('adminTech.resources.title')}</h1>
-          {isSuperAdmin && (
-            <div className="admin-actions portal-actions-reveal">
-              <button className="portal-button portal-action-link" type="button" onClick={() => setShowForm(true)}>
-                <span className="portal-action-icon" aria-hidden>
-                  <svg
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                    stroke="currentColor"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>
-                </span>
-                <span className="portal-action-label">{t('adminTech.resources.addFile')}</span>
-              </button>
-            </div>
-          )}
+    <div className="portal-container production-page production-list production-resources">
+      <div className="portal-card production-intro">
+        <div className="production-header">
+          <PageHeader
+            eyebrow={t('shell.navItem.resources')}
+            title={t('adminTech.resources.title')}
+            actions={
+              isSuperAdmin && (
+                <div className="admin-actions portal-actions-reveal">
+                  <button className="portal-button portal-action-link" type="button" onClick={() => setShowForm(true)}>
+                    <span className="portal-action-icon" aria-hidden>
+                      <svg
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                    </span>
+                    <span className="portal-action-label">{t('adminTech.resources.addFile')}</span>
+                  </button>
+                </div>
+              )
+            }
+          />
         </div>
 
         {/* Filters */}
@@ -268,14 +297,16 @@ export default function Resources() {
               onClick={() => setFilterCat('all')}
               style={{
                 padding: '5px 12px',
-                borderRadius: 20,
+                borderRadius: 'var(--r-pill)',
                 border: '1px solid',
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
-                background: filterCat === 'all' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                borderColor: filterCat === 'all' ? 'rgba(255,255,255,0.3)' : 'var(--border)',
-                color: filterCat === 'all' ? '#fff' : 'var(--text-secondary)',
+                background:
+                  filterCat === 'all' ? 'color-mix(in srgb, var(--text-primary) 10%, transparent)' : 'transparent',
+                borderColor:
+                  filterCat === 'all' ? 'color-mix(in srgb, var(--text-primary) 30%, transparent)' : 'var(--border)',
+                color: filterCat === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)',
               }}
             >
               {t('adminTech.resources.filterAll')}
@@ -289,7 +320,7 @@ export default function Resources() {
                   onClick={() => setFilterCat(cat === filterCat ? 'all' : cat)}
                   style={{
                     padding: '5px 12px',
-                    borderRadius: 20,
+                    borderRadius: 'var(--r-pill)',
                     border: '1px solid',
                     fontSize: 12,
                     fontWeight: 600,
@@ -312,7 +343,7 @@ export default function Resources() {
         <div className="portal-card" style={{ marginTop: 20 }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>{t('adminTech.resources.addTitle')}</h2>
           <form onSubmit={handleUpload}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="production-form-grid">
               <div>
                 <label className="portal-label">{t('adminTech.resources.nameLabel')}</label>
                 <input
@@ -365,10 +396,10 @@ export default function Resources() {
                     padding: '20px',
                     border: '2px dashed',
                     borderColor: file ? 'var(--primary)' : 'var(--border)',
-                    borderRadius: 8,
+                    borderRadius: 'var(--r-md)',
                     textAlign: 'center',
                     cursor: 'pointer',
-                    background: file ? 'rgba(14,165,233,0.05)' : 'transparent',
+                    background: file ? 'color-mix(in srgb, var(--primary) 5%, transparent)' : 'transparent',
                     transition: 'all .15s',
                   }}
                 >
@@ -394,11 +425,17 @@ export default function Resources() {
                 </div>
                 {uploading && (
                   <div style={{ marginTop: 8 }}>
-                    <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
+                    <div
+                      style={{
+                        height: 4,
+                        borderRadius: 'var(--r-hair)',
+                        background: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                      }}
+                    >
                       <div
                         style={{
                           height: '100%',
-                          borderRadius: 2,
+                          borderRadius: 'var(--r-hair)',
                           width: `${uploadProgress}%`,
                           background: 'var(--primary)',
                           transition: 'width .2s',
@@ -450,12 +487,17 @@ export default function Resources() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+          <div className="production-resource-grid">
             {filtered.map((r) => {
               const c = CAT_COLORS[r.category] || CAT_COLORS['Autre']
               return (
                 <div key={r._id} className="portal-card" style={{ padding: 0, overflow: 'hidden' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div
+                    style={{
+                      padding: '16px 20px',
+                      borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 5%, transparent)',
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                       <div style={{ fontSize: 32, flexShrink: 0, lineHeight: 1 }}>{fileIcon(r.mimeType)}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -483,7 +525,7 @@ export default function Resources() {
                               fontSize: 11,
                               fontWeight: 600,
                               padding: '2px 8px',
-                              borderRadius: 12,
+                              borderRadius: 'var(--r-md)',
                               background: c.bg,
                               border: `1px solid ${c.border}`,
                               color: c.text,
@@ -555,7 +597,7 @@ export default function Resources() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.85)',
+            background: 'var(--overlay-scrim)',
             zIndex: 1000,
             display: 'flex',
             flexDirection: 'column',
@@ -568,19 +610,27 @@ export default function Resources() {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '12px 20px',
-              background: 'rgba(0,0,0,0.5)',
+              background: 'var(--bg-secondary)',
               flexShrink: 0,
             }}
           >
-            <span style={{ fontWeight: 600, fontSize: 14, color: '#fff' }}>{previewName}</span>
+            <span
+              className="production-preview-title"
+              style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}
+            >
+              {previewName}
+            </span>
             <button
               type="button"
               onClick={closePreview}
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#fff',
+                color: 'var(--text-primary)',
                 fontSize: 22,
+                flexShrink: 0,
+                minWidth: 44,
+                minHeight: 44,
                 cursor: 'pointer',
                 lineHeight: 1,
                 padding: '0 4px',
@@ -604,13 +654,19 @@ export default function Resources() {
               <img
                 src={previewUrl}
                 alt={previewName}
-                style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 4, objectFit: 'contain' }}
+                style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 'var(--r-sm)', objectFit: 'contain' }}
               />
             ) : (
               <iframe
                 src={previewUrl}
                 title={previewName}
-                style={{ width: '100%', height: '80vh', border: 'none', borderRadius: 4, background: '#fff' }}
+                style={{
+                  width: '100%',
+                  height: '80vh',
+                  border: 'none',
+                  borderRadius: 'var(--r-sm)',
+                  background: 'var(--text-primary)',
+                }}
               />
             )}
           </div>

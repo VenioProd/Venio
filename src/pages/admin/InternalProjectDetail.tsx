@@ -1,3 +1,4 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
 import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { apiFetch, apiUpload } from '../../lib/api'
@@ -8,6 +9,7 @@ import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
+import './Production.css'
 
 const STATUS_LABEL_KEYS: Record<string, MessageKey> = {
   EN_COURS: 'projB.page.statusEnCours',
@@ -22,16 +24,28 @@ const PRIORITY_LABEL_KEYS: Record<string, MessageKey> = {
   URGENTE: 'projB.page.priorityUrgente',
 }
 const STATUS_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  EN_COURS: { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.35)', text: '#6ee7b7' },
-  EN_ATTENTE: { bg: 'rgba(234, 179, 8, 0.12)', border: 'rgba(234, 179, 8, 0.4)', text: '#fde047' },
-  TERMINE: { bg: 'rgba(100, 116, 180, 0.12)', border: 'rgba(100, 116, 180, 0.35)', text: '#a5b4cf' },
-  ARCHIVE: { bg: 'rgba(100, 100, 100, 0.12)', border: 'rgba(100, 100, 100, 0.35)', text: '#9ca3af' },
+  EN_COURS: { bg: 'var(--accent-soft)', border: 'var(--accent-border)', text: 'var(--primary)' },
+  EN_ATTENTE: {
+    bg: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--warning) 40%, transparent)',
+    text: 'var(--warning)',
+  },
+  TERMINE: {
+    bg: 'var(--good-surface)',
+    border: 'color-mix(in srgb, var(--good) 28%, transparent)',
+    text: 'var(--good)',
+  },
+  ARCHIVE: {
+    bg: 'color-mix(in srgb, var(--text-secondary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--text-secondary) 35%, transparent)',
+    text: 'var(--text-secondary)',
+  },
 }
 const PRIORITY_COLORS: Record<string, string> = {
-  BASSE: '#6ee7b7',
-  NORMALE: '#a5b4cf',
-  HAUTE: '#fbbf24',
-  URGENTE: '#f87171',
+  BASSE: 'var(--good)',
+  NORMALE: 'var(--text-secondary)',
+  HAUTE: 'var(--warning)',
+  URGENTE: 'var(--critical)',
 }
 
 import { type Project, type Mission } from './internal-project-detail/types'
@@ -465,84 +479,88 @@ export default function InternalProjectDetail() {
   )
 
   return (
-    <div className="portal-container">
+    <div className="portal-container production-page production-internal-detail">
       <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">{t('projB.page.breadcrumbAdmin')}</Link>
-          <span>/</span>
-          <Link to="/admin/projets/internes">{t('projB.page.breadcrumbProjects')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{project.name}</span>
-        </div>
-
-        <div className="admin-header" style={{ alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: '2px 8px',
-                  borderRadius: 4,
-                  background: 'rgba(14, 165, 233, 0.12)',
-                  border: '1px solid rgba(14, 165, 233, 0.3)',
-                  color: 'var(--primary)',
-                }}
-              >
-                {project.entity}
-              </span>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: '2px 8px',
-                  borderRadius: 4,
-                  background: sc.bg,
-                  border: `1px solid ${sc.border}`,
-                  color: sc.text,
-                }}
-              >
-                {STATUS_LABEL_KEYS[project.status] ? t(STATUS_LABEL_KEYS[project.status]) : project.status}
-              </span>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: PRIORITY_COLORS[project.priority] || 'var(--text-secondary)',
-                }}
-              >
-                ●{' '}
-                {PRIORITY_LABEL_KEYS[project.priority]
-                  ? t(PRIORITY_LABEL_KEYS[project.priority])
-                  : project.priority.charAt(0) + project.priority.slice(1).toLowerCase()}
-              </span>
-            </div>
-            <h1 style={{ marginBottom: 6 }}>{project.name}</h1>
-            {project.description && (
-              <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 600 }}>
-                {project.description}
-              </p>
-            )}
-          </div>
-          <div className="admin-actions portal-actions-reveal">
-            <Link
-              className="portal-button secondary portal-action-link"
-              to={`/admin/projets/internes?edit=${project._id}`}
-            >
-              <span className="portal-action-label">{t('common.edit')}</span>
-            </Link>
-            {isSuperAdmin && (
-              <button
+        <PageHeader
+          eyebrow={t('shell.navItem.internalProjects')}
+          title={project.name}
+          subtitle={
+            <>
+              {
+                <span
+                  className="production-summary"
+                  style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}
+                >
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: 'var(--r-sm)',
+                      background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
+                      color: 'var(--primary)',
+                    }}
+                  >
+                    {project.entity}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: 'var(--r-sm)',
+                      background: sc.bg,
+                      border: `1px solid ${sc.border}`,
+                      color: sc.text,
+                    }}
+                  >
+                    {STATUS_LABEL_KEYS[project.status] ? t(STATUS_LABEL_KEYS[project.status]) : project.status}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: PRIORITY_COLORS[project.priority] || 'var(--text-secondary)',
+                    }}
+                  >
+                    ●{' '}
+                    {PRIORITY_LABEL_KEYS[project.priority]
+                      ? t(PRIORITY_LABEL_KEYS[project.priority])
+                      : project.priority.charAt(0) + project.priority.slice(1).toLowerCase()}
+                  </span>
+                </span>
+              }
+              {project.description && <span className="production-description">{project.description}</span>}
+            </>
+          }
+          actions={
+            <div className="admin-actions portal-actions-reveal">
+              <Link className="portal-button secondary" to="/admin/projets/internes">
+                {t('projB.page.breadcrumbProjects')}
+              </Link>
+              <Link
                 className="portal-button secondary portal-action-link"
-                type="button"
-                onClick={() => setDeleteOpen(true)}
-                style={{ color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
+                to={`/admin/projets/internes?edit=${project._id}`}
               >
-                <span className="portal-action-label">{t('common.delete')}</span>
-              </button>
-            )}
-          </div>
-        </div>
+                <span className="portal-action-label">{t('common.edit')}</span>
+              </Link>
+              {isSuperAdmin && (
+                <button
+                  className="portal-button secondary portal-action-link"
+                  type="button"
+                  onClick={() => setDeleteOpen(true)}
+                  style={{
+                    color: 'var(--critical)',
+                    borderColor: 'color-mix(in srgb, var(--critical) 30%, transparent)',
+                  }}
+                >
+                  <span className="portal-action-label">{t('common.delete')}</span>
+                </button>
+              )}
+            </div>
+          }
+        />
 
         <MetaInfo project={project} />
 
@@ -557,40 +575,18 @@ export default function InternalProjectDetail() {
       </div>
 
       {/* Tab bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 20 }}>
+      <div className="production-tabs">
         <button
           onClick={() => setActiveTab('overview')}
-          style={{
-            padding: '7px 16px',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            border: `1px solid ${activeTab === 'overview' ? 'rgba(14, 165, 233, 0.45)' : 'rgba(255,255,255,0.1)'}`,
-            background: activeTab === 'overview' ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
-            color: activeTab === 'overview' ? 'var(--primary)' : 'var(--text-secondary)',
-            transition: 'all .15s',
-          }}
+          className={`production-tab ${activeTab === 'overview' ? 'active' : ''}`}
+          aria-pressed={activeTab === 'overview'}
         >
           {t('projB.page.tabOverview')}
         </button>
         <button
           onClick={() => setActiveTab('missions')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '7px 16px',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            border: `1.5px solid ${activeTab === 'missions' ? 'rgba(234,179,8,0.6)' : 'rgba(234,179,8,0.28)'}`,
-            background: activeTab === 'missions' ? 'rgba(234,179,8,0.12)' : 'rgba(234,179,8,0.04)',
-            color: activeTab === 'missions' ? '#fde047' : 'rgba(253,224,71,0.55)',
-            boxShadow: activeTab === 'missions' ? '0 0 10px rgba(234,179,8,0.12)' : 'none',
-            transition: 'all .15s',
-          }}
+          className={`production-tab ${activeTab === 'missions' ? 'active' : ''}`}
+          aria-pressed={activeTab === 'missions'}
         >
           <svg
             width="13"
@@ -612,9 +608,13 @@ export default function InternalProjectDetail() {
                 fontSize: 10,
                 fontWeight: 700,
                 padding: '1px 6px',
-                borderRadius: 10,
-                background: activeTab === 'missions' ? 'rgba(234,179,8,0.25)' : 'rgba(234,179,8,0.12)',
-                color: activeTab === 'missions' ? '#fde047' : 'rgba(253,224,71,0.6)',
+                borderRadius: 'var(--r-md)',
+                background:
+                  activeTab === 'missions'
+                    ? 'color-mix(in srgb, var(--warning) 25%, transparent)'
+                    : 'color-mix(in srgb, var(--warning) 12%, transparent)',
+                color:
+                  activeTab === 'missions' ? 'var(--warning)' : 'color-mix(in srgb, var(--warning) 60%, transparent)',
               }}
             >
               {missions.length}

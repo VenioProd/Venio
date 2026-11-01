@@ -78,7 +78,7 @@ export default function MissionDetail({
   onDeleteMission,
 }: MissionDetailProps) {
   return (
-    <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
       <MissionProgress mission={mission} isSuperAdmin={isSuperAdmin} onProgressUpdate={onProgressUpdate} />
       <MissionParticipants
         mission={mission}

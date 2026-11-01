@@ -238,7 +238,7 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                     <img
                       src={getPreviewUrl(projectId, item._id)}
                       alt={item.title}
-                      style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
+                      style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 'var(--r-sm)', flexShrink: 0 }}
                       loading="lazy"
                     />
                   )}
@@ -302,8 +302,8 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                         style={{
                           fontSize: '12px',
                           padding: '8px 12px',
-                          background: 'rgba(239, 68, 68, 0.1)',
-                          borderColor: 'rgba(239, 68, 68, 0.3)',
+                          background: 'color-mix(in srgb, var(--critical) 10%, transparent)',
+                          borderColor: 'color-mix(in srgb, var(--critical) 30%, transparent)',
                         }}
                       >
                         {t('projects.content.delete')}
@@ -343,8 +343,8 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                     style={{
                       fontSize: '12px',
                       padding: '8px 12px',
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      borderColor: 'rgba(239, 68, 68, 0.3)',
+                      background: 'color-mix(in srgb, var(--critical) 10%, transparent)',
+                      borderColor: 'color-mix(in srgb, var(--critical) 30%, transparent)',
                     }}
                   >
                     🗑️
@@ -420,8 +420,8 @@ const ProjectContentTab: React.FC<ProjectContentTabProps> = ({
                           style={{
                             fontSize: '12px',
                             padding: '8px 12px',
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            borderColor: 'rgba(239, 68, 68, 0.3)',
+                            background: 'color-mix(in srgb, var(--critical) 10%, transparent)',
+                            borderColor: 'color-mix(in srgb, var(--critical) 30%, transparent)',
                           }}
                         >
                           🗑️
