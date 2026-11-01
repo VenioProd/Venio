@@ -1,5 +1,7 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
+import '../OrganisationSysteme.css'
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
 import { useI18n } from '../../../context/I18nContext'
 import { useConfirm } from '../../../hooks/useConfirm'
@@ -116,7 +118,10 @@ const InternList = () => {
 
   if (loading) {
     return (
-      <div className="portal-container" style={{ padding: '60px 20px', textAlign: 'center', color: '#fff' }}>
+      <div
+        className="portal-container lot-c-page intern-list-page"
+        style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-primary)' }}
+      >
         {t('intern.list.loading')}
       </div>
     )
@@ -132,7 +137,7 @@ const InternList = () => {
   ]
 
   return (
-    <div className="portal-container">
+    <div className="portal-container lot-c-page intern-list-page">
       {ConfirmDialog}
       {commentModal && (
         <CommentModal
@@ -143,37 +148,23 @@ const InternList = () => {
         />
       )}
 
-      <div className="ticket-hero">
-        <div className="ticket-hero-content">
-          <Link to="/admin" className="ticket-back-btn">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            {t('intern.list.backToDashboard')}
-          </Link>
-          <h1 className="ticket-hero-title">{t('intern.list.title')}</h1>
-        </div>
-        <button
-          className="ticket-new-btn"
-          onClick={() => {
-            resetForm()
-            setShowForm(true)
-            // Le formulaire n'existe que dans l'onglet Équipe
-            setActiveTab('stagiaires')
-          }}
-        >
-          {t('intern.list.newMember')}
-        </button>
-      </div>
+      <PageHeader
+        eyebrow={t('adminOps.zone.team')}
+        title={t('intern.list.title')}
+        actions={
+          <button
+            className="ticket-new-btn"
+            onClick={() => {
+              resetForm()
+              setShowForm(true)
+              // Le formulaire n'existe que dans l'onglet Équipe
+              setActiveTab('stagiaires')
+            }}
+          >
+            {t('intern.list.newMember')}
+          </button>
+        }
+      />
 
       {tabs.length > 1 && (
         <div className="ticket-tabs">

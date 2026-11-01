@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import { useI18n } from '../../../context/I18nContext'
@@ -111,16 +112,23 @@ export function AdvancedSearchView({
   return (
     <div>
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
-        <div>
-          <h1 className="edu-h1">{t('eduD.advSearch.title')}</h1>
-          <p className="edu-sub">
-            {t('eduD.advSearch.subtitle')}
-            {result && t('eduD.advSearch.resultCount', { count: totalResults })}
-          </p>
-        </div>
-        <button className="edu-btn ghost" onClick={reset}>
-          <X size={14} /> {t('eduD.advSearch.reset')}
-        </button>
+        <PageHeader
+          eyebrow={t('adminOps.zone.education')}
+          title={t('eduD.advSearch.title')}
+          subtitle={
+            <>
+              {t('eduD.advSearch.subtitle')}
+              {result && t('eduD.advSearch.resultCount', { count: totalResults })}
+            </>
+          }
+          actions={
+            <>
+              <button className="edu-btn ghost" onClick={reset}>
+                <X size={14} /> {t('eduD.advSearch.reset')}
+              </button>
+            </>
+          }
+        />
       </div>
 
       <div className="edu-search-advanced-filters">

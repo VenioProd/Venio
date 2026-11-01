@@ -283,36 +283,36 @@ const VatDeclarations = () => {
                     style={{
                       margin: '0 0 10px 0',
                       fontSize: '0.95rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      color: '#4ade80',
+                      textTransform: 'none',
+                      letterSpacing: 'normal',
+                      color: 'var(--good)',
                     }}
                   >
                     {t('accVat.list.collected')}
                   </h3>
                   {(preview.collectedByRate || []).length === 0 ? (
-                    <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.88rem' }}>
-                      {t('accVat.list.collectedNone')}
-                    </p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>{t('accVat.list.collectedNone')}</p>
                   ) : (
-                    <table className="accounting-table">
-                      <thead>
-                        <tr>
-                          <th>{t('accVat.list.colRate')}</th>
-                          <th className="amount">{t('accVat.list.colBaseHt')}</th>
-                          <th className="amount">{t('accVat.list.colVat')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {preview.collectedByRate.map((r, i) => (
-                          <tr key={`coll-${i}`}>
-                            <td>{formatRate(r.rate)}</td>
-                            <td className="amount">{formatEur(r.base)}</td>
-                            <td className="amount">{formatEur(r.amount)}</td>
+                    <div className="accounting-table-scroll">
+                      <table className="accounting-table">
+                        <thead>
+                          <tr>
+                            <th>{t('accVat.list.colRate')}</th>
+                            <th className="amount">{t('accVat.list.colBaseHt')}</th>
+                            <th className="amount">{t('accVat.list.colVat')}</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {preview.collectedByRate.map((r, i) => (
+                            <tr key={`coll-${i}`}>
+                              <td>{formatRate(r.rate)}</td>
+                              <td className="amount">{formatEur(r.base)}</td>
+                              <td className="amount">{formatEur(r.amount)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
 
@@ -321,36 +321,36 @@ const VatDeclarations = () => {
                     style={{
                       margin: '0 0 10px 0',
                       fontSize: '0.95rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
+                      textTransform: 'none',
+                      letterSpacing: 'normal',
                       color: 'var(--primary)',
                     }}
                   >
                     {t('accVat.list.deductible')}
                   </h3>
                   {(preview.deductibleByRate || []).length === 0 ? (
-                    <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.88rem' }}>
-                      {t('accVat.list.deductibleNone')}
-                    </p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>{t('accVat.list.deductibleNone')}</p>
                   ) : (
-                    <table className="accounting-table">
-                      <thead>
-                        <tr>
-                          <th>{t('accVat.list.colRate')}</th>
-                          <th className="amount">{t('accVat.list.colBaseHt')}</th>
-                          <th className="amount">{t('accVat.list.colVat')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {preview.deductibleByRate.map((r, i) => (
-                          <tr key={`ded-${i}`}>
-                            <td>{formatRate(r.rate)}</td>
-                            <td className="amount">{formatEur(r.base)}</td>
-                            <td className="amount">{formatEur(r.amount)}</td>
+                    <div className="accounting-table-scroll">
+                      <table className="accounting-table">
+                        <thead>
+                          <tr>
+                            <th>{t('accVat.list.colRate')}</th>
+                            <th className="amount">{t('accVat.list.colBaseHt')}</th>
+                            <th className="amount">{t('accVat.list.colVat')}</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {preview.deductibleByRate.map((r, i) => (
+                            <tr key={`ded-${i}`}>
+                              <td>{formatRate(r.rate)}</td>
+                              <td className="amount">{formatEur(r.base)}</td>
+                              <td className="amount">{formatEur(r.amount)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               </div>
@@ -361,40 +361,42 @@ const VatDeclarations = () => {
                     style={{
                       margin: '0 0 10px 0',
                       fontSize: '0.95rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      color: 'rgba(14, 165, 233, 0.85)',
+                      textTransform: 'none',
+                      letterSpacing: 'normal',
+                      color: 'color-mix(in srgb, var(--primary) 85%, transparent)',
                     }}
                   >
                     {t('accVat.list.ca3Lines')}
                   </h3>
-                  <table className="accounting-table">
-                    <thead>
-                      <tr>
-                        <th>{t('accVat.list.colCode')}</th>
-                        <th>{t('accVat.list.colLabel')}</th>
-                        <th className="amount">{t('accVat.list.colBase')}</th>
-                        <th className="amount">{t('accVat.list.colAmount')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {preview.declarationLines.map((l, i) => (
-                        <tr key={`dl-${i}`}>
-                          <td className="code">{l.code}</td>
-                          <td>{l.label}</td>
-                          <td className="amount">{formatEur(l.base)}</td>
-                          <td className="amount">{formatEur(l.amount)}</td>
+                  <div className="accounting-table-scroll">
+                    <table className="accounting-table">
+                      <thead>
+                        <tr>
+                          <th>{t('accVat.list.colCode')}</th>
+                          <th>{t('accVat.list.colLabel')}</th>
+                          <th className="amount">{t('accVat.list.colBase')}</th>
+                          <th className="amount">{t('accVat.list.colAmount')}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {preview.declarationLines.map((l, i) => (
+                          <tr key={`dl-${i}`}>
+                            <td className="code">{l.code}</td>
+                            <td>{l.label}</td>
+                            <td className="amount">{formatEur(l.base)}</td>
+                            <td className="amount">{formatEur(l.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
               <div className="accounting-kpi-grid" style={{ marginTop: 20 }}>
                 <div className="accounting-kpi">
                   <div className="label">{t('accVat.list.totalCollected')}</div>
-                  <div className="value" style={{ color: '#4ade80' }}>
+                  <div className="value" style={{ color: 'var(--good)' }}>
                     {formatEur(preview.totalCollected)}
                   </div>
                 </div>
@@ -409,7 +411,7 @@ const VatDeclarations = () => {
                   <div
                     className="value"
                     style={{
-                      color: Number(preview.totalDue) > 0 ? '#f87171' : '#4ade80',
+                      color: Number(preview.totalDue) > 0 ? 'var(--critical)' : 'var(--good)',
                     }}
                   >
                     {formatEur(preview.totalDue)}
@@ -448,69 +450,71 @@ const VatDeclarations = () => {
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accVat.common.loading')}</p>
         ) : filteredDeclarations.length === 0 ? (
           <div className="accounting-empty">
             {t('accVat.list.empty')}
             {canManage && <div className="hint">{t('accVat.list.emptyHint')}</div>}
           </div>
         ) : (
-          <table className="accounting-table">
-            <thead>
-              <tr>
-                <th>{t('accVat.list.colPeriod')}</th>
-                <th>{t('accVat.list.typeLabel')}</th>
-                <th className="amount">{t('accVat.list.totalCollected')}</th>
-                <th className="amount">{t('accVat.list.totalDeductible')}</th>
-                <th className="amount">{t('accVat.list.toPay')}</th>
-                <th>{t('accVat.list.colStatus')}</th>
-                <th>{t('accVat.list.colActions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDeclarations.map((d) => {
-                const due = Number(d.totalDue) || 0
-                return (
-                  <tr key={d._id}>
-                    <td>
-                      <Link to={`/admin/comptabilite/tva/${d._id}`} className="code">
-                        {formatDate(d.periodStart)} → {formatDate(d.periodEnd)}
-                      </Link>
-                    </td>
-                    <td className="code">{d.type}</td>
-                    <td className="amount">{formatEur(d.totalCollected)}</td>
-                    <td className="amount">{formatEur(d.totalDeductible)}</td>
-                    <td
-                      className="amount"
-                      style={{
-                        fontWeight: 600,
-                        color: due > 0 ? '#f87171' : '#4ade80',
-                      }}
-                    >
-                      {formatEur(due)}
-                    </td>
-                    <td>
-                      <span className={`accounting-badge ${d.status === 'SUBMITTED' ? 'validated' : 'draft'}`}>
-                        {d.status === 'SUBMITTED' ? t('accVat.list.statusSubmitted') : t('accVat.list.statusDraft')}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="accounting-row-actions">
-                        <Link to={`/admin/comptabilite/tva/${d._id}`}>
-                          <button type="button">{t('accVat.list.open')}</button>
+          <div className="accounting-table-scroll">
+            <table className="accounting-table">
+              <thead>
+                <tr>
+                  <th>{t('accVat.list.colPeriod')}</th>
+                  <th>{t('accVat.list.typeLabel')}</th>
+                  <th className="amount">{t('accVat.list.totalCollected')}</th>
+                  <th className="amount">{t('accVat.list.totalDeductible')}</th>
+                  <th className="amount">{t('accVat.list.toPay')}</th>
+                  <th>{t('accVat.list.colStatus')}</th>
+                  <th>{t('accVat.list.colActions')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDeclarations.map((d) => {
+                  const due = Number(d.totalDue) || 0
+                  return (
+                    <tr key={d._id}>
+                      <td>
+                        <Link to={`/admin/comptabilite/tva/${d._id}`} className="code">
+                          {formatDate(d.periodStart)} → {formatDate(d.periodEnd)}
                         </Link>
-                        {canManage && d.status === 'DRAFT' && (
-                          <button type="button" className="danger" onClick={() => handleDelete(d._id)}>
-                            {t('accVat.list.delete')}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="code">{d.type}</td>
+                      <td className="amount">{formatEur(d.totalCollected)}</td>
+                      <td className="amount">{formatEur(d.totalDeductible)}</td>
+                      <td
+                        className="amount"
+                        style={{
+                          fontWeight: 600,
+                          color: due > 0 ? 'var(--critical)' : 'var(--good)',
+                        }}
+                      >
+                        {formatEur(due)}
+                      </td>
+                      <td>
+                        <span className={`accounting-badge ${d.status === 'SUBMITTED' ? 'validated' : 'draft'}`}>
+                          {d.status === 'SUBMITTED' ? t('accVat.list.statusSubmitted') : t('accVat.list.statusDraft')}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="accounting-row-actions">
+                          <Link to={`/admin/comptabilite/tva/${d._id}`}>
+                            <button type="button">{t('accVat.list.open')}</button>
+                          </Link>
+                          {canManage && d.status === 'DRAFT' && (
+                            <button type="button" className="danger" onClick={() => handleDelete(d._id)}>
+                              {t('accVat.list.delete')}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </AccountingLayout>

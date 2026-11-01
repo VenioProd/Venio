@@ -34,6 +34,7 @@
   font-size: 0.85rem;
 }
 .pf-metric strong {
+  font-family: var(--font-mono);
   font-size: clamp(1.1rem, 2vw, 1.55rem);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -66,10 +67,10 @@
   width: 100%;
   min-width: 0;
   padding: 10px 12px;
-  border: 1px solid var(--border-color, #383838);
-  background: var(--bg-input, #161616);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   color: var(--text-primary);
-  border-radius: 4px;
+  border-radius: var(--r-md);
   font: inherit;
 }
 .pf-field input[type='checkbox'],
@@ -103,9 +104,9 @@
   padding: 0;
   list-style: none;
   z-index: 10;
-  border: 1px solid var(--border-color, #383838);
-  border-radius: 4px;
-  background: var(--bg-input, #161616);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  background: var(--bg-secondary);
 }
 .pf-select-list li {
   display: flex;
@@ -123,7 +124,7 @@
 }
 .pf-select-list li:hover,
 .pf-select-list .pf-select-active {
-  background: var(--bg-hover, #303030);
+  background: var(--bg-card-hover);
 }
 .pf-action-form > fieldset {
   width: 100%;
@@ -148,7 +149,9 @@
 }
 .pf-record {
   min-width: 0;
-  border: 1px solid var(--border-color, #383838);
+  background: var(--surface-glass);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border-color);
   padding: 16px;
   display: grid;
   gap: 14px;
@@ -164,7 +167,7 @@
 }
 .pf-workspace a,
 .accounting-shell .admin-page-subtitle a {
-  color: #0ea5e9;
+  color: var(--primary);
   overflow-wrap: anywhere;
 }
 .pf-workspace .admin-error {
@@ -187,7 +190,7 @@
   opacity: 0.85;
 }
 .pf-workspace .dash-fchart {
-  border-radius: 0;
+  border-radius: var(--r-lg);
   box-shadow: none;
 }
 .pf-workspace .pf-chart {

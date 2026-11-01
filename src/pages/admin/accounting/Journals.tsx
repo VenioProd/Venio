@@ -202,47 +202,49 @@ const Journals = () => {
 
       <section className="accounting-card">
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
         ) : journals.length === 0 ? (
           <div className="accounting-empty">
             {t('accAccounts.journals.empty')}
             <div className="hint">{t('accAccounts.journals.emptyHint')}</div>
           </div>
         ) : (
-          <table className="accounting-table">
-            <thead>
-              <tr>
-                <th>{t('accAccounts.col.code')}</th>
-                <th>{t('accAccounts.col.label')}</th>
-                <th>{t('accAccounts.accounts.type')}</th>
-                <th>{t('accAccounts.journals.counterAccount')}</th>
-                <th>{t('accAccounts.col.status')}</th>
-                {canManage && <th></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {journals.map((j) => (
-                <tr key={j._id}>
-                  <td className="code">{j.code}</td>
-                  <td>{j.label}</td>
-                  <td>{TYPE_LABEL_KEYS[j.type] ? t(TYPE_LABEL_KEYS[j.type]) : j.type}</td>
-                  <td className="code">{j.counterAccount || '—'}</td>
-                  <td>
-                    <span className={`accounting-badge ${j.isActive ? 'validated' : 'locked'}`}>
-                      {j.isActive ? t('accAccounts.accounts.active') : t('accAccounts.accounts.inactive')}
-                    </span>
-                  </td>
-                  {canManage && (
-                    <td>
-                      <div className="accounting-row-actions">
-                        <button onClick={() => startEdit(j)}>{t('common.edit')}</button>
-                      </div>
-                    </td>
-                  )}
+          <div className="accounting-table-scroll">
+            <table className="accounting-table">
+              <thead>
+                <tr>
+                  <th>{t('accAccounts.col.code')}</th>
+                  <th>{t('accAccounts.col.label')}</th>
+                  <th>{t('accAccounts.accounts.type')}</th>
+                  <th>{t('accAccounts.journals.counterAccount')}</th>
+                  <th>{t('accAccounts.col.status')}</th>
+                  {canManage && <th></th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {journals.map((j) => (
+                  <tr key={j._id}>
+                    <td className="code">{j.code}</td>
+                    <td>{j.label}</td>
+                    <td>{TYPE_LABEL_KEYS[j.type] ? t(TYPE_LABEL_KEYS[j.type]) : j.type}</td>
+                    <td className="code">{j.counterAccount || '—'}</td>
+                    <td>
+                      <span className={`accounting-badge ${j.isActive ? 'validated' : 'locked'}`}>
+                        {j.isActive ? t('accAccounts.accounts.active') : t('accAccounts.accounts.inactive')}
+                      </span>
+                    </td>
+                    {canManage && (
+                      <td>
+                        <div className="accounting-row-actions">
+                          <button onClick={() => startEdit(j)}>{t('common.edit')}</button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </AccountingLayout>

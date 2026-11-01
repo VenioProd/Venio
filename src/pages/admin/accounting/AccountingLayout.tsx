@@ -1,3 +1,5 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
+import '../OrganisationSysteme.css'
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
@@ -78,13 +80,12 @@ const AccountingLayout = ({ title, subtitle, actions, children }: AccountingLayo
 
   return (
     <div className="accounting-shell">
-      <div className="admin-page-header">
-        <div>
-          <h1 style={{ margin: 0 }}>{title || t('accAccounts.layout.title')}</h1>
-          {subtitle && <p className="admin-page-subtitle">{subtitle}</p>}
-        </div>
-        {actions && <div className="accounting-toolbar-right">{actions}</div>}
-      </div>
+      <PageHeader
+        eyebrow={t('accAccounts.layout.title')}
+        title={title || t('accAccounts.layout.title')}
+        subtitle={subtitle}
+        actions={actions}
+      />
 
       <nav className="accounting-subnav" aria-label={t('accAccounts.layout.navLabel')}>
         {NAV_ITEMS.filter((item) => !item.perm || hasPermission(user, item.perm)).map((item) => (

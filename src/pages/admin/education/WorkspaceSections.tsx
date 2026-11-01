@@ -41,11 +41,11 @@ export function SaveIndicator({ state }: { state: SaveState }) {
   if (state === 'idle') return null
   const label =
     state === 'saving' ? t('eduC.sections.saving') : state === 'saved' ? t('eduC.sections.saved') : t('common.error')
-  const color = state === 'error' ? '#EF4444' : state === 'saved' ? '#22C55E' : 'rgba(255,255,255,0.6)'
+  const color = state === 'error' ? 'var(--critical)' : state === 'saved' ? 'var(--good)' : 'var(--text-secondary)'
   return (
     <span
       className="edu-pill"
-      style={{ background: 'rgba(255,255,255,0.06)', color, fontSize: 11.5 }}
+      style={{ background: 'color-mix(in srgb, var(--text-primary) 6%, transparent)', color, fontSize: 11.5 }}
       aria-live="polite"
     >
       {label}
@@ -321,7 +321,7 @@ export function RemarksSection({
                 <li key={r.id} className="edu-session-remark">
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13.5, whiteSpace: 'pre-wrap' }}>{r.text}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                       {formatShortDate(r.createdAt, true)}
                     </div>
                   </div>

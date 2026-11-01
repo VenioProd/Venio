@@ -25,7 +25,7 @@ const allowlist: string[] = allowlistJson
 const root = process.cwd()
 const read = (path: string) => readFileSync(join(root, path), 'utf8')
 
-/** Les 37 feuilles couvertes par la charte. */
+/** Feuilles couvertes par la charte, y compris les styles métier du lot C. */
 export const PORTAL_STYLESHEETS = [
   'src/components/admin/ui/AdminHub.css',
   'src/components/AdminCommandPalette.css',
@@ -38,9 +38,12 @@ export const PORTAL_STYLESHEETS = [
   'src/components/admin/RevenueChain.css',
   'src/components/dashboard/dashboard.css',
   'src/pages/admin/AdminPortal.css',
+  'src/pages/admin/OrganisationSysteme.css',
+  'src/pages/admin/subsidiary-detail/Dossier.css',
   'src/pages/admin/Messaging.css',
   'src/pages/admin/Subsidiaries.css',
   'src/pages/admin/accounting/AccountingPortal.css',
+  'src/pages/admin/accounting/projects/ProjectAccounting.css',
   'src/pages/admin/analytics/crm/PilotageSection.css',
   'src/pages/admin/beta/Beta.css',
   'src/pages/admin/dev-workspace/AgentLaunchControl.css',

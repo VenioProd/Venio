@@ -1,3 +1,5 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import { useEffect, useState, useCallback } from 'react'
 import { apiFetch } from '../../lib/api'
 import CustomSelect from '../../components/admin/CustomSelect'
@@ -27,11 +29,11 @@ const actionLabelKeys: Record<string, MessageKey> = {
 }
 
 const actionColors: Record<string, string> = {
-  LOGIN_SUCCESS: '#10b981',
-  LOGIN_FAILED: '#ef4444',
-  LOGOUT: '#6b7280',
-  PASSWORD_CHANGED: '#f59e0b',
-  PROFILE_UPDATED: '#3b82f6',
+  LOGIN_SUCCESS: 'var(--good)',
+  LOGIN_FAILED: 'var(--critical)',
+  LOGOUT: 'var(--text-muted)',
+  PASSWORD_CHANGED: 'var(--warning)',
+  PROFILE_UPDATED: 'var(--primary)',
 }
 
 function shortenUA(ua: string): string {
@@ -83,14 +85,13 @@ const AuditLog = () => {
   }
 
   return (
-    <section className="admin-portal" style={{ paddingTop: '120px', minHeight: '100vh' }}>
+    <section className="lot-c-page audit-page">
       <div className="admin-container">
-        <div className="admin-header">
-          <h1>{t('adminOps.audit.title')}</h1>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            {t('adminOps.audit.entryCount', { count: total })}
-          </span>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.zone.system')}
+          title={t('adminOps.audit.title')}
+          actions={<span className="lot-c-count">{t('adminOps.audit.entryCount', { count: total })}</span>}
+        />
 
         <form
           onSubmit={handleFilterSubmit}
@@ -164,12 +165,12 @@ const AuditLog = () => {
                         style={{
                           display: 'inline-block',
                           padding: '2px 10px',
-                          borderRadius: '12px',
+                          borderRadius: 'var(--r-lg)',
                           fontSize: '0.8rem',
                           fontWeight: 600,
-                          background: `${actionColors[log.action] || '#666'}22`,
-                          color: actionColors[log.action] || '#888',
-                          border: `1px solid ${actionColors[log.action] || '#666'}44`,
+                          background: `${actionColors[log.action] || 'var(--text-muted)'}22`,
+                          color: actionColors[log.action] || 'var(--text-secondary)',
+                          border: `1px solid ${actionColors[log.action] || 'var(--text-muted)'}44`,
                         }}
                       >
                         {actionLabelKeys[log.action] ? t(actionLabelKeys[log.action]) : log.action}
@@ -181,7 +182,7 @@ const AuditLog = () => {
                       style={{
                         padding: '10px 12px',
                         color: 'var(--text-secondary)',
-                        fontFamily: 'monospace',
+                        fontFamily: 'var(--font-mono)',
                         fontSize: '0.8rem',
                       }}
                     >

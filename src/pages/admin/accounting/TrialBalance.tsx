@@ -14,12 +14,12 @@ function formatEur(n: unknown): string {
 
 function balanceColor(type: AccountType | undefined, balance: unknown): string {
   const b = Number(balance) || 0
-  if (b === 0) return 'rgba(255,255,255,0.85)'
+  if (b === 0) return 'var(--text-primary)'
   const debitNormal = type === 'ACTIF' || type === 'CHARGE'
   const creditNormal = type === 'PASSIF' || type === 'PRODUIT' || type === 'CAPITAUX'
-  if (debitNormal) return b > 0 ? '#4ade80' : '#f87171'
-  if (creditNormal) return b < 0 ? '#4ade80' : '#f87171'
-  return 'rgba(255,255,255,0.85)'
+  if (debitNormal) return b > 0 ? 'var(--good)' : 'var(--critical)'
+  if (creditNormal) return b < 0 ? 'var(--good)' : 'var(--critical)'
+  return 'var(--text-primary)'
 }
 
 interface TrialBalanceFilters {
@@ -178,7 +178,7 @@ const TrialBalance = () => {
               </option>
             ))}
           </select>
-          <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
+          <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
             <input
               type="checkbox"
               checked={filters.includeZero}
@@ -192,94 +192,96 @@ const TrialBalance = () => {
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
         ) : !data || rows.length === 0 ? (
           <div className="accounting-empty">
             {t('accAccounts.trial.empty')}
             <div className="hint">{t('accAccounts.trial.emptyHint')}</div>
           </div>
         ) : (
-          <table className="accounting-table">
-            <thead>
-              <tr>
-                <th>{t('accAccounts.col.code')}</th>
-                <th>{t('accAccounts.col.label')}</th>
-                <th>{t('accAccounts.accounts.class')}</th>
-                <th className="amount">{t('accAccounts.col.debit')}</th>
-                <th className="amount">{t('accAccounts.col.credit')}</th>
-                <th className="amount">{t('accAccounts.col.balance')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rowsWithSeparators.map((r) =>
-                isSeparator(r) ? (
-                  <tr
-                    key={r.key}
-                    style={{
-                      background: 'rgba(255,255,255,0.04)',
-                    }}
-                  >
-                    <td
-                      colSpan={6}
-                      style={{
-                        padding: '8px 14px',
-                        fontSize: '0.78rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        color: 'rgba(14, 165, 233, 0.85)',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {t('accAccounts.accounts.classN', { n: r.classNum })}
-                    </td>
-                  </tr>
-                ) : (
-                  <tr key={r.accountCode}>
-                    <td className="code">{r.accountCode}</td>
-                    <td>{r.accountLabel}</td>
-                    <td>{r.accountClass}</td>
-                    <td className="amount">{formatEur(r.debit)}</td>
-                    <td className="amount">{formatEur(r.credit)}</td>
-                    <td
-                      className="amount"
-                      style={{
-                        color: balanceColor(r.type, r.balance),
-                        fontWeight: 600,
-                      }}
-                    >
-                      {formatEur(r.balance)}
-                    </td>
-                  </tr>
-                ),
-              )}
-            </tbody>
-            {totals && (
-              <tfoot>
-                <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
-                  <td colSpan={3} style={{ textAlign: 'right', fontWeight: 700, padding: '14px' }}>
-                    {t('accAccounts.entry.totals')}
-                  </td>
-                  <td className="amount" style={{ fontWeight: 700 }}>
-                    {formatEur(totals.debit)}
-                  </td>
-                  <td className="amount" style={{ fontWeight: 700 }}>
-                    {formatEur(totals.credit)}
-                  </td>
-                  <td className="amount" style={{ fontWeight: 700 }}>
-                    {balanced ? (
-                      <span style={{ color: '#4ade80' }}>{t('accAccounts.trial.balanced')}</span>
-                    ) : (
-                      <span style={{ color: '#f87171' }}>
-                        {t('accAccounts.trial.difference', {
-                          amount: formatEur(Number(totals.debit) - Number(totals.credit)),
-                        })}
-                      </span>
-                    )}
-                  </td>
+          <div className="accounting-table-scroll">
+            <table className="accounting-table">
+              <thead>
+                <tr>
+                  <th>{t('accAccounts.col.code')}</th>
+                  <th>{t('accAccounts.col.label')}</th>
+                  <th>{t('accAccounts.accounts.class')}</th>
+                  <th className="amount">{t('accAccounts.col.debit')}</th>
+                  <th className="amount">{t('accAccounts.col.credit')}</th>
+                  <th className="amount">{t('accAccounts.col.balance')}</th>
                 </tr>
-              </tfoot>
-            )}
-          </table>
+              </thead>
+              <tbody>
+                {rowsWithSeparators.map((r) =>
+                  isSeparator(r) ? (
+                    <tr
+                      key={r.key}
+                      style={{
+                        background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                      }}
+                    >
+                      <td
+                        colSpan={6}
+                        style={{
+                          padding: '8px 14px',
+                          fontSize: '0.78rem',
+                          textTransform: 'none',
+                          letterSpacing: 'normal',
+                          color: 'color-mix(in srgb, var(--primary) 85%, transparent)',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {t('accAccounts.accounts.classN', { n: r.classNum })}
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={r.accountCode}>
+                      <td className="code">{r.accountCode}</td>
+                      <td>{r.accountLabel}</td>
+                      <td>{r.accountClass}</td>
+                      <td className="amount">{formatEur(r.debit)}</td>
+                      <td className="amount">{formatEur(r.credit)}</td>
+                      <td
+                        className="amount"
+                        style={{
+                          color: balanceColor(r.type, r.balance),
+                          fontWeight: 600,
+                        }}
+                      >
+                        {formatEur(r.balance)}
+                      </td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+              {totals && (
+                <tfoot>
+                  <tr style={{ borderTop: '2px solid color-mix(in srgb, var(--primary) 40%, transparent)' }}>
+                    <td colSpan={3} style={{ textAlign: 'right', fontWeight: 700, padding: '14px' }}>
+                      {t('accAccounts.entry.totals')}
+                    </td>
+                    <td className="amount" style={{ fontWeight: 700 }}>
+                      {formatEur(totals.debit)}
+                    </td>
+                    <td className="amount" style={{ fontWeight: 700 }}>
+                      {formatEur(totals.credit)}
+                    </td>
+                    <td className="amount" style={{ fontWeight: 700 }}>
+                      {balanced ? (
+                        <span style={{ color: 'var(--good)' }}>{t('accAccounts.trial.balanced')}</span>
+                      ) : (
+                        <span style={{ color: 'var(--critical)' }}>
+                          {t('accAccounts.trial.difference', {
+                            amount: formatEur(Number(totals.debit) - Number(totals.credit)),
+                          })}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
         )}
       </section>
     </AccountingLayout>

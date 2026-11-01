@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import PageHeader from '../../../components/admin/ui/PageHeader'
+import '../OrganisationSysteme.css'
+import { useEffect, useState, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { useConfirm } from '../../../hooks/useConfirm'
-import { Link } from 'react-router-dom'
+
 import { apiDownload, apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useI18n } from '../../../context/I18nContext'
@@ -276,7 +278,7 @@ const QualiopiBoard = () => {
 
   if (loading)
     return (
-      <div className="portal-container">
+      <div className="portal-container lot-c-page qualiopi-page">
         <div className="portal-card" style={{ padding: 60, textAlign: 'center' }}>
           <div className="qualiopi-loading-spinner" />
           <p style={{ color: 'var(--text-muted)', marginTop: 16 }}>{t('orgs.qualiopi.board.loading')}</p>
@@ -286,17 +288,19 @@ const QualiopiBoard = () => {
 
   if (error)
     return (
-      <div className="portal-container">
+      <div className="portal-container lot-c-page qualiopi-page">
         <div className="portal-card" style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: '#ef4444', marginBottom: 16 }}>{t('orgs.qualiopi.board.errorPrefix', { error })}</p>
+          <p style={{ color: 'var(--critical)', marginBottom: 16 }}>
+            {t('orgs.qualiopi.board.errorPrefix', { error })}
+          </p>
           <button
             onClick={load}
             style={{
               background: 'var(--primary)',
-              color: '#fff',
+              color: 'var(--text-primary)',
               border: 'none',
               padding: '10px 24px',
-              borderRadius: 8,
+              borderRadius: 'var(--r-md)',
               cursor: 'pointer',
               fontSize: 14,
             }}
@@ -308,39 +312,14 @@ const QualiopiBoard = () => {
     )
 
   return (
-    <div className="portal-container">
+    <div className="portal-container lot-c-page qualiopi-page">
       {ConfirmDialog}
       {/* Header */}
-      <div className="qualiopi-hero">
-        <div className="qualiopi-hero-content">
-          <Link to="/admin" className="qualiopi-back-btn">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            {t('orgs.qualiopi.board.backToDashboard')}
-          </Link>
-          <h1 className="qualiopi-hero-title">
-            {t('orgs.qualiopi.board.title')} — <span>Formatio</span>
-          </h1>
-          <p className="qualiopi-hero-subtitle">{t('orgs.qualiopi.board.subtitle')}</p>
-        </div>
-        <div className="qualiopi-hero-badge">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="1.5">
-            <path d="M9 12l2 2 4-4" />
-            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" />
-          </svg>
-          <span>Qualiopi</span>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={t('adminOps.zone.education')}
+        title={`${t('orgs.qualiopi.board.title')} — Formatio`}
+        subtitle={t('orgs.qualiopi.board.subtitle')}
+      />
 
       {/* Tabs */}
       <div className="qualiopi-tabs">
@@ -580,7 +559,7 @@ const QualiopiBoard = () => {
                     height="48"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="rgba(255,255,255,0.15)"
+                    stroke="color-mix(in srgb, var(--text-primary) 15%, transparent)"
                     strokeWidth="1.5"
                   >
                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -756,7 +735,14 @@ const QualiopiBoard = () => {
                   <iframe src={preview.url} className="qualiopi-preview-iframe" title={preview.name} />
                 ) : (
                   <div className="qualiopi-preview-unsupported">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="1.5">
+                    <svg
+                      width="48"
+                      height="48"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="var(--primary)"
+                      strokeWidth="1.5"
+                    >
                       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                       <path d="M14 2v6h6" />
                     </svg>

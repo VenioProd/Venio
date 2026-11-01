@@ -1,3 +1,5 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
@@ -6,7 +8,7 @@ import { useToast } from '../../context/ToastContext'
 import { useI18n } from '../../context/I18nContext'
 import type { MessageKey } from '../../i18n'
 import { getPermissionsForRole, PERMISSIONS } from '../../lib/permissions'
-import type { User, AdminRole } from '../../types/auth.types'
+import type { User } from '../../types/auth.types'
 import CustomSelect from '../../components/admin/CustomSelect'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
@@ -224,26 +226,20 @@ const AdminEdit = () => {
 
   if (!admin && !error) {
     return (
-      <div className="portal-container">
+      <div className="portal-container lot-c-page admin-edit-page">
         <div className="admin-loading">{t('common.loading')}</div>
       </div>
     )
   }
 
   return (
-    <div className="portal-container">
+    <div className="portal-container lot-c-page admin-edit-page">
       <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <Link to="/admin/equipe/comptes">{t('projects.admin.adminAccounts')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{admin?.name || t('projects.admin.administrator')}</span>
-        </div>
-        <div className="admin-header">
-          <div>
-            <h1 style={{ marginBottom: '8px' }}>{admin?.name || t('projects.admin.administrator')}</h1>
-            <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+        <PageHeader
+          eyebrow={t('adminOps.zone.team')}
+          title={admin?.name || t('projects.admin.administrator')}
+          subtitle={
+            <>
               {admin?.email} ·{' '}
               {admin?.title ||
                 (admin?.role && ROLE_LABEL_KEYS[admin.role] ? t(ROLE_LABEL_KEYS[admin.role]) : admin?.role)}
@@ -252,20 +248,25 @@ const AdminEdit = () => {
                   style={{
                     marginLeft: 8,
                     padding: '2px 8px',
-                    borderRadius: 4,
+                    borderRadius: 'var(--r-sm)',
                     fontSize: 11,
                     fontWeight: 600,
-                    background: 'rgba(14, 165, 233, 0.12)',
-                    border: '1px solid rgba(14, 165, 233, 0.4)',
+                    background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--primary) 40%, transparent)',
                     color: 'var(--primary)',
                   }}
                 >
                   {t('projects.admin.internBadge')}
                 </span>
               )}
-            </p>
-          </div>
-        </div>
+            </>
+          }
+          actions={
+            <Link className="portal-button secondary" to="/admin/equipe/comptes">
+              {t('projects.admin.adminAccounts')}
+            </Link>
+          }
+        />
       </div>
 
       {error && (
@@ -283,7 +284,7 @@ const AdminEdit = () => {
             <div
               style={{
                 background: 'var(--bg-tertiary)',
-                borderRadius: 10,
+                borderRadius: 'var(--r-md)',
                 padding: 20,
                 border: '1px solid var(--border-color)',
                 marginBottom: 16,
@@ -291,13 +292,27 @@ const AdminEdit = () => {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('projects.admin.email')}</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                <span
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 14,
+                  }}
+                >
                   {admin.email}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('projects.admin.password')}</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                <span
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 14,
+                  }}
+                >
                   {savedPassword}
                 </span>
               </div>
@@ -410,7 +425,7 @@ const AdminEdit = () => {
               </label>
               {customMode ? (
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, letterSpacing: 'normal', color: 'var(--text-muted)', marginBottom: 8 }}>
                     {t('projects.admin.customPerms')}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px' }}>
@@ -438,7 +453,7 @@ const AdminEdit = () => {
                 </div>
               ) : (
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: 12, letterSpacing: 'normal', color: 'var(--text-muted)' }}>
                     {t('projects.admin.defaultPerms')}
                   </div>
                   <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--text-secondary)', fontSize: 13 }}>
@@ -476,22 +491,22 @@ const AdminEdit = () => {
                         style={{
                           cursor: 'pointer',
                           padding: '3px 10px',
-                          borderRadius: 5,
+                          borderRadius: 'var(--r-sm)',
                           fontSize: 11,
                           fontWeight: 600,
                           background:
                             internForm.type === kind
                               ? kind === 'ALTERNANT'
-                                ? 'rgba(155,155,155,0.15)'
-                                : 'rgba(14, 165, 233, 0.15)'
-                              : 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${internForm.type === kind ? (kind === 'ALTERNANT' ? '#9b9b9b' : '#0ea5e9') : 'rgba(255,255,255,0.1)'}`,
+                                ? 'color-mix(in srgb, var(--text-secondary) 15%, transparent)'
+                                : 'color-mix(in srgb, var(--primary) 15%, transparent)'
+                              : 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
+                          border: `1px solid ${internForm.type === kind ? (kind === 'ALTERNANT' ? 'var(--text-secondary)' : 'var(--primary)') : 'color-mix(in srgb, var(--text-primary) 10%, transparent)'}`,
                           color:
                             internForm.type === kind
                               ? kind === 'ALTERNANT'
-                                ? '#9b9b9b'
-                                : '#0ea5e9'
-                              : 'rgba(255,255,255,0.4)',
+                                ? 'var(--text-secondary)'
+                                : 'var(--primary)'
+                              : 'var(--text-muted)',
                           userSelect: 'none',
                         }}
                       >
@@ -505,7 +520,7 @@ const AdminEdit = () => {
                 <div
                   style={{
                     background: 'var(--bg-tertiary)',
-                    borderRadius: 10,
+                    borderRadius: 'var(--r-md)',
                     padding: 16,
                     border: '1px solid var(--border-color)',
                   }}
@@ -615,11 +630,13 @@ const AdminEdit = () => {
                               style={{
                                 cursor: 'pointer',
                                 padding: '5px 12px',
-                                borderRadius: 6,
-                                background: checked ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255,255,255,0.04)',
-                                border: `1px solid ${checked ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
+                                borderRadius: 'var(--r-sm)',
+                                background: checked
+                                  ? 'color-mix(in srgb, var(--primary) 15%, transparent)'
+                                  : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                border: `1px solid ${checked ? 'var(--primary)' : 'color-mix(in srgb, var(--text-primary) 10%, transparent)'}`,
                                 fontSize: 13,
-                                color: checked ? 'var(--primary)' : 'rgba(255,255,255,0.5)',
+                                color: checked ? 'var(--primary)' : 'var(--text-secondary)',
                                 userSelect: 'none',
                                 transition: 'all 0.15s',
                               }}
@@ -645,8 +662,10 @@ const AdminEdit = () => {
                           style={{
                             width: 36,
                             height: 20,
-                            borderRadius: 10,
-                            background: internForm.inclureEquipe ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                            borderRadius: 'var(--r-md)',
+                            background: internForm.inclureEquipe
+                              ? 'var(--primary)'
+                              : 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                             position: 'relative',
                             transition: 'background 0.2s',
                             flexShrink: 0,
@@ -660,13 +679,16 @@ const AdminEdit = () => {
                               width: 16,
                               height: 16,
                               borderRadius: '50%',
-                              background: '#fff',
+                              background: 'var(--text-primary)',
                               transition: 'left 0.2s',
                             }}
                           />
                         </div>
                         <span
-                          style={{ fontSize: 13, color: internForm.inclureEquipe ? '#fff' : 'rgba(255,255,255,0.4)' }}
+                          style={{
+                            fontSize: 13,
+                            color: internForm.inclureEquipe ? 'var(--text-primary)' : 'var(--text-muted)',
+                          }}
                         >
                           {t('projects.admin.includeInTeam')}
                         </span>

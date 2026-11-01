@@ -1,4 +1,8 @@
 const fr = {
+  'adminOps.zone.team': 'Équipe',
+  'adminOps.zone.system': 'Système',
+  'adminOps.zone.education': 'Formation',
+
   'adminOps.guide.labelSep': ' : ',
   'adminOps.guide.labelColon': ' :',
   'adminOps.guide.title': "Guide d'utilisation — Admin",

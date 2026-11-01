@@ -73,15 +73,17 @@ export default function DashboardTab({
           <div
             style={{
               padding: '14px 20px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
           >
             <div>
-              <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>{t('intern.dash.remindersTitle')}</span>
-              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 10 }}>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 14 }}>
+                {t('intern.dash.remindersTitle')}
+              </span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 10 }}>
                 {t('intern.dash.remindersSchedule')}
               </span>
             </div>
@@ -106,9 +108,9 @@ export default function DashboardTab({
                 disabled={sendingReminders}
                 style={{
                   padding: '7px 16px',
-                  borderRadius: 7,
+                  borderRadius: 'var(--r-md)',
                   background: 'var(--primary)',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
                   border: 'none',
                   fontWeight: 600,
                   fontSize: 13,
@@ -124,18 +126,21 @@ export default function DashboardTab({
             <div
               style={{
                 padding: '10px 20px',
-                background: reminderResult.sent > 0 ? 'rgba(34,197,94,0.08)' : 'rgba(255,200,0,0.08)',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                background:
+                  reminderResult.sent > 0
+                    ? 'color-mix(in srgb, var(--good) 8%, transparent)'
+                    : 'color-mix(in srgb, var(--warning) 8%, transparent)',
+                borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 fontSize: 13,
               }}
             >
-              <span style={{ color: reminderResult.sent > 0 ? '#22c55e' : '#fbbf24', fontWeight: 600 }}>
+              <span style={{ color: reminderResult.sent > 0 ? 'var(--good)' : 'var(--warning)', fontWeight: 600 }}>
                 {reminderResult.sent === 0
                   ? t('intern.dash.noneSent')
                   : t('intern.dash.sentCount', { count: reminderResult.sent })}
               </span>
               {reminderResult.details && (
-                <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 10, fontSize: 11 }}>
+                <span style={{ color: 'var(--text-muted)', marginLeft: 10, fontSize: 11 }}>
                   {t('intern.dash.resultDetails', {
                     total: reminderResult.details.totalInterns ?? '',
                     day: reminderResult.details.today ?? '',
@@ -147,13 +152,13 @@ export default function DashboardTab({
             </div>
           )}
           {reminderLogs.length === 0 ? (
-            <div style={{ padding: '20px', color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center' }}>
+            <div style={{ padding: '20px', color: 'var(--text-muted)', fontSize: 13, textAlign: 'center' }}>
               {t('intern.dash.noActivity')}
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <tr style={{ background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}>
                   {[
                     t('intern.dash.logDate'),
                     t('intern.dash.logStatus'),
@@ -166,7 +171,7 @@ export default function DashboardTab({
                         padding: '8px 16px',
                         textAlign: 'left',
                         fontSize: 11,
-                        color: 'rgba(255,255,255,0.4)',
+                        color: 'var(--text-muted)',
                         fontWeight: 600,
                       }}
                     >
@@ -177,8 +182,11 @@ export default function DashboardTab({
               </thead>
               <tbody>
                 {reminderLogs.map((log: any) => (
-                  <tr key={log._id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+                  <tr
+                    key={log._id}
+                    style={{ borderTop: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
+                  >
+                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--text-secondary)' }}>
                       {formatDateTime(log.startedAt, {
                         day: '2-digit',
                         month: 'short',
@@ -192,19 +200,19 @@ export default function DashboardTab({
                           fontSize: 11,
                           fontWeight: 700,
                           padding: '2px 8px',
-                          borderRadius: 4,
+                          borderRadius: 'var(--r-sm)',
                           background:
                             log.status === 'SUCCESS'
-                              ? 'rgba(34,197,94,0.1)'
+                              ? 'color-mix(in srgb, var(--good) 10%, transparent)'
                               : log.status === 'SKIPPED'
-                                ? 'rgba(255,255,255,0.06)'
-                                : 'rgba(239,68,68,0.1)',
+                                ? 'color-mix(in srgb, var(--text-primary) 6%, transparent)'
+                                : 'color-mix(in srgb, var(--critical) 10%, transparent)',
                           color:
                             log.status === 'SUCCESS'
-                              ? '#22c55e'
+                              ? 'var(--good)'
                               : log.status === 'SKIPPED'
-                                ? 'rgba(255,255,255,0.4)'
-                                : '#ef4444',
+                                ? 'var(--text-muted)'
+                                : 'var(--critical)',
                         }}
                       >
                         {log.status === 'SUCCESS'
@@ -214,10 +222,10 @@ export default function DashboardTab({
                             : t('intern.dash.logError')}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 16px', fontSize: 12, color: '#fff', fontWeight: 600 }}>
+                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--text-primary)', fontWeight: 600 }}>
                       {log.actionsExecuted?.length || 0}
                     </td>
-                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.5)', maxWidth: 280 }}>
+                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--text-secondary)', maxWidth: 280 }}>
                       {log.recipientsNotified?.join(', ') || '—'}
                     </td>
                   </tr>
@@ -229,21 +237,28 @@ export default function DashboardTab({
       )}
 
       {dashboardLoading ? (
-        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>{t('intern.dash.loading')}</p>
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>{t('intern.dash.loading')}</p>
       ) : dashboard.length === 0 ? (
-        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>
           {t('intern.dash.noActiveMember')}
         </p>
       ) : (
         <>
           {/* Tableau récap activité */}
           <div className="portal-card" style={{ marginTop: 16, marginBottom: 20, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>{t('intern.dash.lastLogins')}</span>
+            <div
+              style={{
+                padding: '14px 20px',
+                borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              }}
+            >
+              <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 14 }}>
+                {t('intern.dash.lastLogins')}
+              </span>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <tr style={{ background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}>
                   {[
                     t('intern.dash.colIntern'),
                     t('intern.dash.colRole'),
@@ -257,9 +272,9 @@ export default function DashboardTab({
                         padding: '8px 16px',
                         textAlign: 'left',
                         fontSize: 11,
-                        color: 'rgba(255,255,255,0.4)',
+                        color: 'var(--text-muted)',
                         fontWeight: 600,
-                        letterSpacing: '0.05em',
+                        letterSpacing: 'normal',
                       }}
                     >
                       {h}
@@ -276,42 +291,49 @@ export default function DashboardTab({
                     : null
                   const loginColor =
                     daysSinceLogin === null
-                      ? 'rgba(255,255,255,0.3)'
+                      ? 'var(--text-muted)'
                       : daysSinceLogin === 0
-                        ? '#22c55e'
+                        ? 'var(--good)'
                         : daysSinceLogin <= 1
                           ? 'var(--primary)'
                           : daysSinceLogin <= 3
-                            ? '#f59e0b'
-                            : '#ef4444'
+                            ? 'var(--warning)'
+                            : 'var(--critical)'
                   const reportColor =
                     ds.daysSinceLastReport === null
-                      ? 'rgba(255,255,255,0.3)'
+                      ? 'var(--text-muted)'
                       : ds.daysSinceLastReport <= 1
-                        ? '#22c55e'
+                        ? 'var(--good)'
                         : ds.daysSinceLastReport <= 3
-                          ? '#f59e0b'
-                          : '#ef4444'
+                          ? 'var(--warning)'
+                          : 'var(--critical)'
                   const jours = (di.joursPresence as string[] | undefined) || []
                   return (
                     <tr
                       key={di._id}
-                      style={{ borderTop: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }}
+                      style={{
+                        borderTop: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                        cursor: 'pointer',
+                      }}
                       onClick={() => navigate(`/admin/stagiaires/${di._id}`)}
                     >
                       <td style={{ padding: '10px 16px' }}>
-                        <span style={{ color: '#fff', fontWeight: 500, fontSize: 13 }}>{(di.userId as any)?.name}</span>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: 13 }}>
+                          {(di.userId as any)?.name}
+                        </span>
                         <span
                           style={{
                             display: 'inline-block',
                             marginLeft: 7,
                             padding: '1px 6px',
-                            borderRadius: 3,
+                            borderRadius: 'var(--r-sm)',
                             fontSize: 10,
                             fontWeight: 600,
                             background:
-                              di.type === 'ALTERNANT' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(155, 155, 155, 0.15)',
-                            color: di.type === 'ALTERNANT' ? 'var(--primary)' : '#9b9b9b',
+                              di.type === 'ALTERNANT'
+                                ? 'color-mix(in srgb, var(--primary) 15%, transparent)'
+                                : 'color-mix(in srgb, var(--text-secondary) 15%, transparent)',
+                            color: di.type === 'ALTERNANT' ? 'var(--primary)' : 'var(--text-secondary)',
                           }}
                         >
                           {di.type === 'ALTERNANT'
@@ -319,7 +341,7 @@ export default function DashboardTab({
                             : t('intern.dash.typeInternShort')}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 16px', color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{di.poste}</td>
+                      <td style={{ padding: '10px 16px', color: 'var(--text-secondary)', fontSize: 12 }}>{di.poste}</td>
                       <td style={{ padding: '10px 16px' }}>
                         <div style={{ display: 'flex', gap: 3 }}>
                           {INTERN_DAYS.map((j) => (
@@ -329,9 +351,13 @@ export default function DashboardTab({
                                 fontSize: 10,
                                 fontWeight: 600,
                                 padding: '2px 4px',
-                                borderRadius: 3,
-                                background: jours.includes(j) ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255,255,255,0.04)',
-                                color: jours.includes(j) ? 'var(--primary)' : 'rgba(255,255,255,0.2)',
+                                borderRadius: 'var(--r-sm)',
+                                background: jours.includes(j)
+                                  ? 'color-mix(in srgb, var(--primary) 15%, transparent)'
+                                  : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                color: jours.includes(j)
+                                  ? 'var(--primary)'
+                                  : 'color-mix(in srgb, var(--text-primary) 20%, transparent)',
                               }}
                             >
                               {t(DAY_SHORT_KEYS[j])}
@@ -350,7 +376,7 @@ export default function DashboardTab({
                             : t('intern.dash.never')}
                         </span>
                         {loginAt && (
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
                             {formatDateTime(loginAt, {
                               day: '2-digit',
                               month: 'short',
@@ -371,7 +397,7 @@ export default function DashboardTab({
                             : t('intern.dash.noReport')}
                         </span>
                         {ds.lastActivity && (
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
                             {formatDate(ds.lastActivity)}
                           </div>
                         )}
@@ -383,7 +409,13 @@ export default function DashboardTab({
             </table>
           </div>
           {/* Cartes détaillées */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
+              gap: 16,
+            }}
+          >
             {dashboard.map((item: any) => {
               const { intern: di, stats: ds } = item
               const alertLevel =
@@ -395,13 +427,20 @@ export default function DashboardTab({
                       ? 'warning'
                       : 'ok'
               const alertColors = {
-                none: 'rgba(255,255,255,0.2)',
-                danger: '#ef4444',
-                warning: '#f59e0b',
-                ok: '#22c55e',
+                none: 'color-mix(in srgb, var(--text-primary) 20%, transparent)',
+                danger: 'var(--critical)',
+                warning: 'var(--warning)',
+                ok: 'var(--good)',
               }
               const alertColor = alertColors[alertLevel]
-              const colors = ['#0ea5e9', '#9b9b9b', '#ffffff', '#0284c7', '#6e6e6e', '#0ea5e9']
+              const colors = [
+                'var(--primary)',
+                'var(--text-secondary)',
+                'var(--text-primary)',
+                'var(--primary)',
+                'var(--text-muted)',
+                'var(--primary)',
+              ]
               const avatarColor = colors[(di.userId?.name || '').charCodeAt(0) % colors.length]
 
               return (
@@ -419,7 +458,7 @@ export default function DashboardTab({
                           width: 40,
                           height: 40,
                           borderRadius: '50%',
-                          background: avatarColor + '22',
+                          background: `color-mix(in srgb, ${avatarColor} 13.3%, transparent)`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -433,22 +472,26 @@ export default function DashboardTab({
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ color: '#fff', fontWeight: 600, fontSize: 15 }}>{di.userId?.name}</span>
+                          <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 15 }}>
+                            {di.userId?.name}
+                          </span>
                           <span
                             style={{
                               padding: '1px 7px',
-                              borderRadius: 4,
+                              borderRadius: 'var(--r-sm)',
                               fontSize: 10,
                               fontWeight: 600,
                               background:
-                                di.type === 'ALTERNANT' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(155, 155, 155, 0.15)',
-                              color: di.type === 'ALTERNANT' ? 'var(--primary)' : '#9b9b9b',
+                                di.type === 'ALTERNANT'
+                                  ? 'color-mix(in srgb, var(--primary) 15%, transparent)'
+                                  : 'color-mix(in srgb, var(--text-secondary) 15%, transparent)',
+                              color: di.type === 'ALTERNANT' ? 'var(--primary)' : 'var(--text-secondary)',
                             }}
                           >
                             {di.type === 'ALTERNANT' ? t('intern.type.apprentice') : t('intern.type.intern')}
                           </span>
                         </div>
-                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
                           {di.poste}
                           {di.departement ? ` — ${di.departement}` : ''}
                         </div>
@@ -457,11 +500,11 @@ export default function DashboardTab({
                         <span
                           style={{
                             padding: '3px 8px',
-                            borderRadius: 4,
+                            borderRadius: 'var(--r-sm)',
                             fontSize: 10,
                             fontWeight: 700,
-                            background: '#ef444422',
-                            color: '#ef4444',
+                            background: 'color-mix(in srgb, var(--critical) 13.33%, transparent)',
+                            color: 'var(--critical)',
                           }}
                         >
                           {t('intern.dash.inactive', { count: ds.daysSinceLastReport })}
@@ -471,11 +514,11 @@ export default function DashboardTab({
                         <span
                           style={{
                             padding: '3px 8px',
-                            borderRadius: 4,
+                            borderRadius: 'var(--r-sm)',
                             fontSize: 10,
                             fontWeight: 700,
-                            background: '#f59e0b22',
-                            color: '#f59e0b',
+                            background: 'color-mix(in srgb, var(--warning) 13.33%, transparent)',
+                            color: 'var(--warning)',
                           }}
                         >
                           {t('intern.dash.noReportFor', { count: ds.daysSinceLastReport })}
@@ -489,59 +532,55 @@ export default function DashboardTab({
                         style={{
                           textAlign: 'center',
                           padding: '8px 4px',
-                          borderRadius: 6,
-                          background: 'rgba(255,255,255,0.03)',
+                          borderRadius: 'var(--r-sm)',
+                          background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                         }}
                       >
                         <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 18 }}>
                           {ds.reportsThisWeek}
                         </div>
-                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>{t('intern.dash.thisWeek')}</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>{t('intern.dash.thisWeek')}</div>
                       </div>
                       <div
                         style={{
                           textAlign: 'center',
                           padding: '8px 4px',
-                          borderRadius: 6,
-                          background: 'rgba(255,255,255,0.03)',
+                          borderRadius: 'var(--r-sm)',
+                          background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                         }}
                       >
                         <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 18 }}>
                           {ds.validationRate}%
                         </div>
-                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>
-                          {t('intern.dash.validation')}
-                        </div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>{t('intern.dash.validation')}</div>
                       </div>
                       <div
                         style={{
                           textAlign: 'center',
                           padding: '8px 4px',
-                          borderRadius: 6,
-                          background: 'rgba(255,255,255,0.03)',
+                          borderRadius: 'var(--r-sm)',
+                          background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                         }}
                       >
-                        <div style={{ color: '#22c55e', fontWeight: 700, fontSize: 18 }}>{ds.totalReports}</div>
-                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>
-                          {t('intern.dash.totalReports')}
-                        </div>
+                        <div style={{ color: 'var(--good)', fontWeight: 700, fontSize: 18 }}>{ds.totalReports}</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>{t('intern.dash.totalReports')}</div>
                       </div>
                     </div>
 
                     {/* Barre de progression */}
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                           {t('intern.dash.internshipProgress', { progress: ds.progress })}
                         </span>
                         <span
                           style={{
                             color:
                               ds.daysRemaining <= 7
-                                ? '#ef4444'
+                                ? 'var(--critical)'
                                 : ds.daysRemaining <= 30
-                                  ? '#f59e0b'
-                                  : 'rgba(255,255,255,0.4)',
+                                  ? 'var(--warning)'
+                                  : 'var(--text-muted)',
                             fontSize: 11,
                           }}
                         >
@@ -550,14 +589,24 @@ export default function DashboardTab({
                             : t('intern.status.finished')}
                         </span>
                       </div>
-                      <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
+                      <div
+                        style={{
+                          height: 4,
+                          borderRadius: 'var(--r-sm)',
+                          background: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                        }}
+                      >
                         <div
                           style={{
                             height: '100%',
-                            borderRadius: 2,
+                            borderRadius: 'var(--r-sm)',
                             width: `${ds.progress}%`,
                             background:
-                              ds.progress >= 90 ? '#ef4444' : ds.progress >= 70 ? '#f59e0b' : 'var(--primary)',
+                              ds.progress >= 90
+                                ? 'var(--critical)'
+                                : ds.progress >= 70
+                                  ? 'var(--warning)'
+                                  : 'var(--primary)',
                             transition: 'width 0.5s',
                           }}
                         />
@@ -565,7 +614,7 @@ export default function DashboardTab({
                     </div>
 
                     {/* Derniere activite */}
-                    <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
+                    <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-muted)' }}>
                       {t('intern.dash.lastActivity', {
                         value: ds.lastActivity ? formatDate(ds.lastActivity) : t('intern.dash.lastActivityNone'),
                       })}

@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useState } from 'react'
 import { Building2, ChevronRight, RefreshCw } from 'lucide-react'
 import { listEducationBySchool, type SchoolBucket } from '../../../services/education'
@@ -37,16 +38,24 @@ export function SchoolsView({ onOpenClass }: { onOpenClass: (classId: string) =>
   return (
     <div>
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
-        <div>
-          <h1 className="edu-h1">{t('eduD.schools.title')}</h1>
-          <p className="edu-sub">
-            {t('eduD.schools.followedCount', { count: buckets.length })} {t('eduD.schools.aggregatedPre')}{' '}
-            <code>{t('eduD.schools.fieldName')}</code> {t('eduD.schools.aggregatedPost')}
-          </p>
-        </div>
-        <button className="edu-btn ghost" onClick={refresh}>
-          <RefreshCw size={14} /> {t('eduD.schools.refresh')}
-        </button>
+        <PageHeader
+          eyebrow={t('adminOps.zone.education')}
+          title={t('eduD.schools.title')}
+          subtitle={
+            <>
+              {t('eduD.schools.followedCount', { count: buckets.length })}
+              {t('eduD.schools.aggregatedPre')} <code>{t('eduD.schools.fieldName')}</code>
+              {t('eduD.schools.aggregatedPost')}
+            </>
+          }
+          actions={
+            <>
+              <button className="edu-btn ghost" onClick={refresh}>
+                <RefreshCw size={14} /> {t('eduD.schools.refresh')}
+              </button>
+            </>
+          }
+        />
       </div>
 
       {error && (
@@ -76,7 +85,7 @@ export function SchoolsView({ onOpenClass }: { onOpenClass: (classId: string) =>
           <div key={b.school} className="edu-school-bucket">
             <div className="edu-school-bucket-head">
               <div className="edu-row" style={{ gap: 10 }}>
-                <Building2 size={18} style={{ color: 'rgba(255,255,255,0.55)' }} />
+                <Building2 size={18} style={{ color: 'var(--text-secondary)' }} />
                 <span className="edu-school-bucket-name">{b.school}</span>
               </div>
               <div className="edu-school-bucket-meta">
@@ -93,11 +102,11 @@ export function SchoolsView({ onOpenClass }: { onOpenClass: (classId: string) =>
                   <span className="edu-side-dot" style={{ background: c.color }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 500 }}>{c.name}</div>
-                    <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)' }}>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
                       {[c.level, c.program].filter(Boolean).join(' · ') || '—'}
                     </div>
                   </div>
-                  <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.35)' }} />
+                  <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
                 </button>
               ))}
             </div>

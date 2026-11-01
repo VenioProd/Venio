@@ -1,3 +1,6 @@
+import './AdminPortal.css'
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
@@ -36,17 +39,17 @@ export default function SubsidiaryList() {
       .catch(() => {})
   }, [load])
   return (
-    <div className="platform-dossier">
-      <div className="dossier-hero-heading">
-        <div>
-          <span className="dossier-eyebrow">Venio / {t(dossierKey('platformDossier'))}</span>
-          <h1>{t(dossierKey('listTitle'))}</h1>
-          <p>{t(dossierKey('listSubtitle'))}</p>
-        </div>
-        <button type="button" onClick={() => setShowForm(true)}>
-          + {t('orgs.subsidiary.list.newButton')}
-        </button>
-      </div>
+    <div className="platform-dossier lot-c-page subsidiary-list-page">
+      <PageHeader
+        eyebrow={t(dossierKey('platformDossier'))}
+        title={t(dossierKey('listTitle'))}
+        subtitle={t(dossierKey('listSubtitle'))}
+        actions={
+          <button className="portal-button" type="button" onClick={() => setShowForm(true)}>
+            + {t('orgs.subsidiary.list.newButton')}
+          </button>
+        }
+      />
       {loading ? (
         <p role="status">{t(dossierKey('loading'))}</p>
       ) : error ? (

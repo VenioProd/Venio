@@ -143,7 +143,7 @@ export function StudentProfileDrawer({
             <h2 id="student-profile-title" className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
               {studentDisplayName(student)}
             </h2>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
               {[student.email, student.phone].filter(Boolean).join(' · ') || '—'}
             </div>
           </div>
@@ -207,7 +207,7 @@ export function StudentProfileDrawer({
           <h2 className="edu-h2">
             {t('eduD.profile.gradesHeading')}
             {assignmentsTotal > MAX_ASSIGNMENTS && (
-              <span style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}>
+              <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>
                 {' '}
                 {t('eduD.profile.mostRecentMasc', { count: MAX_ASSIGNMENTS })}
               </span>
@@ -240,7 +240,7 @@ export function StudentProfileDrawer({
                     <td>
                       <strong>{assignment.title}</strong>
                       {assignment.deadline && (
-                        <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)' }}>
+                        <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
                           {formatDate(assignment.deadline)}
                         </div>
                       )}
@@ -249,7 +249,7 @@ export function StudentProfileDrawer({
                       <span className="edu-pill">{submission ? SUBMISSION_STATUS_LABEL[submission.status] : '—'}</span>
                     </td>
                     <td>{submission?.grade != null ? `${submission.grade} / ${assignment.maxGrade}` : '—'}</td>
-                    <td title={submission?.feedback || undefined} style={{ color: 'rgba(255,255,255,0.65)' }}>
+                    <td title={submission?.feedback || undefined} style={{ color: 'var(--text-secondary)' }}>
                       {submission?.feedback
                         ? submission.feedback.length > 80
                           ? `${submission.feedback.slice(0, 80)}…`
@@ -265,7 +265,7 @@ export function StudentProfileDrawer({
           <h2 className="edu-h2">
             {t('eduD.profile.attendanceHeading')}
             {attendanceTotal > MAX_SESSIONS_SHOWN && (
-              <span style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}>
+              <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>
                 {' '}
                 {t('eduD.profile.mostRecentFem', { count: MAX_SESSIONS_SHOWN })}
               </span>
@@ -310,7 +310,7 @@ export function StudentProfileDrawer({
           <h2 className="edu-h2">
             {t('eduD.profile.freeNotes')}
             {notesSaved && (
-              <span style={{ fontSize: 11.5, fontWeight: 400, color: '#22C55E', marginLeft: 8 }}>
+              <span style={{ fontSize: 11.5, fontWeight: 400, color: 'var(--good)', marginLeft: 8 }}>
                 {t('eduD.profile.saved')}
               </span>
             )}

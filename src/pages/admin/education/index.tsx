@@ -1,3 +1,4 @@
+import '../OrganisationSysteme.css'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   GraduationCap,
@@ -5,12 +6,7 @@ import {
   Calendar as CalIcon,
   ClipboardList,
   FileText,
-  Plus,
   Search,
-  X,
-  Trash2,
-  Upload,
-  ChevronRight,
   Menu,
   Sparkles,
   PanelLeftClose,
@@ -21,47 +17,11 @@ import {
   fetchDashboard,
   getStudent,
   listClasses,
-  getClass,
-  createClass,
-  updateClass,
-  deleteClass,
-  listStudents,
-  createStudent,
-  importStudentsCsv,
-  deleteStudent,
-  listSessions,
-  createSession,
-  listAssignments,
-  getAssignment,
-  createAssignment,
-  updateAssignment,
-  updateSubmission,
-  listNotes,
-  createNote,
-  updateNote,
-  deleteNote,
   listTemplates,
-  searchEducation,
-  studentDisplayName,
-  formatDate,
-  assignmentExportUrl,
-  CLASS_STATUS_LABEL,
-  SESSION_STATUS_LABEL,
-  ASSIGNMENT_STATUS_LABEL,
-  ASSIGNMENT_STATUS_COLOR,
-  ASSIGNMENT_KIND_LABEL,
-  SUBMISSION_STATUS_LABEL,
-  CLASS_COLOR_PALETTE,
   type EducationDashboard,
   type EducationDashboardAlert,
   type EducationClass,
   type EducationStudent,
-  type EducationSession,
-  type EducationAssignment,
-  type EducationSubmission,
-  type EducationNote,
-  type NoteBlock,
-  type EducationAssignmentStatus,
   type EducationTemplate,
 } from '../../../services/education'
 import { useI18n } from '../../../context/I18nContext'
@@ -70,7 +30,7 @@ import { DashboardView } from './DashboardView'
 import { SessionLiveMode } from './SessionLiveMode'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
 import { CalendarEventWorkspaceDrawer } from './CalendarEventWorkspaceDrawer'
-import { NoteEditor, type BacklinkEntry } from './NoteEditor'
+import { NoteEditor } from './NoteEditor'
 import { TemplatesView } from './TemplatesView'
 import { CorrectionMode } from './CorrectionMode'
 import { AdvancedSearchView } from './AdvancedSearchView'

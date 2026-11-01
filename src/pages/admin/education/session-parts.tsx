@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 /**
  * Composants internes extraits de `education/index.tsx` pour passer sous 800 lignes.
  *
@@ -6,69 +7,19 @@
  * sessions/assignments/notes) est suggéré pour atteindre le DOD strict.
  */
 import { useCallback, useEffect, useState } from 'react'
+import { Plus, X, ChevronRight } from 'lucide-react'
 import {
-  GraduationCap,
-  BookOpen,
-  Calendar as CalIcon,
-  ClipboardList,
-  FileText,
-  Plus,
-  Search,
-  X,
-  Trash2,
-  Upload,
-  ChevronRight,
-  Menu,
-  Sparkles,
-} from 'lucide-react'
-import {
-  fetchDashboard,
-  listClasses,
-  getClass,
-  createClass,
-  updateClass,
-  deleteClass,
-  listStudents,
-  createStudent,
-  importStudentsCsv,
-  deleteStudent,
   listSessions,
   createSession,
-  listAssignments,
-  getAssignment,
-  createAssignment,
-  updateAssignment,
-  updateSubmission,
-  listNotes,
-  createNote,
-  updateNote,
-  deleteNote,
-  listTemplates,
-  searchEducation,
-  studentDisplayName,
-  assignmentExportUrl,
-  CLASS_STATUS_LABEL,
   SESSION_STATUS_LABEL,
-  ASSIGNMENT_STATUS_LABEL,
-  ASSIGNMENT_STATUS_COLOR,
-  ASSIGNMENT_KIND_LABEL,
-  SUBMISSION_STATUS_LABEL,
-  CLASS_COLOR_PALETTE,
-  type EducationDashboard,
   type EducationClass,
-  type EducationStudent,
   type EducationSession,
-  type EducationAssignment,
-  type EducationSubmission,
-  type EducationNote,
-  type NoteBlock,
-  type EducationAssignmentStatus,
   type EducationTemplate,
 } from '../../../services/education'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
 import { EducationAiDraftPanel } from './EducationAiDraft'
 import { SessionLiveMode } from './SessionLiveMode'
-import { NoteEditor, type BacklinkEntry } from './NoteEditor'
+import { NoteEditor } from './NoteEditor'
 import { CorrectionMode } from './CorrectionMode'
 import { useI18n } from '../../../context/I18nContext'
 import { translate } from '../../../i18n'
@@ -138,7 +89,7 @@ export function SessionsTab({
                   <td>{formatDate(s.date, true)}</td>
                   <td>
                     <strong>{s.title}</strong>
-                    {s.theme && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)' }}>{s.theme}</div>}
+                    {s.theme && <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{s.theme}</div>}
                   </td>
                   <td>
                     <span className="edu-pill">{SESSION_STATUS_LABEL[s.status]}</span>
@@ -147,7 +98,7 @@ export function SessionsTab({
                     {present} / {total}
                   </td>
                   <td>
-                    <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
+                    <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
                   </td>
                 </tr>
               )
@@ -436,25 +387,32 @@ export function SessionsView({
     <>
       <div>
         <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <h1 className="edu-h1">{t('eduB.sessionsView.title')}</h1>
-          <div className="edu-row" style={{ gap: 8 }}>
-            <select
-              className="edu-select"
-              style={{ width: 220 }}
-              value={filterClass}
-              onChange={(e) => setFilterClass(e.target.value)}
-            >
-              <option value="">{t('eduB.sessionsView.allClasses')}</option>
-              {classes.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <button className="edu-btn" onClick={() => setShowCreate(true)}>
-              <Plus size={14} /> {t('eduB.sessionsList.newSession')}
-            </button>
-          </div>
+          <PageHeader
+            eyebrow={t('adminOps.zone.education')}
+            title={t('eduB.sessionsView.title')}
+            actions={
+              <>
+                <div className="edu-row" style={{ gap: 8 }}>
+                  <select
+                    className="edu-select"
+                    style={{ width: 220 }}
+                    value={filterClass}
+                    onChange={(e) => setFilterClass(e.target.value)}
+                  >
+                    <option value="">{t('eduB.sessionsView.allClasses')}</option>
+                    {classes.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="edu-btn" onClick={() => setShowCreate(true)}>
+                    <Plus size={14} /> {t('eduB.sessionsList.newSession')}
+                  </button>
+                </div>
+              </>
+            }
+          />
         </div>
         {error && (
           <div className="edu-banner-error" role="alert" style={{ marginBottom: 12 }}>
@@ -491,7 +449,7 @@ export function SessionsView({
                     <td>
                       {cls && (
                         <span className="edu-pill">
-                          <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                          <span className="edu-pill-dot" style={{ background: cls.color || 'var(--good)' }} />
                           {cls.name}
                         </span>
                       )}

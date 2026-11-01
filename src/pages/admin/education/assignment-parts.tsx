@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 /**
  * Composants internes extraits de `education/index.tsx` pour passer sous 800 lignes.
  *
@@ -6,62 +7,23 @@
  * sessions/assignments/notes) est suggéré pour atteindre le DOD strict.
  */
 import { useCallback, useEffect, useState } from 'react'
+import { Plus, Search, X } from 'lucide-react'
 import {
-  GraduationCap,
-  BookOpen,
-  Calendar as CalIcon,
-  ClipboardList,
-  FileText,
-  Plus,
-  Search,
-  X,
-  Trash2,
-  Upload,
-  ChevronRight,
-  Menu,
-  Sparkles,
-} from 'lucide-react'
-import {
-  fetchDashboard,
-  listClasses,
-  getClass,
-  createClass,
-  updateClass,
-  deleteClass,
-  listStudents,
-  createStudent,
-  importStudentsCsv,
-  deleteStudent,
-  listSessions,
-  createSession,
   listAssignments,
   getAssignment,
   createAssignment,
   updateAssignment,
   updateSubmission,
-  listNotes,
-  createNote,
-  updateNote,
-  deleteNote,
-  listTemplates,
-  searchEducation,
   studentDisplayName,
   downloadAssignmentExport,
-  ASSIGNMENT_STATUS_COLOR,
-  CLASS_COLOR_PALETTE,
-  type EducationDashboard,
   type EducationClass,
-  type EducationStudent,
-  type EducationSession,
   type EducationAssignment,
   type EducationSubmission,
-  type EducationNote,
-  type NoteBlock,
   type EducationAssignmentStatus,
   type EducationTemplate,
 } from '../../../services/education'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
-import { NoteEditor, type BacklinkEntry } from './NoteEditor'
+import { NoteEditor } from './NoteEditor'
 import { CorrectionMode } from './CorrectionMode'
 import { Kpi } from './class-parts'
 import { DocumentsPanel } from './DocumentsPanel'
@@ -138,7 +100,7 @@ function AssignmentKanban({
           >
             <div className="edu-kanban-col-head">
               <span>{t(col.labelKey)}</span>
-              <span style={{ color: 'rgba(255,255,255,0.4)' }}>{list.length}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{list.length}</span>
             </div>
             {list.length === 0 && <div className="edu-kanban-empty">—</div>}
             {list.map((a) => {
@@ -486,7 +448,7 @@ export function AssignmentDetailDrawer({
             <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
               {assignment.title}
             </h2>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
               {t(ASSIGNMENT_KIND_KEYS[assignment.kind])}
               {assignment.deadline &&
                 ` · ${t('eduC.assignment.dueOn', { date: formatShortDate(assignment.deadline) })}`}
@@ -554,10 +516,10 @@ export function AssignmentDetailDrawer({
                 style={{
                   whiteSpace: 'pre-wrap',
                   fontSize: 13.5,
-                  color: 'rgba(255,255,255,0.85)',
-                  background: 'rgba(255,255,255,0.03)',
+                  color: 'var(--text-primary)',
+                  background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                   padding: 12,
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-md)',
                 }}
               >
                 {assignment.instructions}
@@ -702,25 +664,32 @@ export function AssignmentsView({
   return (
     <div>
       <div className="edu-row between">
-        <h1 className="edu-h1">{t('eduC.assignment.viewTitle')}</h1>
-        <div className="edu-row" style={{ gap: 8 }}>
-          <select
-            className="edu-select"
-            style={{ width: 220 }}
-            value={filterClass}
-            onChange={(e) => setFilterClass(e.target.value)}
-          >
-            <option value="">{t('eduC.assignment.allClasses')}</option>
-            {classes.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <button className="edu-btn" onClick={() => setShowCreate(true)}>
-            <Plus size={14} /> {t('eduC.shared.newAssignment')}
-          </button>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.zone.education')}
+          title={t('eduC.assignment.viewTitle')}
+          actions={
+            <>
+              <div className="edu-row" style={{ gap: 8 }}>
+                <select
+                  className="edu-select"
+                  style={{ width: 220 }}
+                  value={filterClass}
+                  onChange={(e) => setFilterClass(e.target.value)}
+                >
+                  <option value="">{t('eduC.assignment.allClasses')}</option>
+                  {classes.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <button className="edu-btn" onClick={() => setShowCreate(true)}>
+                  <Plus size={14} /> {t('eduC.shared.newAssignment')}
+                </button>
+              </div>
+            </>
+          }
+        />
       </div>
       <p className="edu-sub">{t('eduC.shared.assignmentCount', { count: items.length })}</p>
       {items.length === 0 ? (

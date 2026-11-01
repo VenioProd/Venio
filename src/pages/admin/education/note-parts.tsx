@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 /**
  * Composants internes extraits de `education/index.tsx` pour passer sous 800 lignes.
  *
@@ -6,65 +7,15 @@
  * sessions/assignments/notes) est suggéré pour atteindre le DOD strict.
  */
 import { useCallback, useEffect, useState } from 'react'
+import { Plus } from 'lucide-react'
 import {
-  GraduationCap,
-  BookOpen,
-  Calendar as CalIcon,
-  ClipboardList,
-  FileText,
-  Plus,
-  Search,
-  X,
-  Trash2,
-  Upload,
-  ChevronRight,
-  Menu,
-  Sparkles,
-} from 'lucide-react'
-import {
-  fetchDashboard,
-  listClasses,
-  getClass,
-  createClass,
-  updateClass,
-  deleteClass,
-  listStudents,
-  createStudent,
-  importStudentsCsv,
-  deleteStudent,
-  listSessions,
-  createSession,
-  listAssignments,
-  getAssignment,
-  createAssignment,
-  updateAssignment,
-  updateSubmission,
   listNotes,
   createNote,
-  updateNote,
   deleteNote,
   getNote,
-  listTemplates,
-  searchEducation,
-  studentDisplayName,
-  formatDate,
-  assignmentExportUrl,
-  CLASS_STATUS_LABEL,
-  SESSION_STATUS_LABEL,
-  ASSIGNMENT_STATUS_LABEL,
-  ASSIGNMENT_STATUS_COLOR,
-  ASSIGNMENT_KIND_LABEL,
-  SUBMISSION_STATUS_LABEL,
-  CLASS_COLOR_PALETTE,
-  type EducationDashboard,
   type EducationClass,
-  type EducationStudent,
-  type EducationSession,
-  type EducationAssignment,
-  type EducationSubmission,
   type EducationNote,
   type NoteBlock,
-  type EducationAssignmentStatus,
   type EducationTemplate,
 } from '../../../services/education'
 import { useI18n } from '../../../context/I18nContext'
@@ -200,15 +151,20 @@ export function NotesView({
     <div>
       {!fixedLink && (
         <div className="edu-row between" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-          <h1 className="edu-h1" style={{ margin: 0 }}>
-            {t('eduA.notes.title')}
-          </h1>
-          <div className="edu-row" style={{ gap: 8 }}>
-            <AutosaveStatus status={saveState} error={saveError} onRetry={flush} />
-            <button className="edu-btn" onClick={newNote}>
-              <Plus size={14} /> {t('eduA.notes.new')}
-            </button>
-          </div>
+          <PageHeader
+            eyebrow={t('adminOps.zone.education')}
+            title={t('eduA.notes.title')}
+            actions={
+              <>
+                <div className="edu-row" style={{ gap: 8 }}>
+                  <AutosaveStatus status={saveState} error={saveError} onRetry={flush} />
+                  <button className="edu-btn" onClick={newNote}>
+                    <Plus size={14} /> {t('eduA.notes.new')}
+                  </button>
+                </div>
+              </>
+            }
+          />
         </div>
       )}
       {fixedLink && (
@@ -315,11 +271,11 @@ export function NoteSaveIndicator({ state }: { state: NoteSaveState }) {
   if (state === 'idle') return null
   const label =
     state === 'saving' ? t('eduA.notes.saving') : state === 'saved' ? t('eduA.notes.saved') : t('common.error')
-  const color = state === 'error' ? '#EF4444' : state === 'saved' ? '#22C55E' : 'rgba(255,255,255,0.6)'
+  const color = state === 'error' ? 'var(--critical)' : state === 'saved' ? 'var(--good)' : 'var(--text-secondary)'
   return (
     <span
       className="edu-pill"
-      style={{ background: 'rgba(255,255,255,0.06)', color, fontSize: 11.5 }}
+      style={{ background: 'color-mix(in srgb, var(--text-primary) 6%, transparent)', color, fontSize: 11.5 }}
       aria-live="polite"
     >
       {label}

@@ -1,3 +1,5 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import { useCallback, useEffect, useState } from 'react'
 import {
   fetchSystemHealth,
@@ -15,12 +17,25 @@ const STATUS_LABEL_KEYS: Record<HealthStatus, MessageKey> = {
   warning: 'adminOps.health.statusWarning',
   error: 'adminOps.health.statusError',
 }
-const STATUS_COLORS: Record<HealthStatus, string> = { ok: '#22c55e', warning: '#f59e0b', error: '#ef4444' }
+const STATUS_COLORS: Record<HealthStatus, string> = {
+  ok: 'var(--good)',
+  warning: 'var(--warning)',
+  error: 'var(--critical)',
+}
 
 function StatusBadge({ status }: { status: HealthStatus }) {
   const { t } = useI18n()
   return (
-    <span style={{ color: STATUS_COLORS[status], fontSize: 12, fontWeight: 700 }}>{t(STATUS_LABEL_KEYS[status])}</span>
+    <span
+      className="health-status"
+      style={{
+        color: STATUS_COLORS[status],
+        background: `color-mix(in srgb, ${STATUS_COLORS[status]} 10%, transparent)`,
+        border: `1px solid color-mix(in srgb, ${STATUS_COLORS[status]} 30%, transparent)`,
+      }}
+    >
+      {t(STATUS_LABEL_KEYS[status])}
+    </span>
   )
 }
 
@@ -28,10 +43,10 @@ function HealthCard({ title, status, children }: { title: string; status: Health
   return (
     <section
       style={{
-        background: 'var(--bg-card)',
+        background: 'var(--surface-glass)',
         border: '1px solid var(--border-color)',
         borderLeft: `3px solid ${STATUS_COLORS[status]}`,
-        borderRadius: 12,
+        borderRadius: 'var(--r-lg)',
         padding: 20,
       }}
     >
@@ -69,32 +84,24 @@ export default function SystemHealth() {
   }, [load])
 
   return (
-    <div className="portal-container">
-      <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 24px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'start',
-            justifyContent: 'space-between',
-            gap: 16,
-            flexWrap: 'wrap',
-            marginBottom: 28,
-          }}
-        >
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-              {t('adminOps.health.title')}
-            </h1>
-            {data && (
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '5px 0 0' }}>
-                {t('adminOps.health.checkedAt', { date: formatRun(data.checkedAt) })}
-              </p>
-            )}
-          </div>
-          <button className="portal-button secondary" onClick={() => void load()} disabled={loading}>
-            {loading ? t('adminOps.common.loading') : t('adminOps.common.refresh')}
-          </button>
-        </div>
+    <div className="portal-container lot-c-page system-health-page">
+      <div className="system-health-content">
+        <PageHeader
+          eyebrow={t('adminOps.zone.system')}
+          title={t('adminOps.health.title')}
+          actions={
+            <>
+              {data && (
+                <span className="lot-c-count">
+                  {t('adminOps.health.checkedAt', { date: formatRun(data.checkedAt) })}
+                </span>
+              )}
+              <button className="portal-button secondary" onClick={() => void load()} disabled={loading}>
+                {loading ? t('adminOps.common.loading') : t('adminOps.common.refresh')}
+              </button>
+            </>
+          }
+        />
         {error && (
           <div className="admin-error" role="alert">
             {error}
@@ -106,7 +113,13 @@ export default function SystemHealth() {
             <div style={{ marginBottom: 18 }}>
               <StatusBadge status={data.status} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
+                gap: 16,
+              }}
+            >
               <HealthCard title={t('adminOps.health.database')} status={data.database.status}>
                 <span>
                   {data.database.latencyMs === null
@@ -161,9 +174,9 @@ export default function SystemHealth() {
             <section
               style={{
                 marginTop: 20,
-                background: 'var(--bg-card)',
+                background: 'var(--surface-glass)',
                 border: '1px solid var(--border-color)',
-                borderRadius: 12,
+                borderRadius: 'var(--r-lg)',
                 padding: 20,
               }}
             >

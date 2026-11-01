@@ -121,7 +121,7 @@ const EntryForm = () => {
   if (loading) {
     return (
       <AccountingLayout title={t('accAccounts.entryForm.title')}>
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
       </AccountingLayout>
     )
   }
@@ -179,86 +179,92 @@ const EntryForm = () => {
         </div>
 
         <h2 style={{ marginTop: 24 }}>{t('accAccounts.entry.lines')}</h2>
-        <table className="accounting-lines-table">
-          <thead>
-            <tr>
-              <th style={{ width: 200 }}>{t('accAccounts.col.account')}</th>
-              <th>{t('accAccounts.entryForm.lineLabel')}</th>
-              <th style={{ width: 140 }}>{t('accAccounts.col.debit')}</th>
-              <th style={{ width: 140 }}>{t('accAccounts.col.credit')}</th>
-              <th style={{ width: 40 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {form.lines.map((line, idx) => (
-              <tr key={idx}>
-                <td>
-                  <select value={line.account} onChange={(e) => updateLine(idx, { account: e.target.value })} required>
-                    <option value="">{t('accAccounts.entryForm.accountPlaceholder')}</option>
-                    {accounts.map((a) => (
-                      <option key={a._id} value={a.code}>
-                        {a.code} — {a.label}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <input
-                    value={line.label}
-                    onChange={(e) => updateLine(idx, { label: e.target.value })}
-                    placeholder={form.label}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={line.debit}
-                    onChange={(e) =>
-                      updateLine(idx, {
-                        debit: e.target.value,
-                        credit: e.target.value ? '' : line.credit,
-                      })
-                    }
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={line.credit}
-                    onChange={(e) =>
-                      updateLine(idx, {
-                        credit: e.target.value,
-                        debit: e.target.value ? '' : line.debit,
-                      })
-                    }
-                  />
-                </td>
-                <td>
-                  {form.lines.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => removeLine(idx)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'rgba(248,113,113,0.7)',
-                        cursor: 'pointer',
-                        fontSize: '1.1rem',
-                      }}
-                      title={t('accAccounts.entryForm.removeLine')}
-                    >
-                      ×
-                    </button>
-                  )}
-                </td>
+        <div className="accounting-table-scroll">
+          <table className="accounting-lines-table">
+            <thead>
+              <tr>
+                <th style={{ width: 200 }}>{t('accAccounts.col.account')}</th>
+                <th>{t('accAccounts.entryForm.lineLabel')}</th>
+                <th style={{ width: 140 }}>{t('accAccounts.col.debit')}</th>
+                <th style={{ width: 140 }}>{t('accAccounts.col.credit')}</th>
+                <th style={{ width: 40 }}></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {form.lines.map((line, idx) => (
+                <tr key={idx}>
+                  <td>
+                    <select
+                      value={line.account}
+                      onChange={(e) => updateLine(idx, { account: e.target.value })}
+                      required
+                    >
+                      <option value="">{t('accAccounts.entryForm.accountPlaceholder')}</option>
+                      {accounts.map((a) => (
+                        <option key={a._id} value={a.code}>
+                          {a.code} — {a.label}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      value={line.label}
+                      onChange={(e) => updateLine(idx, { label: e.target.value })}
+                      placeholder={form.label}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={line.debit}
+                      onChange={(e) =>
+                        updateLine(idx, {
+                          debit: e.target.value,
+                          credit: e.target.value ? '' : line.credit,
+                        })
+                      }
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={line.credit}
+                      onChange={(e) =>
+                        updateLine(idx, {
+                          credit: e.target.value,
+                          debit: e.target.value ? '' : line.debit,
+                        })
+                      }
+                    />
+                  </td>
+                  <td>
+                    {form.lines.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => removeLine(idx)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'color-mix(in srgb, var(--critical) 70%, transparent)',
+                          cursor: 'pointer',
+                          fontSize: '1.1rem',
+                        }}
+                        title={t('accAccounts.entryForm.removeLine')}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         <div className="accounting-toolbar" style={{ marginTop: 8 }}>
           <button type="button" className="portal-button secondary" onClick={addLine}>

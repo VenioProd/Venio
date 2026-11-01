@@ -49,14 +49,21 @@ export default function ReportsTab({
     grouped[uid].reports.push(r)
   })
   const people = Object.entries(grouped).sort((a, b) => a[1].name.localeCompare(b[1].name))
-  const colors = ['#0ea5e9', '#9b9b9b', '#22c55e', '#f59e0b', '#ef4444', '#ffffff']
+  const colors = [
+    'var(--primary)',
+    'var(--text-secondary)',
+    'var(--good)',
+    'var(--warning)',
+    'var(--critical)',
+    'var(--text-primary)',
+  ]
   const getColor = (name: string) => colors[name.charCodeAt(0) % colors.length]
   const kanbanCols: { key: string; label: string; color: string }[] = [
-    { key: 'BROUILLON', label: t('intern.reportStatus.draft'), color: '#a5b4cf' },
-    { key: 'SOUMIS', label: t('intern.reportStatus.submitted'), color: '#0ea5e9' },
-    { key: 'EN_COURS_DE_REVUE', label: t('intern.reports.kanbanReview'), color: '#f59e0b' },
-    { key: 'VALIDE', label: t('intern.reports.kanbanValidated'), color: '#22c55e' },
-    { key: 'REJETE', label: t('intern.reports.kanbanRejected'), color: '#ef4444' },
+    { key: 'BROUILLON', label: t('intern.reportStatus.draft'), color: 'var(--text-secondary)' },
+    { key: 'SOUMIS', label: t('intern.reportStatus.submitted'), color: 'var(--primary)' },
+    { key: 'EN_COURS_DE_REVUE', label: t('intern.reports.kanbanReview'), color: 'var(--warning)' },
+    { key: 'VALIDE', label: t('intern.reports.kanbanValidated'), color: 'var(--good)' },
+    { key: 'REJETE', label: t('intern.reports.kanbanRejected'), color: 'var(--critical)' },
   ]
   return (
     <>
@@ -66,13 +73,14 @@ export default function ReportsTab({
           onClick={() => setReportView('liste')}
           style={{
             padding: '6px 14px',
-            borderRadius: 6,
+            borderRadius: 'var(--r-sm)',
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
             border: 'none',
-            background: reportView === 'liste' ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
-            color: reportView === 'liste' ? '#fff' : 'rgba(255,255,255,0.5)',
+            background:
+              reportView === 'liste' ? 'var(--primary)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            color: reportView === 'liste' ? 'var(--text-primary)' : 'var(--text-secondary)',
             transition: 'all 0.2s',
           }}
         >
@@ -98,13 +106,14 @@ export default function ReportsTab({
           onClick={() => setReportView('kanban')}
           style={{
             padding: '6px 14px',
-            borderRadius: 6,
+            borderRadius: 'var(--r-sm)',
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
             border: 'none',
-            background: reportView === 'kanban' ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
-            color: reportView === 'kanban' ? '#fff' : 'rgba(255,255,255,0.5)',
+            background:
+              reportView === 'kanban' ? 'var(--primary)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            color: reportView === 'kanban' ? 'var(--text-primary)' : 'var(--text-secondary)',
             transition: 'all 0.2s',
           }}
         >
@@ -126,7 +135,7 @@ export default function ReportsTab({
       </div>
 
       {reports.length === 0 && (
-        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>{t('intern.reports.empty')}</p>
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>{t('intern.reports.empty')}</p>
       )}
 
       {/* ── VUE LISTE (par personne) ── */}
@@ -152,7 +161,7 @@ export default function ReportsTab({
                           width: 36,
                           height: 36,
                           borderRadius: '50%',
-                          background: color + '22',
+                          background: `color-mix(in srgb, ${color} 13.3%, transparent)`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -164,15 +173,15 @@ export default function ReportsTab({
                         {name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div style={{ color: '#fff', fontWeight: 600 }}>{name}</div>
-                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                        <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{name}</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
                           {t('intern.reports.personSummary', { total, validated })}
                         </div>
                       </div>
                     </div>
                     <span
                       style={{
-                        color: 'rgba(255,255,255,0.3)',
+                        color: 'var(--text-muted)',
                         transform: isPersonExpanded ? 'rotate(180deg)' : 'none',
                         transition: 'transform 0.2s',
                       }}
@@ -195,26 +204,28 @@ export default function ReportsTab({
                             style={{ cursor: 'pointer' }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                              <span style={{ color: '#fff', fontWeight: 600 }}>{formatDate(report.date)}</span>
+                              <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                                {formatDate(report.date)}
+                              </span>
                               {report.taches.length > 0 && (
-                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                                   {t('intern.reports.taskCount', { count: report.taches.length })}
                                 </span>
                               )}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               {report.attachments.length > 0 && (
-                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                                   📎 {report.attachments.length}
                                 </span>
                               )}
                               <span
                                 style={{
                                   padding: '2px 8px',
-                                  borderRadius: 4,
+                                  borderRadius: 'var(--r-sm)',
                                   fontSize: 11,
                                   fontWeight: 600,
-                                  background: sCfg.color + '22',
+                                  background: `color-mix(in srgb, ${sCfg.color} 13.3%, transparent)`,
                                   color: sCfg.color,
                                 }}
                               >
@@ -222,7 +233,7 @@ export default function ReportsTab({
                               </span>
                               <span
                                 style={{
-                                  color: 'rgba(255,255,255,0.3)',
+                                  color: 'var(--text-muted)',
                                   transform: expanded ? 'rotate(180deg)' : 'none',
                                   transition: 'transform 0.2s',
                                 }}
@@ -272,9 +283,15 @@ export default function ReportsTab({
               <div
                 key={col.key}
                 style={{
-                  background: dragOverCol === col.key ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
-                  borderRadius: 10,
-                  border: dragOverCol === col.key ? `1px solid ${col.color}44` : '1px solid rgba(255,255,255,0.06)',
+                  background:
+                    dragOverCol === col.key
+                      ? 'color-mix(in srgb, var(--text-primary) 5%, transparent)'
+                      : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                  borderRadius: 'var(--r-md)',
+                  border:
+                    dragOverCol === col.key
+                      ? `1px solid color-mix(in srgb, ${col.color} 26.7%, transparent)`
+                      : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   overflow: 'hidden',
                   transition: 'background 0.2s, border-color 0.2s',
                 }}
@@ -310,18 +327,18 @@ export default function ReportsTab({
                       color: col.color,
                       fontWeight: 700,
                       fontSize: 13,
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5,
+                      textTransform: 'none',
+                      letterSpacing: 'normal',
                     }}
                   >
                     {col.label}
                   </span>
                   <span
                     style={{
-                      background: col.color + '22',
+                      background: `color-mix(in srgb, ${col.color} 13.3%, transparent)`,
                       color: col.color,
                       padding: '2px 8px',
-                      borderRadius: 10,
+                      borderRadius: 'var(--r-md)',
                       fontSize: 12,
                       fontWeight: 700,
                     }}
@@ -333,7 +350,14 @@ export default function ReportsTab({
                 {/* Cartes */}
                 <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 120 }}>
                   {colReports.length === 0 && (
-                    <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
+                    <p
+                      style={{
+                        color: 'color-mix(in srgb, var(--text-primary) 20%, transparent)',
+                        fontSize: 12,
+                        textAlign: 'center',
+                        padding: '20px 0',
+                      }}
+                    >
                       {t('intern.reports.columnEmpty')}
                     </p>
                   )}
@@ -350,9 +374,9 @@ export default function ReportsTab({
                           setDragOverCol(null)
                         }}
                         style={{
-                          background: 'rgba(255,255,255,0.03)',
-                          borderRadius: 8,
-                          border: '1px solid rgba(255,255,255,0.06)',
+                          background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                          borderRadius: 'var(--r-md)',
+                          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                           cursor: 'grab',
                           transition: 'border-color 0.2s, opacity 0.2s',
                           opacity: draggedReportId === report._id ? 0.5 : 1,
@@ -366,7 +390,7 @@ export default function ReportsTab({
                                 width: 30,
                                 height: 30,
                                 borderRadius: '50%',
-                                background: color + '22',
+                                background: `color-mix(in srgb, ${color} 13.3%, transparent)`,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -380,7 +404,7 @@ export default function ReportsTab({
                             </div>
                             <span
                               style={{
-                                color: '#fff',
+                                color: 'var(--text-primary)',
                                 fontWeight: 600,
                                 fontSize: 14,
                                 overflow: 'hidden',
@@ -393,7 +417,7 @@ export default function ReportsTab({
                           </div>
                           <p
                             style={{
-                              color: 'rgba(255,255,255,0.6)',
+                              color: 'var(--text-secondary)',
                               fontSize: 12,
                               margin: '0 0 10px',
                               lineHeight: 1.5,
@@ -406,17 +430,15 @@ export default function ReportsTab({
                             {report.contenu}
                           </p>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                              {formatDate(report.date)}
-                            </span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatDate(report.date)}</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               {report.attachments.length > 0 && (
-                                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                                   📎 {report.attachments.length}
                                 </span>
                               )}
                               {report.taches.length > 0 && (
-                                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                                   {t('intern.reports.taskCount', { count: report.taches.length })}
                                 </span>
                               )}
@@ -427,12 +449,12 @@ export default function ReportsTab({
                               style={{
                                 marginTop: 6,
                                 padding: '4px 8px',
-                                borderRadius: 4,
-                                background: 'rgba(14, 165, 233, 0.08)',
+                                borderRadius: 'var(--r-sm)',
+                                background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
                                 borderLeft: '2px solid var(--primary)',
                               }}
                             >
-                              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>
+                              <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
                                 {report.commentaireAdmin.length > 60
                                   ? report.commentaireAdmin.slice(0, 60) + '...'
                                   : report.commentaireAdmin}

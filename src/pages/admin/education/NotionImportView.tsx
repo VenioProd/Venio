@@ -1,5 +1,6 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Download, AlertTriangle, CheckCircle2, FileText, Database, RefreshCw, Play, Eye } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, FileText, Database, RefreshCw, Play, Eye } from 'lucide-react'
 import { ApiError } from '../../../lib/api'
 import { useI18n } from '../../../context/I18nContext'
 import { translate } from '../../../i18n'
@@ -44,15 +45,15 @@ function statusLabel(status: NotionImportLog['status']): string {
 function statusColor(status: NotionImportLog['status']): string {
   switch (status) {
     case 'success':
-      return '#22C55E'
+      return 'var(--good)'
     case 'partial':
-      return '#F59E0B'
+      return 'var(--warning)'
     case 'error':
-      return '#EF4444'
+      return 'var(--critical)'
     case 'running':
-      return '#0EA5E9'
+      return 'var(--primary)'
     default:
-      return '#94A3B8'
+      return 'var(--text-secondary)'
   }
 }
 
@@ -161,21 +162,23 @@ export function NotionImportView({ classes, onImported }: Props) {
   return (
     <div className="edu-notion">
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 className="edu-h1">
-            <Download size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />
-            {t('eduA.notion.title')}
-          </h1>
-          <p className="edu-sub">{t('eduA.notion.subtitle')}</p>
-        </div>
-        <button
-          className="edu-btn ghost"
-          onClick={refreshLogs}
-          disabled={logsLoading}
-          title={t('eduA.notion.refreshTitle')}
-        >
-          <RefreshCw size={14} className={logsLoading ? 'edu-spin' : ''} /> {t('eduA.notion.refresh')}
-        </button>
+        <PageHeader
+          eyebrow={t('adminOps.zone.education')}
+          title={t('eduA.notion.title')}
+          subtitle={<>{t('eduA.notion.subtitle')}</>}
+          actions={
+            <>
+              <button
+                className="edu-btn ghost"
+                onClick={refreshLogs}
+                disabled={logsLoading}
+                title={t('eduA.notion.refreshTitle')}
+              >
+                <RefreshCw size={14} className={logsLoading ? 'edu-spin' : ''} /> {t('eduA.notion.refresh')}
+              </button>
+            </>
+          }
+        />
       </div>
 
       {tokenMissing && (
@@ -360,11 +363,11 @@ function ResultCard({
         </span>
       </div>
       <div className="edu-notion-stats">
-        <Stat label={t('eduA.notion.stat.created')} value={stats.created} color="#22C55E" />
-        <Stat label={t('eduA.notion.stat.updated')} value={stats.updated} color="#0EA5E9" />
-        <Stat label={t('eduA.notion.stat.skipped')} value={stats.skipped} color="#94A3B8" />
-        <Stat label={t('eduA.notion.stat.errors')} value={stats.errors} color="#EF4444" />
-        <Stat label={t('eduA.notion.stat.total')} value={total} color="#F59E0B" />
+        <Stat label={t('eduA.notion.stat.created')} value={stats.created} color="var(--good)" />
+        <Stat label={t('eduA.notion.stat.updated')} value={stats.updated} color="var(--primary)" />
+        <Stat label={t('eduA.notion.stat.skipped')} value={stats.skipped} color="var(--text-secondary)" />
+        <Stat label={t('eduA.notion.stat.errors')} value={stats.errors} color="var(--critical)" />
+        <Stat label={t('eduA.notion.stat.total')} value={total} color="var(--warning)" />
       </div>
       {messages.length > 0 && (
         <div className="edu-notion-list">
@@ -427,10 +430,10 @@ function LogRow({ log, classes }: { log: NotionImportLog; classes: EducationClas
         </div>
         <div className="edu-notion-log-stats">
           <span title={t('eduA.notion.stat.created')}>
-            <strong style={{ color: '#22C55E' }}>{log.stats.created}</strong> {t('eduA.notion.log.created')}
+            <strong style={{ color: 'var(--good)' }}>{log.stats.created}</strong> {t('eduA.notion.log.created')}
           </span>
           <span title={t('eduA.notion.stat.updated')}>
-            <strong style={{ color: '#0EA5E9' }}>{log.stats.updated}</strong> {t('eduA.notion.log.updated')}
+            <strong style={{ color: 'var(--primary)' }}>{log.stats.updated}</strong> {t('eduA.notion.log.updated')}
           </span>
           <span title={t('eduA.notion.stat.skipped')}>
             <strong style={{ color: 'var(--text-secondary)' }}>{log.stats.skipped}</strong>{' '}
@@ -438,7 +441,7 @@ function LogRow({ log, classes }: { log: NotionImportLog; classes: EducationClas
           </span>
           {log.stats.errors > 0 && (
             <span title={t('eduA.notion.stat.errors')}>
-              <strong style={{ color: '#EF4444' }}>{log.stats.errors}</strong> {t('eduA.notion.log.errors')}
+              <strong style={{ color: 'var(--critical)' }}>{log.stats.errors}</strong> {t('eduA.notion.log.errors')}
             </span>
           )}
         </div>
@@ -463,12 +466,12 @@ function LogRow({ log, classes }: { log: NotionImportLog; classes: EducationClas
           )}
           {log.errors.length > 0 && (
             <details open>
-              <summary style={{ color: '#FCA5A5' }}>
+              <summary style={{ color: 'var(--critical)' }}>
                 {t('eduA.notion.errorCount', { count: log.errors.length })}
               </summary>
               <ul>
                 {log.errors.slice(0, 50).map((m, i) => (
-                  <li key={i} style={{ color: '#FCA5A5' }}>
+                  <li key={i} style={{ color: 'var(--critical)' }}>
                     {m}
                   </li>
                 ))}
@@ -487,39 +490,39 @@ function NotionImportStyles() {
     <style>{`
       .edu-notion { display: flex; flex-direction: column; gap: 16px; }
       .edu-notion-form {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+        border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
         border-radius: 12px;
         padding: 16px;
       }
       .edu-notion-sep {
         display: flex; align-items: center; gap: 8px;
         margin: 4px 0 12px;
-        font-size: 11px; color: rgba(255,255,255,0.45);
+        font-size: 11px; color: var(--text-muted);
         text-transform: uppercase; letter-spacing: 0.1em;
       }
       .edu-notion-sep::before, .edu-notion-sep::after {
         content: ''; flex: 1; height: 1px;
-        background: rgba(255,255,255,0.08);
+        background: color-mix(in srgb, var(--text-primary) 8%, transparent);
       }
       .edu-notion-hint {
-        font-size: 11.5px; color: rgba(255,255,255,0.5);
+        font-size: 11.5px; color: var(--text-secondary);
         margin-top: 4px;
       }
       .edu-notion-hint.warn { color: #FCD34D; }
       .edu-notion-banner {
         display: flex; align-items: flex-start; gap: 10px;
         padding: 12px 14px; border-radius: 10px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+        border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
       }
       .edu-notion-banner.warn {
-        border-color: rgba(245,158,11,0.4);
-        background: rgba(245,158,11,0.08);
+        border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+        background: color-mix(in srgb, var(--warning) 8%, transparent);
       }
       .edu-notion-banner.error {
-        border-color: rgba(239,68,68,0.4);
-        background: rgba(239,68,68,0.08);
+        border-color: color-mix(in srgb, var(--critical) 40%, transparent);
+        background: color-mix(in srgb, var(--critical) 8%, transparent);
       }
       .edu-notion-banner code {
         background: rgba(0,0,0,0.35); padding: 1px 6px;
@@ -528,15 +531,15 @@ function NotionImportStyles() {
 
       .edu-notion-result {
         border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.08);
-        background: rgba(255,255,255,0.03);
+        border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+        background: color-mix(in srgb, var(--text-primary) 3%, transparent);
         padding: 14px 16px;
         display: flex; flex-direction: column; gap: 12px;
       }
-      .edu-notion-result.is-success { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.06); }
-      .edu-notion-result.is-partial { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.06); }
-      .edu-notion-result.is-error { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.06); }
-      .edu-notion-result.is-preview { border-color: rgba(14,165,233,0.35); background: rgba(14,165,233,0.06); }
+      .edu-notion-result.is-success { border-color: color-mix(in srgb, var(--good) 35%, transparent); background: color-mix(in srgb, var(--good) 6%, transparent); }
+      .edu-notion-result.is-partial { border-color: color-mix(in srgb, var(--warning) 35%, transparent); background: color-mix(in srgb, var(--warning) 6%, transparent); }
+      .edu-notion-result.is-error { border-color: color-mix(in srgb, var(--critical) 35%, transparent); background: color-mix(in srgb, var(--critical) 6%, transparent); }
+      .edu-notion-result.is-preview { border-color: color-mix(in srgb, var(--primary) 35%, transparent); background: color-mix(in srgb, var(--primary) 6%, transparent); }
       .edu-notion-result-head {
         display: flex; align-items: center; gap: 8px;
         font-size: 13.5px;
@@ -544,7 +547,7 @@ function NotionImportStyles() {
       .edu-notion-result-source {
         margin-left: auto;
         display: inline-flex; align-items: center; gap: 4px;
-        font-size: 11px; color: rgba(255,255,255,0.6);
+        font-size: 11px; color: var(--text-secondary);
         text-transform: uppercase; letter-spacing: 0.06em;
       }
       .edu-notion-stats {
@@ -559,21 +562,21 @@ function NotionImportStyles() {
         text-align: center;
       }
       .edu-notion-stat-value { font-size: 22px; font-weight: 700; }
-      .edu-notion-stat-label { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+      .edu-notion-stat-label { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
       .edu-notion-list { font-size: 12px; }
       .edu-notion-list-title {
-        font-size: 11px; color: rgba(255,255,255,0.55);
+        font-size: 11px; color: var(--text-secondary);
         text-transform: uppercase; letter-spacing: 0.08em;
         margin-bottom: 4px;
       }
       .edu-notion-list ul { margin: 0; padding-left: 18px; line-height: 1.55; }
       .edu-notion-list.errors ul li { color: #FCA5A5; }
-      .edu-notion-list-more { color: rgba(255,255,255,0.45); list-style: none; margin-left: -18px; }
+      .edu-notion-list-more { color: var(--text-muted); list-style: none; margin-left: -18px; }
 
       .edu-notion-logs { display: flex; flex-direction: column; gap: 8px; }
       .edu-notion-log {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+        border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
         border-left: 3px solid #94A3B8;
         border-radius: 10px;
         overflow: hidden;
@@ -587,7 +590,7 @@ function NotionImportStyles() {
         flex-wrap: wrap;
         color: inherit;
       }
-      .edu-notion-log-head:hover { background: rgba(255,255,255,0.04); }
+      .edu-notion-log-head:hover { background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
       .edu-notion-log-main { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
       .edu-notion-log-status {
         font-size: 10.5px; font-weight: 600;
@@ -597,20 +600,20 @@ function NotionImportStyles() {
       }
       .edu-notion-log-source {
         display: inline-flex; align-items: center; gap: 4px;
-        font-size: 11px; color: rgba(255,255,255,0.6);
+        font-size: 11px; color: var(--text-secondary);
       }
-      .edu-notion-log-date { font-size: 12px; color: rgba(255,255,255,0.7); }
+      .edu-notion-log-date { font-size: 12px; color: var(--text-secondary); }
       .edu-notion-log-stats {
         margin-left: auto;
         display: flex; align-items: center; gap: 12px;
-        font-size: 12px; color: rgba(255,255,255,0.7);
+        font-size: 12px; color: var(--text-secondary);
       }
       .edu-notion-log-body {
         padding: 0 14px 12px;
-        font-size: 12.5px; color: rgba(255,255,255,0.78);
+        font-size: 12.5px; color: var(--text-secondary);
       }
       .edu-notion-log-meta {
-        font-size: 12px; color: rgba(255,255,255,0.55);
+        font-size: 12px; color: var(--text-secondary);
         margin: 4px 0 8px;
         overflow-wrap: anywhere;
       }

@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useState } from 'react'
 import { Apple, CalendarDays, Clock, ExternalLink, MapPin, Plus, RefreshCw, StickyNote } from 'lucide-react'
 import {
@@ -94,31 +95,36 @@ export function DashboardView({
       )}
 
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 className="edu-h1">{t('eduB.dashboard.title')}</h1>
-          <p className="edu-sub">{t('eduB.dashboard.subtitle')}</p>
-        </div>
-        <div className="edu-row" style={{ gap: 8, flexWrap: 'wrap' }}>
-          {schoolsToShow.length > 0 && (
-            <select
-              className="edu-select"
-              style={{ width: 'auto', minWidth: 180 }}
-              value={selectedSchool}
-              onChange={(e) => onChangeSchool(e.target.value)}
-              aria-label={t('eduB.dashboard.filterSchool')}
-            >
-              <option value="">{t('eduB.dashboard.allSchools')}</option>
-              {schoolsToShow.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          )}
-          <button className="edu-btn" onClick={onCreateClass}>
-            <Plus size={14} /> {t('eduB.dashboard.newClass')}
-          </button>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.zone.education')}
+          title={t('eduB.dashboard.title')}
+          subtitle={<>{t('eduB.dashboard.subtitle')}</>}
+          actions={
+            <>
+              <div className="edu-row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                {schoolsToShow.length > 0 && (
+                  <select
+                    className="edu-select"
+                    style={{ width: 'auto', minWidth: 180 }}
+                    value={selectedSchool}
+                    onChange={(e) => onChangeSchool(e.target.value)}
+                    aria-label={t('eduB.dashboard.filterSchool')}
+                  >
+                    <option value="">{t('eduB.dashboard.allSchools')}</option>
+                    {schoolsToShow.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button className="edu-btn" onClick={onCreateClass}>
+                  <Plus size={14} /> {t('eduB.dashboard.newClass')}
+                </button>
+              </div>
+            </>
+          }
+        />
       </div>
 
       <div className="edu-kpi-grid">
@@ -185,7 +191,7 @@ export function DashboardView({
                           onClick={() => onOpenClass(cls._id)}
                           aria-label={t('eduB.dashboard.openClass', { name: cls.name })}
                         >
-                          <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                          <span className="edu-pill-dot" style={{ background: cls.color || 'var(--good)' }} />
                           {cls.name}
                         </button>
                       )}
@@ -245,7 +251,7 @@ export function DashboardView({
                           onClick={() => onOpenClass(cls._id)}
                           aria-label={t('eduB.dashboard.openClass', { name: cls.name })}
                         >
-                          <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                          <span className="edu-pill-dot" style={{ background: cls.color || 'var(--good)' }} />
                           {cls.name}
                         </button>
                       )}
@@ -292,7 +298,7 @@ export function DashboardView({
                           onClick={() => onOpenClass(cls._id)}
                           aria-label={t('eduB.dashboard.openClass', { name: cls.name })}
                         >
-                          <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                          <span className="edu-pill-dot" style={{ background: cls.color || 'var(--good)' }} />
                           {cls.name}
                         </button>
                       )}
@@ -301,7 +307,7 @@ export function DashboardView({
                       <button className="edu-btn ghost" onClick={() => onOpenSession(s._id)}>
                         {s.title}
                       </button>
-                      {s.theme && <span style={{ color: 'rgba(255,255,255,0.5)' }}> · {s.theme}</span>}
+                      {s.theme && <span style={{ color: 'var(--text-secondary)' }}> · {s.theme}</span>}
                     </td>
                     <td>{s.location || '—'}</td>
                   </tr>
@@ -354,7 +360,7 @@ export function DashboardView({
                           onClick={() => onOpenClass(cls._id)}
                           aria-label={t('eduB.dashboard.openClass', { name: cls.name })}
                         >
-                          <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                          <span className="edu-pill-dot" style={{ background: cls.color || 'var(--good)' }} />
                           {cls.name}
                         </button>
                       )}
@@ -395,7 +401,7 @@ export function DashboardView({
                 <tr key={row.class._id}>
                   <td>
                     <button className="edu-btn ghost" onClick={() => onOpenClass(row.class._id)}>
-                      <span className="edu-pill-dot" style={{ background: row.class.color || '#22C55E' }} />
+                      <span className="edu-pill-dot" style={{ background: row.class.color || 'var(--good)' }} />
                       {row.class.name}
                     </button>
                   </td>
@@ -406,21 +412,21 @@ export function DashboardView({
                         {row.lastSession.title}
                       </button>
                     ) : (
-                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
+                      <span style={{ color: 'var(--text-muted)' }}>—</span>
                     )}
                   </td>
                   <td>
                     {row.lastSession ? (
                       formatRelative(row.lastSession.date)
                     ) : (
-                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
+                      <span style={{ color: 'var(--text-muted)' }}>—</span>
                     )}
                   </td>
                   <td>
                     {row.lastSession ? (
                       <span className="edu-pill">{SESSION_STATUS_LABEL[row.lastSession.status]}</span>
                     ) : (
-                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
+                      <span style={{ color: 'var(--text-muted)' }}>—</span>
                     )}
                   </td>
                 </tr>
@@ -460,7 +466,7 @@ export function DashboardView({
                   <span>{alert.message}</span>
                 </span>
                 <span className="edu-alert-class">
-                  <span className="edu-pill-dot" style={{ background: alert.class.color || '#22C55E' }} />
+                  <span className="edu-pill-dot" style={{ background: alert.class.color || 'var(--good)' }} />
                   {alert.class.name}
                   {alert.class.school ? ` · ${alert.class.school}` : ''}
                 </span>
@@ -478,9 +484,13 @@ export function DashboardView({
             {dashboard.activity.slice(0, 10).map((a) => (
               <li
                 key={a._id}
-                style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 13 }}
+                style={{
+                  padding: '8px 0',
+                  borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 5%, transparent)',
+                  fontSize: 13,
+                }}
               >
-                <span style={{ color: 'rgba(255,255,255,0.5)' }}>{formatRelative(a.createdAt)}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{formatRelative(a.createdAt)}</span>
                 {' · '}
                 <span>
                   {a.action.toLowerCase()} {a.entityType}
@@ -580,7 +590,7 @@ function UpcomingCalendarSection({
                 {messageWithNode(
                   'eduB.upcoming.sync',
                   'when',
-                  <strong style={{ color: 'rgba(255,255,255,0.75)' }}>{formatRelative(payload.fetchedAt)}</strong>,
+                  <strong style={{ color: 'var(--text-secondary)' }}>{formatRelative(payload.fetchedAt)}</strong>,
                 )}
                 {payload.fromCache && <span style={{ marginLeft: 6, opacity: 0.65 }}>{t('eduB.calendar.cache')}</span>}
               </>

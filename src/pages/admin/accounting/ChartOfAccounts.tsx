@@ -256,7 +256,7 @@ const ChartOfAccounts = () => {
               </option>
             ))}
           </select>
-          <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
+          <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
             <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />{' '}
             {t('accAccounts.accounts.includeInactive')}
           </label>
@@ -266,54 +266,56 @@ const ChartOfAccounts = () => {
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
         ) : accounts.length === 0 ? (
           <div className="accounting-empty">
             {t('accAccounts.accounts.empty')}
             <div className="hint">{t('accAccounts.accounts.emptyHint')}</div>
           </div>
         ) : (
-          <table className="accounting-table">
-            <thead>
-              <tr>
-                <th>{t('accAccounts.col.code')}</th>
-                <th>{t('accAccounts.col.label')}</th>
-                <th>{t('accAccounts.accounts.class')}</th>
-                <th>{t('accAccounts.accounts.type')}</th>
-                <th>{t('accAccounts.accounts.reconcilable')}</th>
-                <th>{t('accAccounts.col.status')}</th>
-                {canManage && <th></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.map((a) => (
-                <tr key={a._id}>
-                  <td className="code">{a.code}</td>
-                  <td>{a.label}</td>
-                  <td>{a.accountClass}</td>
-                  <td>{TYPE_LABEL_KEYS[a.type] ? t(TYPE_LABEL_KEYS[a.type]) : a.type}</td>
-                  <td>{a.isLettrable ? t('common.yes') : '—'}</td>
-                  <td>
-                    <span className={`accounting-badge ${a.isActive ? 'validated' : 'locked'}`}>
-                      {a.isActive ? t('accAccounts.accounts.active') : t('accAccounts.accounts.inactive')}
-                    </span>
-                  </td>
-                  {canManage && (
-                    <td>
-                      <div className="accounting-row-actions">
-                        <button onClick={() => startEdit(a)}>{t('common.edit')}</button>
-                        {a.isActive && (
-                          <button className="danger" onClick={() => handleDeactivate(a._id)}>
-                            {t('accAccounts.accounts.deactivate')}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  )}
+          <div className="accounting-table-scroll">
+            <table className="accounting-table">
+              <thead>
+                <tr>
+                  <th>{t('accAccounts.col.code')}</th>
+                  <th>{t('accAccounts.col.label')}</th>
+                  <th>{t('accAccounts.accounts.class')}</th>
+                  <th>{t('accAccounts.accounts.type')}</th>
+                  <th>{t('accAccounts.accounts.reconcilable')}</th>
+                  <th>{t('accAccounts.col.status')}</th>
+                  {canManage && <th></th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {accounts.map((a) => (
+                  <tr key={a._id}>
+                    <td className="code">{a.code}</td>
+                    <td>{a.label}</td>
+                    <td>{a.accountClass}</td>
+                    <td>{TYPE_LABEL_KEYS[a.type] ? t(TYPE_LABEL_KEYS[a.type]) : a.type}</td>
+                    <td>{a.isLettrable ? t('common.yes') : '—'}</td>
+                    <td>
+                      <span className={`accounting-badge ${a.isActive ? 'validated' : 'locked'}`}>
+                        {a.isActive ? t('accAccounts.accounts.active') : t('accAccounts.accounts.inactive')}
+                      </span>
+                    </td>
+                    {canManage && (
+                      <td>
+                        <div className="accounting-row-actions">
+                          <button onClick={() => startEdit(a)}>{t('common.edit')}</button>
+                          {a.isActive && (
+                            <button className="danger" onClick={() => handleDeactivate(a._id)}>
+                              {t('accAccounts.accounts.deactivate')}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </AccountingLayout>

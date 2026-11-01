@@ -1,3 +1,5 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import ConfirmModal from '../../components/ConfirmModal'
 import { useToast } from '../../context/ToastContext'
@@ -183,14 +185,17 @@ const Webhooks: React.FC = () => {
   }
 
   return (
-    <section className="admin-portal" style={{ paddingTop: '120px', minHeight: '100vh' }}>
+    <section className="lot-c-page webhooks-page">
       <div className="admin-container">
-        <div className="admin-header">
-          <h1>{t('adminTech.webhooks.title')}</h1>
-          <button type="button" className="portal-button" onClick={openCreate}>
-            {t('adminTech.webhooks.newEndpoint')}
-          </button>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.zone.system')}
+          title={t('adminTech.webhooks.title')}
+          actions={
+            <button type="button" className="portal-button" onClick={openCreate}>
+              {t('adminTech.webhooks.newEndpoint')}
+            </button>
+          }
+        />
 
         <p style={{ color: 'var(--text-muted)', maxWidth: 720 }}>
           {t('adminTech.webhooks.introLead')} <code>X-Venio-Signature</code>
@@ -221,7 +226,9 @@ const Webhooks: React.FC = () => {
                   <tr key={endpoint._id}>
                     <td style={{ padding: '10px 12px' }}>
                       <strong>{endpoint.name}</strong>
-                      <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      <div
+                        style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-secondary)' }}
+                      >
                         {endpoint.url}
                       </div>
                     </td>
@@ -244,7 +251,7 @@ const Webhooks: React.FC = () => {
                     <td style={{ padding: '10px 12px', fontSize: '0.85rem' }}>
                       <div>{healthLabel(endpoint)}</div>
                       {endpoint.consecutiveFailures > 0 && (
-                        <div style={{ color: '#f87171' }}>
+                        <div style={{ color: 'var(--critical)' }}>
                           {t('adminTech.webhooks.consecutiveFailures', { count: endpoint.consecutiveFailures })}
                         </div>
                       )}

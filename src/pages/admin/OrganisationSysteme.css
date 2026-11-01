@@ -1,0 +1,291 @@
+/* Lot C — Organisation et Système. Les primitives communes restent inchangées. */
+html.theme-portail .lot-c-page {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--text-primary);
+  font: 13.5px/1.5 var(--font-body);
+}
+.lot-c-page *,
+.lot-c-page *::before,
+.lot-c-page *::after {
+  box-sizing: border-box;
+}
+html.theme-portail .lot-c-page > .admin-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+}
+html.theme-portail .lot-c-page .admin-page-header {
+  display: block;
+  width: 100%;
+  margin-bottom: 20px;
+}
+html.theme-portail .lot-c-page .admin-page-header__row {
+  align-items: flex-start;
+  width: 100%;
+  gap: 16px;
+  padding-bottom: 0;
+}
+.lot-c-page .admin-page-header__row > div:first-child {
+  min-width: 0;
+}
+.lot-c-page :is(h1, h2, h3, p, code, a) {
+  overflow-wrap: anywhere;
+}
+.lot-c-page .admin-page-header__subtitle {
+  font-size: 13.5px;
+}
+html.theme-portail .lot-c-page .admin-page-header__actions {
+  gap: 8px;
+  flex-shrink: 0;
+}
+html.theme-portail .lot-c-page :is(.portal-card, .client-card) {
+  background: var(--surface-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  box-shadow: var(--surface-shadow);
+}
+.lot-c-page :is(.lot-c-count, code, pre, .client-card-id) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.lot-c-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+/* Dans un hub, seul le titre enfant disparaît. Les actions restent en tête. */
+html.theme-portail .admin-hub-panel .lot-c-page .admin-page-header__row > div:first-child {
+  display: none;
+}
+html.theme-portail .admin-hub-panel .lot-c-page .admin-page-header__row {
+  flex-direction: row;
+  justify-content: flex-end;
+  padding: 0;
+}
+html.theme-portail .admin-hub-panel .lot-c-page .admin-page-header:not(:has(.admin-page-header__actions)) {
+  display: none;
+}
+html.theme-portail .admin-hub-panel .lot-c-page.portal-container {
+  padding: 0;
+}
+html.theme-portail .admin-hub-panel .lot-c-page > .portal-card:first-child:has(> .admin-page-header) {
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+/* Ces pages contiennent des formulaires longs : chaque champ peut rétrécir. */
+.lot-c-page :is(input, select, textarea, .portal-input, .portal-select, .custom-select-container) {
+  min-width: 0;
+  max-width: 100%;
+}
+.lot-c-page :is(.admin-table-wrapper, .ticket-table-wrapper) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.lot-c-page :is(.admin-actions, .admin-list-item-actions, .portal-actions-reveal) {
+  flex-wrap: wrap;
+}
+html.theme-portail .lot-c-page .portal-action-label {
+  max-width: none;
+  opacity: 1;
+  transform: none;
+}
+html.theme-portail .lot-c-page .portal-action-link {
+  width: auto;
+  padding: 8px 14px;
+}
+.system-health-content {
+  min-width: 0;
+}
+/* Membres : cartes et outils reprennent la même densité que les comptes. */
+html.theme-portail :is(.intern-list-page, .intern-detail-page) :is(.ticket-card, .ticket-stat-card, .ticket-form-card) {
+  background: var(--surface-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  box-shadow: var(--surface-shadow);
+}
+html.theme-portail :is(.intern-list-page, .intern-detail-page) :is(.ticket-stats, .ticket-tabs) {
+  gap: 8px;
+}
+html.theme-portail :is(.intern-list-page, .intern-detail-page) :is(.ticket-stat-number, .ticket-tab-badge) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+html.theme-portail :is(.intern-list-page, .intern-detail-page) :is(.ticket-new-btn, .ticket-back-btn) {
+  border-radius: var(--r-pill);
+  font: 13px var(--font-body);
+  padding: 8px 14px;
+  box-shadow: none;
+}
+html.theme-portail :is(.intern-list-page, .intern-detail-page) .ticket-new-btn {
+  color: var(--pill-tx);
+  background: var(--pill-bg);
+  border: 1px solid var(--border-strong);
+}
+html.theme-portail :is(.intern-list-page, .intern-detail-page) .ticket-back-btn {
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+html.theme-portail .intern-list-page .ticket-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  padding: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+}
+html.theme-portail .intern-list-page .ticket-tab {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-radius: var(--r-sm);
+  background: transparent;
+}
+html.theme-portail .intern-list-page .ticket-tab.active {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+  box-shadow: none;
+}
+/* Qualiopi : le contenu des critères reste visible et les colonnes défilent en interne. */
+html.theme-portail
+  .qualiopi-page
+  :is(.qualiopi-stat-card, .qualiopi-criterion, .qualiopi-kanban-card, .qualiopi-global-progress) {
+  background: var(--surface-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  box-shadow: var(--surface-shadow);
+}
+html.theme-portail .qualiopi-page :is(.qualiopi-stat-number, .qualiopi-criterion-percent, .qualiopi-criterion-count) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+html.theme-portail .qualiopi-page .qualiopi-stat-number {
+  font-size: 26px;
+  font-weight: 500;
+}
+html.theme-portail .qualiopi-page .qualiopi-stat-card {
+  padding: 16px;
+}
+html.theme-portail .qualiopi-page .qualiopi-criterion-header {
+  padding: 16px;
+}
+html.theme-portail .qualiopi-page :is(.qualiopi-criterion-name, .qualiopi-indicator-title) {
+  font-size: 14px;
+}
+html.theme-portail .qualiopi-page .qualiopi-tabs {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  max-width: 100%;
+}
+html.theme-portail .qualiopi-page .qualiopi-tab {
+  flex-shrink: 0;
+  font-size: 13px;
+}
+html.theme-portail .qualiopi-page .qualiopi-status-badge {
+  border-radius: var(--r-pill);
+}
+html.theme-portail .qualiopi-page .qualiopi-kanban {
+  overflow-x: auto;
+  max-width: 100%;
+}
+/* Connexion et MFA : panneau centré, typographie et contrôles sobres. */
+html.theme-portail .admin-login-page {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  width: 100%;
+  padding: 32px 16px;
+}
+html.theme-portail .admin-login-page > .portal-card {
+  width: min(100%, 420px);
+  padding: 28px;
+}
+html.theme-portail .admin-login-page .admin-page-header__row {
+  display: block;
+}
+html.theme-portail .admin-login-page .portal-button {
+  width: 100%;
+  justify-content: center;
+}
+html.theme-portail .admin-login-page .portal-input {
+  min-height: 44px;
+}
+html.theme-portail .mfa-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+.mfa-page img {
+  max-width: 100%;
+  height: auto;
+}
+.mfa-page :is(pre, code) {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+@media (max-width: 640px) {
+  html.theme-portail .lot-c-page .admin-page-header__actions {
+    width: 100%;
+    flex-shrink: 1;
+  }
+  html.theme-portail .admin-hub-panel .lot-c-page .admin-page-header__actions {
+    justify-content: flex-end;
+  }
+  html.theme-portail .lot-c-page .admin-page-header__actions > div {
+    flex-wrap: wrap;
+  }
+  html.theme-portail .lot-c-page :is(.portal-card, .client-card) {
+    padding: 16px;
+  }
+  html.theme-portail .lot-c-page :is(.admin-grid, .admin-form-grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lot-c-page [style*='grid-template-columns: 1fr 1fr'] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .intern-list-page [style*='grid-template-columns: repeat(3,'] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  html.theme-portail .qualiopi-page .qualiopi-stats-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  html.theme-portail .qualiopi-page :is(.qualiopi-criterion-header, .qualiopi-indicator-header) {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  html.theme-portail
+    .qualiopi-page
+    :is(.qualiopi-criterion-title-row, .qualiopi-indicator-left, .qualiopi-criterion-info) {
+    min-width: 0;
+  }
+  html.theme-portail .qualiopi-page .qualiopi-criterion-meta {
+    flex-wrap: wrap;
+  }
+  html.theme-portail .admin-login-page > .portal-card {
+    padding: 20px;
+  }
+}
+
+.health-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 500;
+}
+.system-health-page .system-health-content section {
+  box-shadow: var(--surface-shadow);
+}

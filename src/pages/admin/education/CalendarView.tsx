@@ -1,16 +1,6 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  Apple,
-  MapPin,
-  Clock,
-  AlertTriangle,
-  Plus,
-  X,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, RefreshCw, Apple, MapPin, Clock, AlertTriangle, X } from 'lucide-react'
 import {
   fetchAppleCalendar,
   refreshAppleCalendar,
@@ -65,7 +55,16 @@ function formatDayKey(d: Date): string {
 function eventColor(ev: AppleCalendarEvent): string {
   // Couleur stable par école/classe pour aider Raphael à scanner.
   const key = (ev.school || ev.classLabel || ev.title || ev.uid).toLowerCase()
-  const palette = ['#22C55E', '#CCFF00', '#9B9B9B', '#F59E0B', '#FFFFFF', '#14B8A6', '#F97316', '#A5D400']
+  const palette = [
+    'var(--good)',
+    'var(--good)',
+    'var(--text-secondary)',
+    'var(--warning)',
+    'var(--text-primary)',
+    'var(--primary)',
+    'var(--critical)',
+    'var(--good)',
+  ]
   let hash = 0
   for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0
   return palette[hash % palette.length]
@@ -179,59 +178,65 @@ export function CalendarView({ classes = [] }: { classes?: EducationClass[] }) {
   return (
     <div className="edu-cal">
       <div className="edu-row between edu-cal-toolbar">
-        <div>
-          <h1 className="edu-h1">
-            <CalendarDays size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />
-            {t('eduB.calendar.title')}
-          </h1>
-          <p className="edu-sub">
-            {t('eduB.calendar.subtitle')}
-            {payload?.fetchedAt && (
-              <>
-                {' '}
-                {messageWithNode(
-                  'eduB.calendar.lastSync',
-                  'date',
-                  <strong style={{ color: 'rgba(255,255,255,0.75)' }}>
-                    {formatDateTime(payload.fetchedAt, {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                    })}
-                  </strong>,
-                )}
-                {payload.fromCache && <span style={{ marginLeft: 6, opacity: 0.65 }}>{t('eduB.calendar.cache')}</span>}
-              </>
-            )}
-          </p>
-        </div>
-        <div className="edu-row" style={{ gap: 6 }}>
-          <button
-            className={`edu-btn ghost ${mode === 'week' ? 'is-active' : ''}`}
-            onClick={() => setMode('week')}
-            aria-pressed={mode === 'week'}
-          >
-            {t('eduB.calendar.week')}
-          </button>
-          <button
-            className={`edu-btn ghost ${mode === 'month' ? 'is-active' : ''}`}
-            onClick={() => setMode('month')}
-            aria-pressed={mode === 'month'}
-          >
-            {t('eduB.calendar.month')}
-          </button>
-          <button
-            className="edu-btn ghost"
-            onClick={manualRefresh}
-            disabled={refreshing}
-            title={t('eduB.calendar.syncTitle')}
-          >
-            <RefreshCw size={14} className={refreshing ? 'edu-spin' : ''} /> {t('eduB.calendar.sync')}
-          </button>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.zone.education')}
+          title={t('eduB.calendar.title')}
+          subtitle={
+            <>
+              {t('eduB.calendar.subtitle')}
+              {payload?.fetchedAt && (
+                <>
+                  {' '}
+                  {messageWithNode(
+                    'eduB.calendar.lastSync',
+                    'date',
+                    <strong style={{ color: 'var(--text-secondary)' }}>
+                      {formatDateTime(payload.fetchedAt, {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })}
+                    </strong>,
+                  )}
+                  {payload.fromCache && (
+                    <span style={{ marginLeft: 6, opacity: 0.65 }}>{t('eduB.calendar.cache')}</span>
+                  )}
+                </>
+              )}
+            </>
+          }
+          actions={
+            <>
+              <div className="edu-row" style={{ gap: 6 }}>
+                <button
+                  className={`edu-btn ghost ${mode === 'week' ? 'is-active' : ''}`}
+                  onClick={() => setMode('week')}
+                  aria-pressed={mode === 'week'}
+                >
+                  {t('eduB.calendar.week')}
+                </button>
+                <button
+                  className={`edu-btn ghost ${mode === 'month' ? 'is-active' : ''}`}
+                  onClick={() => setMode('month')}
+                  aria-pressed={mode === 'month'}
+                >
+                  {t('eduB.calendar.month')}
+                </button>
+                <button
+                  className="edu-btn ghost"
+                  onClick={manualRefresh}
+                  disabled={refreshing}
+                  title={t('eduB.calendar.syncTitle')}
+                >
+                  <RefreshCw size={14} className={refreshing ? 'edu-spin' : ''} /> {t('eduB.calendar.sync')}
+                </button>
+              </div>
+            </>
+          }
+        />
       </div>
 
       <div className="edu-row edu-cal-nav">
@@ -755,9 +760,9 @@ function CalendarStyles() {
       .edu-cal-nav { gap: 6px; align-items: center; }
       .edu-cal-label { margin-left: 8px; font-weight: 600; font-size: 15px; }
       .edu-cal .edu-btn.ghost.is-active {
-        background: rgba(34,197,94,0.15);
+        background: color-mix(in srgb, var(--good) 15%, transparent);
         color: #86EFAC;
-        border-color: rgba(34,197,94,0.35);
+        border-color: color-mix(in srgb, var(--good) 35%, transparent);
       }
       .edu-spin { animation: edu-cal-spin 1s linear infinite; }
       @keyframes edu-cal-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -765,12 +770,12 @@ function CalendarStyles() {
       .edu-cal-state {
         display: flex; gap: 12px; align-items: center;
         padding: 14px 16px; border-radius: 10px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+        border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
       }
-      .edu-cal-state-error { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.08); }
-      .edu-cal-state-success { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.08); }
-      .edu-cal-state-warn { border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.08); margin-top: 4px; }
+      .edu-cal-state-error { border-color: color-mix(in srgb, var(--critical) 35%, transparent); background: color-mix(in srgb, var(--critical) 8%, transparent); }
+      .edu-cal-state-success { border-color: color-mix(in srgb, var(--good) 35%, transparent); background: color-mix(in srgb, var(--good) 8%, transparent); }
+      .edu-cal-state-warn { border-color: color-mix(in srgb, var(--warning) 40%, transparent); background: color-mix(in srgb, var(--warning) 8%, transparent); margin-top: 4px; }
 
       .edu-cal-week {
         display: grid;
@@ -778,27 +783,27 @@ function CalendarStyles() {
         gap: 8px;
       }
       .edu-cal-week-col {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+        border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
         border-radius: 10px;
         display: flex; flex-direction: column;
         min-height: 220px;
       }
-      .edu-cal-week-col.is-today { border-color: rgba(34,197,94,0.45); background: rgba(34,197,94,0.05); }
+      .edu-cal-week-col.is-today { border-color: color-mix(in srgb, var(--good) 45%, transparent); background: color-mix(in srgb, var(--good) 5%, transparent); }
       .edu-cal-week-head {
         display: flex; justify-content: space-between; align-items: baseline;
         padding: 8px 10px;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        font-size: 12px; color: rgba(255,255,255,0.6);
+        border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+        font-size: 12px; color: var(--text-secondary);
       }
       .edu-cal-week-head strong { color: #fff; font-size: 16px; }
       .edu-cal-week-body { padding: 6px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-      .edu-cal-week-empty { font-size: 11px; color: rgba(255,255,255,0.3); padding: 6px; text-align: center; }
+      .edu-cal-week-empty { font-size: 11px; color: var(--text-muted); padding: 6px; text-align: center; }
 
       .edu-cal-event {
         display: block; text-align: left; width: 100%;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+        border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
         border-left: 3px solid var(--edu-color, #22C55E);
         border-radius: 8px;
         padding: 6px 8px;
@@ -806,14 +811,14 @@ function CalendarStyles() {
         cursor: pointer;
         transition: background 0.12s ease, transform 0.12s ease;
       }
-      .edu-cal-event:hover { background: rgba(255,255,255,0.09); transform: translateY(-1px); }
-      .edu-cal-event-time { color: rgba(255,255,255,0.55); font-size: 11px; margin-bottom: 2px; }
+      .edu-cal-event:hover { background: color-mix(in srgb, var(--text-primary) 9%, transparent); transform: translateY(-1px); }
+      .edu-cal-event-time { color: var(--text-secondary); font-size: 11px; margin-bottom: 2px; }
       .edu-cal-event-title { color: #fff; font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; }
-      .edu-cal-event-meta { color: rgba(255,255,255,0.55); font-size: 11px; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px; }
+      .edu-cal-event-meta { color: var(--text-secondary); font-size: 11px; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px; }
       .edu-cal-event-school {
         display: inline-block; margin-top: 4px;
         font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
-        background: rgba(14, 165, 233, 0.18); color: var(--primary);
+        background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary);
         padding: 2px 6px; border-radius: 4px;
       }
       .edu-cal-event.compact {
@@ -824,46 +829,46 @@ function CalendarStyles() {
         border-left: 3px solid var(--edu-color, #22C55E);
         border-radius: 0;
       }
-      .edu-cal-event.compact .edu-cal-event-time { margin: 0; font-size: 10px; color: rgba(255,255,255,0.5); }
+      .edu-cal-event.compact .edu-cal-event-time { margin: 0; font-size: 10px; color: var(--text-secondary); }
       .edu-cal-event.compact .edu-cal-event-title { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
       .edu-cal-month {
-        background: rgba(255,255,255,0.02);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: color-mix(in srgb, var(--text-primary) 2%, transparent);
+        border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
         border-radius: 10px;
         overflow: hidden;
       }
       .edu-cal-month-head {
         display: grid; grid-template-columns: repeat(7, 1fr);
-        background: rgba(255,255,255,0.04);
-        font-size: 11px; color: rgba(255,255,255,0.55);
+        background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+        font-size: 11px; color: var(--text-secondary);
       }
       .edu-cal-month-head > div { padding: 8px 10px; }
       .edu-cal-month-body { display: grid; grid-template-columns: repeat(7, 1fr); }
       .edu-cal-month-cell {
-        border-top: 1px solid rgba(255,255,255,0.05);
-        border-left: 1px solid rgba(255,255,255,0.05);
+        border-top: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent);
+        border-left: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent);
         min-height: 96px;
         padding: 4px 5px;
         display: flex; flex-direction: column; gap: 3px;
       }
       .edu-cal-month-cell.is-out { background: rgba(0,0,0,0.18); opacity: 0.55; }
-      .edu-cal-month-cell.is-today { background: rgba(34,197,94,0.07); }
-      .edu-cal-month-day { font-size: 12px; color: rgba(255,255,255,0.65); }
+      .edu-cal-month-cell.is-today { background: color-mix(in srgb, var(--good) 7%, transparent); }
+      .edu-cal-month-day { font-size: 12px; color: var(--text-secondary); }
       .edu-cal-month-events { display: flex; flex-direction: column; gap: 2px; }
-      .edu-cal-event-more { font-size: 10px; color: rgba(255,255,255,0.55); padding-left: 6px; }
+      .edu-cal-event-more { font-size: 10px; color: var(--text-secondary); padding-left: 6px; }
 
       .edu-cal-upcoming { margin-top: 8px; }
       .edu-cal-upcoming-list { display: flex; flex-direction: column; gap: 6px; }
       .edu-cal-upcoming-item {
         display: flex; align-items: center; gap: 10px;
         padding: 10px 12px;
-        background: rgba(255,255,255,0.04);
+        background: color-mix(in srgb, var(--text-primary) 4%, transparent);
         border-left: 3px solid var(--edu-color, #22C55E);
         border-radius: 8px;
       }
       .edu-cal-upcoming-title { font-size: 14px; font-weight: 500; }
-      .edu-cal-upcoming-meta { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+      .edu-cal-upcoming-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 
       @media (max-width: 900px) {
         .edu-cal-week { grid-template-columns: 1fr; }

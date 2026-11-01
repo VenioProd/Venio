@@ -72,7 +72,7 @@
 /* Grille de cartes étudiant — gros targets tactiles. */
 .edu-live-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
   gap: 10px;
 }
 .edu-live-card {

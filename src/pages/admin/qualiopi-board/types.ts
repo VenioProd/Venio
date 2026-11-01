@@ -12,11 +12,15 @@ export type {
 } from '../../../types/qualiopi.types'
 
 export const STATUS_CONFIG: Record<QualiopiStatus, { labelKey: MessageKey; color: string; bg: string }> = {
-  A_FAIRE: { labelKey: 'orgs.qualiopi.status.todo', color: '#94a3b8', bg: '#010104' },
-  EN_COURS: { labelKey: 'orgs.qualiopi.status.inProgress', color: '#f59e0b', bg: '#010104' },
-  FAIT: { labelKey: 'orgs.qualiopi.status.done', color: '#22c55e', bg: '#010104' },
-  BLOQUE: { labelKey: 'orgs.qualiopi.status.blocked', color: '#ef4444', bg: '#010104' },
-  NON_CONCERNE: { labelKey: 'orgs.qualiopi.status.notApplicable', color: '#64748b', bg: '#010104' },
+  A_FAIRE: { labelKey: 'orgs.qualiopi.status.todo', color: 'var(--text-secondary)', bg: 'var(--bg-secondary)' },
+  EN_COURS: { labelKey: 'orgs.qualiopi.status.inProgress', color: 'var(--warning)', bg: 'var(--bg-secondary)' },
+  FAIT: { labelKey: 'orgs.qualiopi.status.done', color: 'var(--good)', bg: 'var(--bg-secondary)' },
+  BLOQUE: { labelKey: 'orgs.qualiopi.status.blocked', color: 'var(--critical)', bg: 'var(--bg-secondary)' },
+  NON_CONCERNE: {
+    labelKey: 'orgs.qualiopi.status.notApplicable',
+    color: 'var(--text-muted)',
+    bg: 'var(--bg-secondary)',
+  },
 }
 
 /** Options de statut pour les listes déroulantes, libellés dans la langue active. */
@@ -35,7 +39,15 @@ export function formatFileDate(value: string): string {
   return formatDate(value, { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-export const CRITERIA_COLORS = ['#ff0080', '#8b5cf6', '#0ea5e9', '#f59e0b', '#22c55e', '#ef4444', '#6366f1']
+export const CRITERIA_COLORS = [
+  'var(--critical)',
+  'var(--cat-2)',
+  'var(--primary)',
+  'var(--warning)',
+  'var(--good)',
+  'var(--critical)',
+  'var(--cat-2)',
+]
 
 export function getProgress(indicators: QualiopiIndicator[]) {
   const total = indicators.length

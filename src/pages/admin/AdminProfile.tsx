@@ -1,3 +1,6 @@
+import './AdminPortal.css'
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -12,9 +15,9 @@ import LanguageSelect from '../../components/LanguageSelect'
 import '../espace-client/ClientPortal.css'
 
 const ROLE_LABELS: Record<string, { labelKey: MessageKey; color: string }> = {
-  SUPER_ADMIN: { labelKey: 'adminAccess.profile.roleSuperAdmin', color: '#0ea5e9' },
-  ADMIN: { labelKey: 'adminAccess.profile.roleSales', color: '#0284c7' },
-  VIEWER: { labelKey: 'adminAccess.profile.roleViewer', color: '#64748b' },
+  SUPER_ADMIN: { labelKey: 'adminAccess.profile.roleSuperAdmin', color: 'var(--primary)' },
+  ADMIN: { labelKey: 'adminAccess.profile.roleSales', color: 'var(--primary)' },
+  VIEWER: { labelKey: 'adminAccess.profile.roleViewer', color: 'var(--text-muted)' },
 }
 
 const AdminProfile = () => {
@@ -150,7 +153,7 @@ const AdminProfile = () => {
   const knownRole = ROLE_LABELS[user?.role || '']
   const roleInfo = knownRole
     ? { label: t(knownRole.labelKey), color: knownRole.color }
-    : { label: user?.role, color: '#64748b' }
+    : { label: user?.role, color: 'var(--text-muted)' }
 
   const passwordToggleStyle: React.CSSProperties = {
     position: 'absolute',
@@ -167,43 +170,40 @@ const AdminProfile = () => {
   }
 
   return (
-    <div className="portal-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <Link
-          to="/admin"
-          style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}
-        >
-          {t('adminAccess.profile.backToDashboard')}
-        </Link>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-        <h1 style={{ margin: 0 }}>{t('adminAccess.profile.title')}</h1>
-        <span
-          style={{
-            fontSize: '12px',
-            fontWeight: 600,
-            padding: '3px 10px',
-            borderRadius: '6px',
-            background: `color-mix(in srgb, ${roleInfo.color} 15%, transparent)`,
-            color: roleInfo.color,
-          }}
-        >
-          {roleInfo.label}
-        </span>
-      </div>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px' }}>
-        {t('adminAccess.profile.subtitle')}
-      </p>
+    <div className="portal-container lot-c-page admin-profile-page" style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <PageHeader
+        eyebrow={t('adminOps.zone.team')}
+        title={t('adminAccess.profile.title')}
+        subtitle={t('adminAccess.profile.subtitle')}
+        actions={
+          <>
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                padding: '3px 10px',
+                borderRadius: 'var(--r-sm)',
+                background: `color-mix(in srgb, ${roleInfo.color} 15%, transparent)`,
+                color: roleInfo.color,
+              }}
+            >
+              {roleInfo.label}
+            </span>
+            <Link className="portal-button secondary" to="/admin">
+              {t('adminAccess.profile.backToDashboard')}
+            </Link>
+          </>
+        }
+      />
 
       {success && (
         <div
           style={{
             padding: '12px 16px',
-            background: 'rgba(74, 222, 128, 0.1)',
-            border: '1px solid rgba(74, 222, 128, 0.3)',
-            borderRadius: '10px',
-            color: '#4ade80',
+            background: 'color-mix(in srgb, var(--good) 10%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--good) 30%, transparent)',
+            borderRadius: 'var(--r-md)',
+            color: 'var(--good)',
             marginBottom: '24px',
             fontSize: '14px',
             fontWeight: 600,
@@ -230,8 +230,8 @@ const AdminProfile = () => {
                 display: 'inline-block',
                 padding: '8px 16px',
                 background: 'var(--primary)',
-                color: '#fff',
-                borderRadius: '8px',
+                color: 'var(--text-primary)',
+                borderRadius: 'var(--r-md)',
                 cursor: avatarUploading ? 'not-allowed' : 'pointer',
                 fontSize: '13px',
                 fontWeight: 600,
@@ -255,9 +255,9 @@ const AdminProfile = () => {
                 disabled={avatarUploading}
                 style={{
                   background: 'none',
-                  border: '1px solid rgba(239,68,68,0.4)',
-                  color: '#ef4444',
-                  borderRadius: '8px',
+                  border: '1px solid color-mix(in srgb, var(--critical) 40%, transparent)',
+                  color: 'var(--critical)',
+                  borderRadius: 'var(--r-md)',
                   padding: '6px 14px',
                   fontSize: '13px',
                   cursor: 'pointer',
@@ -267,7 +267,7 @@ const AdminProfile = () => {
                 {t('adminAccess.profile.avatarRemove')}
               </button>
             )}
-            {avatarError && <p style={{ color: '#ef4444', fontSize: '13px', margin: 0 }}>{avatarError}</p>}
+            {avatarError && <p style={{ color: 'var(--critical)', fontSize: '13px', margin: 0 }}>{avatarError}</p>}
             <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: 0 }}>
               {t('adminAccess.profile.avatarHint')}
             </p>
@@ -360,7 +360,7 @@ const AdminProfile = () => {
               />
             </div>
           </div>
-          {error && <p style={{ color: '#ef4444', fontSize: '14px' }}>{error}</p>}
+          {error && <p style={{ color: 'var(--critical)', fontSize: '14px' }}>{error}</p>}
           <button className="portal-button" type="submit" disabled={saving} style={{ alignSelf: 'flex-start' }}>
             {saving ? t('adminAccess.profile.saving') : t('adminAccess.profile.saveChanges')}
           </button>
@@ -477,7 +477,7 @@ const AdminProfile = () => {
               </button>
             </div>
           </div>
-          {passwordError && <p style={{ color: '#ef4444', fontSize: '14px' }}>{passwordError}</p>}
+          {passwordError && <p style={{ color: 'var(--critical)', fontSize: '14px' }}>{passwordError}</p>}
           <button className="portal-button" type="submit" disabled={savingPassword} style={{ alignSelf: 'flex-start' }}>
             {savingPassword ? t('adminAccess.profile.changing') : t('adminAccess.profile.passwordHeading')}
           </button>

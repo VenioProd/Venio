@@ -239,7 +239,7 @@ export function SessionLiveMode({
             <div className="edu-live-subtitle">
               {cls && (
                 <span className="edu-pill">
-                  <span className="edu-pill-dot" style={{ background: cls.color || '#22C55E' }} />
+                  <span className="edu-pill-dot" style={{ background: cls.color || 'var(--good)' }} />
                   {cls.name}
                 </span>
               )}

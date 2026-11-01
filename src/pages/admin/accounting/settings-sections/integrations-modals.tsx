@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
+import type { FormEvent } from 'react'
 import type { IExternalSource } from '../../../../types/accounting'
 import { useI18n } from '../../../../context/I18nContext'
 
@@ -66,7 +66,7 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
       <form onSubmit={handleSubmit}>
         <div className="accounting-form-field" style={{ marginBottom: 14 }}>
           <label>
-            Slug <span style={{ color: '#f87171' }}>*</span>
+            Slug <span style={{ color: 'var(--critical)' }}>*</span>
           </label>
           <input
             className="portal-input"
@@ -80,7 +80,7 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
             style={{
               marginTop: 4,
               fontSize: '0.78rem',
-              color: slugProblem || slugTaken ? '#fca5a5' : 'rgba(255,255,255,0.5)',
+              color: slugProblem || slugTaken ? 'var(--critical)' : 'var(--text-secondary)',
             }}
           >
             {slugTaken
@@ -93,7 +93,7 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
 
         <div className="accounting-form-field" style={{ marginBottom: 14 }}>
           <label>
-            {t('accVat.modal.displayName')} <span style={{ color: '#f87171' }}>*</span>
+            {t('accVat.modal.displayName')} <span style={{ color: 'var(--critical)' }}>*</span>
           </label>
           <input
             className="portal-input"
@@ -121,12 +121,12 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
             gap: 10,
             alignItems: 'flex-start',
             padding: '10px 12px',
-            background: 'rgba(251,191,36,0.08)',
-            border: '1px solid rgba(251,191,36,0.30)',
-            borderRadius: 8,
+            background: 'color-mix(in srgb, var(--warning) 8%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--warning) 30%, transparent)',
+            borderRadius: 'var(--r-md)',
             cursor: 'pointer',
             fontSize: '0.85rem',
-            color: 'rgba(255,255,255,0.82)',
+            color: 'var(--text-primary)',
           }}
         >
           <input
@@ -136,12 +136,12 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
             style={{ marginTop: 3 }}
           />
           <span>
-            <strong style={{ color: '#fde68a' }}>{t('accVat.modal.autoValidate')}</strong>
+            <strong style={{ color: 'var(--warning)' }}>{t('accVat.modal.autoValidate')}</strong>
             <div
               style={{
                 marginTop: 2,
                 fontSize: '0.78rem',
-                color: 'rgba(255,255,255,0.6)',
+                color: 'var(--text-secondary)',
               }}
             >
               {t('accVat.modal.autoValidateBefore')} <code>VALIDATED</code>
@@ -155,10 +155,10 @@ export function CreateIntegrationModal({ existingSlugs, onCancel, onSubmit }: Cr
             style={{
               marginTop: 14,
               padding: '10px 12px',
-              background: 'rgba(220,38,38,0.15)',
-              border: '1px solid rgba(220,38,38,0.40)',
-              borderRadius: 8,
-              color: '#fecaca',
+              background: 'color-mix(in srgb, var(--critical) 15%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--critical) 40%, transparent)',
+              borderRadius: 'var(--r-md)',
+              color: 'var(--text-secondary)',
               fontSize: '0.85rem',
             }}
           >
@@ -218,10 +218,10 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
       <div
         style={{
           padding: '12px 14px',
-          background: 'rgba(220,38,38,0.10)',
-          border: '1px solid rgba(220,38,38,0.40)',
-          borderRadius: 10,
-          color: '#fecaca',
+          background: 'color-mix(in srgb, var(--critical) 10%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--critical) 40%, transparent)',
+          borderRadius: 'var(--r-md)',
+          color: 'var(--text-secondary)',
           fontSize: '0.88rem',
           lineHeight: 1.55,
         }}
@@ -230,9 +230,9 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
         {t('accVat.modal.revokeWarnC')}{' '}
         <code
           style={{
-            background: 'rgba(15,15,20,0.6)',
+            background: 'color-mix(in srgb, var(--bg-secondary) 60%, transparent)',
             padding: '1px 6px',
-            borderRadius: 4,
+            borderRadius: 'var(--r-sm)',
           }}
         >
           {source.slug}
@@ -245,10 +245,10 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
           {t('accVat.modal.confirmSlugA')}{' '}
           <code
             style={{
-              background: 'rgba(15,15,20,0.6)',
+              background: 'color-mix(in srgb, var(--bg-secondary) 60%, transparent)',
               padding: '1px 6px',
-              borderRadius: 4,
-              fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+              borderRadius: 'var(--r-sm)',
+              fontFamily: 'var(--font-mono)',
             }}
           >
             {source.slug}
@@ -269,10 +269,10 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
           style={{
             marginTop: 14,
             padding: '10px 12px',
-            background: 'rgba(220,38,38,0.15)',
-            border: '1px solid rgba(220,38,38,0.40)',
-            borderRadius: 8,
-            color: '#fecaca',
+            background: 'color-mix(in srgb, var(--critical) 15%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--critical) 40%, transparent)',
+            borderRadius: 'var(--r-md)',
+            color: 'var(--text-secondary)',
             fontSize: '0.85rem',
           }}
         >
@@ -297,9 +297,11 @@ export function RevokeIntegrationModal({ source, onCancel, onConfirm }: RevokeIn
           onClick={handleConfirm}
           disabled={!canSubmit}
           style={{
-            background: canSubmit ? 'rgba(220,38,38,0.85)' : 'rgba(220,38,38,0.35)',
-            border: '1px solid rgba(220,38,38,0.55)',
-            color: '#fff',
+            background: canSubmit
+              ? 'color-mix(in srgb, var(--critical) 85%, transparent)'
+              : 'color-mix(in srgb, var(--critical) 35%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--critical) 55%, transparent)',
+            color: 'var(--text-primary)',
           }}
         >
           {submitting ? t('accVat.modal.revoking') : t('accVat.modal.revokeButton')}
@@ -338,7 +340,7 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
       <div
         style={{
           fontSize: '0.85rem',
-          color: 'rgba(255,255,255,0.65)',
+          color: 'var(--text-secondary)',
           marginTop: -4,
           marginBottom: 14,
         }}
@@ -346,10 +348,10 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
         {t('accVat.integ.slugLabel')}{' '}
         <code
           style={{
-            fontFamily: "'SF Mono', Menlo, Consolas, monospace",
-            background: 'rgba(15,15,20,0.6)',
+            fontFamily: 'var(--font-mono)',
+            background: 'color-mix(in srgb, var(--bg-secondary) 60%, transparent)',
             padding: '1px 6px',
-            borderRadius: 4,
+            borderRadius: 'var(--r-sm)',
           }}
         >
           {credentials.sourceSlug}
@@ -359,10 +361,10 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
       <div
         style={{
           padding: '12px 14px',
-          background: 'rgba(251,191,36,0.10)',
-          border: '1px solid rgba(251,191,36,0.40)',
-          borderRadius: 10,
-          color: '#fde68a',
+          background: 'color-mix(in srgb, var(--warning) 10%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--warning) 40%, transparent)',
+          borderRadius: 'var(--r-md)',
+          color: 'var(--warning)',
           fontSize: '0.88rem',
           lineHeight: 1.5,
         }}
@@ -379,8 +381,8 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
       <SecretField
         label="VENIO_API_KEY"
         value={credentials.apiKey}
-        color="#0ea5e9"
-        borderColor="rgba(14,165,233,0.35)"
+        color="var(--primary)"
+        borderColor="color-mix(in srgb, var(--primary) 35%, transparent)"
         fieldKey="apiKey"
         copiedField={copiedField}
         onCopy={onCopy}
@@ -389,8 +391,8 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
       <SecretField
         label="VENIO_HMAC_SECRET"
         value={credentials.webhookSecret}
-        color="#9b9b9b"
-        borderColor="rgba(155,155,155,0.35)"
+        color="var(--text-secondary)"
+        borderColor="color-mix(in srgb, var(--text-secondary) 35%, transparent)"
         fieldKey="webhookSecret"
         copiedField={copiedField}
         onCopy={onCopy}
@@ -399,8 +401,8 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
       <SecretField
         label="VENIO_INGEST_URL"
         value={ingestUrl}
-        color="#86efac"
-        borderColor="rgba(134,239,172,0.35)"
+        color="var(--good)"
+        borderColor="color-mix(in srgb, var(--good) 35%, transparent)"
         fieldKey="ingestUrl"
         copiedField={copiedField}
         onCopy={onCopy}
@@ -410,9 +412,9 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
         <div
           style={{
             fontSize: '0.78rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            color: 'rgba(255,255,255,0.55)',
+            textTransform: 'none',
+            letterSpacing: 'normal',
+            color: 'var(--text-secondary)',
             marginBottom: 6,
             display: 'flex',
             justifyContent: 'space-between',
@@ -433,12 +435,12 @@ export function CredentialsModal({ credentials, copiedField, onCopy, onClose }: 
           style={{
             margin: 0,
             padding: '14px 16px',
-            background: 'rgba(15,15,20,0.85)',
-            border: '1px solid rgba(255,255,255,0.10)',
-            borderRadius: 10,
-            fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+            background: 'color-mix(in srgb, var(--bg-secondary) 85%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
+            borderRadius: 'var(--r-md)',
+            fontFamily: 'var(--font-mono)',
             fontSize: '0.82rem',
-            color: 'rgba(255,255,255,0.88)',
+            color: 'var(--text-primary)',
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-all',
             userSelect: 'all',
@@ -480,9 +482,9 @@ export function SecretField({ label, value, color, borderColor, fieldKey, copied
       <div
         style={{
           fontSize: '0.78rem',
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px',
-          color: 'rgba(255,255,255,0.55)',
+          textTransform: 'none',
+          letterSpacing: 'normal',
+          color: 'var(--text-secondary)',
           marginBottom: 6,
         }}
       >
@@ -500,10 +502,10 @@ export function SecretField({ label, value, color, borderColor, fieldKey, copied
           style={{
             flex: '1 1 280px',
             padding: '12px 14px',
-            background: 'rgba(15,15,20,0.85)',
+            background: 'color-mix(in srgb, var(--bg-secondary) 85%, transparent)',
             border: `1px solid ${borderColor}`,
-            borderRadius: 10,
-            fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+            borderRadius: 'var(--r-md)',
+            fontFamily: 'var(--font-mono)',
             fontSize: '0.86rem',
             color,
             wordBreak: 'break-all',

@@ -1,6 +1,9 @@
 import type fr from '../fr/adminOps'
 
 const en: Record<keyof typeof fr, string> = {
+  'adminOps.zone.team': 'Team',
+  'adminOps.zone.system': 'System',
+  'adminOps.zone.education': 'Education',
   'adminOps.guide.labelSep': ': ',
   'adminOps.guide.labelColon': ':',
   'adminOps.guide.title': 'User guide — Admin',

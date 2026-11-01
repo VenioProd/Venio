@@ -23,13 +23,13 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
         </div>
         <div className="accounting-kpi">
           <div className="label">{t('accVat.integ.rejected')}</div>
-          <div className="value" style={{ color: source.totalRejected ? '#f87171' : undefined }}>
+          <div className="value" style={{ color: source.totalRejected ? 'var(--critical)' : undefined }}>
             {formatNumber(Number(source.totalRejected || 0))}
           </div>
         </div>
         <div className="accounting-kpi">
           <div className="label">{t('accVat.integ.duplicates')}</div>
-          <div className="value" style={{ color: source.totalDuplicates ? '#fbbf24' : undefined }}>
+          <div className="value" style={{ color: source.totalDuplicates ? 'var(--warning)' : undefined }}>
             {formatNumber(Number(source.totalDuplicates || 0))}
           </div>
         </div>
@@ -58,7 +58,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             <label
               style={{
                 textTransform: 'none',
-                letterSpacing: 0,
+                letterSpacing: 'normal',
                 fontSize: '0.88rem',
               }}
             >
@@ -73,7 +73,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
             <span
               style={{
                 fontSize: '0.74rem',
-                color: 'rgba(251,191,36,0.85)',
+                color: 'color-mix(in srgb, var(--warning) 85%, transparent)',
                 marginTop: 2,
               }}
             >
@@ -143,7 +143,7 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
         <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>{t('accVat.esd.endpoints')}</h2>
         <p
           style={{
-            color: 'rgba(255,255,255,0.65)',
+            color: 'var(--text-secondary)',
             fontSize: '0.85rem',
             marginTop: 0,
           }}
@@ -153,18 +153,18 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
 
         <div
           style={{
-            background: 'rgba(15,15,20,0.7)',
-            border: '1px solid rgba(14, 165, 233, 0.2)',
-            borderRadius: 10,
+            background: 'color-mix(in srgb, var(--bg-secondary) 70%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
+            borderRadius: 'var(--r-md)',
             padding: 14,
-            fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+            fontFamily: 'var(--font-mono)',
             fontSize: '0.82rem',
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--text-primary)',
             lineHeight: 1.8,
           }}
         >
           <div>
-            <span style={{ color: '#4ade80' }}>POST</span> https://venio.paris/api/external/
+            <span style={{ color: 'var(--good)' }}>POST</span> https://venio.paris/api/external/
             {source.slug}/entries
           </div>
           <div>
@@ -185,46 +185,48 @@ export default function InfoTab({ source, infoForm, setInfoForm, onSave, saving 
           style={{
             margin: '20px 0 10px 0',
             fontSize: '0.85rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            color: 'rgba(14, 165, 233, 0.85)',
+            textTransform: 'none',
+            letterSpacing: 'normal',
+            color: 'color-mix(in srgb, var(--primary) 85%, transparent)',
           }}
         >
           {t('accVat.esd.headersHeading')}
         </h3>
-        <table className="accounting-table">
-          <thead>
-            <tr>
-              <th>{t('accVat.esd.colHeader')}</th>
-              <th>{t('accVat.esd.colDescription')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="code">X-Api-Key</td>
-              <td>{t('accVat.esd.hdrApiKey', { prefix: source.apiKeyPrefix || '—' })}</td>
-            </tr>
-            <tr>
-              <td className="code">X-Venio-Signature</td>
-              <td>{t('accVat.esd.hdrSignature')}</td>
-            </tr>
-            <tr>
-              <td className="code">X-Venio-Timestamp</td>
-              <td>{t('accVat.esd.hdrTimestamp')}</td>
-            </tr>
-            <tr>
-              <td className="code">Idempotency-Key</td>
-              <td>{t('accVat.esd.hdrIdempotency')}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="accounting-table-scroll">
+          <table className="accounting-table">
+            <thead>
+              <tr>
+                <th>{t('accVat.esd.colHeader')}</th>
+                <th>{t('accVat.esd.colDescription')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="code">X-Api-Key</td>
+                <td>{t('accVat.esd.hdrApiKey', { prefix: source.apiKeyPrefix || '—' })}</td>
+              </tr>
+              <tr>
+                <td className="code">X-Venio-Signature</td>
+                <td>{t('accVat.esd.hdrSignature')}</td>
+              </tr>
+              <tr>
+                <td className="code">X-Venio-Timestamp</td>
+                <td>{t('accVat.esd.hdrTimestamp')}</td>
+              </tr>
+              <tr>
+                <td className="code">Idempotency-Key</td>
+                <td>{t('accVat.esd.hdrIdempotency')}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         {source.rotatedAt && (
           <p
             style={{
               marginTop: 14,
               fontSize: '0.78rem',
-              color: 'rgba(255,255,255,0.5)',
+              color: 'var(--text-secondary)',
             }}
           >
             {t('accVat.esd.lastRotation', { date: formatDateTime(source.rotatedAt) })}

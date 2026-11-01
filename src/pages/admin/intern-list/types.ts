@@ -128,15 +128,15 @@ export interface ActivityReport {
 }
 
 export const STATUS_CONFIG: Record<string, { labelKey: MessageKey; color: string }> = {
-  ACTIF: { labelKey: 'intern.status.active', color: '#22c55e' },
-  TERMINE: { labelKey: 'intern.status.finished', color: '#64748b' },
-  ANNULE: { labelKey: 'intern.status.cancelled', color: '#ef4444' },
+  ACTIF: { labelKey: 'intern.status.active', color: 'var(--good)' },
+  TERMINE: { labelKey: 'intern.status.finished', color: 'var(--text-muted)' },
+  ANNULE: { labelKey: 'intern.status.cancelled', color: 'var(--critical)' },
 }
 
 export const REPORT_STATUS_CONFIG: Record<string, { labelKey: MessageKey; color: string }> = {
-  BROUILLON: { labelKey: 'intern.reportStatus.draft', color: '#f59e0b' },
-  SOUMIS: { labelKey: 'intern.reportStatus.submitted', color: '#0ea5e9' },
-  VALIDE: { labelKey: 'intern.reportStatus.validated', color: '#22c55e' },
+  BROUILLON: { labelKey: 'intern.reportStatus.draft', color: 'var(--warning)' },
+  SOUMIS: { labelKey: 'intern.reportStatus.submitted', color: 'var(--primary)' },
+  VALIDE: { labelKey: 'intern.reportStatus.validated', color: 'var(--good)' },
 }
 
 export function formatDate(d: string) {

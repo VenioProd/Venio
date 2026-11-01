@@ -72,7 +72,7 @@ const EntryDetail = () => {
   if (loading || !entry) {
     return (
       <AccountingLayout title={t('accAccounts.entry.title')}>
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
       </AccountingLayout>
     )
   }
@@ -97,7 +97,7 @@ const EntryDetail = () => {
               <button
                 className="portal-button secondary"
                 onClick={handleDelete}
-                style={{ borderColor: 'rgba(248,113,113,0.4)' }}
+                style={{ borderColor: 'color-mix(in srgb, var(--critical) 40%, transparent)' }}
               >
                 {t('accAccounts.entry.deleteDraft')}
               </button>
@@ -150,7 +150,7 @@ const EntryDetail = () => {
           {entry.notes && (
             <div className="accounting-form-field full">
               <label>{t('accAccounts.col.notes')}</label>
-              <div style={{ whiteSpace: 'pre-wrap', color: 'rgba(255,255,255,0.7)' }}>{entry.notes}</div>
+              <div style={{ whiteSpace: 'pre-wrap', color: 'var(--text-secondary)' }}>{entry.notes}</div>
             </div>
           )}
         </div>
@@ -158,90 +158,94 @@ const EntryDetail = () => {
 
       <section className="accounting-card">
         <h2>{t('accAccounts.entry.lines')}</h2>
-        <table className="accounting-table">
-          <thead>
-            <tr>
-              <th>{t('accAccounts.col.account')}</th>
-              <th>{t('accAccounts.col.label')}</th>
-              <th className="amount">{t('accAccounts.col.debit')}</th>
-              <th className="amount">{t('accAccounts.col.credit')}</th>
-              <th>{t('accAccounts.col.reconciliation')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((l) => (
-              <tr key={l._id}>
-                <td>
-                  <span className="code">{l.accountCode}</span>{' '}
-                  <span style={{ color: 'rgba(255,255,255,0.55)' }}>— {l.accountLabel}</span>
-                </td>
-                <td>{l.label}</td>
-                <td className="amount">{formatMoney(Number(l.debit))}</td>
-                <td className="amount">{formatMoney(Number(l.credit))}</td>
-                <td className="code">{l.lettrage || '—'}</td>
+        <div className="accounting-table-scroll">
+          <table className="accounting-table">
+            <thead>
+              <tr>
+                <th>{t('accAccounts.col.account')}</th>
+                <th>{t('accAccounts.col.label')}</th>
+                <th className="amount">{t('accAccounts.col.debit')}</th>
+                <th className="amount">{t('accAccounts.col.credit')}</th>
+                <th>{t('accAccounts.col.reconciliation')}</th>
               </tr>
-            ))}
-            <tr>
-              <td
-                colSpan={2}
-                style={{
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.5px',
-                  color: 'rgba(255,255,255,0.55)',
-                }}
-              >
-                {t('accAccounts.entry.totals')}
-              </td>
-              <td className="amount" style={{ fontWeight: 700 }}>
-                {formatMoney(totalDebit)}
-              </td>
-              <td className="amount" style={{ fontWeight: 700 }}>
-                {formatMoney(totalCredit)}
-              </td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {lines.map((l) => (
+                <tr key={l._id}>
+                  <td>
+                    <span className="code">{l.accountCode}</span>{' '}
+                    <span style={{ color: 'var(--text-secondary)' }}>— {l.accountLabel}</span>
+                  </td>
+                  <td>{l.label}</td>
+                  <td className="amount">{formatMoney(Number(l.debit))}</td>
+                  <td className="amount">{formatMoney(Number(l.credit))}</td>
+                  <td className="code">{l.lettrage || '—'}</td>
+                </tr>
+              ))}
+              <tr>
+                <td
+                  colSpan={2}
+                  style={{
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    fontSize: '0.78rem',
+                    letterSpacing: 'normal',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {t('accAccounts.entry.totals')}
+                </td>
+                <td className="amount" style={{ fontWeight: 700 }}>
+                  {formatMoney(totalDebit)}
+                </td>
+                <td className="amount" style={{ fontWeight: 700 }}>
+                  {formatMoney(totalCredit)}
+                </td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {auditEvents.length > 0 && (
         <section className="accounting-card">
           <h2>{t('accAccounts.entry.auditHistory')}</h2>
-          <table className="accounting-table">
-            <thead>
-              <tr>
-                <th>{t('accAccounts.col.date')}</th>
-                <th>{t('accAccounts.entry.auditAction')}</th>
-                <th>{t('accAccounts.entry.auditActor')}</th>
-                <th>{t('accAccounts.col.details')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {auditEvents.map((ev) => (
-                <tr key={ev._id}>
-                  <td style={{ whiteSpace: 'nowrap', color: 'rgba(255,255,255,0.7)' }}>
-                    {formatDateTime(ev.createdAt, {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                    })}
-                  </td>
-                  <td>
-                    <span className="accounting-badge source-external">{ev.action}</span>
-                  </td>
-                  <td style={{ fontSize: '0.85rem' }}>
-                    {ev.actor?.userEmail || ev.actor?.externalSourceSlug || ev.actor?.type || '—'}
-                  </td>
-                  <td style={{ fontSize: '0.85rem' }}>{ev.summary || '—'}</td>
+          <div className="accounting-table-scroll">
+            <table className="accounting-table">
+              <thead>
+                <tr>
+                  <th>{t('accAccounts.col.date')}</th>
+                  <th>{t('accAccounts.entry.auditAction')}</th>
+                  <th>{t('accAccounts.entry.auditActor')}</th>
+                  <th>{t('accAccounts.col.details')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {auditEvents.map((ev) => (
+                  <tr key={ev._id}>
+                    <td style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
+                      {formatDateTime(ev.createdAt, {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })}
+                    </td>
+                    <td>
+                      <span className="accounting-badge source-external">{ev.action}</span>
+                    </td>
+                    <td style={{ fontSize: '0.85rem' }}>
+                      {ev.actor?.userEmail || ev.actor?.externalSourceSlug || ev.actor?.type || '—'}
+                    </td>
+                    <td style={{ fontSize: '0.85rem' }}>{ev.summary || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
     </AccountingLayout>

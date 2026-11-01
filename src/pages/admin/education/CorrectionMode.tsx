@@ -587,7 +587,7 @@ export function CorrectionMode({
             <div className="edu-correction-side-block">
               <div className="edu-correction-side-head">
                 <strong>{t('eduC.correction.snippetsTitle')}</strong>
-                <Sparkles size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
+                <Sparkles size={14} style={{ color: 'var(--text-muted)' }} />
               </div>
               <SnippetsEditor
                 snippets={snippets}
@@ -631,7 +631,14 @@ function CorrectionPanel({
         <div className="edu-correction-student-meta">
           {submission.submittedAt && t('eduC.correction.submittedOn', { date: formatDate(submission.submittedAt) })}
           {submission.isLate && (
-            <span className="edu-pill" style={{ marginLeft: 8, background: 'rgba(245,158,11,0.15)', color: '#FBBF24' }}>
+            <span
+              className="edu-pill"
+              style={{
+                marginLeft: 8,
+                background: 'color-mix(in srgb, var(--warning) 15%, transparent)',
+                color: 'var(--warning)',
+              }}
+            >
               {t('eduC.shared.late')}
             </span>
           )}
@@ -686,7 +693,7 @@ function CorrectionPanel({
         <div className="edu-correction-rubric-input">
           <div className="edu-correction-side-head">
             <strong>{t('eduC.correction.rubricDetail')}</strong>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
               {t('eduC.correction.rubricSum', {
                 sum: formatNumber(sumScores(safeScores)),
                 max: formatNumber(assignment.rubric.reduce((acc, c) => acc + c.max, 0)),
@@ -710,7 +717,7 @@ function CorrectionPanel({
                 }}
                 style={{ width: 80 }}
               />
-              <span style={{ color: 'rgba(255,255,255,0.4)' }}>/ {formatNumber(c.max)}</span>
+              <span style={{ color: 'var(--text-muted)' }}>/ {formatNumber(c.max)}</span>
             </div>
           ))}
         </div>

@@ -165,7 +165,7 @@ export function SessionDetailDrawer({
             <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
               {session.title}
             </h2>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>{formatDate(session.date, true)}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{formatDate(session.date, true)}</div>
           </div>
           <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
             <button

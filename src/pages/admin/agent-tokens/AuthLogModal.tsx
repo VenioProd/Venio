@@ -42,10 +42,10 @@ export default function AuthLogModal({ token, events, loading, onClose }: Props)
                   <div
                     key={event._id}
                     style={{
-                      border: `1px solid ${success ? 'rgba(16,185,129,0.28)' : 'rgba(248,113,113,0.32)'}`,
-                      borderRadius: 8,
+                      border: `1px solid ${success ? 'color-mix(in srgb, var(--good) 28%, transparent)' : 'color-mix(in srgb, var(--critical) 32%, transparent)'}`,
+                      borderRadius: 'var(--r-md)',
                       padding: 12,
-                      background: 'rgba(255,255,255,0.03)',
+                      background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                     }}
                   >
                     <div
@@ -57,7 +57,7 @@ export default function AuthLogModal({ token, events, loading, onClose }: Props)
                         marginBottom: 6,
                       }}
                     >
-                      <strong style={{ color: success ? '#6ee7b7' : '#f87171' }}>
+                      <strong style={{ color: success ? 'var(--good)' : 'var(--critical)' }}>
                         {success ? t('adminTech.agentTokens.logSuccess') : t('adminTech.agentTokens.logFailure')}
                       </strong>
                       <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>

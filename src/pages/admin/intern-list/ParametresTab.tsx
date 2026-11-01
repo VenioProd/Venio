@@ -74,9 +74,11 @@ export default function ParametresTab({
               gap: 12,
               cursor: 'pointer',
               padding: '10px 14px',
-              borderRadius: 10,
-              background: selectedIds.has(a._id) ? 'rgba(14, 165, 233, 0.1)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${selectedIds.has(a._id) ? 'rgba(14, 165, 233, 0.4)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 'var(--r-md)',
+              background: selectedIds.has(a._id)
+                ? 'color-mix(in srgb, var(--primary) 10%, transparent)'
+                : 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+              border: `1px solid ${selectedIds.has(a._id) ? 'color-mix(in srgb, var(--primary) 40%, transparent)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)'}`,
               transition: 'all 0.15s',
             }}
           >
@@ -92,8 +94,8 @@ export default function ParametresTab({
                 fontSize: 12,
                 color: 'var(--text-muted)',
                 marginLeft: 'auto',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
+                textTransform: 'none',
+                letterSpacing: 'normal',
               }}
             >
               {a.role === 'SUPER_ADMIN' ? t('intern.settings.superAdmin') : a.role}
@@ -101,7 +103,9 @@ export default function ParametresTab({
           </label>
         ))}
       </div>
-      {notifSuccess && <p style={{ color: '#4ade80', fontSize: 13, marginBottom: 12 }}>{t('intern.settings.saved')}</p>}
+      {notifSuccess && (
+        <p style={{ color: 'var(--good)', fontSize: 13, marginBottom: 12 }}>{t('intern.settings.saved')}</p>
+      )}
       <button className="portal-button" onClick={save} disabled={notifSaving} style={{ alignSelf: 'flex-start' }}>
         {notifSaving ? t('intern.settings.saving') : t('intern.settings.save')}
       </button>

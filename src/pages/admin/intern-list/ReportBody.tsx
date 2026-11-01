@@ -14,13 +14,15 @@ interface Props {
 export default function ReportBody({ report, showAdminActions, isAdmin, onValidate, onOpenComment, onDelete }: Props) {
   const { t } = useI18n()
   return (
-    <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+    <div
+      style={{ padding: '16px 20px', borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
+    >
       {/* Contenu */}
       <div style={{ marginBottom: 12 }}>
-        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{t('intern.report.summary')}</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{t('intern.report.summary')}</span>
         <p
           style={{
-            color: 'rgba(255,255,255,0.8)',
+            color: 'var(--text-primary)',
             fontSize: 14,
             margin: '4px 0 0',
             whiteSpace: 'pre-wrap',
@@ -34,10 +36,10 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
       {/* Tâches */}
       {report.taches.length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{t('intern.report.tasksDone')}</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{t('intern.report.tasksDone')}</span>
           <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
             {report.taches.map((task, i) => (
-              <li key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>
+              <li key={i} style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 4 }}>
                 {task}
               </li>
             ))}
@@ -48,7 +50,7 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
       {/* Pieces jointes */}
       {report.attachments.length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{t('intern.report.attachments')}</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{t('intern.report.attachments')}</span>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
             {report.attachments.map((f, i) => (
               <a
@@ -58,8 +60,8 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
                 rel="noopener noreferrer"
                 style={{
                   padding: '6px 10px',
-                  borderRadius: 6,
-                  background: 'rgba(255,255,255,0.04)',
+                  borderRadius: 'var(--r-sm)',
+                  background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   color: 'var(--primary)',
                   fontSize: 12,
                   textDecoration: 'none',
@@ -69,7 +71,7 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
                 }}
               >
                 {isImage(f.mimetype) ? '🖼️' : '📄'} {f.originalName}
-                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
               </a>
             ))}
           </div>
@@ -81,8 +83,8 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
         <div
           style={{
             padding: '10px 14px',
-            borderRadius: 6,
-            background: 'rgba(14, 165, 233, 0.08)',
+            borderRadius: 'var(--r-sm)',
+            background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
             marginBottom: 12,
             borderLeft: '3px solid var(--primary)',
           }}
@@ -90,13 +92,13 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
           <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>
             {t('intern.report.adminComment')}
           </span>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>{report.commentaireAdmin}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '4px 0 0' }}>{report.commentaireAdmin}</p>
         </div>
       )}
 
       {/* Validation info */}
       {report.status === 'VALIDE' && report.validePar && (
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
           {report.valideAt
             ? t('intern.report.validatedByOn', { name: report.validePar.name, date: formatDateTime(report.valideAt) })
             : t('intern.report.validatedBy', { name: report.validePar.name })}
@@ -139,7 +141,7 @@ export default function ReportBody({ report, showAdminActions, isAdmin, onValida
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             className="ticket-back-btn"
-            style={{ fontSize: 12, color: '#ef4444' }}
+            style={{ fontSize: 12, color: 'var(--critical)' }}
             onClick={() => onDelete(report._id)}
           >
             {t('intern.report.delete')}
