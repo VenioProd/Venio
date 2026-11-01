@@ -9444,7 +9444,7 @@ a.portal-button {
 /* ─────────────────────────────────────────────────────────────────
    CHARTE PORTAIL — chiffres, identifiants, dates et durées
    Contrat §5 de la charte : tout ce qui est identifiant, montant,
-   horodatage ou durée passe en DM Mono ; tout ce qui s'aligne en
+   horodatage ou durée passe en Geist Mono ; tout ce qui s'aligne en
    colonne porte tabular-nums. Aucune règle de mise en page ici.
    ───────────────────────────────────────────────────────────────── */
 .crm-th-date,
@@ -10231,4 +10231,400 @@ a.portal-button {
     flex: 1;
     min-height: 44px;
   }
+}
+
+/* ── Système · primitives communes (novembre 2026) ──────────────────
+   Familles relevées dans les pages : portal-input (67 fichiers),
+   portal-button (91), portal-card (42), puis admin-list/badge/form.
+   Les structures métier et leurs adaptations mobiles restent au-dessus.
+   La palette et les alias sont exclusivement définis dans portail.css. */
+html.theme-portail :is(.portal-container, .admin-portal) {
+  min-width: 0;
+  font: 13.5px/1.5 var(--font-body);
+  color: var(--text-primary);
+}
+html.theme-portail .portal-container {
+  width: 100%;
+  max-width: 1400px;
+}
+html.theme-portail :is(.admin-header, .admin-page-header) {
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+html.theme-portail :is(.admin-header, .admin-page-header) h1 {
+  font-size: clamp(22px, 2.2vw, 28px);
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+html.theme-portail .admin-page-header::after {
+  display: none;
+}
+html.theme-portail .admin-page-subtitle {
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+html.theme-portail :is(.admin-actions, .admin-button-group, .admin-list-item-actions) {
+  gap: 8px;
+}
+html.theme-portail :is(.portal-card, .admin-form-section, .project-form-section) {
+  padding: 20px;
+}
+html.theme-portail :is(.portal-card, .admin-widget, .admin-stat-card, .admin-form-section, .admin-table-wrapper) {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+html.theme-portail :is(.admin-form-section, .project-form-section) h2 {
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+}
+html.theme-portail :is(.admin-stats-grid, .admin-widgets-grid) {
+  gap: 12px;
+  margin-bottom: 24px;
+}
+html.theme-portail :is(.admin-widget, .admin-stat-card) {
+  padding: 16px;
+}
+html.theme-portail :is(.admin-stat-label, .admin-widget-label) {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+html.theme-portail :is(.admin-stat-value, .admin-widget-value) {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+html.theme-portail .admin-list {
+  gap: 8px;
+}
+html.theme-portail .admin-list-item {
+  padding: 14px 16px;
+}
+html.theme-portail .admin-list-item-title {
+  font-size: 13.5px;
+  font-weight: 500;
+}
+html.theme-portail .admin-list-item-subtitle {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* Tableaux : hauteur minimale utile de 44 px, sans tronquer le multiligne. */
+html.theme-portail .admin-table-wrapper {
+  overflow-x: auto;
+}
+html.theme-portail .admin-table {
+  font-size: 13px;
+}
+html.theme-portail .admin-table :is(th, td) {
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+html.theme-portail .admin-table th {
+  height: 38px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+html.theme-portail .admin-table td {
+  height: 44px;
+}
+html.theme-portail .admin-table :is(th, td):first-child {
+  padding-left: 16px;
+}
+html.theme-portail .admin-table :is(th, td):last-child {
+  padding-right: 16px;
+}
+html.theme-portail .admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+html.theme-portail .admin-table tbody tr {
+  transition: background 150ms ease;
+}
+html.theme-portail .admin-table :is(tr.selected, tr[aria-selected='true']) td {
+  background: var(--accent-soft);
+}
+
+/* Actions textuelles : pilules ; les commandes d'icône gardent --r-md. */
+html.theme-portail :is(.portal-button, .admin-button, .admin-card-btn, .portal-action-link) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 7px 16px;
+  border-radius: var(--r-pill) !important;
+  font: 500 13.5px/1.4 var(--font-body);
+  text-decoration: none;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+  transition:
+    background 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+html.theme-portail :is(.admin-button, .admin-card-btn, .portal-action-link) {
+  border: 1px solid var(--line-strong);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+html.theme-portail .admin-actions .portal-action-link {
+  border-radius: var(--r-pill) !important;
+}
+html.theme-portail :is(.admin-button, .admin-card-btn, .portal-action-link):hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  border-color: var(--line-strong);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+html.theme-portail :is(.portal-button.danger, .admin-button.danger, .admin-card-btn--delete) {
+  background: var(--critical-surface);
+  border: 1px solid var(--mono-danger-border);
+  color: var(--critical);
+  box-shadow: none;
+}
+html.theme-portail :is(.portal-button.danger, .admin-button.danger, .admin-card-btn--delete):hover:not(:disabled) {
+  background: color-mix(in srgb, var(--critical) 16%, transparent);
+  border-color: var(--mono-danger-border);
+  color: var(--critical);
+  box-shadow: none;
+}
+html.theme-portail :is(.portal-button, .admin-button, .admin-card-btn):disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+html.theme-portail :is(.admin-list-item-actions .portal-button, .admin-card-btn) {
+  min-height: 32px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
+html.theme-portail .portal-input {
+  min-height: 36px;
+  padding: 8px 12px;
+  font: 13.5px/1.4 var(--font-body);
+  box-sizing: border-box;
+}
+html.theme-portail textarea.portal-input {
+  min-height: 96px;
+  line-height: 1.5;
+  resize: vertical;
+}
+html.theme-portail :is(.portal-label, .project-form-label) {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+html.theme-portail :is(.portal-input, .crm-modal-textarea)::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+html.theme-portail .portal-container :is(select, option),
+html.theme-portail input.portal-input:is([type='date'], [type='datetime-local']) {
+  color-scheme: inherit;
+}
+html.theme-portail .portal-container select option,
+html.theme-portail .custom-select-menu {
+  background: var(--bg-secondary);
+}
+html.theme-portail .custom-select-trigger {
+  min-height: 34px;
+  padding: 6px 12px;
+  background: var(--bg-card);
+  border-color: var(--line-strong);
+  font: 13px/1.4 var(--font-body);
+}
+html.theme-portail .custom-select-menu {
+  padding: 6px;
+  border-color: var(--line-strong);
+  box-shadow: var(--overlay-shadow);
+}
+html.theme-portail .custom-select-option {
+  padding: 8px 10px;
+  font: 13px/1.4 var(--font-body);
+}
+html.theme-portail .custom-select-option:hover {
+  background: var(--bg-card-hover);
+}
+html.theme-portail .custom-select-option.active {
+  background: var(--accent-soft);
+  color: var(--primary);
+}
+
+/* Chips et segments : casse naturelle, filets teintés, valeurs mono. */
+html.theme-portail :is(.admin-badge, .admin-tag, .priority-indicator, .admin-card-role, .portal-badge) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+  padding: 2px 8px;
+  border-radius: var(--r-pill) !important;
+  font-size: 11.5px;
+  line-height: 1.25;
+  font-weight: 500;
+  box-shadow: none;
+}
+html.theme-portail .admin-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-pill);
+  background: var(--bg-card);
+  overflow-x: auto;
+  max-width: 100%;
+}
+html.theme-portail .admin-tab {
+  flex: none;
+  min-height: 30px;
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill) !important;
+  background: transparent;
+  color: var(--text-secondary);
+  font: 400 12.5px/1.4 var(--font-body);
+  white-space: nowrap;
+  box-shadow: none;
+  text-shadow: none;
+}
+html.theme-portail .admin-tab:hover:not(.active) {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+html.theme-portail .admin-tab:is(.active, [aria-selected='true']) {
+  background: var(--bg-card-hover);
+  border-color: var(--line-strong);
+  color: var(--text-primary);
+  box-shadow: none;
+  text-shadow: none;
+}
+html.theme-portail :is(.admin-empty-state, .gestion-empty-state) {
+  padding: 32px 20px;
+  border-radius: var(--r-lg);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+html.theme-portail .admin-empty-state-icon {
+  margin-bottom: 12px;
+  font-size: 32px;
+  opacity: 0.6;
+}
+html.theme-portail .admin-empty-state-text {
+  font-size: 13.5px;
+}
+html.theme-portail :is(.admin-error, .admin-success, .admin-info) {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 400;
+  box-shadow: none;
+}
+html.theme-portail .admin-loading::before {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+  border-color: var(--line-strong);
+  border-top-color: var(--primary);
+}
+
+/* Les variantes métier de modales conservent dimensions et comportements. */
+html.theme-portail :is(.crm-modal-overlay, .ticket-quick-overlay, .decision-modal-overlay) {
+  background: var(--overlay-scrim);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+html.theme-portail :is(.crm-modal, .ticket-quick-modal, .decision-modal, .crm-form-panel, .crm-worklist-panel) {
+  background: var(--bg-secondary);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--overlay-shadow);
+  color: var(--text-primary);
+}
+html.theme-portail
+  :is(
+    .crm-modal-header,
+    .crm-modal-actions,
+    .crm-form-panel-header,
+    .decision-modal__header,
+    .decision-modal__actions
+  ) {
+  border-color: var(--border-color);
+}
+html.theme-portail :is(.crm-modal-header h2, .crm-form-panel-header h2, .decision-modal__title) {
+  font-size: 18px;
+  font-weight: 600;
+}
+html.theme-portail .accounting-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font: 12px/1.5 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+html.theme-portail .accounting-pagination button {
+  min-height: 32px;
+  padding: 5px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill) !important;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font: 12.5px/1.4 var(--font-body);
+  cursor: pointer;
+}
+html.theme-portail .accounting-pagination button:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+}
+html.theme-portail .accounting-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+@media (max-width: 767px) {
+  html.theme-portail :is(.portal-card, .admin-form-section, .project-form-section) {
+    padding: 16px;
+  }
+  html.theme-portail
+    :is(
+      .portal-button,
+      .admin-button,
+      .admin-card-btn,
+      .admin-tab,
+      .custom-select-trigger,
+      .accounting-pagination button
+    ) {
+    min-height: 44px;
+  }
+  html.theme-portail .portal-input {
+    min-height: 44px;
+    font-size: 16px; /* évite le zoom automatique des champs sur iOS */
+  }
+}
+
+/* Les contrôles natifs suivent color-scheme ; pas de chevron SVG blanc en clair. */
+html.theme-portail select.portal-input {
+  appearance: auto;
+  background-image: none;
+  padding-right: 12px;
+}
+html.theme-portail[data-theme='light'] div:has(> input.portal-input:is([type='date'], [type='datetime-local']))::after,
+html.theme-portail[data-theme='light']
+  .project-form-field:has(input:is([type='date'], [type='datetime-local']))::after {
+  filter: invert(1);
 }

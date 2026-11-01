@@ -35,10 +35,10 @@ const ICONS: Record<ToastType, JSX.Element> = {
 }
 
 const COLORS: Record<ToastType, string> = {
-  success: '#22c55e',
-  error: '#ef4444',
-  info: '#0ea5e9',
-  warning: '#f59e0b',
+  success: 'var(--good, #22c55e)',
+  error: 'var(--critical, #ef4444)',
+  info: 'var(--primary, #0ea5e9)',
+  warning: 'var(--warning, #f59e0b)',
 }
 
 function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
