@@ -12,6 +12,7 @@ Elles ont été sorties d'ici pour ne plus pénaliser le boot et faciliter le re
 | [`001-unset-plain-password.ts`](./001-unset-plain-password.ts)                 | 2024       | Retire le champ `plainPassword` de tous les `User` (sécurité).                                                                           |
 | [`002-unset-conversation-slug-null.ts`](./002-unset-conversation-slug-null.ts) | 2024       | Retire `slug: null` sur les conversations DM/GROUP (fix index sparse unique).                                                            |
 | [`003-notes-to-interactions.ts`](./003-notes-to-interactions.ts)               | 2026-08-27 | Reprend les `ClientNote` et les `LeadActivity` de type `NOTE` dans le journal des échanges (`Interaction`). Les sources sont conservées. |
+| [`004-crm-enrich.ts`](./004-crm-enrich.ts) | 2026-11-01 | Remplit `probability`, `lastInteractionAt`, `interactionsCount` des leads et crée les règles CRM prédéfinies (brouillons). |
 
 ## Exécuter une migration
 

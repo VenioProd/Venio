@@ -38,11 +38,12 @@ export const ADMIN_HUBS = {
   crm: {
     title: 'CRM',
     eyebrow: 'Commercial',
-    subtitle: 'Pipeline, comptes clients et partenaires.',
+    subtitle: 'Pipeline, comptes clients, partenaires et automatisations.',
     tabs: [
       { id: 'pipeline', label: 'Pipeline', to: '/admin/crm', modules: ['crm'] },
       { id: 'comptes', label: 'Comptes clients', to: '/admin/crm/comptes', modules: ['clients'] },
       { id: 'partenaires', label: 'Partenaires', to: '/admin/crm/partenaires', modules: ['external-sales'] },
+      { id: 'automatisations', label: 'Automatisations', to: '/admin/crm/automatisations', modules: ['crm'] },
     ],
   },
   projets: {

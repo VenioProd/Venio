@@ -30,6 +30,19 @@ export interface ILead extends Document {
   score: number | null
   lostReason: string
   lostComment: string
+  probability: number | null
+  expectedCloseAt: Date | null
+  tags: string[]
+  sourceDetail: string
+  utm: Record<string, string> | null
+  sector: string
+  companySize: string
+  nextActionLabel: string
+  nextActionType: '' | 'CALL' | 'EMAIL' | 'MEETING' | 'TASK' | 'OTHER'
+  lastInteractionAt: Date | null
+  interactionsCount: number
+  archivedAt: Date | null
+  automationPausedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }

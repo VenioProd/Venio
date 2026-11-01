@@ -29,6 +29,19 @@ export interface Lead {
   assignedTo?: string | null
   clientAccountId?: string | null
   score?: number | null
+  externalRep?: string | null
+  probability?: number | null
+  expectedCloseAt?: string | null
+  tags?: string[]
+  sourceDetail?: string
+  sector?: string
+  companySize?: string
+  nextActionLabel?: string
+  nextActionType?: string
+  lastInteractionAt?: string | null
+  interactionsCount?: number
+  archivedAt?: string | null
+  automationPausedAt?: string | null
   createdAt?: string
   updatedAt?: string
 }

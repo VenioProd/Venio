@@ -258,6 +258,22 @@ Le demandeur (`requesterUser`) est notifié à chaque changement de statut, à l
 conversion (avec l'identifiant de l'issue) et quand l'issue passe `DONE`. Sans
 `requesterName`, le nom du token est utilisé.
 
+### CRM enrichi (vues, actions groupées, règles)
+
+Sous `/api/v1/agent/crm/*`, scopes `read:crm` (GET) et `write:crm` (mutations), sans nouveau scope.
+
+| Endpoint | Rôle |
+| -------- | ---- |
+| `GET/POST /crm/views`, `PATCH/DELETE /crm/views/:id` | Vues enregistrées (filtres, colonnes, tri, mode ; `PRIVATE`/`TEAM`). |
+| `POST /crm/leads/bulk` | `{ ids (≤ 200), action: assign\|status\|tag\|archive\|restore\|delete, payload, confirm }` ; `delete` exige `confirm: true`. Réponse : résultat par lead. |
+| `GET /crm/leads/export?columns=&ids=&status=` | CSV (séparateur `;`, formules neutralisées). |
+| `GET /crm/leads/:id/timeline`, `/tasks`, `/documents` | Fiche lead : échanges + événements + exécutions de règles, tâches, devis et projets liés. |
+| `GET/POST /crm/rules`, `GET/PATCH/DELETE /crm/rules/:id`, `GET /crm/rules/catalog` | Règles déclencheur → conditions → actions. |
+| `POST /crm/rules/:id/simulate` | Leads concernés aujourd'hui, sans effet (`record: true` consigne des exécutions `SIM`). |
+| `GET /crm/rules/runs`, `POST /crm/rules/runs/:id/approve\|reject\|retry` | Journal d'exécution ; validation des e-mails en attente ; relance d'une erreur. |
+
+Garde-fous : une règle créée par l'agent naît en `DRAFT` ; l'activer (`PATCH status: ACTIVE`) exige le scope `admin:*`, et modifier le contenu d'une règle active la remet en `PAUSED`. Les règles `system` ne se suppriment pas. Les leads portent désormais `probability`, `expectedCloseAt`, `tags`, `sourceDetail`, `sector`, `nextActionLabel`, `archivedAt`, `automationPausedAt` (écriture via `PATCH /leads/:id` : `archived`, `automationPaused` booléens). `GET /leads` exclut les leads archivés sauf `?archived=true` et accepte `?tag=`.
+
 ## 8. Gestion des tokens (admin)
 
 Routes JWT classiques sous `/api/admin/agent-tokens` :

@@ -11,6 +11,8 @@ import ClientActivity from '../../models/ClientActivity.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
+import { normalizeEnrichedLeadFields } from '../../lib/crmLeadFields.js'
+import { emitLeadChanges } from '../../lib/crmRules.js'
 
 /**
  * Routes agent pour le CRM : clients, leads, contacts, notes, activities.
@@ -247,7 +249,8 @@ router.patch(
 router.get('/leads', requireScope('read:crm'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pag = parsePagination(req)
-    const filter: Record<string, unknown> = {}
+    const filter: Record<string, unknown> = { archivedAt: req.query.archived === 'true' ? { $ne: null } : null }
+    if (typeof req.query.tag === 'string' && req.query.tag) filter.tags = req.query.tag
     if (typeof req.query.q === 'string' && req.query.q.trim()) {
       const regex = new RegExp(req.query.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
       filter.$or = [{ company: regex }, { contactName: regex }, { contactEmail: regex }]
@@ -272,6 +275,10 @@ router.get('/leads', requireScope('read:crm'), async (req: Request, res: Respons
       'score',
       'priority',
       'status',
+      'probability',
+      'budget',
+      'expectedCloseAt',
+      'lastInteractionAt',
     ])
 
     const [items, total] = await Promise.all([
@@ -351,6 +358,7 @@ router.post(
         summary: `Création du lead "${lead.company}"`,
         after: lead.toObject(),
       }
+      emitLeadChanges(lead, null)
       res.status(201).json(lead.toObject())
     } catch (err) {
       next(err)
@@ -372,12 +380,14 @@ router.patch(
       const lead = await Lead.findById(req.params.id)
       if (!lead) return respondError(res, 404, 'NOT_FOUND', 'Lead introuvable')
       const before = lead.toObject()
+      const emitBefore = { status: lead.status, assignedTo: lead.assignedTo }
       const payload = normalizeLeadPayload(req.body || {})
       Object.assign(lead, payload)
       if (payload.status && payload.status !== before.status) {
         ;(lead as unknown as { statusChangedAt: Date }).statusChangedAt = new Date()
       }
       await lead.save()
+      emitLeadChanges(lead, emitBefore)
       res.locals.audit = {
         entityType: 'Lead',
         entityId: String(lead._id),
@@ -729,6 +739,7 @@ function normalizeLeadPayload(body: Record<string, unknown>): Record<string, unk
     payload.assignedTo =
       typeof body.assignedTo === 'string' && isValidObjectId(body.assignedTo) ? body.assignedTo : null
   }
+  Object.assign(payload, normalizeEnrichedLeadFields(body))
   return payload
 }
 

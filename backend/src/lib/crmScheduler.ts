@@ -770,6 +770,12 @@ export async function runScheduledJobs(): Promise<void> {
 
   try {
     await processLeadFollowUps()
+    // Règles à déclencheur « état » : une fois par jour, après 09:00. Idempotent via la clé d'événement du jour.
+    if (currentHour >= 9 && lastRunTimes.crmRules !== now.toDateString()) {
+      lastRunTimes.crmRules = now.toDateString()
+      const { sweepRules } = await import('./crmRules.js')
+      await sweepRules(now)
+    }
     const settings = await CrmSettings.getSettings()
 
     // Daily jobs at 08:00 (CRM + task/brief/project reminders)

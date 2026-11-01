@@ -39,6 +39,7 @@ import adminProjectsRouter from './routes/admin/projects/index.js'
 import adminBillingRoutes from './routes/admin/billing.js'
 import adminQuoteProposalRoutes from './routes/admin/quoteProposals.js'
 import adminCrmRoutes from './routes/admin/crm.js'
+import adminCrmExtrasRoutes from './routes/admin/crmExtras.js'
 import adminInteractionRoutes from './routes/admin/interactions.js'
 import adminNotificationRoutes from './routes/admin/notifications.js'
 import pushRoutes from './routes/push.js'
@@ -344,6 +345,7 @@ app.use('/api/mobile/sync', mobileSyncRoutes)
 app.use('/api/mobile/interactions', mobileInteractionRoutes)
 app.use('/api/mobile/sales-targets', mobileSalesTargetRoutes)
 app.use('/api/admin/sales-targets', adminSalesTargetRoutes)
+app.use('/api/admin/crm', adminCrmExtrasRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
 // Commerciaux externes : leur espace, et son pilotage côté équipe.
 app.use('/api/commercial', commercialRoutes)

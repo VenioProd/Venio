@@ -4,6 +4,7 @@ import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
 import InteractionTimeline from '../../../components/admin/InteractionTimeline'
 import RevenueChain from '../../../components/admin/RevenueChain'
+import LeadEnrichedPanel from './rich/LeadEnrichedPanel'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
 import {
@@ -311,6 +312,13 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
           {/* Le champ libre `interactionNotes` est remplacé par le journal des
               échanges. Son contenu déjà saisi reste affiché en tête de
               timeline pour ne pas disparaître de l'écran. */}
+          <LeadEnrichedPanel
+            lead={lead}
+            canManageCrm={canManageCrm}
+            onUpdateLead={onUpdateLead}
+            onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
+          />
+
           <div className="crm-modal-notes">
             <label className="crm-modal-label">{t('crm.detail.revenueChain')}</label>
             <RevenueChain leadId={lead._id} canManage={canManageCrm} />
