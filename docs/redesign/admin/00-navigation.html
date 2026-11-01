@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Venio Admin — Navigation</title>
+<meta name="description" content="Proposition de simplification de la navigation du back-office Venio : 33 entrées regroupées en 13.">
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #04050a; --line: rgba(255,255,255,.08); --line-2: rgba(255,255,255,.14);
+  --tx: #eef0f7; --mut: #9aa1b4; --dim: #646b80;
+  --sky: #38bdf8; --vio: #a78bfa; --teal: #5eead4; --mint: #34d399; --amber: #fbbf24; --rose: #f472b6;
+  --grad: linear-gradient(92deg, #c4b5fd 0%, #7dd3fc 45%, #5eead4 100%);
+  --r: 22px; --maxw: 1120px; --gut: 24px;
+  --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--tx); font-family: var(--sans); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; overflow-x: clip; }
+a { color: inherit; text-decoration: none; }
+h1,h2,h3,h4,p,ul,ol { margin: 0; } ul,ol { padding: 0; list-style: none; }
+:focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; border-radius: 6px; }
+::selection { background: rgba(125,211,252,.3); }
+.wrap { width: 100%; max-width: calc(var(--maxw) + var(--gut)*2); margin: 0 auto; padding: 0 var(--gut); }
+.mono { font-family: var(--mono); font-size: 12px; letter-spacing: .02em; }
+.gt { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.glass { position: relative; border-radius: var(--r); background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)); border: 1px solid var(--line); box-shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 30px 60px -40px rgba(0,0,0,.8); }
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; color: var(--mut); text-transform: uppercase; letter-spacing: .14em; font-size: 11.5px; font-family: var(--mono); }
+.eyebrow i { width: 8px; height: 8px; border-radius: 2px; background: var(--c, var(--sky)); box-shadow: 0 0 14px var(--c, var(--sky)); flex: none; }
+.sec { padding: 96px 0 0; }
+.h2 { margin-top: 14px; font-size: clamp(28px, 3.6vw, 44px); line-height: 1.05; letter-spacing: -.04em; font-weight: 600; }
+.sub { margin-top: 12px; color: var(--mut); max-width: 62ch; }
+
+/* top bar */
+.top { padding: 22px 0; border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.brand { font-weight: 600; letter-spacing: -.02em; }
+.top a.mono { color: var(--mut); } .top a.mono:hover { color: var(--tx); }
+
+/* hero */
+.hero { padding: 84px 0 0; }
+.h1 { margin-top: 20px; font-size: clamp(44px, 8vw, 96px); line-height: .98; letter-spacing: -.055em; font-weight: 600; }
+.lede { margin-top: 20px; color: var(--mut); font-size: clamp(16px, 1.6vw, 19px); max-width: 60ch; }
+.stats { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 10px; }
+.stat { display: inline-flex; align-items: baseline; gap: 10px; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(255,255,255,.03); }
+.stat b { font-size: 20px; letter-spacing: -.03em; font-weight: 600; }
+.stat span { color: var(--mut); font-size: 14px; }
+
+/* avant / après */
+.ba { margin-top: 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.col { padding: 22px; }
+.col h3 { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.col h3 .mono { color: var(--dim); }
+.zone { margin-top: 18px; padding-bottom: 6px; color: var(--dim); font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; }
+.col.before { background: rgba(255,255,255,.015); }
+.col.before ul { opacity: .9; }
+.row { --c: var(--mut); display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 10px; border-left: 2px solid var(--c); margin-top: 3px; background: color-mix(in srgb, var(--c) 6%, transparent); font-size: 14px; color: #aeb4c6; }
+.row .tag { font-family: var(--mono); font-size: 10.5px; color: var(--c); white-space: nowrap; padding: 2px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--c) 40%, transparent); }
+.row.gone { --c: var(--rose); } .row.gone .nm { text-decoration: line-through; text-decoration-color: var(--rose); color: var(--dim); }
+.row.out { --c: var(--dim); border-left-style: dashed; }
+.after .row { color: var(--tx); font-weight: 500; padding: 10px 12px; font-size: 15px; }
+.after .row small { font-weight: 400; color: var(--mut); font-size: 12px; font-family: var(--mono); }
+.after .row .n { font-family: var(--mono); font-size: 11px; color: var(--c); }
+.outbox { margin-top: 22px; padding-top: 4px; border-top: 1px dashed var(--line-2); }
+.legend { margin-top: 16px; color: var(--dim); }
+
+/* fusions */
+.fus { margin-top: 36px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.card { --c: var(--sky); padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.card::before { content: ""; position: absolute; left: 24px; top: -1px; width: 48px; height: 2px; background: var(--c); box-shadow: 0 0 14px var(--c); border-radius: 2px; }
+.card h3 { font-size: 22px; letter-spacing: -.03em; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.card h3 .mono { color: var(--dim); font-weight: 400; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { font-size: 13px; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--line-2); color: #d5d9e6; background: rgba(255,255,255,.03); }
+.chips span.x { border-color: color-mix(in srgb, var(--rose) 50%, transparent); color: var(--rose); text-decoration: line-through; }
+.tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--line); overflow: hidden; }
+.tabs span { padding: 8px 0 9px; font-size: 13px; color: var(--mut); white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs span:first-child { color: var(--tx); border-color: var(--c); }
+.why { color: var(--mut); font-size: 14.5px; }
+.why b { color: var(--tx); font-weight: 500; }
+
+/* rules */
+.rules { margin-top: 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.rules .glass { padding: 26px; }
+.rules h3 { font-size: 18px; letter-spacing: -.02em; }
+.rules ul { margin-top: 14px; display: grid; gap: 12px; }
+.rules li { color: var(--mut); font-size: 15px; padding-left: 18px; position: relative; }
+.rules li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 6px; border-radius: 2px; background: var(--mint); box-shadow: 0 0 8px var(--mint); }
+.rules li b { color: var(--tx); font-weight: 500; }
+.rules code { font-family: var(--mono); font-size: 12.5px; color: var(--teal); }
+.redir { margin-top: 14px; display: grid; gap: 8px; }
+.redir div { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-family: var(--mono); font-size: 12.5px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid var(--line); overflow-wrap: anywhere; }
+.redir .o { color: var(--dim); } .redir .a { color: var(--sky); } .redir .d { color: var(--tx); }
+
+/* mobile */
+.mob { margin-top: 36px; display: grid; grid-template-columns: auto 1fr; gap: 48px; align-items: center; }
+.phone { width: 260px; border-radius: 38px; padding: 10px; background: #0a0c14; border: 1px solid var(--line-2); box-shadow: 0 40px 80px -40px rgba(0,0,0,.9); }
+.screen { border-radius: 30px; height: 420px; background: #070910; border: 1px solid var(--line); display: flex; flex-direction: column; overflow: hidden; }
+.screen .bar { padding: 14px 16px; display: flex; justify-content: space-between; color: var(--mut); border-bottom: 1px solid var(--line); }
+.screen .body { flex: 1; padding: 14px; display: grid; gap: 8px; align-content: start; }
+.screen .body i { display: block; height: 44px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+.screen .body i:first-child { height: 72px; }
+.tabbar { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--line); background: rgba(255,255,255,.03); padding: 10px 4px 14px; }
+.tabbar span { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 10.5px; color: var(--dim); }
+.tabbar span::before { content: ""; width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid currentColor; }
+.tabbar span.on { color: var(--sky); } .tabbar span.on::before { background: color-mix(in srgb, var(--sky) 25%, transparent); }
+.mob p { color: var(--mut); max-width: 46ch; } .mob p + p { margin-top: 12px; }
+
+/* links */
+.links { margin-top: 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.links a { padding: 26px; display: block; transition: border-color .25s, transform .25s; }
+.links a:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.links h3 { font-size: 20px; letter-spacing: -.03em; margin-top: 12px; }
+.links p { color: var(--mut); font-size: 14.5px; margin-top: 6px; }
+footer { padding: 80px 0 60px; color: var(--dim); }
+
+@media (max-width: 900px) { .fus, .rules, .links { grid-template-columns: 1fr; } .mob { grid-template-columns: 1fr; gap: 28px; justify-items: start; } }
+@media (max-width: 767px) {
+  :root { --gut: 16px; }
+  .sec { padding-top: 72px; } .hero { padding-top: 56px; }
+  .ba { grid-template-columns: 1fr; }
+  .col { padding: 16px; } .card, .rules .glass, .links a { padding: 20px; }
+  .tabs { gap: 14px; } .tabs span { font-size: 12.5px; }
+  .row { font-size: 13.5px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <span class="brand">Venio <span class="mono" style="color:var(--dim)">/ admin</span></span>
+  <a class="mono" href="#liens">Maquettes →</a>
+</div></header>
+
+<main>
+<section class="hero"><div class="wrap">
+  <span class="eyebrow"><i></i>Refonte admin · Navigation</span>
+  <h1 class="h1"><span class="gt">33 entrées</span> → 13</h1>
+  <p class="lede">Même back-office, mêmes droits : les pages qui servent le même geste sont regroupées sous une seule entrée, avec des onglets, et un seul CRM remplace trois outils.</p>
+  <div class="stats" role="list">
+    <div class="stat" role="listitem"><b>−61 %</b><span>d’entrées</span></div>
+    <div class="stat" role="listitem"><b>1</b><span>seul CRM</span></div>
+    <div class="stat" role="listitem"><b>0</b><span>droit modifié</span></div>
+  </div>
+</div></section>
+
+<section class="sec" aria-labelledby="t-ba"><div class="wrap">
+  <span class="eyebrow" style="--c:var(--vio)"><i></i>01 · Avant / Après</span>
+  <h2 class="h2" id="t-ba">Où va chaque entrée</h2>
+  <p class="sub">Chaque ancienne entrée porte la couleur et le nom de sa nouvelle destination.</p>
+  <div class="ba">
+    <section class="glass col before" aria-labelledby="t-av"><h3 id="t-av">Avant <span class="mono">33 entrées · 7 zones</span></h3><div id="before"></div></section>
+    <section class="glass col after" aria-labelledby="t-ap"><h3 id="t-ap">Après <span class="mono">13 entrées · 4 zones</span></h3><div id="after"></div></section>
+  </div>
+  <p class="legend mono">Pointillés = hors sidebar · rose = supprimé</p>
+</div></section>
+
+<section class="sec" aria-labelledby="t-fus"><div class="wrap">
+  <span class="eyebrow" style="--c:var(--teal)"><i></i>02 · Les fusions</span>
+  <h2 class="h2" id="t-fus">Dix entrées regroupent des pages voisines</h2>
+  <p class="sub">Les pages absorbées deviennent des onglets. Les entrées sans fusion (Calendrier, Ressources, Comptabilité) restent telles quelles.</p>
+  <div class="fus" id="fus"></div>
+</div></section>
+
+<section class="sec" aria-labelledby="t-rules"><div class="wrap">
+  <span class="eyebrow" style="--c:var(--mint)"><i></i>03 · Ce qui ne change pas</span>
+  <h2 class="h2" id="t-rules">Les droits restent la source de vérité</h2>
+  <div class="rules">
+    <div class="glass"><h3>Permissions</h3><ul>
+      <li>Les droits restent définis dans <code>rbac-matrix.json</code>, sans modification.</li>
+      <li>Une entrée fusionnée apparaît si l’utilisateur a accès à <b>au moins un</b> de ses onglets.</li>
+      <li>Chaque onglet reste filtré par sa <b>permission d’origine</b>.</li>
+    </ul></div>
+    <div class="glass"><h3>Anciennes URL</h3>
+      <p class="sub" style="font-size:15px;margin-top:8px">Elles redirigent vers l’onglet correspondant. Marque-pages et liens d’e-mails continuent de fonctionner.</p>
+      <div class="redir">
+        <div><span class="o">/admin/tickets</span><span class="a">→</span><span class="d">/admin/demandes?source=equipe</span></div>
+        <div><span class="o">/admin/clients</span><span class="a">→</span><span class="d">/admin/crm/comptes</span></div>
+        <div><span class="o">/admin/decisions</span><span class="a">→</span><span class="d">/admin/accueil#a-arbitrer</span></div>
+        <div><span class="o">/admin/webhooks</span><span class="a">→</span><span class="d">/admin/systeme/integrations</span></div>
+        <div><span class="o">/admin/qualiopi</span><span class="a">→</span><span class="d">/admin/formation/qualiopi</span></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec" aria-labelledby="t-mob"><div class="wrap">
+  <span class="eyebrow" style="--c:var(--amber)"><i></i>04 · Mobile</span>
+  <h2 class="h2" id="t-mob">Cinq onglets en bas de l’écran</h2>
+  <div class="mob">
+    <div class="phone" aria-hidden="true"><div class="screen">
+      <div class="bar mono"><span>9:41</span><span>Accueil</span></div>
+      <div class="body"><i></i><i></i><i></i><i></i></div>
+      <div class="tabbar"><span class="on">Accueil</span><span>Inbox</span><span>Projets</span><span>CRM</span><span>Plus</span></div>
+    </div></div>
+    <div>
+      <p>Accueil · Inbox · Projets · CRM · Plus : les quatre usages quotidiens sont à portée de pouce.</p>
+      <p>« Plus » ouvre le reste de la sidebar, filtré par permission comme sur ordinateur.</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec" id="liens" aria-labelledby="t-lk"><div class="wrap">
+  <span class="eyebrow"><i></i>05 · Maquettes</span>
+  <h2 class="h2" id="t-lk">Voir les écrans</h2>
+  <div class="links">
+    <a class="glass" href="01-cockpit.html"><span class="mono" style="color:var(--sky)">01</span><h3>Cockpit d’accueil →</h3><p>Accueil, bloc « À arbitrer » et widgets business.</p></a>
+    <a class="glass" href="02-crm.html"><span class="mono" style="color:var(--vio)">02</span><h3>CRM unifié →</h3><p>Pipeline, comptes clients et partenaires en onglets.</p></a>
+  </div>
+</div></section>
+</main>
+<footer><div class="wrap mono">Venio · Proposition de navigation admin</div></footer>
+
+<script>
+const D = {
+  accueil:{n:'Accueil',c:'#38bdf8',z:'Pilotage'}, inbox:{n:'Inbox',c:'#7dd3fc',z:'Pilotage'}, analytics:{n:'Analytics',c:'#818cf8',z:'Pilotage'},
+  crm:{n:'CRM',c:'#a78bfa',z:'Commercial'},
+  projets:{n:'Projets',c:'#5eead4',z:'Production'}, demandes:{n:'Demandes',c:'#2dd4bf',z:'Production'}, calendrier:{n:'Calendrier',c:'#34d399',z:'Production'}, dev:{n:'Dev',c:'#86efac',z:'Production'}, ressources:{n:'Ressources',c:'#a3e635',z:'Production'},
+  compta:{n:'Comptabilité',c:'#fbbf24',z:'Organisation'}, equipe:{n:'Équipe',c:'#fb923c',z:'Organisation'}, formation:{n:'Formation',c:'#f5d06a',z:'Organisation'}, systeme:{n:'Système',c:'#f87171',z:'Organisation'}
+};
+const before = [
+ ['Pilotage',[['Mon espace','accueil'],['Vue business','accueil'],['Centre d’activité','inbox'],['Messages','inbox']]],
+ ['Clients & projets',[['CRM','crm'],['Commerciaux externes','crm'],['Clients','crm'],['Arrow prospection','x'],['Projets','projets'],['Tickets','demandes'],['Demandes clients','demandes'],['Calendrier','calendrier']]],
+ ['Contenu & outils',[['Templates','projets'],['Ressources','ressources'],['Pédagogie','formation'],['Projets internes','projets'],['Dev workspace','dev'],['Beta tests','dev']]],
+ ['Finance & conformité',[['Comptabilité','compta'],['Qualiopi','formation'],['Audit','systeme']]],
+ ['Équipe',[['Équipe','equipe'],['Emails','inbox']]],
+ ['Analyse & rapports',[['Analytics','analytics'],['Mes rapports','analytics'],['Décisions','accueil']]],
+ ['Administration',[['Accès outils','equipe'],['Comptes admin','equipe'],['Agents API','systeme'],['Santé système','systeme'],['Filiales','o:sélecteur d’espace'],['Webhooks','systeme']]],
+ ['Footer',[['Guide','o:menu ? et ⌘K']]]
+];
+const after = [
+ ['Pilotage',['accueil','inbox','analytics']],['Commercial',['crm']],['Production',['projets','demandes','calendrier','dev','ressources']],['Organisation',['compta','equipe','formation','systeme']]
+];
+const counts = {}; before.forEach(([,l])=>l.forEach(([,d])=>counts[d]=(counts[d]||0)+1));
+const esc = s => s.replace(/&/g,'&amp;');
+let h = '';
+before.forEach(([z,l])=>{
+  h += `<div class="zone">${esc(z)}</div><ul>`;
+  l.forEach(([nm,d])=>{
+    if (d==='x') h += `<li class="row gone"><span class="nm">${nm}</span><span class="tag">supprimé</span></li>`;
+    else if (d.startsWith('o:')) h += `<li class="row out"><span class="nm">${nm}</span><span class="tag">hors sidebar · ${d.slice(2)}</span></li>`;
+    else h += `<li class="row" style="--c:${D[d].c}"><span class="nm">${nm}</span><span class="tag">${D[d].n}</span></li>`;
+  });
+  h += '</ul>';
+});
+document.getElementById('before').innerHTML = h;
+h = '';
+after.forEach(([z,l])=>{
+  h += `<div class="zone">${z}</div><ul>`;
+  l.forEach(k=>{ const n=counts[k]||1; h += `<li class="row" style="--c:${D[k].c}"><span>${D[k].n}</span><span class="n">${n>1?'← '+n+' pages':'inchangé'}</span></li>`; });
+  h += '</ul>';
+});
+h += `<div class="outbox"><div class="zone">Hors sidebar</div><ul>
+<li class="row out"><span>Sélecteur d’espace <small>Filiales</small></span><span class="n">haut</span></li>
+<li class="row out"><span>Menu « ? » + ⌘K <small>Guide</small></span><span class="n">topbar</span></li>
+<li class="row out"><span>Carte utilisateur <small>Profil</small></span><span class="n">bas</span></li></ul></div>`;
+document.getElementById('after').innerHTML = h;
+
+const F = [
+ ['accueil','Accueil',['Mon espace','Vue business','Décisions'],['Cockpit','À arbitrer','Widgets business'],'<b>Un seul point de départ par rôle.</b> Les décisions sont une liste de choses à trancher pour le super admin : elles vivent sur le cockpit, dans le bloc « À arbitrer ». La vue business devient des widgets.'],
+ ['inbox','Inbox',['Messages','Centre d’activité','Emails'],['Conversations','Activité','Envoi groupé'],'<b>Tout ce qui arrive vers moi au même endroit.</b> Emails est un mode d’envoi groupé de la messagerie. La cloche du topbar ouvre l’onglet Activité.'],
+ ['analytics','Analytics',['Analytics','Mes rapports'],['Business','Projets','Site public','Rapports'],'<b>Les rapports sont une vue des mêmes chiffres</b> : les séparer de l’analyse obligeait à chercher à deux endroits.'],
+ ['crm','CRM',['CRM','Clients','Commerciaux externes','Arrow prospection'],['Pipeline','Comptes clients','Partenaires'],'<b>Un seul CRM.</b> Clients duplique les comptes du CRM, les commerciaux externes sont des partenaires, et Arrow prospection est supprimé.'],
+ ['projets','Projets',['Projets','Projets internes','Templates'],['Clients','Internes','Modèles'],'<b>Même objet, trois périmètres.</b> Projets clients, projets internes et modèles partagent le même cycle de vie.'],
+ ['demandes','Demandes',['Demandes clients','Tickets'],['File unique · filtre Source : Client / Équipe'],'<b>Même workflow : une demande à trier</b>, avec une source différente. Une file unique évite de traiter deux boîtes.'],
+ ['dev','Dev',['Dev workspace','Beta tests'],['Workspace','Recette (beta)'],'<b>La recette est la suite du développement.</b> Les retours des testeurs alimentent directement les tickets du workspace.'],
+ ['equipe','Équipe',['Équipe','Comptes admin','Accès outils'],['Membres','Rôles & comptes','Accès outils'],'<b>Qui fait quoi, avec quels droits.</b> Les onglets sont filtrés par permission : un manager ne voit pas les comptes admin.'],
+ ['formation','Formation',['Qualiopi','Pédagogie'],['Qualiopi','Pédagogie'],'<b>La conformité Qualiopi se prouve avec le contenu pédagogique</b> : les deux se consultent ensemble.'],
+ ['systeme','Système',['Santé système','Audit','Agents API','Webhooks'],['Santé','Journal d’audit','Intégrations'],'<b>Préoccupations du super admin.</b> Santé, audit, API et webhooks sont de l’infrastructure ; API et webhooks forment l’onglet Intégrations.']
+];
+document.getElementById('fus').innerHTML = F.map(([k,t,abs,tabs,why])=>`
+<article class="glass card" style="--c:${D[k].c}">
+  <h3>${t} <span class="mono">${abs.length} → 1</span></h3>
+  <div class="chips">${abs.map(a=>`<span${a==='Arrow prospection'?' class="x"':''}>${a}</span>`).join('')}</div>
+  <div class="tabs" aria-hidden="true">${tabs.map(x=>`<span>${x}</span>`).join('')}</div>
+  <p class="why">${why}</p>
+</article>`).join('');
+</script>
+</body>
+</html>

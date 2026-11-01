@@ -3,36 +3,17 @@ import { hasPermission, PERMISSIONS } from './permissions'
 import { getVisibleNavigation, NAVIGATION } from './rbac'
 import { translate, type MessageKey } from '../i18n'
 
-export const ADMIN_NAVIGATION_ZONES = [
-  'Pilotage',
-  'Clients & projets',
-  'Contenu & outils',
-  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
-  'Finance & conformité',
-  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
-  'Équipe',
-  'Analyse & rapports',
-  'Administration',
-] as const
-
+export const ADMIN_NAVIGATION_ZONES = ['Pilotage', 'Commercial', 'Production', 'Organisation'] as const
 export type AdminNavigationZone = (typeof ADMIN_NAVIGATION_ZONES)[number]
 type NavigationItem = (typeof NAVIGATION)[number]
 type NavigationId = NavigationItem['id']
-
-// Les zones gardent leur libellé français comme identifiant stable ; l'affichage passe par ces clés.
 const ZONE_LABEL_KEYS = {
   Pilotage: 'shell.zone.pilotage',
-  'Clients & projets': 'shell.zone.clientsProjects',
-  'Contenu & outils': 'shell.zone.contentTools',
-  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
-  'Finance & conformité': 'shell.zone.financeCompliance',
-  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
-  Équipe: 'shell.zone.team',
-  'Analyse & rapports': 'shell.zone.analysisReports',
-  Administration: 'shell.zone.administration',
+  Commercial: 'shell.zone.commercial',
+  Production: 'shell.zone.production',
+  Organisation: 'shell.zone.organisation',
 } as const satisfies Record<AdminNavigationZone, MessageKey>
 
-/** Libellé affiché d'une zone dans la langue active. */
 export function getZoneLabel(zone: AdminNavigationZone): string {
   return translate(ZONE_LABEL_KEYS[zone])
 }
@@ -74,164 +55,165 @@ const NAVIGATION_LABEL_KEYS: Record<string, MessageKey | undefined> = {
 }
 
 /** Libellé affiché d'un module de navigation dans la langue active (repli : libellé de la matrice RBAC). */
-export function getNavigationLabel(item: NavigationItem): string {
+export function getNavigationLabel(item: NavigationItem | AdminNavigationItem): string {
+  if ('paths' in item) return getAdminNavigationLabel(item)
   const key = NAVIGATION_LABEL_KEYS[item.id]
   return key ? translate(key) : item.label
 }
 
-/**
- * Tiroirs déployés par défaut à l'ouverture de la sidebar. Vide : tout est
- * replié au chargement. Les tiroirs s'ouvrent au survol (desktop, via CSS) ou
- * au clic/tap de l'en-tête (tactile & clavier) ; seul celui de la page active
- * reste ouvert.
- */
-export const DEFAULT_OPEN_ZONES: AdminNavigationZone[] = []
+/** Presentation only: access to each original module still comes from the RBAC matrix. */
+export const ADMIN_NAVIGATION_GROUPS = [
+  { id: 'home', zone: 'Pilotage', modules: ['home', 'dashboard', 'decisions'] },
+  { id: 'inbox', zone: 'Pilotage', modules: ['messages', 'activity-center', 'emails'] },
+  { id: 'analytics', zone: 'Pilotage', modules: ['analytics', 'reports'] },
+  { id: 'crm', zone: 'Commercial', modules: ['crm', 'clients', 'external-sales'] },
+  { id: 'projects', zone: 'Production', modules: ['projects', 'internal-projects', 'templates'] },
+  { id: 'requests', zone: 'Production', modules: ['change-requests', 'tickets'] },
+  { id: 'calendar', zone: 'Production', modules: ['calendar'] },
+  { id: 'dev', zone: 'Production', modules: ['dev', 'beta'] },
+  { id: 'resources', zone: 'Production', modules: ['resources'] },
+  { id: 'accounting', zone: 'Organisation', modules: ['accounting'] },
+  { id: 'team', zone: 'Organisation', modules: ['interns', 'admin-accounts', 'tool-access'] },
+  { id: 'training', zone: 'Organisation', modules: ['qualiopi', 'education'] },
+  { id: 'system', zone: 'Organisation', modules: ['health', 'audit', 'agents', 'webhooks'] },
+] as const satisfies readonly { id: string; zone: AdminNavigationZone; modules: readonly NavigationId[] }[]
 
-/**
- * Modules rendus dans le pied de la sidebar (aide, support) plutôt que dans
- * un tiroir. Ils restent soumis au RBAC comme n'importe quel autre module.
- */
-const FOOTER_NAVIGATION_IDS: NavigationId[] = ['guide']
-
-/**
- * Task-oriented information architecture. Access remains exclusively defined
- * by rbac-matrix.json; this mapping only changes how authorised modules are
- * grouped and prioritised. Le regroupement suit l'usage (fréquence + tâche),
- * pas la permission : `dev` (partagé) ne rejoint donc jamais la zone
- * Administration, réservée aux outils `manage_admins`/super-admin.
- */
-const ZONE_BY_NAVIGATION_ID: Partial<Record<NavigationId, AdminNavigationZone>> = {
-  home: 'Pilotage',
-  dashboard: 'Pilotage',
-  'activity-center': 'Pilotage',
-  messages: 'Pilotage',
-  crm: 'Clients & projets',
-  'external-sales': 'Clients & projets',
-  clients: 'Clients & projets',
-  arrow: 'Clients & projets',
-  projects: 'Clients & projets',
-  tickets: 'Clients & projets',
-  'change-requests': 'Clients & projets',
-  calendar: 'Clients & projets',
-  templates: 'Contenu & outils',
-  resources: 'Contenu & outils',
-  education: 'Contenu & outils',
-  'internal-projects': 'Contenu & outils',
-  dev: 'Contenu & outils',
-  beta: 'Contenu & outils',
-  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
-  accounting: 'Finance & conformité',
-  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
-  qualiopi: 'Finance & conformité',
-  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
-  audit: 'Finance & conformité',
-  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
-  interns: 'Équipe',
-  // i18n-ignore: identifiant de zone stable, affiché via getZoneLabel
-  emails: 'Équipe',
-  analytics: 'Analyse & rapports',
-  reports: 'Analyse & rapports',
-  decisions: 'Analyse & rapports',
-  'tool-access': 'Administration',
-  'admin-accounts': 'Administration',
-  agents: 'Administration',
-  health: 'Administration',
-  subsidiaries: 'Administration',
-  webhooks: 'Administration',
+export type AdminNavigationId = (typeof ADMIN_NAVIGATION_GROUPS)[number]['id']
+export interface AdminNavigationItem {
+  id: AdminNavigationId
+  label: string
+  screen: string
+  /** All original paths, including modules other than the selected destination. */
+  paths: string[]
 }
-
 export interface NavigationZone {
   id: AdminNavigationZone
-  items: NavigationItem[]
+  items: AdminNavigationItem[]
 }
 
-export function getNavigationZone(item: NavigationItem): AdminNavigationZone {
-  // A future matrix entry remains visible only when RBAC allows it and lands
-  // in the tools zone until it receives an explicit task classification.
-  return ZONE_BY_NAVIGATION_ID[item.id] ?? 'Contenu & outils'
-}
-
-export function getVisibleNavigationZones(user: User | null): NavigationZone[] {
-  const itemsByZone = new Map<AdminNavigationZone, NavigationItem[]>()
-  for (const zone of ADMIN_NAVIGATION_ZONES) itemsByZone.set(zone, [])
-
-  for (const item of getVisibleNavigation(user)) {
-    if (FOOTER_NAVIGATION_IDS.includes(item.id)) continue
-    itemsByZone.get(getNavigationZone(item))?.push(item)
-  }
-
-  return ADMIN_NAVIGATION_ZONES.map((id) => ({ id, items: itemsByZone.get(id) || [] })).filter(
-    (zone) => zone.items.length > 0,
+export function getNavigationZone(item: { id: string }): AdminNavigationZone {
+  return (
+    ADMIN_NAVIGATION_GROUPS.find(
+      (group) => group.id === item.id || (group.modules as readonly string[]).includes(item.id),
+    )?.zone ?? 'Organisation'
   )
 }
 
-/** Modules d'aide/support rendus dans le pied de la sidebar (hors tiroirs). */
-export function getFooterNavigation(user: User | null): NavigationItem[] {
+export function getVisibleAdminNavigation(user: User | null): AdminNavigationItem[] {
   const visible = getVisibleNavigation(user)
-  return FOOTER_NAVIGATION_IDS.flatMap((id) => visible.filter((item) => item.id === id))
+  return ADMIN_NAVIGATION_GROUPS.flatMap((group) => {
+    const destination = group.modules.flatMap((id) => visible.filter((item) => item.id === id))[0]
+    if (!destination) return []
+    const paths = NAVIGATION.filter((item) => (group.modules as readonly string[]).includes(item.id)).map(
+      (item) => item.screen,
+    )
+    if (group.id === 'home') paths.push('/admin/mon-espace')
+    // Project creation/details live outside the historical /gestion list route.
+    if (group.id === 'projects') paths.push('/admin/projets')
+    return [
+      {
+        id: group.id,
+        label: translate(GROUP_LABEL_KEYS[group.id]),
+        screen: destination.id === 'home' ? '/admin/mon-espace' : destination.screen,
+        paths,
+      },
+    ]
+  })
 }
 
-const MOBILE_NAVIGATION_PRIORITY: NavigationId[] = ['home', 'messages', 'projects', 'crm']
+const GROUP_LABEL_KEYS = {
+  home: 'shell.entry.home',
+  inbox: 'shell.entry.inbox',
+  analytics: 'shell.navItem.analytics',
+  crm: 'shell.navItem.crm',
+  projects: 'shell.navItem.projects',
+  requests: 'shell.entry.requests',
+  calendar: 'shell.navItem.calendar',
+  dev: 'shell.entry.dev',
+  resources: 'shell.navItem.resources',
+  accounting: 'shell.navItem.accounting',
+  team: 'shell.entry.team',
+  training: 'shell.entry.training',
+  system: 'shell.entry.system',
+} as const satisfies Record<AdminNavigationId, MessageKey>
 
-export function getMobileNavigation(user: User | null): NavigationItem[] {
-  const visible = getVisibleNavigation(user)
+export function getAdminNavigationLabel(item: AdminNavigationItem): string {
+  return translate(GROUP_LABEL_KEYS[item.id])
+}
+
+export function isAdminNavigationActive(item: AdminNavigationItem, pathname: string): boolean {
+  return item.paths.some((path) => pathname === path || (path !== '/admin' && pathname.startsWith(`${path}/`)))
+}
+
+export function getVisibleNavigationZones(user: User | null): NavigationZone[] {
+  const visible = getVisibleAdminNavigation(user)
+  return ADMIN_NAVIGATION_ZONES.map((id) => ({
+    id,
+    items: visible.filter((item) => getNavigationZone(item) === id),
+  })).filter((zone) => zone.items.length > 0)
+}
+
+const MOBILE_NAVIGATION_PRIORITY: AdminNavigationId[] = ['home', 'inbox', 'projects', 'crm']
+export function getMobileNavigation(user: User | null): AdminNavigationItem[] {
+  const visible = getVisibleAdminNavigation(user)
   const preferred = MOBILE_NAVIGATION_PRIORITY.flatMap((id) => visible.filter((item) => item.id === id))
-  const remaining = visible.filter((item) => !preferred.some((preferredItem) => preferredItem.id === item.id))
-  return [...preferred, ...remaining].slice(0, 4)
+  const remaining = getRoleCockpitNavigation(user).filter((item) => !preferred.some((tab) => tab.id === item.id))
+  const fallback = visible.filter((item) => ![...preferred, ...remaining].some((tab) => tab.id === item.id))
+  return [...preferred, ...remaining, ...fallback].slice(0, 4)
 }
 
 export interface RoleCockpit {
   title: string
   description: string
-  priorities: NavigationId[]
+  priorities: AdminNavigationId[]
 }
 
 interface RoleCockpitDefinition {
   titleKey: MessageKey
   descriptionKey: MessageKey
-  priorities: NavigationId[]
+  priorities: AdminNavigationId[]
 }
 
 const ROLE_COCKPITS: Record<Exclude<UserRole, 'CLIENT' | 'COMMERCIAL_EXTERNE'>, RoleCockpitDefinition> = {
   SUPER_ADMIN: {
     titleKey: 'shell.cockpit.superAdminTitle',
     descriptionKey: 'shell.cockpit.superAdminDescription',
-    priorities: ['activity-center', 'dashboard', 'decisions', 'analytics', 'health'],
+    priorities: ['inbox', 'home', 'analytics', 'system'],
   },
   ADMIN: {
     titleKey: 'shell.cockpit.adminTitle',
     descriptionKey: 'shell.cockpit.adminDescription',
-    priorities: ['activity-center', 'projects', 'crm', 'tickets'],
+    priorities: ['inbox', 'projects', 'crm', 'requests'],
   },
   MANAGER: {
     titleKey: 'shell.cockpit.managerTitle',
     descriptionKey: 'shell.cockpit.managerDescription',
-    priorities: ['projects', 'crm', 'tickets', 'messages'],
+    priorities: ['projects', 'crm', 'requests', 'inbox'],
   },
   COMMERCIAL: {
     titleKey: 'shell.cockpit.commercialTitle',
     descriptionKey: 'shell.cockpit.commercialDescription',
-    priorities: ['crm', 'clients', 'projects', 'tickets'],
+    priorities: ['crm', 'projects', 'requests'],
   },
   RH: {
     titleKey: 'shell.cockpit.rhTitle',
     descriptionKey: 'shell.cockpit.rhDescription',
-    priorities: ['interns', 'qualiopi', 'tickets', 'projects'],
+    priorities: ['team', 'training', 'requests', 'projects'],
   },
   COMPTABLE: {
     titleKey: 'shell.cockpit.comptableTitle',
     descriptionKey: 'shell.cockpit.comptableDescription',
-    priorities: ['accounting', 'projects', 'messages'],
+    priorities: ['accounting', 'projects', 'inbox'],
   },
   VIEWER: {
     titleKey: 'shell.cockpit.viewerTitle',
     descriptionKey: 'shell.cockpit.viewerDescription',
-    priorities: ['projects', 'accounting', 'tickets', 'dev'],
+    priorities: ['projects', 'accounting', 'requests', 'dev'],
   },
   STAGIAIRE: {
     titleKey: 'shell.cockpit.stagiaireTitle',
     descriptionKey: 'shell.cockpit.stagiaireDescription',
-    priorities: ['projects', 'resources', 'tickets', 'crm'],
+    priorities: ['projects', 'resources', 'requests', 'crm'],
   },
 }
 
@@ -253,9 +235,9 @@ export function getRoleCockpit(user: User | null): RoleCockpit {
   }
 }
 
-export function getRoleCockpitNavigation(user: User | null): NavigationItem[] {
+export function getRoleCockpitNavigation(user: User | null): AdminNavigationItem[] {
   const cockpit = getRoleCockpit(user)
-  const visible = getVisibleNavigation(user)
+  const visible = getVisibleAdminNavigation(user)
   return cockpit.priorities.flatMap((id) => visible.filter((item) => item.id === id))
 }
 
@@ -303,7 +285,7 @@ export type AdminCommandPaletteItem =
   | { kind: 'action'; id: string; label: string; to: string; zone: AdminNavigationZone }
 
 export function getCommandPaletteItems(user: User | null): AdminCommandPaletteItem[] {
-  const visible = getVisibleNavigation(user)
+  const visible = getVisibleNavigation(user).filter((item) => item.id !== 'arrow')
   const modules = visible.map((item) => ({
     kind: 'module' as const,
     id: item.id,

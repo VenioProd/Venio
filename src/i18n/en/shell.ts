@@ -1,6 +1,24 @@
 import type fr from '../fr/shell'
 
 const en: Record<keyof typeof fr, string> = {
+  'shell.zone.commercial': 'Sales',
+  'shell.zone.production': 'Production',
+  'shell.zone.organisation': 'Organisation',
+  'shell.entry.home': 'Home',
+  'shell.entry.inbox': 'Inbox',
+  'shell.entry.requests': 'Requests',
+  'shell.entry.dev': 'Dev',
+  'shell.entry.team': 'Team',
+  'shell.entry.training': 'Training',
+  'shell.entry.system': 'System',
+  'shell.nav.more': 'More',
+  'shell.nav.create': 'Create',
+  'shell.nav.workspace': 'Venio · Paris',
+  'shell.nav.portfolio': 'Portfolio view',
+  'shell.nav.skip': 'Skip to content',
+  'shell.sidebar.pin': 'Pin navigation',
+  'shell.sidebar.unpin': 'Unpin navigation',
+
   // Admin navigation zones
   'shell.zone.pilotage': 'Overview',
   'shell.zone.clientsProjects': 'Clients & projects',

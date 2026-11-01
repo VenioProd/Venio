@@ -1,108 +1,170 @@
-/* ============================================================
-   AdminShell — layout racine de l'espace admin Venio
-   La sidebar est en position: fixed → le body compense avec margin-left
-   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500;600&display=swap');
+@import './AdminSystemTokens.css';
 
 .admin-shell {
   position: relative;
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at 20% 30%, var(--admin-shell-bg-glow-1), transparent 50%),
-    radial-gradient(circle at 80% 70%, var(--admin-shell-bg-glow-2), transparent 50%),
-    radial-gradient(circle at 50% 90%, var(--admin-shell-bg-glow-3), transparent 60%), var(--admin-shell-bg-base);
-  color: var(--text-primary);
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--tx);
+  font: 13.5px/1.5 var(--sans);
 }
-
-/* ---- Zone de contenu — décalée de la largeur de la sidebar ---- */
+body.admin-system-theme {
+  background: var(--bg);
+}
 .admin-shell-body {
-  margin-left: 200px;
-  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: 248px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
+  transition: margin-left 180ms var(--ease);
 }
-
 .admin-shell[data-collapsed='true'] .admin-shell-body {
-  margin-left: 56px;
+  margin-left: 64px;
 }
-
-/* ---- Topbar (breadcrumb + burger mobile) ---- */
 .admin-shell-topbar {
-  height: calc(44px + env(safe-area-inset-top, 0px));
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-end;
-  padding: 0 clamp(16px, 3vw, 32px) 0;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: 0;
-  border-bottom: 1px solid var(--border-color);
-  gap: 8px;
+  height: calc(56px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 32px 0;
   position: sticky;
   top: 0;
-  z-index: 100;
-  background: var(--bg-primary);
-}
-
-/* Burger visible uniquement sur mobile */
-.admin-shell-burger {
-  display: none;
+  z-index: 200;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--r-md);
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-family: var(--font-body);
-  flex-shrink: 0;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  gap: 12px;
+  background: var(--bar-bg);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: saturate(160%) blur(16px);
+  -webkit-backdrop-filter: saturate(160%) blur(16px);
 }
-
-.admin-shell-burger:hover {
-  background: var(--accent-soft);
-  color: var(--text-primary);
+.admin-shell-breadcrumb {
+  flex: 1;
+  min-width: 0;
+  font: 12px var(--mono);
 }
-
-.admin-shell-palette-trigger {
+.admin-shell-breadcrumb .breadcrumb-list {
+  font-size: 12px;
+}
+.admin-shell-breadcrumb .breadcrumb-link,
+.admin-shell-breadcrumb .breadcrumb-current {
+  color: var(--mut);
+}
+.admin-shell-breadcrumb .breadcrumb-current.is-last {
+  color: var(--tx);
+}
+.admin-shell-breadcrumb .breadcrumb-sep {
+  color: var(--dim-t);
+}
+.admin-shell-top-actions,
+.admin-shell-desktop-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.admin-shell-top-actions {
   margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 30px;
-  padding: 0 8px;
-  border: 1px solid var(--border-color);
+}
+.admin-shell-help {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--mut);
   border-radius: var(--r-md);
-  background: transparent;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 0.75rem;
+}
+.admin-shell-help:hover {
+  color: var(--tx);
+  background: var(--f2);
+}
+.admin-shell-create {
+  position: relative;
+  margin-right: 8px;
+}
+.admin-shell-create summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  background: var(--pill-bg);
+  color: var(--pill-tx);
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  list-style: none;
 }
-
-.admin-shell-palette-trigger:hover,
-.admin-shell-palette-trigger:focus-visible {
-  color: var(--text-primary);
-  background: var(--accent-surface);
+.admin-shell-create summary::-webkit-details-marker {
+  display: none;
 }
-
-.admin-shell-palette-trigger kbd {
-  padding: 1px 4px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--r-sm);
-  color: var(--text-muted);
-  font-size: 0.65rem;
+.admin-shell-create nav {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  padding: 6px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--sheet);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.27);
 }
-
-/* ---- Contenu principal ---- */
+.admin-shell-create nav a {
+  display: block;
+  padding: 10px;
+  border-radius: var(--r-md);
+  color: var(--tx);
+  text-decoration: none;
+}
+.admin-shell-create nav a:hover {
+  background: var(--f3);
+}
+.admin-shell-mobile-brand,
+.admin-shell-mobile-title,
+.admin-shell-mobile-avatar {
+  display: none;
+}
 .admin-shell-main {
   flex: 1;
-  padding: 20px clamp(16px, 3vw, 32px) 60px;
+  min-width: 0;
+  padding: 28px 32px 56px;
 }
-
+.admin-shell-skip {
+  position: fixed;
+  z-index: 1300;
+  top: -100px;
+  left: 12px;
+  padding: 8px 14px;
+  border-radius: var(--r-md);
+  background: var(--pill-bg);
+  color: var(--pill-tx);
+}
+.admin-shell-skip:focus {
+  top: 12px;
+}
+.admin-shell .notif-bell-btn {
+  color: var(--mut);
+  background: transparent;
+  border-color: var(--line);
+}
+.admin-shell .notif-dropdown {
+  background: var(--sheet);
+  border-color: var(--line-2);
+  color: var(--tx);
+}
+.admin-shell .notif-dropdown-title,
+.admin-shell .notif-item-title {
+  color: var(--tx);
+}
+.admin-shell .notif-item-message,
+.admin-shell .notif-item-time,
+.admin-shell .notif-empty {
+  color: var(--mut);
+}
+.admin-shell .notif-item {
+  border-color: var(--line);
+}
+.admin-shell .notif-item:hover {
+  background: var(--f3);
+}
 /* ---- Neutralisation du portal-container hérité de ClientPortal.css ---- */
 .admin-shell .portal-container {
   width: auto !important;
@@ -168,128 +230,119 @@
   gap: 8px;
 }
 
-/* ---- Responsive ---- */
-@media (max-width: 768px) {
-  .admin-shell-body {
-    margin-left: 0;
-  }
-
-  .admin-shell[data-collapsed='true'] .admin-shell-body {
-    margin-left: 0;
-  }
-
-  .admin-shell-burger {
-    display: inline-flex;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════
-   ADMIN BOTTOM TAB BAR — navigation mobile
-   ═══════════════════════════════════════════════════════ */
-
 .admin-mobile-nav {
   display: none;
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 201;
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border-color);
+  inset: auto 0 0;
+  z-index: 250;
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--bar-bg);
+  border-top: 1px solid var(--line);
+  backdrop-filter: blur(16px);
 }
-
 .admin-mobile-tab {
   flex: 1;
+  min-width: 0;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 10px 2px;
-  min-height: 54px;
-  color: var(--text-muted);
+  gap: 4px;
+  border: 0;
+  background: none;
+  color: var(--mut);
   text-decoration: none;
-  font-size: 9px;
-  font-weight: 600;
-  transition: color 0.2s ease;
-  background: transparent;
-  border: none;
+  font: 10px var(--sans);
   cursor: pointer;
-  font-family: var(--font-body);
-  -webkit-tap-highlight-color: transparent;
 }
-
 .admin-mobile-tab.active {
-  color: var(--primary);
+  color: var(--sky);
 }
-
 .admin-mobile-tab.active::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 22%;
-  right: 22%;
+  left: 25%;
+  right: 25%;
   height: 2px;
-  background: var(--primary);
-  border-radius: var(--r-sm);
-  box-shadow: none;
+  background: var(--grad);
 }
-
 .admin-mobile-tab-icon {
   position: relative;
   display: inline-flex;
 }
-
 .admin-mobile-badge {
   position: absolute;
   top: -5px;
-  right: -8px;
-  background: var(--primary);
-  color: var(--primary-fg);
-  font-size: 9px;
-  font-weight: 800;
+  right: -10px;
   min-width: 15px;
-  height: 15px;
-  border-radius: var(--r-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 0 3px;
-  line-height: 1;
+  border-radius: var(--r-pill);
+  background: var(--rose);
+  color: var(--bg);
+  text-align: center;
+  font: 600 9px/15px var(--mono);
 }
-
-@media (max-width: 768px) {
+@media (max-width: 1023px) and (min-width: 768px) {
+  .admin-shell-body {
+    margin-left: 64px;
+  }
+  .admin-shell-main {
+    padding: 24px;
+  }
+  .admin-shell-topbar {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+}
+@media (max-width: 767px) {
+  .admin-shell-body,
+  .admin-shell[data-collapsed='true'] .admin-shell-body {
+    margin-left: 0;
+  }
+  .admin-shell-topbar {
+    height: calc(52px + env(safe-area-inset-top, 0px));
+    padding-right: 16px;
+    padding-left: 16px;
+    gap: 10px;
+  }
+  .admin-shell-breadcrumb,
+  .admin-shell-create,
+  .admin-shell-help,
+  .admin-shell-desktop-controls {
+    display: none;
+  }
+  .admin-shell-mobile-brand,
+  .admin-shell-mobile-avatar {
+    display: inline-flex;
+    text-decoration: none;
+  }
+  .admin-shell-mobile-title {
+    display: block;
+    color: var(--tx);
+    font-size: 14px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-shell-main {
+    padding: 20px 16px calc(84px + env(safe-area-inset-bottom, 0px));
+  }
   .admin-mobile-nav {
     display: flex;
   }
-
-  /* Dégagement bas pour que le contenu ne passe pas sous la nav */
-  .admin-shell-main {
-    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* Le burger topbar est remplacé par le tab "Menu" de la bottom nav */
-  .admin-shell-burger {
-    display: none;
-  }
-
-  .admin-shell-palette-trigger span,
-  .admin-shell-palette-trigger kbd {
-    display: none;
-  }
-
-  .admin-shell-palette-trigger {
-    margin-left: auto;
-    width: 34px;
-    justify-content: center;
-    padding: 0;
+  .admin-shell .notif-dropdown {
+    position: fixed;
+    top: calc(52px + env(safe-area-inset-top, 0px));
+    right: 8px;
+    width: min(380px, calc(100vw - 16px));
   }
 }
-
-/* Sélecteur de langue de la barre du haut */
-.admin-shell-topbar .language-select {
-  align-self: center;
-  flex-shrink: 0;
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell-body {
+    transition: none;
+  }
 }

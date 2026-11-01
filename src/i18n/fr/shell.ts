@@ -1,4 +1,22 @@
 const fr = {
+  'shell.zone.commercial': 'Commercial',
+  'shell.zone.production': 'Production',
+  'shell.zone.organisation': 'Organisation',
+  'shell.entry.home': 'Accueil',
+  'shell.entry.inbox': 'Inbox',
+  'shell.entry.requests': 'Demandes',
+  'shell.entry.dev': 'Dev',
+  'shell.entry.team': 'Équipe',
+  'shell.entry.training': 'Formation',
+  'shell.entry.system': 'Système',
+  'shell.nav.more': 'Plus',
+  'shell.nav.create': 'Créer',
+  'shell.nav.workspace': 'Venio · Paris',
+  'shell.nav.portfolio': 'Vue portefeuille',
+  'shell.nav.skip': 'Aller au contenu',
+  'shell.sidebar.pin': 'Épingler la navigation',
+  'shell.sidebar.unpin': 'Désépingler la navigation',
+
   // Zones de navigation admin
   'shell.zone.pilotage': 'Pilotage',
   'shell.zone.clientsProjects': 'Clients & projets',

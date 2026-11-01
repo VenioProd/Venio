@@ -1,447 +1,338 @@
-/* ============================================================
-   AdminSidebar — navigation latérale de l'espace admin Venio
-   Monolithe : fond plat, filet net 1px, casse normale (sans
-   majuscules), actif = barre lime nette + fond accent, sans glow.
-   Sections en tiroirs (accordéon). Collapsible : 200px / 56px.
-   ============================================================ */
-
-/* ---- Sidebar desktop — position: fixed pour rester en place quel que soit le scroll ---- */
 .admin-sidebar {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 200px;
-  height: 100vh;
-  padding-top: env(safe-area-inset-top, 0px);
+  inset: 0 auto 0 0;
+  z-index: 300;
+  width: 64px;
   display: flex;
   flex-direction: column;
-  background: var(--bg-primary);
-  border-right: 1px solid var(--border-color);
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--sheet);
+  border-right: 1px solid var(--line);
   overflow: hidden;
-  z-index: 200;
+  transition:
+    width 180ms var(--ease),
+    box-shadow 180ms var(--ease);
 }
-
-.admin-sidebar.collapsed {
-  width: 56px;
+.admin-sidebar[data-expanded='true'] {
+  width: 248px;
 }
-
-/* ---- Brand ---- */
-.admin-sb-brand {
-  width: 100%;
+.admin-sidebar[data-expanded='true'][data-pinned='false'] {
+  box-shadow: 16px 0 48px rgba(0, 0, 0, 0.33);
+}
+.admin-sb-top {
+  padding: 12px 12px 4px;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 14px 14px;
-  border: 0;
-  border-bottom: 1px solid var(--border-color);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  user-select: none;
-  flex-shrink: 0;
-  overflow: hidden;
-  white-space: nowrap;
+  flex-direction: column;
+  gap: 8px;
 }
-
-.admin-sb-brand:hover,
-.admin-sb-brand:focus-visible {
-  background: var(--accent-soft);
-  outline: none;
-}
-
-.admin-sb-logo {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--r-md);
-  background: var(--primary);
-  color: var(--primary-fg);
-  font-weight: 900;
-  font-size: 0.95rem;
-}
-
-.admin-sb-brand-name {
-  font-weight: 800;
-  font-size: 0.92rem;
-  color: var(--text-primary);
-}
-
-/* ---- Scroll zone ---- */
-.admin-sb-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 8px 8px 4px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
-}
-
-.admin-sb-scroll::-webkit-scrollbar {
-  width: 3px;
-}
-.admin-sb-scroll::-webkit-scrollbar-thumb {
-  background: var(--line-strong);
-  border-radius: var(--r-pill);
-}
-
-/* ---- Section (tiroir) ---- */
-.admin-sb-section {
-  margin-bottom: 2px;
-}
-
-/* En-tête cliquable du tiroir */
-.admin-sb-section-header {
+.admin-sb-brand-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  padding: 11px 8px 5px;
-  background: transparent;
-  border: 0;
-  color: var(--text-muted);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: color 0.15s;
 }
-
-.admin-sb-section-header:hover {
-  color: var(--text-secondary);
-}
-
-.admin-sb-section-header:focus-visible {
-  outline: 2px solid var(--accent-ring);
-  outline-offset: 2px;
-}
-
-.admin-sb-section-label {
-  font-size: 0.72rem;
-  color: inherit;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.admin-sb-section-chevron {
-  flex-shrink: 0;
-  opacity: 0.55;
-  transition: transform 0.2s ease;
-}
-
-.admin-sb-section.open .admin-sb-section-chevron,
-.admin-sb-section:hover .admin-sb-section-chevron,
-.admin-sb-section:focus-within .admin-sb-section-chevron {
-  transform: rotate(180deg);
-}
-
-/* Corps repliable : animation de hauteur via grid-template-rows 0fr → 1fr.
-   Ouverture au survol (souris) et au focus clavier ; la classe .open couvre
-   la page active et le tap tactile. */
-.admin-sb-section-body {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.25s ease;
-}
-
-.admin-sb-section.open .admin-sb-section-body,
-.admin-sb-section:hover .admin-sb-section-body,
-.admin-sb-section:focus-within .admin-sb-section-body {
-  grid-template-rows: 1fr;
-}
-
-.admin-sb-section-items {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* Sidebar réduite (icônes) : tout est déplié, l'en-tête devient un filet */
-.admin-sidebar.collapsed .admin-sb-section-header {
-  padding: 0;
-  pointer-events: none;
-}
-
-.admin-sidebar.collapsed .admin-sb-section-chevron {
-  display: none;
-}
-
-.admin-sidebar.collapsed .admin-sb-section-label {
-  opacity: 0;
-  height: 1px;
-  padding: 0;
-  margin: 6px 8px;
-  background: var(--border-color);
-  border-radius: var(--r-sm);
-}
-
-.admin-sidebar.collapsed .admin-sb-section-body {
-  grid-template-rows: 1fr;
-}
-
-/* ---- Nav item ---- */
-.admin-sb-item {
+.admin-sb-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px;
-  border-radius: var(--r-md);
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 0.82rem;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  transition:
-    color 0.15s,
-    background 0.15s;
+  height: 32px;
+  padding: 0 4px;
+  font: 600 16px var(--sans);
+  color: var(--tx);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.admin-sb-logo {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 26px;
+  flex: none;
+  font: 700 22px var(--sans);
+  background: var(--grad);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.admin-sb-workspace {
   position: relative;
 }
-
+.admin-sb-workspace-trigger,
+.admin-sb-search,
+.admin-sb-rail-toggle {
+  width: 100%;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--f1);
+  color: var(--mut);
+  font: 12.5px var(--sans);
+  text-align: left;
+}
+button.admin-sb-workspace-trigger,
+.admin-sb-search,
+.admin-sb-rail-toggle {
+  cursor: pointer;
+}
+.admin-sb-workspace-trigger svg,
+.admin-sb-search svg {
+  flex: none;
+}
+.admin-sb-workspace-trigger .admin-sb-label:first-of-type {
+  flex: 1;
+}
+.admin-sb-workspace-options {
+  padding: 6px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--bg);
+}
+.admin-sb-workspace-options a {
+  display: block;
+  padding: 8px;
+  color: var(--tx);
+  text-decoration: none;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+}
+.admin-sb-workspace-options a:hover {
+  background: var(--f3);
+}
+.admin-sb-search kbd {
+  margin-left: auto;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: 1px 4px;
+  font: 10.5px var(--mono);
+}
+.admin-sb-rail-toggle {
+  display: none;
+}
+.admin-sb-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 12px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+.admin-sb-section {
+  margin-top: 12px;
+}
+.admin-sidebar .admin-sb-section-label,
+.admin-sb-drawer .admin-sb-section-label {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  margin: 0 0 2px;
+  color: var(--dim-t);
+  font: 400 10.5px var(--mono);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.admin-sb-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
+  margin-top: 1px;
+  border-radius: var(--r-md);
+  color: var(--mut);
+  text-decoration: none;
+  font-size: 13.5px;
+}
+.admin-sb-icon {
+  flex: none;
+  color: var(--dim-t);
+}
+.admin-sb-label {
+  white-space: nowrap;
+}
+.admin-sb-item .admin-sb-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .admin-sb-item:hover {
-  color: var(--text-primary);
-  background: var(--accent-medium);
+  color: var(--tx);
+  background: var(--f2);
 }
-
 .admin-sb-item.active {
-  color: var(--text-primary);
-  background: var(--accent-surface);
+  color: var(--tx);
+  background: var(--f3);
 }
-
+.admin-sb-item.active .admin-sb-icon {
+  color: var(--sky);
+}
 .admin-sb-item.active::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  border-radius: var(--r-sm);
-  background: var(--primary);
+  top: 7px;
+  bottom: 7px;
+  width: 2px;
+  border-radius: var(--r-hair);
+  background: var(--grad);
 }
-
-.admin-sb-icon {
-  flex-shrink: 0;
-}
-
-/* ---- Badge non-lu (Messages) ---- */
 .admin-sb-badge {
-  margin-left: auto;
-  flex-shrink: 0;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: var(--r-sm);
-  background: var(--primary);
-  color: var(--primary-fg);
-  font-size: 0.65rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+  font: 11px var(--mono);
+  padding: 0 6px;
+  min-width: 20px;
+  text-align: center;
+  line-height: 18px;
+  border-radius: var(--r-pill);
+  background: var(--f3);
+  color: var(--mut);
 }
-
-.admin-sidebar.collapsed .admin-sb-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 14px;
-  height: 14px;
-  font-size: 0.58rem;
-  padding: 0 3px;
+.admin-sb-bottom {
+  border-top: 1px solid var(--line);
+  padding: 8px;
 }
-
-/* ---- Labels (masqués quand collapsed, le overflow: hidden de la sidebar suffit) ---- */
-.admin-sb-label {
-  transition: opacity 0.15s;
-}
-
-.admin-sidebar.collapsed .admin-sb-label {
-  opacity: 0;
-}
-
-/* ---- User block ---- */
 .admin-sb-user {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
-  border-top: 1px solid var(--border-color);
-  overflow: hidden;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.admin-sb-avatar {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--accent-surface-strong);
-  border: 1px solid var(--accent-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 0.82rem;
-  color: var(--primary);
-}
-
-.admin-sb-user-info {
-  overflow: hidden;
-  transition: opacity 0.15s;
-}
-
-.admin-sidebar.collapsed .admin-sb-user-info {
-  opacity: 0;
-}
-
-.admin-sb-user-name {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.admin-sb-user-role {
-  font-size: 0.66rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-/* ---- Footer (profil + déconnexion) ---- */
-.admin-sb-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 8px;
-  border-top: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-
-.admin-sb-footer-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
   padding: 8px;
   border-radius: var(--r-md);
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  font-family: var(--font-body);
-  cursor: pointer;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  transition:
-    color 0.15s,
-    background 0.15s;
+  color: var(--tx);
+  text-decoration: none;
 }
-
-.admin-sb-footer-btn:hover {
-  color: var(--text-primary);
-  background: var(--accent-soft);
+.admin-sb-user:hover {
+  background: var(--f2);
 }
-
-.admin-sb-footer-btn.danger {
-  color: var(--mono-danger);
+.admin-sb-avatar {
+  flex: none;
 }
-
-.admin-sb-footer-btn.danger:hover {
-  color: var(--mono-danger);
-  background: var(--mono-danger-surface);
-}
-
-/* ---- Drawer mobile ---- */
-.admin-sb-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 10002;
-}
-
-.admin-sb-drawer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: min(280px, 88vw);
-  height: 100vh;
-  z-index: 10003;
-  background: var(--bg-primary);
-  border-right: 1px solid var(--border-color);
+.admin-sb-user-info {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  padding-top: env(safe-area-inset-top, 0px);
+  line-height: 1.3;
 }
-
+.admin-sb-user-name {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-sb-user-role {
+  font: 11px var(--mono);
+  color: var(--dim-t);
+}
+/* Keep accessible names while the rail shows only the icons. */
+.admin-sidebar[data-expanded='false'] .admin-sb-label,
+.admin-sidebar[data-expanded='false'] .admin-sb-user-info {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.admin-sidebar[data-expanded='false'] .sb-pivot-toggle,
+.admin-sidebar[data-expanded='false'] .admin-sb-search kbd,
+.admin-sidebar[data-expanded='false'] .admin-sb-badge {
+  display: none;
+}
+/* Keep icon targets stationary when zone labels appear. */
+.admin-sidebar[data-expanded='false'] .admin-sb-section-label {
+  visibility: hidden;
+}
+.admin-sidebar[data-expanded='false'] .admin-sb-user {
+  padding: 8px;
+}
+.admin-sb-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--sheet);
+  color: var(--tx);
+  padding: env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px);
+}
 .admin-sb-drawer-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-color);
+  gap: 16px;
+  min-height: 56px;
+  border-bottom: 1px solid var(--line);
 }
-
 .admin-sb-drawer-close {
-  width: 32px;
-  height: 32px;
+  margin-left: auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
   border-radius: var(--r-md);
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
+  background: var(--f2);
+  color: var(--tx);
   cursor: pointer;
-  font-family: var(--font-body);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background 0.15s,
-    color 0.15s;
 }
-
-.admin-sb-drawer-close:hover {
-  background: var(--accent-soft);
-  color: var(--text-primary);
+.admin-sb-drawer-tools {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
 }
-
 .admin-sb-drawer-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 8px 10px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
+  overscroll-behavior: contain;
+  padding-bottom: 16px;
 }
-
-/* Dans le drawer, les labels sont toujours visibles ; les tiroirs
-   fonctionnent comme sur le bureau (aucun état « collapsed » ici). */
-.admin-sb-drawer-body .admin-sb-label {
-  opacity: 1;
+.admin-sb-drawer-body .admin-sb-item {
+  height: 44px;
 }
-
 .admin-sb-drawer-footer {
-  padding: 8px 10px 16px;
-  border-top: 1px solid var(--border-color);
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
 }
-
-/* ---- Responsive : masquer sidebar sur mobile ---- */
-@media (max-width: 768px) {
+.admin-sb-drawer-footer .admin-sb-user {
+  flex-basis: 100%;
+}
+.admin-sb-drawer-footer > a {
+  color: var(--mut);
+}
+.admin-sb-logout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  border: 0;
+  background: none;
+  color: var(--mut);
+  font: inherit;
+  cursor: pointer;
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .admin-sb-rail-toggle {
+    display: flex;
+  }
+  .sb-pivot-toggle {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
   .admin-sidebar {
     display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar {
+    transition: none;
   }
 }

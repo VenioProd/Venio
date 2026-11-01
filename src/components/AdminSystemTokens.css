@@ -1,0 +1,103 @@
+/* Scoped to /admin and its portals; the existing data-theme preference remains authoritative. */
+.admin-shell,
+.admin-sb-drawer,
+.admin-command-palette-layer,
+body.admin-system-theme {
+  color-scheme: dark;
+  --bg: #04050a;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.14);
+  --tx: #eef0f7;
+  --mut: #9aa1b4;
+  --dim: #646b80;
+  --dim-t: #7f869b;
+  --sky: #38bdf8;
+  --vio: #a78bfa;
+  --teal: #5eead4;
+  --mint: #34d399;
+  --amber: #fbbf24;
+  --rose: #f472b6;
+  --grad: linear-gradient(92deg, #c4b5fd 0%, #7dd3fc 45%, #5eead4 100%);
+  --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --ease: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --f1: rgba(255, 255, 255, 0.03);
+  --f2: rgba(255, 255, 255, 0.045);
+  --f3: rgba(255, 255, 255, 0.06);
+  --bar-bg: rgba(6, 7, 12, 0.72);
+  --sheet: #0a0c14;
+  --pill-bg: #f4f6fb;
+  --pill-tx: #05060b;
+  /* Bridge existing page primitives to the Système palette. */
+  --bg-primary: var(--bg);
+  --bg-secondary: var(--sheet);
+  --bg-card: var(--sheet);
+  --bg-tertiary: var(--f2);
+  --bg-card-hover: var(--f3);
+  --surface-sunken: var(--f1);
+  --surface-strong: var(--f3);
+  --ink-strong: var(--tx);
+  --ink-body: var(--tx);
+  --ink-soft: var(--mut);
+  --ink-dim: var(--mut);
+  --ink-faint: var(--dim-t);
+  --ink-ghost: var(--dim-t);
+  --ink-whisper: var(--dim);
+  --line-faint: var(--line);
+  --line-soft: var(--line);
+  --line-strong: var(--line-2);
+  --line-vivid: var(--dim-t);
+  --surface-raised: var(--f3);
+  --surface-hover: var(--f2);
+  --text-primary: var(--tx);
+  --text-secondary: var(--mut);
+  --text-muted: var(--dim-t);
+  --border-color: var(--line);
+  --border-strong: var(--line-2);
+  --primary: var(--sky);
+  --primary-light: #7dd3fc;
+  --primary-rgb: 56, 189, 248;
+  --primary-light-rgb: 125, 211, 252;
+  --primary-fg: #04050a;
+  --accent-soft: var(--f2);
+  --accent-surface: var(--f3);
+  --admin-shell-bg-base: var(--bg);
+  --font-body: var(--sans);
+  --font-heading: var(--sans);
+  --font-mono: var(--mono);
+  font-family: var(--sans);
+}
+[data-theme='light'] :is(.admin-shell, .admin-sb-drawer, .admin-command-palette-layer, body.admin-system-theme) {
+  color-scheme: light;
+  --bg: #f5f6fa;
+  --line: rgba(15, 20, 45, 0.1);
+  --line-2: rgba(15, 20, 45, 0.18);
+  --tx: #0d1020;
+  --mut: #4a5167;
+  --dim: #8a90a3;
+  --dim-t: #62697e;
+  --sky: #0284c7;
+  --vio: #7c3aed;
+  --teal: #0d9488;
+  --mint: #047857;
+  --amber: #b45309;
+  --rose: #be185d;
+  --grad: linear-gradient(92deg, #7c3aed 0%, #0284c7 50%, #0d9488 100%);
+  --f1: rgba(15, 20, 45, 0.025);
+  --f2: rgba(15, 20, 45, 0.04);
+  --f3: rgba(15, 20, 45, 0.06);
+  --bar-bg: rgba(245, 246, 250, 0.8);
+  --sheet: #fff;
+  --pill-bg: #0d1020;
+  --pill-tx: #fff;
+  --primary-rgb: 2, 132, 199;
+  --primary-light-rgb: 2, 132, 199;
+  --primary-light: var(--sky);
+  --primary-fg: #fff;
+}
+.admin-shell :focus-visible,
+.admin-sb-drawer :focus-visible,
+.admin-command-palette-layer :focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+}

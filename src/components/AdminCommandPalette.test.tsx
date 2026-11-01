@@ -33,6 +33,24 @@ describe('AdminCommandPalette', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  it('retains legacy destinations and guide while hiding Arrow even for a CRM reader', () => {
+    viewer.grantedPermissions = ['view_crm']
+    try {
+      render(
+        <MemoryRouter>
+          <AdminCommandPalette onClose={() => {}} />
+        </MemoryRouter>,
+      )
+      expect(screen.getByRole('option', { name: /CRM/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /Tickets/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /Guide/i })).toBeInTheDocument()
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Arrow' } })
+      expect(screen.queryAllByRole('option')).toHaveLength(0)
+    } finally {
+      viewer.grantedPermissions = []
+    }
+  })
+
   it('closes with Escape', () => {
     const onClose = vi.fn()
     render(

@@ -17,6 +17,20 @@ interface SegmentMapping {
 
 const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   admin: { labelKey: 'shell.breadcrumb.admin', to: '/admin' },
+  'mon-espace': { labelKey: 'shell.entry.home', to: '/admin/mon-espace' },
+  dashboard: { labelKey: 'shell.navItem.dashboard', to: '/admin/dashboard' },
+  'centre-activite': { labelKey: 'shell.navItem.activityCenter', to: '/admin/centre-activite' },
+  messages: { labelKey: 'shell.navItem.messages', to: '/admin/messages' },
+  'demandes-clients': { labelKey: 'shell.entry.requests', to: '/admin/demandes-clients' },
+  'commerciaux-externes': { labelKey: 'shell.navItem.externalSales', to: '/admin/commerciaux-externes' },
+  dev: { labelKey: 'shell.entry.dev', to: '/admin/dev' },
+  beta: { labelKey: 'shell.navItem.beta', to: '/admin/beta' },
+  education: { labelKey: 'shell.navItem.education', to: '/admin/education' },
+  health: { labelKey: 'shell.entry.system', to: '/admin/health' },
+  decisions: { labelKey: 'shell.navItem.decisions', to: '/admin/decisions' },
+  agents: { labelKey: 'shell.navItem.agents', to: '/admin/agents' },
+  webhooks: { labelKey: 'shell.navItem.webhooks', to: '/admin/webhooks' },
+  filiales: { labelKey: 'shell.navItem.subsidiaries', to: '/admin/filiales' },
   'comptes-clients': { labelKey: 'shell.breadcrumb.clientAccounts', to: '/admin/comptes-clients' },
   'comptes-admin': { labelKey: 'shell.breadcrumb.adminAccounts', to: '/admin/comptes-admin' },
   crm: { labelKey: 'shell.breadcrumb.crm', to: '/admin/crm' },
@@ -42,7 +56,7 @@ const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   'file-attente': { labelKey: 'shell.breadcrumb.queue', to: '/admin/comptabilite/file-attente' },
   audit: { labelKey: 'shell.breadcrumb.audit', to: null },
   projets: { labelKey: 'shell.breadcrumb.projects', to: null },
-  gestion: { labelKey: 'shell.breadcrumb.management', to: '/admin/gestion' },
+  gestion: { labelKey: 'shell.navItem.projects', to: '/admin/gestion' },
   qualiopi: { labelKey: 'shell.breadcrumb.qualiopi', to: '/admin/qualiopi' },
   tickets: { labelKey: 'shell.breadcrumb.tickets', to: '/admin/tickets' },
   stagiaires: { labelKey: 'shell.breadcrumb.team', to: '/admin/stagiaires' },
@@ -85,8 +99,8 @@ const AutoBreadcrumb = ({ extra = [] }: AutoBreadcrumbProps) => {
 
   if (segments.length === 0 || segments[0] !== 'admin') return null
 
-  // Sur la racine /admin, pas de fil d'Ariane (la nav suffit).
-  if (segments.length === 1 && extra.length === 0) return null
+  // L'accueil possède aussi un titre dans la nouvelle topbar.
+  if (segments.length === 1 && extra.length === 0) segments.push('mon-espace')
 
   const crumbs: BreadcrumbItem[] = []
   let path = ''

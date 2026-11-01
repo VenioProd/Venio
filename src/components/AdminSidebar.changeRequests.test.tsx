@@ -42,7 +42,7 @@ describe('entrée « Demandes clients » de la sidebar admin', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText('Demandes clients')).toBeInTheDocument()
+    expect(await screen.findByText('Demandes')).toBeInTheDocument()
     expect(await screen.findByLabelText('4 demandes à qualifier')).toHaveTextContent('4')
   })
 
@@ -54,11 +54,11 @@ describe('entrée « Demandes clients » de la sidebar admin', () => {
       </MemoryRouter>,
     )
 
-    await screen.findByText('Demandes clients')
+    await screen.findByText('Demandes')
     await waitFor(() => expect(screen.queryByLabelText(/demandes? à qualifier/)).not.toBeInTheDocument())
   })
 
-  it('masque l’entrée à un rôle sans view_change_requests', async () => {
+  it('conserve l’entrée via Tickets sans badge ni appel aux demandes clients', async () => {
     mockStats(4)
     currentUser.value = { _id: 'r1', name: 'RH', email: 'rh@example.test', role: 'RH', permissions: [] }
     render(
@@ -67,6 +67,8 @@ describe('entrée « Demandes clients » de la sidebar admin', () => {
       </MemoryRouter>,
     )
 
-    await waitFor(() => expect(screen.queryByText('Demandes clients')).not.toBeInTheDocument())
+    expect(screen.getByRole('link', { name: 'Demandes' })).toHaveAttribute('href', '/admin/tickets')
+    await waitFor(() => expect(screen.queryByLabelText(/demandes? à qualifier/)).not.toBeInTheDocument())
+    expect(api.apiFetch).not.toHaveBeenCalledWith('/api/admin/change-requests/stats')
   })
 })

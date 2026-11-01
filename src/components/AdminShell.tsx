@@ -1,17 +1,26 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Outlet, NavLink } from 'react-router-dom'
-import { FileText, Menu, LayoutDashboard, MessageSquare, FolderKanban, Search, Target } from 'lucide-react'
-import AdminSidebar from './AdminSidebar'
+import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Menu, Plus, HelpCircle } from 'lucide-react'
+import AdminSidebar, { ADMIN_NAV_ICONS } from './AdminSidebar'
 import AdminCommandPalette from './AdminCommandPalette'
-import SidebarCollapseToggle from './SidebarCollapseToggle'
 import AutoBreadcrumb from './AutoBreadcrumb'
 import PushPermissionPrompt from './PushPermissionPrompt'
 import { useAuth } from '../context/AuthContext'
 import { MessagingProvider, useMessaging } from '../context/MessagingContext'
 import { trackAdminEvent } from '../lib/adminAnalytics'
-import { getMobileNavigation, getNavigationLabel } from '../lib/adminNavigation'
+import {
+  getMobileNavigation,
+  getNavigationLabel,
+  getVisibleAdminNavigation,
+  isAdminNavigationActive,
+  getCommandPaletteItems,
+} from '../lib/adminNavigation'
 import { useI18n } from '../context/I18nContext'
 import LanguageSelect from './LanguageSelect'
+import ThemeToggle from './ThemeToggle'
+import UserAvatar from './UserAvatar'
+import NotificationBell from './admin/NotificationBell'
+import { NotificationProvider } from '../context/NotificationContext'
 import './AdminShell.css'
 
 const LS_KEY = 'venio-admin-sidebar-collapsed'
@@ -40,61 +49,98 @@ const AdminShellInner = ({
   const { user } = useAuth()
   const { t } = useI18n()
   const unreadTotal = useMemo(() => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0), [conversations])
-  const mobileItems = useMemo(() => getMobileNavigation(user), [user])
+  const mobileItems = getMobileNavigation(user)
 
-  const mobileIcon = (id: string) => {
-    if (id === 'home') return <LayoutDashboard size={22} aria-hidden />
-    if (id === 'messages') {
-      return (
-        <span className="admin-mobile-tab-icon">
-          <MessageSquare size={22} aria-hidden />
-          {unreadTotal > 0 && (
-            <span className="admin-mobile-badge" aria-label={t('shell.nav.unreadTab', { count: unreadTotal })}>
-              {unreadTotal > 9 ? '9+' : unreadTotal}
-            </span>
-          )}
-        </span>
-      )
-    }
-    if (id === 'projects') return <FolderKanban size={22} aria-hidden />
-    if (id === 'crm') return <Target size={22} aria-hidden />
-    return <FileText size={22} aria-hidden />
-  }
+  const location = useLocation()
+  const currentItem = getVisibleAdminNavigation(user).find((item) => isAdminNavigationActive(item, location.pathname))
+  const currentModule = getCommandPaletteItems(user)
+    .filter((item) => item.kind === 'module' && location.pathname.startsWith(item.to))
+    .sort((a, b) => b.to.length - a.to.length)[0]
+  const pageTitle = currentItem
+    ? getNavigationLabel(currentItem)
+    : location.pathname === '/admin/profil'
+      ? t('shell.nav.profile')
+      : location.pathname === '/admin/mon-releve'
+        ? t('shell.nav.statement')
+        : currentModule?.label
+  const quickActions = getCommandPaletteItems(user).filter((item) => item.kind === 'action')
 
   return (
     <div className="admin-shell" data-collapsed={collapsed ? 'true' : 'false'}>
+      <a className="admin-shell-skip" href="#admin-main">
+        {t('shell.nav.skip')}
+      </a>
       <AdminSidebar
         collapsed={collapsed}
+        onCollapseToggle={onCollapseToggle}
+        onPaletteOpen={onPaletteOpen}
         drawerOpen={mobileDrawerOpen}
         onDrawerClose={() => setMobileDrawerOpen(false)}
       />
-      <SidebarCollapseToggle collapsed={collapsed} onToggle={onCollapseToggle} />
       <div className="admin-shell-body">
-        <div className="admin-shell-topbar">
-          <button
-            type="button"
-            className="admin-shell-burger"
-            onClick={() => setMobileDrawerOpen(true)}
-            aria-label={t('shell.nav.openMenu')}
-            aria-haspopup="dialog"
-            aria-expanded={mobileDrawerOpen}
-          >
-            <Menu size={20} />
-          </button>
-          <AutoBreadcrumb />
-          <button
-            type="button"
-            className="admin-shell-palette-trigger"
-            onClick={onPaletteOpen}
-            aria-label={t('shell.palette.quickSearch')}
-          >
-            <Search size={16} aria-hidden />
-            <span>{t('shell.palette.searchTrigger')}</span>
-            <kbd>⌘K</kbd>
-          </button>
-          <LanguageSelect compact />
-        </div>
-        <main className="admin-shell-main">
+        <header className="admin-shell-topbar">
+          <Link to="/admin/mon-espace" className="admin-shell-mobile-brand" aria-label={t('shell.nav.adminHome')}>
+            <span className="admin-sb-logo" aria-hidden>
+              V
+            </span>
+          </Link>
+          <div className="admin-shell-breadcrumb">
+            <AutoBreadcrumb />
+          </div>
+          <span className="admin-shell-mobile-title">{pageTitle}</span>
+          <div className="admin-shell-top-actions">
+            {quickActions.length > 0 && (
+              <details
+                className="admin-shell-create"
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    event.currentTarget.open = false
+                    event.currentTarget.querySelector('summary')?.focus()
+                  }
+                }}
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false
+                }}
+              >
+                <summary>
+                  <Plus size={16} aria-hidden />
+                  {t('shell.nav.create')}
+                </summary>
+                <nav aria-label={t('shell.nav.create')}>
+                  {quickActions.map((action) => (
+                    <Link
+                      key={action.id}
+                      to={action.to}
+                      onClick={(event) => {
+                        event.currentTarget.closest('details')?.removeAttribute('open')
+                        trackAdminEvent('admin_palette_selected', action.id)
+                      }}
+                    >
+                      {action.label}
+                    </Link>
+                  ))}
+                </nav>
+              </details>
+            )}
+            <NotificationBell />
+            <Link
+              className="admin-shell-help"
+              to="/admin/guide"
+              aria-label={t('shell.navItem.guide')}
+              title={t('shell.navItem.guide')}
+            >
+              <HelpCircle size={18} aria-hidden />
+            </Link>
+            <div className="admin-shell-desktop-controls">
+              <ThemeToggle />
+              <LanguageSelect compact />
+            </div>
+            <Link className="admin-shell-mobile-avatar" to="/admin/profil" aria-label={t('shell.nav.profile')}>
+              <UserAvatar name={user?.name || user?.email || '?'} avatarUrl={user?.avatarUrl} size={28} />
+            </Link>
+          </div>
+        </header>
+        <main id="admin-main" className="admin-shell-main" tabIndex={-1}>
           <PushPermissionPrompt variant="admin" />
           <Outlet />
         </main>
@@ -102,28 +148,39 @@ const AdminShellInner = ({
 
       {/* Bottom tab bar mobile admin */}
       <nav className="admin-mobile-nav" aria-label={t('shell.nav.mobileAria')}>
-        {mobileItems.map((item) => (
-          <NavLink
-            key={item.id}
-            to={item.screen}
-            end={item.id === 'home'}
-            className={({ isActive }) => `admin-mobile-tab${isActive ? ' active' : ''}`}
-            onClick={() => trackAdminEvent('admin_navigation_selected', item.id.replace(/-/g, '_'))}
-          >
-            {mobileIcon(item.id)}
-            <span>{getNavigationLabel(item)}</span>
-          </NavLink>
-        ))}
+        {mobileItems.map((item) => {
+          const Icon = ADMIN_NAV_ICONS[item.id]
+          const active = isAdminNavigationActive(item, location.pathname)
+          return (
+            <Link
+              key={item.id}
+              to={item.screen}
+              aria-current={active ? 'page' : undefined}
+              className={`admin-mobile-tab${active ? ' active' : ''}`}
+              onClick={() => trackAdminEvent('admin_navigation_selected', item.id)}
+            >
+              <span className="admin-mobile-tab-icon">
+                <Icon size={20} aria-hidden />
+                {item.id === 'inbox' && unreadTotal > 0 && (
+                  <span className="admin-mobile-badge" aria-label={t('shell.nav.unreadTab', { count: unreadTotal })}>
+                    {unreadTotal > 9 ? '9+' : unreadTotal}
+                  </span>
+                )}
+              </span>
+              <span>{getNavigationLabel(item)}</span>
+            </Link>
+          )
+        })}
         <button
           type="button"
-          className={`admin-mobile-tab${mobileDrawerOpen ? ' active' : ''}`}
+          className={`admin-mobile-tab${mobileDrawerOpen || (currentItem && !mobileItems.some((item) => item.id === currentItem.id)) ? ' active' : ''}`}
           onClick={() => setMobileDrawerOpen(true)}
           aria-label={t('shell.nav.openFullNav')}
           aria-haspopup="dialog"
           aria-expanded={mobileDrawerOpen}
         >
           <Menu size={22} aria-hidden />
-          <span>{t('nav.menu')}</span>
+          <span>{t('shell.nav.more')}</span>
         </button>
       </nav>
       {paletteOpen && <AdminCommandPalette onClose={onPaletteClose} />}
@@ -132,13 +189,17 @@ const AdminShellInner = ({
 }
 
 const AdminShell = () => {
+  useEffect(() => {
+    document.body.classList.add('admin-system-theme')
+    return () => document.body.classList.remove('admin-system-theme')
+  }, [])
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => {
     try {
-      return localStorage.getItem(LS_KEY) === 'true'
+      return localStorage.getItem(LS_KEY) !== 'false'
     } catch {
-      return false
+      return true
     }
   })
 
@@ -176,17 +237,19 @@ const AdminShell = () => {
   }, [handleCollapseToggle, openPalette])
 
   return (
-    <MessagingProvider>
-      <AdminShellInner
-        mobileDrawerOpen={mobileDrawerOpen}
-        setMobileDrawerOpen={setMobileDrawerOpen}
-        collapsed={collapsed}
-        onCollapseToggle={handleCollapseToggle}
-        paletteOpen={paletteOpen}
-        onPaletteOpen={openPalette}
-        onPaletteClose={() => setPaletteOpen(false)}
-      />
-    </MessagingProvider>
+    <NotificationProvider>
+      <MessagingProvider>
+        <AdminShellInner
+          mobileDrawerOpen={mobileDrawerOpen}
+          setMobileDrawerOpen={setMobileDrawerOpen}
+          collapsed={collapsed}
+          onCollapseToggle={handleCollapseToggle}
+          paletteOpen={paletteOpen}
+          onPaletteOpen={openPalette}
+          onPaletteClose={() => setPaletteOpen(false)}
+        />
+      </MessagingProvider>
+    </NotificationProvider>
   )
 }
 
