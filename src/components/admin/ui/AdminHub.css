@@ -131,4 +131,9 @@
     flex-direction: column;
     gap: 16px;
   }
+  /* En colonne, les flex-basis en largeur des pages (ex. 240px) deviennent des hauteurs.
+     :not(#_) l'emporte sur les surcharges propres à chaque page. */
+  .admin-page-header__row > :not(#_) {
+    flex-basis: auto;
+  }
 }

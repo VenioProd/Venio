@@ -20,6 +20,9 @@ function handleAuth401(path: string): void {
   if (path.includes('/auth/login')) return
   if (typeof window === 'undefined') return
   const currentPath = window.location.pathname
+  // Déjà sur une page de connexion : rediriger rechargerait la page en boucle
+  // (chaque chargement appelle /auth/me, qui répond 401).
+  if (currentPath === '/admin/login' || currentPath === '/espace-client/login') return
   if (currentPath.startsWith('/admin')) {
     window.location.href = '/admin/login'
   } else if (currentPath.startsWith('/espace-client')) {

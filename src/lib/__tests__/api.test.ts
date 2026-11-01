@@ -144,4 +144,24 @@ describe('api client', () => {
     })
     expect(replace).toHaveBeenCalledWith('/admin/mfa-setup?returnTo=%2Fadmin%2Fcomptabilite%3Fperiode%3D2026')
   })
+  it.each([
+    ['/admin/login', null],
+    ['/espace-client/login', null],
+    ['/admin/crm', '/admin/login'],
+  ])('on 401 from %s, redirects to %s', async (pathname, expected) => {
+    const location = { pathname, search: '', href: 'unchanged' }
+    vi.stubGlobal('window', { location })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: 'Non authentifié' }), {
+          status: 401,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    )
+
+    await expect(apiFetch('/api/auth/me')).rejects.toMatchObject({ status: 401 })
+    expect(location.href).toBe(expected ?? 'unchanged')
+  })
 })
