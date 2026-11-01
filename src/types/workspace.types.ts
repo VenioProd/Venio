@@ -43,12 +43,13 @@ export interface WorkspaceNote {
   updatedAt?: string
 }
 
-export interface RoleKpi { label: string; value: number; link: string }
+/** `key` : identifiant stable traduit côté client (absent des réponses antérieures). */
+export interface RoleKpi { key?: string; label: string; value: number; link: string }
 
 export interface WorkspaceOverview {
   kpis: RoleKpi[]
   overdue: PersonalTask[]
   week: PersonalTask[]
   pinned: { _id: string; title: string; link: string; color?: string }[]
-  activity: { _id: string; title: string; message: string; link: string; createdAt: string }[]
+  activity: { _id: string; title: string; message: string; link: string; createdAt: string; isRead?: boolean }[]
 }

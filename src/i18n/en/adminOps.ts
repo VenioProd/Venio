@@ -410,6 +410,7 @@ const en: Record<keyof typeof fr, string> = {
   'adminOps.calendar.typeDeadline': 'Deadline',
   'adminOps.calendar.typeProjectStart': 'Project start',
   'adminOps.calendar.typeProjectEnd': 'Project end',
+  'adminOps.calendar.typeDecision': 'Decision',
   'adminOps.calendar.legendTasks': 'Tasks',
   'adminOps.calendar.legendDeadlines': 'Deadlines',
   'adminOps.calendar.title': 'Calendar',

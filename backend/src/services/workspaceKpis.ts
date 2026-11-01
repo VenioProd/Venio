@@ -7,6 +7,8 @@ import Project from '../models/Project.js'
 import Task from '../models/Task.js'
 
 export interface RoleKpi {
+  /** Identifiant stable, traduit côté client (`label` reste le repli français). */
+  key: string
   label: string
   value: number
   link: string
@@ -30,12 +32,14 @@ export async function computeRoleKpis(userId: string, role: string): Promise<Rol
     case 'COMMERCIAL':
       return [
         {
+          key: 'hotLeads',
           label: 'Leads chauds',
           // leadTemperature confirmed in Lead model — enum: ['FROID','TIEDE','CHAUD','TRES_CHAUD']
           value: await safe(Lead.countDocuments({ leadTemperature: { $in: ['CHAUD', 'TRES_CHAUD'] } })),
           link: '/admin/crm',
         },
         {
+          key: 'openDeals',
           label: 'Affaires en cours',
           // Lead.assignedTo scopes to this user; WON/LOST are closed statuses
           value: await safe(Lead.countDocuments({ assignedTo: userId, status: { $nin: ['WON', 'LOST'] } })),
@@ -46,12 +50,14 @@ export async function computeRoleKpis(userId: string, role: string): Promise<Rol
     case 'RH':
       return [
         {
+          key: 'activeInterns',
           label: 'Stagiaires actifs',
           // Intern.status enum: ['ACTIF', 'TERMINE', 'ANNULE']
           value: await safe(Intern.countDocuments({ status: 'ACTIF' })),
           link: '/admin/stagiaires',
         },
         {
+          key: 'pendingReports',
           label: 'Rapports en attente',
           // ActivityReport.status enum: ['BROUILLON', 'SOUMIS', 'VALIDE']
           // 'SOUMIS' = submitted by intern, awaiting RH validation
@@ -63,12 +69,14 @@ export async function computeRoleKpis(userId: string, role: string): Promise<Rol
     case 'COMPTABLE':
       return [
         {
+          key: 'draftEntries',
           label: 'Écritures à valider',
           // AccountingEntry.status enum: ['DRAFT', 'VALIDATED', 'LOCKED']
           value: await safe(AccountingEntry.countDocuments({ status: 'DRAFT' })),
           link: '/admin/comptabilite',
         },
         {
+          key: 'vatDeclarations',
           label: 'Déclarations TVA',
           // VatDeclaration.status enum: ['DRAFT', 'SUBMITTED']
           value: await safe(VatDeclaration.countDocuments({ status: { $ne: 'SUBMITTED' } })),
@@ -79,12 +87,14 @@ export async function computeRoleKpis(userId: string, role: string): Promise<Rol
     case 'STAGIAIRE':
       return [
         {
+          key: 'myTasks',
           label: 'Mes tâches',
           // Task.assignee (ObjectId), Task.status — 'TERMINE' is confirmed terminal value
           value: await safe(Task.countDocuments({ assignee: userId, status: { $ne: 'TERMINE' } })),
           link: '/admin/mon-espace',
         },
         {
+          key: 'myReports',
           label: 'Mes rapports',
           // ActivityReport.userId is the author field (confirmed: userId: Schema.Types.ObjectId ref User)
           value: await safe(ActivityReport.countDocuments({ userId })),
@@ -99,12 +109,14 @@ export async function computeRoleKpis(userId: string, role: string): Promise<Rol
     default:
       return [
         {
+          key: 'activeProjects',
           label: 'Projets actifs',
           // Project.status enum: ['EN_COURS', 'EN_ATTENTE', 'TERMINE']
           value: await safe(Project.countDocuments({ status: 'EN_COURS' })),
           link: '/admin/gestion',
         },
         {
+          key: 'tasksInProgress',
           label: 'Tâches en cours',
           // Task.status enum includes 'EN_COURS'
           value: await safe(Task.countDocuments({ status: 'EN_COURS' })),

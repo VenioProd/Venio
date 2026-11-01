@@ -92,6 +92,7 @@ import adminMessagingRoutes from './routes/admin/messaging.js'
 import adminHealthRoutes from './routes/admin/health.js'
 import adminActivityCenterRoutes from './routes/admin/activityCenter.js'
 import adminWorkspaceRoutes from './routes/admin/workspace.js'
+import adminHomeRoutes from './routes/admin/home.js'
 import commercialRoutes from './routes/commercial/index.js'
 import adminExternalSalesRoutes from './routes/admin/externalSales.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
@@ -354,6 +355,7 @@ app.use('/api/admin/interactions', adminInteractionRoutes)
 app.use('/api/admin/notifications', adminNotificationRoutes)
 app.use('/api/admin/dashboard', adminDashboardRoutes)
 app.use('/api/admin/workspace', adminWorkspaceRoutes)
+app.use('/api/admin/home', adminHomeRoutes)
 app.use('/api/admin/decisions', adminDecisionRoutes)
 app.use('/api/admin/inbox', adminInboxRoutes)
 app.use('/api/admin/search', adminSearchRoutes)

@@ -200,6 +200,48 @@ Réponse :
 | 2FA              | `/users/:id/2fa`                 | `read:2fa`           | `manage:2fa`           |
 | Dev (tracker, idées) | `/dev`                       | `read:dev`           | `write:dev`            |
 | Users            | `/users`                         | `read:users`         | `write:users`          |
+| Accueil (file d'actions) | `/home/queue`            | un des scopes ci-dessous | —                  |
+
+### File d'actions de l'accueil (`GET /home/queue`)
+
+Équivalent agent de `GET /api/admin/home/queue` (accueil admin) : une seule
+lecture qui agrège ce qui attend une action, triée par score d'urgence. **Aucun
+scope dédié** : chaque source est filtrée par le scope de lecture qui la couvre
+déjà, et il suffit d'en détenir un pour appeler la route. Sans aucun de ces
+scopes : `403 INSUFFICIENT_SCOPE` (`details.anyOf: true`, `details.required` liste
+les scopes acceptés).
+
+| Source (`kind`) | Contenu | Scope |
+|---|---|---|
+| `task` | Tâches projet en retard (échéance avant aujourd'hui, ni `TERMINE` ni `VALIDE`) | `read:tasks` |
+| `ticket` | Tickets internes `OUVERT` / `EN_COURS` ; SLA de prise en charge 4 h (`URGENTE`, `HAUTE`) ou 24 h (`NORMALE`), comme l'alerte `ticket.sla_breach_alert` | `read:tickets` |
+| `request` | Demandes clients `SOUMISE` (à qualifier) ou `A_CHIFFRER` | `read:projects` |
+| `crm` | Leads ouverts dont la prochaine action (`nextActionAt`) est échue ou du jour | `read:crm` |
+| `dev` | Issues dev `IN_REVIEW` | `read:dev` |
+| `decision` | Décisions `PENDING` | `admin:*` (aucune route agent n'expose les décisions) |
+
+Query : `limit` (défaut 50, max 200 ; les compteurs portent sur la totalité).
+
+```json
+{
+  "items": [{
+    "id": "ticket:<ObjectId>", "kind": "ticket", "sourceId": "<ObjectId>",
+    "title": "Paiement indisponible", "subtitle": "Théo L.", "priority": "URGENT",
+    "status": "OUVERT", "dueAt": null, "slaDueAt": "2026-11-01T09:00:00.000Z",
+    "overdue": true, "dueToday": false, "createdAt": "…", "score": 95,
+    "link": "/admin/demandes/equipe", "actions": [], "meta": { "category": "PROBLEME" }
+  }],
+  "counts": { "all": 9, "decision": 0, "task": 3, "ticket": 2, "request": 1, "crm": 2, "dev": 1 },
+  "overdue": 3, "dueToday": 4,
+  "kinds": ["task", "ticket", "request", "crm", "dev"],
+  "generatedAt": "…"
+}
+```
+
+- `priority` est normalisée (`LOW` / `NORMAL` / `HIGH` / `URGENT`) ; `status` reste le statut d'origine.
+- Score 0–100 : base par type, + priorité, + retard (borné), + échéance du jour ou sous 48 h, + SLA dépassé ou proche. Tri : score, puis échéance, puis ancienneté.
+- Un token n'a pas d'utilisateur : la vue est globale (pas de filtre par assigné, pas de tâches personnelles) et `actions` est toujours vide. Pour agir, utiliser les routes d'écriture de chaque module (`PATCH /tasks/:id`, `PATCH /tickets/:id`…).
+- Côté interface (session, hors API agent), `GET /api/admin/home/queue` applique les contrôles des routes d'origine : décisions réservées au super-admin, tâches assignées à l'utilisateur (+ ses tâches perso), tickets limités aux siens hors super-admin (`view_tickets`), demandes et projets lisibles (`view_change_requests`), relances qui lui reviennent dans son périmètre CRM (`view_crm`), revue des issues dont il n'est pas l'assigné (`view_dev`). Les actions inline n'y sont proposées que si la route d'écriture les accepterait (`manage_tasks` pour une tâche projet).
 
 ### Actions groupées (`/bulk`)
 

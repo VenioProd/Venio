@@ -19,6 +19,7 @@ import eduA from './eduA'
 import eduB from './eduB'
 import eduC from './eduC'
 import eduD from './eduD'
+import home from './home'
 import intern from './intern'
 import orgs from './orgs'
 import projA from './projA'
@@ -49,6 +50,7 @@ const messages = {
   ...eduB,
   ...eduC,
   ...eduD,
+  ...home,
   ...intern,
   ...orgs,
   ...projA,
