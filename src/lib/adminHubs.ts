@@ -68,9 +68,10 @@ export const ADMIN_HUBS = {
   dev: {
     title: 'Dev',
     eyebrow: 'Production',
-    subtitle: 'Workspace de développement et recette.',
+    subtitle: 'Workspace de développement, boîte à idées et recette.',
     tabs: [
       { id: 'workspace', label: 'Workspace', to: '/admin/dev/workspace', modules: ['dev'] },
+      { id: 'idees', label: 'Idées', to: '/admin/dev/idees', modules: ['dev-ideas'] },
       { id: 'recette', label: 'Recette', to: '/admin/dev/recette', modules: ['beta'] },
     ],
   },

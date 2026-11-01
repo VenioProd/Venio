@@ -129,6 +129,8 @@ export type NotificationType =
   // Dev workspace
   | 'DEV_ISSUE_ASSIGNED'
   | 'DEV_ISSUE_STATUS_CHANGED'
+  | 'DEV_SUGGESTION_SUBMITTED'
+  | 'DEV_SUGGESTION_STATUS_CHANGED'
   // Beta tests
   | 'BETA_BLOCKING_FEEDBACK'
   // Qualiopi
@@ -307,6 +309,7 @@ export type Permission =
   // ── Dev workspace (suivi développement, type Linear) ──
   | 'view_dev'
   | 'manage_dev'
+  | 'submit_dev_suggestion'
   | 'view_beta'
   | 'manage_beta'
   // ── Education (workspace pédagogique type Notion) ──

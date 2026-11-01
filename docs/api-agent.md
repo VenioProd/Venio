@@ -167,6 +167,7 @@ Réponse :
 | `read:automations` / `write:automations` / `trigger:automations` | settings + déclenchement | — |
 | `read:backup` / `manage:backup` | trigger + restore                  | **très sensible** |
 | `read:2fa` / `manage:2fa`  | activer/désactiver 2FA d'un user       | **très sensible** |
+| `read:dev` / `write:dev`   | dev tracker (projets, issues) et boîte à idées (suggestions) | — |
 | `read:users` / `write:users` | gestion users                        | —                |
 | `admin:*`                  | super-scope (octroie tout)             | tokens master uniquement |
 
@@ -197,11 +198,33 @@ Réponse :
 | Automations      | `/automations`                   | `read:automations`   | `write:automations` + `trigger:automations` |
 | Backup           | `/backup`                        | `read:backup`        | `manage:backup`        |
 | 2FA              | `/users/:id/2fa`                 | `read:2fa`           | `manage:2fa`           |
+| Dev (tracker, idées) | `/dev`                       | `read:dev`           | `write:dev`            |
 | Users            | `/users`                         | `read:users`         | `write:users`          |
 
 La prospection des établissements Arrow utilise désormais les leads du CRM
 principal (`/leads`, `project: "ARROW"`), avec `read:crm` / `write:crm`.
 Les scopes Arrow restent réservés au pilotage.
+
+### Boîte à idées (suggestions de features)
+
+Scopes inchangés : `read:dev` pour lire, `write:dev` pour écrire. Les tokens
+existants y accèdent sans régénération. Une suggestion est distincte d'une issue ;
+elle ne devient une `DevIssue` (type `FEATURE`, backlog) qu'à l'acceptation.
+
+| Méthode + chemin | Scope | Rôle |
+|---|---|---|
+| `GET /dev/suggestions` | `read:dev` | Liste paginée. Filtres `status` (`NEW`/`STUDIED`/`ACCEPTED`/`REJECTED`), `project`, `link` (id lead/client), `q`, `includeArchived`. Tri `sort=impact` (défaut) \| `votes` \| `recent`. |
+| `GET /dev/suggestions/:id` | `read:dev` | Détail, historique des statuts inclus. |
+| `POST /dev/suggestions` | `write:dev` | Crée (statut `NEW`). Requis : `title`, `problem`. Optionnels : `project`, `link: {kind: "lead"\|"client", ref}`, `requesterName`, `requesterUser`, `amountEur`, `level` (`LOW`/`MEDIUM`/`HIGH`/`CRITICAL`). |
+| `PATCH /dev/suggestions/:id` | `write:dev` | Modifie les champs ci-dessus, `status` (`NEW`/`STUDIED`/`REJECTED`), `reason` (obligatoire pour `REJECTED`), `archived`. `ACCEPTED` passe par `/convert`. |
+| `POST /dev/suggestions/:id/vote` | `write:dev` | Bascule l'appui de `userId` (requis : un token n'a pas d'utilisateur). |
+| `POST /dev/suggestions/:id/convert` | `write:dev` | Crée l'issue. Corps optionnel : `project`, `assignee`. `201` à la création, `200` si l'issue existait déjà (idempotent). |
+| `POST /dev/suggestions/bulk` | `write:dev` | `{ids, action}` avec `archive`, `status` (+`status`, `reason`) ou `convert`. Max 100 ids. Réponse `{processed, failed:[{id,error}]}`. La suppression définitive est réservée à l'admin. |
+| `POST /dev/issues/bulk` | `write:dev` | `{ids, action}` avec `archive`, `status` (+`status`) ou `assign` (+`assignee`, `null` pour désassigner). Mêmes limites et réponse. |
+
+Le demandeur (`requesterUser`) est notifié à chaque changement de statut, à la
+conversion (avec l'identifiant de l'issue) et quand l'issue passe `DONE`. Sans
+`requesterName`, le nom du token est utilisé.
 
 ## 8. Gestion des tokens (admin)
 

@@ -408,7 +408,7 @@ export function createDevIssue(data: {
 
 export function updateDevIssue(
   id: string,
-  data: Partial<DevIssue> & { assignee?: string | null; github?: Partial<DevIssueGithubLink> | null },
+  data: Partial<Omit<DevIssue, 'assignee'>> & { assignee?: string | null; github?: Partial<DevIssueGithubLink> | null },
 ): Promise<DevIssue> {
   return apiFetch(`/api/admin/dev/issues/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
@@ -1029,4 +1029,95 @@ export function computeWeightedProgress(byStatus: Record<DevIssueStatus, number>
   }
   if (nonCancelled === 0) return 0
   return Math.round(weighted / nonCancelled)
+}
+
+
+// Boîte à idées (suggestions de features)
+export type DevSuggestionStatus = 'NEW' | 'STUDIED' | 'ACCEPTED' | 'REJECTED'
+export type DevSuggestionImpactLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+export type DevSuggestionSort = 'impact' | 'votes' | 'recent'
+
+export interface DevSuggestion {
+  _id: string
+  title: string
+  problem: string
+  project: Pick<DevProject, '_id' | 'key' | 'name' | 'color'> | null
+  link: { kind: 'lead' | 'client'; ref: string } | null
+  requester: { user: string | null; name: string }
+  impact: { amountEur: number | null; level: DevSuggestionImpactLevel }
+  status: DevSuggestionStatus
+  rejectionReason: string | null
+  voteCount: number
+  hasVoted: boolean
+  issue: { _id: string; identifier: string; status: DevIssueStatus } | null
+  source: { kind: 'manual' | 'agent'; name: string | null }
+  statusHistory: { status: DevSuggestionStatus; at: string; note: string }[]
+  archivedAt: string | null
+  createdAt: string
+}
+
+export interface DevSuggestionInput {
+  title: string
+  problem: string
+  project?: string | null
+  link?: { kind: 'lead' | 'client'; ref: string } | null
+  requesterName?: string
+  amountEur?: number | null
+  level?: DevSuggestionImpactLevel
+}
+
+export interface DevBulkReport {
+  processed: string[]
+  failed: { id: string; error: string }[]
+}
+
+export const SUGGESTION_STATUS_ORDER: DevSuggestionStatus[] = ['NEW', 'STUDIED', 'ACCEPTED', 'REJECTED']
+export const SUGGESTION_LEVEL_ORDER: DevSuggestionImpactLevel[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+
+export function listDevSuggestions(
+  filters: { status?: DevSuggestionStatus; project?: string; sort?: DevSuggestionSort; q?: string } = {},
+  signal?: AbortSignal,
+): Promise<{ items: DevSuggestion[] }> {
+  return apiFetch(`/api/admin/dev/suggestions${qs(filters)}`, { signal })
+}
+
+export function createDevSuggestion(data: DevSuggestionInput): Promise<DevSuggestion> {
+  return apiFetch('/api/admin/dev/suggestions', { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function toggleDevSuggestionVote(id: string): Promise<DevSuggestion> {
+  return apiFetch(`/api/admin/dev/suggestions/${id}/vote`, { method: 'POST' })
+}
+
+export function updateDevSuggestion(
+  id: string,
+  data: Partial<DevSuggestionInput> & { status?: DevSuggestionStatus; reason?: string; archived?: boolean },
+): Promise<DevSuggestion> {
+  return apiFetch(`/api/admin/dev/suggestions/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function convertDevSuggestion(
+  id: string,
+  data: { project?: string; assignee?: string } = {},
+): Promise<{ suggestion: DevSuggestion; issue: DevIssue }> {
+  return apiFetch(`/api/admin/dev/suggestions/${id}/convert`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function bulkDevSuggestions(
+  ids: string[],
+  action: 'archive' | 'delete' | 'status' | 'convert',
+  params: { status?: DevSuggestionStatus; reason?: string; project?: string; assignee?: string } = {},
+): Promise<DevBulkReport> {
+  return apiFetch('/api/admin/dev/suggestions/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ ids, action, ...params }),
+  })
+}
+
+export function bulkDevIssues(
+  ids: string[],
+  action: 'archive' | 'delete' | 'status' | 'assign',
+  params: { status?: DevIssueStatus; assignee?: string | null } = {},
+): Promise<DevBulkReport> {
+  return apiFetch('/api/admin/dev/issues/bulk', { method: 'POST', body: JSON.stringify({ ids, action, ...params }) })
 }

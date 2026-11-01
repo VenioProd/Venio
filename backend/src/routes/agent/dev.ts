@@ -8,6 +8,20 @@ import DevProject, { DEV_PROJECT_STATUSES } from '../../models/DevProject.js'
 import DevIssue, { DEV_ISSUE_STATUSES, DEV_ISSUE_PRIORITIES, DEV_ISSUE_TYPES } from '../../models/DevIssue.js'
 import DevIssueComment, { DEV_ISSUE_COMMENT_KINDS } from '../../models/DevIssueComment.js'
 import User from '../../models/User.js'
+import DevSuggestion, { DEV_SUGGESTION_STATUSES } from '../../models/DevSuggestion.js'
+import {
+  applySuggestionFields,
+  bulkIssues,
+  bulkSuggestions,
+  convertSuggestion,
+  notifyManagersOfSubmission,
+  parseBulkIds,
+  parseSuggestionBody,
+  recordInitialStatus,
+  serializeSuggestion,
+  suggestionListQuery,
+  transitionSuggestion,
+} from '../../lib/dev/suggestions.js'
 import { computeStats, computeOverview, computeProjectCockpit } from '../../lib/dev/stats.js'
 import { createIssueWithRetry } from '../../lib/dev/createIssue.js'
 import { parseGithubPatch, mergeGithubLink } from '../../lib/dev/github.js'
@@ -486,5 +500,184 @@ router.post(
     }
   },
 )
+
+// ─── Boîte à idées (suggestions de features) ─────────────────────────────────
+// read:dev pour lire, write:dev pour créer / modifier / convertir. Le token
+// agent n'a pas d'utilisateur : le reporter des issues créées est le compte
+// système, et le demandeur est un nom libre (requesterName).
+
+router.get('/dev/suggestions', requireScope('read:dev'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const pag = parsePagination(req)
+    const { filter, sort } = suggestionListQuery(req.query)
+    const [items, total] = await Promise.all([
+      DevSuggestion.find(filter).sort(sort).skip(pag.skip).limit(pag.limit),
+      DevSuggestion.countDocuments(filter),
+    ])
+    res.json(
+      paginatedResponse(
+        items.map((s) => serializeSuggestion(s)),
+        pag,
+        total,
+      ),
+    )
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.get('/dev/suggestions/:id', requireScope('read:dev'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const s = await DevSuggestion.findById(req.params.id)
+    if (!s) return respondError(res, 404, 'NOT_FOUND', 'Suggestion introuvable')
+    res.json(serializeSuggestion(s))
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.post('/dev/suggestions', requireScope('write:dev'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = await parseSuggestionBody(req.body, 'create')
+    if ('error' in parsed) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
+    const s = new DevSuggestion({ source: { kind: 'agent', name: parseCreatorModel(req) ?? req.agentToken?.name ?? null } })
+    applySuggestionFields(s, {
+      ...parsed.data,
+      requesterName: parsed.data.requesterName || req.agentToken?.name || 'Agent',
+    })
+    recordInitialStatus(s, null)
+    await s.save()
+    notifyManagersOfSubmission(s).catch(() => {})
+    res.locals.audit = {
+      entityType: 'DevSuggestion',
+      entityId: String(s._id),
+      entityRef: s.title,
+      summary: `Création suggestion "${s.title}"`,
+      after: s.toObject(),
+    }
+    res.status(201).json(serializeSuggestion(s))
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.patch('/dev/suggestions/:id', requireScope('write:dev'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const s = await DevSuggestion.findById(req.params.id)
+    if (!s) return respondError(res, 404, 'NOT_FOUND', 'Suggestion introuvable')
+    const before = s.toObject()
+    const parsed = await parseSuggestionBody(req.body, 'patch')
+    if ('error' in parsed) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
+    applySuggestionFields(s, parsed.data)
+    if (req.body?.archived === true) s.archivedAt = new Date()
+    if (req.body?.archived === false) s.archivedAt = null
+    await s.save()
+    if (typeof req.body?.status === 'string') {
+      if (!(DEV_SUGGESTION_STATUSES as readonly string[]).includes(req.body.status)) {
+        return respondError(res, 400, 'VALIDATION_ERROR', 'status invalide')
+      }
+      const r = await transitionSuggestion(s, req.body.status, {
+        actorId: null,
+        reason: typeof req.body.reason === 'string' ? req.body.reason : null,
+      })
+      if (!r.ok) return respondError(res, 400, r.code, r.error)
+    }
+    res.locals.audit = {
+      entityType: 'DevSuggestion',
+      entityId: String(s._id),
+      entityRef: s.title,
+      before,
+      after: s.toObject(),
+    }
+    res.json(serializeSuggestion(s))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Un token agent n'a pas d'utilisateur : l'appui est donné au nom de `userId`.
+router.post(
+  '/dev/suggestions/:id/vote',
+  requireScope('write:dev'),
+  param('id').isMongoId(),
+  body('userId').isMongoId().withMessage('userId requis (utilisateur au nom duquel appuyer)'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const s = await DevSuggestion.findById(req.params.id)
+      if (!s) return respondError(res, 404, 'NOT_FOUND', 'Suggestion introuvable')
+      if (!(await User.exists({ _id: req.body.userId }))) return respondError(res, 404, 'NOT_FOUND', 'Utilisateur introuvable')
+      const uid = String(req.body.userId)
+      const had = s.voters.some((v) => String(v) === uid)
+      s.voters = had ? s.voters.filter((v) => String(v) !== uid) : [...s.voters, new mongoose.Types.ObjectId(uid)]
+      s.voteCount = s.voters.length
+      await s.save()
+      res.json(serializeSuggestion(s, uid))
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+
+router.post('/dev/suggestions/:id/convert', requireScope('write:dev'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const s = await DevSuggestion.findById(req.params.id)
+    if (!s) return respondError(res, 404, 'NOT_FOUND', 'Suggestion introuvable')
+    const systemId = await resolveSystemUserId()
+    const r = await convertSuggestion(
+      s,
+      { userId: null, fallbackReporterId: systemId },
+      {
+        projectId: typeof req.body?.project === 'string' ? req.body.project : null,
+        assignee: typeof req.body?.assignee === 'string' ? req.body.assignee : null,
+      },
+    )
+    if (!r.ok) return respondError(res, r.status, r.code, r.error)
+    res.locals.audit = {
+      entityType: 'DevSuggestion',
+      entityId: String(s._id),
+      entityRef: s.title,
+      summary: `Suggestion convertie en issue ${String((r.issue as { identifier?: string }).identifier ?? '')}`,
+    }
+    res.status(r.created ? 201 : 200).json({ suggestion: serializeSuggestion(s), issue: r.issue })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Suppression définitive réservée à l'admin : un agent archive.
+router.post('/dev/suggestions/bulk', requireScope('write:dev'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ids = parseBulkIds(req.body?.ids)
+    if (!ids) return respondError(res, 400, 'VALIDATION_ERROR', 'ids requis (1 à 100 ObjectId)')
+    const systemId = await resolveSystemUserId()
+    const report = await bulkSuggestions(
+      ids,
+      String(req.body?.action),
+      req.body ?? {},
+      { userId: null, fallbackReporterId: systemId },
+      { allowDelete: false },
+    )
+    if ('error' in report) return respondError(res, 400, 'VALIDATION_ERROR', report.error)
+    res.json(report)
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.post('/dev/issues/bulk', requireScope('write:dev'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ids = parseBulkIds(req.body?.ids)
+    if (!ids) return respondError(res, 400, 'VALIDATION_ERROR', 'ids requis (1 à 100 ObjectId)')
+    const report = await bulkIssues(ids, String(req.body?.action), req.body ?? {}, null, { allowDelete: false })
+    if ('error' in report) return respondError(res, 400, 'VALIDATION_ERROR', report.error)
+    res.json(report)
+  } catch (err) {
+    next(err)
+  }
+})
 
 export default router

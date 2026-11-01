@@ -18,6 +18,7 @@ import {
   Trash2,
   X,
   XCircle,
+  Archive,
 } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
@@ -36,6 +37,7 @@ import {
   createDevIssue,
   updateDevIssue,
   deleteDevIssue,
+  bulkDevIssues,
   createDevProject,
   addDevIssueComment,
   getDevIssue,
@@ -181,6 +183,7 @@ const DevWorkspace = () => {
   const [bulkStatus, setBulkStatus] = useState<'' | DevIssueStatus>('')
   const [bulkPriority, setBulkPriority] = useState<'' | DevIssuePriority>('')
   const [bulkLabel, setBulkLabel] = useState('')
+  const [bulkAssignee, setBulkAssignee] = useState('')
   const [bulkApplying, setBulkApplying] = useState(false)
   const [bulkError, setBulkError] = useState<string | null>(null)
 
@@ -722,12 +725,13 @@ const DevWorkspace = () => {
 
   const applyBulk = async () => {
     const label = bulkLabel.trim()
-    if ((!bulkStatus && !bulkPriority && !label) || selectedIds.size === 0 || bulkApplying) return
+    if ((!bulkStatus && !bulkPriority && !label && !bulkAssignee) || selectedIds.size === 0 || bulkApplying) return
     setBulkApplying(true)
     setBulkError(null)
     const patchFor = (id: string) => {
       const issue = issues.find((i) => i._id === id)
-      const patch: Partial<Pick<DevIssue, 'status' | 'priority' | 'labels'>> = {}
+      const patch: Partial<Pick<DevIssue, 'status' | 'priority' | 'labels'>> & { assignee?: string | null } = {}
+      if (bulkAssignee) patch.assignee = bulkAssignee === 'none' ? null : bulkAssignee
       if (bulkStatus) patch.status = bulkStatus
       if (bulkPriority) patch.priority = bulkPriority
       if (label && issue) patch.labels = Array.from(new Set([...issue.labels, label]))
@@ -747,9 +751,43 @@ const DevWorkspace = () => {
       setBulkStatus('')
       setBulkPriority('')
       setBulkLabel('')
+      setBulkAssignee('')
       setBulkApplying(false)
     }
   }
+
+  // Archiver / supprimer en lot : un seul appel serveur, rapport par issue.
+  const applyBulkRemoval = async (action: 'archive' | 'delete') => {
+    if (selectedIds.size === 0 || bulkApplying) return
+    const message =
+      action === 'delete'
+        ? t('devA.bulk.confirmDelete', { count: selectedIds.size })
+        : t('devA.bulk.confirmArchive', { count: selectedIds.size })
+    if (!(await confirm({ message, variant: action === 'delete' ? 'danger' : 'warning' }))) return
+    setBulkApplying(true)
+    setBulkError(null)
+    try {
+      const report = await bulkDevIssues([...selectedIds], action)
+      if (report.failed.length > 0) setBulkError(t('devA.workspace.bulkFailed', { count: report.failed.length }))
+      await Promise.all([loadIssues(), loadStats(), loadOverview(), loadDailyPriorities(), loadAnalyticsIssues()])
+    } catch (err) {
+      setBulkError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSelectedIds(new Set())
+      setLastClickedId(null)
+      setBulkApplying(false)
+    }
+  }
+
+  const assigneeOptions = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const p of projects) {
+      for (const u of [p.lead, ...(p.members ?? [])]) {
+        if (u?._id && !seen.has(u._id)) seen.set(u._id, u.name || u.email || u._id)
+      }
+    }
+    return [...seen.entries()].map(([id, name]) => ({ id, name }))
+  }, [projects])
 
   const projectOverview = useMemo(() => {
     if (!overview) return []
@@ -1522,6 +1560,15 @@ const DevWorkspace = () => {
                   </option>
                 ))}
               </select>
+              <select className="dev-select" value={bulkAssignee} onChange={(e) => setBulkAssignee(e.target.value)}>
+                <option value="">{t('devA.bulk.assignee')}</option>
+                <option value="none">{t('devA.bulk.unassign')}</option>
+                {assigneeOptions.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
               <input
                 className="dev-bulk-label-input"
                 placeholder={t('devA.bulk.labelPlaceholder')}
@@ -1534,9 +1581,15 @@ const DevWorkspace = () => {
               <button
                 className="dev-btn primary"
                 onClick={() => void applyBulk()}
-                disabled={bulkApplying || (!bulkStatus && !bulkPriority && !bulkLabel.trim())}
+                disabled={bulkApplying || (!bulkStatus && !bulkPriority && !bulkLabel.trim() && !bulkAssignee)}
               >
                 {bulkApplying ? '…' : t('devA.bulk.apply')}
+              </button>
+              <button className="dev-btn subtle" disabled={bulkApplying} onClick={() => void applyBulkRemoval('archive')}>
+                <Archive size={12} /> {t('devA.bulk.archive')}
+              </button>
+              <button className="dev-btn subtle" disabled={bulkApplying} onClick={() => void applyBulkRemoval('delete')}>
+                <Trash2 size={12} /> {t('devA.bulk.delete')}
               </button>
               <button className="dev-btn subtle" onClick={() => setSelectedIds(new Set())} title={t('devA.bulk.clear')}>
                 <X size={12} />

@@ -40,6 +40,8 @@ const notificationSchema = new mongoose.Schema<INotification>(
         'WEBHOOK_TEST',
         // ── Beta tests ──
         'BETA_BLOCKING_FEEDBACK',
+        'DEV_SUGGESTION_SUBMITTED',
+        'DEV_SUGGESTION_STATUS_CHANGED',
       ],
       required: true,
     },

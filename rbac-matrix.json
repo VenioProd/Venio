@@ -1,6 +1,15 @@
 {
   "roles": {
-    "admin": ["SUPER_ADMIN", "ADMIN", "MANAGER", "RH", "COMMERCIAL", "COMPTABLE", "VIEWER", "STAGIAIRE"],
+    "admin": [
+      "SUPER_ADMIN",
+      "ADMIN",
+      "MANAGER",
+      "RH",
+      "COMMERCIAL",
+      "COMPTABLE",
+      "VIEWER",
+      "STAGIAIRE"
+    ],
     "all": [
       "SUPER_ADMIN",
       "ADMIN",
@@ -50,6 +59,7 @@
     "MANAGE_EXTERNAL_SOURCES": "manage_external_sources",
     "VIEW_DEV": "view_dev",
     "MANAGE_DEV": "manage_dev",
+    "SUBMIT_DEV_SUGGESTION": "submit_dev_suggestion",
     "VIEW_BETA": "view_beta",
     "MANAGE_BETA": "manage_beta",
     "VIEW_EDUCATION": "view_education",
@@ -92,6 +102,7 @@
       "manage_external_sources",
       "view_dev",
       "manage_dev",
+      "submit_dev_suggestion",
       "manage_beta",
       "view_beta",
       "view_education",
@@ -127,6 +138,7 @@
       "export_fec",
       "view_dev",
       "manage_dev",
+      "submit_dev_suggestion",
       "manage_beta",
       "view_beta",
       "view_change_requests",
@@ -156,12 +168,14 @@
       "manage_vat",
       "view_dev",
       "manage_dev",
+      "submit_dev_suggestion",
       "manage_beta",
       "view_beta",
       "view_change_requests",
       "manage_change_requests"
     ],
     "COMPTABLE": [
+      "submit_dev_suggestion",
       "view_accounting",
       "manage_accounting",
       "lock_accounting",
@@ -175,6 +189,7 @@
       "send_messages"
     ],
     "RH": [
+      "submit_dev_suggestion",
       "view_projects",
       "view_content",
       "view_phases",
@@ -186,6 +201,7 @@
       "create_tickets"
     ],
     "COMMERCIAL": [
+      "submit_dev_suggestion",
       "upload_project_documents",
       "manage_quotes",
       "view_crm",
@@ -203,6 +219,7 @@
       "view_change_requests"
     ],
     "VIEWER": [
+      "submit_dev_suggestion",
       "view_projects",
       "view_content",
       "view_phases",
@@ -312,7 +329,10 @@
       "screen": "/admin/stagiaires",
       "label": "Équipe",
       "permission": null,
-      "roles": ["SUPER_ADMIN", "RH"]
+      "roles": [
+        "SUPER_ADMIN",
+        "RH"
+      ]
     },
     {
       "id": "calendar",
@@ -328,7 +348,10 @@
       "screen": "/admin/emails",
       "label": "Emails",
       "permission": null,
-      "roles": ["SUPER_ADMIN", "RH"]
+      "roles": [
+        "SUPER_ADMIN",
+        "RH"
+      ]
     },
     {
       "id": "templates",
@@ -376,7 +399,10 @@
       "screen": "/admin/qualiopi",
       "label": "Qualiopi",
       "permission": null,
-      "roles": ["SUPER_ADMIN", "RH"]
+      "roles": [
+        "SUPER_ADMIN",
+        "RH"
+      ]
     },
     {
       "id": "tickets",
@@ -419,6 +445,14 @@
       "roles": []
     },
     {
+      "id": "dev-ideas",
+      "section": "Suivi",
+      "screen": "/admin/dev/idees",
+      "label": "Boîte à idées",
+      "permission": "submit_dev_suggestion",
+      "roles": []
+    },
+    {
       "id": "beta",
       "section": "Suivi",
       "screen": "/admin/beta",
@@ -440,7 +474,9 @@
       "screen": "/admin/filiales",
       "label": "Filiales",
       "permission": null,
-      "roles": ["SUPER_ADMIN"]
+      "roles": [
+        "SUPER_ADMIN"
+      ]
     },
     {
       "id": "admin-accounts",
@@ -560,6 +596,36 @@
       "agentEndpoint": "/api/v1/agent/dev/projects",
       "scope": "write:dev",
       "source": "backend/src/routes/admin/dev/projects.ts",
+      "agentSource": "backend/src/routes/agent/dev.ts"
+    },
+    {
+      "id": "dev.suggestions.read",
+      "method": "GET",
+      "endpoint": "/api/admin/dev/suggestions",
+      "permission": "submit_dev_suggestion",
+      "agentEndpoint": "/api/v1/agent/dev/suggestions",
+      "scope": "read:dev",
+      "source": "backend/src/routes/admin/dev/suggestions.ts",
+      "agentSource": "backend/src/routes/agent/dev.ts"
+    },
+    {
+      "id": "dev.suggestions.write",
+      "method": "POST",
+      "endpoint": "/api/admin/dev/suggestions/bulk",
+      "permission": "manage_dev",
+      "agentEndpoint": "/api/v1/agent/dev/suggestions/bulk",
+      "scope": "write:dev",
+      "source": "backend/src/routes/admin/dev/suggestions.ts",
+      "agentSource": "backend/src/routes/agent/dev.ts"
+    },
+    {
+      "id": "dev.issues.bulk",
+      "method": "POST",
+      "endpoint": "/api/admin/dev/issues/bulk",
+      "permission": "manage_dev",
+      "agentEndpoint": "/api/v1/agent/dev/issues/bulk",
+      "scope": "write:dev",
+      "source": "backend/src/routes/admin/dev/suggestions.ts",
       "agentSource": "backend/src/routes/agent/dev.ts"
     },
     {

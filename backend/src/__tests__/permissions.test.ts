@@ -50,6 +50,7 @@ describe('permissions module', () => {
         // Dev workspace
         'VIEW_DEV',
         'MANAGE_DEV',
+        'SUBMIT_DEV_SUGGESTION',
         'VIEW_BETA',
         'MANAGE_BETA',
         // Education workspace (workspace pédagogique type Notion)

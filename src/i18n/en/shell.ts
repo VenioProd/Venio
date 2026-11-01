@@ -53,6 +53,7 @@ const en: Record<keyof typeof fr, string> = {
   'shell.navItem.internalProjects': 'Internal projects',
   'shell.navItem.dev': 'Dev workspace',
   'shell.navItem.beta': 'Beta tests',
+  'shell.navItem.devIdeas': 'Idea box',
   'shell.navItem.education': 'Education',
   'shell.navItem.subsidiaries': 'Subsidiaries',
   'shell.navItem.arrow': 'Arrow prospecting',

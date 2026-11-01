@@ -6,6 +6,7 @@ import issuesRouter from './issues.js'
 import statsRouter from './stats.js'
 import roadmapRouter from './roadmap.js'
 import agentRunsRouter from './agentRuns.js'
+import suggestionsRouter from './suggestions.js'
 
 const router = express.Router()
 
@@ -17,5 +18,6 @@ router.use(issuesRouter)
 router.use(statsRouter)
 router.use(roadmapRouter)
 router.use(agentRunsRouter)
+router.use(suggestionsRouter)
 
 export default router
