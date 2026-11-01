@@ -272,6 +272,7 @@ router.post(
           name,
           description: description || '',
           status: status || 'EN_COURS',
+          templateId: template ? template._id : null,
           ...options,
         })
         await project.save({ session })

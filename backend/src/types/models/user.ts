@@ -25,6 +25,7 @@ export interface IUser extends Document {
   tags: string[]
   source: UserSource
   ownerAdminId: Types.ObjectId | null
+  weeklyCapacityHours: number
   originLead?: Types.ObjectId | null
   status: ClientStatus
   onboardingStatus: OnboardingStatus

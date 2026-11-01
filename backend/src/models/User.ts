@@ -47,6 +47,8 @@ const userSchema = new mongoose.Schema<IUser>(
       default: 'AUTRE',
     },
     ownerAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    // Capacité hebdomadaire (heures) pour la charge d'équipe de la page Projets.
+    weeklyCapacityHours: { type: Number, default: 35, min: 0, max: 80 },
     // Lead dont la conversion a créé ce compte client. Posé à la création
     // seulement : un lead rattaché après coup (doublon, même email) n'en hérite pas.
     originLead: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', default: null },

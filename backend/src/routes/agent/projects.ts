@@ -10,6 +10,10 @@ import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
 import { deleteProject } from '../../lib/projectDeletion.js'
+import { buildPortfolioOverview } from '../../lib/projectPortfolio.js'
+import { applyBulk, parseBulkRequest } from '../../lib/projectBulk.js'
+import { sanitizeViewFilters, sanitizeViewName } from '../../lib/projectViews.js'
+import ProjectView from '../../models/ProjectView.js'
 
 /**
  * Routes agent pour les Projets et leurs sous-ressources : sections, items
@@ -134,6 +138,100 @@ router.get('/projects', requireScope('read:projects'), async (req: Request, res:
     next(err)
   }
 })
+
+// ── Vue d'ensemble, actions groupées, vues partagées ───────────────────────
+// Déclarées avant `/projects/:id` pour ne pas être prises pour un identifiant.
+
+router.get('/projects/overview', requireScope('read:projects'), async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await buildPortfolioOverview(null))
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.post('/projects/bulk', requireScope('write:projects'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = parseBulkRequest(req.body)
+    if ('error' in parsed) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
+    const results = await applyBulk(parsed.request, null)
+    res.locals.audit = {
+      entityType: 'Project',
+      entityId: parsed.request.ids.join(','),
+      entityRef: `${parsed.request.ids.length} projet(s)`,
+      summary: `Action groupée « ${parsed.request.action} » sur ${parsed.request.ids.length} projet(s)`,
+      after: { action: parsed.request.action, value: parsed.request.value ?? null, results },
+    }
+    res.json({
+      results,
+      succeeded: results.filter((r) => r.ok).length,
+      failed: results.filter((r) => !r.ok).length,
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Les vues personnelles des admins restent privées : l'API agent ne voit et ne gère que les vues partagées.
+router.get('/projects/views', requireScope('read:projects'), async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ items: await ProjectView.find({ shared: true }).sort({ createdAt: 1 }).lean() })
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.post('/projects/views', requireScope('write:projects'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const name = sanitizeViewName(req.body?.name)
+    if (!name) return respondError(res, 400, 'VALIDATION_ERROR', 'name requis (60 caractères max)')
+    const owner = await getDefaultAdminId(res)
+    if (!owner) return
+    const view = await ProjectView.create({ owner, name, shared: true, filters: sanitizeViewFilters(req.body?.filters) })
+    res.status(201).json(view.toObject())
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.patch(
+  '/projects/views/:id',
+  requireScope('write:projects'),
+  param('id').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emitValidationError(req, res)) return
+    try {
+      const set: Record<string, unknown> = {}
+      if (req.body?.name !== undefined) {
+        const name = sanitizeViewName(req.body.name)
+        if (!name) return respondError(res, 400, 'VALIDATION_ERROR', 'name invalide')
+        set.name = name
+      }
+      if (req.body?.filters !== undefined) set.filters = sanitizeViewFilters(req.body.filters)
+      const view = await ProjectView.findOneAndUpdate({ _id: req.params.id, shared: true }, set, { new: true }).lean()
+      if (!view) return respondError(res, 404, 'NOT_FOUND', 'Vue partagée introuvable')
+      res.json(view)
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+
+router.delete(
+  '/projects/views/:id',
+  requireScope('write:projects'),
+  param('id').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emitValidationError(req, res)) return
+    try {
+      const view = await ProjectView.findOneAndDelete({ _id: req.params.id, shared: true })
+      if (!view) return respondError(res, 404, 'NOT_FOUND', 'Vue partagée introuvable')
+      res.json({ success: true })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 router.get(
   '/projects/:id',

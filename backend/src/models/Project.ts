@@ -43,6 +43,8 @@ const projectSchema = new mongoose.Schema<IProject>(
     // Lead à l'origine du projet, quand il vient du CRM. Sans lui, aucun euro
     // facturé ne peut être remonté jusqu'à l'affaire qui l'a apporté.
     sourceLead: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', default: null },
+    // Modèle dont le projet est issu : permet de compter l'usage d'un modèle.
+    templateId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProjectTemplate', default: null },
     summary: { type: String, default: '' },
     reminderAt: { type: Date, default: null },
     billing: {
