@@ -1,3 +1,5 @@
+import { translate, type MessageKey } from '../../../../i18n'
+import { useI18n } from '../../../../context/I18nContext'
 import { DEFAULT_LIMITS, type RuleDraft } from './types'
 
 export interface RuleTemplate {
@@ -8,29 +10,30 @@ export interface RuleTemplate {
 }
 
 const base = { description: '', requireApproval: true, limits: { ...DEFAULT_LIMITS } }
+const tr = (key: MessageKey) => translate(key)
 
 /** Modèles de départ : de simples brouillons pré-remplis, rien n'est créé avant l'enregistrement. */
-export const RULE_TEMPLATES: RuleTemplate[] = [
+export const ruleTemplates = (): RuleTemplate[] => [
   {
     id: 'big-amount',
-    title: 'Lead à fort montant → alerte direction',
-    summary: 'Notifier les responsables dès qu’un lead de 50 000 € ou plus est créé.',
+    title: tr('crmAuto.tpl.bigAmount.title'),
+    summary: tr('crmAuto.tpl.bigAmount.summary'),
     draft: {
       ...base,
-      name: 'Lead à fort montant → alerte direction',
+      name: tr('crmAuto.tpl.bigAmount.title'),
       trigger: { type: 'LEAD_CREATED', params: {} },
       conditions: { op: 'AND', items: [{ field: 'budget', operator: 'gte', value: 50000 }] },
-      actions: [{ type: 'NOTIFY', params: { recipients: 'admins', title: 'Lead à fort montant : {company}', message: 'Montant estimé : {amount}' } }],
+      actions: [{ type: 'NOTIFY', params: { recipients: 'admins', title: tr('crmAuto.tpl.bigAmount.notifyTitle'), message: tr('crmAuto.tpl.bigAmount.notifyMessage') } }],
       limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
     },
   },
   {
     id: 'demo-followup',
-    title: 'Interaction consignée → qualifier',
-    summary: 'Passe un lead « Lead » en « Contacté » dès qu’une interaction est consignée.',
+    title: tr('crmAuto.tpl.demoFollowup.title'),
+    summary: tr('crmAuto.tpl.demoFollowup.summary'),
     draft: {
       ...base,
-      name: 'Interaction consignée → passer en Contacté',
+      name: tr('crmAuto.tpl.demoFollowup.name'),
       trigger: { type: 'INTERACTION_LOGGED', params: {} },
       conditions: { op: 'AND', items: [{ field: 'status', operator: 'eq', value: 'LEAD' }] },
       actions: [{ type: 'SET_STATUS', params: { status: 'CONTACTED' } }],
@@ -39,64 +42,64 @@ export const RULE_TEMPLATES: RuleTemplate[] = [
   },
   {
     id: 'inactive-week',
-    title: 'Relance après 7 jours sans activité',
-    summary: 'Crée une tâche de relance pour le commercial quand un lead s’endort.',
+    title: tr('crmAuto.tpl.inactiveWeek.title'),
+    summary: tr('crmAuto.tpl.inactiveWeek.summary'),
     draft: {
       ...base,
-      name: 'Relance après 7 jours sans activité',
+      name: tr('crmAuto.tpl.inactiveWeek.title'),
       trigger: { type: 'LEAD_INACTIVE', params: { days: 7, statuses: ['CONTACTED', 'DEMO', 'PROPOSAL'] } },
       conditions: { op: 'AND', items: [] },
       actions: [
-        { type: 'CREATE_TASK', params: { title: 'Relancer {contact}', dueInDays: 1, assignTo: 'owner' } },
-        { type: 'NOTIFY', params: { recipients: 'owner', title: 'Lead inactif : {company}', message: '' } },
+        { type: 'CREATE_TASK', params: { title: tr('crmAuto.default.taskTitle'), dueInDays: 1, assignTo: 'owner' } },
+        { type: 'NOTIFY', params: { recipients: 'owner', title: tr('crmAuto.tpl.inactiveWeek.notifyTitle'), message: '' } },
       ],
     },
   },
   {
     id: 'won-client',
-    title: 'Lead gagné → compte client + projet',
-    summary: 'Crée le compte client et le projet dès que le lead passe en « Gagné ».',
+    title: tr('crmAuto.tpl.wonClient.title'),
+    summary: tr('crmAuto.tpl.wonClient.summary'),
     draft: {
       ...base,
-      name: 'Lead gagné → compte client + projet',
+      name: tr('crmAuto.tpl.wonClient.title'),
       trigger: { type: 'STATUS_CHANGED', params: { to: ['WON'] } },
       conditions: { op: 'AND', items: [] },
       actions: [
         { type: 'CREATE_CLIENT', params: {} },
         { type: 'CREATE_PROJECT', params: {} },
-        { type: 'NOTIFY', params: { recipients: 'admins', title: 'Nouveau client : {company}', message: '' } },
+        { type: 'NOTIFY', params: { recipients: 'admins', title: tr('crmAuto.tpl.wonClient.notifyTitle'), message: '' } },
       ],
       limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
     },
   },
   {
     id: 'lost-tag',
-    title: 'Perdu → tag et relance à 6 mois',
-    summary: 'Garde la porte ouverte : tag « recontacter-6m » et tâche à J+180.',
+    title: tr('crmAuto.tpl.lostTag.title'),
+    summary: tr('crmAuto.tpl.lostTag.summary'),
     draft: {
       ...base,
-      name: 'Perdu → relance à 6 mois',
+      name: tr('crmAuto.tpl.lostTag.name'),
       trigger: { type: 'STATUS_CHANGED', params: { to: ['LOST'] } },
       conditions: { op: 'AND', items: [] },
       actions: [
-        { type: 'ADD_TAG', params: { tag: 'recontacter-6m' } },
-        { type: 'CREATE_TASK', params: { title: 'Reprendre contact avec {company}', dueInDays: 180, assignTo: 'owner' } },
+        { type: 'ADD_TAG', params: { tag: tr('crmAuto.tpl.lostTag.tag') } },
+        { type: 'CREATE_TASK', params: { title: tr('crmAuto.tpl.lostTag.taskTitle'), dueInDays: 180, assignTo: 'owner' } },
       ],
       limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
     },
   },
   {
     id: 'proposal-silence',
-    title: 'Proposition sans réponse après 5 jours',
-    summary: 'Prépare un e-mail de relance, envoyé seulement après validation humaine.',
+    title: tr('crmAuto.tpl.proposalSilence.title'),
+    summary: tr('crmAuto.tpl.proposalSilence.summary'),
     draft: {
       ...base,
-      name: 'Proposition sans réponse après 5 jours',
+      name: tr('crmAuto.tpl.proposalSilence.title'),
       trigger: { type: 'LEAD_INACTIVE', params: { days: 5, statuses: ['PROPOSAL'] } },
       conditions: { op: 'AND', items: [] },
       actions: [
-        { type: 'SEND_EMAIL', params: { subject: 'Suite à notre proposition', body: 'Bonjour {contact},\n\nAvez-vous pu consulter notre proposition ?' } },
-        { type: 'CREATE_TASK', params: { title: 'Appeler {contact} (proposition)', dueInDays: 1, assignTo: 'owner' } },
+        { type: 'SEND_EMAIL', params: { subject: tr('crmAuto.tpl.proposalSilence.subject'), body: tr('crmAuto.tpl.proposalSilence.body') } },
+        { type: 'CREATE_TASK', params: { title: tr('crmAuto.tpl.proposalSilence.taskTitle'), dueInDays: 1, assignTo: 'owner' } },
       ],
       limits: { perLead: 'DAYS', days: 5, maxPerRun: 50 },
     },
@@ -104,14 +107,15 @@ export const RULE_TEMPLATES: RuleTemplate[] = [
 ]
 
 export default function TemplatesGrid({ onUse }: { onUse: (template: RuleTemplate) => void }) {
+  const { t: tt } = useI18n()
   return (
     <div className="crm-auto-tpls">
-      {RULE_TEMPLATES.map((t) => (
+      {ruleTemplates().map((t) => (
         <article className="crm-auto-tpl crm-auto-glass" key={t.id}>
           <h3>{t.title}</h3>
           <p>{t.summary}</p>
-          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => onUse(t)} aria-label={`Utiliser le modèle « ${t.title} »`}>
-            Utiliser ce modèle
+          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => onUse(t)} aria-label={tt('crmAuto.tpl.useAria', { title: t.title })}>
+            {tt('crmAuto.tpl.use')}
           </button>
         </article>
       ))}

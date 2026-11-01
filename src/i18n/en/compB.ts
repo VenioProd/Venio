@@ -224,6 +224,7 @@ const en: Record<keyof typeof fr, string> = {
   'compB.lightbox.noVideo': 'Your browser does not support video playback.',
   'compB.lightbox.noPreview': 'Preview not available for this file type.',
   'compB.lightbox.downloadFile': 'Download {name}',
+  'compB.msg.sendFailed': 'Unable to send',
 }
 
 export default en

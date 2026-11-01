@@ -484,8 +484,8 @@ const CrmBoard = () => {
                 <button
                   className={`crm-view-btn ${viewMode === 'liste' ? 'active' : ''}`}
                   onClick={() => changeViewMode('liste')}
-                  title="Tableau enrichi"
-                  aria-label="Tableau enrichi"
+                  title={t('crmRich.view.enrichedTable')}
+                  aria-label={t('crmRich.view.enrichedTable')}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="8" y1="6" x2="21" y2="6" />

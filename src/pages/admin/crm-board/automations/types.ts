@@ -1,3 +1,6 @@
+import { intlLocale, translate, type MessageKey } from '../../../../i18n'
+import { formatDate, formatNumber } from '../../../../i18n/format'
+
 export type RuleStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED'
 export type RunStatus = 'OK' | 'ERR' | 'SKIP' | 'SIM' | 'PENDING' | 'RUNNING'
 
@@ -113,82 +116,25 @@ export interface RuleDraft {
   requireApproval: boolean
 }
 
-export const LEAD_STATUS_LABELS: Record<string, string> = {
-  LEAD: 'Lead',
-  QUALIFIED: 'Qualifié',
-  CONTACTED: 'Contacté',
-  DEMO: 'Démo',
-  PROPOSAL: 'Proposition',
-  WON: 'Gagné',
-  LOST: 'Perdu',
-}
-export const LEAD_STATUSES = Object.keys(LEAD_STATUS_LABELS)
+export const LEAD_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
+/** Libellé d'un statut de lead dans la langue active (repli : le code brut). */
+export const leadStatusLabel = (status: string): string => (LEAD_STATUSES.includes(status) ? translate(`crmAuto.status.${status}` as MessageKey) : status)
 
-export const TRIGGER_LABELS: Record<TriggerType, string> = {
-  LEAD_CREATED: 'Lead créé',
-  STATUS_CHANGED: 'Changement de statut',
-  LEAD_ASSIGNED: 'Lead assigné',
-  LEAD_INACTIVE: 'Lead inactif',
-  ACTION_OVERDUE: 'Action en retard',
-  SCORE_AT_LEAST: 'Score franchit un seuil',
-  INTERACTION_LOGGED: 'Interaction consignée',
-}
+export const triggerLabel = (type: string): string => (TRIGGER_TYPES.includes(type as TriggerType) ? translate(`crmAuto.trigger.${type}` as MessageKey) : type)
 
-export const ACTION_LABELS: Record<ActionType, string> = {
-  CREATE_TASK: 'Créer une tâche',
-  NOTIFY: 'Notifier',
-  ASSIGN: 'Assigner',
-  SET_STATUS: 'Changer le statut',
-  ADD_TAG: 'Ajouter un tag',
-  SET_FIELD: 'Modifier un champ',
-  SEND_EMAIL: 'Envoyer un e-mail',
-  CREATE_CLIENT: 'Créer le compte client',
-  CREATE_PROJECT: 'Créer un projet',
-  ARCHIVE: 'Archiver',
-}
+export const actionLabel = (type: string): string => (ACTION_TYPES.includes(type as ActionType) ? translate(`crmAuto.action.${type}` as MessageKey) : type)
 
-export const FIELD_LABELS: Record<ConditionField, string> = {
-  status: 'Statut',
-  project: 'Plateforme',
-  source: 'Source',
-  budget: 'Montant',
-  probability: 'Probabilité',
-  leadTemperature: 'Température',
-  score: 'Score',
-  tags: 'Tags',
-  assignedTo: 'Commercial',
-  externalRep: 'Partenaire',
-  daysSinceActivity: 'Jours sans activité',
-  daysInStage: 'Jours dans l’étape',
-  archived: 'Archivé',
-}
+const CONDITION_FIELDS: ConditionField[] = ['status', 'project', 'source', 'budget', 'probability', 'leadTemperature', 'score', 'tags', 'assignedTo', 'externalRep', 'daysSinceActivity', 'daysInStage', 'archived']
+export const CONDITION_FIELD_LIST = CONDITION_FIELDS
+export const fieldLabel = (field: string): string => (CONDITION_FIELDS.includes(field as ConditionField) ? translate(`crmAuto.field.${field}` as MessageKey) : field)
 export const NUMERIC_FIELDS: ConditionField[] = ['budget', 'probability', 'score', 'daysSinceActivity', 'daysInStage']
 
-export const OPERATOR_LABELS: Record<ConditionOperator, string> = {
-  eq: 'est',
-  neq: 'n’est pas',
-  in: 'est dans',
-  nin: 'n’est pas dans',
-  gt: '>',
-  gte: '≥',
-  lt: '<',
-  lte: '≤',
-  contains: 'contient',
-  empty: 'est vide',
-  notEmpty: 'est renseigné',
-}
+export const operatorLabel = (operator: string): string => translate(`crmAuto.op.${operator}` as MessageKey)
 export const NUMERIC_OPERATORS: ConditionOperator[] = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'empty', 'notEmpty']
 export const TEXT_OPERATORS: ConditionOperator[] = ['eq', 'neq', 'in', 'nin', 'contains', 'empty', 'notEmpty']
 export const BOOL_OPERATORS: ConditionOperator[] = ['eq', 'neq']
 
-export const RUN_STATUS_LABELS: Record<RunStatus, string> = {
-  OK: 'Succès',
-  ERR: 'Erreur',
-  SKIP: 'Ignorée',
-  SIM: 'Simulation',
-  PENDING: 'À valider',
-  RUNNING: 'En cours',
-}
+export const runStatusLabel = (status: string): string => translate(`crmAuto.run.${status}` as MessageKey)
 export const RUN_STATUS_COLORS: Record<RunStatus, string> = {
   OK: 'var(--mint)',
   ERR: 'var(--rose)',
@@ -197,7 +143,7 @@ export const RUN_STATUS_COLORS: Record<RunStatus, string> = {
   PENDING: 'var(--amber)',
   RUNNING: 'var(--sky)',
 }
-export const RULE_STATUS_LABELS: Record<RuleStatus, string> = { DRAFT: 'Brouillon', ACTIVE: 'Active', PAUSED: 'En pause' }
+export const ruleStatusLabel = (status: RuleStatus): string => translate(`crmAuto.ruleStatus.${status}` as MessageKey)
 
 export const DEFAULT_LIMITS: RuleLimits = { perLead: 'DAYS', days: 7, maxPerRun: 50 }
 
@@ -207,7 +153,7 @@ export function emptyDraft(): RuleDraft {
     description: '',
     trigger: { type: 'LEAD_INACTIVE', params: { days: 7, statuses: ['CONTACTED', 'DEMO', 'PROPOSAL'] } },
     conditions: { op: 'AND', items: [] },
-    actions: [{ type: 'CREATE_TASK', params: { title: 'Relancer {contact}', dueInDays: 1, assignTo: 'owner' } }],
+    actions: [{ type: 'CREATE_TASK', params: { title: translate('crmAuto.default.taskTitle'), dueInDays: 1, assignTo: 'owner' } }],
     limits: { ...DEFAULT_LIMITS },
     requireApproval: true,
   }
@@ -215,7 +161,7 @@ export function emptyDraft(): RuleDraft {
 
 export function draftFromRule(rule: CrmRule, asCopy = false): RuleDraft {
   return {
-    name: asCopy ? `${rule.name} (copie)`.slice(0, 120) : rule.name,
+    name: asCopy ? translate('crmAuto.copyName', { name: rule.name }).slice(0, 120) : rule.name,
     description: rule.description ?? '',
     trigger: { type: rule.trigger.type, params: { ...(rule.trigger.params ?? {}) } },
     conditions: { op: rule.conditions?.op ?? 'AND', items: (rule.conditions?.items ?? []).map((c) => ({ ...c })) },
@@ -229,24 +175,24 @@ export function draftFromRule(rule: CrmRule, asCopy = false): RuleDraft {
 
 const statusList = (value: unknown): string =>
   (Array.isArray(value) ? value : [])
-    .map((s) => LEAD_STATUS_LABELS[String(s)] ?? String(s))
+    .map((s) => leadStatusLabel(String(s)))
     .join(', ')
 
 export function describeTrigger(trigger: CrmRule['trigger']): { title: string; detail: string } {
   const p = trigger.params ?? {}
-  const title = TRIGGER_LABELS[trigger.type] ?? trigger.type
+  const title = triggerLabel(trigger.type)
   switch (trigger.type) {
     case 'STATUS_CHANGED': {
       const to = statusList(p.to)
       const from = statusList(p.from)
-      return { title, detail: [to && `vers ${to}`, from && `depuis ${from}`].filter(Boolean).join(' · ') || 'vers n’importe quel statut' }
+      return { title, detail: [to && translate('crmAuto.describe.toStatus', { status: to }), from && translate('crmAuto.describe.fromStatus', { status: from })].filter(Boolean).join(' · ') || translate('crmAuto.describe.anyStatus') }
     }
     case 'LEAD_INACTIVE': {
       const st = statusList(p.statuses)
-      return { title, detail: `pendant ${Number(p.days) || 7} jours${st ? ` · statut ${st}` : ''}` }
+      return { title, detail: `${translate('crmAuto.describe.inactiveFor', { days: Number(p.days) || 7 })}${st ? translate('crmAuto.describe.inactiveStatus', { status: st }) : ''}` }
     }
     case 'SCORE_AT_LEAST':
-      return { title, detail: `score ≥ ${Number(p.threshold) || 0}` }
+      return { title, detail: translate('crmAuto.describe.scoreAtLeast', { score: Number(p.threshold) || 0 }) }
     default:
       return { title, detail: '' }
   }
@@ -254,61 +200,61 @@ export function describeTrigger(trigger: CrmRule['trigger']): { title: string; d
 
 export function formatConditionValue(c: RuleCondition): string {
   if (c.operator === 'empty' || c.operator === 'notEmpty') return ''
-  if (c.field === 'archived') return c.value === true || c.value === 'true' ? 'oui' : 'non'
+  if (c.field === 'archived') return c.value === true || c.value === 'true' ? translate('crmAuto.describe.yes') : translate('crmAuto.describe.no')
   const raw = Array.isArray(c.value) ? c.value : [c.value]
   return raw
-    .map((v) => (c.field === 'status' ? (LEAD_STATUS_LABELS[String(v)] ?? String(v)) : String(v ?? '')))
+    .map((v) => (c.field === 'status' ? leadStatusLabel(String(v)) : String(v ?? '')))
     .join(', ')
 }
 
 export function describeCondition(c: RuleCondition): string {
-  return `${FIELD_LABELS[c.field] ?? c.field} ${OPERATOR_LABELS[c.operator] ?? c.operator} ${formatConditionValue(c)}`.trim()
+  return `${fieldLabel(c.field)} ${operatorLabel(c.operator)} ${formatConditionValue(c)}`.trim()
 }
 
 export function describeAction(a: RuleAction, requireApproval = false): string {
   const p = a.params ?? {}
-  const label = ACTION_LABELS[a.type] ?? a.type
+  const label = actionLabel(a.type)
   switch (a.type) {
     case 'CREATE_TASK':
-      return `${label} « ${String(p.title ?? 'Relancer {contact}')} » (J+${Number(p.dueInDays ?? 1)})`
+      return translate('crmAuto.describe.createTask', { label, title: String(p.title ?? translate('crmAuto.default.taskTitle')), days: Number(p.dueInDays ?? 1) })
     case 'NOTIFY':
-      return `${label} ${p.recipients === 'admins' ? 'les responsables CRM' : 'le commercial'}`
+      return translate(p.recipients === 'admins' ? 'crmAuto.describe.notifyAdmins' : 'crmAuto.describe.notifyOwner', { label })
     case 'ASSIGN':
-      return p.strategy === 'user' ? `${label} à un utilisateur précis` : `${label} à tour de rôle`
+      return translate(p.strategy === 'user' ? 'crmAuto.describe.assignUser' : 'crmAuto.describe.assignRound', { label })
     case 'SET_STATUS':
-      return `${label} : ${LEAD_STATUS_LABELS[String(p.status)] ?? String(p.status ?? '')}`
+      return translate('crmAuto.describe.setStatus', { label, status: p.status == null ? '' : leadStatusLabel(String(p.status)) })
     case 'ADD_TAG':
-      return `${label} « ${String(p.tag ?? '')} »`
+      return translate('crmAuto.describe.addTag', { label, tag: String(p.tag ?? '') })
     case 'SET_FIELD':
       return `${label} ${String(p.field ?? '')} = ${String(p.value ?? '')}`
     case 'SEND_EMAIL':
-      return `${label} « ${String(p.subject ?? '')} »${requireApproval ? ' (validation humaine)' : ''}`
+      return `${translate('crmAuto.describe.sendEmail', { label, subject: String(p.subject ?? '') })}${requireApproval ? translate('crmAuto.describe.humanApproval') : ''}`
     default:
       return label
   }
 }
 
 export function describeLimits(l: RuleLimits): string {
-  if (l.perLead === 'ONCE') return '1 fois par lead'
-  if (l.perLead === 'NONE') return 'Sans limite par lead'
-  return `1 fois par lead tous les ${l.days} j`
+  if (l.perLead === 'ONCE') return translate('crmAuto.limits.once')
+  if (l.perLead === 'NONE') return translate('crmAuto.limits.none')
+  return translate('crmAuto.limits.days', { days: l.days })
 }
 
-const RELATIVE = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' })
 export function formatRelative(iso: string | null | undefined, now: number = Date.now()): string {
   if (!iso) return '—'
+  const relative = new Intl.RelativeTimeFormat(intlLocale(), { numeric: 'auto' })
   const t = new Date(iso).getTime()
   if (Number.isNaN(t)) return '—'
   const diff = (t - now) / 1000
   const abs = Math.abs(diff)
-  if (abs < 60) return 'à l’instant'
-  if (abs < 3600) return RELATIVE.format(Math.round(diff / 60), 'minute')
-  if (abs < 86400) return RELATIVE.format(Math.round(diff / 3600), 'hour')
-  if (abs < 86400 * 30) return RELATIVE.format(Math.round(diff / 86400), 'day')
-  return new Date(t).toLocaleDateString('fr-FR')
+  if (abs < 60) return translate('crmAuto.justNow')
+  if (abs < 3600) return relative.format(Math.round(diff / 60), 'minute')
+  if (abs < 86400) return relative.format(Math.round(diff / 3600), 'hour')
+  if (abs < 86400 * 30) return relative.format(Math.round(diff / 86400), 'day')
+  return formatDate(t)
 }
 
 export function formatDuration(ms: number): string {
   if (!ms || ms < 1) return '—'
-  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} s`
+  return ms < 1000 ? `${Math.round(ms)} ms` : `${formatNumber(ms / 1000, { maximumFractionDigits: 1 })} s`
 }

@@ -1,27 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useI18n } from '../../../../context/I18nContext'
+import type { MessageKey } from '../../../../i18n'
+import { formatDateTime } from '../../../../i18n/format'
 import { approveRun, fetchRuns, rejectRun, retryRun } from './api'
 import {
-  ACTION_LABELS,
   RUN_STATUS_COLORS,
-  RUN_STATUS_LABELS,
-  TRIGGER_LABELS,
+  actionLabel,
+  runStatusLabel,
+  triggerLabel,
   formatDuration,
   formatRelative,
-  type ActionType,
   type CrmRuleRun,
   type RunStep,
-  type TriggerType,
 } from './types'
 
 export type JournalFilter = 'all' | 'OK' | 'ERR' | 'SKIP' | 'SIM' | 'PENDING'
 
-const FILTERS: Array<{ key: JournalFilter; label: string }> = [
-  { key: 'all', label: 'Tout' },
-  { key: 'OK', label: 'Succès' },
-  { key: 'ERR', label: 'Erreurs' },
-  { key: 'SKIP', label: 'Ignorées' },
-  { key: 'SIM', label: 'Simulations' },
-  { key: 'PENDING', label: 'À valider' },
+const FILTERS: Array<{ key: JournalFilter; labelKey: MessageKey }> = [
+  { key: 'all', labelKey: 'crmAuto.journal.filter.all' },
+  { key: 'OK', labelKey: 'crmAuto.journal.filter.OK' },
+  { key: 'ERR', labelKey: 'crmAuto.journal.filter.ERR' },
+  { key: 'SKIP', labelKey: 'crmAuto.journal.filter.SKIP' },
+  { key: 'SIM', labelKey: 'crmAuto.journal.filter.SIM' },
+  { key: 'PENDING', labelKey: 'crmAuto.journal.filter.PENDING' },
 ]
 const PAGE_SIZE = 50
 
@@ -35,7 +36,7 @@ interface RunsJournalProps {
 }
 
 
-const stepLabel = (step: RunStep) => step.message || ACTION_LABELS[step.action as ActionType] || step.action
+const stepLabel = (step: RunStep) => step.message || actionLabel(step.action)
 
 function RunRow({ run, open, onToggle, onAct, busy }: {
   run: CrmRuleRun
@@ -44,6 +45,7 @@ function RunRow({ run, open, onToggle, onAct, busy }: {
   onAct: (kind: 'approve' | 'reject' | 'retry', run: CrmRuleRun) => void
   busy: boolean
 }) {
+  const { t } = useI18n()
   const panelId = `crm-auto-run-${run._id}`
   const base = new Date(run.createdAt).getTime()
   const pendingStep = run.steps.find((s) => s.status === 'PENDING' && s.payload)
@@ -51,10 +53,10 @@ function RunRow({ run, open, onToggle, onAct, busy }: {
   return (
     <li className="crm-auto-run" data-testid={`run-${run._id}`}>
       <button type="button" className="crm-auto-run-h" aria-expanded={open} aria-controls={panelId} onClick={onToggle}>
-        <span className="crm-auto-when" title={new Date(run.createdAt).toLocaleString('fr-FR')}>
+        <span className="crm-auto-when" title={formatDateTime(run.createdAt, { dateStyle: 'short', timeStyle: 'medium' })}>
           {formatRelative(run.createdAt)}
         </span>
-        <b>{run.ruleName || 'Règle supprimée'}</b>
+        <b>{run.ruleName || t('crmAuto.journal.deletedRule')}</b>
         <span>{run.leadLabel || '—'}</span>
         <span className="crm-auto-acts">
           {run.steps.map((s, i) => (
@@ -65,12 +67,12 @@ function RunRow({ run, open, onToggle, onAct, busy }: {
         </span>
         <span className="crm-auto-st" style={{ ['--c' as string]: RUN_STATUS_COLORS[run.status] }}>
           <i />
-          {RUN_STATUS_LABELS[run.status] ?? run.status}
+          {runStatusLabel(run.status)}
         </span>
       </button>
       {open && (
         <div className="crm-auto-det" id={panelId}>
-          <b>Déclencheur : {TRIGGER_LABELS[run.trigger as TriggerType] ?? run.trigger}</b>
+          <b>{t('crmAuto.journal.trigger', { name: triggerLabel(run.trigger) })}</b>
           <ul>
             {run.steps.map((s, i) => {
               const at = new Date(s.at).getTime()
@@ -78,7 +80,7 @@ function RunRow({ run, open, onToggle, onAct, busy }: {
                 <li key={i}>
                   <time dateTime={s.at}>{Number.isNaN(at - base) ? '' : `+${Math.max(0, at - base)} ms`}</time>
                   <span>
-                    {ACTION_LABELS[s.action as ActionType] ?? s.action} · {s.message || RUN_STATUS_LABELS[s.status]}
+                    {actionLabel(s.action)} · {s.message || runStatusLabel(s.status)}
                   </span>
                 </li>
               )
@@ -86,7 +88,7 @@ function RunRow({ run, open, onToggle, onAct, busy }: {
           </ul>
           {payload && (
             <>
-              <span className="crm-auto-lb">E-mail à valider{payload.to ? ` · ${payload.to}` : ''}</span>
+              <span className="crm-auto-lb">{t('crmAuto.journal.emailToApprove')}{payload.to ? ` · ${payload.to}` : ''}</span>
               <pre>{`${payload.subject ?? ''}\n\n${payload.body ?? ''}`.trim()}</pre>
             </>
           )}
@@ -94,19 +96,19 @@ function RunRow({ run, open, onToggle, onAct, busy }: {
             {run.status === 'PENDING' && (
               <>
                 <button type="button" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" disabled={busy} onClick={() => onAct('approve', run)}>
-                  Approuver et envoyer
+                  {t('crmAuto.journal.approve')}
                 </button>
                 <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={busy} onClick={() => onAct('reject', run)}>
-                  Refuser
+                  {t('crmAuto.journal.reject')}
                 </button>
               </>
             )}
             {run.status === 'ERR' && (
               <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={busy} onClick={() => onAct('retry', run)}>
-                Relancer l’exécution
+                {t('crmAuto.journal.retryRun')}
               </button>
             )}
-            {run.status !== 'PENDING' && run.status !== 'ERR' && <span className="crm-auto-note">Durée {formatDuration(run.durationMs)}</span>}
+            {run.status !== 'PENDING' && run.status !== 'ERR' && <span className="crm-auto-note">{t('crmAuto.journal.duration', { duration: formatDuration(run.durationMs) })}</span>}
           </div>
         </div>
       )}
@@ -115,6 +117,7 @@ function RunRow({ run, open, onToggle, onAct, busy }: {
 }
 
 export default function RunsJournal({ filter, onFilterChange, version, onChanged, onError }: RunsJournalProps) {
+  const { t } = useI18n()
   const [items, setItems] = useState<CrmRuleRun[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -136,11 +139,11 @@ export default function RunsJournal({ filter, onFilterChange, version, onChanged
       setError(null)
     } catch (e) {
       if (mine !== seq.current) return
-      setError(e instanceof Error ? e.message : 'Journal indisponible')
+      setError(e instanceof Error ? e.message : t('crmAuto.journal.unavailable'))
     } finally {
       if (mine === seq.current) setLoading(false)
     }
-  }, [filter])
+  }, [filter, t])
 
   useEffect(() => {
     void load(1, false)
@@ -152,9 +155,9 @@ export default function RunsJournal({ filter, onFilterChange, version, onChanged
       if (kind === 'approve') await approveRun(run._id)
       else if (kind === 'reject') await rejectRun(run._id)
       else await retryRun(run._id)
-      onChanged(kind === 'approve' ? 'E-mail approuvé' : kind === 'reject' ? 'E-mail refusé' : 'Exécution relancée')
+      onChanged(kind === 'approve' ? t('crmAuto.journal.approved') : kind === 'reject' ? t('crmAuto.journal.rejected') : t('crmAuto.journal.retried'))
     } catch (e) {
-      onError(e instanceof Error ? e.message : 'Action impossible')
+      onError(e instanceof Error ? e.message : t('crmAuto.journal.actionError'))
     } finally {
       setBusyId(null)
     }
@@ -162,10 +165,10 @@ export default function RunsJournal({ filter, onFilterChange, version, onChanged
 
   return (
     <div>
-      <div className="crm-auto-filters" role="group" aria-label="Filtrer le journal">
+      <div className="crm-auto-filters" role="group" aria-label={t('crmAuto.journal.filterAria')}>
         {FILTERS.map((f) => (
           <button key={f.key} type="button" className="crm-auto-chip" aria-pressed={filter === f.key} onClick={() => onFilterChange(f.key)}>
-            {f.label}
+            {t(f.labelKey)}
             {filter === f.key && !loading && <b className="crm-auto-note" style={{ fontFamily: 'var(--mono)' }}>{total}</b>}
           </button>
         ))}
@@ -175,25 +178,25 @@ export default function RunsJournal({ filter, onFilterChange, version, onChanged
           <div className="crm-auto-notice crm-auto-notice--err" role="alert" style={{ margin: 12 }}>
             <span>{error}</span>
             <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => void load(1, false)}>
-              Réessayer
+              {t('crmAuto.retry')}
             </button>
           </div>
         ) : loading && items.length === 0 ? (
-          <p className="crm-auto-empty" role="status">Chargement du journal…</p>
+          <p className="crm-auto-empty" role="status">{t('crmAuto.journal.loading')}</p>
         ) : items.length === 0 ? (
-          <p className="crm-auto-empty">Aucune exécution pour ce filtre.</p>
+          <p className="crm-auto-empty">{t('crmAuto.journal.empty')}</p>
         ) : (
-          <ul className="crm-auto-runs" aria-label="Journal d’exécution">
+          <ul className="crm-auto-runs" aria-label={t('crmAuto.journal.listAria')}>
             {items.map((run) => (
               <RunRow key={run._id} run={run} open={openId === run._id} busy={busyId === run._id} onToggle={() => setOpenId(openId === run._id ? null : run._id)} onAct={(k, r) => void act(k, r)} />
             ))}
           </ul>
         )}
         <div className="crm-auto-foot">
-          <span>Conservé 90 jours · une exécution = un déclenchement sur un lead</span>
+          <span>{t('crmAuto.journal.retention')}</span>
           {items.length < total && (
             <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={loading} onClick={() => void load(page + 1, true)}>
-              Charger la suite ({items.length}/{total})
+              {t('crmAuto.journal.loadMore', { loaded: items.length, total })}
             </button>
           )}
         </div>

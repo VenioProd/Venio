@@ -2,6 +2,7 @@ import { lazyWithRetry as lazy } from '../../../lib/lazyWithRetry'
 import { useState } from 'react'
 import AdminHub from './AdminHub'
 import ProjectsPortfolio from '../projects-portfolio/ProjectsPortfolio'
+import { useI18n } from '../../../context/I18nContext'
 import { ADMIN_HUBS } from '../../../lib/adminHubs'
 
 const GestionBoard = lazy(() => import('../GestionBoard'))
@@ -10,15 +11,16 @@ const SubsidiaryList = lazy(() => import('../SubsidiaryList'))
 const TemplateList = lazy(() => import('../TemplateList'))
 
 function ClientsPanel() {
+  const { t } = useI18n()
   const [view, setView] = useState<'portfolio' | 'tasks'>('portfolio')
   return (
     <>
-      <div className="pf-switch" role="group" aria-label="Affichage des projets clients">
+      <div className="pf-switch" role="group" aria-label={t('shell.hub.projets.viewAria')}>
         <button type="button" aria-pressed={view === 'portfolio'} onClick={() => setView('portfolio')}>
-          Portefeuille
+          {t('shell.hub.projets.viewPortfolio')}
         </button>
         <button type="button" aria-pressed={view === 'tasks'} onClick={() => setView('tasks')}>
-          Tâches (tableau, kanban, Gantt)
+          {t('shell.hub.projets.viewTasks')}
         </button>
       </div>
       {view === 'portfolio' ? <ProjectsPortfolio /> : <GestionBoard />}

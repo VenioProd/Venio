@@ -1,4 +1,6 @@
 /** Types et logique pure de la vue d'ensemble Projets (onglet Clients). */
+import { intlLocale, translate, type MessageKey } from '../../../i18n'
+import { formatDate } from '../../../i18n/format'
 
 export type RiskCode = 'LATE' | 'BUDGET_OVER' | 'PROJECTED_LATE' | 'DUE_SOON' | 'STALE' | 'TO_BILL' | 'WAITING_CLIENT'
 export type ProjectAction = 'POSTPONE' | 'REMIND_CLIENT' | 'REASSIGN' | 'RESUME' | 'INVOICE' | 'ARCHIVE'
@@ -84,12 +86,12 @@ export interface SavedView {
   filters: Filters
 }
 
-export const BUILTIN_VIEWS: { id: string; label: string; filters: Filters }[] = [
-  { id: 'all', label: 'Tous', filters: EMPTY_FILTERS },
-  { id: 'mine', label: 'Mes projets', filters: { ...EMPTY_FILTERS, mine: true } },
-  { id: 'late', label: 'En retard', filters: { ...EMPTY_FILTERS, late: true } },
-  { id: 'risk', label: 'À risque', filters: { ...EMPTY_FILTERS, risk: true } },
-  { id: 'toBill', label: 'À facturer', filters: { ...EMPTY_FILTERS, toBill: true } },
+export const BUILTIN_VIEWS: { id: string; labelKey: MessageKey; filters: Filters }[] = [
+  { id: 'all', labelKey: 'portfolio.views.all', filters: EMPTY_FILTERS },
+  { id: 'mine', labelKey: 'portfolio.views.mine', filters: { ...EMPTY_FILTERS, mine: true } },
+  { id: 'late', labelKey: 'portfolio.views.late', filters: { ...EMPTY_FILTERS, late: true } },
+  { id: 'risk', labelKey: 'portfolio.views.risk', filters: { ...EMPTY_FILTERS, risk: true } },
+  { id: 'toBill', labelKey: 'portfolio.views.toBill', filters: { ...EMPTY_FILTERS, toBill: true } },
 ]
 
 const hasRisk = (i: PortfolioItem, code: RiskCode) => i.risks.some((r) => r.code === code)
@@ -110,7 +112,7 @@ export function applyFilters(items: PortfolioItem[], f: Filters, meId: string | 
     }
     return true
   })
-  const byName = (a: PortfolioItem, b: PortfolioItem) => a.name.localeCompare(b.name, 'fr')
+  const byName = (a: PortfolioItem, b: PortfolioItem) => a.name.localeCompare(b.name, intlLocale())
   const cmp: Record<SortKey, (a: PortfolioItem, b: PortfolioItem) => number> = {
     urgency: (a, b) => b.urgency - a.urgency || byName(a, b),
     dueDate: (a, b) => (a.daysToDue ?? Infinity) - (b.daysToDue ?? Infinity) || byName(a, b),
@@ -127,26 +129,29 @@ export function sameFilters(a: Filters, b: Filters): boolean {
 export function riskLabel(r: { code: RiskCode; value: number | null }, item: PortfolioItem): { text: string; tone: 'rose' | 'amber' | 'sky' } {
   switch (r.code) {
     case 'LATE':
-      return { text: `${r.value} j de retard`, tone: 'rose' }
+      return { text: translate('portfolio.risk.late', { value: r.value ?? 0 }), tone: 'rose' }
     case 'BUDGET_OVER':
-      return { text: `Budget ${r.value} %`, tone: 'rose' }
+      return { text: translate('portfolio.risk.budget', { value: r.value ?? 0 }), tone: 'rose' }
     case 'PROJECTED_LATE':
-      return { text: `${item.progress} % fait, ${r.value} % attendu`, tone: 'amber' }
+      return { text: translate('portfolio.risk.projectedLate', { progress: item.progress, value: r.value ?? 0 }), tone: 'amber' }
     case 'DUE_SOON':
-      return { text: r.value === 0 ? 'Échéance aujourd’hui' : `Échéance dans ${r.value} j`, tone: 'amber' }
+      return { text: r.value === 0 ? translate('portfolio.risk.dueToday') : translate('portfolio.risk.dueSoon', { value: r.value ?? 0 }), tone: 'amber' }
     case 'STALE':
-      return { text: `Sans activité depuis ${r.value} j`, tone: 'amber' }
+      return { text: translate('portfolio.risk.stale', { value: r.value ?? 0 }), tone: 'amber' }
     case 'WAITING_CLIENT':
-      return { text: 'En attente du client', tone: 'sky' }
+      return { text: translate('portfolio.risk.waitingClient'), tone: 'sky' }
     case 'TO_BILL':
-      return { text: 'Livré, non facturé', tone: 'sky' }
+      return { text: translate('portfolio.risk.toBill'), tone: 'sky' }
   }
 }
 
+/** Jour + mois abrégé dans la langue active. */
+export const shortDate = (iso: string): string => formatDate(iso, { day: 'numeric', month: 'short' })
+
 export function dueLabel(i: Pick<PortfolioItem, 'daysToDue' | 'overdueDays' | 'endDate' | 'status'>): string {
   if (!i.endDate) return '—'
-  if (i.status === 'TERMINE') return new Date(i.endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-  if (i.overdueDays > 0) return `−${i.overdueDays} j`
-  if (i.daysToDue !== null && i.daysToDue <= 7) return `J−${i.daysToDue}`
-  return new Date(i.endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+  if (i.status === 'TERMINE') return shortDate(i.endDate)
+  if (i.overdueDays > 0) return translate('portfolio.due.overdue', { count: i.overdueDays })
+  if (i.daysToDue !== null && i.daysToDue <= 7) return translate('portfolio.due.countdown', { count: i.daysToDue })
+  return shortDate(i.endDate)
 }

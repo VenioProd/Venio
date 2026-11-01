@@ -24,6 +24,9 @@ import orgs from './orgs'
 import projA from './projA'
 import projB from './projB'
 import projects from './projects'
+import crmAuto from './crmAuto'
+import crmRich from './crmRich'
+import portfolio from './portfolio'
 
 const messages = {
   ...accAccounts,
@@ -51,6 +54,9 @@ const messages = {
   ...projA,
   ...projB,
   ...projects,
+  ...crmAuto,
+  ...crmRich,
+  ...portfolio,
 }
 
 export default messages

@@ -222,6 +222,7 @@ const fr = {
   'compB.lightbox.noVideo': 'Votre navigateur ne supporte pas la lecture vidéo.',
   'compB.lightbox.noPreview': 'Aperçu non disponible pour ce type de fichier.',
   'compB.lightbox.downloadFile': 'Télécharger {name}',
+  'compB.msg.sendFailed': 'Envoi impossible',
 } as const
 
 export default fr

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
+import { translate } from '../i18n'
 import {
   fetchConversations as fetchConversationsApi,
   fetchMessages as fetchMessagesApi,
@@ -145,7 +146,7 @@ export function MessagingProvider({ children }: { children: React.ReactNode }) {
             { conversationId: activeConversationId, content, parentMessage },
             (ack: { ok: boolean; error?: string }) => {
               if (ack.ok) resolve()
-              else reject(new Error(ack.error || 'Envoi impossible'))
+              else reject(new Error(ack.error || translate('compB.msg.sendFailed')))
             },
           )
         })

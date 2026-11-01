@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import { useAuth } from '../../../context/AuthContext'
 import { canAccessHubModule, type AdminHubDefinition } from '../../../lib/adminHubs'
 import PageHeader from '../../../components/admin/ui/PageHeader'
@@ -12,22 +13,25 @@ export default function AdminHub({
   panels: Record<string, ReactNode>
 }) {
   const { user, loading } = useAuth()
+  const { t } = useI18n()
   if (loading) return null
   return (
     <div className="admin-hub">
       <HubTabs
-        label={`Sections ${definition.title}`}
+        label={t('shell.hub.sectionsAria', { title: t(definition.titleKey) })}
         tabs={definition.tabs.map((tab) => ({
-          ...tab,
+          id: tab.id,
+          to: tab.to,
+          label: t(tab.labelKey),
           allowed: tab.modules.some((module) => canAccessHubModule(user, module)),
-          content: <Suspense fallback={<p role="status">Chargement…</p>}>{panels[tab.id]}</Suspense>,
+          content: <Suspense fallback={<p role="status">{t('shell.hub.loading')}</p>}>{panels[tab.id]}</Suspense>,
         }))}
       >
         {(tabs) => (
           <PageHeader
-            eyebrow={definition.eyebrow}
-            title={definition.title}
-            subtitle={definition.subtitle}
+            eyebrow={t(definition.eyebrowKey)}
+            title={t(definition.titleKey)}
+            subtitle={t(definition.subtitleKey)}
             tabs={tabs}
           />
         )}

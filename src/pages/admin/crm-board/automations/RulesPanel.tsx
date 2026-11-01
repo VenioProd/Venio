@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import { useI18n } from '../../../../context/I18nContext'
 import Dialog from './Dialog'
 import { simulateRule } from './api'
 import {
-  LEAD_STATUS_LABELS,
-  RULE_STATUS_LABELS,
+  leadStatusLabel,
+  ruleStatusLabel,
   describeAction,
   describeCondition,
   describeLimits,
@@ -41,6 +42,7 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
   onDelete: () => void
   onSimulate: () => void
 }) {
+  const { t } = useI18n()
   const trig = describeTrigger(rule.trigger)
   const active = rule.status === 'ACTIVE'
   const conds = rule.conditions?.items ?? []
@@ -55,13 +57,13 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
             {rule.system && (
               <span className="crm-auto-st" style={{ ['--c' as string]: 'var(--teal)' }}>
                 <i />
-                Système
+                {t('crmAuto.rule.system')}
               </span>
             )}
             {rule.requireApproval && rule.actions.some((a) => a.type === 'SEND_EMAIL') && (
               <span className="crm-auto-st" style={{ ['--c' as string]: 'var(--amber)' }}>
                 <i />
-                E-mail à valider
+                {t('crmAuto.rule.emailToApprove')}
               </span>
             )}
           </h3>
@@ -71,17 +73,17 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
           type="button"
           className="crm-auto-tog"
           aria-pressed={active}
-          aria-label={`Activer la règle « ${rule.name} »`}
+          aria-label={t('crmAuto.rule.activateAria', { name: rule.name })}
           disabled={busy}
           onClick={onToggle}
         >
           <span className="crm-auto-sw" aria-hidden="true" />
-          {active ? 'Active' : RULE_STATUS_LABELS[rule.status]}
+          {active ? t('crmAuto.ruleStatus.ACTIVE') : ruleStatusLabel(rule.status)}
         </button>
       </div>
       <div className="crm-auto-flow">
         <div className="crm-auto-fn" style={{ ['--c' as string]: 'var(--sky)' }}>
-          <small>Quand</small>
+          <small>{t('crmAuto.rule.when')}</small>
           <span>
             <b>{trig.title}</b>
             {trig.detail ? ` — ${trig.detail}` : ''}
@@ -89,9 +91,9 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
         </div>
         <Arrow />
         <div className="crm-auto-fn" style={{ ['--c' as string]: 'var(--amber)' }}>
-          <small>Si</small>
+          <small>{t('crmAuto.rule.if')}</small>
           {conds.length === 0 ? (
-            <span>Aucune condition</span>
+            <span>{t('crmAuto.rule.noCondition')}</span>
           ) : (
             <ul>
               {conds.map((c, i) => (
@@ -99,11 +101,11 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
               ))}
             </ul>
           )}
-          {conds.length > 1 && <span className="crm-auto-note">{rule.conditions.op === 'OR' ? 'Au moins une condition' : 'Toutes les conditions'}</span>}
+          {conds.length > 1 && <span className="crm-auto-note">{rule.conditions.op === 'OR' ? t('crmAuto.rule.anyCondition') : t('crmAuto.rule.allConditions')}</span>}
         </div>
         <Arrow />
         <div className="crm-auto-fn" style={{ ['--c' as string]: 'var(--mint)' }}>
-          <small>Alors</small>
+          <small>{t('crmAuto.rule.then')}</small>
           <ul>
             {rule.actions.map((a, i) => (
               <li key={i}>{describeAction(a, rule.requireApproval)}</li>
@@ -113,28 +115,28 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
       </div>
       <div className="crm-auto-rule-f">
         <span>
-          <b>{stats.runs === 0 ? 'Jamais exécutée' : `${stats.runs} exécution${stats.runs > 1 ? 's' : ''}${rate !== null ? ` · ${rate} %` : ''}`}</b>
+          <b>{stats.runs === 0 ? t('crmAuto.rule.neverRun') : `${t('crmAuto.rule.runCount', { count: stats.runs })}${rate !== null ? t('crmAuto.rule.runRate', { rate }) : ''}`}</b>
         </span>
-        <span>Dernière : {formatRelative(stats.lastRunAt)}</span>
-        <span>Limite : {describeLimits(rule.limits)}</span>
+        <span>{t('crmAuto.rule.last', { when: formatRelative(stats.lastRunAt) })}</span>
+        <span>{t('crmAuto.rule.limit', { limit: describeLimits(rule.limits) })}</span>
         <span className="crm-auto-sp" />
-        <button type="button" className="crm-auto-link" onClick={onSimulate} aria-label={`Simuler « ${rule.name} »`}>
-          Simuler
+        <button type="button" className="crm-auto-link" onClick={onSimulate} aria-label={t('crmAuto.rule.simulateAria', { name: rule.name })}>
+          {t('crmAuto.rule.simulate')}
         </button>
         {rule.system ? (
-          <button type="button" className="crm-auto-link" onClick={onDuplicate} disabled={busy} aria-label={`Dupliquer « ${rule.name} »`}>
-            Dupliquer
+          <button type="button" className="crm-auto-link" onClick={onDuplicate} disabled={busy} aria-label={t('crmAuto.rule.duplicateAria', { name: rule.name })}>
+            {t('crmAuto.rule.duplicate')}
           </button>
         ) : (
           <>
-            <button type="button" className="crm-auto-link" onClick={onEdit} aria-label={`Modifier « ${rule.name} »`}>
-              Modifier
+            <button type="button" className="crm-auto-link" onClick={onEdit} aria-label={t('crmAuto.rule.editAria', { name: rule.name })}>
+              {t('common.edit')}
             </button>
-            <button type="button" className="crm-auto-link" onClick={onDuplicate} disabled={busy} aria-label={`Dupliquer « ${rule.name} »`}>
-              Dupliquer
+            <button type="button" className="crm-auto-link" onClick={onDuplicate} disabled={busy} aria-label={t('crmAuto.rule.duplicateAria', { name: rule.name })}>
+              {t('crmAuto.rule.duplicate')}
             </button>
-            <button type="button" className="crm-auto-link" onClick={onDelete} disabled={busy} aria-label={`Supprimer « ${rule.name} »`}>
-              Supprimer
+            <button type="button" className="crm-auto-link" onClick={onDelete} disabled={busy} aria-label={t('crmAuto.rule.deleteAria', { name: rule.name })}>
+              {t('common.delete')}
             </button>
           </>
         )}
@@ -144,6 +146,7 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
 }
 
 export default function RulesPanel({ rules, busyId, onToggle, onEdit, onDuplicate, onDelete, onSimulated, onNew }: RulesPanelProps) {
+  const { t } = useI18n()
   const [sim, setSim] = useState<{ rule: CrmRule; result: SimulationResult | null; error: string | null; recording: boolean } | null>(null)
 
   const openSim = async (rule: CrmRule) => {
@@ -152,7 +155,7 @@ export default function RulesPanel({ rules, busyId, onToggle, onEdit, onDuplicat
       const result = await simulateRule(rule._id)
       setSim({ rule, result, error: null, recording: false })
     } catch (e) {
-      setSim({ rule, result: null, error: e instanceof Error ? e.message : 'Simulation impossible', recording: false })
+      setSim({ rule, result: null, error: e instanceof Error ? e.message : t('crmAuto.sim.error'), recording: false })
     }
   }
   const record = async () => {
@@ -163,16 +166,16 @@ export default function RulesPanel({ rules, busyId, onToggle, onEdit, onDuplicat
       setSim(null)
       onSimulated()
     } catch (e) {
-      setSim({ ...sim, recording: false, error: e instanceof Error ? e.message : 'Consignation impossible' })
+      setSim({ ...sim, recording: false, error: e instanceof Error ? e.message : t('crmAuto.sim.recordError') })
     }
   }
 
   if (rules.length === 0) {
     return (
       <div className="crm-auto-empty crm-auto-glass">
-        <p>Aucune règle pour le moment.</p>
+        <p>{t('crmAuto.rule.none')}</p>
         <button type="button" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" onClick={onNew} style={{ marginTop: 12 }}>
-          Créer une règle
+          {t('crmAuto.rule.create')}
         </button>
       </div>
     )
@@ -195,36 +198,36 @@ export default function RulesPanel({ rules, busyId, onToggle, onEdit, onDuplicat
       </div>
       {sim && (
         <Dialog titleId="crm-auto-sim-t" onClose={() => setSim(null)}>
-          <h3 id="crm-auto-sim-t">Simulation</h3>
+          <h3 id="crm-auto-sim-t">{t('crmAuto.sim.title')}</h3>
           {sim.error ? (
             <p className="crm-auto-err" role="alert">{sim.error}</p>
           ) : !sim.result ? (
-            <p role="status">Calcul en cours…</p>
+            <p role="status">{t('crmAuto.sim.running')}</p>
           ) : (
             <>
               <p>
-                Sur le pipeline actuel, « {sim.rule.name} » se déclencherait pour <b style={{ color: 'var(--tx)' }}>{sim.result.total} lead{sim.result.total > 1 ? 's' : ''}</b>.
-                Aucune action n’est exécutée.
+                {t('crmAuto.sim.before', { name: sim.rule.name })}<b style={{ color: 'var(--tx)' }}>{t('crmAuto.sim.leads', { count: sim.result.total })}</b>
+                {t('crmAuto.sim.after')}
               </p>
               {sim.result.leads.length > 0 && (
                 <ul>
                   {sim.result.leads.slice(0, 8).map((l) => (
                     <li key={l.id}>
-                      {l.company} <span className="crm-auto-note">({LEAD_STATUS_LABELS[l.status] ?? l.status})</span>
+                      {l.company} <span className="crm-auto-note">({leadStatusLabel(l.status)})</span>
                     </li>
                   ))}
-                  {sim.result.leads.length > 8 && <li>… et {sim.result.leads.length - 8} autre(s)</li>}
+                  {sim.result.leads.length > 8 && <li>{t('crmAuto.sim.more', { count: sim.result.leads.length - 8 })}</li>}
                 </ul>
               )}
             </>
           )}
           <div className="crm-auto-row">
             <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => setSim(null)}>
-              Fermer
+              {t('common.close')}
             </button>
             {sim.result && sim.result.total > 0 && (
               <button type="button" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" onClick={() => void record()} disabled={sim.recording}>
-                Consigner au journal
+                {t('crmAuto.sim.record')}
               </button>
             )}
           </div>

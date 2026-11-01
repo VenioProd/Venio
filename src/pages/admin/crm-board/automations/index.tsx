@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useI18n } from '../../../../context/I18nContext'
+import type { MessageKey } from '../../../../i18n'
 import Dialog from './Dialog'
 import RuleBuilder from './RuleBuilder'
 import RulesPanel from './RulesPanel'
@@ -10,10 +12,10 @@ import { draftFromRule, emptyDraft, type CrmRule, type CrmRuleRun, type RuleDraf
 import './automations.css'
 
 type Section = 'regles' | 'journal' | 'modeles'
-const SECTIONS: Array<{ key: Section; label: string }> = [
-  { key: 'regles', label: 'Règles' },
-  { key: 'journal', label: 'Journal d’exécution' },
-  { key: 'modeles', label: 'Modèles' },
+const SECTIONS: Array<{ key: Section; labelKey: MessageKey }> = [
+  { key: 'regles', labelKey: 'crmAuto.tab.rules' },
+  { key: 'journal', labelKey: 'crmAuto.tab.journal' },
+  { key: 'modeles', labelKey: 'crmAuto.tab.templates' },
 ]
 const tabId = (i: number) => `crm-auto-tab-${SECTIONS[i].key}`
 
@@ -25,6 +27,7 @@ interface BuilderState {
 const errorText = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback)
 
 export default function CrmAutomations() {
+  const { t } = useI18n()
   const [rules, setRules] = useState<CrmRule[]>([])
   const [recent, setRecent] = useState<CrmRuleRun[]>([])
   const [recentTotal, setRecentTotal] = useState(0)
@@ -49,11 +52,11 @@ export default function CrmAutomations() {
       setPending(pend.total ?? 0)
       setLoadError(null)
     } catch (e) {
-      setLoadError(errorText(e, 'Impossible de charger les automatisations'))
+      setLoadError(errorText(e, t('crmAuto.loadError')))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void reload()
@@ -75,9 +78,9 @@ export default function CrmAutomations() {
     try {
       const updated = await setRuleStatus(rule._id, rule.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE')
       setRules((list) => list.map((r) => (r._id === rule._id ? { ...r, ...updated } : r)))
-      notify(updated.status === 'ACTIVE' ? 'Règle activée' : 'Règle mise en pause')
+      notify(updated.status === 'ACTIVE' ? t('crmAuto.ruleActivated') : t('crmAuto.rulePaused'))
     } catch (e) {
-      setProblem(errorText(e, 'Changement de statut impossible'))
+      setProblem(errorText(e, t('crmAuto.statusChangeError')))
     } finally {
       setBusyId(null)
     }
@@ -89,10 +92,10 @@ export default function CrmAutomations() {
     try {
       const copy = await createRule(draftFromRule(rule, true))
       await reload()
-      notify('Règle dupliquée en brouillon')
+      notify(t('crmAuto.duplicated'))
       setBuilder({ rule: copy, draft: draftFromRule(copy) })
     } catch (e) {
-      setProblem(errorText(e, 'Duplication impossible'))
+      setProblem(errorText(e, t('crmAuto.duplicateError')))
     } finally {
       setBusyId(null)
     }
@@ -106,9 +109,9 @@ export default function CrmAutomations() {
     try {
       await deleteRule(rule._id)
       setRules((list) => list.filter((r) => r._id !== rule._id))
-      notify('Règle supprimée')
+      notify(t('crmAuto.deleted'))
     } catch (e) {
-      setProblem(errorText(e, 'Suppression impossible'))
+      setProblem(errorText(e, t('crmAuto.deleteError')))
     } finally {
       setBusyId(null)
     }
@@ -124,13 +127,13 @@ export default function CrmAutomations() {
     const judged = totals.ok + totals.errors
     const tasks = recent.reduce((n, run) => n + run.steps.filter((s) => s.action === 'CREATE_TASK' && s.status === 'OK').length, 0)
     return [
-      { label: 'Règles actives', value: `${active}/${rules.length}`, hint: `dont ${systemActive} règle${systemActive > 1 ? 's' : ''} système` },
-      { label: 'Exécutions', value: String(totals.runs), hint: 'cumul de toutes les règles' },
-      { label: 'Taux de succès', value: judged > 0 ? `${Math.round((totals.ok / judged) * 100)} %` : '—', hint: `${totals.errors} erreur${totals.errors > 1 ? 's' : ''} au total` },
-      { label: 'Tâches créées', value: String(tasks), hint: `sur les ${recent.length} dernières exécutions` },
-      { label: 'À valider', value: String(pending), hint: pending > 0 ? 'e-mails en attente' : 'rien en attente' },
+      { label: t('crmAuto.kpi.activeRules'), value: `${active}/${rules.length}`, hint: t('crmAuto.kpi.systemHint', { count: systemActive }) },
+      { label: t('crmAuto.kpi.runs'), value: String(totals.runs), hint: t('crmAuto.kpi.runsHint') },
+      { label: t('crmAuto.kpi.successRate'), value: judged > 0 ? `${Math.round((totals.ok / judged) * 100)} %` : '—', hint: t('crmAuto.kpi.errorsHint', { count: totals.errors }) },
+      { label: t('crmAuto.kpi.tasks'), value: String(tasks), hint: t('crmAuto.kpi.tasksHint', { count: recent.length }) },
+      { label: t('crmAuto.kpi.toApprove'), value: String(pending), hint: pending > 0 ? t('crmAuto.kpi.pendingHint') : t('crmAuto.kpi.nothingPending') },
     ]
-  }, [rules, recent, pending])
+  }, [rules, recent, pending, t])
 
   const applyTemplate = (template: { draft: RuleDraft }) => setBuilder({ rule: null, draft: template.draft })
 
@@ -138,7 +141,7 @@ export default function CrmAutomations() {
     <div className="crm-auto">
       <p className="crm-auto-sr" role="status" aria-live="polite">{message}</p>
 
-      <section className="crm-auto-kpis" aria-label="Indicateurs des automatisations">
+      <section className="crm-auto-kpis" aria-label={t('crmAuto.kpi.aria')}>
         {kpis.map((k) => (
           <div className="crm-auto-kpi crm-auto-glass" key={k.label}>
             <small>{k.label}</small>
@@ -151,7 +154,7 @@ export default function CrmAutomations() {
       {loadError && (
         <div className="crm-auto-notice crm-auto-notice--err" role="alert">
           <span>{loadError}</span>
-          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => void reload()}>Réessayer</button>
+          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => void reload()}>{t('crmAuto.retry')}</button>
         </div>
       )}
       {problem && (
@@ -161,7 +164,7 @@ export default function CrmAutomations() {
       )}
       {pending > 0 && (
         <div className="crm-auto-notice">
-          <span>{pending} e-mail{pending > 1 ? 's' : ''} en attente de validation avant envoi.</span>
+          <span>{t('crmAuto.pendingNotice', { count: pending })}</span>
           <button
             type="button"
             className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
@@ -170,13 +173,13 @@ export default function CrmAutomations() {
               setSection('journal')
             }}
           >
-            Examiner
+            {t('crmAuto.review')}
           </button>
         </div>
       )}
 
       <div className="crm-auto-top">
-        <div className="crm-auto-sub" role="tablist" aria-label="Section">
+        <div className="crm-auto-sub" role="tablist" aria-label={t('crmAuto.section')}>
           {SECTIONS.map((s, i) => (
             <button
               key={s.key}
@@ -189,19 +192,19 @@ export default function CrmAutomations() {
               onClick={() => setSection(s.key)}
               onKeyDown={(e) => handleTabKeys(e, i, SECTIONS.length, (n) => setSection(SECTIONS[n].key), tabId)}
             >
-              {s.label}
+              {t(s.labelKey)}
             </button>
           ))}
         </div>
         <button type="button" id="crm-auto-new" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" onClick={() => setBuilder({ rule: null, draft: emptyDraft() })}>
-          + Nouvelle règle
+          {t('crmAuto.newRule')}
         </button>
       </div>
 
       <div role="tabpanel" id="crm-auto-panel-regles" aria-labelledby={tabId(0)} hidden={section !== 'regles'}>
         {section === 'regles' &&
           (loading ? (
-            <p className="crm-auto-empty crm-auto-glass" role="status">Chargement des règles…</p>
+            <p className="crm-auto-empty crm-auto-glass" role="status">{t('crmAuto.loadingRules')}</p>
           ) : (
             <RulesPanel
               rules={rules}
@@ -211,7 +214,7 @@ export default function CrmAutomations() {
               onDuplicate={(r) => void duplicate(r)}
               onDelete={setToDelete}
               onSimulated={() => {
-                notify('Simulation consignée au journal')
+                notify(t('crmAuto.simRecorded'))
                 refreshAll()
               }}
               onNew={() => setBuilder({ rule: null, draft: emptyDraft() })}
@@ -235,7 +238,7 @@ export default function CrmAutomations() {
       <div role="tabpanel" id="crm-auto-panel-modeles" aria-labelledby={tabId(2)} hidden={section !== 'modeles'}>
         {section === 'modeles' && <TemplatesGrid onUse={applyTemplate} />}
       </div>
-      {recentTotal > 0 && section === 'regles' && <p className="crm-auto-note">{recentTotal} exécution{recentTotal > 1 ? 's' : ''} au journal (90 derniers jours).</p>}
+      {recentTotal > 0 && section === 'regles' && <p className="crm-auto-note">{t('crmAuto.runsNote', { count: recentTotal })}</p>}
 
       {builder && (
         <RuleBuilder
@@ -252,11 +255,11 @@ export default function CrmAutomations() {
       )}
       {toDelete && (
         <Dialog titleId="crm-auto-del-t" onClose={() => setToDelete(null)}>
-          <h3 id="crm-auto-del-t">Supprimer cette règle ?</h3>
-          <p>« {toDelete.name} » sera supprimée. Son historique d’exécution reste au journal.</p>
+          <h3 id="crm-auto-del-t">{t('crmAuto.deleteTitle')}</h3>
+          <p>{t('crmAuto.deleteBody', { name: toDelete.name })}</p>
           <div className="crm-auto-row">
-            <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => setToDelete(null)}>Annuler</button>
-            <button type="button" className="crm-auto-btn crm-auto-btn--danger crm-auto-btn--sm" onClick={() => void confirmDelete()}>Supprimer</button>
+            <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => setToDelete(null)}>{t('common.cancel')}</button>
+            <button type="button" className="crm-auto-btn crm-auto-btn--danger crm-auto-btn--sm" onClick={() => void confirmDelete()}>{t('common.delete')}</button>
           </div>
         </Dialog>
       )}

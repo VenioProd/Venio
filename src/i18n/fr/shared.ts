@@ -289,8 +289,8 @@ const fr = {
   'shared.dash.snoozeTonight': 'Ce soir 18h',
   'shared.dash.snoozeTomorrow': 'Demain 9h',
   'shared.dash.snoozeMonday': 'Lundi',
-  'shared.dash.snoozeCustom': 'Custom…',
-  'shared.dash.snoozeCustomPrompt': "Snooze jusqu'à (YYYY-MM-DD HH:MM) :",
+  'shared.dash.snoozeCustom': 'Personnalisé…',
+  'shared.dash.snoozeCustomPrompt': "Reporter jusqu'au (AAAA-MM-JJ HH:MM) :",
 } as const
 
 export default fr

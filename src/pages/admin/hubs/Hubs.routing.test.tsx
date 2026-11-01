@@ -3,6 +3,7 @@ import { MemoryRouter, Outlet, useLocation, useNavigate } from 'react-router-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { User } from '../../../types/auth.types'
 import App from '../../../App'
+import { translate } from '../../../i18n'
 import { ADMIN_HUBS } from '../../../lib/adminHubs'
 import { LEGACY_ADMIN_LIST_ROUTES } from '../../../lib/adminHubRoutes'
 
@@ -192,25 +193,25 @@ describe.each(cases)('Routage du hub $hub', ({ hub, legacy, to, visible, grant, 
     const definition = ADMIN_HUBS[hub]
     mount(definition.tabs[0].to)
     await screen.findByRole('tablist')
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(definition.tabs.map((tab) => tab.label))
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(definition.tabs.map((tab) => translate(tab.labelKey)))
     const second = definition.tabs[1]
-    fireEvent.click(screen.getByRole('tab', { name: second.label }))
+    fireEvent.click(screen.getByRole('tab', { name: translate(second.labelKey) }))
     expect(screen.getByLabelText('URL')).toHaveTextContent(second.to)
-    expect(screen.getByRole('tab', { name: second.label })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: translate(second.labelKey) })).toHaveAttribute('aria-selected', 'true')
     fireEvent.click(screen.getByRole('button', { name: 'Précédent' }))
-    expect(screen.getByRole('tab', { name: definition.tabs[0].label })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: translate(definition.tabs[0].labelKey) })).toHaveAttribute('aria-selected', 'true')
     fireEvent.click(screen.getByRole('button', { name: 'Suivant' }))
-    expect(screen.getByRole('tab', { name: second.label })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: translate(second.labelKey) })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('protège aussi un accès direct à un onglet interdit', async () => {
     currentUser = viewer([...grant], [...deny])
     const definition = ADMIN_HUBS[hub]
-    const forbidden = definition.tabs.find((tab) => !(visible as readonly string[]).includes(tab.label))
+    const forbidden = definition.tabs.find((tab) => !(visible as readonly string[]).includes(translate(tab.labelKey)))
     if (!forbidden) return // Équipe : les deux accès par permission sont accordés ensemble, Membres reste interdit.
     mount(`${forbidden.to}?source=direct`)
     await screen.findByRole('tablist')
-    expect(screen.queryByRole('tab', { name: forbidden.label })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: translate(forbidden.labelKey) })).not.toBeInTheDocument()
     expect(screen.getByLabelText('URL')).toHaveTextContent(`${to}?source=direct`)
   })
 })

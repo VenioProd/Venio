@@ -45,6 +45,18 @@ describe('dictionnaires i18n', () => {
     }
   }
 
+  it('aucune valeur anglaise ne contient de mots français courants (hors noms propres)', () => {
+    const french = /\b(pour|avec|sans|dans|votre|vos|aucun|aucune|ajouter|supprimer|enregistrer|annuler|chargement|erreur|nouveau|nouvelle|rechercher|modifier|fermer|statut)\b/i
+    const allowed = new Set(['accAccounts.fec.title', 'accAccounts.fec.info', 'adminOps.guide.projects.access'])
+    const leaks: string[] = []
+    for (const domain of domains(enModules)) {
+      for (const [key, text] of Object.entries(enModules[`../en/${domain}.ts`].default)) {
+        if (!allowed.has(key) && french.test(text)) leaks.push(`${key}: ${text}`)
+      }
+    }
+    expect(leaks).toEqual([])
+  })
+
   it('aucune clé n’est définie dans deux domaines', () => {
     const seen = new Map<string, string>()
     for (const domain of domains(frModules)) {

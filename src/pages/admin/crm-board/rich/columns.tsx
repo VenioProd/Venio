@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import type { AdminUser, Lead } from '../../../../types/crm.types'
 import { PROJECT_MAP, STATUS_MAP, TEMPERATURE_MAP } from '../constants'
-import type { MessageKey } from '../../../../i18n'
+import { translate, type MessageKey, type MessageParams } from '../../../../i18n'
+import { formatDate, formatMoney } from '../../../../i18n/format'
 
-export type Translate = (key: MessageKey) => string
+export type Translate = (key: MessageKey, params?: MessageParams) => string
 
 export interface ColumnContext {
   t: Translate
@@ -13,8 +14,8 @@ export interface ColumnContext {
 
 export interface RichColumn {
   key: string
-  label: string
-  group: 'Identité' | 'Pipeline' | 'Liens' | 'Origine' | 'Équipe' | 'Valeur' | 'Activité' | 'Qualification'
+  labelKey: MessageKey
+  group: 'identity' | 'pipeline' | 'links' | 'origin' | 'team' | 'value' | 'activity' | 'qualification'
   /** Donnée ou colonne apparue avec l'enrichissement du CRM. */
   isNew?: boolean
   align?: 'right'
@@ -41,15 +42,15 @@ export const daysSince = (date: Date | null, now: Date) => (date ? Math.max(0, M
 export const isLate = (lead: Lead, now: Date) => isOpen(lead) && !!lead.nextActionAt && new Date(lead.nextActionAt).getTime() < now.getTime()
 
 export const formatEuro = (n: number | null | undefined) =>
-  n == null ? '—' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(n).replace(/[  ]/g, ' ')} €`
-const shortDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—')
-const relDays = (n: number | null) => (n == null ? '—' : n === 0 ? 'Aujourd’hui' : `Il y a ${n} j`)
+  n == null ? '—' : formatMoney(n, 'EUR', { maximumFractionDigits: 0 }).replace(/[\u202f\u00a0]/g, ' ')
+export const shortDate = (iso?: string | null) => (iso ? formatDate(iso, { day: 'numeric', month: 'short' }) : '—')
+const relDays = (n: number | null) => (n == null ? '—' : n === 0 ? translate('crmRich.today') : translate('crmRich.daysAgo', { count: n }))
 
 const dash = <span className="rich-dim">—</span>
 
 export const RICH_COLUMNS: RichColumn[] = [
   {
-    key: 'company', label: 'Lead', group: 'Identité', locked: true,
+    key: 'company', labelKey: 'crmRich.col.company', group: 'identity', locked: true,
     sortValue: (l) => l.company.toLowerCase(),
     render: (l) => (
       <span className="rich-co">
@@ -60,7 +61,7 @@ export const RICH_COLUMNS: RichColumn[] = [
     csv: (l) => l.company,
   },
   {
-    key: 'status', label: 'Statut', group: 'Pipeline',
+    key: 'status', labelKey: 'crmRich.col.status', group: 'pipeline',
     sortValue: (l) => Object.keys(STATUS_PROBABILITY).indexOf(l.status),
     render: (l, { t }) => {
       const s = STATUS_MAP[l.status]
@@ -74,31 +75,31 @@ export const RICH_COLUMNS: RichColumn[] = [
     csv: (l, { t }) => (STATUS_MAP[l.status] ? t(STATUS_MAP[l.status].labelKey) : l.status),
   },
   {
-    key: 'project', label: 'Plateforme liée', group: 'Liens',
+    key: 'project', labelKey: 'crmRich.col.project', group: 'links',
     sortValue: (l) => l.project || '',
     render: (l, { t }) => (PROJECT_MAP[l.project || ''] ? <span className="rich-link">{t(PROJECT_MAP[l.project || ''].labelKey)}</span> : dash),
     csv: (l, { t }) => (PROJECT_MAP[l.project || ''] ? t(PROJECT_MAP[l.project || ''].labelKey) : ''),
   },
-  { key: 'source', label: 'Source', group: 'Origine', sortValue: (l) => l.source || '', render: (l) => l.source || dash, csv: (l) => l.source || '' },
+  { key: 'source', labelKey: 'crmRich.col.source', group: 'origin', sortValue: (l) => l.source || '', render: (l) => l.source || dash, csv: (l) => l.source || '' },
   {
-    key: 'sourceDetail', label: 'Détail de la source', group: 'Origine', isNew: true,
+    key: 'sourceDetail', labelKey: 'crmRich.col.sourceDetail', group: 'origin', isNew: true,
     sortValue: (l) => l.sourceDetail || '', render: (l) => (l.sourceDetail ? <span className="rich-dim">{l.sourceDetail}</span> : dash), csv: (l) => l.sourceDetail || '',
   },
   {
-    key: 'assignedTo', label: 'Commercial', group: 'Équipe',
+    key: 'assignedTo', labelKey: 'crmRich.col.assignedTo', group: 'team',
     sortValue: (l, { adminsById }) => adminsById[l.assignedTo || '']?.name || 'zzz',
-    render: (l, { adminsById }) => (l.assignedTo && adminsById[l.assignedTo] ? adminsById[l.assignedTo].name : <span className="rich-pill rich-pill--warn"><i />Non assigné</span>),
+    render: (l, { adminsById }) => (l.assignedTo && adminsById[l.assignedTo] ? adminsById[l.assignedTo].name : <span className="rich-pill rich-pill--warn"><i />{translate('crmRich.unassigned')}</span>),
     csv: (l, { adminsById }) => adminsById[l.assignedTo || '']?.name || '',
   },
   {
-    key: 'externalRep', label: 'Partenaire', group: 'Équipe',
+    key: 'externalRep', labelKey: 'crmRich.col.externalRep', group: 'team',
     sortValue: (l, { adminsById }) => adminsById[l.externalRep || '']?.name || '',
     render: (l, { adminsById }) => (l.externalRep && adminsById[l.externalRep] ? adminsById[l.externalRep].name : dash),
     csv: (l, { adminsById }) => adminsById[l.externalRep || '']?.name || '',
   },
-  { key: 'budget', label: 'Montant', group: 'Valeur', align: 'right', sortValue: (l) => l.budget ?? -1, render: (l) => <span className="rich-num">{formatEuro(l.budget)}</span>, csv: (l) => (l.budget != null ? String(l.budget) : '') },
+  { key: 'budget', labelKey: 'crmRich.col.budget', group: 'value', align: 'right', sortValue: (l) => l.budget ?? -1, render: (l) => <span className="rich-num">{formatEuro(l.budget)}</span>, csv: (l) => (l.budget != null ? String(l.budget) : '') },
   {
-    key: 'probability', label: 'Probabilité', group: 'Valeur', isNew: true,
+    key: 'probability', labelKey: 'crmRich.col.probability', group: 'value', isNew: true,
     sortValue: (l) => probabilityOf(l),
     render: (l) => (
       <span className="rich-prob">
@@ -108,10 +109,10 @@ export const RICH_COLUMNS: RichColumn[] = [
     ),
     csv: (l) => String(probabilityOf(l)),
   },
-  { key: 'weighted', label: 'Pondéré', group: 'Valeur', isNew: true, align: 'right', sortValue: (l) => weightedOf(l), render: (l) => <span className="rich-num">{weightedOf(l) ? formatEuro(weightedOf(l)) : '—'}</span>, csv: (l) => String(Math.round(weightedOf(l))) },
-  { key: 'expectedCloseAt', label: 'Clôture prévue', group: 'Valeur', isNew: true, sortValue: (l) => l.expectedCloseAt || '', render: (l) => <span className="rich-num">{shortDate(l.expectedCloseAt)}</span>, csv: (l) => (l.expectedCloseAt ? l.expectedCloseAt.slice(0, 10) : '') },
+  { key: 'weighted', labelKey: 'crmRich.col.weighted', group: 'value', isNew: true, align: 'right', sortValue: (l) => weightedOf(l), render: (l) => <span className="rich-num">{weightedOf(l) ? formatEuro(weightedOf(l)) : '—'}</span>, csv: (l) => String(Math.round(weightedOf(l))) },
+  { key: 'expectedCloseAt', labelKey: 'crmRich.col.expectedCloseAt', group: 'value', isNew: true, sortValue: (l) => l.expectedCloseAt || '', render: (l) => <span className="rich-num">{shortDate(l.expectedCloseAt)}</span>, csv: (l) => (l.expectedCloseAt ? l.expectedCloseAt.slice(0, 10) : '') },
   {
-    key: 'lastInteractionAt', label: 'Dernière interaction', group: 'Activité', isNew: true,
+    key: 'lastInteractionAt', labelKey: 'crmRich.col.lastInteractionAt', group: 'activity', isNew: true,
     sortValue: (l, { now }) => daysSince(lastActivityOf(l), now) ?? 9999,
     render: (l, { now }) => {
       const d = daysSince(lastActivityOf(l), now)
@@ -120,19 +121,19 @@ export const RICH_COLUMNS: RichColumn[] = [
     csv: (l) => (lastActivityOf(l) ? lastActivityOf(l)!.toISOString().slice(0, 10) : ''),
   },
   {
-    key: 'nextAction', label: 'Prochaine action', group: 'Activité', isNew: true,
+    key: 'nextAction', labelKey: 'crmRich.col.nextAction', group: 'activity', isNew: true,
     sortValue: (l) => l.nextActionAt || '9',
     render: (l, { now }) =>
       l.nextActionAt || l.nextActionLabel ? (
         <span className="rich-co">
-          <b>{l.nextActionLabel || 'À faire'}</b>
+          <b>{l.nextActionLabel || translate('crmRich.todo')}</b>
           <span className={isLate(l, now) ? 'rich-late' : ''}>{shortDate(l.nextActionAt)}</span>
         </span>
       ) : dash,
     csv: (l) => [l.nextActionLabel, l.nextActionAt?.slice(0, 10)].filter(Boolean).join(' — '),
   },
   {
-    key: 'leadTemperature', label: 'Température', group: 'Qualification',
+    key: 'leadTemperature', labelKey: 'crmRich.col.leadTemperature', group: 'qualification',
     sortValue: (l) => TEMP_ORDER.indexOf(l.leadTemperature || 'TIEDE'),
     render: (l, { t }) => {
       const idx = TEMP_ORDER.indexOf(l.leadTemperature || 'TIEDE')
@@ -146,17 +147,17 @@ export const RICH_COLUMNS: RichColumn[] = [
     },
     csv: (l, { t }) => (TEMPERATURE_MAP[l.leadTemperature || ''] ? t(TEMPERATURE_MAP[l.leadTemperature || ''].labelKey) : ''),
   },
-  { key: 'score', label: 'Score', group: 'Qualification', align: 'right', sortValue: (l) => l.score ?? -1, render: (l) => <span className="rich-num">{l.score ?? '—'}</span>, csv: (l) => (l.score != null ? String(l.score) : '') },
+  { key: 'score', labelKey: 'crmRich.col.score', group: 'qualification', align: 'right', sortValue: (l) => l.score ?? -1, render: (l) => <span className="rich-num">{l.score ?? '—'}</span>, csv: (l) => (l.score != null ? String(l.score) : '') },
   {
-    key: 'tags', label: 'Tags', group: 'Qualification', isNew: true,
+    key: 'tags', labelKey: 'crmRich.col.tags', group: 'qualification', isNew: true,
     sortValue: (l) => (l.tags ?? []).join(),
     render: (l) => (l.tags?.length ? <span className="rich-tags">{l.tags.slice(0, 3).map((x) => <span key={x}>{x}</span>)}</span> : dash),
     csv: (l) => (l.tags ?? []).join(' | '),
   },
-  { key: 'daysInStage', label: 'Jours dans l’étape', group: 'Pipeline', isNew: true, align: 'right', sortValue: (l, { now }) => daysSince(l.statusChangedAt ? new Date(l.statusChangedAt) : null, now) ?? 0, render: (l, { now }) => { const d = daysSince(l.statusChangedAt ? new Date(l.statusChangedAt) : null, now); return <span className={`rich-num ${isOpen(l) && d != null && d >= 14 ? 'rich-late' : ''}`}>{d == null ? '—' : `${d} j`}</span> }, csv: (l, { now }) => String(daysSince(l.statusChangedAt ? new Date(l.statusChangedAt) : null, now) ?? '') },
-  { key: 'sector', label: 'Secteur', group: 'Identité', isNew: true, sortValue: (l) => l.sector || '', render: (l) => l.sector || dash, csv: (l) => l.sector || '' },
+  { key: 'daysInStage', labelKey: 'crmRich.col.daysInStage', group: 'pipeline', isNew: true, align: 'right', sortValue: (l, { now }) => daysSince(l.statusChangedAt ? new Date(l.statusChangedAt) : null, now) ?? 0, render: (l, { now }) => { const d = daysSince(l.statusChangedAt ? new Date(l.statusChangedAt) : null, now); return <span className={`rich-num ${isOpen(l) && d != null && d >= 14 ? 'rich-late' : ''}`}>{d == null ? '—' : translate('crmRich.days', { count: d })}</span> }, csv: (l, { now }) => String(daysSince(l.statusChangedAt ? new Date(l.statusChangedAt) : null, now) ?? '') },
+  { key: 'sector', labelKey: 'crmRich.col.sector', group: 'identity', isNew: true, sortValue: (l) => l.sector || '', render: (l) => l.sector || dash, csv: (l) => l.sector || '' },
 ]
 
 export const COLUMN_MAP: Record<string, RichColumn> = Object.fromEntries(RICH_COLUMNS.map((c) => [c.key, c]))
 export const DEFAULT_COLUMNS = ['company', 'status', 'project', 'source', 'assignedTo', 'budget', 'probability', 'weighted', 'lastInteractionAt', 'nextAction', 'leadTemperature', 'tags']
-export const COLUMN_GROUPS = ['Identité', 'Pipeline', 'Liens', 'Origine', 'Équipe', 'Valeur', 'Activité', 'Qualification'] as const
+export const COLUMN_GROUPS = ['identity', 'pipeline', 'links', 'origin', 'team', 'value', 'activity', 'qualification'] as const
