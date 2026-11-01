@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dev tracker — mobile</title><meta name="description" content="Même écran en 375 px, sans défilement horizontal."><meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04050a;--line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.14);--tx:#eef0f7;--mut:#9aa1b4;--dim:#646b80;--dim-t:#7f869b;--sky:#38bdf8;--vio:#a78bfa;--teal:#5eead4;--mint:#34d399;--amber:#fbbf24;--rose:#f472b6;--grad:linear-gradient(92deg,#c4b5fd 0%,#7dd3fc 45%,#5eead4 100%);--sans:'Geist',ui-sans-serif,system-ui,-apple-system,sans-serif;--mono:'Geist Mono',ui-monospace,Menlo,monospace;--r:14px;--f1:rgba(255,255,255,.03);--f2:rgba(255,255,255,.045);--f3:rgba(255,255,255,.065);--bar-bg:rgba(6,7,12,.82)}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100dvh;overflow-x:hidden}
+h1,h2,h3,p,ul{margin:0}ul{padding:0;list-style:none}
+button,input,select,textarea{font:inherit;color:inherit}button{background:none;border:0;padding:0;cursor:pointer}
+a{color:inherit;text-decoration:none}svg{display:block}
+.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ic-sm{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mono{font-family:var(--mono)}.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px;border-radius:6px}
+.new{display:inline-flex;align-items:center;height:16px;padding:0 6px;margin-left:6px;border-radius:4px;font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--vio);background:color-mix(in srgb,var(--vio) 14%,transparent);border:1px solid color-mix(in srgb,var(--vio) 35%,transparent);vertical-align:1px;white-space:nowrap}
+.chip{--c:var(--sky);display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;font-weight:500;white-space:nowrap;color:var(--c);background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 30%,transparent)}
+.chip.dot::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;margin-right:6px;box-shadow:0 0 6px currentColor}
+.c-amber{--c:var(--amber)}.c-rose{--c:var(--rose)}.c-vio{--c:var(--vio)}.c-sky{--c:var(--sky)}.c-mint{--c:var(--mint)}.c-teal{--c:var(--teal)}.c-mut{--c:var(--mut)}
+.av{flex:none;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:9.5px;font-weight:600;color:var(--c,var(--sky));background:color-mix(in srgb,var(--c,var(--sky)) 16%,var(--bg));border:1px solid color-mix(in srgb,var(--c,var(--sky)) 35%,transparent)}
+.count{font-family:var(--mono);font-size:11px;color:var(--mut);background:var(--f3);border-radius:999px;padding:0 7px;line-height:18px}.count.hot{color:#05060b;background:var(--rose)}
+.card{position:relative;border:1px solid var(--line);border-radius:var(--r);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px;flex-wrap:wrap}
+.card-h h2{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;letter-spacing:-.01em;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;font-size:12.5px;font-weight:500;border:1px solid var(--line-2);background:var(--f2);white-space:nowrap}
+.btn:hover{background:var(--f3)}.btn.pri{background:#f4f6fb;color:#05060b;border-color:transparent;font-weight:600}
+.btn.sm{height:28px;padding:0 9px;font-size:12px;border-radius:8px}.btn.danger{color:var(--rose);border-color:color-mix(in srgb,var(--rose) 35%,transparent)}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-family:var(--mono)}
+.eyebrow i{width:7px;height:7px;border-radius:2px;background:var(--sky);box-shadow:0 0 12px var(--sky)}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.ph h1{margin-top:8px;font-size:26px;line-height:1.15;letter-spacing:-.035em;font-weight:600}
+.ph-sub{margin-top:6px;color:var(--mut);font-size:13.5px}
+.ph-a{display:flex;gap:8px;flex-wrap:wrap}
+.tabs{display:flex;gap:2px;margin-top:18px;border-bottom:1px solid var(--line);overflow:hidden;flex-wrap:wrap}
+.tab{height:38px;padding:0 12px;display:inline-flex;align-items:center;font-size:13px;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab[aria-current]{color:var(--tx);border-color:var(--sky)}
+.sec{margin-top:20px}
+/* Vue d'ensemble */
+.ov{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.ov .card::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:2px;border-radius:2px;background:var(--c);box-shadow:0 0 12px var(--c)}
+.ov .big{font-size:24px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ov-i{display:flex;flex-direction:column;gap:8px;padding:10px 16px;border-top:1px solid var(--line)}
+.ov-i b{font-weight:500;font-size:13px;overflow-wrap:anywhere}.ov-i small{color:var(--mut);font-size:12px;overflow-wrap:anywhere}
+.ov-i .row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ref{font-family:var(--mono);font-size:11.5px;color:var(--dim-t)}
+.bar{height:6px;border-radius:99px;background:var(--f3);overflow:hidden}.bar i{display:block;height:100%;border-radius:99px;background:var(--grad)}
+.spr{padding:0 16px 14px;display:flex;flex-direction:column;gap:10px}
+.spr-g{display:flex;gap:6px;flex-wrap:wrap}
+/* Layout principal */
+.two{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+/* Formulaire */
+.frm{padding:0 16px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}.fld.full{grid-column:1/-1}
+.fld label{font-size:12px;color:var(--mut)}
+.inp{width:100%;min-height:36px;padding:7px 11px;border-radius:10px;border:1px solid var(--line-2);background:var(--f1);color:var(--tx);font-size:13px;min-width:0}
+textarea.inp{min-height:64px;resize:vertical}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line);color:var(--mut);font-size:12px}
+.seg button[aria-pressed=true]{color:var(--tx);background:var(--f3);border-color:var(--line-2)}
+.frm-f{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hint{font-size:12px;color:var(--dim-t);display:flex;gap:6px;align-items:center}
+.sug{margin-top:4px;border:1px solid var(--line-2);border-radius:10px;background:var(--f2);padding:6px 10px;font-size:12.5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* Filtres */
+.tool{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 12px;align-items:center}
+.flt{height:28px;padding:0 10px;border-radius:8px;font-size:12.5px;color:var(--mut);display:inline-flex;align-items:center;gap:6px;border:1px solid transparent}
+.flt[aria-pressed=true]{background:var(--f3);color:var(--tx);border-color:var(--line-2)}
+.sort{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim-t)}
+.sort select{height:28px;border-radius:8px;border:1px solid var(--line-2);background:var(--f1);padding:0 8px;font-size:12.5px}
+/* Idées */
+.ideas{border-top:1px solid var(--line)}
+.idea{display:grid;grid-template-columns:28px minmax(0,1fr) 56px 150px;gap:4px 12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.idea:hover{background:var(--f1)}.idea[hidden]{display:none}.idea.sel{background:color-mix(in srgb,var(--sky) 6%,transparent)}
+.idea.sel{box-shadow:inset 2px 0 0 var(--sky)}
+.i-main{min-width:0;display:flex;flex-direction:column;gap:3px}
+.i-main b{font-weight:500;font-size:13.5px;line-height:1.35;overflow-wrap:anywhere}
+.i-main p{color:var(--mut);font-size:12.5px;line-height:1.4;overflow-wrap:anywhere}
+.i-meta{display:flex;gap:6px 10px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--dim-t);margin-top:2px}
+.i-meta span{display:inline-flex;align-items:center;gap:5px}
+.i-foot{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.imp{text-align:right;line-height:1.25}.imp b{font-family:var(--mono);font-weight:600;font-size:14px}.imp small{display:block;color:var(--dim-t);font-size:11px}
+.vote{display:flex;flex-direction:column;align-items:center;gap:1px;width:48px;height:48px;justify-content:center;border-radius:10px;border:1px solid var(--line-2);background:var(--f1);color:var(--mut)}
+.vote b{font-family:var(--mono);font-size:12.5px;color:var(--tx)}.vote[aria-pressed=true]{color:var(--sky);border-color:color-mix(in srgb,var(--sky) 50%,transparent);background:color-mix(in srgb,var(--sky) 10%,transparent)}
+.ck{position:relative;width:28px;height:28px;display:grid;place-items:center;cursor:pointer}
+.ck input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
+.ck span{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--dim);display:grid;place-items:center}
+.ck input:checked+span{background:var(--sky);border-color:var(--sky)}
+.ck input:checked+span::after{content:"";width:8px;height:4px;border-left:2px solid #05060b;border-bottom:2px solid #05060b;transform:rotate(-45deg) translate(1px,-1px)}
+.ck input:focus-visible+span{outline:2px solid var(--sky);outline-offset:2px}
+/* Barre d'actions groupées */
+.bulk{position:sticky;bottom:12px;z-index:40;margin:12px 16px 16px;padding:10px 12px;border-radius:14px;border:1px solid var(--line-2);background:rgba(14,16,26,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 18px 40px -12px rgba(0,0,0,.8);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bulk[hidden]{display:none}.bulk .n{font-family:var(--mono);font-size:12px;margin-right:4px}.bulk .btn{height:30px}
+.bulk .sp{flex:1}
+/* Décision */
+.tl{padding:0 16px 14px;display:flex;flex-direction:column;gap:0}
+.st{display:grid;grid-template-columns:14px minmax(0,1fr);gap:10px;padding-bottom:12px;position:relative}
+.st::before{content:"";position:absolute;left:6px;top:16px;bottom:0;width:1px;background:var(--line-2)}.st:last-child::before{display:none}.st:last-child{padding-bottom:0}
+.st i{width:13px;height:13px;border-radius:50%;margin-top:3px;border:2px solid var(--dim);background:var(--bg)}.st.ok i{background:var(--mint);border-color:var(--mint)}.st.now i{border-color:var(--sky);box-shadow:0 0 8px var(--sky)}
+.st b{font-weight:500;font-size:13px}.st small{display:block;color:var(--mut);font-size:12px;overflow-wrap:anywhere}
+.dec{padding:0 16px 16px;display:flex;flex-direction:column;gap:10px}
+.notif{padding:10px 16px;border-top:1px solid var(--line);display:flex;gap:10px;font-size:12.5px;color:var(--mut)}.notif b{color:var(--tx);font-weight:500}
+/* Issues */
+.iss{display:grid;grid-template-columns:28px 78px minmax(0,1fr) 110px 90px 30px;gap:10px;align-items:center;padding:8px 16px;border-top:1px solid var(--line);min-height:48px}
+.iss .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.iss.sel{background:color-mix(in srgb,var(--sky) 6%,transparent)}
+/* Shell */
+.doc{max-width:1500px;margin:0 auto;padding:28px 20px 60px;position:relative}
+.doc-h h1{font-size:20px;letter-spacing:-.03em;font-weight:600;margin:6px 0 4px}.doc-h p{color:var(--mut);max-width:80ch;font-size:13px;margin-bottom:20px}
+.frame{position:relative;border:1px solid var(--line-2);background:var(--bg);overflow:hidden;margin:0 auto}
+.sb{width:232px;flex:none;border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:2px;background:rgba(255,255,255,.012)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;padding:0 8px 14px}.brand svg{width:22px;height:22px}
+.grl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding:12px 10px 4px}
+.ni{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:10px;color:var(--mut);font-size:13px}
+.ni[aria-current]{background:var(--f3);color:var(--tx)}.ni .count{margin-left:auto}
+.main{flex:1;min-width:0}
+.top{height:52px;display:flex;align-items:center;gap:10px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--bar-bg);font-family:var(--mono);font-size:12px;color:var(--dim-t)}.top b{color:var(--tx);font-weight:500}
+.page{padding:22px 24px 40px}
+/* Desktop */
+.d{display:flex;width:1440px;max-width:100%;border-radius:16px;min-height:900px}
+/* Tablette */
+.t{display:flex;width:768px;max-width:100%;border-radius:28px;min-height:1024px}
+.t .sb{width:64px;padding:14px 8px;align-items:center}.t .sb .lb,.t .sb .grl,.t .sb .brand span,.t .sb .count{display:none}.t .ni{width:44px;justify-content:center;padding:0}.t .brand{padding:0 0 12px}
+.t .page{padding:20px 20px 40px}.t .top{padding:0 20px}
+.t .ov{grid-template-columns:repeat(2,minmax(0,1fr))}.t .ov .card:last-child{grid-column:1/-1}
+.t .two{grid-template-columns:minmax(0,1fr)}
+.t .iss{grid-template-columns:28px 70px minmax(0,1fr) 100px 30px}.t .iss .asg{display:none}
+/* Mobile */
+.m{width:375px;max-width:100%;height:812px;border-radius:44px;display:block}
+.m .scr{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:0 16px 96px}
+.m .top{margin:0 -16px;padding:44px 16px 0;height:92px;align-items:center;position:sticky;top:0;z-index:30}
+.m .page{padding:16px 0 0}.m .ph h1{font-size:22px}
+.m .ph-a{width:100%}.m .ph-a .btn{flex:1}
+.m .ov,.m .two{grid-template-columns:minmax(0,1fr)}
+.m .tab{padding:0 8px;font-size:12.5px}.m .tab .new{display:none}
+.m .frm{grid-template-columns:minmax(0,1fr)}
+.m .idea{grid-template-columns:28px minmax(0,1fr) 48px;padding:12px}
+.m .i-foot{grid-column:2/-1;flex-direction:row;align-items:center;justify-content:space-between;margin-top:4px}
+.m .imp{text-align:left}.m .imp small{display:inline;margin-left:6px}
+.m .tool{padding:0 12px 12px}.m .sort{margin-left:0;width:100%}
+.m #bulk{bottom:80px;margin:12px 8px 12px}
+.m .bulk .n{grid-column:1/-1}.m .bulk .sp{display:none}.m .bulk .btn{padding:0 6px}.m #bulk .pri{grid-column:1/-1}.m .bulk{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.m #bulk{grid-template-columns:repeat(3,minmax(0,1fr))}
+.m .iss{grid-template-columns:28px minmax(0,1fr) 26px;gap:2px 8px}.m .iss .ref,.m .iss .t,.m .iss .asg{grid-column:2}.m .iss .t{white-space:normal}.m .iss .chip{justify-self:start;grid-column:2}
+.m .iss .av{grid-column:3;grid-row:1}
+.m .iss .ck{grid-row:1/4}
+.tbar{position:absolute;z-index:60;left:0;right:0;bottom:0;height:72px;padding:6px 8px 20px;display:grid;grid-template-columns:repeat(5,1fr);background:var(--bar-bg);border-top:1px solid var(--line);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.tbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10.5px;color:var(--dim-t);min-height:44px}.tbar a[aria-current]{color:var(--tx)}
+.sbar{position:absolute;z-index:70;top:0;left:0;right:0;height:44px;padding:14px 28px 0;display:flex;justify-content:space-between;font-family:var(--mono);font-size:12.5px;pointer-events:none}
+.island{position:absolute;z-index:71;top:10px;left:50%;transform:translateX(-50%);width:108px;height:28px;border-radius:20px;background:#000}
+@media (max-width:420px){.doc{padding:0}.doc-h{display:none}.frame.m{height:100dvh;border-radius:0;border:0}.sbar,.island{display:none}.m .top{height:52px;padding-top:0}}
+@media (max-width:1100px){.d{width:100%}}
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4b5fd"/><stop offset="1" stop-color="#5eead4"/></linearGradient>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></symbol>
+<symbol id="inbox" viewBox="0 0 24 24"><path d="M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5"/></symbol>
+<symbol id="kanban" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></symbol>
+<symbol id="folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"/></symbol>
+<symbol id="code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol>
+<symbol id="users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M17 5a3.5 3.5 0 010 6M22 20c0-3-2-5-4-5.5"/></symbol>
+<symbol id="more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+<symbol id="bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M12 19V6M6 11l6-6 6 6"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="arch" viewBox="0 0 24 24"><path d="M3 5h18v4H3zM5 9v10h14V9M10 13h4"/></symbol>
+<symbol id="trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+<symbol id="conv" viewBox="0 0 24 24"><path d="M4 12h13M13 6l6 6-6 6"/></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0112 0v6l2 2H4zM10 21h4"/></symbol>
+<symbol id="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+<symbol id="flag" viewBox="0 0 24 24"><path d="M5 21V4h12l-2 4 2 4H5"/></symbol>
+<symbol id="link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></symbol>
+</defs></svg>
+<div class="doc"><div class="doc-h"><span class="eyebrow"><i></i>Maquette · Admin Venio · Style Système</span><h1>Dev tracker — mobile</h1><p>Même écran en 375 px, sans défilement horizontal. Les éléments marqués <span class="new">nouveau</span> n’existent pas encore dans le produit.</p></div>
+<div class="frame m"><div class="sbar"><span>9:41</span><span>100%</span></div><div class="island"></div><div class="scr"><header class="top"><b style="font-size:15px;font-family:var(--sans)">Dev</b><span style="margin-left:auto" class="count hot">3</span></header><main class="page">
+<div class="ph"><div><span class="eyebrow"><i></i>Production · Dev</span><h1>Dev tracker</h1>
+<p class="ph-sub">Cycle 12 · 5 jours restants — 4 issues attendent une revue, 2 sont bloquées.</p></div>
+<div class="ph-a"><button class="btn" type="button"><svg class="ic-sm" aria-hidden="true"><use href="#plus"/></svg>Nouvelle issue</button><button class="btn pri" type="button"><svg class="ic-sm" aria-hidden="true"><use href="#bulb"/></svg>Suggérer une feature<span class="new">nouveau</span></button></div></div>
+<nav class="tabs" aria-label="Sections Dev"><a class="tab" aria-current="page" href="#ov">Vue d’ensemble</a><a class="tab" href="#iss">Issues</a><a class="tab" href="#ideas">Idées<span class="new">nouveau</span><span class="count hot" style="margin-left:6px">3</span></a><a class="tab" href="#">Recette</a></nav>
+
+<section class="sec ov" id="ov" aria-label="À traiter">
+  <article class="card" style="--c:var(--amber)"><div class="card-h"><h2>En revue <span class="count">4</span></h2><a class="btn sm" href="#">File de revue</a></div>
+    <div class="ov-i"><div class="row"><span class="ref">ARR-138 · PR #412</span><span class="chip dot c-mint">CI verte</span></div><b>Refonte de l’import élèves</b><div class="row"><small>Attend 2 j · Sofia</small><button class="btn sm" type="button"><svg class="ic-sm" aria-hidden="true"><use href="#check"/></svg>Approuver</button></div></div>
+    <div class="ov-i"><div class="row"><span class="ref">VEN-221 · PR #409</span><span class="chip dot c-rose">CI rouge</span></div><b>Export comptable FEC</b><div class="row"><small>Attend 4 j · Marc</small><button class="btn sm" type="button">Voir les logs</button></div></div></article>
+  <article class="card" style="--c:var(--rose)"><div class="card-h"><h2>Bloqué <span class="count hot">2</span></h2><a class="btn sm" href="#">Tout voir</a></div>
+    <div class="ov-i"><div class="row"><span class="ref">VIG-77</span><span class="chip c-rose">5 j</span></div><b>Synchro tablette</b><div class="row"><small>Clé API Apple en attente</small><button class="btn sm" type="button">Débloquer</button></div></div>
+    <div class="ov-i"><div class="row"><span class="ref">ART-54</span><span class="chip c-rose">2 j</span></div><b>Webhook paiement</b><div class="row"><small>Bloquée par ART-51</small><button class="btn sm" type="button">Ouvrir ART-51</button></div></div></article>
+  <article class="card" style="--c:var(--sky)"><div class="card-h"><h2>Sprint · Cycle 12</h2><span class="ref">9 → 22 nov.</span></div>
+    <div class="spr"><div class="row" style="display:flex;justify-content:space-between;align-items:baseline"><span class="big">14<small style="font-size:14px;color:var(--mut)"> / 22</small></span><span class="hint">issues terminées</span></div>
+    <div class="bar" role="progressbar" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100" aria-label="Avancement du sprint"><i style="width:64%"></i></div>
+    <div class="spr-g"><span class="chip c-amber">2 à risque</span><span class="chip c-sky">5 en cours</span><span class="chip c-mut">3 à faire</span></div>
+    <small style="color:var(--mut);font-size:12px">Rythme : 2,8 / jour — 1 issue de retard sur l’objectif.</small></div></article>
+</section>
+
+<div class="two sec">
+<div class="col">
+<section class="card" id="ideas" aria-label="Boîte à idées"><div class="card-h"><h2><svg class="ic" aria-hidden="true"><use href="#bulb"/></svg>Boîte à idées<span class="new">nouveau</span></h2><span class="hint">Commerciaux, externes et équipe peuvent proposer</span></div>
+<form class="frm" onsubmit="return false" aria-label="Soumission rapide d’une suggestion">
+  <div class="fld full"><label for="f-t">Titre de la suggestion</label><input class="inp" id="f-t" placeholder="Ex. Signature électronique sur les devis"></div>
+  <div class="fld full"><label for="f-p">Problème client</label><textarea class="inp" id="f-p" placeholder="Qu’est-ce qui coince pour le client, concrètement ?"></textarea></div>
+  <div class="fld"><label for="f-pr">Plateforme / projet</label><select class="inp" id="f-pr"><option>ARROW</option><option>ARTOSERA</option><option>VIGNO</option><option>VENIO</option><option>Autre</option></select></div>
+  <div class="fld"><label for="f-l">Lead ou client lié</label><input class="inp" id="f-l" value="Lycée Saint" aria-describedby="f-l-s"><div class="sug" id="f-l-s"><span class="chip c-sky">Lead</span> Lycée Saint-Joseph <span style="color:var(--dim-t)">· Proposé</span></div></div>
+  <div class="fld"><label for="f-d">Demandeur</label><select class="inp" id="f-d"><option>Camille R. — commercial externe</option><option>Moi</option></select></div>
+  <div class="fld"><label id="f-i">Impact commercial estimé</label><div style="display:flex;gap:8px;flex-wrap:wrap"><input class="inp" style="width:110px" value="18 000" aria-label="Montant en euros" inputmode="numeric"><div class="seg" role="group" aria-labelledby="f-i"><button type="button" aria-pressed="false">Faible</button><button type="button" aria-pressed="false">Moyen</button><button type="button" aria-pressed="true">Fort</button><button type="button" aria-pressed="false">Critique</button></div></div></div>
+  <div class="frm-f"><span class="hint"><svg class="ic-sm" aria-hidden="true"><use href="#bell"/></svg>Le demandeur est notifié à chaque changement de statut<span class="new">nouveau</span></span><button class="btn pri" type="submit">Envoyer la suggestion</button></div>
+</form></section>
+
+<section class="card" aria-label="Suggestions"><div class="card-h"><h2>Suggestions <span class="count">5</span></h2></div>
+<div class="tool" role="group" aria-label="Filtrer par statut"><button class="flt" type="button" data-f="all" aria-pressed="true">Toutes</button><button class="flt" type="button" data-f="new" aria-pressed="false">Nouvelles <span class="count">2</span></button><button class="flt" type="button" data-f="stu" aria-pressed="false">Étudiées</button><button class="flt" type="button" data-f="acc" aria-pressed="false">Acceptées</button><button class="flt" type="button" data-f="ref" aria-pressed="false">Refusées</button>
+<label class="sort">Trier<select id="sort" aria-label="Trier les suggestions"><option value="imp">Impact estimé ↓</option><option value="votes">Appuis ↓</option></select></label></div>
+<ul class="ideas" id="ideaList">
+<li class="idea sel" data-status="new" data-impact="18000" data-votes="9">
+  <label class="ck"><input type="checkbox" aria-label="Sélectionner « Signature électronique sur les devis PDF »" checked><span></span></label>
+  <div class="i-main"><b>Signature électronique sur les devis PDF</b><p>Les directeurs d’école impriment, signent et rescannent : 2 jours perdus par devis.</p>
+    <div class="i-meta"><span class="chip c-vio">ARTOSERA</span><span><svg class="ic-sm" aria-hidden="true"><use href="#link"/></svg>Lycée Saint-Joseph · Lead</span><span><i class="av" style="--c:var(--sky)">CR</i>Camille R.</span></div>
+    </div>
+  <button class="vote" type="button" aria-pressed="true" aria-label="Appuyer cette suggestion (9 appuis)"><svg class="ic-sm" aria-hidden="true"><use href="#up"/></svg><b>9</b></button>
+  <div class="i-foot"><div class="imp"><b>18 k€</b><small>Fort</small></div><span class="chip dot c-sky">Nouvelle</span></div>
+</li>
+<li class="idea" data-status="acc" data-impact="24000" data-votes="8">
+  <label class="ck"><input type="checkbox" aria-label="Sélectionner « Import CSV d’élèves en masse »"><span></span></label>
+  <div class="i-main"><b>Import CSV d’élèves en masse</b><p>Saisie manuelle de 400 élèves à chaque rentrée, source d’erreurs.</p>
+    <div class="i-meta"><span class="chip c-vio">ARROW</span><span><svg class="ic-sm" aria-hidden="true"><use href="#link"/></svg>École Montaigne · Lead</span><span><i class="av" style="--c:var(--mint)">SB</i>Sofia B.</span></div>
+    </div>
+  <button class="vote" type="button" aria-pressed="false" aria-label="Appuyer cette suggestion (8 appuis)"><svg class="ic-sm" aria-hidden="true"><use href="#up"/></svg><b>8</b></button>
+  <div class="i-foot"><div class="imp"><b>24 k€</b><small>Critique</small></div><span class="chip dot c-mint">Acceptée → ARR-142</span></div>
+</li>
+<li class="idea sel" data-status="stu" data-impact="12000" data-votes="7">
+  <label class="ck"><input type="checkbox" aria-label="Sélectionner « Relances automatiques des factures impayées »" checked><span></span></label>
+  <div class="i-main"><b>Relances automatiques des factures impayées</b><p>Le client relance à la main chaque mois et perd du cash.</p>
+    <div class="i-meta"><span class="chip c-vio">VENIO</span><span><svg class="ic-sm" aria-hidden="true"><use href="#link"/></svg>Groupe Delmas · Client</span><span><i class="av" style="--c:var(--vio)">JM</i>Julien M.</span></div>
+    </div>
+  <button class="vote" type="button" aria-pressed="false" aria-label="Appuyer cette suggestion (7 appuis)"><svg class="ic-sm" aria-hidden="true"><use href="#up"/></svg><b>7</b></button>
+  <div class="i-foot"><div class="imp"><b>12 k€</b><small>Fort</small></div><span class="chip dot c-amber">Étudiée</span></div>
+</li>
+<li class="idea" data-status="new" data-impact="8000" data-votes="5">
+  <label class="ck"><input type="checkbox" aria-label="Sélectionner « Notifications SMS dans le portail parents »"><span></span></label>
+  <div class="i-main"><b>Notifications SMS dans le portail parents</b><p>Les parents ratent les mails d’absence ; demande récurrente en démo.</p>
+    <div class="i-meta"><span class="chip c-vio">ARROW</span><span><svg class="ic-sm" aria-hidden="true"><use href="#link"/></svg>Collège Pasteur · Lead</span><span><i class="av" style="--c:var(--mint)">SB</i>Sofia B.</span></div>
+    </div>
+  <button class="vote" type="button" aria-pressed="false" aria-label="Appuyer cette suggestion (5 appuis)"><svg class="ic-sm" aria-hidden="true"><use href="#up"/></svg><b>5</b></button>
+  <div class="i-foot"><div class="imp"><b>8 k€</b><small>Moyen</small></div><span class="chip dot c-sky">Nouvelle</span></div>
+</li>
+<li class="idea" data-status="ref" data-impact="4000" data-votes="2">
+  <label class="ck"><input type="checkbox" aria-label="Sélectionner « Mode hors-ligne sur tablette »"><span></span></label>
+  <div class="i-main"><b>Mode hors-ligne sur tablette</b><p>Réseau instable dans les ateliers du client.</p>
+    <div class="i-meta"><span class="chip c-vio">VIGNO</span><span><svg class="ic-sm" aria-hidden="true"><use href="#link"/></svg>Domaine Lacroix · Client</span><span><i class="av" style="--c:var(--amber)">MT</i>Marc T.</span></div>
+    <div class="i-meta"><span style="color:var(--rose)"><svg class="ic-sm" aria-hidden="true"><use href="#flag"/></svg>Motif : Hors périmètre 2026, couvert par la PWA</span></div></div>
+  <button class="vote" type="button" aria-pressed="false" aria-label="Appuyer cette suggestion (2 appuis)"><svg class="ic-sm" aria-hidden="true"><use href="#up"/></svg><b>2</b></button>
+  <div class="i-foot"><div class="imp"><b>4 k€</b><small>Faible</small></div><span class="chip dot c-rose">Refusée</span></div>
+</li></ul>
+<div class="bulk" id="bulk" role="toolbar" aria-label="Actions groupées sur les suggestions"><span class="n" id="bulkN">2 sélectionnées</span>
+<button class="btn sm pri" type="button"><svg class="ic-sm" aria-hidden="true"><use href="#conv"/></svg>Convertir en issues</button><button class="btn sm" type="button">Statut <svg class="ic-sm" aria-hidden="true"><use href="#chev"/></svg></button><button class="btn sm" type="button">Assigné <svg class="ic-sm" aria-hidden="true"><use href="#chev"/></svg></button><button class="btn sm" type="button"><svg class="ic-sm" aria-hidden="true"><use href="#arch"/></svg>Archiver</button><span class="sp"></span><button class="btn sm danger" type="button"><svg class="ic-sm" aria-hidden="true"><use href="#trash"/></svg>Supprimer</button></div>
+</section>
+</div>
+
+<aside class="col" aria-label="Décision">
+<section class="card"><div class="card-h"><h2>Décision<span class="new">nouveau</span></h2><span class="ref">Suggestion sélectionnée</span></div>
+<div class="dec"><b style="font-weight:500">Import CSV d’élèves en masse</b>
+<div class="tl"><div class="st ok"><i></i><div><b>Soumise</b><small>Sofia B. · 14 oct.</small></div></div><div class="st ok"><i></i><div><b>Étudiée</b><small>Estimation : 5 pts · risque faible</small></div></div><div class="st ok"><i></i><div><b>Acceptée → issue ARR-142</b><small>Projet ARROW · priorité Haute, créée en 1 clic</small></div></div><div class="st now"><i></i><div><b>Demandeur notifié</b><small>Sofia B. a reçu l’avis par notification et e-mail</small></div></div></div></div>
+<div class="dec" style="border-top:1px solid var(--line);padding-top:12px"><div class="fld"><label for="mot">Refuser — motif obligatoire</label><textarea class="inp" id="mot" placeholder="Visible par le demandeur"></textarea></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn danger" type="button"><svg class="ic-sm" aria-hidden="true"><use href="#x"/></svg>Refuser avec motif</button><button class="btn pri" type="button"><svg class="ic-sm" aria-hidden="true"><use href="#conv"/></svg>Accepter → issue</button></div></div></section>
+<section class="card"><div class="card-h"><h2>Notifications envoyées<span class="new">nouveau</span></h2></div>
+<div class="notif"><svg class="ic" aria-hidden="true"><use href="#bell"/></svg><div><b>Camille R.</b> — « Signature électronique » est passée en <b>Nouvelle</b>.<br><span class="ref">il y a 12 min</span></div></div>
+<div class="notif"><svg class="ic" aria-hidden="true"><use href="#bell"/></svg><div><b>Marc T.</b> — « Mode hors-ligne » a été <b>refusée</b> : hors périmètre 2026.<br><span class="ref">hier</span></div></div></section>
+</aside>
+</div>
+
+<section class="card sec" id="iss" aria-label="Issues"><div class="card-h"><h2>Issues ouvertes <span class="count">22</span></h2><span class="hint">Sélection multiple · actions groupées<span class="new">nouveau</span></span></div>
+<ul>
+<li class="iss sel"><label class="ck"><input type="checkbox" aria-label="Sélectionner ARR-138" checked><span></span></label>
+<span class="ref">ARR-138</span><span class="t">Refonte de l’import élèves</span><span class="chip dot c-amber">En revue</span><span class="asg"><i class="av" style="--c:var(--mint)">SB</i></span></li>
+<li class="iss sel"><label class="ck"><input type="checkbox" aria-label="Sélectionner VEN-221" checked><span></span></label>
+<span class="ref">VEN-221</span><span class="t">Export comptable FEC</span><span class="chip dot c-amber">En revue</span><span class="asg"><i class="av" style="--c:var(--amber)">MT</i></span></li>
+<li class="iss"><label class="ck"><input type="checkbox" aria-label="Sélectionner VIG-77"><span></span></label>
+<span class="ref">VIG-77</span><span class="t">Synchro tablette</span><span class="chip dot c-rose">Bloquée</span><span class="asg"><i class="av" style="--c:var(--vio)">JM</i></span></li>
+<li class="iss"><label class="ck"><input type="checkbox" aria-label="Sélectionner ART-60"><span></span></label>
+<span class="ref">ART-60</span><span class="t">Page devis responsive</span><span class="chip dot c-sky">En cours</span><span class="asg"><i class="av" style="--c:var(--sky)">CR</i></span></li></ul>
+<div class="bulk" style="position:static;margin:12px 16px 16px" role="toolbar" aria-label="Actions groupées sur les issues"><span class="n">2 issues</span><button class="btn sm" type="button">Statut <svg class="ic-sm" aria-hidden="true"><use href="#chev"/></svg></button><button class="btn sm" type="button">Assigné <svg class="ic-sm" aria-hidden="true"><use href="#chev"/></svg></button><button class="btn sm" type="button"><svg class="ic-sm" aria-hidden="true"><use href="#arch"/></svg>Archiver</button><span class="sp"></span><button class="btn sm danger" type="button"><svg class="ic-sm" aria-hidden="true"><use href="#trash"/></svg>Supprimer</button></div>
+</section></main></div>
+<nav class="tbar" aria-label="Navigation"><a href="#" aria-label="Accueil"><svg class="ic" aria-hidden="true"><use href="#home"/></svg>Accueil</a><a href="#" aria-label="CRM"><svg class="ic" aria-hidden="true"><use href="#kanban"/></svg>CRM</a><a href="#" aria-current="page" aria-label="Dev"><svg class="ic" aria-hidden="true"><use href="#code"/></svg>Dev</a><a href="#" aria-label="Inbox"><svg class="ic" aria-hidden="true"><use href="#inbox"/></svg>Inbox</a><a href="#" aria-label="Plus"><svg class="ic" aria-hidden="true"><use href="#more"/></svg>Plus</a></nav></div></div><script>
+(function(){
+var list=document.getElementById('ideaList'),bulk=document.getElementById('bulk'),n=document.getElementById('bulkN');
+function upd(){var c=list.querySelectorAll('input:checked').length;bulk.hidden=!c;n.textContent=c+(c>1?' sélectionnées':' sélectionnée');
+list.querySelectorAll('.idea').forEach(function(li){li.classList.toggle('sel',li.querySelector('input').checked)})}
+list.addEventListener('change',upd);upd();
+document.querySelectorAll('.flt').forEach(function(b){b.addEventListener('click',function(){
+document.querySelectorAll('.flt').forEach(function(x){x.setAttribute('aria-pressed',x===b)});
+list.querySelectorAll('.idea').forEach(function(li){li.hidden=b.dataset.f!=='all'&&li.dataset.status!==b.dataset.f})})});
+document.getElementById('sort').addEventListener('change',function(e){
+var k=e.target.value;Array.prototype.slice.call(list.children).sort(function(a,b){return b.dataset[k]-a.dataset[k]}).forEach(function(li){list.appendChild(li)})});
+list.addEventListener('click',function(e){var v=e.target.closest('.vote');if(!v)return;var on=v.getAttribute('aria-pressed')==='true',b=v.querySelector('b');
+v.setAttribute('aria-pressed',!on);b.textContent=+b.textContent+(on?-1:1)});
+document.querySelectorAll('.seg').forEach(function(s){s.addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;
+s.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===t)})})});
+})();
+</script></body></html>

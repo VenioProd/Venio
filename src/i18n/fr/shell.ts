@@ -225,6 +225,8 @@ const fr = {
   'shell.validation.minLength': 'Minimum {count} caractères.',
   'shell.validation.maxLength': 'Maximum {count} caractères.',
   'shell.validation.pattern': 'Format invalide.',
+
+  'shell.navItem.devIdeas': 'Boîte à idées',
 } as const
 
 export default fr

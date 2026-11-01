@@ -49,6 +49,7 @@ export const PERMISSIONS: Record<string, Permission> = {
   // ── Dev workspace ──
   VIEW_DEV: 'view_dev',
   MANAGE_DEV: 'manage_dev',
+  SUBMIT_DEV_SUGGESTION: 'submit_dev_suggestion',
   // ── Espace beta tests ──
   VIEW_BETA: 'view_beta',
   MANAGE_BETA: 'manage_beta',
@@ -65,6 +66,7 @@ export const PERMISSIONS: Record<string, Permission> = {
 const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
   SUPER_ADMIN: new Set(Object.values(PERMISSIONS)),
   ADMIN: new Set([
+    PERMISSIONS.SUBMIT_DEV_SUGGESTION,
     PERMISSIONS.MANAGE_CLIENTS,
     PERMISSIONS.VIEW_CRM,
     PERMISSIONS.MANAGE_CRM,
@@ -96,6 +98,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
   ]),
   // MANAGER = ADMIN sans manage_admins, lock_accounting, export_fec, manage_external_sources
   MANAGER: new Set([
+    PERMISSIONS.SUBMIT_DEV_SUGGESTION,
     PERMISSIONS.MANAGE_CLIENTS,
     PERMISSIONS.VIEW_CRM,
     PERMISSIONS.MANAGE_CRM,
@@ -125,6 +128,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.MANAGE_BETA,
   ]),
   COMPTABLE: new Set([
+    PERMISSIONS.SUBMIT_DEV_SUGGESTION,
     PERMISSIONS.VIEW_ACCOUNTING,
     PERMISSIONS.MANAGE_ACCOUNTING,
     PERMISSIONS.LOCK_ACCOUNTING,
@@ -138,6 +142,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.SEND_MESSAGES,
   ]),
   RH: new Set([
+    PERMISSIONS.SUBMIT_DEV_SUGGESTION,
     PERMISSIONS.VIEW_PROJECTS,
     PERMISSIONS.VIEW_CONTENT,
     PERMISSIONS.VIEW_PHASES,
@@ -149,6 +154,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.CREATE_TICKETS,
   ]),
   VIEWER: new Set([
+    PERMISSIONS.SUBMIT_DEV_SUGGESTION,
     PERMISSIONS.VIEW_PROJECTS,
     PERMISSIONS.VIEW_CONTENT,
     PERMISSIONS.VIEW_PHASES,
@@ -164,6 +170,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.VIEW_BETA,
   ]),
   COMMERCIAL: new Set([
+    PERMISSIONS.SUBMIT_DEV_SUGGESTION,
     PERMISSIONS.UPLOAD_PROJECT_DOCUMENTS,
     PERMISSIONS.MANAGE_QUOTES,
     PERMISSIONS.VIEW_CRM,

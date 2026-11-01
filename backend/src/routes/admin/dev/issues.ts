@@ -19,6 +19,7 @@ import {
 import { issueFilter } from '../../../lib/dev/issueFilter.js'
 import { computeIssueAnalytics } from '../../../lib/dev/issueAnalytics.js'
 import { applyIssueResolutionToBetaRuns } from '../../../lib/beta/promote.js'
+import { notifySuggestionDelivered } from '../../../lib/dev/suggestions.js'
 
 const router = express.Router()
 
@@ -297,6 +298,7 @@ router.patch(
         // validation. Seul DONE compte — une issue annulée n'a rien réparé.
         if (issue.status === 'DONE') {
           await applyIssueResolutionToBetaRuns(String(issue._id))
+          await notifySuggestionDelivered(String(issue._id))
         }
       }
       if (oldPriority !== issue.priority) {

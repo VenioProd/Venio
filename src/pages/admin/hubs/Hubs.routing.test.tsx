@@ -145,7 +145,7 @@ const cases = [
     to: '/admin/dev/recette',
     visible: ['Recette'],
     grant: ['view_beta'],
-    deny: ['view_dev'],
+    deny: ['view_dev', 'submit_dev_suggestion'],
   },
   {
     hub: 'equipe',

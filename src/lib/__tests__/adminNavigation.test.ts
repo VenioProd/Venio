@@ -30,13 +30,13 @@ describe('VENIO-99 — navigation et cockpit RBAC', () => {
     }
   })
 
-  it('groups the 30 sidebar modules into exactly 13 entries and four zones', () => {
+  it('groups the 31 sidebar modules into exactly 13 entries and four zones', () => {
     const zones = getVisibleNavigationZones(user('SUPER_ADMIN'))
     expect(zones.map((zone) => zone.id)).toEqual(['Pilotage', 'Commercial', 'Production', 'Organisation'])
     const entries = zones.flatMap((zone) => zone.items)
     expect(entries.map((item) => item.id)).toEqual(ADMIN_NAVIGATION_GROUPS.map((group) => group.id))
     expect(entries).toHaveLength(13)
-    expect(ADMIN_NAVIGATION_GROUPS.flatMap((group) => [...group.modules])).toHaveLength(30)
+    expect(ADMIN_NAVIGATION_GROUPS.flatMap((group) => [...group.modules])).toHaveLength(31)
     expect(entries.find((item) => item.id === 'home')?.screen).toBe('/admin/mon-espace')
     expect(entries.map((item) => item.id)).not.toEqual(expect.arrayContaining(['arrow', 'subsidiaries', 'guide']))
   })
@@ -57,7 +57,11 @@ describe('VENIO-99 — navigation et cockpit RBAC', () => {
       )?.screen,
     ).toBe('/admin/crm/partenaires')
     expect(
-      getVisibleAdminNavigation({ ...comptable, grantedPermissions: ['view_beta'] }).find((item) => item.id === 'dev')
+      getVisibleAdminNavigation({
+        ...comptable,
+        grantedPermissions: ['view_beta'],
+        deniedPermissions: ['submit_dev_suggestion'],
+      }).find((item) => item.id === 'dev')
         ?.screen,
     ).toBe('/admin/dev/recette')
     expect(

@@ -45,6 +45,7 @@ export const ADMIN_MODULE_PATHS: Readonly<Record<string, string>> = {
   'change-requests': '/admin/demandes/clients',
   tickets: '/admin/demandes/equipe',
   dev: '/admin/dev/workspace',
+  'dev-ideas': '/admin/dev/idees',
   beta: '/admin/dev/recette',
   interns: '/admin/equipe/membres',
   'admin-accounts': '/admin/equipe/comptes',
