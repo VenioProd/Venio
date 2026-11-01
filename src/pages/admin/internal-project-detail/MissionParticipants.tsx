@@ -29,14 +29,19 @@ export default function MissionParticipants({
           )
           const blockedCount = (mission.participants || []).filter((p) => p.blocked).length
           return (
-            <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <div
+              style={{
+                padding: '14px 16px',
+                borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <span
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '.5px',
+                    textTransform: 'none',
+                    letterSpacing: 'normal',
                     color: 'var(--text-secondary)',
                   }}
                 >
@@ -47,10 +52,10 @@ export default function MissionParticipants({
                     style={{
                       fontSize: 11,
                       padding: '1px 7px',
-                      borderRadius: 8,
-                      background: 'rgba(248,113,113,0.12)',
-                      border: '1px solid rgba(248,113,113,0.3)',
-                      color: '#f87171',
+                      borderRadius: 'var(--r-md)',
+                      background: 'color-mix(in srgb, var(--critical) 12%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--critical) 30%, transparent)',
+                      color: 'var(--critical)',
                     }}
                   >
                     {t('projB.detail.blockedCount', { count: blockedCount })}
@@ -68,30 +73,30 @@ export default function MissionParticipants({
                   const myDelivsDone = myDelivs.filter((d) => d.done).length
                   const isBehind = mission.participants.length > 1 && avgP - (p.progress ?? 0) >= 30
                   const avatarColor = p.blocked
-                    ? '#f87171'
+                    ? 'var(--critical)'
                     : p.status === 'TERMINE'
-                      ? '#6ee7b7'
+                      ? 'var(--good)'
                       : p.user?._id === currentUserId
                         ? 'var(--primary)'
-                        : '#a5b4cf'
+                        : 'var(--text-secondary)'
                   const cardBorder = p.blocked
-                    ? 'rgba(248,113,113,0.25)'
+                    ? 'color-mix(in srgb, var(--critical) 25%, transparent)'
                     : isBehind
-                      ? 'rgba(251,191,36,0.2)'
+                      ? 'color-mix(in srgb, var(--warning) 20%, transparent)'
                       : p.user?._id === currentUserId
-                        ? 'rgba(14, 165, 233, 0.15)'
-                        : 'rgba(255,255,255,0.05)'
+                        ? 'color-mix(in srgb, var(--primary) 15%, transparent)'
+                        : 'color-mix(in srgb, var(--text-primary) 5%, transparent)'
                   const cardBg = p.blocked
-                    ? 'rgba(248,113,113,0.04)'
+                    ? 'color-mix(in srgb, var(--critical) 4%, transparent)'
                     : p.user?._id === currentUserId
-                      ? 'rgba(14, 165, 233, 0.05)'
-                      : 'rgba(255,255,255,0.02)'
-                  const barColor = p.blocked ? '#f87171' : p.progress === 100 ? '#10b981' : 'var(--primary)'
+                      ? 'color-mix(in srgb, var(--primary) 5%, transparent)'
+                      : 'color-mix(in srgb, var(--text-primary) 2%, transparent)'
+                  const barColor = p.blocked ? 'var(--critical)' : p.progress === 100 ? 'var(--good)' : 'var(--primary)'
                   return (
                     <div
                       key={p._id}
                       style={{
-                        borderRadius: 8,
+                        borderRadius: 'var(--r-md)',
                         background: cardBg,
                         border: `1px solid ${cardBorder}`,
                         overflow: 'hidden',
@@ -104,8 +109,10 @@ export default function MissionParticipants({
                               width: 26,
                               height: 26,
                               borderRadius: '50%',
-                              background: p.blocked ? 'rgba(248,113,113,0.15)' : 'rgba(165,180,207,0.12)',
-                              border: `1.5px solid ${p.blocked ? 'rgba(248,113,113,0.4)' : 'rgba(165,180,207,0.2)'}`,
+                              background: p.blocked
+                                ? 'color-mix(in srgb, var(--critical) 15%, transparent)'
+                                : 'color-mix(in srgb, var(--text-secondary) 12%, transparent)',
+                              border: `1.5px solid ${p.blocked ? 'color-mix(in srgb, var(--critical) 40%, transparent)' : 'color-mix(in srgb, var(--text-secondary) 20%, transparent)'}`,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -125,9 +132,9 @@ export default function MissionParticipants({
                               style={{
                                 fontSize: 10,
                                 color: 'var(--primary)',
-                                background: 'rgba(14, 165, 233, 0.1)',
-                                border: '1px solid rgba(14, 165, 233, 0.2)',
-                                borderRadius: 8,
+                                background: 'color-mix(in srgb, var(--primary) 10%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
+                                borderRadius: 'var(--r-md)',
                                 padding: '1px 6px',
                               }}
                             >
@@ -139,10 +146,10 @@ export default function MissionParticipants({
                               style={{
                                 fontSize: 11,
                                 padding: '2px 7px',
-                                borderRadius: 8,
-                                background: 'rgba(248,113,113,0.15)',
-                                border: '1px solid rgba(248,113,113,0.35)',
-                                color: '#f87171',
+                                borderRadius: 'var(--r-md)',
+                                background: 'color-mix(in srgb, var(--critical) 15%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--critical) 35%, transparent)',
+                                color: 'var(--critical)',
                                 fontWeight: 600,
                               }}
                             >
@@ -153,10 +160,10 @@ export default function MissionParticipants({
                               style={{
                                 fontSize: 11,
                                 padding: '2px 7px',
-                                borderRadius: 10,
-                                color: MSC[p.status] || '#a5b4cf',
-                                background: MSBg[p.status] || 'rgba(255,255,255,0.05)',
-                                border: `1px solid ${MSBo[p.status] || 'rgba(255,255,255,0.1)'}`,
+                                borderRadius: 'var(--r-md)',
+                                color: MSC[p.status] || 'var(--text-secondary)',
+                                background: MSBg[p.status] || 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
+                                border: `1px solid ${MSBo[p.status] || 'color-mix(in srgb, var(--text-primary) 10%, transparent)'}`,
                               }}
                             >
                               {MSL_KEYS[p.status] ? t(MSL_KEYS[p.status]) : p.status}
@@ -167,10 +174,10 @@ export default function MissionParticipants({
                               style={{
                                 fontSize: 10,
                                 padding: '1px 6px',
-                                borderRadius: 6,
-                                background: 'rgba(251,191,36,0.1)',
-                                border: '1px solid rgba(251,191,36,0.3)',
-                                color: '#fbbf24',
+                                borderRadius: 'var(--r-sm)',
+                                background: 'color-mix(in srgb, var(--warning) 10%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--warning) 30%, transparent)',
+                                color: 'var(--warning)',
                               }}
                             >
                               {t('projB.mission.late')}
@@ -178,11 +185,18 @@ export default function MissionParticipants({
                           )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-                          <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)' }}>
+                          <div
+                            style={{
+                              flex: 1,
+                              height: 5,
+                              borderRadius: 'var(--r-hair)',
+                              background: 'color-mix(in srgb, var(--text-primary) 7%, transparent)',
+                            }}
+                          >
                             <div
                               style={{
                                 height: '100%',
-                                borderRadius: 3,
+                                borderRadius: 'var(--r-hair)',
                                 background: barColor,
                                 width: `${p.progress ?? 0}%`,
                                 transition: 'width .3s',
@@ -206,10 +220,10 @@ export default function MissionParticipants({
                                 fontSize: 12,
                                 fontWeight: 700,
                                 padding: '2px 4px',
-                                borderRadius: 5,
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                background: 'rgba(255,255,255,0.04)',
-                                color: p.progress === 100 ? '#6ee7b7' : 'var(--primary)',
+                                borderRadius: 'var(--r-sm)',
+                                border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
+                                background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                color: p.progress === 100 ? 'var(--good)' : 'var(--primary)',
                                 textAlign: 'center',
                               }}
                             />
@@ -218,7 +232,7 @@ export default function MissionParticipants({
                               style={{
                                 fontSize: 12,
                                 fontWeight: 700,
-                                color: p.progress === 100 ? '#6ee7b7' : 'var(--primary)',
+                                color: p.progress === 100 ? 'var(--good)' : 'var(--primary)',
                                 minWidth: 26,
                                 textAlign: 'right',
                               }}
@@ -233,11 +247,11 @@ export default function MissionParticipants({
                             <span
                               style={{
                                 fontSize: 11,
-                                color: myStepsDone === mySteps.length ? '#6ee7b7' : 'var(--text-secondary)',
-                                background: 'rgba(255,255,255,0.04)',
-                                borderRadius: 5,
+                                color: myStepsDone === mySteps.length ? 'var(--good)' : 'var(--text-secondary)',
+                                background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                borderRadius: 'var(--r-sm)',
                                 padding: '1px 6px',
-                                border: '1px solid rgba(255,255,255,0.06)',
+                                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                               }}
                             >
                               {t('projB.detail.ownSteps', { done: myStepsDone, total: mySteps.length })}
@@ -248,10 +262,10 @@ export default function MissionParticipants({
                               style={{
                                 fontSize: 11,
                                 color: 'var(--text-secondary)',
-                                background: 'rgba(255,255,255,0.04)',
-                                borderRadius: 5,
+                                background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                borderRadius: 'var(--r-sm)',
                                 padding: '1px 6px',
-                                border: '1px solid rgba(255,255,255,0.06)',
+                                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                               }}
                             >
                               {t('projB.detail.commonSteps', { done: commonDone, total: commonSteps.length })}
@@ -262,10 +276,10 @@ export default function MissionParticipants({
                               style={{
                                 fontSize: 11,
                                 color: myDelivsDone === myDelivs.length ? 'var(--primary)' : 'var(--text-secondary)',
-                                background: 'rgba(255,255,255,0.04)',
-                                borderRadius: 5,
+                                background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                borderRadius: 'var(--r-sm)',
                                 padding: '1px 6px',
-                                border: '1px solid rgba(255,255,255,0.06)',
+                                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                               }}
                             >
                               {t('projB.detail.ownDeliverables', { done: myDelivsDone, total: myDelivs.length })}
@@ -281,8 +295,8 @@ export default function MissionParticipants({
                                 onClick={() => handleParticipantUpdate(mission._id, p.user?._id, { status: v })}
                                 style={{
                                   padding: '2px 8px',
-                                  borderRadius: 10,
-                                  border: `1px solid ${p.status === v ? MSBo[v] : 'rgba(255,255,255,0.08)'}`,
+                                  borderRadius: 'var(--r-md)',
+                                  border: `1px solid ${p.status === v ? MSBo[v] : 'color-mix(in srgb, var(--text-primary) 8%, transparent)'}`,
                                   background: p.status === v ? MSBg[v] : 'transparent',
                                   color: p.status === v ? MSC[v] : 'var(--text-secondary)',
                                   fontSize: 11,
@@ -304,10 +318,14 @@ export default function MissionParticipants({
                               }
                               style={{
                                 padding: '2px 8px',
-                                borderRadius: 10,
-                                border: `1px solid ${p.blocked ? 'rgba(248,113,113,0.4)' : 'rgba(248,113,113,0.2)'}`,
-                                background: p.blocked ? 'rgba(248,113,113,0.12)' : 'transparent',
-                                color: p.blocked ? '#f87171' : 'rgba(248,113,113,0.5)',
+                                borderRadius: 'var(--r-md)',
+                                border: `1px solid ${p.blocked ? 'color-mix(in srgb, var(--critical) 40%, transparent)' : 'color-mix(in srgb, var(--critical) 20%, transparent)'}`,
+                                background: p.blocked
+                                  ? 'color-mix(in srgb, var(--critical) 12%, transparent)'
+                                  : 'transparent',
+                                color: p.blocked
+                                  ? 'var(--critical)'
+                                  : 'color-mix(in srgb, var(--critical) 50%, transparent)',
                                 fontSize: 11,
                                 cursor: 'pointer',
                                 marginLeft: 'auto',
@@ -323,8 +341,8 @@ export default function MissionParticipants({
                         <div
                           style={{
                             padding: '7px 12px 10px',
-                            borderTop: '1px solid rgba(248,113,113,0.15)',
-                            background: 'rgba(248,113,113,0.03)',
+                            borderTop: '1px solid color-mix(in srgb, var(--critical) 15%, transparent)',
+                            background: 'color-mix(in srgb, var(--critical) 3%, transparent)',
                           }}
                         >
                           {canEdit ? (
@@ -340,21 +358,28 @@ export default function MissionParticipants({
                                 width: '100%',
                                 fontSize: 11,
                                 padding: '5px 8px',
-                                borderRadius: 5,
-                                border: '1px solid rgba(248,113,113,0.2)',
-                                background: 'rgba(248,113,113,0.06)',
-                                color: '#f87171',
+                                borderRadius: 'var(--r-sm)',
+                                border: '1px solid color-mix(in srgb, var(--critical) 20%, transparent)',
+                                background: 'color-mix(in srgb, var(--critical) 6%, transparent)',
+                                color: 'var(--critical)',
                                 resize: 'vertical',
                                 lineHeight: 1.5,
                                 boxSizing: 'border-box',
                               }}
                             />
                           ) : p.blockedReason ? (
-                            <p style={{ fontSize: 11, color: '#f87171', margin: 0, lineHeight: 1.5 }}>
+                            <p style={{ fontSize: 11, color: 'var(--critical)', margin: 0, lineHeight: 1.5 }}>
                               "{p.blockedReason}"
                             </p>
                           ) : (
-                            <p style={{ fontSize: 11, color: 'rgba(248,113,113,0.5)', margin: 0, fontStyle: 'italic' }}>
+                            <p
+                              style={{
+                                fontSize: 11,
+                                color: 'color-mix(in srgb, var(--critical) 50%, transparent)',
+                                margin: 0,
+                                fontStyle: 'italic',
+                              }}
+                            >
                               {t('projB.detail.noReason')}
                             </p>
                           )}

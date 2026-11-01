@@ -37,16 +37,16 @@
   display: grid;
   place-items: center;
   padding: 18px;
-  background: rgba(2, 6, 23, 0.76);
+  background: var(--overlay-scrim);
 }
 
 .agent-launch-modal {
   width: min(100%, 620px);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: var(--bg-card);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 25%, transparent);
+  background: var(--bg-secondary);
   color: var(--ink-body);
   padding: 20px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--overlay-shadow);
 }
 
 .agent-launch-header {
@@ -99,8 +99,8 @@
   overflow-wrap: anywhere;
 }
 .agent-launch-limits {
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 16%, transparent);
+  background: var(--bg-secondary);
   padding: 11px 12px;
   font-size: 12px;
   line-height: 1.45;

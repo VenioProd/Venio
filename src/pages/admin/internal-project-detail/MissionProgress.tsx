@@ -19,7 +19,7 @@ export default function MissionProgress({
       <div
         style={{
           padding: '14px 16px',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)',
           display: 'flex',
           alignItems: 'center',
           gap: 10,
@@ -29,22 +29,29 @@ export default function MissionProgress({
           style={{
             fontSize: 11,
             fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '.5px',
+            textTransform: 'none',
+            letterSpacing: 'normal',
             color: 'var(--text-secondary)',
             minWidth: 130,
           }}
         >
           {t('projB.detail.progress')}
         </span>
-        <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'rgba(255,255,255,0.07)' }}>
+        <div
+          style={{
+            flex: 1,
+            height: 7,
+            borderRadius: 'var(--r-sm)',
+            background: 'color-mix(in srgb, var(--text-primary) 7%, transparent)',
+          }}
+        >
           <div
             style={{
               height: '100%',
-              borderRadius: 4,
+              borderRadius: 'var(--r-sm)',
               background:
                 mission.progress === 100
-                  ? 'linear-gradient(90deg,#10b981,#6ee7b7)'
+                  ? 'linear-gradient(90deg,var(--good),var(--good))'
                   : 'linear-gradient(90deg,var(--primary),var(--primary))',
               width: `${mission.progress ?? 0}%`,
               transition: 'width .4s',
@@ -68,10 +75,10 @@ export default function MissionProgress({
               fontSize: 13,
               fontWeight: 700,
               padding: '2px 5px',
-              borderRadius: 5,
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.04)',
-              color: mission.progress === 100 ? '#6ee7b7' : 'var(--primary)',
+              borderRadius: 'var(--r-sm)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
+              background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              color: mission.progress === 100 ? 'var(--good)' : 'var(--primary)',
               textAlign: 'center',
             }}
           />
@@ -80,7 +87,7 @@ export default function MissionProgress({
             style={{
               fontSize: 14,
               fontWeight: 700,
-              color: mission.progress === 100 ? '#6ee7b7' : 'var(--primary)',
+              color: mission.progress === 100 ? 'var(--good)' : 'var(--primary)',
               minWidth: 36,
               textAlign: 'right',
             }}

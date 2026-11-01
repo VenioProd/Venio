@@ -29,14 +29,19 @@ export default function MissionDeliverables({
     <>
       {/* Livrables attendus */}
       {((mission.deliverables || []).length > 0 || isSuperAdmin) && (
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div
+          style={{
+            padding: '14px 16px',
+            borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <span
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '.5px',
+                textTransform: 'none',
+                letterSpacing: 'normal',
                 color: 'var(--text-secondary)',
               }}
             >
@@ -47,9 +52,9 @@ export default function MissionDeliverables({
                 style={{
                   fontSize: 11,
                   padding: '1px 7px',
-                  borderRadius: 8,
-                  background: 'rgba(14, 165, 233, 0.1)',
-                  border: '1px solid rgba(14, 165, 233, 0.25)',
+                  borderRadius: 'var(--r-md)',
+                  background: 'color-mix(in srgb, var(--primary) 10%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--primary) 25%, transparent)',
                   color: 'var(--primary)',
                 }}
               >
@@ -58,7 +63,13 @@ export default function MissionDeliverables({
             )}
           </div>
           {(mission.deliverables || []).length === 0 ? (
-            <p style={{ fontSize: 12, color: 'rgba(165,180,207,0.3)', margin: '0 0 8px' }}>
+            <p
+              style={{
+                fontSize: 12,
+                color: 'color-mix(in srgb, var(--text-secondary) 30%, transparent)',
+                margin: '0 0 8px',
+              }}
+            >
               {t('projB.detail.noDeliverables')}
             </p>
           ) : (
@@ -73,9 +84,11 @@ export default function MissionDeliverables({
                     gap: 8,
                     marginBottom: 6,
                     padding: '8px 10px',
-                    borderRadius: 7,
-                    background: d.done ? 'rgba(14, 165, 233, 0.04)' : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${d.done ? 'rgba(14, 165, 233, 0.18)' : 'rgba(255,255,255,0.05)'}`,
+                    borderRadius: 'var(--r-md)',
+                    background: d.done
+                      ? 'color-mix(in srgb, var(--primary) 4%, transparent)'
+                      : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                    border: `1px solid ${d.done ? 'color-mix(in srgb, var(--primary) 18%, transparent)' : 'color-mix(in srgb, var(--text-primary) 5%, transparent)'}`,
                   }}
                 >
                   <input
@@ -100,8 +113,8 @@ export default function MissionDeliverables({
                             width: 14,
                             height: 14,
                             borderRadius: '50%',
-                            background: 'rgba(14, 165, 233, 0.15)',
-                            border: '1px solid rgba(14, 165, 233, 0.3)',
+                            background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
+                            border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -138,10 +151,10 @@ export default function MissionDeliverables({
                       style={{
                         fontSize: 10,
                         padding: '2px 5px',
-                        borderRadius: 4,
-                        border: '1px solid rgba(248,113,113,0.2)',
-                        background: 'rgba(248,113,113,0.05)',
-                        color: '#f87171',
+                        borderRadius: 'var(--r-sm)',
+                        border: '1px solid color-mix(in srgb, var(--critical) 20%, transparent)',
+                        background: 'color-mix(in srgb, var(--critical) 5%, transparent)',
+                        color: 'var(--critical)',
                         cursor: 'pointer',
                         flexShrink: 0,
                       }}
@@ -168,10 +181,10 @@ export default function MissionDeliverables({
                     }
                     style={{
                       padding: '2px 7px',
-                      borderRadius: 9,
-                      border: `1px solid ${!deliverableInputs[mission._id]?.assignedTo ? 'rgba(14, 165, 233, 0.35)' : 'rgba(255,255,255,0.07)'}`,
+                      borderRadius: 'var(--r-md)',
+                      border: `1px solid ${!deliverableInputs[mission._id]?.assignedTo ? 'color-mix(in srgb, var(--primary) 35%, transparent)' : 'color-mix(in srgb, var(--text-primary) 7%, transparent)'}`,
                       background: !deliverableInputs[mission._id]?.assignedTo
-                        ? 'rgba(14, 165, 233, 0.08)'
+                        ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
                         : 'transparent',
                       color: !deliverableInputs[mission._id]?.assignedTo ? 'var(--primary)' : 'var(--text-secondary)',
                       fontSize: 11,
@@ -198,11 +211,11 @@ export default function MissionDeliverables({
                         alignItems: 'center',
                         gap: 3,
                         padding: '2px 7px',
-                        borderRadius: 9,
-                        border: `1px solid ${deliverableInputs[mission._id]?.assignedTo === a._id ? 'rgba(14, 165, 233, 0.4)' : 'rgba(255,255,255,0.07)'}`,
+                        borderRadius: 'var(--r-md)',
+                        border: `1px solid ${deliverableInputs[mission._id]?.assignedTo === a._id ? 'color-mix(in srgb, var(--primary) 40%, transparent)' : 'color-mix(in srgb, var(--text-primary) 7%, transparent)'}`,
                         background:
                           deliverableInputs[mission._id]?.assignedTo === a._id
-                            ? 'rgba(14, 165, 233, 0.1)'
+                            ? 'color-mix(in srgb, var(--primary) 10%, transparent)'
                             : 'transparent',
                         color:
                           deliverableInputs[mission._id]?.assignedTo === a._id
@@ -217,7 +230,7 @@ export default function MissionDeliverables({
                           width: 12,
                           height: 12,
                           borderRadius: '50%',
-                          background: 'rgba(165,180,207,0.1)',
+                          background: 'color-mix(in srgb, var(--text-secondary) 10%, transparent)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -256,9 +269,9 @@ export default function MissionDeliverables({
                   onClick={() => handleDeliverableAdd(mission._id, mission)}
                   style={{
                     padding: '5px 10px',
-                    borderRadius: 5,
-                    border: '1px solid rgba(14, 165, 233, 0.3)',
-                    background: 'rgba(14, 165, 233, 0.08)',
+                    borderRadius: 'var(--r-sm)',
+                    border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
+                    background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
                     color: 'var(--primary)',
                     fontSize: 14,
                     cursor: 'pointer',

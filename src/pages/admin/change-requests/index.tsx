@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useI18n } from '../../../context/I18nContext'
@@ -8,6 +9,7 @@ import ChangeRequestFilters from './ChangeRequestFilters'
 import { ADMIN_PRIORITY_CONFIG, ADMIN_STATUS_CONFIG, formatAdminDate } from './types'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import '../Production.css'
 
 const AdminChangeRequestList = () => {
   const { t } = useI18n()
@@ -39,21 +41,18 @@ const AdminChangeRequestList = () => {
   }, [load])
 
   return (
-    <div className="portal-container">
-      <span
-        style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.7rem' }}
-      >
-        {t('changeReq.list.eyebrow')}
-      </span>
-      <h1 style={{ margin: '6px 0 16px' }}>{t('changeReq.list.title')}</h1>
+    <div className="portal-container production-page production-list production-change-requests">
+      <div className="production-header">
+        <PageHeader eyebrow={t('changeReq.list.eyebrow')} title={t('changeReq.list.title')} />
+      </div>
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <div className="portal-card" style={{ minWidth: 160 }}>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{stats.aTraiter}</div>
+      <div className="production-kpis">
+        <div className="portal-card production-kpi">
+          <div className="production-kpi__value">{stats.aTraiter}</div>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{t('changeReq.list.statToQualify')}</div>
         </div>
-        <div className="portal-card" style={{ minWidth: 160 }}>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{stats.enCours}</div>
+        <div className="portal-card production-kpi">
+          <div className="production-kpi__value">{stats.enCours}</div>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{t('changeReq.list.statInHandling')}</div>
         </div>
       </div>
@@ -68,20 +67,17 @@ const AdminChangeRequestList = () => {
 
       {loading && <div className="portal-spinner" />}
 
-      {!loading && changeRequests.length === 0 && <p>{t('changeReq.list.empty')}</p>}
+      {!loading && changeRequests.length === 0 && (
+        <div className="admin-empty-state">
+          <p>{t('changeReq.list.empty')}</p>
+        </div>
+      )}
 
       {!loading && changeRequests.length > 0 && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="production-table-scroll">
+          <table className="admin-table production-request-table">
             <thead>
-              <tr
-                style={{
-                  textAlign: 'left',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.72rem',
-                  textTransform: 'uppercase',
-                }}
-              >
+              <tr>
                 <th style={{ padding: '10px 12px' }}>{t('changeReq.list.colRequest')}</th>
                 <th style={{ padding: '10px 12px' }}>{t('changeReq.list.colClient')}</th>
                 <th style={{ padding: '10px 12px' }}>{t('changeReq.list.colPriority')}</th>
@@ -117,7 +113,11 @@ const AdminChangeRequestList = () => {
                     <td style={{ padding: '12px', color: priority?.color }}>
                       {priority ? t(priority.labelKey) : undefined}
                     </td>
-                    <td style={{ padding: '12px', color: status.color }}>{t(status.labelKey)}</td>
+                    <td>
+                      <span className="production-status" style={{ color: status.color }}>
+                        {t(status.labelKey)}
+                      </span>
+                    </td>
                     <td style={{ padding: '12px', color: 'var(--text-muted)' }}>
                       {formatAdminDate(request.createdAt)}
                     </td>

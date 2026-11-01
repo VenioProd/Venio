@@ -51,7 +51,7 @@ export default function ProjectFormDrawer({
         {editTarget ? t('projA.projectForm.editTitle') : t('projA.projectForm.newTitle')}
       </h2>
       <form onSubmit={onSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div className="production-form-grid">
           <div style={{ gridColumn: '1 / -1' }}>
             <label className="portal-label">{t('projA.projectForm.nameLabel')}</label>
             <input
@@ -133,12 +133,14 @@ export default function ProjectFormDrawer({
                   onClick={() => togglePole(pole)}
                   style={{
                     padding: '4px 12px',
-                    borderRadius: 20,
+                    borderRadius: 'var(--r-pill)',
                     border: '1px solid',
                     fontSize: 12,
                     fontWeight: 500,
                     cursor: 'pointer',
-                    background: form.poles.includes(pole) ? 'rgba(14, 165, 233, 0.2)' : 'transparent',
+                    background: form.poles.includes(pole)
+                      ? 'color-mix(in srgb, var(--primary) 20%, transparent)'
+                      : 'transparent',
                     borderColor: form.poles.includes(pole) ? 'var(--primary)' : 'var(--border)',
                     color: form.poles.includes(pole) ? 'var(--primary)' : 'var(--text-secondary)',
                     transition: 'all .15s',
@@ -160,14 +162,16 @@ export default function ProjectFormDrawer({
                   onClick={() => toggleMember(admin._id)}
                   style={{
                     padding: '4px 12px',
-                    borderRadius: 20,
+                    borderRadius: 'var(--r-pill)',
                     border: '1px solid',
                     fontSize: 12,
                     fontWeight: 500,
                     cursor: 'pointer',
-                    background: form.members.includes(admin._id) ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
-                    borderColor: form.members.includes(admin._id) ? '#10b981' : 'var(--border)',
-                    color: form.members.includes(admin._id) ? '#6ee7b7' : 'var(--text-secondary)',
+                    background: form.members.includes(admin._id)
+                      ? 'color-mix(in srgb, var(--good) 20%, transparent)'
+                      : 'transparent',
+                    borderColor: form.members.includes(admin._id) ? 'var(--good)' : 'var(--border)',
+                    color: form.members.includes(admin._id) ? 'var(--good)' : 'var(--text-secondary)',
                     transition: 'all .15s',
                   }}
                 >

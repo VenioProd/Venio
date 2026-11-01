@@ -537,174 +537,6 @@
   cursor: not-allowed;
 }
 
-/* ── Light Mode — mêmes noms de jetons, palette claire dans portail.css. ── */
-[data-theme='light'] .task-board-loading {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-column {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-
-[data-theme='light'] .task-column-title {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-column-count {
-  background: var(--bg-card-hover);
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-add-btn {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-add-btn:hover {
-  background: var(--bg-card-hover);
-  color: var(--text-secondary);
-  border-color: var(--line-strong);
-}
-
-[data-theme='light'] .task-card {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-
-[data-theme='light'] .task-card:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--line-strong);
-}
-
-[data-theme='light'] .task-card-title {
-  color: var(--text-primary);
-}
-
-[data-theme='light'] .task-card-delete {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-card-desc {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-assignee {
-  color: var(--text-muted);
-  background: var(--bg-card-hover);
-}
-
-[data-theme='light'] .task-due {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-modal {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-  box-shadow: none;
-}
-
-[data-theme='light'] .task-modal h3 {
-  color: var(--text-primary);
-}
-
-[data-theme='light'] .task-form-group label {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-form-group input,
-[data-theme='light'] .task-form-group select,
-[data-theme='light'] .task-form-group textarea {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-  color: var(--text-primary);
-}
-
-[data-theme='light'] .task-attachments-section {
-  border-top-color: var(--border-color);
-}
-
-[data-theme='light'] .task-attachments-title {
-  color: var(--text-primary);
-}
-
-[data-theme='light'] .task-attachments-empty {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-attachment-item {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-
-[data-theme='light'] .task-attachment-name {
-  color: var(--text-secondary);
-}
-
-[data-theme='light'] .task-attachment-size {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-attachment-upload-btn {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-attachment-upload-btn:hover {
-  background: var(--bg-card-hover);
-  color: var(--text-secondary);
-  border-color: var(--line-strong);
-}
-
-[data-theme='light'] .task-attachment-delete {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-readonly-value {
-  color: var(--text-secondary);
-}
-
-[data-theme='light'] .task-comments-section {
-  border-top-color: var(--border-color);
-}
-
-[data-theme='light'] .task-comments-title {
-  color: var(--text-primary);
-}
-
-[data-theme='light'] .task-comments-empty {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-comment {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-
-[data-theme='light'] .task-comment-author {
-  color: var(--text-primary);
-}
-
-[data-theme='light'] .task-comment-time {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-comment-delete {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .task-comment-content {
-  color: var(--text-secondary);
-}
-
-[data-theme='light'] .task-comment-input textarea {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-  color: var(--text-primary);
-}
-
 /* Système — cartes et dialogue utilisés dans les fiches projet. */
 html.theme-portail .task-column {
   padding: 12px;
@@ -776,5 +608,39 @@ html.theme-portail :is(.task-attachments-empty, .task-comments-empty) {
   }
   html.theme-portail .task-add-btn {
     min-height: 44px;
+  }
+}
+
+/* Les colonnes et les pièces jointes restent dans la fiche projet. */
+.task-board-wrapper,
+.task-board,
+.task-column,
+.task-card {
+  min-width: 0;
+}
+.task-board {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.task-card :is(.task-card-title, .task-card-desc) {
+  overflow-wrap: anywhere;
+}
+.task-modal {
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+}
+.task-attachment-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1024px) {
+  .task-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .task-board {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

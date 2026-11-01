@@ -53,7 +53,7 @@ export function StatusSelector({ current, saving, statusLabelKeys, statusColors,
               onClick={() => onChange(v)}
               style={{
                 padding: '5px 14px',
-                borderRadius: 20,
+                borderRadius: 'var(--r-pill)',
                 border: '1px solid',
                 fontSize: 12,
                 fontWeight: 600,
@@ -94,13 +94,15 @@ export function MetaInfo({ project }: { project: Project }) {
               color: 'var(--text-secondary)',
               marginBottom: 4,
               fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '.5px',
+              textTransform: 'none',
+              letterSpacing: 'normal',
             }}
           >
             {t('projB.parts.start')}
           </div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>{formatDate(project.startDate)}</div>
+          <div className="production-number" style={{ fontSize: 14, fontWeight: 600 }}>
+            {formatDate(project.startDate)}
+          </div>
         </div>
       )}
       {project.endDate && (
@@ -111,13 +113,15 @@ export function MetaInfo({ project }: { project: Project }) {
               color: 'var(--text-secondary)',
               marginBottom: 4,
               fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '.5px',
+              textTransform: 'none',
+              letterSpacing: 'normal',
             }}
           >
             {t('projB.parts.plannedEnd')}
           </div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>{formatDate(project.endDate)}</div>
+          <div className="production-number" style={{ fontSize: 14, fontWeight: 600 }}>
+            {formatDate(project.endDate)}
+          </div>
         </div>
       )}
       <div className="portal-card" style={{ padding: '12px 16px' }}>
@@ -127,8 +131,8 @@ export function MetaInfo({ project }: { project: Project }) {
             color: 'var(--text-secondary)',
             marginBottom: 4,
             fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '.5px',
+            textTransform: 'none',
+            letterSpacing: 'normal',
           }}
         >
           {t('projB.parts.createdBy')}
@@ -142,13 +146,15 @@ export function MetaInfo({ project }: { project: Project }) {
             color: 'var(--text-secondary)',
             marginBottom: 4,
             fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '.5px',
+            textTransform: 'none',
+            letterSpacing: 'normal',
           }}
         >
           {t('projB.parts.updatedAt')}
         </div>
-        <div style={{ fontSize: 14, fontWeight: 600 }}>{formatDate(project.updatedAt)}</div>
+        <div className="production-number" style={{ fontSize: 14, fontWeight: 600 }}>
+          {formatDate(project.updatedAt)}
+        </div>
       </div>
     </div>
   )
@@ -171,9 +177,9 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
                   fontSize: 12,
                   fontWeight: 600,
                   padding: '4px 12px',
-                  borderRadius: 20,
-                  background: 'rgba(14, 165, 233, 0.12)',
-                  border: '1px solid rgba(14, 165, 233, 0.3)',
+                  borderRadius: 'var(--r-pill)',
+                  background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
                   color: 'var(--primary)',
                 }}
               >
@@ -199,9 +205,9 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
                   alignItems: 'center',
                   gap: 8,
                   padding: '6px 12px',
-                  borderRadius: 8,
-                  background: 'rgba(16,185,129,0.08)',
-                  border: '1px solid rgba(16,185,129,0.2)',
+                  borderRadius: 'var(--r-md)',
+                  background: 'color-mix(in srgb, var(--good) 8%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--good) 20%, transparent)',
                 }}
               >
                 <div
@@ -209,13 +215,14 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
                     width: 28,
                     height: 28,
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.1))',
+                    background:
+                      'linear-gradient(135deg, color-mix(in srgb, var(--good) 30%, transparent), color-mix(in srgb, var(--good) 10%, transparent))',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 12,
                     fontWeight: 700,
-                    color: '#6ee7b7',
+                    color: 'var(--good)',
                   }}
                 >
                   {(m.name || '?').charAt(0).toUpperCase()}
@@ -241,10 +248,10 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
                 style={{
                   fontSize: 11,
                   padding: '3px 9px',
-                  borderRadius: 12,
-                  background: 'rgba(100,116,180,0.12)',
-                  border: '1px solid rgba(100,116,180,0.25)',
-                  color: '#a5b4cf',
+                  borderRadius: 'var(--r-md)',
+                  background: 'color-mix(in srgb, var(--cat-2) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--cat-2) 25%, transparent)',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 #{tag}
@@ -260,7 +267,7 @@ export function OverviewTab({ project, missions, onGoToMissions }: OverviewTabPr
             onClick={onGoToMissions}
             style={{
               fontSize: 12,
-              color: 'rgba(253,224,71,0.7)',
+              color: 'color-mix(in srgb, var(--warning) 70%, transparent)',
               background: 'none',
               border: 'none',
               cursor: 'pointer',

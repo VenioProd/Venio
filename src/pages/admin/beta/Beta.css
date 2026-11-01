@@ -10,28 +10,6 @@
 
 /* ── En-tête ── */
 
-.beta-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.beta-header-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--ink-strong);
-}
-
-.beta-header-title h1 {
-  margin: 0;
-  font-size: 19px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
 .beta-header-actions {
   display: flex;
   gap: 8px;
@@ -775,7 +753,7 @@
 .beta-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(2, 6, 23, 0.65);
+  background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -860,4 +838,117 @@
   margin-left: 8px;
   font-weight: 400;
   text-transform: lowercase;
+}
+
+/* Système · campagnes, couverture, retours et scénarios. */
+.beta-workspace.production-page {
+  min-width: 0;
+  padding: 0;
+  gap: 16px;
+}
+.admin-hub-panel .beta-workspace .production-header {
+  padding-top: 16px;
+}
+.beta-workspace :is(.beta-campaign-card, .beta-finding, .beta-scenario, .beta-tester) {
+  background: var(--surface-glass);
+  border-color: var(--border-color);
+  box-shadow: var(--surface-shadow);
+}
+.beta-workspace .beta-campaign-card {
+  padding: 16px;
+}
+.beta-workspace .beta-campaign-card h2 {
+  font-size: 15px;
+}
+.beta-workspace :is(.beta-btn, .beta-tab) {
+  min-height: 34px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+}
+.beta-workspace .beta-btn-primary {
+  background: var(--pill-bg);
+  color: var(--pill-tx);
+  border-color: var(--line-strong);
+}
+.beta-workspace .beta-tabs {
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: none;
+}
+.beta-workspace .beta-tab {
+  border: 1px solid transparent;
+  padding: 6px 12px;
+}
+.beta-workspace .beta-tab.active {
+  color: var(--primary);
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+}
+.beta-workspace :is(.beta-badge, .beta-status, .beta-chip) {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  border-color: color-mix(in srgb, currentColor 28%, transparent);
+  font-size: 11.5px;
+  padding: 3px 8px;
+}
+.beta-workspace .beta-empty {
+  padding: 32px 20px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--bg-card);
+}
+.beta-workspace :is(.beta-coverage-ratio, .beta-tab-count, .beta-campaign-meta, .beta-coverage-corner) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.beta-workspace .beta-coverage-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border-color);
+  background: var(--surface-glass);
+}
+.beta-workspace .beta-coverage-table {
+  font-size: 13px;
+}
+.beta-workspace .beta-coverage-table td {
+  height: 44px;
+}
+.beta-modal-backdrop {
+  background: var(--overlay-scrim);
+  backdrop-filter: blur(4px);
+}
+.beta-modal {
+  background: var(--bg-secondary);
+  box-shadow: var(--overlay-shadow);
+}
+.beta-workspace :is(input, select, textarea) {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 720px) {
+  .beta-workspace .beta-campaign-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .beta-workspace .beta-campaign-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .beta-workspace .beta-header-actions {
+    flex-wrap: wrap;
+  }
+  .beta-workspace .beta-coverage-head {
+    flex-wrap: wrap;
+  }
+  .beta-workspace .beta-coverage-table {
+    min-width: 580px;
+  }
+  .beta-workspace :is(.beta-btn, .beta-tab) {
+    min-height: 44px;
+  }
+  .beta-workspace .beta-finding-head {
+    flex-wrap: wrap;
+  }
 }

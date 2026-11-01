@@ -1,3 +1,4 @@
+import { STATUS_COLOR, PRIORITY_COLOR } from './colors'
 import {
   CircleDashed,
   Circle,
@@ -18,7 +19,6 @@ import {
   FileText,
 } from 'lucide-react'
 import type { DevIssueStatus, DevIssuePriority, DevIssueType, UserRef } from '../../../services/dev'
-import { STATUS_COLOR, PRIORITY_COLOR } from '../../../services/dev'
 import { translate } from '../../../i18n'
 import { formatDate } from '../../../i18n/format'
 
@@ -67,7 +67,7 @@ export function PriorityIcon({ priority, size = 14 }: { priority: DevIssuePriori
           height: 2,
           background: color,
           opacity: 0.6,
-          borderRadius: 1,
+          borderRadius: 'var(--r-hair)',
         }}
       />
     )
@@ -92,8 +92,8 @@ export function PriorityIcon({ priority, size = 14 }: { priority: DevIssuePriori
           style={{
             width: size / 4.5,
             height: `${(i / 3) * 100}%`,
-            background: i <= bars ? color : 'rgba(148,163,184,0.25)',
-            borderRadius: 1,
+            background: i <= bars ? color : 'var(--border-color)',
+            borderRadius: 'var(--r-hair)',
           }}
         />
       ))}

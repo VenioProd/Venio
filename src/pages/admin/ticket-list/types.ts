@@ -50,23 +50,23 @@ export interface KpiData {
 }
 
 export const CATEGORY_CONFIG: Record<string, { labelKey: MessageKey; color: string }> = {
-  QUESTION: { labelKey: 'orgs.tickets.category.question', color: '#0ea5e9' },
-  DEMANDE: { labelKey: 'orgs.tickets.category.request', color: '#8b5cf6' },
-  PROBLEME: { labelKey: 'orgs.tickets.category.problem', color: '#ef4444' },
+  QUESTION: { labelKey: 'orgs.tickets.category.question', color: 'var(--primary)' },
+  DEMANDE: { labelKey: 'orgs.tickets.category.request', color: 'var(--cat-2)' },
+  PROBLEME: { labelKey: 'orgs.tickets.category.problem', color: 'var(--critical)' },
 }
 
 export const PRIORITY_CONFIG: Record<string, { labelKey: MessageKey; color: string }> = {
-  BASSE: { labelKey: 'orgs.tickets.priority.low', color: '#64748b' },
-  NORMALE: { labelKey: 'orgs.tickets.priority.normal', color: '#0ea5e9' },
-  HAUTE: { labelKey: 'orgs.tickets.priority.high', color: '#f59e0b' },
-  URGENTE: { labelKey: 'orgs.tickets.priority.urgent', color: '#ef4444' },
+  BASSE: { labelKey: 'orgs.tickets.priority.low', color: 'var(--text-secondary)' },
+  NORMALE: { labelKey: 'orgs.tickets.priority.normal', color: 'var(--primary)' },
+  HAUTE: { labelKey: 'orgs.tickets.priority.high', color: 'var(--warning)' },
+  URGENTE: { labelKey: 'orgs.tickets.priority.urgent', color: 'var(--critical)' },
 }
 
 export const STATUS_CONFIG: Record<string, { labelKey: MessageKey; color: string }> = {
-  OUVERT: { labelKey: 'orgs.tickets.status.open', color: '#f59e0b' },
-  EN_COURS: { labelKey: 'orgs.tickets.status.inProgress', color: '#0ea5e9' },
-  RESOLU: { labelKey: 'orgs.tickets.status.resolved', color: '#22c55e' },
-  FERME: { labelKey: 'orgs.tickets.status.closed', color: '#64748b' },
+  OUVERT: { labelKey: 'orgs.tickets.status.open', color: 'var(--warning)' },
+  EN_COURS: { labelKey: 'orgs.tickets.status.inProgress', color: 'var(--primary)' },
+  RESOLU: { labelKey: 'orgs.tickets.status.resolved', color: 'var(--good)' },
+  FERME: { labelKey: 'orgs.tickets.status.closed', color: 'var(--text-secondary)' },
 }
 
 export function formatFileSize(bytes: number) {

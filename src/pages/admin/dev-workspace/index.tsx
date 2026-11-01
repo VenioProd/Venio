@@ -1,3 +1,5 @@
+import { STATUS_COLOR, PRIORITY_COLOR, TYPE_COLOR } from './colors'
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
@@ -39,13 +41,10 @@ import {
   getDevIssue,
   deleteDevIssueComment,
   STATUS_LABEL,
-  STATUS_COLOR,
   STATUS_ORDER,
   PRIORITY_LABEL,
-  PRIORITY_COLOR,
   PRIORITY_ORDER,
   TYPE_LABEL,
-  TYPE_COLOR,
   computeWeightedProgress,
   type DevProject,
   type DevIssue,
@@ -73,6 +72,7 @@ import { VelocityChart } from './charts/VelocityChart'
 import { StatusBreakdownBar } from './charts/StatusBreakdownBar'
 import { HorizontalBarList } from './charts/HorizontalBarList'
 import './DevWorkspace.css'
+import '../Production.css'
 
 // Persistance des filtres & préférences d'affichage (A4).
 const FILTERS_KEY = 'dev-workspace-prefs-v1'
@@ -886,7 +886,7 @@ const DevWorkspace = () => {
   }
 
   return (
-    <div className="dev-workspace">
+    <div className="dev-workspace production-page production-list">
       {ConfirmDialog}
       {dataError && (
         <div className="dev-empty" role="alert">
@@ -897,42 +897,43 @@ const DevWorkspace = () => {
         </div>
       )}
 
-      <div className="dev-header">
-        <div className="dev-header-left">
-          <h1 className="dev-title">{t('devA.workspace.title')}</h1>
-          <span className="dev-subtitle">
-            {t('devA.workspace.subtitle', { projects: stats?.totalProjects ?? 0, open: stats?.open ?? 0 })}
-          </span>
-        </div>
-        <div className="dev-header-actions">
-          <button className="dev-btn subtle" onClick={refreshWorkspace} title={t('devA.workspace.refreshTitle')}>
-            <RefreshCw size={13} />
-          </button>
-          {(stats?.byStatus?.IN_REVIEW ?? 0) > 0 && (
-            <button
-              className="dev-btn review"
-              onClick={() => setShowReviewQueue(true)}
-              title={t('devA.workspace.openReviewQueue')}
-            >
-              <Check size={13} /> {t('devA.workspace.toValidateCount', { count: stats!.byStatus.IN_REVIEW })}
-            </button>
-          )}
-          {canManage && (
-            <>
-              <button className="dev-btn subtle" onClick={() => setShowProjectModal(true)}>
-                <Plus size={13} /> {t('devA.workspace.addProject')}
+      <div className="production-header">
+        <PageHeader
+          eyebrow={t('shell.navItem.dev')}
+          title={t('devA.workspace.title')}
+          subtitle={t('devA.workspace.subtitle', { projects: stats?.totalProjects ?? 0, open: stats?.open ?? 0 })}
+          actions={
+            <div className="dev-header-actions">
+              <button className="dev-btn subtle" onClick={refreshWorkspace} title={t('devA.workspace.refreshTitle')}>
+                <RefreshCw size={13} />
               </button>
-              <button
-                className="dev-btn primary"
-                onClick={() => setShowQuickCreate((s) => !s)}
-                disabled={projects.length === 0}
-                title={projects.length === 0 ? t('devA.workspace.createProjectFirst') : undefined}
-              >
-                <Plus size={13} /> {t('devA.workspace.newIssue')}
-              </button>
-            </>
-          )}
-        </div>
+              {(stats?.byStatus?.IN_REVIEW ?? 0) > 0 && (
+                <button
+                  className="dev-btn review"
+                  onClick={() => setShowReviewQueue(true)}
+                  title={t('devA.workspace.openReviewQueue')}
+                >
+                  <Check size={13} /> {t('devA.workspace.toValidateCount', { count: stats!.byStatus.IN_REVIEW })}
+                </button>
+              )}
+              {canManage && (
+                <>
+                  <button className="dev-btn subtle" onClick={() => setShowProjectModal(true)}>
+                    <Plus size={13} /> {t('devA.workspace.addProject')}
+                  </button>
+                  <button
+                    className="dev-btn primary"
+                    onClick={() => setShowQuickCreate((s) => !s)}
+                    disabled={projects.length === 0}
+                    title={projects.length === 0 ? t('devA.workspace.createProjectFirst') : undefined}
+                  >
+                    <Plus size={13} /> {t('devA.workspace.newIssue')}
+                  </button>
+                </>
+              )}
+            </div>
+          }
+        />
       </div>
 
       {stats && (

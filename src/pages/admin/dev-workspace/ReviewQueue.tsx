@@ -1,3 +1,4 @@
+import { PRIORITY_COLOR, TYPE_COLOR } from './colors'
 import { WorkspaceOverlayPortal } from '../../../components/WorkspaceOverlayPortal'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, ChevronUp, GitPullRequest, Keyboard, Undo2, X } from 'lucide-react'
@@ -6,9 +7,7 @@ import {
   getDevIssue,
   listDevIssues,
   updateDevIssue,
-  PRIORITY_COLOR,
   PRIORITY_LABEL,
-  TYPE_COLOR,
   TYPE_LABEL,
   type DevIssue,
   type DevIssueComment,

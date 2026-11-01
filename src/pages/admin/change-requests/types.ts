@@ -4,19 +4,19 @@ import type { ChangeRequestStatus } from '../../../types/changeRequest.types'
 
 /** Libellés admin : ils décrivent l'action attendue côté Venio. */
 export const ADMIN_STATUS_CONFIG: Record<ChangeRequestStatus, { labelKey: MessageKey; color: string }> = {
-  SOUMISE: { labelKey: 'changeReq.status.submitted', color: '#f59e0b' },
-  A_CHIFFRER: { labelKey: 'changeReq.status.quoteToSend', color: '#8b5cf6' },
-  PLANIFIEE: { labelKey: 'changeReq.status.planned', color: '#0ea5e9' },
-  EN_COURS: { labelKey: 'changeReq.status.inProgress', color: '#0ea5e9' },
-  LIVREE: { labelKey: 'changeReq.status.delivered', color: '#f59e0b' },
-  VALIDEE: { labelKey: 'changeReq.status.validated', color: '#22c55e' },
-  REFUSEE: { labelKey: 'changeReq.status.refused', color: '#64748b' },
+  SOUMISE: { labelKey: 'changeReq.status.submitted', color: 'var(--warning)' },
+  A_CHIFFRER: { labelKey: 'changeReq.status.quoteToSend', color: 'var(--cat-2)' },
+  PLANIFIEE: { labelKey: 'changeReq.status.planned', color: 'var(--primary)' },
+  EN_COURS: { labelKey: 'changeReq.status.inProgress', color: 'var(--primary)' },
+  LIVREE: { labelKey: 'changeReq.status.delivered', color: 'var(--warning)' },
+  VALIDEE: { labelKey: 'changeReq.status.validated', color: 'var(--good)' },
+  REFUSEE: { labelKey: 'changeReq.status.refused', color: 'var(--text-secondary)' },
 }
 
 export const ADMIN_PRIORITY_CONFIG: Record<string, { labelKey: MessageKey; color: string }> = {
-  BASSE: { labelKey: 'changeReq.priority.low', color: '#64748b' },
-  NORMALE: { labelKey: 'changeReq.priority.normal', color: '#0ea5e9' },
-  HAUTE: { labelKey: 'changeReq.priority.high', color: '#f59e0b' },
+  BASSE: { labelKey: 'changeReq.priority.low', color: 'var(--text-secondary)' },
+  NORMALE: { labelKey: 'changeReq.priority.normal', color: 'var(--primary)' },
+  HAUTE: { labelKey: 'changeReq.priority.high', color: 'var(--warning)' },
 }
 
 export const ADMIN_STATUS_ORDER: ChangeRequestStatus[] = [
