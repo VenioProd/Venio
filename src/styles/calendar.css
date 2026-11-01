@@ -179,6 +179,11 @@
   color: var(--cat-2);
 }
 
+.calendar-event.type-decision {
+  background: color-mix(in srgb, var(--cat-4) 20%, transparent);
+  color: var(--cat-4);
+}
+
 .calendar-event-more {
   font-size: 0.65rem;
   color: var(--text-muted);
@@ -265,6 +270,10 @@
   flex-shrink: 0;
 }
 
+.calendar-detail-dot.type-decision {
+  background: var(--cat-4);
+}
+
 .calendar-detail-dot.type-task {
   background: var(--primary);
 }
@@ -307,6 +316,11 @@
   border-radius: var(--r-pill);
   font-weight: 500;
   flex-shrink: 0;
+}
+
+.calendar-detail-type.type-decision {
+  background: color-mix(in srgb, var(--cat-4) 14%, transparent);
+  color: var(--cat-4);
 }
 
 .calendar-detail-type.type-task {

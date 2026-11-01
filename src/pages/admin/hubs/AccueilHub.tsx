@@ -1,15 +1,15 @@
 import { Suspense } from 'react'
+import { useI18n } from '../../../context/I18nContext'
 import { lazyWithRetry as lazy } from '../../../lib/lazyWithRetry'
-import DecisionsDigest from '../../../components/admin/DecisionsDigest'
 
-const MonEspace = lazy(() => import('../mon-espace'))
+const Accueil = lazy(() => import('../accueil'))
 
 export default function AccueilHub() {
+  const { t } = useI18n()
   return (
     <div className="admin-hub admin-hub--accueil">
-      <DecisionsDigest />
-      <Suspense fallback={<p role="status">Chargement…</p>}>
-        <MonEspace />
+      <Suspense fallback={<p role="status">{t('common.loading')}</p>}>
+        <Accueil />
       </Suspense>
     </div>
   )

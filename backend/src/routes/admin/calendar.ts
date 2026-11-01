@@ -4,6 +4,7 @@ import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import Task from '../../models/Task.js'
 import Project from '../../models/Project.js'
+import Decision from '../../models/Decision.js'
 
 const router = express.Router()
 
@@ -33,7 +34,7 @@ router.get('/events', async (req: Request, res: Response, next: NextFunction) =>
       type: string
       title: string
       date: string
-      projectId: unknown
+      projectId: unknown | null
       projectName: string
       metadata?: Record<string, unknown>
     }> = []
@@ -111,6 +112,31 @@ router.get('/events', async (req: Request, res: Response, next: NextFunction) =>
         date: project.endDate!.toISOString().slice(0, 10),
         projectId: project._id,
         projectName: project.name,
+      })
+    }
+
+    // 5. Décisions en attente dont l'échéance tombe dans la plage — même accès
+    // que GET /api/admin/decisions (tout admin). Pas de projet rattaché.
+    const decisions = await Decision.find({
+      status: 'PENDING',
+      deadline: { $gte: startDate, $lte: endDate },
+    })
+      .select('title deadline priority category')
+      .lean()
+
+    for (const decision of decisions) {
+      events.push({
+        id: `decision_${decision._id}`,
+        type: 'decision',
+        title: decision.title,
+        date: new Date(decision.deadline!).toISOString().slice(0, 10),
+        projectId: null,
+        projectName: '',
+        metadata: {
+          decisionId: String(decision._id),
+          priority: decision.priority,
+          category: decision.category,
+        },
       })
     }
 

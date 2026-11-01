@@ -411,6 +411,7 @@ const fr = {
   'adminOps.calendar.typeDeadline': 'Deadline',
   'adminOps.calendar.typeProjectStart': 'Début projet',
   'adminOps.calendar.typeProjectEnd': 'Fin projet',
+  'adminOps.calendar.typeDecision': 'Décision',
   'adminOps.calendar.legendTasks': 'Tâches',
   'adminOps.calendar.legendDeadlines': 'Deadlines',
   'adminOps.calendar.title': 'Calendrier',

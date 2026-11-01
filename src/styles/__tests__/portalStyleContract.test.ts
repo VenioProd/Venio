@@ -44,6 +44,7 @@ export const PORTAL_STYLESHEETS = [
   'src/pages/admin/Messaging.css',
   'src/pages/admin/Subsidiaries.css',
   'src/pages/admin/accounting/AccountingPortal.css',
+  'src/pages/admin/accueil/Accueil.css',
   'src/pages/admin/accounting/projects/ProjectAccounting.css',
   'src/pages/admin/analytics/crm/PilotageSection.css',
   'src/pages/admin/beta/Beta.css',

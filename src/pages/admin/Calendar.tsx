@@ -10,10 +10,10 @@ import './Production.css'
 
 interface CalendarEvent {
   id: string
-  type: 'task' | 'deadline' | 'project_start' | 'project_end'
+  type: 'task' | 'deadline' | 'project_start' | 'project_end' | 'decision'
   title: string
   date: string
-  projectId: string
+  projectId: string | null
   projectName: string
   metadata?: {
     status?: string
@@ -51,6 +51,7 @@ const TYPE_LABEL_KEYS: Record<string, MessageKey> = {
   deadline: 'adminOps.calendar.typeDeadline',
   project_start: 'adminOps.calendar.typeProjectStart',
   project_end: 'adminOps.calendar.typeProjectEnd',
+  decision: 'adminOps.calendar.typeDecision',
 }
 
 const LEGEND_ITEMS: { type: string; labelKey: MessageKey; color: string }[] = [
@@ -58,6 +59,7 @@ const LEGEND_ITEMS: { type: string; labelKey: MessageKey; color: string }[] = [
   { type: 'deadline', labelKey: 'adminOps.calendar.legendDeadlines', color: '#ef4444' },
   { type: 'project_start', labelKey: 'adminOps.calendar.typeProjectStart', color: '#22c55e' },
   { type: 'project_end', labelKey: 'adminOps.calendar.typeProjectEnd', color: '#f97316' },
+  { type: 'decision', labelKey: 'adminOps.calendar.typeDecision', color: '#fbbf24' },
 ]
 
 function formatDateKey(d: Date): string {
@@ -273,7 +275,7 @@ export default function Calendar() {
                     {selectedEvents.map((ev) => (
                       <Link
                         key={ev.id}
-                        to={`/admin/projets/${ev.projectId}`}
+                        to={ev.type === 'decision' || !ev.projectId ? '/admin/decisions' : `/admin/projets/${ev.projectId}`}
                         className="calendar-detail-item"
                         style={{ textDecoration: 'none' }}
                       >

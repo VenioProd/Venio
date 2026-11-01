@@ -33,6 +33,7 @@ import messagingRoutes from './messaging.js'
 import devRoutes from './dev.js'
 import betaRoutes from './beta.js'
 import subsidiariesRoutes from './subsidiaries.js'
+import homeRoutes from './home.js'
 
 /**
  * Router racine de l'API agent — monté sur /api/v1/agent.
@@ -136,6 +137,7 @@ router.use('/messaging', messagingRoutes)
 router.use('/', devRoutes)
 router.use('/', betaRoutes)
 router.use('/', subsidiariesRoutes)
+router.use('/', homeRoutes)
 
 // 404 dans le scope agent (avant l'error handler) — sinon Express le passe
 // au handler global de index.ts, qui formate différemment.

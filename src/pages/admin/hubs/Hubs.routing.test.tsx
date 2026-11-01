@@ -43,7 +43,7 @@ vi.mock('../AuditLog', () => ({ default: () => <p>Page AuditLog</p> }))
 vi.mock('../AgentTokensList', () => ({ default: () => <p>Page AgentTokensList</p> }))
 vi.mock('../Webhooks', () => ({ default: () => <p>Page Webhooks</p> }))
 vi.mock('../MyReports', () => ({ default: () => <p>Page MyReports</p> }))
-vi.mock('../mon-espace', () => ({ default: () => <p>Page MonEspace</p> }))
+vi.mock('../accueil', () => ({ default: () => <p>Page Accueil</p> }))
 vi.mock('../DecisionsList', () => ({ default: () => <p>Page DecisionsList</p> }))
 vi.mock('../client-detail', () => ({ default: () => <p>Page ClientAccountDetail</p> }))
 vi.mock('../AdminNew', () => ({ default: () => <p>Page AdminNew</p> }))
@@ -234,7 +234,7 @@ describe('Compatibilité des URL admin', () => {
     mount('/admin/messages?q=test', '/admin/mon-espace')
     await screen.findByRole('tablist')
     fireEvent.click(screen.getByRole('button', { name: 'Précédent' }))
-    expect(await screen.findByText('Page MonEspace')).toBeInTheDocument()
+    expect(await screen.findByText('Page Accueil')).toBeInTheDocument()
     expect(screen.getByLabelText('URL')).toHaveTextContent('/admin/mon-espace')
   })
 
@@ -261,17 +261,17 @@ describe('Compatibilité des URL admin', () => {
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 
-  it('garde MonEspace et insère un seul digest à l’accueil', async () => {
-    mount('/admin/mon-espace')
-    expect(await screen.findByText('Page MonEspace')).toBeInTheDocument()
-    expect(await screen.findByText('Aucune décision en attente.')).toBeInTheDocument()
-    expect(screen.getAllByRole('heading', { name: /À arbitrer/ })).toHaveLength(1)
+  it.each(['/admin', '/admin/mon-espace'])('rend le nouvel accueil sur %s, sans digest ni grille personnalisable', async (path) => {
+    mount(path)
+    expect(await screen.findByText('Page Accueil')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /À arbitrer/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Personnaliser/ })).not.toBeInTheDocument()
   })
 
   it('refuse un hub entièrement inaccessible sans monter ses enfants', async () => {
     currentUser = viewer([], ['view_crm', 'manage_clients', 'manage_external_sales'])
     mount('/admin/crm')
-    expect(await screen.findByText('Page MonEspace')).toBeInTheDocument()
+    expect(await screen.findByText('Page Accueil')).toBeInTheDocument()
     expect(screen.queryByText('Page CrmBoard')).not.toBeInTheDocument()
   })
 
