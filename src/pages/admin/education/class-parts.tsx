@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 /**
  * Composants internes extraits de `education/index.tsx` pour passer sous 800 lignes.
  *
@@ -6,62 +7,18 @@
  * sessions/assignments/notes) est suggéré pour atteindre le DOD strict.
  */
 import { useCallback, useEffect, useState } from 'react'
+import { Plus, X, Trash2 } from 'lucide-react'
 import {
-  GraduationCap,
-  BookOpen,
-  Calendar as CalIcon,
-  ClipboardList,
-  FileText,
-  Plus,
-  Search,
-  X,
-  Trash2,
-  Upload,
-  ChevronRight,
-  Menu,
-  Sparkles,
-} from 'lucide-react'
-import {
-  fetchDashboard,
-  listClasses,
   getClass,
   createClass,
   updateClass,
   deleteClass,
-  listStudents,
-  createStudent,
-  importStudentsCsv,
-  deleteStudent,
-  listSessions,
-  createSession,
-  listAssignments,
-  getAssignment,
-  createAssignment,
-  updateAssignment,
-  updateSubmission,
-  listNotes,
-  createNote,
-  updateNote,
-  deleteNote,
-  listTemplates,
-  searchEducation,
-  studentDisplayName,
-  assignmentExportUrl,
-  ASSIGNMENT_STATUS_COLOR,
   CLASS_COLOR_PALETTE,
-  type EducationDashboard,
   type EducationClass,
-  type EducationStudent,
-  type EducationSession,
-  type EducationAssignment,
-  type EducationSubmission,
-  type EducationNote,
-  type NoteBlock,
-  type EducationAssignmentStatus,
   type EducationTemplate,
 } from '../../../services/education'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
-import { NoteEditor, type BacklinkEntry } from './NoteEditor'
+import { NoteEditor } from './NoteEditor'
 import { CorrectionMode } from './CorrectionMode'
 import { StudentsTab } from './student-parts'
 import { SessionsTab } from './session-parts'
@@ -102,18 +59,23 @@ export function ClassesView({
   return (
     <div>
       <div className="edu-row between">
-        <div>
-          <h1 className="edu-h1">{t('eduC.shared.classes')}</h1>
-          <p className="edu-sub">{t('eduC.classes.count', { count: classes.length })}</p>
-        </div>
-        <div className="edu-row" style={{ gap: 6 }}>
-          <button className="edu-btn ghost" onClick={onRefresh}>
-            {t('eduC.classes.refresh')}
-          </button>
-          <button className="edu-btn" onClick={onCreate}>
-            <Plus size={14} /> {t('eduC.shared.newClass')}
-          </button>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.zone.education')}
+          title={t('eduC.shared.classes')}
+          subtitle={<>{t('eduC.classes.count', { count: classes.length })}</>}
+          actions={
+            <>
+              <div className="edu-row" style={{ gap: 6 }}>
+                <button className="edu-btn ghost" onClick={onRefresh}>
+                  {t('eduC.classes.refresh')}
+                </button>
+                <button className="edu-btn" onClick={onCreate}>
+                  <Plus size={14} /> {t('eduC.shared.newClass')}
+                </button>
+              </div>
+            </>
+          }
+        />
       </div>
 
       {classes.length === 0 ? (
@@ -339,7 +301,7 @@ export function ClassFormDrawer({
                   style={{
                     width: 26,
                     height: 26,
-                    borderRadius: 7,
+                    borderRadius: 'var(--r-md)',
                     background: c,
                     border: c === form.color ? '2px solid white' : '2px solid transparent',
                     cursor: 'pointer',
@@ -358,7 +320,7 @@ export function ClassFormDrawer({
               placeholder={t('eduC.classes.notesPlaceholder')}
             />
           </div>
-          {error && <div style={{ color: '#EF4444', fontSize: 13, marginTop: 6 }}>{error}</div>}
+          {error && <div style={{ color: 'var(--critical)', fontSize: 13, marginTop: 6 }}>{error}</div>}
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
@@ -436,7 +398,7 @@ export function ClassDetailDrawer({
               <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
                 {klass.name}
               </h2>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 {[klass.school, klass.level, klass.program].filter(Boolean).join(' · ') || '—'}
               </div>
             </div>
@@ -554,7 +516,7 @@ export function OverviewTab({
       {klass.notes && (
         <>
           <h2 className="edu-h2">{t('eduC.shared.internalNotes')}</h2>
-          <div style={{ whiteSpace: 'pre-wrap', fontSize: 13.5, color: 'rgba(255,255,255,0.85)' }}>{klass.notes}</div>
+          <div style={{ whiteSpace: 'pre-wrap', fontSize: 13.5, color: 'var(--text-primary)' }}>{klass.notes}</div>
         </>
       )}
     </div>

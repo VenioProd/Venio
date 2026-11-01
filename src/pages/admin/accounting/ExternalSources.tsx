@@ -196,7 +196,7 @@ const ExternalSources = () => {
               <span
                 style={{
                   fontSize: '0.74rem',
-                  color: 'rgba(255,255,255,0.45)',
+                  color: 'var(--text-muted)',
                   marginTop: 2,
                 }}
               >
@@ -223,7 +223,7 @@ const ExternalSources = () => {
               />
             </div>
             <div className="accounting-form-field full">
-              <label style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}>
+              <label style={{ textTransform: 'none', letterSpacing: 'normal', fontSize: '0.88rem' }}>
                 <input
                   type="checkbox"
                   checked={form.autoValidateAll}
@@ -235,7 +235,7 @@ const ExternalSources = () => {
               <span
                 style={{
                   fontSize: '0.74rem',
-                  color: 'rgba(251,191,36,0.85)',
+                  color: 'color-mix(in srgb, var(--warning) 85%, transparent)',
                   marginTop: 2,
                 }}
               >
@@ -258,8 +258,8 @@ const ExternalSources = () => {
             style={{
               margin: '24px 0 12px 0',
               fontSize: '0.85rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
+              textTransform: 'none',
+              letterSpacing: 'normal',
               color: 'var(--primary)',
             }}
           >
@@ -362,9 +362,9 @@ const ExternalSources = () => {
             <div
               className="accounting-message"
               style={{
-                background: 'rgba(251,191,36,0.1)',
-                border: '1px solid rgba(251,191,36,0.4)',
-                color: '#fde68a',
+                background: 'color-mix(in srgb, var(--warning) 10%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--warning) 40%, transparent)',
+                color: 'var(--warning)',
               }}
             >
               ⚠ {t('accVat.src.credsWarning')}
@@ -377,9 +377,9 @@ const ExternalSources = () => {
               <div
                 style={{
                   fontSize: '0.78rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  color: 'rgba(255,255,255,0.55)',
+                  textTransform: 'none',
+                  letterSpacing: 'normal',
+                  color: 'var(--text-secondary)',
                   marginBottom: 6,
                 }}
               >
@@ -388,10 +388,10 @@ const ExternalSources = () => {
               <div
                 style={{
                   padding: '14px 16px',
-                  background: 'rgba(15,15,20,0.85)',
-                  border: '1px solid rgba(14, 165, 233, 0.35)',
-                  borderRadius: 10,
-                  fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+                  background: 'color-mix(in srgb, var(--bg-secondary) 85%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
+                  borderRadius: 'var(--r-md)',
+                  fontFamily: 'var(--font-mono)',
                   fontSize: '0.92rem',
                   color: 'var(--primary)',
                   wordBreak: 'break-all',
@@ -414,9 +414,9 @@ const ExternalSources = () => {
               <div
                 style={{
                   fontSize: '0.78rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  color: 'rgba(255,255,255,0.55)',
+                  textTransform: 'none',
+                  letterSpacing: 'normal',
+                  color: 'var(--text-secondary)',
                   marginBottom: 6,
                 }}
               >
@@ -425,10 +425,10 @@ const ExternalSources = () => {
               <div
                 style={{
                   padding: '14px 16px',
-                  background: 'rgba(15,15,20,0.85)',
-                  border: '1px solid rgba(14, 165, 233, 0.35)',
-                  borderRadius: 10,
-                  fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+                  background: 'color-mix(in srgb, var(--bg-secondary) 85%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
+                  borderRadius: 'var(--r-md)',
+                  fontFamily: 'var(--font-mono)',
                   fontSize: '0.92rem',
                   color: 'var(--primary)',
                   wordBreak: 'break-all',
@@ -465,100 +465,105 @@ const ExternalSources = () => {
 
       <section className="accounting-card">
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accVat.common.loading')}</p>
         ) : sources.length === 0 ? (
           <div className="accounting-empty">
             {t('accVat.src.empty')}
             <div className="hint">{t('accVat.src.emptyHint')}</div>
           </div>
         ) : (
-          <table className="accounting-table">
-            <thead>
-              <tr>
-                <th>{t('accVat.src.colSlug')}</th>
-                <th>{t('accVat.src.colName')}</th>
-                <th>{t('accVat.src.colStatus')}</th>
-                <th>{t('accVat.src.colKeyPrefix')}</th>
-                <th>{t('accVat.src.colLastActivity')}</th>
-                <th className="amount">{t('accVat.src.colReceived')}</th>
-                <th className="amount">{t('accVat.src.colRejected')}</th>
-                <th className="amount">{t('accVat.src.colDuplicates')}</th>
-                <th>{t('accVat.src.colActions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sources.map((s) => (
-                <tr key={s._id}>
-                  <td>
-                    <Link to={`/admin/comptabilite/sources-externes/${s._id}`} className="code">
-                      {s.slug}
-                    </Link>
-                  </td>
-                  <td>
-                    <Link
-                      to={`/admin/comptabilite/sources-externes/${s._id}`}
-                      style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'none' }}
-                    >
-                      {s.name}
-                    </Link>
-                    {s.autoValidateAll && (
-                      <span className="accounting-badge source-external" style={{ marginLeft: 8, fontSize: '0.66rem' }}>
-                        {t('accVat.src.autoValidation')}
-                      </span>
-                    )}
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => togglePause(s)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        padding: 0,
-                        cursor: 'pointer',
-                      }}
-                      title={
-                        s.status === 'ACTIVE' ? t('accVat.src.togglePauseTitle') : t('accVat.src.toggleResumeTitle')
-                      }
-                    >
-                      <span className={`accounting-badge ${statusBadgeClass(s.status)}`}>
-                        {STATUS_LABEL_KEYS[s.status] ? t(STATUS_LABEL_KEYS[s.status]) : s.status}
-                      </span>
-                    </button>
-                  </td>
-                  <td className="code">{s.apiKeyPrefix ? `${s.apiKeyPrefix}…` : '—'}</td>
-                  <td style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)' }}>
-                    {formatDateTime(s.lastSeenAt)}
-                    {s.lastError && (
-                      <div
-                        style={{
-                          fontSize: '0.74rem',
-                          color: '#fca5a5',
-                          marginTop: 2,
-                        }}
-                      >
-                        {t('accVat.src.lastError', { date: formatDateTime(s.lastErrorAt) })}
-                      </div>
-                    )}
-                  </td>
-                  <td className="amount">{formatNumber(Number(s.totalIngested || 0))}</td>
-                  <td className="amount" style={{ color: s.totalRejected ? '#fca5a5' : undefined }}>
-                    {formatNumber(Number(s.totalRejected || 0))}
-                  </td>
-                  <td className="amount" style={{ color: s.totalDuplicates ? '#fbbf24' : undefined }}>
-                    {formatNumber(Number(s.totalDuplicates || 0))}
-                  </td>
-                  <td>
-                    <div className="accounting-row-actions">
-                      <Link to={`/admin/comptabilite/sources-externes/${s._id}`}>
-                        <button type="button">{t('accVat.src.detail')}</button>
-                      </Link>
-                    </div>
-                  </td>
+          <div className="accounting-table-scroll">
+            <table className="accounting-table">
+              <thead>
+                <tr>
+                  <th>{t('accVat.src.colSlug')}</th>
+                  <th>{t('accVat.src.colName')}</th>
+                  <th>{t('accVat.src.colStatus')}</th>
+                  <th>{t('accVat.src.colKeyPrefix')}</th>
+                  <th>{t('accVat.src.colLastActivity')}</th>
+                  <th className="amount">{t('accVat.src.colReceived')}</th>
+                  <th className="amount">{t('accVat.src.colRejected')}</th>
+                  <th className="amount">{t('accVat.src.colDuplicates')}</th>
+                  <th>{t('accVat.src.colActions')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sources.map((s) => (
+                  <tr key={s._id}>
+                    <td>
+                      <Link to={`/admin/comptabilite/sources-externes/${s._id}`} className="code">
+                        {s.slug}
+                      </Link>
+                    </td>
+                    <td>
+                      <Link
+                        to={`/admin/comptabilite/sources-externes/${s._id}`}
+                        style={{ color: 'var(--text-primary)', textDecoration: 'none' }}
+                      >
+                        {s.name}
+                      </Link>
+                      {s.autoValidateAll && (
+                        <span
+                          className="accounting-badge source-external"
+                          style={{ marginLeft: 8, fontSize: '0.66rem' }}
+                        >
+                          {t('accVat.src.autoValidation')}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => togglePause(s)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                        }}
+                        title={
+                          s.status === 'ACTIVE' ? t('accVat.src.togglePauseTitle') : t('accVat.src.toggleResumeTitle')
+                        }
+                      >
+                        <span className={`accounting-badge ${statusBadgeClass(s.status)}`}>
+                          {STATUS_LABEL_KEYS[s.status] ? t(STATUS_LABEL_KEYS[s.status]) : s.status}
+                        </span>
+                      </button>
+                    </td>
+                    <td className="code">{s.apiKeyPrefix ? `${s.apiKeyPrefix}…` : '—'}</td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                      {formatDateTime(s.lastSeenAt)}
+                      {s.lastError && (
+                        <div
+                          style={{
+                            fontSize: '0.74rem',
+                            color: 'var(--critical)',
+                            marginTop: 2,
+                          }}
+                        >
+                          {t('accVat.src.lastError', { date: formatDateTime(s.lastErrorAt) })}
+                        </div>
+                      )}
+                    </td>
+                    <td className="amount">{formatNumber(Number(s.totalIngested || 0))}</td>
+                    <td className="amount" style={{ color: s.totalRejected ? 'var(--critical)' : undefined }}>
+                      {formatNumber(Number(s.totalRejected || 0))}
+                    </td>
+                    <td className="amount" style={{ color: s.totalDuplicates ? 'var(--warning)' : undefined }}>
+                      {formatNumber(Number(s.totalDuplicates || 0))}
+                    </td>
+                    <td>
+                      <div className="accounting-row-actions">
+                        <Link to={`/admin/comptabilite/sources-externes/${s._id}`}>
+                          <button type="button">{t('accVat.src.detail')}</button>
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </AccountingLayout>

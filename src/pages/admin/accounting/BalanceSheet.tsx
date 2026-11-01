@@ -163,12 +163,12 @@ const BalanceSheet = () => {
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
         ) : !data ? (
           <div className="accounting-empty">{t('accAccounts.balanceSheet.prompt')}</div>
         ) : (
           <>
-            <div style={{ marginBottom: 16, color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem' }}>
+            <div style={{ marginBottom: 16, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               {t('accAccounts.common.asOf')} <strong>{formatDate(data.asOf)}</strong>
               {data.fiscalYear && (
                 <>
@@ -202,70 +202,72 @@ const BalanceSheet = () => {
                   style={{
                     margin: '0 0 12px 0',
                     fontSize: '1rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'rgba(14, 165, 233, 0.9)',
+                    textTransform: 'none',
+                    letterSpacing: 'normal',
+                    color: 'color-mix(in srgb, var(--primary) 90%, transparent)',
                   }}
                 >
                   {t('accAccounts.balanceSheet.assets')}
                 </h2>
                 {actifGroups.length === 0 ? (
-                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                     {t('accAccounts.balanceSheet.noAssets')}
                   </p>
                 ) : (
-                  <table className="accounting-table">
-                    <tbody>
-                      {actifGroups.map((g) => (
-                        <Fragment key={`actif-${g.cls}`}>
-                          <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
-                            <td
-                              colSpan={2}
-                              style={{
-                                padding: '8px 14px',
-                                fontSize: '0.78rem',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px',
-                                color: 'rgba(14, 165, 233, 0.85)',
-                                fontWeight: 600,
-                              }}
-                            >
-                              {classLabel(g.cls)}
-                            </td>
-                            <td
-                              className="amount"
-                              style={{
-                                padding: '8px 14px',
-                                fontWeight: 700,
-                                color: 'rgba(255,255,255,0.9)',
-                              }}
-                            >
-                              {formatEur(g.subtotal)}
-                            </td>
-                          </tr>
-                          {g.lines.map((l) => (
-                            <tr key={`actif-l-${l.code}`}>
-                              <td className="code" style={{ paddingLeft: 24 }}>
-                                {l.code}
+                  <div className="accounting-table-scroll">
+                    <table className="accounting-table">
+                      <tbody>
+                        {actifGroups.map((g) => (
+                          <Fragment key={`actif-${g.cls}`}>
+                            <tr style={{ background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>
+                              <td
+                                colSpan={2}
+                                style={{
+                                  padding: '8px 14px',
+                                  fontSize: '0.78rem',
+                                  textTransform: 'none',
+                                  letterSpacing: 'normal',
+                                  color: 'color-mix(in srgb, var(--primary) 85%, transparent)',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {classLabel(g.cls)}
                               </td>
-                              <td>{l.label}</td>
-                              <td className="amount">{formatEur(l.amount)}</td>
+                              <td
+                                className="amount"
+                                style={{
+                                  padding: '8px 14px',
+                                  fontWeight: 700,
+                                  color: 'var(--text-primary)',
+                                }}
+                              >
+                                {formatEur(g.subtotal)}
+                              </td>
                             </tr>
-                          ))}
-                        </Fragment>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
-                        <td colSpan={2} style={{ fontWeight: 700, padding: '14px' }}>
-                          {t('accAccounts.balanceSheet.totalAssets')}
-                        </td>
-                        <td className="amount" style={{ fontWeight: 700, color: '#4ade80' }}>
-                          {formatEur(totalActif)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                            {g.lines.map((l) => (
+                              <tr key={`actif-l-${l.code}`}>
+                                <td className="code" style={{ paddingLeft: 24 }}>
+                                  {l.code}
+                                </td>
+                                <td>{l.label}</td>
+                                <td className="amount">{formatEur(l.amount)}</td>
+                              </tr>
+                            ))}
+                          </Fragment>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ borderTop: '2px solid color-mix(in srgb, var(--primary) 40%, transparent)' }}>
+                          <td colSpan={2} style={{ fontWeight: 700, padding: '14px' }}>
+                            {t('accAccounts.balanceSheet.totalAssets')}
+                          </td>
+                          <td className="amount" style={{ fontWeight: 700, color: 'var(--good)' }}>
+                            {formatEur(totalActif)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 )}
               </div>
 
@@ -275,107 +277,109 @@ const BalanceSheet = () => {
                   style={{
                     margin: '0 0 12px 0',
                     fontSize: '1rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'rgba(14, 165, 233, 0.9)',
+                    textTransform: 'none',
+                    letterSpacing: 'normal',
+                    color: 'color-mix(in srgb, var(--primary) 90%, transparent)',
                   }}
                 >
                   {t('accAccounts.balanceSheet.liabilities')}
                 </h2>
                 {passifGroups.length === 0 && resultExercise === 0 ? (
-                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                     {t('accAccounts.balanceSheet.noLiabilities')}
                   </p>
                 ) : (
-                  <table className="accounting-table">
-                    <tbody>
-                      {passifGroups.map((g) => (
-                        <Fragment key={`passif-${g.cls}`}>
-                          <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
-                            <td
-                              colSpan={2}
-                              style={{
-                                padding: '8px 14px',
-                                fontSize: '0.78rem',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px',
-                                color: 'rgba(14, 165, 233, 0.85)',
-                                fontWeight: 600,
-                              }}
-                            >
-                              {classLabel(g.cls)}
-                            </td>
-                            <td
-                              className="amount"
-                              style={{
-                                padding: '8px 14px',
-                                fontWeight: 700,
-                                color: 'rgba(255,255,255,0.9)',
-                              }}
-                            >
-                              {formatEur(g.subtotal)}
-                            </td>
-                          </tr>
-                          {g.lines.map((l) => (
-                            <tr key={`passif-l-${l.code}`}>
-                              <td className="code" style={{ paddingLeft: 24 }}>
-                                {l.code}
+                  <div className="accounting-table-scroll">
+                    <table className="accounting-table">
+                      <tbody>
+                        {passifGroups.map((g) => (
+                          <Fragment key={`passif-${g.cls}`}>
+                            <tr style={{ background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>
+                              <td
+                                colSpan={2}
+                                style={{
+                                  padding: '8px 14px',
+                                  fontSize: '0.78rem',
+                                  textTransform: 'none',
+                                  letterSpacing: 'normal',
+                                  color: 'color-mix(in srgb, var(--primary) 85%, transparent)',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {classLabel(g.cls)}
                               </td>
-                              <td>{l.label}</td>
-                              <td className="amount">{formatEur(l.amount)}</td>
+                              <td
+                                className="amount"
+                                style={{
+                                  padding: '8px 14px',
+                                  fontWeight: 700,
+                                  color: 'var(--text-primary)',
+                                }}
+                              >
+                                {formatEur(g.subtotal)}
+                              </td>
                             </tr>
-                          ))}
-                        </Fragment>
-                      ))}
-                      <tr
-                        style={{
-                          background: 'rgba(14, 165, 233, 0.06)',
-                          borderTop: '1px solid rgba(14, 165, 233, 0.2)',
-                        }}
-                      >
-                        <td
-                          colSpan={2}
+                            {g.lines.map((l) => (
+                              <tr key={`passif-l-${l.code}`}>
+                                <td className="code" style={{ paddingLeft: 24 }}>
+                                  {l.code}
+                                </td>
+                                <td>{l.label}</td>
+                                <td className="amount">{formatEur(l.amount)}</td>
+                              </tr>
+                            ))}
+                          </Fragment>
+                        ))}
+                        <tr
                           style={{
-                            padding: '10px 14px',
-                            fontWeight: 600,
-                            color: 'rgba(255,255,255,0.9)',
+                            background: 'color-mix(in srgb, var(--primary) 6%, transparent)',
+                            borderTop: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
                           }}
                         >
-                          {t('accAccounts.balanceSheet.fiscalResult')} (
-                          <span
+                          <td
+                            colSpan={2}
                             style={{
-                              color: resultExercise >= 0 ? '#4ade80' : '#f87171',
-                              fontWeight: 700,
+                              padding: '10px 14px',
+                              fontWeight: 600,
+                              color: 'var(--text-primary)',
                             }}
                           >
-                            {resultExercise >= 0
-                              ? t('accAccounts.balanceSheet.profit')
-                              : t('accAccounts.balanceSheet.loss')}
-                          </span>
-                          )
-                        </td>
-                        <td
-                          className="amount"
-                          style={{
-                            fontWeight: 700,
-                            color: resultExercise >= 0 ? '#4ade80' : '#f87171',
-                          }}
-                        >
-                          {formatEur(resultExercise)}
-                        </td>
-                      </tr>
-                    </tbody>
-                    <tfoot>
-                      <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
-                        <td colSpan={2} style={{ fontWeight: 700, padding: '14px' }}>
-                          {t('accAccounts.balanceSheet.totalLiabilities')}
-                        </td>
-                        <td className="amount" style={{ fontWeight: 700, color: '#4ade80' }}>
-                          {formatEur(totalPassif)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                            {t('accAccounts.balanceSheet.fiscalResult')} (
+                            <span
+                              style={{
+                                color: resultExercise >= 0 ? 'var(--good)' : 'var(--critical)',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {resultExercise >= 0
+                                ? t('accAccounts.balanceSheet.profit')
+                                : t('accAccounts.balanceSheet.loss')}
+                            </span>
+                            )
+                          </td>
+                          <td
+                            className="amount"
+                            style={{
+                              fontWeight: 700,
+                              color: resultExercise >= 0 ? 'var(--good)' : 'var(--critical)',
+                            }}
+                          >
+                            {formatEur(resultExercise)}
+                          </td>
+                        </tr>
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ borderTop: '2px solid color-mix(in srgb, var(--primary) 40%, transparent)' }}>
+                          <td colSpan={2} style={{ fontWeight: 700, padding: '14px' }}>
+                            {t('accAccounts.balanceSheet.totalLiabilities')}
+                          </td>
+                          <td className="amount" style={{ fontWeight: 700, color: 'var(--good)' }}>
+                            {formatEur(totalPassif)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 )}
               </div>
             </div>
@@ -395,9 +399,9 @@ const BalanceSheet = () => {
                 <span
                   className="accounting-badge"
                   style={{
-                    color: '#fca5a5',
-                    background: 'rgba(248,113,113,0.1)',
-                    borderColor: 'rgba(248,113,113,0.4)',
+                    color: 'var(--critical)',
+                    background: 'color-mix(in srgb, var(--critical) 10%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--critical) 40%, transparent)',
                     fontSize: '0.85rem',
                   }}
                 >

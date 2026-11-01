@@ -1,3 +1,5 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
@@ -195,16 +197,17 @@ const AdminNew = () => {
 
   if (createdUser) {
     return (
-      <div className="portal-container">
+      <div className="portal-container lot-c-page admin-new-page">
         <div className="portal-card">
-          <div className="admin-breadcrumb">
-            <Link to="/admin">Admin</Link>
-            <span>/</span>
-            <Link to="/admin/equipe/comptes">{t('projects.admin.adminAccounts')}</Link>
-            <span>/</span>
-            <span style={{ color: 'var(--text-primary)' }}>{t('projects.admin.createdCrumb')}</span>
-          </div>
-          <h1>{t('projects.admin.createdTitle')}</h1>
+          <PageHeader
+            eyebrow={t('adminOps.zone.team')}
+            title={t('projects.admin.createdTitle')}
+            actions={
+              <Link className="portal-button secondary" to="/admin/equipe/comptes">
+                {t('projects.admin.adminAccounts')}
+              </Link>
+            }
+          />
         </div>
 
         <div className="portal-card" style={{ marginTop: 24 }}>
@@ -216,7 +219,7 @@ const AdminNew = () => {
             <div
               style={{
                 background: 'var(--bg-tertiary)',
-                borderRadius: 10,
+                borderRadius: 'var(--r-md)',
                 padding: 20,
                 border: '1px solid var(--border-color)',
                 marginBottom: 20,
@@ -224,13 +227,27 @@ const AdminNew = () => {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('projects.admin.email')}</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                <span
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 14,
+                  }}
+                >
                   {createdUser.email}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('projects.admin.password')}</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'monospace', fontSize: 14 }}>
+                <span
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 14,
+                  }}
+                >
                   {createdUser.password}
                 </span>
               </div>
@@ -290,16 +307,17 @@ const AdminNew = () => {
   }
 
   return (
-    <div className="portal-container">
+    <div className="portal-container lot-c-page admin-new-page">
       <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <Link to="/admin/equipe/comptes">{t('projects.admin.adminAccounts')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('projects.admin.newCrumb')}</span>
-        </div>
-        <h1>{t('projects.admin.newTitle')}</h1>
+        <PageHeader
+          eyebrow={t('adminOps.zone.team')}
+          title={t('projects.admin.newTitle')}
+          actions={
+            <Link className="portal-button secondary" to="/admin/equipe/comptes">
+              {t('projects.admin.adminAccounts')}
+            </Link>
+          }
+        />
       </div>
 
       <div className="portal-card" style={{ marginTop: 24 }}>
@@ -390,7 +408,7 @@ const AdminNew = () => {
             )}
             {isExternal ? null : customMode && form.role !== 'SUPER_ADMIN' ? (
               <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, letterSpacing: 'normal', color: 'var(--text-muted)', marginBottom: 8 }}>
                   {t('projects.admin.customPerms')}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px' }}>
@@ -419,7 +437,7 @@ const AdminNew = () => {
             ) : (
               <>
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: 12, letterSpacing: 'normal', color: 'var(--text-muted)' }}>
                     {t('projects.admin.grantedPerms')}
                   </div>
                   <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--text-secondary)', fontSize: 13 }}>
@@ -430,7 +448,7 @@ const AdminNew = () => {
                 </div>
                 {missingPermissions.length > 0 && (
                   <div style={{ marginTop: 12 }}>
-                    <div style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: 12, letterSpacing: 'normal', color: 'var(--text-muted)' }}>
                       {t('projects.admin.missingPerms')}
                     </div>
                     <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--text-muted)', fontSize: 13 }}>

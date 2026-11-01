@@ -134,13 +134,13 @@ export function StudentsTab({ classId, onChanged }: { classId: string; onChanged
                 style={{ cursor: 'pointer' }}
               >
                 <td>{studentDisplayName(s)}</td>
-                <td style={{ color: 'rgba(255,255,255,0.65)' }}>{s.email || '—'}</td>
+                <td style={{ color: 'var(--text-secondary)' }}>{s.email || '—'}</td>
                 <td>
-                  <span style={{ color: '#22C55E' }}>{s.attendanceCount}</span>
+                  <span style={{ color: 'var(--good)' }}>{s.attendanceCount}</span>
                   {' / '}
-                  <span style={{ color: '#EF4444' }}>{s.absenceCount}</span>
+                  <span style={{ color: 'var(--critical)' }}>{s.absenceCount}</span>
                   {' / '}
-                  <span style={{ color: '#F59E0B' }}>{s.lateCount}</span>
+                  <span style={{ color: 'var(--warning)' }}>{s.lateCount}</span>
                 </td>
                 <td>{s.averageGrade != null ? s.averageGrade.toFixed(1) : '—'}</td>
                 <td>
@@ -286,7 +286,7 @@ export function QuickAddStudent({
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </div>
-          {error && <div style={{ color: '#EF4444', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ color: 'var(--critical)', fontSize: 13 }}>{error}</div>}
         </div>
         <div className="edu-drawer-foot">
           <button className="edu-btn ghost" onClick={onClose}>
@@ -382,7 +382,7 @@ export function CsvImport({
           </p>
           <textarea
             className="edu-textarea"
-            style={{ minHeight: 240, fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}
+            style={{ minHeight: 240, fontFamily: 'var(--font-mono)', fontSize: 12 }}
             value={csv}
             onChange={(e) => {
               setCsv(e.target.value)
@@ -391,8 +391,8 @@ export function CsvImport({
             }}
             aria-label={t('eduD.students.csvAria')}
           />
-          {error && <div style={{ color: '#EF4444', fontSize: 13, marginTop: 8 }}>{error}</div>}
-          {result && <div style={{ color: '#22C55E', fontSize: 13, marginTop: 8 }}>{result}</div>}
+          {error && <div style={{ color: 'var(--critical)', fontSize: 13, marginTop: 8 }}>{error}</div>}
+          {result && <div style={{ color: 'var(--good)', fontSize: 13, marginTop: 8 }}>{result}</div>}
           {preview && (
             <div className="edu-empty" style={{ marginTop: 10 }}>
               <strong>{t('eduD.students.csvReady', { count: preview.valid || 0 })}</strong>

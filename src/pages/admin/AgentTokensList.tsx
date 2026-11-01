@@ -1,5 +1,7 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import React, { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+
 import { apiFetch } from '../../lib/api'
 import { useToast } from '../../context/ToastContext'
 import { useI18n } from '../../context/I18nContext'
@@ -247,33 +249,31 @@ const AgentTokensList: React.FC = () => {
   }
 
   return (
-    <div className="portal-container">
+    <div className="portal-container lot-c-page agent-tokens-page">
       <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{tr('adminTech.agentTokens.title')}</span>
-        </div>
-        <div className="admin-header">
-          <div>
-            <h1>{tr('adminTech.agentTokens.title')}</h1>
-            <p className="admin-subtitle">
-              {tr('adminTech.agentTokens.subtitleLead')}{' '}
-              <a href="/docs/api-agent.md" target="_blank" rel="noopener noreferrer">
+        <PageHeader
+          eyebrow={tr('adminOps.zone.system')}
+          title={tr('adminTech.agentTokens.title')}
+          subtitle={tr('adminTech.agentTokens.subtitleLead')}
+          actions={
+            <div className="admin-actions portal-actions-reveal">
+              <a
+                className="portal-button secondary"
+                href="/docs/api-agent.md"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 {tr('adminTech.agentTokens.specLink')}
               </a>
-              .
-            </p>
-          </div>
-          <div className="admin-actions portal-actions-reveal">
-            <button type="button" className="portal-button portal-action-link" onClick={openCreate}>
-              <span className="portal-action-icon" aria-hidden>
-                +
-              </span>
-              <span className="portal-action-label">{tr('adminTech.agentTokens.newToken')}</span>
-            </button>
-          </div>
-        </div>
+              <button type="button" className="portal-button portal-action-link" onClick={openCreate}>
+                <span className="portal-action-icon" aria-hidden>
+                  +
+                </span>
+                <span className="portal-action-label">{tr('adminTech.agentTokens.newToken')}</span>
+              </button>
+            </div>
+          }
+        />
 
         <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
           {(['ACTIVE', 'REVOKED', 'ALL'] as const).map((s) => (
@@ -283,7 +283,8 @@ const AgentTokensList: React.FC = () => {
               onClick={() => setStatusFilter(s)}
               className={`portal-button secondary ${statusFilter === s ? 'is-active' : ''}`}
               style={{
-                background: statusFilter === s ? 'var(--accent-bg, rgba(14, 165, 233, 0.15))' : '',
+                background:
+                  statusFilter === s ? 'var(--accent-bg, color-mix(in srgb, var(--primary) 15%, transparent))' : '',
               }}
             >
               {s === 'ACTIVE'
@@ -322,8 +323,8 @@ const AgentTokensList: React.FC = () => {
                     style={{
                       background:
                         t.status === 'ACTIVE'
-                          ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.1))'
-                          : 'linear-gradient(135deg, rgba(100, 116, 180, 0.25), rgba(100, 116, 180, 0.1))',
+                          ? 'linear-gradient(135deg, color-mix(in srgb, var(--good) 30%, transparent), color-mix(in srgb, var(--good) 10%, transparent))'
+                          : 'linear-gradient(135deg, color-mix(in srgb, var(--primary) 25%, transparent), color-mix(in srgb, var(--primary) 10%, transparent))',
                     }}
                   >
                     🔑
@@ -331,16 +332,22 @@ const AgentTokensList: React.FC = () => {
                   <span
                     className="admin-card-role"
                     style={{
-                      background: t.status === 'ACTIVE' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(100, 116, 180, 0.12)',
-                      borderColor: t.status === 'ACTIVE' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(100, 116, 180, 0.35)',
-                      color: t.status === 'ACTIVE' ? '#6ee7b7' : '#a5b4cf',
+                      background:
+                        t.status === 'ACTIVE'
+                          ? 'color-mix(in srgb, var(--good) 12%, transparent)'
+                          : 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                      borderColor:
+                        t.status === 'ACTIVE'
+                          ? 'color-mix(in srgb, var(--good) 35%, transparent)'
+                          : 'color-mix(in srgb, var(--primary) 35%, transparent)',
+                      color: t.status === 'ACTIVE' ? 'var(--good)' : 'var(--text-secondary)',
                     }}
                   >
                     {t.status}
                   </span>
                 </div>
                 <h3 className="client-card-name">{t.name}</h3>
-                <p className="client-card-email" style={{ fontFamily: 'monospace' }}>
+                <p className="client-card-email" style={{ fontFamily: 'var(--font-mono)' }}>
                   {t.prefix}…
                 </p>
 
@@ -350,8 +357,8 @@ const AgentTokensList: React.FC = () => {
                       key={s}
                       className="admin-card-role"
                       style={{
-                        background: 'rgba(14, 165, 233, 0.12)',
-                        borderColor: 'rgba(14, 165, 233, 0.35)',
+                        background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                        borderColor: 'color-mix(in srgb, var(--primary) 35%, transparent)',
                         color: 'var(--primary)',
                         fontSize: '0.75rem',
                       }}
@@ -398,7 +405,7 @@ const AgentTokensList: React.FC = () => {
                     {t.createdBy?.name || t.createdBy?.email || '—'} · {formatDate(t.createdAt)}
                   </div>
                   {t.status === 'REVOKED' && (
-                    <div style={{ color: '#f87171' }}>
+                    <div style={{ color: 'var(--critical)' }}>
                       <strong>{tr('adminTech.agentTokens.revokedLabel')}</strong> {formatDate(t.revokedAt)}
                       {t.revokedBy &&
                         ` ${tr('adminTech.agentTokens.revokedBy', { name: t.revokedBy.name || t.revokedBy.email || '' })}`}
@@ -458,7 +465,7 @@ const AgentTokensList: React.FC = () => {
               <div className="confirm-modal__body" style={{ display: 'grid', gap: 16 }}>
                 <label>
                   <div style={{ marginBottom: 4 }}>
-                    {tr('adminTech.agentTokens.nameLabel')} <span style={{ color: '#f87171' }}>*</span>
+                    {tr('adminTech.agentTokens.nameLabel')} <span style={{ color: 'var(--critical)' }}>*</span>
                   </div>
                   <input
                     type="text"
@@ -483,7 +490,7 @@ const AgentTokensList: React.FC = () => {
                     }}
                   >
                     <div>
-                      {tr('adminTech.agentTokens.scopesLabel')} <span style={{ color: '#f87171' }}>*</span>{' '}
+                      {tr('adminTech.agentTokens.scopesLabel')} <span style={{ color: 'var(--critical)' }}>*</span>{' '}
                       <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                         {tr('adminTech.agentTokens.selectedCount', { count: form.scopes.length })}
                       </span>
@@ -493,11 +500,11 @@ const AgentTokensList: React.FC = () => {
                       onClick={toggleAllScopes}
                       disabled={!scopesCatalog}
                       style={{
-                        background: 'rgba(14, 165, 233, 0.12)',
-                        border: '1px solid rgba(14, 165, 233, 0.35)',
+                        background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
                         color: 'var(--primary)',
                         padding: '4px 10px',
-                        borderRadius: 6,
+                        borderRadius: 'var(--r-sm)',
                         fontSize: '0.8rem',
                         cursor: 'pointer',
                       }}
@@ -511,8 +518,8 @@ const AgentTokensList: React.FC = () => {
                     style={{
                       maxHeight: 260,
                       overflowY: 'auto',
-                      border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
-                      borderRadius: 8,
+                      border: '1px solid var(--border-color, color-mix(in srgb, var(--text-primary) 10%, transparent))',
+                      borderRadius: 'var(--r-md)',
                       padding: 12,
                       display: 'grid',
                       gap: 12,
@@ -525,8 +532,8 @@ const AgentTokensList: React.FC = () => {
                             fontSize: '0.75rem',
                             fontWeight: 600,
                             color: 'var(--text-secondary)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
+                            textTransform: 'none',
+                            letterSpacing: 'normal',
                             marginBottom: 4,
                           }}
                         >
@@ -542,15 +549,15 @@ const AgentTokensList: React.FC = () => {
                                 gap: 6,
                                 padding: '6px 10px',
                                 background: form.scopes.includes(s)
-                                  ? 'rgba(14, 165, 233, 0.2)'
-                                  : 'rgba(255, 255, 255, 0.04)',
+                                  ? 'color-mix(in srgb, var(--primary) 20%, transparent)'
+                                  : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                                 border: form.scopes.includes(s)
-                                  ? '1px solid rgba(14, 165, 233, 0.5)'
-                                  : '1px solid rgba(255, 255, 255, 0.08)',
-                                borderRadius: 6,
+                                  ? '1px solid color-mix(in srgb, var(--primary) 50%, transparent)'
+                                  : '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
+                                borderRadius: 'var(--r-sm)',
                                 cursor: 'pointer',
                                 fontSize: '0.85rem',
-                                fontFamily: 'monospace',
+                                fontFamily: 'var(--font-mono)',
                               }}
                             >
                               <input

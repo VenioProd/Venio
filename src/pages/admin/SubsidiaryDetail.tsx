@@ -1,3 +1,6 @@
+import './AdminPortal.css'
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiFetch, ApiError } from '../../lib/api'
@@ -98,13 +101,13 @@ export default function SubsidiaryDetail() {
   }
   if (loading)
     return (
-      <div className="platform-dossier" role="status">
+      <div className="platform-dossier lot-c-page subsidiary-detail-page" role="status">
         {tr('loading')}
       </div>
     )
   if (!sub)
     return (
-      <div className="platform-dossier">
+      <div className="platform-dossier lot-c-page subsidiary-detail-page">
         <Link to="/admin/projets/plateformes">{t('orgs.subsidiary.detail.backLink')}</Link>
         <p role="alert">{error || t('orgs.subsidiary.detail.notFound')}</p>
       </div>
@@ -122,44 +125,44 @@ export default function SubsidiaryDetail() {
     },
   ]
   return (
-    <div className="platform-dossier">
+    <div className="platform-dossier lot-c-page subsidiary-detail-page">
       <Link className="dossier-back" to="/admin/projets/plateformes">
         ← {t('orgs.subsidiary.detail.backLink')}
       </Link>
       <header className="dossier-hero" id="overview">
-        <span className="dossier-eyebrow">{tr('platformDossier')}</span>
-        <div className="dossier-hero-heading">
-          {subsidiaryLogo(sub) && <img className="dossier-logo" src={subsidiaryLogo(sub)} alt="" />}
-          <div>
-            <h1>{sub.name}</h1>
-            <p>{sub.tagline}</p>
-          </div>
-          <div className="dossier-actions">
-            <span className={`dossier-chip ${sub.status}`}>{t(STATUS_LABEL_KEYS[sub.status])}</span>
-            <span className={`dossier-chip ${sub.health}`}>{t(HEALTH_LABEL_KEYS[sub.health])}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setHeaderDraft({
-                  name: sub.name,
-                  tagline: sub.tagline,
-                  sector: sub.sector,
-                  status: sub.status,
-                  health: sub.health,
-                })
-                setHeaderError('')
-              }}
-            >
-              {tr('edit')}
-            </button>
-            <button type="button" onClick={() => setEditing(true)}>
-              {tr('settings')}
-            </button>
-            <button type="button" onClick={() => setConfirmDelete(true)}>
-              {tr('remove')}
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow={tr('platformDossier')}
+          title={sub.name}
+          subtitle={sub.tagline}
+          actions={
+            <div className="dossier-actions">
+              <span className={`dossier-chip ${sub.status}`}>{t(STATUS_LABEL_KEYS[sub.status])}</span>
+              <span className={`dossier-chip ${sub.health}`}>{t(HEALTH_LABEL_KEYS[sub.health])}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setHeaderDraft({
+                    name: sub.name,
+                    tagline: sub.tagline,
+                    sector: sub.sector,
+                    status: sub.status,
+                    health: sub.health,
+                  })
+                  setHeaderError('')
+                }}
+              >
+                {tr('edit')}
+              </button>
+              <button type="button" onClick={() => setEditing(true)}>
+                {tr('settings')}
+              </button>
+              <button type="button" onClick={() => setConfirmDelete(true)}>
+                {tr('remove')}
+              </button>
+            </div>
+          }
+        />
+        {subsidiaryLogo(sub) && <img className="dossier-logo" src={subsidiaryLogo(sub)} alt="" />}
         {headerDraft && (
           <form
             onSubmit={async (e) => {

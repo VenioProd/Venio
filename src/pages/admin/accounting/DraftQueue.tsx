@@ -170,7 +170,7 @@ const DraftQueue = () => {
       <div className="accounting-kpi-grid">
         <div className="accounting-kpi">
           <div className="label">{t('accAccounts.queue.kpiToValidate')}</div>
-          <div className="value" style={{ color: draftCount > 0 ? '#fbbf24' : '#4ade80' }}>
+          <div className="value" style={{ color: draftCount > 0 ? 'var(--warning)' : 'var(--good)' }}>
             {draftCount}
           </div>
         </div>
@@ -247,7 +247,7 @@ const DraftQueue = () => {
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
         ) : entries.length === 0 ? (
           <div className="accounting-empty">
             <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>✓</div>
@@ -255,83 +255,85 @@ const DraftQueue = () => {
             <div className="hint">{t('accAccounts.queue.upToDateHint')}</div>
           </div>
         ) : (
-          <table className="accounting-table">
-            <thead>
-              <tr>
-                <th style={{ width: 30 }}>
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleAll}
-                    disabled={selectableEntries.length === 0}
-                  />
-                </th>
-                <th>{t('accAccounts.col.number')}</th>
-                <th>{t('accAccounts.col.date')}</th>
-                <th>{t('accAccounts.queue.colSource')}</th>
-                <th>{t('accAccounts.queue.colPieceRef')}</th>
-                <th>{t('accAccounts.col.label')}</th>
-                <th className="amount">{t('accAccounts.col.debit')}</th>
-                <th className="amount">{t('accAccounts.col.credit')}</th>
-                <th>{t('accAccounts.queue.colAutoValidated')}</th>
-                <th>{t('accAccounts.col.status')}</th>
-                <th>{t('accAccounts.queue.colActions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((e) => {
-                const isDraft = e.status === 'DRAFT'
-                return (
-                  <tr key={e._id}>
-                    <td>
-                      {isDraft && (
-                        <input type="checkbox" checked={selected.has(e._id)} onChange={() => toggle(e._id)} />
-                      )}
-                    </td>
-                    <td>
-                      <Link to={`/admin/comptabilite/ecritures/${e._id}`} className="code">
-                        {e.entryNumber}
-                      </Link>
-                    </td>
-                    <td>{formatDate(e.date)}</td>
-                    <td>
-                      {e.sourceSlug ? (
-                        <span className="accounting-badge source-external">{e.sourceSlug}</span>
-                      ) : (
-                        <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
-                      )}
-                    </td>
-                    <td className="code">{e.pieceRef || '—'}</td>
-                    <td>{e.label}</td>
-                    <td className="amount">{formatEur(e.totalDebit)}</td>
-                    <td className="amount">{formatEur(e.totalCredit)}</td>
-                    <td>
-                      {e.autoValidated ? (
-                        <span className="accounting-badge validated">{t('common.yes')}</span>
-                      ) : (
-                        <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`accounting-badge ${e.status.toLowerCase()}`}>{e.status}</span>
-                    </td>
-                    <td>
-                      <div className="accounting-row-actions">
-                        <Link to={`/admin/comptabilite/ecritures/${e._id}`}>
-                          <button type="button">{t('accAccounts.queue.open')}</button>
-                        </Link>
+          <div className="accounting-table-scroll">
+            <table className="accounting-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 30 }}>
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleAll}
+                      disabled={selectableEntries.length === 0}
+                    />
+                  </th>
+                  <th>{t('accAccounts.col.number')}</th>
+                  <th>{t('accAccounts.col.date')}</th>
+                  <th>{t('accAccounts.queue.colSource')}</th>
+                  <th>{t('accAccounts.queue.colPieceRef')}</th>
+                  <th>{t('accAccounts.col.label')}</th>
+                  <th className="amount">{t('accAccounts.col.debit')}</th>
+                  <th className="amount">{t('accAccounts.col.credit')}</th>
+                  <th>{t('accAccounts.queue.colAutoValidated')}</th>
+                  <th>{t('accAccounts.col.status')}</th>
+                  <th>{t('accAccounts.queue.colActions')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((e) => {
+                  const isDraft = e.status === 'DRAFT'
+                  return (
+                    <tr key={e._id}>
+                      <td>
                         {isDraft && (
-                          <button type="button" onClick={() => handleBulkValidate([e._id])} disabled={validating}>
-                            {t('accAccounts.queue.validateOne')}
-                          </button>
+                          <input type="checkbox" checked={selected.has(e._id)} onChange={() => toggle(e._id)} />
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                      </td>
+                      <td>
+                        <Link to={`/admin/comptabilite/ecritures/${e._id}`} className="code">
+                          {e.entryNumber}
+                        </Link>
+                      </td>
+                      <td>{formatDate(e.date)}</td>
+                      <td>
+                        {e.sourceSlug ? (
+                          <span className="accounting-badge source-external">{e.sourceSlug}</span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>—</span>
+                        )}
+                      </td>
+                      <td className="code">{e.pieceRef || '—'}</td>
+                      <td>{e.label}</td>
+                      <td className="amount">{formatEur(e.totalDebit)}</td>
+                      <td className="amount">{formatEur(e.totalCredit)}</td>
+                      <td>
+                        {e.autoValidated ? (
+                          <span className="accounting-badge validated">{t('common.yes')}</span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>—</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`accounting-badge ${e.status.toLowerCase()}`}>{e.status}</span>
+                      </td>
+                      <td>
+                        <div className="accounting-row-actions">
+                          <Link to={`/admin/comptabilite/ecritures/${e._id}`}>
+                            <button type="button">{t('accAccounts.queue.open')}</button>
+                          </Link>
+                          {isDraft && (
+                            <button type="button" onClick={() => handleBulkValidate([e._id])} disabled={validating}>
+                              {t('accAccounts.queue.validateOne')}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {total > filters.limit && (
@@ -343,7 +345,7 @@ const DraftQueue = () => {
             >
               {t('accAccounts.common.previous')}
             </button>
-            <span style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.6)' }}>
+            <span style={{ alignSelf: 'center', color: 'var(--text-secondary)' }}>
               {t('accAccounts.common.page', {
                 page: filters.page,
                 total: Math.max(1, Math.ceil(total / filters.limit)),

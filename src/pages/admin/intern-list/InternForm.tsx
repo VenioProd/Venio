@@ -60,9 +60,9 @@ export default function InternForm({
               style={{
                 width: '100%',
                 padding: '8px 12px',
-                borderRadius: 8,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 'var(--r-md)',
+                background: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 12%, transparent)',
                 color: 'inherit',
                 fontSize: 14,
               }}
@@ -175,11 +175,13 @@ export default function InternForm({
                     gap: 5,
                     cursor: 'pointer',
                     padding: '4px 10px',
-                    borderRadius: 6,
-                    background: checked ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${checked ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
+                    borderRadius: 'var(--r-sm)',
+                    background: checked
+                      ? 'color-mix(in srgb, var(--primary) 15%, transparent)'
+                      : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    border: `1px solid ${checked ? 'var(--primary)' : 'color-mix(in srgb, var(--text-primary) 10%, transparent)'}`,
                     fontSize: 13,
-                    color: checked ? 'var(--primary)' : 'rgba(255,255,255,0.6)',
+                    color: checked ? 'var(--primary)' : 'var(--text-secondary)',
                     transition: 'all 0.15s',
                   }}
                 >

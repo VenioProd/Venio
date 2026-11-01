@@ -162,7 +162,7 @@ const GeneralLedger = () => {
             ))}
           </select>
 
-          <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
+          <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
             <input
               type="checkbox"
               checked={filters.includeOpening}
@@ -177,7 +177,7 @@ const GeneralLedger = () => {
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
         ) : !data ? (
           <div className="accounting-empty">
             {t('accAccounts.ledger.prompt')}
@@ -189,13 +189,13 @@ const GeneralLedger = () => {
               <div className="accounting-kpi">
                 <div className="label">{t('accAccounts.col.account')}</div>
                 <div className="value" style={{ fontSize: '1.1rem' }}>
-                  <span className="code" style={{ color: 'rgba(14, 165, 233, 0.9)' }}>
+                  <span className="code" style={{ color: 'color-mix(in srgb, var(--primary) 90%, transparent)' }}>
                     {account?.code}
                   </span>
                   <div
                     style={{
                       fontSize: '0.85rem',
-                      color: 'rgba(255,255,255,0.7)',
+                      color: 'var(--text-secondary)',
                       fontWeight: 500,
                       marginTop: 4,
                     }}
@@ -211,7 +211,7 @@ const GeneralLedger = () => {
                   <div
                     style={{
                       fontSize: '0.85rem',
-                      color: 'rgba(255,255,255,0.7)',
+                      color: 'var(--text-secondary)',
                       fontWeight: 500,
                       marginTop: 4,
                     }}
@@ -235,61 +235,63 @@ const GeneralLedger = () => {
             {movements.length === 0 ? (
               <div className="accounting-empty">{t('accAccounts.ledger.noMovements')}</div>
             ) : (
-              <table className="accounting-table">
-                <thead>
-                  <tr>
-                    <th>{t('accAccounts.col.date')}</th>
-                    <th>{t('accAccounts.col.journal')}</th>
-                    <th>{t('accAccounts.ledger.colEntryNumber')}</th>
-                    <th>{t('accAccounts.col.piece')}</th>
-                    <th>{t('accAccounts.col.label')}</th>
-                    <th className="amount">{t('accAccounts.col.debit')}</th>
-                    <th className="amount">{t('accAccounts.col.credit')}</th>
-                    <th className="amount">{t('accAccounts.col.balance')}</th>
-                    <th>{t('accAccounts.col.reconciliation')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {movements.map((m) => (
-                    <tr key={m._id}>
-                      <td>{formatDate(m.date)}</td>
-                      <td className="code">{m.journalCode}</td>
-                      <td>
-                        <Link to={`/admin/comptabilite/ecritures/${m._id}`} className="code">
-                          {m.entryNumber}
-                        </Link>
-                      </td>
-                      <td className="code">{m.pieceRef || '—'}</td>
-                      <td>{m.label}</td>
-                      <td className="amount">{Number(m.debit) > 0 ? formatEur(m.debit) : ''}</td>
-                      <td className="amount">{Number(m.credit) > 0 ? formatEur(m.credit) : ''}</td>
-                      <td className="amount" style={{ fontWeight: 600 }}>
-                        {formatEur(m.runningBalance)}
-                      </td>
-                      <td className="code">{m.lettrage || '—'}</td>
+              <div className="accounting-table-scroll">
+                <table className="accounting-table">
+                  <thead>
+                    <tr>
+                      <th>{t('accAccounts.col.date')}</th>
+                      <th>{t('accAccounts.col.journal')}</th>
+                      <th>{t('accAccounts.ledger.colEntryNumber')}</th>
+                      <th>{t('accAccounts.col.piece')}</th>
+                      <th>{t('accAccounts.col.label')}</th>
+                      <th className="amount">{t('accAccounts.col.debit')}</th>
+                      <th className="amount">{t('accAccounts.col.credit')}</th>
+                      <th className="amount">{t('accAccounts.col.balance')}</th>
+                      <th>{t('accAccounts.col.reconciliation')}</th>
                     </tr>
-                  ))}
-                </tbody>
-                {totals && (
-                  <tfoot>
-                    <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
-                      <td colSpan={5} style={{ textAlign: 'right', fontWeight: 600, padding: '14px' }}>
-                        {t('accAccounts.entry.totals')}
-                      </td>
-                      <td className="amount" style={{ fontWeight: 700 }}>
-                        {formatEur(totals.debit)}
-                      </td>
-                      <td className="amount" style={{ fontWeight: 700 }}>
-                        {formatEur(totals.credit)}
-                      </td>
-                      <td className="amount" style={{ fontWeight: 700, color: '#4ade80' }}>
-                        {formatEur(totals.closingBalance)}
-                      </td>
-                      <td></td>
-                    </tr>
-                  </tfoot>
-                )}
-              </table>
+                  </thead>
+                  <tbody>
+                    {movements.map((m) => (
+                      <tr key={m._id}>
+                        <td>{formatDate(m.date)}</td>
+                        <td className="code">{m.journalCode}</td>
+                        <td>
+                          <Link to={`/admin/comptabilite/ecritures/${m._id}`} className="code">
+                            {m.entryNumber}
+                          </Link>
+                        </td>
+                        <td className="code">{m.pieceRef || '—'}</td>
+                        <td>{m.label}</td>
+                        <td className="amount">{Number(m.debit) > 0 ? formatEur(m.debit) : ''}</td>
+                        <td className="amount">{Number(m.credit) > 0 ? formatEur(m.credit) : ''}</td>
+                        <td className="amount" style={{ fontWeight: 600 }}>
+                          {formatEur(m.runningBalance)}
+                        </td>
+                        <td className="code">{m.lettrage || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  {totals && (
+                    <tfoot>
+                      <tr style={{ borderTop: '2px solid color-mix(in srgb, var(--primary) 40%, transparent)' }}>
+                        <td colSpan={5} style={{ textAlign: 'right', fontWeight: 600, padding: '14px' }}>
+                          {t('accAccounts.entry.totals')}
+                        </td>
+                        <td className="amount" style={{ fontWeight: 700 }}>
+                          {formatEur(totals.debit)}
+                        </td>
+                        <td className="amount" style={{ fontWeight: 700 }}>
+                          {formatEur(totals.credit)}
+                        </td>
+                        <td className="amount" style={{ fontWeight: 700, color: 'var(--good)' }}>
+                          {formatEur(totals.closingBalance)}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
             )}
           </>
         )}

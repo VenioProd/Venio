@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { exportToCsv } from '../../lib/exportCsv'
@@ -22,23 +24,56 @@ const ROLE_LABEL_KEYS: Record<string, MessageKey> = {
 }
 
 const ROLE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  SUPER_ADMIN: { bg: 'rgba(234, 179, 8, 0.12)', border: 'rgba(234, 179, 8, 0.4)', text: '#fde047' },
-  PDG: { bg: 'rgba(239, 68, 68, 0.12)', border: 'rgba(239, 68, 68, 0.4)', text: '#fca5a5' },
-  ADMIN: { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.35)', text: '#6ee7b7' },
-  RH: { bg: 'rgba(236, 72, 153, 0.12)', border: 'rgba(236, 72, 153, 0.35)', text: '#f9a8d4' },
-  COMMERCIAL: { bg: 'rgba(59, 130, 246, 0.12)', border: 'rgba(59, 130, 246, 0.35)', text: '#93c5fd' },
-  VIEWER: { bg: 'rgba(100, 116, 180, 0.12)', border: 'rgba(100, 116, 180, 0.35)', text: '#a5b4cf' },
-  STAGIAIRE: { bg: 'rgba(251, 146, 60, 0.12)', border: 'rgba(251, 146, 60, 0.35)', text: '#fdba74' },
+  SUPER_ADMIN: {
+    bg: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--warning) 40%, transparent)',
+    text: 'var(--warning)',
+  },
+  PDG: {
+    bg: 'color-mix(in srgb, var(--critical) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--critical) 40%, transparent)',
+    text: 'var(--critical)',
+  },
+  ADMIN: {
+    bg: 'color-mix(in srgb, var(--good) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--good) 35%, transparent)',
+    text: 'var(--good)',
+  },
+  RH: {
+    bg: 'color-mix(in srgb, var(--critical) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--critical) 35%, transparent)',
+    text: 'var(--critical)',
+  },
+  COMMERCIAL: {
+    bg: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--primary) 35%, transparent)',
+    text: 'var(--primary)',
+  },
+  VIEWER: {
+    bg: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--primary) 35%, transparent)',
+    text: 'var(--text-secondary)',
+  },
+  STAGIAIRE: {
+    bg: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--warning) 35%, transparent)',
+    text: 'var(--warning)',
+  },
 }
 
 const ROLE_AVATARS: Record<string, string> = {
-  SUPER_ADMIN: 'linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(202, 138, 4, 0.12))',
-  PDG: 'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(185, 28, 28, 0.12))',
-  ADMIN: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.1))',
-  RH: 'linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(219, 39, 119, 0.1))',
-  COMMERCIAL: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.1))',
-  VIEWER: 'linear-gradient(135deg, rgba(100, 116, 180, 0.25), rgba(100, 116, 180, 0.1))',
-  STAGIAIRE: 'linear-gradient(135deg, rgba(251, 146, 60, 0.25), rgba(234, 88, 12, 0.1))',
+  SUPER_ADMIN:
+    'linear-gradient(135deg, color-mix(in srgb, var(--warning) 30%, transparent), color-mix(in srgb, var(--warning) 12%, transparent))',
+  PDG: 'linear-gradient(135deg, color-mix(in srgb, var(--critical) 30%, transparent), color-mix(in srgb, var(--critical) 12%, transparent))',
+  ADMIN:
+    'linear-gradient(135deg, color-mix(in srgb, var(--good) 25%, transparent), color-mix(in srgb, var(--good) 10%, transparent))',
+  RH: 'linear-gradient(135deg, color-mix(in srgb, var(--critical) 25%, transparent), color-mix(in srgb, var(--critical) 10%, transparent))',
+  COMMERCIAL:
+    'linear-gradient(135deg, color-mix(in srgb, var(--primary) 25%, transparent), color-mix(in srgb, var(--primary) 10%, transparent))',
+  VIEWER:
+    'linear-gradient(135deg, color-mix(in srgb, var(--primary) 25%, transparent), color-mix(in srgb, var(--primary) 10%, transparent))',
+  STAGIAIRE:
+    'linear-gradient(135deg, color-mix(in srgb, var(--warning) 25%, transparent), color-mix(in srgb, var(--critical) 10%, transparent))',
 }
 
 const AdminList = () => {
@@ -127,74 +162,72 @@ const AdminList = () => {
   }
 
   return (
-    <div className="portal-container">
+    <div className="portal-container lot-c-page admin-accounts-page">
       <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('adminAccess.admins.breadcrumb')}</span>
-        </div>
-        <div className="admin-header">
-          <h1>{t('adminAccess.admins.breadcrumb')}</h1>
-          <div className="admin-actions portal-actions-reveal">
-            <button
-              className="portal-button secondary portal-action-link"
-              type="button"
-              title={t('adminAccess.admins.exportCsv')}
-              onClick={() => {
-                const headers = [
-                  t('adminAccess.admins.csvName'),
-                  t('adminAccess.admins.csvEmail'),
-                  t('adminAccess.admins.csvRole'),
-                ]
-                const rows = admins.map((admin) => [
-                  admin.name || '',
-                  admin.email || '',
-                  roleLabel(admin.role) || admin.role || '',
-                ])
-                exportToCsv('admins.csv', headers, rows)
-              }}
-            >
-              <span className="portal-action-icon" aria-hidden>
-                <svg
-                  viewBox="0 0 24 24"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              </span>
-              <span className="portal-action-label">{t('adminAccess.admins.exportCsv')}</span>
-            </button>
-            <Link
-              className="portal-button portal-action-link"
-              to="/admin/comptes-admin/nouveau"
-              title={t('adminAccess.admins.newAdmin')}
-            >
-              <span className="portal-action-icon" aria-hidden>
-                <svg
-                  viewBox="0 0 24 24"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <line x1="19" y1="8" x2="19" y2="14" />
-                  <line x1="22" y1="11" x2="16" y2="11" />
-                </svg>
-              </span>
-              <span className="portal-action-label">{t('adminAccess.admins.newAdmin')}</span>
-            </Link>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.zone.team')}
+          title={t('adminAccess.admins.breadcrumb')}
+          actions={
+            <div className="admin-actions portal-actions-reveal">
+              <button
+                className="portal-button secondary portal-action-link"
+                type="button"
+                title={t('adminAccess.admins.exportCsv')}
+                onClick={() => {
+                  const headers = [
+                    t('adminAccess.admins.csvName'),
+                    t('adminAccess.admins.csvEmail'),
+                    t('adminAccess.admins.csvRole'),
+                  ]
+                  const rows = admins.map((admin) => [
+                    admin.name || '',
+                    admin.email || '',
+                    roleLabel(admin.role) || admin.role || '',
+                  ])
+                  exportToCsv('admins.csv', headers, rows)
+                }}
+              >
+                <span className="portal-action-icon" aria-hidden>
+                  <svg
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </span>
+                <span className="portal-action-label">{t('adminAccess.admins.exportCsv')}</span>
+              </button>
+              <Link
+                className="portal-button portal-action-link"
+                to="/admin/comptes-admin/nouveau"
+                title={t('adminAccess.admins.newAdmin')}
+              >
+                <span className="portal-action-icon" aria-hidden>
+                  <svg
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="19" y1="8" x2="19" y2="14" />
+                    <line x1="22" y1="11" x2="16" y2="11" />
+                  </svg>
+                </span>
+                <span className="portal-action-label">{t('adminAccess.admins.newAdmin')}</span>
+              </Link>
+            </div>
+          }
+        />
       </div>
 
       {error && (
@@ -243,8 +276,8 @@ const AdminList = () => {
                       <span
                         className="admin-card-role"
                         style={{
-                          background: 'rgba(14, 165, 233, 0.12)',
-                          borderColor: 'rgba(14, 165, 233, 0.4)',
+                          background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                          borderColor: 'color-mix(in srgb, var(--primary) 40%, transparent)',
                           color: 'var(--primary)',
                         }}
                       >

@@ -173,7 +173,7 @@ const Entries = () => {
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
         ) : entries.length === 0 ? (
           <div className="accounting-empty">
             {t('accAccounts.entries.empty')}
@@ -185,54 +185,56 @@ const Entries = () => {
           </div>
         ) : (
           <>
-            <table className="accounting-table">
-              <thead>
-                <tr>
-                  {canManage && <th style={{ width: 30 }}></th>}
-                  <th>{t('accAccounts.col.number')}</th>
-                  <th>{t('accAccounts.col.date')}</th>
-                  <th>{t('accAccounts.col.journal')}</th>
-                  <th>{t('accAccounts.col.label')}</th>
-                  <th>{t('accAccounts.col.piece')}</th>
-                  <th className="amount">{t('accAccounts.col.debit')}</th>
-                  <th className="amount">{t('accAccounts.col.credit')}</th>
-                  <th>{t('accAccounts.col.source')}</th>
-                  <th>{t('accAccounts.col.status')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((e) => (
-                  <tr key={e._id}>
-                    {canManage && (
-                      <td>
-                        {e.status === 'DRAFT' && (
-                          <input type="checkbox" checked={selected.has(e._id)} onChange={() => toggle(e._id)} />
-                        )}
-                      </td>
-                    )}
-                    <td>
-                      <Link to={`/admin/comptabilite/ecritures/${e._id}`} className="code">
-                        {e.entryNumber}
-                      </Link>
-                    </td>
-                    <td>{formatDate(e.date)}</td>
-                    <td className="code">{e.journalCode}</td>
-                    <td>{e.label}</td>
-                    <td className="code">{e.pieceRef || '—'}</td>
-                    <td className="amount">{formatMoney(Number(e.totalDebit))}</td>
-                    <td className="amount">{formatMoney(Number(e.totalCredit))}</td>
-                    <td>
-                      <span className={`accounting-badge ${e.source === 'EXTERNAL' ? 'source-external' : 'locked'}`}>
-                        {e.source}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`accounting-badge ${e.status.toLowerCase()}`}>{e.status}</span>
-                    </td>
+            <div className="accounting-table-scroll">
+              <table className="accounting-table">
+                <thead>
+                  <tr>
+                    {canManage && <th style={{ width: 30 }}></th>}
+                    <th>{t('accAccounts.col.number')}</th>
+                    <th>{t('accAccounts.col.date')}</th>
+                    <th>{t('accAccounts.col.journal')}</th>
+                    <th>{t('accAccounts.col.label')}</th>
+                    <th>{t('accAccounts.col.piece')}</th>
+                    <th className="amount">{t('accAccounts.col.debit')}</th>
+                    <th className="amount">{t('accAccounts.col.credit')}</th>
+                    <th>{t('accAccounts.col.source')}</th>
+                    <th>{t('accAccounts.col.status')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {entries.map((e) => (
+                    <tr key={e._id}>
+                      {canManage && (
+                        <td>
+                          {e.status === 'DRAFT' && (
+                            <input type="checkbox" checked={selected.has(e._id)} onChange={() => toggle(e._id)} />
+                          )}
+                        </td>
+                      )}
+                      <td>
+                        <Link to={`/admin/comptabilite/ecritures/${e._id}`} className="code">
+                          {e.entryNumber}
+                        </Link>
+                      </td>
+                      <td>{formatDate(e.date)}</td>
+                      <td className="code">{e.journalCode}</td>
+                      <td>{e.label}</td>
+                      <td className="code">{e.pieceRef || '—'}</td>
+                      <td className="amount">{formatMoney(Number(e.totalDebit))}</td>
+                      <td className="amount">{formatMoney(Number(e.totalCredit))}</td>
+                      <td>
+                        <span className={`accounting-badge ${e.source === 'EXTERNAL' ? 'source-external' : 'locked'}`}>
+                          {e.source}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`accounting-badge ${e.status.toLowerCase()}`}>{e.status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {totalPages > 1 && (
               <div className="accounting-pagination">
@@ -243,7 +245,7 @@ const Entries = () => {
                 >
                   {t('accAccounts.common.previous')}
                 </button>
-                <span style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.6)' }}>
+                <span style={{ alignSelf: 'center', color: 'var(--text-secondary)' }}>
                   {t('accAccounts.common.page', { page: filters.page, total: totalPages })}
                 </span>
                 <button

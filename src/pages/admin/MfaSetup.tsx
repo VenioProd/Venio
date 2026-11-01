@@ -1,3 +1,6 @@
+import './AdminPortal.css'
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -75,15 +78,17 @@ export default function MfaSetup() {
   }
 
   if (checking) {
-    return <div className="portal-container">{t('adminAccess.mfa.checking')}</div>
+    return <div className="portal-container lot-c-page mfa-page">{t('adminAccess.mfa.checking')}</div>
   }
 
   return (
-    <main className="portal-container" style={{ maxWidth: 680, margin: '0 auto', paddingTop: 48 }}>
+    <main className="portal-container lot-c-page mfa-page">
       <section className="portal-card">
-        <p style={{ color: 'var(--primary)', fontWeight: 700, margin: 0 }}>{t('adminAccess.mfa.eyebrow')}</p>
-        <h1 style={{ margin: '8px 0 12px' }}>{t('adminAccess.mfa.title')}</h1>
-        <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{t('adminAccess.mfa.intro')}</p>
+        <PageHeader
+          eyebrow={t('adminAccess.mfa.eyebrow')}
+          title={t('adminAccess.mfa.title')}
+          subtitle={t('adminAccess.mfa.intro')}
+        />
 
         {error && (
           <div className="admin-error" role="alert">
@@ -113,7 +118,12 @@ export default function MfaSetup() {
               alt={t('adminAccess.mfa.qrAlt')}
               width={240}
               height={240}
-              style={{ alignSelf: 'center', background: '#fff', borderRadius: 12, padding: 8 }}
+              style={{
+                alignSelf: 'center',
+                background: 'var(--text-primary)',
+                borderRadius: 'var(--r-lg)',
+                padding: 8,
+              }}
             />
             <p style={{ color: 'var(--text-secondary)', fontSize: 14, overflowWrap: 'anywhere' }}>
               {t('adminAccess.mfa.manualEntry')} <strong>{setup.secret}</strong>
@@ -144,7 +154,14 @@ export default function MfaSetup() {
           <div className="portal-list">
             <h2>{t('adminAccess.mfa.recoveryTitle')}</h2>
             <p style={{ color: 'var(--text-secondary)' }}>{t('adminAccess.mfa.recoveryHint')}</p>
-            <pre style={{ padding: 16, borderRadius: 12, background: 'var(--bg-secondary)', whiteSpace: 'pre-wrap' }}>
+            <pre
+              style={{
+                padding: 16,
+                borderRadius: 'var(--r-lg)',
+                background: 'var(--bg-secondary)',
+                whiteSpace: 'pre-wrap',
+              }}
+            >
               {recoveryCodes.join('\n')}
             </pre>
             <button

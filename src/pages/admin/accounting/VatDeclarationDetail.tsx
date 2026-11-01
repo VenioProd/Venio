@@ -152,7 +152,7 @@ const VatDeclarationDetail = () => {
       {error && <div className="accounting-message error">{error}</div>}
 
       {loading ? (
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('accVat.common.loading')}</p>
       ) : !declaration ? (
         <div className="accounting-empty">
           {t('accVat.detail.notFound')}
@@ -169,7 +169,7 @@ const VatDeclarationDetail = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
                 gap: 16,
               }}
             >
@@ -177,29 +177,29 @@ const VatDeclarationDetail = () => {
                 <div
                   style={{
                     fontSize: '0.75rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'rgba(255,255,255,0.55)',
+                    textTransform: 'none',
+                    letterSpacing: 'normal',
+                    color: 'var(--text-secondary)',
                     marginBottom: 4,
                   }}
                 >
                   {t('accVat.list.typeLabel')}
                 </div>
-                <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>{declaration.type}</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{declaration.type}</div>
               </div>
               <div>
                 <div
                   style={{
                     fontSize: '0.75rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'rgba(255,255,255,0.55)',
+                    textTransform: 'none',
+                    letterSpacing: 'normal',
+                    color: 'var(--text-secondary)',
                     marginBottom: 4,
                   }}
                 >
                   {t('accVat.list.colPeriod')}
                 </div>
-                <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                   {formatDate(declaration.periodStart)} → {formatDate(declaration.periodEnd)}
                 </div>
               </div>
@@ -207,37 +207,37 @@ const VatDeclarationDetail = () => {
                 <div
                   style={{
                     fontSize: '0.75rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'rgba(255,255,255,0.55)',
+                    textTransform: 'none',
+                    letterSpacing: 'normal',
+                    color: 'var(--text-secondary)',
                     marginBottom: 4,
                   }}
                 >
                   {t('accVat.detail.regime')}
                 </div>
-                <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>{declaration.regime || '—'}</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{declaration.regime || '—'}</div>
               </div>
               <div>
                 <div
                   style={{
                     fontSize: '0.75rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'rgba(255,255,255,0.55)',
+                    textTransform: 'none',
+                    letterSpacing: 'normal',
+                    color: 'var(--text-secondary)',
                     marginBottom: 4,
                   }}
                 >
                   {t('accVat.detail.periodicity')}
                 </div>
-                <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>{declaration.periodicity || '—'}</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{declaration.periodicity || '—'}</div>
               </div>
               <div>
                 <div
                   style={{
                     fontSize: '0.75rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'rgba(255,255,255,0.55)',
+                    textTransform: 'none',
+                    letterSpacing: 'normal',
+                    color: 'var(--text-secondary)',
                     marginBottom: 4,
                   }}
                 >
@@ -254,9 +254,9 @@ const VatDeclarationDetail = () => {
                   <div
                     style={{
                       fontSize: '0.75rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      color: 'rgba(255,255,255,0.55)',
+                      textTransform: 'none',
+                      letterSpacing: 'normal',
+                      color: 'var(--text-secondary)',
                       marginBottom: 4,
                     }}
                   >
@@ -270,15 +270,15 @@ const VatDeclarationDetail = () => {
                   <div
                     style={{
                       fontSize: '0.75rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      color: 'rgba(255,255,255,0.55)',
+                      textTransform: 'none',
+                      letterSpacing: 'normal',
+                      color: 'var(--text-secondary)',
                       marginBottom: 4,
                     }}
                   >
                     {t('accVat.detail.submittedOnLabel')}
                   </div>
-                  <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                     {formatDateTime(declaration.submittedAt)}
                   </div>
                 </div>
@@ -290,21 +290,22 @@ const VatDeclarationDetail = () => {
             className="accounting-card"
             style={{
               marginBottom: 16,
-              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.07) 0%, rgba(59,130,246,0.03) 100%)',
+              background:
+                'linear-gradient(135deg, color-mix(in srgb, var(--primary) 7%, transparent) 0%, color-mix(in srgb, var(--primary) 3%, transparent) 100%)',
             }}
           >
             <h2 style={{ marginTop: 0, fontSize: '1rem' }}>{t('accVat.detail.summary')}</h2>
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
                 gap: 12,
                 marginBottom: 16,
               }}
             >
               <div className="accounting-kpi">
                 <div className="label">{t('accVat.list.totalCollected')}</div>
-                <div className="value" style={{ color: '#4ade80' }}>
+                <div className="value" style={{ color: 'var(--good)' }}>
                   {formatEur(totalCollected)}
                 </div>
               </div>
@@ -317,7 +318,7 @@ const VatDeclarationDetail = () => {
               {previousCredit > 0 && (
                 <div className="accounting-kpi">
                   <div className="label">{t('accVat.detail.previousCredit')}</div>
-                  <div className="value" style={{ color: '#fbbf24' }}>
+                  <div className="value" style={{ color: 'var(--warning)' }}>
                     {formatEur(previousCredit)}
                   </div>
                 </div>
@@ -327,21 +328,21 @@ const VatDeclarationDetail = () => {
             <div
               style={{
                 padding: '24px',
-                borderRadius: 16,
+                borderRadius: 'var(--r-lg)',
                 background:
                   totalDue > 0
-                    ? 'linear-gradient(135deg, rgba(248,113,113,0.12) 0%, rgba(239,68,68,0.06) 100%)'
-                    : 'linear-gradient(135deg, rgba(74,222,128,0.12) 0%, rgba(34,197,94,0.06) 100%)',
-                border: `1px solid ${totalDue > 0 ? 'rgba(248,113,113,0.4)' : 'rgba(74,222,128,0.4)'}`,
+                    ? 'linear-gradient(135deg, color-mix(in srgb, var(--critical) 12%, transparent) 0%, color-mix(in srgb, var(--critical) 6%, transparent) 100%)'
+                    : 'linear-gradient(135deg, color-mix(in srgb, var(--good) 12%, transparent) 0%, color-mix(in srgb, var(--good) 6%, transparent) 100%)',
+                border: `1px solid ${totalDue > 0 ? 'color-mix(in srgb, var(--critical) 40%, transparent)' : 'color-mix(in srgb, var(--good) 40%, transparent)'}`,
                 textAlign: 'center',
               }}
             >
               <div
                 style={{
                   fontSize: '0.85rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.6px',
-                  color: 'rgba(255,255,255,0.55)',
+                  textTransform: 'none',
+                  letterSpacing: 'normal',
+                  color: 'var(--text-secondary)',
                   marginBottom: 8,
                 }}
               >
@@ -351,7 +352,7 @@ const VatDeclarationDetail = () => {
                 style={{
                   fontSize: '2.4rem',
                   fontWeight: 800,
-                  color: totalDue > 0 ? '#f87171' : '#4ade80',
+                  color: totalDue > 0 ? 'var(--critical)' : 'var(--good)',
                   fontVariantNumeric: 'tabular-nums',
                 }}
               >
@@ -362,7 +363,7 @@ const VatDeclarationDetail = () => {
                   style={{
                     marginTop: 12,
                     fontSize: '0.9rem',
-                    color: '#fbbf24',
+                    color: 'var(--warning)',
                   }}
                 >
                   {t('accVat.detail.creditCarried')} <strong>{formatEur(currentCredit)}</strong>
@@ -372,39 +373,43 @@ const VatDeclarationDetail = () => {
           </section>
 
           <section className="accounting-card" style={{ marginBottom: 16 }}>
-            <h2 style={{ marginTop: 0, fontSize: '1rem', color: '#4ade80' }}>{t('accVat.detail.collectedByRate')}</h2>
+            <h2 style={{ marginTop: 0, fontSize: '1rem', color: 'var(--good)' }}>
+              {t('accVat.detail.collectedByRate')}
+            </h2>
             {(declaration.collectedByRate || []).length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>{t('accVat.list.collectedNone')}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('accVat.list.collectedNone')}</p>
             ) : (
-              <table className="accounting-table">
-                <thead>
-                  <tr>
-                    <th>{t('accVat.list.colRate')}</th>
-                    <th className="amount">{t('accVat.list.colBaseHt')}</th>
-                    <th className="amount">{t('accVat.list.colVat')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {declaration.collectedByRate.map((r, i) => (
-                    <tr key={`coll-${i}`}>
-                      <td>{formatRate(r.rate)}</td>
-                      <td className="amount">{formatEur(r.base)}</td>
-                      <td className="amount">{formatEur(r.amount)}</td>
+              <div className="accounting-table-scroll">
+                <table className="accounting-table">
+                  <thead>
+                    <tr>
+                      <th>{t('accVat.list.colRate')}</th>
+                      <th className="amount">{t('accVat.list.colBaseHt')}</th>
+                      <th className="amount">{t('accVat.list.colVat')}</th>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
-                    <td style={{ fontWeight: 700, padding: '14px' }}>{t('accVat.detail.totals')}</td>
-                    <td className="amount" style={{ fontWeight: 700 }}>
-                      {formatEur(sumBase(declaration.collectedByRate))}
-                    </td>
-                    <td className="amount" style={{ fontWeight: 700, color: '#4ade80' }}>
-                      {formatEur(sumAmount(declaration.collectedByRate))}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody>
+                    {declaration.collectedByRate.map((r, i) => (
+                      <tr key={`coll-${i}`}>
+                        <td>{formatRate(r.rate)}</td>
+                        <td className="amount">{formatEur(r.base)}</td>
+                        <td className="amount">{formatEur(r.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ borderTop: '2px solid color-mix(in srgb, var(--primary) 40%, transparent)' }}>
+                      <td style={{ fontWeight: 700, padding: '14px' }}>{t('accVat.detail.totals')}</td>
+                      <td className="amount" style={{ fontWeight: 700 }}>
+                        {formatEur(sumBase(declaration.collectedByRate))}
+                      </td>
+                      <td className="amount" style={{ fontWeight: 700, color: 'var(--good)' }}>
+                        {formatEur(sumAmount(declaration.collectedByRate))}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             )}
           </section>
 
@@ -413,63 +418,67 @@ const VatDeclarationDetail = () => {
               {t('accVat.detail.deductibleByRate')}
             </h2>
             {(declaration.deductibleByRate || []).length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>{t('accVat.list.deductibleNone')}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('accVat.list.deductibleNone')}</p>
             ) : (
-              <table className="accounting-table">
-                <thead>
-                  <tr>
-                    <th>{t('accVat.list.colRate')}</th>
-                    <th className="amount">{t('accVat.list.colBaseHt')}</th>
-                    <th className="amount">{t('accVat.list.colVat')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {declaration.deductibleByRate.map((r, i) => (
-                    <tr key={`ded-${i}`}>
-                      <td>{formatRate(r.rate)}</td>
-                      <td className="amount">{formatEur(r.base)}</td>
-                      <td className="amount">{formatEur(r.amount)}</td>
+              <div className="accounting-table-scroll">
+                <table className="accounting-table">
+                  <thead>
+                    <tr>
+                      <th>{t('accVat.list.colRate')}</th>
+                      <th className="amount">{t('accVat.list.colBaseHt')}</th>
+                      <th className="amount">{t('accVat.list.colVat')}</th>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
-                    <td style={{ fontWeight: 700, padding: '14px' }}>{t('accVat.detail.totals')}</td>
-                    <td className="amount" style={{ fontWeight: 700 }}>
-                      {formatEur(sumBase(declaration.deductibleByRate))}
-                    </td>
-                    <td className="amount" style={{ fontWeight: 700, color: 'var(--primary)' }}>
-                      {formatEur(sumAmount(declaration.deductibleByRate))}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody>
+                    {declaration.deductibleByRate.map((r, i) => (
+                      <tr key={`ded-${i}`}>
+                        <td>{formatRate(r.rate)}</td>
+                        <td className="amount">{formatEur(r.base)}</td>
+                        <td className="amount">{formatEur(r.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ borderTop: '2px solid color-mix(in srgb, var(--primary) 40%, transparent)' }}>
+                      <td style={{ fontWeight: 700, padding: '14px' }}>{t('accVat.detail.totals')}</td>
+                      <td className="amount" style={{ fontWeight: 700 }}>
+                        {formatEur(sumBase(declaration.deductibleByRate))}
+                      </td>
+                      <td className="amount" style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                        {formatEur(sumAmount(declaration.deductibleByRate))}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             )}
           </section>
 
           {Array.isArray(declaration.declarationLines) && declaration.declarationLines.length > 0 && (
             <section className="accounting-card" style={{ marginBottom: 16 }}>
               <h2 style={{ marginTop: 0, fontSize: '1rem' }}>{t('accVat.list.ca3Lines')}</h2>
-              <table className="accounting-table">
-                <thead>
-                  <tr>
-                    <th>{t('accVat.list.colCode')}</th>
-                    <th>{t('accVat.list.colLabel')}</th>
-                    <th className="amount">{t('accVat.list.colBase')}</th>
-                    <th className="amount">{t('accVat.list.colAmount')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {declaration.declarationLines.map((l, i) => (
-                    <tr key={`dl-${i}`}>
-                      <td className="code">{l.code}</td>
-                      <td>{l.label}</td>
-                      <td className="amount">{formatEur(l.base)}</td>
-                      <td className="amount">{formatEur(l.amount)}</td>
+              <div className="accounting-table-scroll">
+                <table className="accounting-table">
+                  <thead>
+                    <tr>
+                      <th>{t('accVat.list.colCode')}</th>
+                      <th>{t('accVat.list.colLabel')}</th>
+                      <th className="amount">{t('accVat.list.colBase')}</th>
+                      <th className="amount">{t('accVat.list.colAmount')}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {declaration.declarationLines.map((l, i) => (
+                      <tr key={`dl-${i}`}>
+                        <td className="code">{l.code}</td>
+                        <td>{l.label}</td>
+                        <td className="amount">{formatEur(l.base)}</td>
+                        <td className="amount">{formatEur(l.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           )}
 
@@ -479,7 +488,7 @@ const VatDeclarationDetail = () => {
               <p
                 style={{
                   whiteSpace: 'pre-wrap',
-                  color: 'rgba(255,255,255,0.85)',
+                  color: 'var(--text-primary)',
                   margin: 0,
                 }}
               >
@@ -510,7 +519,7 @@ const VatDeclarationDetail = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>{t('accVat.detail.modalTitle')}</h2>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>{t('accVat.detail.modalText')}</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{t('accVat.detail.modalText')}</p>
             <div className="accounting-form-field">
               <label>{t('accVat.detail.refLabel')}</label>
               <input

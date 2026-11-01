@@ -23,12 +23,12 @@ function formatEurDetail(n: number | undefined | null): string {
 }
 
 // ---- Theme constants — graphes en accent data-viz cyan (distinct de l'UI lime) ----
-const COLOR_REVENUE = '#22d3ee'
-const COLOR_EXPENSE = '#f87171'
-const COLOR_MARGIN = '#0ea5e9'
-const COLOR_GREEN = '#4ade80'
-const COLOR_ORANGE = '#fbbf24'
-const COLOR_RED = '#f87171'
+const COLOR_REVENUE = 'var(--primary)'
+const COLOR_EXPENSE = 'var(--critical)'
+const COLOR_MARGIN = 'var(--primary)'
+const COLOR_GREEN = 'var(--good)'
+const COLOR_ORANGE = 'var(--warning)'
+const COLOR_RED = 'var(--critical)'
 
 const EMPTY_KPI: IDashboardKpi = {
   revenueMonth: 0,
@@ -49,16 +49,16 @@ const ChartTooltip = (props: TooltipContentProps) => {
   return (
     <div
       style={{
-        background: 'rgba(15, 15, 20, 0.95)',
-        border: '1px solid rgba(14, 165, 233, 0.4)',
-        borderRadius: 8,
+        background: 'color-mix(in srgb, var(--bg-secondary) 95%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--primary) 40%, transparent)',
+        borderRadius: 'var(--r-md)',
         padding: '10px 12px',
         fontSize: '0.82rem',
-        color: 'rgba(255,255,255,0.92)',
+        color: 'var(--text-primary)',
         boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
       }}
     >
-      <div style={{ fontWeight: 600, marginBottom: 6, color: 'rgba(255,255,255,0.95)' }}>{label}</div>
+      <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text-primary)' }}>{label}</div>
       {payload.map((p) => (
         <div
           key={String(p.dataKey)}
@@ -180,9 +180,9 @@ const AccountingDashboard = () => {
           <div
             style={{
               fontSize: '0.74rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.6px',
-              color: 'rgba(255,255,255,0.5)',
+              textTransform: 'none',
+              letterSpacing: 'normal',
+              color: 'var(--text-secondary)',
               marginBottom: 4,
             }}
           >
@@ -192,21 +192,19 @@ const AccountingDashboard = () => {
             style={{
               fontSize: '1.1rem',
               fontWeight: 600,
-              color: 'rgba(255,255,255,0.95)',
+              color: 'var(--text-primary)',
             }}
           >
             {loading ? '…' : fiscalYear?.label || t('accAccounts.dashboard.noFiscalYear')}
           </div>
           {fiscalYear && (
-            <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 4 }}>
               {t('accAccounts.dashboard.fiscalYearRange', {
                 start: formatDate(fiscalYear.startDate),
                 end: formatDate(fiscalYear.endDate),
               })}
               {fiscalYear.code && (
-                <span style={{ marginLeft: 10, fontFamily: 'SF Mono, Menlo, Consolas, monospace' }}>
-                  · {fiscalYear.code}
-                </span>
+                <span style={{ marginLeft: 10, fontFamily: 'var(--font-mono)' }}>· {fiscalYear.code}</span>
               )}
             </div>
           )}
@@ -216,9 +214,9 @@ const AccountingDashboard = () => {
             htmlFor="fiscal-year-select"
             style={{
               fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              color: 'rgba(255,255,255,0.5)',
+              textTransform: 'none',
+              letterSpacing: 'normal',
+              color: 'var(--text-secondary)',
             }}
           >
             {t('accAccounts.dashboard.fiscalYearLabel')}
@@ -228,10 +226,10 @@ const AccountingDashboard = () => {
             disabled
             value={fiscalYear?._id || ''}
             style={{
-              background: 'rgba(15,15,20,0.7)',
-              border: '1px solid rgba(14, 165, 233, 0.25)',
-              borderRadius: 8,
-              color: 'rgba(255,255,255,0.85)',
+              background: 'color-mix(in srgb, var(--bg-secondary) 70%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--primary) 25%, transparent)',
+              borderRadius: 'var(--r-md)',
+              color: 'var(--text-primary)',
               padding: '8px 12px',
               fontSize: '0.88rem',
               opacity: 0.8,
@@ -251,7 +249,7 @@ const AccountingDashboard = () => {
           <div className="value" style={{ color: COLOR_GREEN }}>
             {loading ? '…' : formatEur(kpi.revenueMonth)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
             {t('accAccounts.dashboard.kpiThisMonth')}
           </div>
         </div>
@@ -260,7 +258,7 @@ const AccountingDashboard = () => {
           <div className="value" style={{ color: COLOR_GREEN }}>
             {loading ? '…' : formatEur(kpi.revenueYTD)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
             {t('accAccounts.dashboard.kpiSinceYearStart')}
           </div>
         </div>
@@ -269,14 +267,14 @@ const AccountingDashboard = () => {
           <div className="value" style={{ color: COLOR_RED }}>
             {loading ? '…' : formatEur(kpi.expensesMonth)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
             {t('accAccounts.dashboard.kpiThisMonth')}
           </div>
         </div>
         <div className="accounting-kpi">
           <div className="label">{t('accAccounts.dashboard.kpiExpensesYtd')}</div>
           <div className="value">{loading ? '…' : formatEur(kpi.expensesYTD)}</div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
             {t('accAccounts.dashboard.kpiSinceYearStart')}
           </div>
         </div>
@@ -285,14 +283,14 @@ const AccountingDashboard = () => {
           <div className="value" style={{ color: Number(kpi.receivables) > 0 ? COLOR_ORANGE : undefined }}>
             {loading ? '…' : formatEur(kpi.receivables)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
             {t('accAccounts.dashboard.kpiAwaitingPayment')}
           </div>
         </div>
         <div className="accounting-kpi">
           <div className="label">{t('accAccounts.dashboard.kpiPayables')}</div>
           <div className="value">{loading ? '…' : formatEur(kpi.payables)}</div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
             {t('accAccounts.dashboard.kpiToPay')}
           </div>
         </div>
@@ -301,7 +299,7 @@ const AccountingDashboard = () => {
           <div className="value" style={{ color: Number(kpi.vatToPay) > 0 ? COLOR_RED : undefined }}>
             {loading ? '…' : formatEur(kpi.vatToPay)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
             {t('accAccounts.dashboard.kpiVatBalance')}
           </div>
         </div>
@@ -310,7 +308,7 @@ const AccountingDashboard = () => {
           <div className="value" style={{ color: COLOR_GREEN }}>
             {loading ? '…' : formatEur(kpi.bankBalance)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
             {t('accAccounts.dashboard.kpiBankAccounts')}
           </div>
         </div>
@@ -331,7 +329,7 @@ const AccountingDashboard = () => {
       <section className="accounting-card">
         <h2>{t('accAccounts.dashboard.monthlyTrend')}</h2>
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.dashboard.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.dashboard.loading')}</p>
         ) : chartData.length === 0 ? (
           <div className="accounting-empty">
             {t('accAccounts.dashboard.noChartData')}
@@ -340,29 +338,32 @@ const AccountingDashboard = () => {
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <ComposedChart data={chartData} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <CartesianGrid stroke="color-mix(in srgb, var(--text-primary) 6%, transparent)" vertical={false} />
               <XAxis
                 dataKey="label"
-                stroke="rgba(255,255,255,0.45)"
+                stroke="var(--text-muted)"
                 fontSize={12}
                 tickLine={false}
-                axisLine={{ stroke: 'rgba(255,255,255,0.15)' }}
+                axisLine={{ stroke: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }}
               />
               <YAxis
-                stroke="rgba(255,255,255,0.45)"
+                stroke="var(--text-muted)"
                 fontSize={12}
                 tickLine={false}
-                axisLine={{ stroke: 'rgba(255,255,255,0.15)' }}
+                axisLine={{ stroke: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }}
                 tickFormatter={(v: number) => formatEur(v)}
                 width={80}
               />
-              <Tooltip content={(props) => <ChartTooltip {...props} />} cursor={{ fill: 'rgba(14, 165, 233, 0.06)' }} />
+              <Tooltip
+                content={(props) => <ChartTooltip {...props} />}
+                cursor={{ fill: 'color-mix(in srgb, var(--primary) 6%, transparent)' }}
+              />
               <Legend
                 verticalAlign="bottom"
                 wrapperStyle={{
                   paddingTop: 16,
                   fontSize: '0.85rem',
-                  color: 'rgba(255,255,255,0.7)',
+                  color: 'var(--text-secondary)',
                 }}
               />
               <Bar
@@ -397,35 +398,37 @@ const AccountingDashboard = () => {
       <section className="accounting-card">
         <h2>{t('accAccounts.dashboard.topRevenueAccounts')}</h2>
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.dashboard.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.dashboard.loading')}</p>
         ) : topRevenueAccounts.length === 0 ? (
           <div className="accounting-empty">{t('accAccounts.dashboard.noRevenue')}</div>
         ) : (
-          <table className="accounting-table">
-            <thead>
-              <tr>
-                <th>{t('accAccounts.col.code')}</th>
-                <th>{t('accAccounts.col.label')}</th>
-                <th className="amount">{t('accAccounts.col.amount')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topRevenueAccounts.map((acc) => (
-                <tr key={acc.code}>
-                  <td>
-                    <Link
-                      to={`/admin/comptabilite/grand-livre?accountCode=${encodeURIComponent(acc.code)}`}
-                      className="code"
-                    >
-                      {acc.code}
-                    </Link>
-                  </td>
-                  <td>{acc.label}</td>
-                  <td className="amount">{formatEurDetail(acc.amount)}</td>
+          <div className="accounting-table-scroll">
+            <table className="accounting-table">
+              <thead>
+                <tr>
+                  <th>{t('accAccounts.col.code')}</th>
+                  <th>{t('accAccounts.col.label')}</th>
+                  <th className="amount">{t('accAccounts.col.amount')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {topRevenueAccounts.map((acc) => (
+                  <tr key={acc.code}>
+                    <td>
+                      <Link
+                        to={`/admin/comptabilite/grand-livre?accountCode=${encodeURIComponent(acc.code)}`}
+                        className="code"
+                      >
+                        {acc.code}
+                      </Link>
+                    </td>
+                    <td>{acc.label}</td>
+                    <td className="amount">{formatEurDetail(acc.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
@@ -433,7 +436,7 @@ const AccountingDashboard = () => {
       <section className="accounting-card">
         <h2>{t('accAccounts.dashboard.recentEntries')}</h2>
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.dashboard.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.dashboard.loading')}</p>
         ) : recent.length === 0 ? (
           <div className="accounting-empty">
             {t('accAccounts.dashboard.noEntries')}
@@ -444,38 +447,40 @@ const AccountingDashboard = () => {
             </div>
           </div>
         ) : (
-          <table className="accounting-table">
-            <thead>
-              <tr>
-                <th>{t('accAccounts.col.number')}</th>
-                <th>{t('accAccounts.col.date')}</th>
-                <th>{t('accAccounts.col.journal')}</th>
-                <th>{t('accAccounts.col.label')}</th>
-                <th className="amount">{t('accAccounts.col.debit')}</th>
-                <th className="amount">{t('accAccounts.col.credit')}</th>
-                <th>{t('accAccounts.col.status')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recent.map((e) => (
-                <tr key={e._id}>
-                  <td>
-                    <Link to={`/admin/comptabilite/ecritures/${e._id}`} className="code">
-                      {e.entryNumber}
-                    </Link>
-                  </td>
-                  <td>{formatDate(e.date)}</td>
-                  <td className="code">{e.journalCode}</td>
-                  <td>{e.label}</td>
-                  <td className="amount">{formatEurDetail(e.totalDebit)}</td>
-                  <td className="amount">{formatEurDetail(e.totalCredit)}</td>
-                  <td>
-                    <span className={`accounting-badge ${e.status.toLowerCase()}`}>{e.status}</span>
-                  </td>
+          <div className="accounting-table-scroll">
+            <table className="accounting-table">
+              <thead>
+                <tr>
+                  <th>{t('accAccounts.col.number')}</th>
+                  <th>{t('accAccounts.col.date')}</th>
+                  <th>{t('accAccounts.col.journal')}</th>
+                  <th>{t('accAccounts.col.label')}</th>
+                  <th className="amount">{t('accAccounts.col.debit')}</th>
+                  <th className="amount">{t('accAccounts.col.credit')}</th>
+                  <th>{t('accAccounts.col.status')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recent.map((e) => (
+                  <tr key={e._id}>
+                    <td>
+                      <Link to={`/admin/comptabilite/ecritures/${e._id}`} className="code">
+                        {e.entryNumber}
+                      </Link>
+                    </td>
+                    <td>{formatDate(e.date)}</td>
+                    <td className="code">{e.journalCode}</td>
+                    <td>{e.label}</td>
+                    <td className="amount">{formatEurDetail(e.totalDebit)}</td>
+                    <td className="amount">{formatEurDetail(e.totalCredit)}</td>
+                    <td>
+                      <span className={`accounting-badge ${e.status.toLowerCase()}`}>{e.status}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 

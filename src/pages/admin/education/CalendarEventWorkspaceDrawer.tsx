@@ -136,11 +136,11 @@ export function CalendarEventWorkspaceDrawer({
             <h2 className="edu-h1" style={{ fontSize: 18, margin: 0 }}>
               {event.title || t('eduB.event.untitled')}
             </h2>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
               <Apple size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
               Apple Calendar
               {event.status && ` · ${event.status.toLowerCase()}`}
-              <span style={{ marginLeft: 8, color: 'rgba(255,255,255,0.4)' }}>{t('eduB.event.readOnly')}</span>
+              <span style={{ marginLeft: 8, color: 'var(--text-muted)' }}>{t('eduB.event.readOnly')}</span>
             </div>
           </div>
           <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
@@ -324,8 +324,8 @@ function CalendarEventDrawerStyles() {
   return (
     <style>{`
       .edu-calevt-meta {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+        border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
         border-radius: var(--r-md);
         padding: 12px 14px;
         margin-bottom: 16px;
@@ -333,13 +333,13 @@ function CalendarEventDrawerStyles() {
       }
       .edu-calevt-meta-row {
         display: flex; gap: 8px; align-items: center;
-        font-size: 13px; color: rgba(255,255,255,0.85);
+        font-size: 13px; color: var(--text-primary);
         flex-wrap: wrap;
       }
       .edu-calevt-meta-block { display: flex; flex-direction: column; gap: 4px; }
       .edu-calevt-meta-label {
         font-size: 11px; 
-        color: rgba(255,255,255,0.5);
+        color: var(--text-secondary);
       }
     `}</style>
   )

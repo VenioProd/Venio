@@ -194,9 +194,15 @@ const Lettrage = () => {
           <div className="accounting-form-field" style={{ flex: 1, minWidth: 280 }}>
             <label>{t('accAccounts.recon.accountLabel')}</label>
             {accountsLoading ? (
-              <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>{t('accAccounts.recon.loadingAccounts')}</p>
+              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('accAccounts.recon.loadingAccounts')}</p>
             ) : lettrableAccounts.length === 0 ? (
-              <p style={{ color: 'rgba(248,113,113,0.85)', margin: 0, fontSize: '0.88rem' }}>
+              <p
+                style={{
+                  color: 'color-mix(in srgb, var(--critical) 85%, transparent)',
+                  margin: 0,
+                  fontSize: '0.88rem',
+                }}
+              >
                 {t('accAccounts.recon.noAccounts')}
               </p>
             ) : (
@@ -214,22 +220,22 @@ const Lettrage = () => {
               style={{
                 alignSelf: 'flex-end',
                 padding: '8px 12px',
-                borderRadius: 8,
-                background: 'rgba(14, 165, 233, 0.08)',
-                border: '1px solid rgba(14, 165, 233, 0.25)',
+                borderRadius: 'var(--r-md)',
+                background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--primary) 25%, transparent)',
                 fontSize: '0.85rem',
-                color: 'rgba(255,255,255,0.85)',
+                color: 'var(--text-primary)',
               }}
             >
               <span className="code">{account.code}</span> — {account.label}
-              {account.type && <span style={{ marginLeft: 8, color: 'rgba(255,255,255,0.55)' }}>({account.type})</span>}
+              {account.type && <span style={{ marginLeft: 8, color: 'var(--text-secondary)' }}>({account.type})</span>}
             </div>
           )}
         </div>
       </section>
 
       {!accountCode ? null : loading ? (
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
       ) : (
         <>
           <section className="accounting-card" style={{ marginBottom: 16 }}>
@@ -249,7 +255,7 @@ const Lettrage = () => {
                   style={{
                     marginLeft: 10,
                     fontSize: '0.85rem',
-                    color: 'rgba(255,255,255,0.55)',
+                    color: 'var(--text-secondary)',
                     fontWeight: 400,
                   }}
                 >
@@ -278,50 +284,52 @@ const Lettrage = () => {
               </div>
             ) : (
               <>
-                <table className="accounting-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: 32 }}></th>
-                      <th>{t('accAccounts.col.date')}</th>
-                      <th>{t('accAccounts.col.journal')}</th>
-                      <th>{t('accAccounts.ledger.colEntryNumber')}</th>
-                      <th>{t('accAccounts.col.piece')}</th>
-                      <th>{t('accAccounts.col.label')}</th>
-                      <th className="amount">{t('accAccounts.col.debit')}</th>
-                      <th className="amount">{t('accAccounts.col.credit')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {unlettered.lines.map((line) => {
-                      const isSelected = selected.has(line._id)
-                      const isSuggested = suggestionIds.has(line._id)
-                      return (
-                        <tr
-                          key={line._id}
-                          style={
-                            isSuggested
-                              ? {
-                                  background: 'rgba(251,191,36,0.08)',
-                                  outline: '1px solid rgba(251,191,36,0.35)',
-                                }
-                              : undefined
-                          }
-                        >
-                          <td>
-                            <input type="checkbox" checked={isSelected} onChange={() => toggle(line._id)} />
-                          </td>
-                          <td>{formatDate(line.date)}</td>
-                          <td className="code">{line.journalCode}</td>
-                          <td className="code">{line.entryNumber}</td>
-                          <td className="code">{line.pieceRef || '—'}</td>
-                          <td>{line.label}</td>
-                          <td className="amount">{Number(line.debit) > 0 ? formatEur(line.debit) : '—'}</td>
-                          <td className="amount">{Number(line.credit) > 0 ? formatEur(line.credit) : '—'}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+                <div className="accounting-table-scroll">
+                  <table className="accounting-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 32 }}></th>
+                        <th>{t('accAccounts.col.date')}</th>
+                        <th>{t('accAccounts.col.journal')}</th>
+                        <th>{t('accAccounts.ledger.colEntryNumber')}</th>
+                        <th>{t('accAccounts.col.piece')}</th>
+                        <th>{t('accAccounts.col.label')}</th>
+                        <th className="amount">{t('accAccounts.col.debit')}</th>
+                        <th className="amount">{t('accAccounts.col.credit')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {unlettered.lines.map((line) => {
+                        const isSelected = selected.has(line._id)
+                        const isSuggested = suggestionIds.has(line._id)
+                        return (
+                          <tr
+                            key={line._id}
+                            style={
+                              isSuggested
+                                ? {
+                                    background: 'color-mix(in srgb, var(--warning) 8%, transparent)',
+                                    outline: '1px solid color-mix(in srgb, var(--warning) 35%, transparent)',
+                                  }
+                                : undefined
+                            }
+                          >
+                            <td>
+                              <input type="checkbox" checked={isSelected} onChange={() => toggle(line._id)} />
+                            </td>
+                            <td>{formatDate(line.date)}</td>
+                            <td className="code">{line.journalCode}</td>
+                            <td className="code">{line.entryNumber}</td>
+                            <td className="code">{line.pieceRef || '—'}</td>
+                            <td>{line.label}</td>
+                            <td className="amount">{Number(line.debit) > 0 ? formatEur(line.debit) : '—'}</td>
+                            <td className="amount">{Number(line.credit) > 0 ? formatEur(line.credit) : '—'}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
                 <div
                   className={`accounting-totals ${
@@ -341,7 +349,7 @@ const Lettrage = () => {
                     <div className="label">{t('accAccounts.recon.difference')}</div>
                     <div className="value">
                       {selected.size === 0 ? (
-                        <span style={{ color: 'rgba(255,255,255,0.55)' }}>—</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>—</span>
                       ) : balanced ? (
                         <span className="accounting-badge validated" style={{ fontSize: '0.78rem' }}>
                           {t('accAccounts.trial.balanced')}
@@ -365,7 +373,7 @@ const Lettrage = () => {
                 style={{
                   marginLeft: 10,
                   fontSize: '0.85rem',
-                  color: 'rgba(255,255,255,0.55)',
+                  color: 'var(--text-secondary)',
                   fontWeight: 400,
                 }}
               >
@@ -387,9 +395,9 @@ const Lettrage = () => {
                       key={g.code}
                       style={{
                         padding: 16,
-                        borderRadius: 12,
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(14, 165, 233, 0.18)',
+                        borderRadius: 'var(--r-lg)',
+                        background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--primary) 18%, transparent)',
                       }}
                     >
                       <div
@@ -415,7 +423,7 @@ const Lettrage = () => {
                           </span>
                           <span
                             style={{
-                              color: 'rgba(255,255,255,0.65)',
+                              color: 'var(--text-secondary)',
                               fontSize: '0.88rem',
                             }}
                           >
@@ -439,30 +447,32 @@ const Lettrage = () => {
                         </div>
                       </div>
 
-                      <table className="accounting-table">
-                        <thead>
-                          <tr>
-                            <th>{t('accAccounts.col.date')}</th>
-                            <th>{t('accAccounts.col.journal')}</th>
-                            <th>{t('accAccounts.ledger.colEntryNumber')}</th>
-                            <th>{t('accAccounts.col.label')}</th>
-                            <th className="amount">{t('accAccounts.col.debit')}</th>
-                            <th className="amount">{t('accAccounts.col.credit')}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(g.lines || []).map((line) => (
-                            <tr key={line._id}>
-                              <td>{formatDate(line.date)}</td>
-                              <td className="code">{line.journalCode}</td>
-                              <td className="code">{line.entryNumber}</td>
-                              <td>{line.label}</td>
-                              <td className="amount">{Number(line.debit) > 0 ? formatEur(line.debit) : '—'}</td>
-                              <td className="amount">{Number(line.credit) > 0 ? formatEur(line.credit) : '—'}</td>
+                      <div className="accounting-table-scroll">
+                        <table className="accounting-table">
+                          <thead>
+                            <tr>
+                              <th>{t('accAccounts.col.date')}</th>
+                              <th>{t('accAccounts.col.journal')}</th>
+                              <th>{t('accAccounts.ledger.colEntryNumber')}</th>
+                              <th>{t('accAccounts.col.label')}</th>
+                              <th className="amount">{t('accAccounts.col.debit')}</th>
+                              <th className="amount">{t('accAccounts.col.credit')}</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {(g.lines || []).map((line) => (
+                              <tr key={line._id}>
+                                <td>{formatDate(line.date)}</td>
+                                <td className="code">{line.journalCode}</td>
+                                <td className="code">{line.entryNumber}</td>
+                                <td>{line.label}</td>
+                                <td className="amount">{Number(line.debit) > 0 ? formatEur(line.debit) : '—'}</td>
+                                <td className="amount">{Number(line.credit) > 0 ? formatEur(line.credit) : '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )
                 })}

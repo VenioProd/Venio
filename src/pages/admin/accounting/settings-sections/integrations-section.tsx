@@ -52,25 +52,26 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
         style={{
           marginTop: 14,
           padding: '14px 16px',
-          background: 'linear-gradient(135deg, rgba(14,165,233,0.10) 0%, rgba(14,165,233,0.10) 100%)',
-          border: '1px solid rgba(14,165,233,0.25)',
-          borderRadius: 10,
+          background:
+            'linear-gradient(135deg, color-mix(in srgb, var(--primary) 10%, transparent) 0%, color-mix(in srgb, var(--primary) 10%, transparent) 100%)',
+          border: '1px solid color-mix(in srgb, var(--primary) 25%, transparent)',
+          borderRadius: 'var(--r-md)',
           fontSize: '0.88rem',
           lineHeight: 1.55,
-          color: 'rgba(255,255,255,0.82)',
+          color: 'var(--text-primary)',
         }}
       >
         <p style={{ margin: 0 }}>{t('accVat.integ.intro')}</p>
         <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
           <div>
             <span style={{ color: 'var(--primary)', fontWeight: 600 }}>🔑 {t('accVat.integ.apiKeyTitle')}</span>
-            <div style={{ paddingLeft: 22, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem' }}>
+            <div style={{ paddingLeft: 22, color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
               {t('accVat.integ.apiKeyText')}
             </div>
           </div>
           <div>
             <span style={{ color: 'var(--primary)', fontWeight: 600 }}>✍️ {t('accVat.integ.hmacTitle')}</span>
-            <div style={{ paddingLeft: 22, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem' }}>
+            <div style={{ paddingLeft: 22, color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
               {t('accVat.integ.hmacText')}
             </div>
           </div>
@@ -79,15 +80,15 @@ export function IntegrationsSection(props: IntegrationsSectionProps) {
           style={{
             margin: '12px 0 0',
             fontSize: '0.8rem',
-            color: 'rgba(255,255,255,0.55)',
+            color: 'var(--text-secondary)',
           }}
         >
           📚 {t('accVat.integ.docs')}{' '}
           <code
             style={{
-              background: 'rgba(15,15,20,0.6)',
+              background: 'color-mix(in srgb, var(--bg-secondary) 60%, transparent)',
               padding: '1px 6px',
-              borderRadius: 4,
+              borderRadius: 'var(--r-sm)',
               fontSize: '0.78rem',
             }}
           >
@@ -134,9 +135,9 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
     <div
       style={{
         padding: '16px 18px',
-        background: 'rgba(15,15,20,0.55)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 10,
+        background: 'color-mix(in srgb, var(--bg-secondary) 55%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
+        borderRadius: 'var(--r-md)',
       }}
     >
       <div
@@ -153,7 +154,7 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
             style={{
               fontWeight: 600,
               fontSize: '1rem',
-              color: 'rgba(255,255,255,0.92)',
+              color: 'var(--text-primary)',
               display: 'flex',
               alignItems: 'center',
               gap: 10,
@@ -167,16 +168,16 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
             style={{
               marginTop: 4,
               fontSize: '0.82rem',
-              color: 'rgba(255,255,255,0.55)',
+              color: 'var(--text-secondary)',
             }}
           >
             {t('accVat.integ.slugLabel')}{' '}
             <code
               style={{
-                fontFamily: "'SF Mono', Menlo, Consolas, monospace",
-                background: 'rgba(15,15,20,0.6)',
+                fontFamily: 'var(--font-mono)',
+                background: 'color-mix(in srgb, var(--bg-secondary) 60%, transparent)',
                 padding: '1px 6px',
-                borderRadius: 4,
+                borderRadius: 'var(--r-sm)',
               }}
             >
               {source.slug}
@@ -187,7 +188,7 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
               style={{
                 marginTop: 6,
                 fontSize: '0.82rem',
-                color: 'rgba(255,255,255,0.65)',
+                color: 'var(--text-secondary)',
               }}
             >
               {source.description}
@@ -218,9 +219,9 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
             onClick={onRequestRevoke}
             disabled={!canManage}
             style={{
-              background: 'rgba(220,38,38,0.18)',
-              border: '1px solid rgba(220,38,38,0.45)',
-              color: '#fecaca',
+              background: 'color-mix(in srgb, var(--critical) 18%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--critical) 45%, transparent)',
+              color: 'var(--text-secondary)',
             }}
             title={t('accVat.integ.revokeTitle')}
           >
@@ -233,7 +234,7 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
         style={{
           marginTop: 14,
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))',
           gap: 10,
           fontSize: '0.82rem',
         }}
@@ -258,11 +259,11 @@ export function IntegrationCard({ source, canManage, rotating, onRotate, onReque
           style={{
             marginTop: 12,
             padding: '8px 12px',
-            background: 'rgba(220,38,38,0.12)',
-            border: '1px solid rgba(220,38,38,0.35)',
-            borderRadius: 8,
+            background: 'color-mix(in srgb, var(--critical) 12%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--critical) 35%, transparent)',
+            borderRadius: 'var(--r-md)',
             fontSize: '0.78rem',
-            color: '#fecaca',
+            color: 'var(--text-secondary)',
           }}
         >
           ⚠️ {t('accVat.integ.lastError')} {source.lastError}
@@ -283,18 +284,18 @@ export function StatusBadge({ status }: { status: ExternalSourceStatus }) {
       className: 'accounting-badge',
       labelKey: 'accVat.integ.statusPaused',
       style: {
-        background: 'rgba(251,146,60,0.15)',
-        color: '#fdba74',
-        border: '1px solid rgba(251,146,60,0.4)',
+        background: 'color-mix(in srgb, var(--warning) 15%, transparent)',
+        color: 'var(--warning)',
+        border: '1px solid color-mix(in srgb, var(--warning) 40%, transparent)',
       },
     },
     DISABLED: {
       className: 'accounting-badge',
       labelKey: 'accVat.integ.statusDisabled',
       style: {
-        background: 'rgba(255,255,255,0.06)',
-        color: 'rgba(255,255,255,0.55)',
-        border: '1px solid rgba(255,255,255,0.12)',
+        background: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        color: 'var(--text-secondary)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 12%, transparent)',
       },
     },
   }
@@ -326,17 +327,17 @@ export function StatCell({
       title={title}
       style={{
         padding: '8px 10px',
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 8,
+        background: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        borderRadius: 'var(--r-md)',
       }}
     >
       <div
         style={{
           fontSize: '0.68rem',
-          textTransform: 'uppercase',
-          letterSpacing: '0.4px',
-          color: 'rgba(255,255,255,0.45)',
+          textTransform: 'none',
+          letterSpacing: 'normal',
+          color: 'var(--text-muted)',
         }}
       >
         {label}
@@ -344,8 +345,8 @@ export function StatCell({
       <div
         style={{
           marginTop: 2,
-          color: 'rgba(255,255,255,0.88)',
-          fontFamily: mono ? "'SF Mono', Menlo, Consolas, monospace" : undefined,
+          color: 'var(--text-primary)',
+          fontFamily: mono ? 'var(--font-mono)' : undefined,
           fontSize: mono ? '0.82rem' : '0.88rem',
         }}
       >

@@ -1,5 +1,7 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+
 import { useI18n } from '../../context/I18nContext'
 import type { MessageKey } from '../../i18n'
 import '../espace-client/ClientPortal.css'
@@ -19,7 +21,7 @@ const Section = ({ section, isOpen, toggle }: { section: GuideSection; isOpen: b
       style={{
         background: 'var(--bg-tertiary)',
         border: '1px solid var(--border-color)',
-        borderRadius: 12,
+        borderRadius: 'var(--r-lg)',
         overflow: 'hidden',
         transition: 'border-color 0.2s',
       }}
@@ -82,7 +84,7 @@ const Kbd = ({ children }: { children: React.ReactNode }) => (
       background: 'rgba(var(--primary-rgb), 0.12)',
       color: 'var(--primary)',
       padding: '2px 8px',
-      borderRadius: 6,
+      borderRadius: 'var(--r-sm)',
       fontSize: 12,
       fontWeight: 600,
       border: '1px solid rgba(var(--primary-rgb), 0.25)',
@@ -451,47 +453,31 @@ const AdminGuide = () => {
   }
 
   return (
-    <div className="portal-container">
+    <div className="portal-container lot-c-page admin-guide-page">
       <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">Admin</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{t('adminOps.guide.breadcrumb')}</span>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 24,
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div>
-            <h1 style={{ margin: 0, fontSize: 24, color: 'var(--text-primary)' }}>{t('adminOps.guide.title')}</h1>
-            <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>
-              {t('adminOps.guide.subtitle')}
-            </p>
-          </div>
-          <button
-            onClick={toggleAll}
-            style={{
-              padding: '8px 16px',
-              background: 'rgba(var(--primary-rgb), 0.1)',
-              border: '1px solid rgba(var(--primary-rgb), 0.3)',
-              borderRadius: 8,
-              color: 'var(--primary)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {allOpen ? t('adminOps.guide.collapseAll') : t('adminOps.guide.expandAll')}
-          </button>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.zone.system')}
+          title={t('adminOps.guide.title')}
+          subtitle={t('adminOps.guide.subtitle')}
+          actions={
+            <button
+              onClick={toggleAll}
+              style={{
+                padding: '8px 16px',
+                background: 'rgba(var(--primary-rgb), 0.1)',
+                border: '1px solid rgba(var(--primary-rgb), 0.3)',
+                borderRadius: 'var(--r-md)',
+                color: 'var(--primary)',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {allOpen ? t('adminOps.guide.collapseAll') : t('adminOps.guide.expandAll')}
+            </button>
+          }
+        />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {sections.map((section) => (
@@ -510,7 +496,7 @@ const AdminGuide = () => {
             padding: '16px 20px',
             background: 'rgba(var(--primary-rgb), 0.06)',
             border: '1px solid rgba(var(--primary-rgb), 0.2)',
-            borderRadius: 10,
+            borderRadius: 'var(--r-md)',
             color: 'var(--text-muted)',
             fontSize: 13,
             lineHeight: 1.6,

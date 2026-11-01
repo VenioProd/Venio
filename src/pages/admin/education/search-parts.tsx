@@ -5,76 +5,20 @@
  * un follow-up — voir issue #87). Un découpage par domaine (classes/students/
  * sessions/assignments/notes) est suggéré pour atteindre le DOD strict.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  GraduationCap,
-  BookOpen,
-  Calendar as CalIcon,
-  ClipboardList,
-  FileText,
-  Plus,
-  Search,
-  X,
-  Trash2,
-  Upload,
-  ChevronRight,
-  Menu,
-  Sparkles,
-  Download,
-  Loader2,
-} from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { FileText, X, Download, Loader2 } from 'lucide-react'
 import { apiDownload } from '../../../lib/api'
 import {
-  fetchDashboard,
-  listClasses,
-  getClass,
-  createClass,
-  updateClass,
-  deleteClass,
-  listStudents,
-  createStudent,
-  importStudentsCsv,
-  deleteStudent,
-  listSessions,
-  createSession,
-  listAssignments,
-  getAssignment,
-  createAssignment,
-  updateAssignment,
-  updateSubmission,
-  listNotes,
-  createNote,
-  updateNote,
-  deleteNote,
-  listTemplates,
   searchEducation,
   studentDisplayName,
   formatDate,
-  assignmentExportUrl,
   documentDownloadUrl,
-  CLASS_STATUS_LABEL,
-  SESSION_STATUS_LABEL,
-  ASSIGNMENT_STATUS_LABEL,
-  ASSIGNMENT_STATUS_COLOR,
-  ASSIGNMENT_KIND_LABEL,
-  SUBMISSION_STATUS_LABEL,
-  CLASS_COLOR_PALETTE,
-  type EducationDashboard,
-  type EducationClass,
-  type EducationStudent,
-  type EducationSession,
-  type EducationAssignment,
-  type EducationSubmission,
-  type EducationNote,
-  type NoteBlock,
-  type EducationAssignmentStatus,
-  type EducationTemplate,
   type EducationSearchDocument,
 } from '../../../services/education'
 import { useI18n } from '../../../context/I18nContext'
 import type { MessageKey } from '../../../i18n'
 import { SessionDetailDrawer } from './SessionDetailDrawer'
-import { NoteEditor, type BacklinkEntry } from './NoteEditor'
+import { NoteEditor } from './NoteEditor'
 import { CorrectionMode } from './CorrectionMode'
 
 export type NoteSaveState = 'idle' | 'saving' | 'saved' | 'error'
@@ -174,9 +118,9 @@ function QuickfindDocumentPreview({
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          background: '#0E1116',
-          border: '1px solid rgba(255,255,255,0.14)',
-          borderRadius: 12,
+          background: 'var(--bg-secondary)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 14%, transparent)',
+          borderRadius: 'var(--r-lg)',
           boxShadow: '0 16px 64px rgba(0,0,0,0.6)',
         }}
       >
@@ -186,7 +130,7 @@ function QuickfindDocumentPreview({
             alignItems: 'center',
             gap: 12,
             padding: '14px 18px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
           }}
         >
           <h2
@@ -227,7 +171,7 @@ function QuickfindDocumentPreview({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: preview.kind === 'pdf' ? 'var(--surface-raised)' : '#090b0e',
+            background: preview.kind === 'pdf' ? 'var(--surface-raised)' : 'var(--bg-secondary)',
           }}
         >
           {preview.status === 'loading' && (
@@ -395,14 +339,19 @@ export function SearchModal({
           width: 'min(640px, 92vw)',
           maxHeight: '70vh',
           overflow: 'auto',
-          background: '#0E1116',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 12,
+          background: 'var(--bg-secondary)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
+          borderRadius: 'var(--r-lg)',
           boxShadow: '0 16px 64px rgba(0,0,0,0.5)',
           zIndex: 101,
         }}
       >
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div
+          style={{
+            padding: '14px 18px',
+            borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
+          }}
+        >
           <input
             className="edu-input"
             autoFocus
@@ -429,7 +378,7 @@ export function SearchModal({
                     style={{ background: c.color, display: 'inline-block', marginRight: 8, verticalAlign: 'middle' }}
                   />
                   {c.name}
-                  <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 6 }}>{c.school}</span>
+                  <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{c.school}</span>
                 </div>
               ))}
               {results.students.length > 0 && <h4>{t('eduD.search.headingStudents')}</h4>}
@@ -441,7 +390,7 @@ export function SearchModal({
                 >
                   {studentDisplayName(s)}
                   {typeof s.classId !== 'string' && (
-                    <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 6 }}>· {s.classId.name}</span>
+                    <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>· {s.classId.name}</span>
                   )}
                 </div>
               ))}
@@ -453,7 +402,7 @@ export function SearchModal({
                   onClick={() => typeof s.classId !== 'string' && onPickClass(s.classId._id)}
                 >
                   {s.title}
-                  <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 6 }}>· {formatDate(s.date)}</span>
+                  <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>· {formatDate(s.date)}</span>
                 </div>
               ))}
               {results.assignments.length > 0 && <h4>{t('eduD.search.headingAssignments')}</h4>}

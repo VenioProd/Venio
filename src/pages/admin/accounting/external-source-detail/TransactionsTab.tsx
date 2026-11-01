@@ -79,78 +79,80 @@ export default function TransactionsTab({
       </div>
 
       {loading ? (
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('accVat.common.loading')}</p>
       ) : transactions.length === 0 ? (
         <div className="accounting-empty">{t('accVat.tx.empty')}</div>
       ) : (
         <>
-          <table className="accounting-table">
-            <thead>
-              <tr>
-                <th>{t('accVat.tx.colReceivedAt')}</th>
-                <th>External ID</th>
-                <th>{t('accVat.src.colStatus')}</th>
-                <th>{t('accVat.tx.colAutoValidated')}</th>
-                <th>{t('accVat.tx.colEntry')}</th>
-                <th>{t('accVat.src.colActions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((tx) => (
-                <tr key={tx._id}>
-                  <td style={{ fontSize: '0.82rem' }}>{formatDateTime(tx.receivedAt)}</td>
-                  <td className="code">{tx.externalId || '—'}</td>
-                  <td>
-                    <span className={`accounting-badge ${txStatusClass(tx.status)}`}>{tx.status}</span>
-                    {tx.errorReason && (
-                      <div
-                        style={{
-                          fontSize: '0.72rem',
-                          color: '#fca5a5',
-                          marginTop: 2,
-                        }}
-                      >
-                        {tx.errorReason}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    {tx.autoValidated ? (
-                      <span className="accounting-badge validated">{t('accVat.tx.yes')}</span>
-                    ) : (
-                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
-                    )}
-                  </td>
-                  <td>
-                    {tx.generatedEntry ? (
-                      <Link
-                        to={`/admin/comptabilite/ecritures/${
-                          typeof tx.generatedEntry === 'object' ? tx.generatedEntry._id : tx.generatedEntry
-                        }`}
-                        className="code"
-                      >
-                        {t('accVat.tx.view')}
-                      </Link>
-                    ) : (
-                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>—</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="accounting-row-actions">
-                      <button type="button" onClick={() => setTxDetail(tx)}>
-                        {t('accVat.tx.detail')}
-                      </button>
-                      {(tx.status === 'REJECTED' || tx.status === 'AWAITING_REVIEW') && (
-                        <button type="button" onClick={() => handleReplay(tx)}>
-                          {t('accVat.tx.replay')}
-                        </button>
-                      )}
-                    </div>
-                  </td>
+          <div className="accounting-table-scroll">
+            <table className="accounting-table">
+              <thead>
+                <tr>
+                  <th>{t('accVat.tx.colReceivedAt')}</th>
+                  <th>External ID</th>
+                  <th>{t('accVat.src.colStatus')}</th>
+                  <th>{t('accVat.tx.colAutoValidated')}</th>
+                  <th>{t('accVat.tx.colEntry')}</th>
+                  <th>{t('accVat.src.colActions')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {transactions.map((tx) => (
+                  <tr key={tx._id}>
+                    <td style={{ fontSize: '0.82rem' }}>{formatDateTime(tx.receivedAt)}</td>
+                    <td className="code">{tx.externalId || '—'}</td>
+                    <td>
+                      <span className={`accounting-badge ${txStatusClass(tx.status)}`}>{tx.status}</span>
+                      {tx.errorReason && (
+                        <div
+                          style={{
+                            fontSize: '0.72rem',
+                            color: 'var(--critical)',
+                            marginTop: 2,
+                          }}
+                        >
+                          {tx.errorReason}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {tx.autoValidated ? (
+                        <span className="accounting-badge validated">{t('accVat.tx.yes')}</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      )}
+                    </td>
+                    <td>
+                      {tx.generatedEntry ? (
+                        <Link
+                          to={`/admin/comptabilite/ecritures/${
+                            typeof tx.generatedEntry === 'object' ? tx.generatedEntry._id : tx.generatedEntry
+                          }`}
+                          className="code"
+                        >
+                          {t('accVat.tx.view')}
+                        </Link>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="accounting-row-actions">
+                        <button type="button" onClick={() => setTxDetail(tx)}>
+                          {t('accVat.tx.detail')}
+                        </button>
+                        {(tx.status === 'REJECTED' || tx.status === 'AWAITING_REVIEW') && (
+                          <button type="button" onClick={() => handleReplay(tx)}>
+                            {t('accVat.tx.replay')}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {txTotalPages > 1 && (
             <div className="accounting-pagination">
@@ -164,7 +166,7 @@ export default function TransactionsTab({
               <span
                 style={{
                   alignSelf: 'center',
-                  color: 'rgba(255,255,255,0.6)',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 {t('accVat.tx.pageInfo', { page: filters.page, pages: txTotalPages, total: txTotal })}
@@ -222,7 +224,7 @@ export default function TransactionsTab({
                 <div
                   style={{
                     fontSize: '0.82rem',
-                    color: 'rgba(255,255,255,0.55)',
+                    color: 'var(--text-secondary)',
                     marginTop: 4,
                   }}
                 >
@@ -260,8 +262,8 @@ export default function TransactionsTab({
                 style={{
                   margin: '0 0 8px 0',
                   fontSize: '0.85rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
+                  textTransform: 'none',
+                  letterSpacing: 'normal',
                   color: 'var(--primary)',
                 }}
               >
@@ -269,12 +271,12 @@ export default function TransactionsTab({
               </h3>
               <pre
                 style={{
-                  background: 'rgba(15,15,20,0.85)',
-                  border: '1px solid rgba(14, 165, 233, 0.2)',
-                  borderRadius: 10,
+                  background: 'color-mix(in srgb, var(--bg-secondary) 85%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
+                  borderRadius: 'var(--r-md)',
                   padding: 14,
                   fontSize: '0.78rem',
-                  color: 'rgba(255,255,255,0.85)',
+                  color: 'var(--text-primary)',
                   overflow: 'auto',
                   maxHeight: 280,
                   margin: 0,
@@ -289,8 +291,8 @@ export default function TransactionsTab({
                 style={{
                   margin: '0 0 8px 0',
                   fontSize: '0.85rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
+                  textTransform: 'none',
+                  letterSpacing: 'normal',
                   color: 'var(--primary)',
                 }}
               >
@@ -298,12 +300,12 @@ export default function TransactionsTab({
               </h3>
               <pre
                 style={{
-                  background: 'rgba(15,15,20,0.85)',
-                  border: '1px solid rgba(14, 165, 233, 0.2)',
-                  borderRadius: 10,
+                  background: 'color-mix(in srgb, var(--bg-secondary) 85%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
+                  borderRadius: 'var(--r-md)',
                   padding: 14,
                   fontSize: '0.78rem',
-                  color: 'rgba(255,255,255,0.85)',
+                  color: 'var(--text-primary)',
                   overflow: 'auto',
                   maxHeight: 280,
                   margin: 0,
@@ -319,9 +321,9 @@ export default function TransactionsTab({
                   style={{
                     margin: '0 0 8px 0',
                     fontSize: '0.85rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'rgba(74,222,128,0.85)',
+                    textTransform: 'none',
+                    letterSpacing: 'normal',
+                    color: 'color-mix(in srgb, var(--good) 85%, transparent)',
                   }}
                 >
                   {t('accVat.tx.entry')}
@@ -341,7 +343,7 @@ export default function TransactionsTab({
               style={{
                 marginTop: 18,
                 fontSize: '0.78rem',
-                color: 'rgba(255,255,255,0.45)',
+                color: 'var(--text-muted)',
               }}
             >
               {t('accVat.tx.footer', { ip: txDetail.requestIp || '—', ua: txDetail.requestUserAgent || '—' })}{' '}

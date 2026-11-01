@@ -44,7 +44,7 @@ export function ClassExportActions({ classId }: { classId: string }) {
         {loading === 'json' ? t('eduD.export.jsonBusy') : 'JSON'}
       </button>
       {error && (
-        <span role="alert" style={{ color: '#FCA5A5', fontSize: 12, flexBasis: '100%', textAlign: 'right' }}>
+        <span role="alert" style={{ color: 'var(--critical)', fontSize: 12, flexBasis: '100%', textAlign: 'right' }}>
           {error}
         </span>
       )}

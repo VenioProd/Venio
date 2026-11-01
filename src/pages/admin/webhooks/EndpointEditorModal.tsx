@@ -100,7 +100,7 @@ export default function EndpointEditorModal({
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))',
                   gap: 6,
                   maxHeight: 260,
                   overflowY: 'auto',

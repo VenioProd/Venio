@@ -167,82 +167,88 @@ const AccountingAuditLog = () => {
             {t('accAccounts.common.filter')}
           </button>
           <div className="accounting-toolbar-right">
-            <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.85rem' }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
               {t('accAccounts.audit.eventCount', { count: total })}
             </span>
           </div>
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
         ) : items.length === 0 ? (
           <div className="accounting-empty">{t('accAccounts.audit.empty')}</div>
         ) : (
           <>
-            <table className="accounting-table">
-              <thead>
-                <tr>
-                  <th>{t('accAccounts.col.date')}</th>
-                  <th>{t('accAccounts.audit.colAction')}</th>
-                  <th>{t('accAccounts.audit.colEntity')}</th>
-                  <th>{t('accAccounts.audit.colReference')}</th>
-                  <th>{t('accAccounts.audit.colActor')}</th>
-                  <th>{t('accAccounts.audit.colSummary')}</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((e) => (
-                  <tr key={e._id}>
-                    <td style={{ whiteSpace: 'nowrap', color: 'rgba(255,255,255,0.7)' }}>
-                      {formatDateTime(e.createdAt)}
-                    </td>
-                    <td>
-                      <span className={`accounting-badge ${actionBadgeClass(e.action)}`}>{actionLabel(e.action)}</span>
-                    </td>
-                    <td style={{ color: 'rgba(14, 165, 233, 0.85)', fontSize: '0.85rem' }}>{e.entityType}</td>
-                    <td>
-                      {(() => {
-                        const link = entityLink(e)
-                        const label = e.entityRef || e.entityId || '—'
-                        return link ? (
-                          <Link to={link} className="code" style={{ color: 'var(--primary)' }}>
-                            {label}
-                          </Link>
-                        ) : (
-                          <span className="code">{label}</span>
-                        )
-                      })()}
-                    </td>
-                    <td>
-                      <div style={{ fontSize: '0.85rem' }}>
-                        <span style={{ color: 'rgba(255,255,255,0.55)' }}>
-                          {e.actor?.type
-                            ? ACTOR_LABEL_KEYS[e.actor.type]
-                              ? t(ACTOR_LABEL_KEYS[e.actor.type])
-                              : e.actor.type
-                            : '—'}
-                        </span>
-                        {e.actor?.userEmail && (
-                          <div style={{ color: 'rgba(255,255,255,0.85)' }}>{e.actor.userEmail}</div>
-                        )}
-                        {e.actor?.externalSourceSlug && (
-                          <div className="code" style={{ color: '#c084fc' }}>
-                            {e.actor.externalSourceSlug}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td style={{ fontSize: '0.85rem' }}>{e.summary || '—'}</td>
-                    <td>
-                      <div className="accounting-row-actions">
-                        <button onClick={() => setSelected(e)}>{t('accAccounts.audit.detail')}</button>
-                      </div>
-                    </td>
+            <div className="accounting-table-scroll">
+              <table className="accounting-table">
+                <thead>
+                  <tr>
+                    <th>{t('accAccounts.col.date')}</th>
+                    <th>{t('accAccounts.audit.colAction')}</th>
+                    <th>{t('accAccounts.audit.colEntity')}</th>
+                    <th>{t('accAccounts.audit.colReference')}</th>
+                    <th>{t('accAccounts.audit.colActor')}</th>
+                    <th>{t('accAccounts.audit.colSummary')}</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {items.map((e) => (
+                    <tr key={e._id}>
+                      <td style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
+                        {formatDateTime(e.createdAt)}
+                      </td>
+                      <td>
+                        <span className={`accounting-badge ${actionBadgeClass(e.action)}`}>
+                          {actionLabel(e.action)}
+                        </span>
+                      </td>
+                      <td style={{ color: 'color-mix(in srgb, var(--primary) 85%, transparent)', fontSize: '0.85rem' }}>
+                        {e.entityType}
+                      </td>
+                      <td>
+                        {(() => {
+                          const link = entityLink(e)
+                          const label = e.entityRef || e.entityId || '—'
+                          return link ? (
+                            <Link to={link} className="code" style={{ color: 'var(--primary)' }}>
+                              {label}
+                            </Link>
+                          ) : (
+                            <span className="code">{label}</span>
+                          )
+                        })()}
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.85rem' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>
+                            {e.actor?.type
+                              ? ACTOR_LABEL_KEYS[e.actor.type]
+                                ? t(ACTOR_LABEL_KEYS[e.actor.type])
+                                : e.actor.type
+                              : '—'}
+                          </span>
+                          {e.actor?.userEmail && (
+                            <div style={{ color: 'var(--text-primary)' }}>{e.actor.userEmail}</div>
+                          )}
+                          {e.actor?.externalSourceSlug && (
+                            <div className="code" style={{ color: 'var(--cat-2)' }}>
+                              {e.actor.externalSourceSlug}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ fontSize: '0.85rem' }}>{e.summary || '—'}</td>
+                      <td>
+                        <div className="accounting-row-actions">
+                          <button onClick={() => setSelected(e)}>{t('accAccounts.audit.detail')}</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {totalPages > 1 && (
               <div className="accounting-pagination">
@@ -253,7 +259,7 @@ const AccountingAuditLog = () => {
                 >
                   {t('accAccounts.common.previous')}
                 </button>
-                <span style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.6)' }}>
+                <span style={{ alignSelf: 'center', color: 'var(--text-secondary)' }}>
                   {t('accAccounts.common.page', { page: filters.page, total: totalPages })}
                 </span>
                 <button
@@ -290,35 +296,37 @@ const AccountingAuditLog = () => {
           >
             <h2>{actionLabel(selected.action)}</h2>
             <div style={{ marginBottom: 12 }}>
-              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.85rem' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                 {formatDateTime(selected.createdAt)} — {selected.entityType}
                 {selected.entityRef && ` (${selected.entityRef})`}
               </span>
             </div>
 
-            {selected.summary && <p style={{ color: 'rgba(255,255,255,0.85)' }}>{selected.summary}</p>}
+            {selected.summary && <p style={{ color: 'var(--text-primary)' }}>{selected.summary}</p>}
 
             {selected.diff && selected.diff.length > 0 && (
               <>
                 <h3 style={{ fontSize: '0.9rem', marginTop: 16 }}>{t('accAccounts.audit.changedFields')}</h3>
-                <table className="accounting-table">
-                  <thead>
-                    <tr>
-                      <th>{t('accAccounts.audit.colField')}</th>
-                      <th>{t('accAccounts.audit.colBefore')}</th>
-                      <th>{t('accAccounts.audit.colAfter')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selected.diff.map((d, idx) => (
-                      <tr key={idx}>
-                        <td className="code">{d.field}</td>
-                        <td style={{ color: '#fca5a5' }}>{JSON.stringify(d.before)}</td>
-                        <td style={{ color: '#86efac' }}>{JSON.stringify(d.after)}</td>
+                <div className="accounting-table-scroll">
+                  <table className="accounting-table">
+                    <thead>
+                      <tr>
+                        <th>{t('accAccounts.audit.colField')}</th>
+                        <th>{t('accAccounts.audit.colBefore')}</th>
+                        <th>{t('accAccounts.audit.colAfter')}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {selected.diff.map((d, idx) => (
+                        <tr key={idx}>
+                          <td className="code">{d.field}</td>
+                          <td style={{ color: 'var(--critical)' }}>{JSON.stringify(d.before)}</td>
+                          <td style={{ color: 'var(--good)' }}>{JSON.stringify(d.after)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </>
             )}
 
@@ -329,10 +337,10 @@ const AccountingAuditLog = () => {
                   style={{
                     background: 'rgba(0,0,0,0.4)',
                     padding: 12,
-                    borderRadius: 8,
+                    borderRadius: 'var(--r-md)',
                     fontSize: '0.78rem',
                     overflow: 'auto',
-                    color: 'rgba(255,255,255,0.8)',
+                    color: 'var(--text-primary)',
                   }}
                 >
                   {JSON.stringify(selected.metadata, null, 2)}

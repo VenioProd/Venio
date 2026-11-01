@@ -172,7 +172,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
               style={{
                 marginLeft: 10,
                 fontSize: '0.85rem',
-                color: 'rgba(255,255,255,0.55)',
+                color: 'var(--text-secondary)',
                 fontWeight: 400,
               }}
             >
@@ -183,7 +183,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
             style={{
               margin: '4px 0 0 0',
               fontSize: '0.82rem',
-              color: 'rgba(255,255,255,0.55)',
+              color: 'var(--text-secondary)',
             }}
           >
             {t('accVat.rules.help')}
@@ -198,7 +198,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
         <div
           className="accounting-card"
           style={{
-            background: 'rgba(14, 165, 233, 0.04)',
+            background: 'color-mix(in srgb, var(--primary) 4%, transparent)',
             marginBottom: 16,
           }}
         >
@@ -226,7 +226,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
               />
             </div>
             <div className="accounting-form-field">
-              <label style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}>
+              <label style={{ textTransform: 'none', letterSpacing: 'normal', fontSize: '0.88rem' }}>
                 <input
                   type="checkbox"
                   checked={editingRule.enabled}
@@ -245,10 +245,10 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'rgba(14, 165, 233, 0.85)',
+                color: 'color-mix(in srgb, var(--primary) 85%, transparent)',
                 fontSize: '0.85rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
+                textTransform: 'none',
+                letterSpacing: 'normal',
                 padding: 0,
                 cursor: 'pointer',
                 fontWeight: 600,
@@ -381,7 +381,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                       })
                     }
                   />
-                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                     {t('accVat.rules.commaSeparated')}
                   </span>
                 </div>
@@ -401,7 +401,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                       })
                     }
                   />
-                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                     {t('accVat.rules.commaSeparated')}
                   </span>
                 </div>
@@ -416,10 +416,10 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'rgba(14, 165, 233, 0.85)',
+                color: 'color-mix(in srgb, var(--primary) 85%, transparent)',
                 fontSize: '0.85rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
+                textTransform: 'none',
+                letterSpacing: 'normal',
                 padding: 0,
                 cursor: 'pointer',
                 fontWeight: 600,
@@ -500,7 +500,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   />
                 </div>
                 <div className="accounting-form-field full">
-                  <label style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}>
+                  <label style={{ textTransform: 'none', letterSpacing: 'normal', fontSize: '0.88rem' }}>
                     <input
                       type="checkbox"
                       checked={editingRule.mapping.useVatFromPayload}
@@ -534,13 +534,13 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                       })
                     }
                   />
-                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                     {t('accVat.rules.variables')} <span className="code">{'{description}'}</span>{' '}
                     <span className="code">{'{externalId}'}</span> <span className="code">{'{date}'}</span>
                   </span>
                 </div>
                 <div className="accounting-form-field">
-                  <label style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}>
+                  <label style={{ textTransform: 'none', letterSpacing: 'normal', fontSize: '0.88rem' }}>
                     <input
                       type="checkbox"
                       checked={editingRule.mapping.autoValidate}
@@ -559,7 +559,7 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
                   </label>
                 </div>
                 <div className="accounting-form-field">
-                  <label style={{ textTransform: 'none', letterSpacing: 0, fontSize: '0.88rem' }}>
+                  <label style={{ textTransform: 'none', letterSpacing: 'normal', fontSize: '0.88rem' }}>
                     <input
                       type="checkbox"
                       checked={editingRule.mapping.assignToAuxiliary}
@@ -603,79 +603,81 @@ export default function RulesTab({ sourceId, onError }: RulesTabProps) {
       )}
 
       {rulesLoading ? (
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('accVat.common.loading')}</p>
       ) : sortedRules.length === 0 ? (
         <div className="accounting-empty">
           {t('accVat.rules.empty')}
           <div className="hint">{t('accVat.rules.emptyHint')}</div>
         </div>
       ) : (
-        <table className="accounting-table">
-          <thead>
-            <tr>
-              <th>{t('accVat.rules.colPriority')}</th>
-              <th>{t('accVat.rules.colName')}</th>
-              <th>{t('accVat.rules.type')}</th>
-              <th>{t('accVat.rules.colMapping')}</th>
-              <th className="amount">{t('accVat.rules.colMatches')}</th>
-              <th>{t('accVat.rules.colLastMatch')}</th>
-              <th>{t('accVat.rules.colState')}</th>
-              <th>{t('accVat.src.colActions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedRules.map((r) => (
-              <tr key={r._id} style={r.enabled ? undefined : { opacity: 0.55 }}>
-                <td className="code">{r.priority}</td>
-                <td>{r.name}</td>
-                <td className="code">{r.conditions?.type || '—'}</td>
-                <td style={{ fontSize: '0.82rem' }}>
-                  {r.mapping?.journalCode && <span className="code">{r.mapping.journalCode}</span>}{' '}
-                  {r.mapping?.debitAccount && (
-                    <>
-                      <span style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.rules.debitShort')}</span>{' '}
-                      <span className="code">{r.mapping.debitAccount}</span>{' '}
-                    </>
-                  )}
-                  {r.mapping?.creditAccount && (
-                    <>
-                      <span style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.rules.creditShort')}</span>{' '}
-                      <span className="code">{r.mapping.creditAccount}</span>
-                    </>
-                  )}
-                </td>
-                <td className="amount">{formatNumber(Number(r.matchCount || 0))}</td>
-                <td style={{ fontSize: '0.82rem' }}>{formatDateTime(r.lastMatchedAt)}</td>
-                <td>
-                  <span className={`accounting-badge ${r.enabled ? 'validated' : 'locked'}`}>
-                    {r.enabled ? t('accVat.integ.statusActive') : t('accVat.integ.statusDisabled')}
-                  </span>
-                </td>
-                <td>
-                  <div className="accounting-row-actions">
-                    <button type="button" onClick={() => openEditRule(r)}>
-                      {t('accVat.rules.edit')}
-                    </button>
-                    <button type="button" onClick={() => handleToggleRule(r)}>
-                      {r.enabled ? t('accVat.rules.disable') : t('accVat.rules.enable')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled
-                      title={t('accVat.rules.testSoon')}
-                      style={{ opacity: 0.5, cursor: 'not-allowed' }}
-                    >
-                      {t('accVat.rules.test')}
-                    </button>
-                    <button type="button" className="danger" onClick={() => handleDeleteRule(r)}>
-                      {t('accVat.list.delete')}
-                    </button>
-                  </div>
-                </td>
+        <div className="accounting-table-scroll">
+          <table className="accounting-table">
+            <thead>
+              <tr>
+                <th>{t('accVat.rules.colPriority')}</th>
+                <th>{t('accVat.rules.colName')}</th>
+                <th>{t('accVat.rules.type')}</th>
+                <th>{t('accVat.rules.colMapping')}</th>
+                <th className="amount">{t('accVat.rules.colMatches')}</th>
+                <th>{t('accVat.rules.colLastMatch')}</th>
+                <th>{t('accVat.rules.colState')}</th>
+                <th>{t('accVat.src.colActions')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sortedRules.map((r) => (
+                <tr key={r._id} style={r.enabled ? undefined : { opacity: 0.55 }}>
+                  <td className="code">{r.priority}</td>
+                  <td>{r.name}</td>
+                  <td className="code">{r.conditions?.type || '—'}</td>
+                  <td style={{ fontSize: '0.82rem' }}>
+                    {r.mapping?.journalCode && <span className="code">{r.mapping.journalCode}</span>}{' '}
+                    {r.mapping?.debitAccount && (
+                      <>
+                        <span style={{ color: 'var(--text-secondary)' }}>{t('accVat.rules.debitShort')}</span>{' '}
+                        <span className="code">{r.mapping.debitAccount}</span>{' '}
+                      </>
+                    )}
+                    {r.mapping?.creditAccount && (
+                      <>
+                        <span style={{ color: 'var(--text-secondary)' }}>{t('accVat.rules.creditShort')}</span>{' '}
+                        <span className="code">{r.mapping.creditAccount}</span>
+                      </>
+                    )}
+                  </td>
+                  <td className="amount">{formatNumber(Number(r.matchCount || 0))}</td>
+                  <td style={{ fontSize: '0.82rem' }}>{formatDateTime(r.lastMatchedAt)}</td>
+                  <td>
+                    <span className={`accounting-badge ${r.enabled ? 'validated' : 'locked'}`}>
+                      {r.enabled ? t('accVat.integ.statusActive') : t('accVat.integ.statusDisabled')}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="accounting-row-actions">
+                      <button type="button" onClick={() => openEditRule(r)}>
+                        {t('accVat.rules.edit')}
+                      </button>
+                      <button type="button" onClick={() => handleToggleRule(r)}>
+                        {r.enabled ? t('accVat.rules.disable') : t('accVat.rules.enable')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled
+                        title={t('accVat.rules.testSoon')}
+                        style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                      >
+                        {t('accVat.rules.test')}
+                      </button>
+                      <button type="button" className="danger" onClick={() => handleDeleteRule(r)}>
+                        {t('accVat.list.delete')}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   )

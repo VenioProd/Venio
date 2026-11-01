@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { WorkspaceOverlayPortal } from '../../../components/WorkspaceOverlayPortal'
 import { useI18n } from '../../../context/I18nContext'
 import { translate, type MessageKey } from '../../../i18n'
@@ -82,28 +83,33 @@ export function TemplatesView({
   return (
     <div>
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
-        <div>
-          <h1 className="edu-h1">{t('eduA.templates.title')}</h1>
-          <p className="edu-sub">{t('eduA.templates.subtitle')}</p>
-        </div>
-        <div className="edu-row" style={{ gap: 6 }}>
-          <select
-            className="edu-select"
-            style={{ width: 170 }}
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as EducationTemplateKind | 'all')}
-          >
-            <option value="all">{t('eduA.templates.filterAll')}</option>
-            {TEMPLATE_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {t(KIND_LABEL_KEYS[k])}
-              </option>
-            ))}
-          </select>
-          <button className="edu-btn" onClick={() => setShowCreate('note')}>
-            <Plus size={14} /> {t('eduA.templates.new')}
-          </button>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.zone.education')}
+          title={t('eduA.templates.title')}
+          subtitle={<>{t('eduA.templates.subtitle')}</>}
+          actions={
+            <>
+              <div className="edu-row" style={{ gap: 6 }}>
+                <select
+                  className="edu-select"
+                  style={{ width: 170 }}
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value as EducationTemplateKind | 'all')}
+                >
+                  <option value="all">{t('eduA.templates.filterAll')}</option>
+                  {TEMPLATE_KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {t(KIND_LABEL_KEYS[k])}
+                    </option>
+                  ))}
+                </select>
+                <button className="edu-btn" onClick={() => setShowCreate('note')}>
+                  <Plus size={14} /> {t('eduA.templates.new')}
+                </button>
+              </div>
+            </>
+          }
+        />
       </div>
 
       {notice && <p role="status">{notice}</p>}
@@ -379,7 +385,7 @@ function TemplateEditorDrawer({ template, kind: initialKind, onClose, onSaved }:
           <div className="edu-form-group">
             <label>
               {t('eduA.templates.tags')}{' '}
-              <span style={{ color: 'rgba(255,255,255,0.4)' }}>{t('eduA.templates.tagsHint')}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{t('eduA.templates.tagsHint')}</span>
             </label>
             <input
               className="edu-input"
@@ -402,7 +408,7 @@ function TemplateEditorDrawer({ template, kind: initialKind, onClose, onSaved }:
                   setAdvancedDirty(true)
                 }}
                 spellCheck={false}
-                style={{ fontFamily: 'monospace', minHeight: 220 }}
+                style={{ fontFamily: 'var(--font-mono)', minHeight: 220 }}
               />
             </label>
             <button

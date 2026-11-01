@@ -1,3 +1,4 @@
+import PageHeader from '../../../components/admin/ui/PageHeader'
 import { apiDownload } from '../../../lib/api'
 import { WorkspaceOverlayPortal } from '../../../components/WorkspaceOverlayPortal'
 import { useI18n } from '../../../context/I18nContext'
@@ -189,21 +190,26 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
   return (
     <div>
       <div className="edu-row between" style={{ flexWrap: 'wrap', gap: 8 }}>
-        <div>
-          <h1 className="edu-h1">{t('eduA.docs.title')}</h1>
-          <p className="edu-sub">{t('eduA.docs.subtitle', { count: total })}</p>
-        </div>
-        <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
-          <button className="edu-btn ghost" onClick={() => refresh()} title={t('eduA.docs.refresh')}>
-            <RefreshCw size={14} /> {t('eduA.docs.refresh')}
-          </button>
-          <button className="edu-btn ghost" onClick={() => setShowCreate('url')}>
-            <Link2 size={14} /> {t('eduA.docs.addUrl')}
-          </button>
-          <button className="edu-btn" onClick={() => setShowCreate('file')}>
-            <Upload size={14} /> {t('eduA.docs.importFile')}
-          </button>
-        </div>
+        <PageHeader
+          eyebrow={t('adminOps.zone.education')}
+          title={t('eduA.docs.title')}
+          subtitle={<>{t('eduA.docs.subtitle', { count: total })}</>}
+          actions={
+            <>
+              <div className="edu-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+                <button className="edu-btn ghost" onClick={() => refresh()} title={t('eduA.docs.refresh')}>
+                  <RefreshCw size={14} /> {t('eduA.docs.refresh')}
+                </button>
+                <button className="edu-btn ghost" onClick={() => setShowCreate('url')}>
+                  <Link2 size={14} /> {t('eduA.docs.addUrl')}
+                </button>
+                <button className="edu-btn" onClick={() => setShowCreate('file')}>
+                  <Upload size={14} /> {t('eduA.docs.importFile')}
+                </button>
+              </div>
+            </>
+          }
+        />
       </div>
 
       {/* Compteurs par catégorie (clic = filtre rapide) */}
@@ -363,13 +369,13 @@ export function DocumentsView({ classes }: DocumentsViewProps) {
                     </td>
                     <td>
                       <div style={{ fontSize: 12.5 }}>
-                        {doc.school || <span style={{ color: 'rgba(255,255,255,0.35)' }}>—</span>}
+                        {doc.school || <span style={{ color: 'var(--text-muted)' }}>—</span>}
                       </div>
-                      {klass && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.55)' }}>{klass.name}</div>}
+                      {klass && <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{klass.name}</div>}
                     </td>
                     <td>
                       {doc.tags.length === 0 ? (
-                        <span style={{ color: 'rgba(255,255,255,0.35)' }}>—</span>
+                        <span style={{ color: 'var(--text-muted)' }}>—</span>
                       ) : (
                         <div className="edu-doc-tags">
                           {doc.tags.slice(0, 3).map((t) => (
@@ -556,7 +562,7 @@ function DocumentCreateDrawer({
               <label>{t('eduA.docs.fileLabel')}</label>
               <input type="file" className="edu-input" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
               {file && (
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
                   {file.name} · {formatFileSize(file.size)}
                 </div>
               )}

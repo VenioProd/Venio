@@ -46,9 +46,9 @@ export default function RotateKeyModal({
         <div
           className="accounting-message"
           style={{
-            background: 'rgba(251,191,36,0.1)',
-            border: '1px solid rgba(251,191,36,0.4)',
-            color: '#fde68a',
+            background: 'color-mix(in srgb, var(--warning) 10%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--warning) 40%, transparent)',
+            color: 'var(--warning)',
           }}
         >
           ⚠ {t('accVat.esd.rotateWarning')}
@@ -59,9 +59,9 @@ export default function RotateKeyModal({
           <div
             style={{
               fontSize: '0.78rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              color: 'rgba(255,255,255,0.55)',
+              textTransform: 'none',
+              letterSpacing: 'normal',
+              color: 'var(--text-secondary)',
               marginBottom: 6,
             }}
           >
@@ -70,10 +70,10 @@ export default function RotateKeyModal({
           <div
             style={{
               padding: '14px 16px',
-              background: 'rgba(15,15,20,0.85)',
-              border: '1px solid rgba(14, 165, 233, 0.35)',
-              borderRadius: 10,
-              fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+              background: 'color-mix(in srgb, var(--bg-secondary) 85%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
+              borderRadius: 'var(--r-md)',
+              fontFamily: 'var(--font-mono)',
               fontSize: '0.92rem',
               color: 'var(--primary)',
               wordBreak: 'break-all',
@@ -96,9 +96,9 @@ export default function RotateKeyModal({
           <div
             style={{
               fontSize: '0.78rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              color: 'rgba(255,255,255,0.55)',
+              textTransform: 'none',
+              letterSpacing: 'normal',
+              color: 'var(--text-secondary)',
               marginBottom: 6,
             }}
           >
@@ -107,10 +107,10 @@ export default function RotateKeyModal({
           <div
             style={{
               padding: '14px 16px',
-              background: 'rgba(15,15,20,0.85)',
-              border: '1px solid rgba(14, 165, 233, 0.35)',
-              borderRadius: 10,
-              fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+              background: 'color-mix(in srgb, var(--bg-secondary) 85%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
+              borderRadius: 'var(--r-md)',
+              fontFamily: 'var(--font-mono)',
               fontSize: '0.92rem',
               color: 'var(--primary)',
               wordBreak: 'break-all',

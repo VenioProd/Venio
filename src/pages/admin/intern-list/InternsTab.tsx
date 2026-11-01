@@ -62,7 +62,7 @@ export default function InternsTab({
       <div className="ticket-stats" style={{ marginBottom: 16 }}>
         {['all', 'ACTIF', 'TERMINE', 'ANNULE'].map((status) => {
           const label = status === 'all' ? t('intern.members.all') : t(STATUS_CONFIG[status].labelKey)
-          const color = status === 'all' ? 'var(--primary)' : STATUS_CONFIG[status]?.color || '#fff'
+          const color = status === 'all' ? 'var(--primary)' : STATUS_CONFIG[status]?.color || 'var(--text-primary)'
           const count = status === 'all' ? interns.length : interns.filter((intern) => intern.status === status).length
           return (
             <button
@@ -72,7 +72,7 @@ export default function InternsTab({
               onClick={() => setFilterStatus(status)}
             >
               <span style={{ color, fontWeight: 700, fontSize: 22 }}>{count}</span>{' '}
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{label}</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{label}</span>
             </button>
           )
         })}
@@ -93,9 +93,7 @@ export default function InternsTab({
 
       <div className="ticket-list">
         {filteredInterns.length === 0 && (
-          <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>
-            {t('intern.members.empty')}
-          </p>
+          <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>{t('intern.members.empty')}</p>
         )}
         {filteredInterns.map((intern) => (
           <InternCard

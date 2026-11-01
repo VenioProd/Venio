@@ -25,12 +25,12 @@ export default function SecretRevealModal({ secret, tokenName, copied, onCopy, o
         <div className="confirm-modal__body">
           <p
             style={{
-              color: '#f59e0b',
+              color: 'var(--warning)',
               fontWeight: 500,
-              background: 'rgba(245, 158, 11, 0.08)',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
+              background: 'color-mix(in srgb, var(--warning) 8%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--warning) 30%, transparent)',
               padding: '10px 12px',
-              borderRadius: 6,
+              borderRadius: 'var(--r-sm)',
             }}
           >
             {t('adminTech.agentTokens.secretWarning')}
@@ -40,8 +40,8 @@ export default function SecretRevealModal({ secret, tokenName, copied, onCopy, o
               marginTop: 16,
               padding: 12,
               background: 'rgba(0,0,0,0.3)',
-              borderRadius: 6,
-              fontFamily: 'monospace',
+              borderRadius: 'var(--r-sm)',
+              fontFamily: 'var(--font-mono)',
               wordBreak: 'break-all',
               fontSize: '0.9rem',
             }}

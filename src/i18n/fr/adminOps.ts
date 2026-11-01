@@ -12,6 +12,10 @@ const fr = {
   'adminOps.pilotage.digest.high': 'Priorité haute',
   'adminOps.pilotage.pipeline.empty': 'Aucune opportunité à cette étape.',
   'adminOps.pilotage.pipeline.total': 'Budget total : {amount}',
+  'adminOps.zone.team': 'Équipe',
+  'adminOps.zone.system': 'Système',
+  'adminOps.zone.education': 'Formation',
+
   'adminOps.guide.labelSep': ' : ',
   'adminOps.guide.labelColon': ' :',
   'adminOps.guide.title': "Guide d'utilisation — Admin",

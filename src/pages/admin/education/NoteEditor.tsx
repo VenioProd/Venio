@@ -477,7 +477,7 @@ export function NoteEditor({
                 title={t('eduA.note.archive')}
                 onClick={() => update({ archived: !note.archived })}
               >
-                <Archive size={16} color={note.archived ? '#F59E0B' : undefined} />
+                <Archive size={16} color={note.archived ? 'var(--warning)' : undefined} />
               </button>
               <button className="edu-btn-icon" title={t('common.delete')} onClick={onDelete}>
                 <Trash2 size={16} />

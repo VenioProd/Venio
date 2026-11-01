@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+
 import AccountingLayout from './AccountingLayout'
 import {
   getAccountingSettings,
@@ -16,7 +16,7 @@ import {
 } from '../../../services/accounting'
 import { useAuth } from '../../../context/AuthContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
-import type { ICompanySettings, IFiscalYear, IExternalSource, ExternalSourceStatus } from '../../../types/accounting'
+import type { ICompanySettings, IFiscalYear, IExternalSource } from '../../../types/accounting'
 import FiscalYearsSection from './settings-sections/FiscalYearsSection'
 import { IntegrationsSection } from './settings-sections/integrations-section'
 import {
@@ -253,7 +253,7 @@ const AccountingSettings = () => {
   if (loading || !settings) {
     return (
       <AccountingLayout title={t('accVat.settings.title')}>
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('accVat.common.loading')}</p>
       </AccountingLayout>
     )
   }
@@ -265,7 +265,7 @@ const AccountingSettings = () => {
 
       <section className="accounting-card">
         <h2>{t('accVat.settings.initHeading')}</h2>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>{t('accVat.settings.initText')}</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{t('accVat.settings.initText')}</p>
         <button className="portal-button" onClick={handleSeed} disabled={!canManage} style={{ marginTop: 8 }}>
           {t('accVat.settings.initButton')}
         </button>

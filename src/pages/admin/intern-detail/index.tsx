@@ -1,4 +1,6 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import PageHeader from '../../../components/admin/ui/PageHeader'
+import '../OrganisationSysteme.css'
+import { useEffect, useState, useCallback } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { ApiError, apiFetch, apiUpload } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
@@ -240,7 +242,10 @@ const InternDetail = () => {
 
   if (loading)
     return (
-      <div className="portal-container" style={{ padding: '60px 20px', textAlign: 'center', color: '#fff' }}>
+      <div
+        className="portal-container lot-c-page intern-detail-page"
+        style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-primary)' }}
+      >
         {t('intern.list.loading')}
       </div>
     )
@@ -250,7 +255,7 @@ const InternDetail = () => {
   const statusCfg = STATUS_CONFIG[intern.status]
 
   return (
-    <div className="portal-container">
+    <div className="portal-container lot-c-page intern-detail-page">
       {ConfirmDialog}
 
       {previewUrl && (
@@ -315,88 +320,79 @@ const InternDetail = () => {
       )}
 
       {/* Hero */}
-      <div className="ticket-hero">
-        <div className="ticket-hero-content">
-          <Link to="/admin/equipe/membres" className="ticket-back-btn">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            {t('intern.detail.backToTeam')}
-          </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8 }}>
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: '50%',
-                background: statusCfg.color + '22',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: statusCfg.color,
-                fontWeight: 700,
-                fontSize: 22,
-              }}
-            >
-              {intern.userId.name.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h1 className="ticket-hero-title" style={{ margin: 0 }}>
-                {intern.userId.name}
-              </h1>
-              <p style={{ color: 'rgba(255,255,255,0.5)', margin: '4px 0 0', fontSize: 14 }}>
-                {intern.poste}
-                {intern.departement ? ` — ${intern.departement}` : ''}
-              </p>
-            </div>
-            <span
-              style={{
-                padding: '4px 12px',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                background: 'rgba(14, 165, 233, 0.15)',
-                color: 'var(--primary)',
-              }}
-            >
-              {intern.type === 'ALTERNANT' ? t('intern.type.apprentice') : t('intern.type.intern')}
+      <PageHeader
+        eyebrow={t('adminOps.zone.team')}
+        title={intern.userId.name}
+        subtitle={
+          <>
+            <span>
+              {intern.poste}
+              {intern.departement ? ` — ${intern.departement}` : ''}
             </span>
-            <span
-              style={{
-                padding: '4px 12px',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                background: statusCfg.color + '22',
-                color: statusCfg.color,
-              }}
-            >
-              {t(statusCfg.labelKey)}
+            <span className="lot-c-chips">
+              <span
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 'var(--r-sm)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
+                  color: 'var(--primary)',
+                }}
+              >
+                {intern.type === 'ALTERNANT' ? t('intern.type.apprentice') : t('intern.type.intern')}
+              </span>
+              <span
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 'var(--r-sm)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: `color-mix(in srgb, ${statusCfg.color} 13.3%, transparent)`,
+                  color: statusCfg.color,
+                }}
+              >
+                {t(statusCfg.labelKey)}
+              </span>
             </span>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {isSuperAdmin && !editing && (
-            <>
-              <button className="ticket-new-btn" onClick={() => setEditing(true)} style={{ fontSize: 13 }}>
-                {t('intern.card.edit')}
-              </button>
-              <button className="ticket-back-btn" onClick={handleDelete} style={{ fontSize: 13, color: '#ef4444' }}>
-                {t('intern.card.delete')}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <Link to="/admin/equipe/membres" className="ticket-back-btn">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              {t('intern.detail.backToTeam')}
+            </Link>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {isSuperAdmin && !editing && (
+                <>
+                  <button className="ticket-new-btn" onClick={() => setEditing(true)} style={{ fontSize: 13 }}>
+                    {t('intern.card.edit')}
+                  </button>
+                  <button
+                    className="ticket-back-btn"
+                    onClick={handleDelete}
+                    style={{ fontSize: 13, color: 'var(--critical)' }}
+                  >
+                    {t('intern.card.delete')}
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        }
+      />
 
       {/* Stats cards */}
       <div className="ticket-stats" style={{ marginBottom: 20 }}>
@@ -405,7 +401,7 @@ const InternDetail = () => {
           label={t('intern.detail.statTotalReports')}
           color="var(--primary)"
         />
-        <StatCard value={String(stats.reportsThisWeek)} label={t('intern.dash.thisWeek')} color="#22c55e" />
+        <StatCard value={String(stats.reportsThisWeek)} label={t('intern.dash.thisWeek')} color="var(--good)" />
         <StatCard
           value={`${stats.validationRate}%`}
           label={t('intern.detail.statValidationRate')}
@@ -414,7 +410,7 @@ const InternDetail = () => {
         <StatCard
           value={String(stats.pendingReports)}
           label={t('intern.detail.statPending')}
-          color={stats.pendingReports > 0 ? '#f59e0b' : 'rgba(255,255,255,0.3)'}
+          color={stats.pendingReports > 0 ? 'var(--warning)' : 'var(--text-muted)'}
         />
         <StatCard
           value={
@@ -427,12 +423,12 @@ const InternDetail = () => {
           label={t('intern.dash.colLastReport')}
           color={
             stats.daysSinceLastReport === null
-              ? 'rgba(255,255,255,0.3)'
+              ? 'var(--text-muted)'
               : stats.daysSinceLastReport > 3
-                ? '#ef4444'
+                ? 'var(--critical)'
                 : stats.daysSinceLastReport > 1
-                  ? '#f59e0b'
-                  : '#22c55e'
+                  ? 'var(--warning)'
+                  : 'var(--good)'
           }
         />
       </div>
@@ -464,7 +460,13 @@ const InternDetail = () => {
           </div>
 
           {!editing ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))',
+                gap: 16,
+              }}
+            >
               <InfoField label={t('intern.card.fieldEmail')} value={intern.userId.email} />
               <InfoField label={t('intern.card.fieldPhone')} value={intern.userId.phone || '—'} />
               <InfoField label={t('intern.detail.mission')} value={intern.poste} />
@@ -497,7 +499,13 @@ const InternDetail = () => {
                     ? t('intern.detail.daysCount', { count: stats.daysRemaining })
                     : t('intern.status.finished')
                 }
-                color={stats.daysRemaining <= 7 ? '#ef4444' : stats.daysRemaining <= 30 ? '#f59e0b' : undefined}
+                color={
+                  stats.daysRemaining <= 7
+                    ? 'var(--critical)'
+                    : stats.daysRemaining <= 30
+                      ? 'var(--warning)'
+                      : undefined
+                }
               />
             </div>
           ) : (
@@ -511,9 +519,9 @@ const InternDetail = () => {
                     style={{
                       width: '100%',
                       padding: '8px 12px',
-                      borderRadius: 8,
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 'var(--r-md)',
+                      background: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--text-primary) 12%, transparent)',
                       color: 'inherit',
                       fontSize: 14,
                     }}
@@ -603,11 +611,13 @@ const InternDetail = () => {
                           alignItems: 'center',
                           cursor: 'pointer',
                           padding: '5px 12px',
-                          borderRadius: 6,
-                          background: checked ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255,255,255,0.04)',
-                          border: `1px solid ${checked ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
+                          borderRadius: 'var(--r-sm)',
+                          background: checked
+                            ? 'color-mix(in srgb, var(--primary) 15%, transparent)'
+                            : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                          border: `1px solid ${checked ? 'var(--primary)' : 'color-mix(in srgb, var(--text-primary) 10%, transparent)'}`,
                           fontSize: 13,
-                          color: checked ? 'var(--primary)' : 'rgba(255,255,255,0.5)',
+                          color: checked ? 'var(--primary)' : 'var(--text-secondary)',
                           transition: 'all 0.15s',
                           userSelect: 'none',
                         }}
@@ -624,23 +634,34 @@ const InternDetail = () => {
           {/* Barre de progression du stage */}
           <div style={{ marginTop: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{t('intern.card.progress')}</span>
-              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{stats.progress}%</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{t('intern.card.progress')}</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{stats.progress}%</span>
             </div>
-            <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
+            <div
+              style={{
+                height: 6,
+                borderRadius: 'var(--r-sm)',
+                background: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              }}
+            >
               <div
                 style={{
                   height: '100%',
-                  borderRadius: 3,
+                  borderRadius: 'var(--r-sm)',
                   width: `${stats.progress}%`,
-                  background: stats.progress >= 90 ? '#ef4444' : stats.progress >= 70 ? '#f59e0b' : 'var(--primary)',
+                  background:
+                    stats.progress >= 90
+                      ? 'var(--critical)'
+                      : stats.progress >= 70
+                        ? 'var(--warning)'
+                        : 'var(--primary)',
                   transition: 'width 0.5s ease',
                 }}
               />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>{formatDate(intern.dateDebut)}</span>
-              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>{formatDate(intern.dateFin)}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{formatDate(intern.dateDebut)}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{formatDate(intern.dateFin)}</span>
             </div>
           </div>
 
@@ -650,15 +671,15 @@ const InternDetail = () => {
               style={{
                 marginTop: 16,
                 padding: '12px 16px',
-                borderRadius: 8,
-                background: 'rgba(14, 165, 233, 0.06)',
+                borderRadius: 'var(--r-md)',
+                background: 'color-mix(in srgb, var(--primary) 6%, transparent)',
                 borderLeft: '3px solid var(--primary)',
               }}
             >
               <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>
                 {t('intern.form.internalNotes')}
               </span>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>
                 {intern.notes}
               </p>
             </div>
@@ -670,8 +691,8 @@ const InternDetail = () => {
               style={{
                 marginTop: 16,
                 padding: '14px 16px',
-                borderRadius: 8,
-                background: 'rgba(14, 165, 233, 0.06)',
+                borderRadius: 'var(--r-md)',
+                background: 'color-mix(in srgb, var(--primary) 6%, transparent)',
                 borderLeft: '3px solid var(--primary)',
               }}
             >
@@ -688,9 +709,9 @@ const InternDetail = () => {
                     fontSize: 11,
                     textDecoration: 'none',
                     padding: '3px 8px',
-                    borderRadius: 4,
-                    border: '1px solid rgba(14, 165, 233, 0.3)',
-                    background: 'rgba(14, 165, 233, 0.08)',
+                    borderRadius: 'var(--r-sm)',
+                    border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
+                    background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
                   }}
                 >
                   {t('intern.detail.openNextcloud')}
@@ -698,16 +719,16 @@ const InternDetail = () => {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, display: 'block', marginBottom: 2 }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block', marginBottom: 2 }}>
                     {t('intern.detail.username')}
                   </span>
                   <code
                     style={{
-                      color: 'rgba(255,255,255,0.85)',
+                      color: 'var(--text-primary)',
                       fontSize: 13,
-                      background: 'rgba(255,255,255,0.04)',
+                      background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                       padding: '3px 8px',
-                      borderRadius: 4,
+                      borderRadius: 'var(--r-sm)',
                     }}
                   >
                     {intern.nextcloudUsername}
@@ -715,16 +736,16 @@ const InternDetail = () => {
                 </div>
                 {intern.nextcloudPassword && (
                   <div>
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, display: 'block', marginBottom: 2 }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block', marginBottom: 2 }}>
                       {t('intern.detail.initialPassword')}
                     </span>
                     <code
                       style={{
-                        color: 'rgba(255,255,255,0.85)',
+                        color: 'var(--text-primary)',
                         fontSize: 13,
-                        background: 'rgba(255,255,255,0.04)',
+                        background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                         padding: '3px 8px',
-                        borderRadius: 4,
+                        borderRadius: 'var(--r-sm)',
                       }}
                     >
                       {intern.nextcloudPassword}
@@ -741,10 +762,10 @@ const InternDetail = () => {
       <div className="portal-card" style={{ marginBottom: 20 }}>
         <div style={{ padding: '20px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h3 style={{ margin: 0, color: '#f59e0b', fontSize: 16 }}>
+            <h3 style={{ margin: 0, color: 'var(--warning)', fontSize: 16 }}>
               {t('intern.detail.agreementsTitle')}
               {(intern.conventions?.length ?? 0) > 0 && (
-                <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>
+                <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 400, color: 'var(--text-muted)' }}>
                   {t('intern.detail.agreementsCount', { count: intern.conventions!.length })}
                 </span>
               )}
@@ -753,12 +774,14 @@ const InternDetail = () => {
               style={{
                 display: 'inline-block',
                 padding: '6px 14px',
-                borderRadius: 6,
+                borderRadius: 'var(--r-sm)',
                 fontSize: 12,
                 fontWeight: 600,
-                background: conventionUploading ? 'rgba(255,255,255,0.06)' : 'rgba(14, 165, 233, 0.15)',
-                color: conventionUploading ? 'rgba(255,255,255,0.3)' : 'var(--primary)',
-                border: '1px solid rgba(14, 165, 233, 0.3)',
+                background: conventionUploading
+                  ? 'color-mix(in srgb, var(--text-primary) 6%, transparent)'
+                  : 'color-mix(in srgb, var(--primary) 15%, transparent)',
+                color: conventionUploading ? 'var(--text-muted)' : 'var(--primary)',
+                border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
                 cursor: conventionUploading ? 'not-allowed' : 'pointer',
               }}
             >
@@ -774,7 +797,7 @@ const InternDetail = () => {
           </div>
 
           {(intern.conventions?.length ?? 0) === 0 ? (
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, margin: 0 }}>{t('intern.detail.noAgreement')}</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>{t('intern.detail.noAgreement')}</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {intern.conventions!.map((conv) => (
@@ -785,9 +808,9 @@ const InternDetail = () => {
                     alignItems: 'center',
                     gap: 12,
                     padding: '12px 16px',
-                    borderRadius: 8,
-                    background: 'rgba(245,158,11,0.05)',
-                    border: '1px solid rgba(245,158,11,0.12)',
+                    borderRadius: 'var(--r-md)',
+                    background: 'color-mix(in srgb, var(--warning) 5%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--warning) 12%, transparent)',
                   }}
                 >
                   <svg
@@ -795,7 +818,7 @@ const InternDetail = () => {
                     height="18"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#f59e0b"
+                    stroke="var(--warning)"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -807,7 +830,7 @@ const InternDetail = () => {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
-                        color: 'rgba(255,255,255,0.85)',
+                        color: 'var(--text-primary)',
                         fontSize: 13,
                         fontWeight: 500,
                         overflow: 'hidden',
@@ -817,7 +840,7 @@ const InternDetail = () => {
                     >
                       {conv.originalName}
                     </div>
-                    <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, marginTop: 1 }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 1 }}>
                       {formatFileSize(conv.size)} — {formatDate(conv.uploadedAt)}
                     </div>
                   </div>
@@ -830,11 +853,11 @@ const InternDetail = () => {
                     }
                     style={{
                       padding: '5px 10px',
-                      borderRadius: 5,
+                      borderRadius: 'var(--r-sm)',
                       fontSize: 12,
-                      background: 'rgba(14, 165, 233, 0.08)',
+                      background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
                       color: 'var(--primary)',
-                      border: '1px solid rgba(14, 165, 233, 0.2)',
+                      border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
@@ -847,11 +870,11 @@ const InternDetail = () => {
                     download={conv.originalName}
                     style={{
                       padding: '5px 10px',
-                      borderRadius: 5,
+                      borderRadius: 'var(--r-sm)',
                       fontSize: 12,
-                      background: 'rgba(245,158,11,0.08)',
-                      color: '#f59e0b',
-                      border: '1px solid rgba(245,158,11,0.2)',
+                      background: 'color-mix(in srgb, var(--warning) 8%, transparent)',
+                      color: 'var(--warning)',
+                      border: '1px solid color-mix(in srgb, var(--warning) 20%, transparent)',
                       textDecoration: 'none',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
@@ -864,11 +887,11 @@ const InternDetail = () => {
                       onClick={() => handleConventionDelete(conv.filename, conv.originalName)}
                       style={{
                         padding: '5px 8px',
-                        borderRadius: 5,
+                        borderRadius: 'var(--r-sm)',
                         fontSize: 12,
-                        background: 'rgba(239,68,68,0.06)',
-                        color: '#ef4444',
-                        border: '1px solid rgba(239,68,68,0.15)',
+                        background: 'color-mix(in srgb, var(--critical) 6%, transparent)',
+                        color: 'var(--critical)',
+                        border: '1px solid color-mix(in srgb, var(--critical) 15%, transparent)',
                         cursor: 'pointer',
                         flexShrink: 0,
                       }}
@@ -885,7 +908,7 @@ const InternDetail = () => {
 
       {/* Rapports d'activite */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, color: '#fff', fontSize: 16 }}>
+        <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 16 }}>
           {t('intern.detail.reportsTitle', { count: reports.length })}
         </h3>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -895,13 +918,14 @@ const InternDetail = () => {
               onClick={() => setReportView(v)}
               style={{
                 padding: '5px 12px',
-                borderRadius: 6,
+                borderRadius: 'var(--r-sm)',
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
                 border: 'none',
-                background: reportView === v ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
-                color: reportView === v ? '#fff' : 'rgba(255,255,255,0.5)',
+                background:
+                  reportView === v ? 'var(--primary)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                color: reportView === v ? 'var(--text-primary)' : 'var(--text-secondary)',
                 transition: 'all 0.2s',
               }}
             >
@@ -912,15 +936,13 @@ const InternDetail = () => {
       </div>
 
       {reports.length === 0 ? (
-        <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: 40 }}>
-          {t('intern.detail.noReports')}
-        </p>
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>{t('intern.detail.noReports')}</p>
       ) : reportView === 'liste' ? (
         /* ── VUE LISTE (tableau) ── */
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <tr style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)' }}>
                 {[
                   t('intern.dash.logDate'),
                   t('intern.detail.status'),
@@ -934,11 +956,11 @@ const InternDetail = () => {
                     style={{
                       padding: '10px 8px',
                       textAlign: 'left',
-                      color: 'rgba(255,255,255,0.5)',
+                      color: 'var(--text-secondary)',
                       fontWeight: 600,
                       fontSize: 11,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
+                      textTransform: 'none',
+                      letterSpacing: 'normal',
                     }}
                   >
                     {h}
@@ -952,33 +974,42 @@ const InternDetail = () => {
                 return (
                   <tr
                     key={report._id}
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                    style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = 'color-mix(in srgb, var(--text-primary) 3%, transparent)')
+                    }
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <td style={{ padding: '10px 8px', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    <td
+                      style={{
+                        padding: '10px 8px',
+                        color: 'var(--text-primary)',
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {formatDate(report.date)}
                     </td>
                     <td style={{ padding: '10px 8px' }}>
                       <span
                         style={{
                           padding: '2px 8px',
-                          borderRadius: 4,
+                          borderRadius: 'var(--r-sm)',
                           fontSize: 11,
                           fontWeight: 600,
-                          background: sCfg.color + '22',
+                          background: `color-mix(in srgb, ${sCfg.color} 13.3%, transparent)`,
                           color: sCfg.color,
                         }}
                       >
                         {t(sCfg.labelKey)}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 8px', color: 'rgba(255,255,255,0.7)' }}>{report.taches.length}</td>
-                    <td style={{ padding: '10px 8px', color: 'rgba(255,255,255,0.7)' }}>{report.attachments.length}</td>
+                    <td style={{ padding: '10px 8px', color: 'var(--text-secondary)' }}>{report.taches.length}</td>
+                    <td style={{ padding: '10px 8px', color: 'var(--text-secondary)' }}>{report.attachments.length}</td>
                     <td
                       style={{
                         padding: '10px 8px',
-                        color: 'rgba(255,255,255,0.6)',
+                        color: 'var(--text-secondary)',
                         maxWidth: 300,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -993,11 +1024,11 @@ const InternDetail = () => {
                           onClick={() => setExpandedReport(expandedReport === report._id ? null : report._id)}
                           style={{
                             padding: '3px 8px',
-                            borderRadius: 4,
+                            borderRadius: 'var(--r-sm)',
                             fontSize: 11,
                             cursor: 'pointer',
-                            border: '1px solid rgba(14, 165, 233, 0.3)',
-                            background: 'rgba(14, 165, 233, 0.08)',
+                            border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
+                            background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
                             color: 'var(--primary)',
                           }}
                         >
@@ -1008,12 +1039,12 @@ const InternDetail = () => {
                             onClick={() => handleValidateReport(report._id, 'VALIDE')}
                             style={{
                               padding: '3px 8px',
-                              borderRadius: 4,
+                              borderRadius: 'var(--r-sm)',
                               fontSize: 11,
                               cursor: 'pointer',
-                              border: '1px solid rgba(34,197,94,0.3)',
-                              background: 'rgba(34,197,94,0.08)',
-                              color: '#22c55e',
+                              border: '1px solid color-mix(in srgb, var(--good) 30%, transparent)',
+                              background: 'color-mix(in srgb, var(--good) 8%, transparent)',
+                              color: 'var(--good)',
                             }}
                           >
                             {t('intern.report.validate')}
@@ -1044,14 +1075,14 @@ const InternDetail = () => {
                         marginBottom: 12,
                       }}
                     >
-                      <span style={{ color: '#fff', fontWeight: 600 }}>{formatDate(report.date)}</span>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{formatDate(report.date)}</span>
                       <span
                         style={{
                           padding: '2px 8px',
-                          borderRadius: 4,
+                          borderRadius: 'var(--r-sm)',
                           fontSize: 11,
                           fontWeight: 600,
-                          background: sCfg.color + '22',
+                          background: `color-mix(in srgb, ${sCfg.color} 13.3%, transparent)`,
                           color: sCfg.color,
                         }}
                       >
@@ -1060,7 +1091,7 @@ const InternDetail = () => {
                     </div>
                     <p
                       style={{
-                        color: 'rgba(255,255,255,0.8)',
+                        color: 'var(--text-primary)',
                         fontSize: 14,
                         margin: '0 0 12px',
                         whiteSpace: 'pre-wrap',
@@ -1072,7 +1103,7 @@ const InternDetail = () => {
                     {report.taches.length > 0 && (
                       <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
                         {report.taches.map((task, i) => (
-                          <li key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>
+                          <li key={i} style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 4 }}>
                             {task}
                           </li>
                         ))}
@@ -1091,8 +1122,8 @@ const InternDetail = () => {
                             }
                             style={{
                               padding: '6px 10px',
-                              borderRadius: 6,
-                              background: 'rgba(255,255,255,0.04)',
+                              borderRadius: 'var(--r-sm)',
+                              background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                               color: 'var(--primary)',
                               fontSize: 12,
                               border: 'none',
@@ -1100,9 +1131,7 @@ const InternDetail = () => {
                             }}
                           >
                             {f.originalName}{' '}
-                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>
-                              ({formatFileSize(f.size)})
-                            </span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>({formatFileSize(f.size)})</span>
                           </button>
                         ))}
                       </div>
@@ -1111,8 +1140,8 @@ const InternDetail = () => {
                       <div
                         style={{
                           padding: '10px 14px',
-                          borderRadius: 6,
-                          background: 'rgba(14, 165, 233, 0.08)',
+                          borderRadius: 'var(--r-sm)',
+                          background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
                           borderLeft: '3px solid var(--primary)',
                           marginBottom: 12,
                         }}
@@ -1120,13 +1149,13 @@ const InternDetail = () => {
                         <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>
                           {t('intern.report.adminComment')}
                         </span>
-                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '4px 0 0' }}>
                           {report.commentaireAdmin}
                         </p>
                       </div>
                     )}
                     {report.status === 'VALIDE' && report.validePar && (
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                         {report.valideAt
                           ? t('intern.report.validatedByOn', {
                               name: report.validePar.name,
@@ -1154,26 +1183,26 @@ const InternDetail = () => {
                   style={{ cursor: 'pointer' }}
                 >
                   <div style={{ flex: 1 }}>
-                    <span style={{ color: '#fff', fontWeight: 600 }}>{formatDate(report.date)}</span>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{formatDate(report.date)}</span>
                     {report.taches.length > 0 && (
-                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginLeft: 10 }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 10 }}>
                         {t('intern.reports.taskCount', { count: report.taches.length })}
                       </span>
                     )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {report.attachments.length > 0 && (
-                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                         {t('intern.detail.fileCount', { count: report.attachments.length })}
                       </span>
                     )}
                     <span
                       style={{
                         padding: '2px 8px',
-                        borderRadius: 4,
+                        borderRadius: 'var(--r-sm)',
                         fontSize: 11,
                         fontWeight: 600,
-                        background: sCfg.color + '22',
+                        background: `color-mix(in srgb, ${sCfg.color} 13.3%, transparent)`,
                         color: sCfg.color,
                       }}
                     >
@@ -1181,7 +1210,7 @@ const InternDetail = () => {
                     </span>
                     <span
                       style={{
-                        color: 'rgba(255,255,255,0.3)',
+                        color: 'var(--text-muted)',
                         transform: expanded ? 'rotate(180deg)' : 'none',
                         transition: 'transform 0.2s',
                       }}
@@ -1191,12 +1220,17 @@ const InternDetail = () => {
                   </div>
                 </div>
                 {expanded && (
-                  <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div
+                    style={{
+                      padding: '16px 20px',
+                      borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                    }}
+                  >
                     <div style={{ marginBottom: 12 }}>
-                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{t('intern.report.summary')}</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{t('intern.report.summary')}</span>
                       <p
                         style={{
-                          color: 'rgba(255,255,255,0.8)',
+                          color: 'var(--text-primary)',
                           fontSize: 14,
                           margin: '4px 0 0',
                           whiteSpace: 'pre-wrap',
@@ -1208,12 +1242,10 @@ const InternDetail = () => {
                     </div>
                     {report.taches.length > 0 && (
                       <div style={{ marginBottom: 12 }}>
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
-                          {t('intern.report.tasksDone')}
-                        </span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{t('intern.report.tasksDone')}</span>
                         <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
                           {report.taches.map((task, i) => (
-                            <li key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>
+                            <li key={i} style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 4 }}>
                               {task}
                             </li>
                           ))}
@@ -1222,7 +1254,7 @@ const InternDetail = () => {
                     )}
                     {report.attachments.length > 0 && (
                       <div style={{ marginBottom: 12 }}>
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                           {t('intern.report.attachments')}
                         </span>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
@@ -1237,8 +1269,8 @@ const InternDetail = () => {
                               }
                               style={{
                                 padding: '6px 10px',
-                                borderRadius: 6,
-                                background: 'rgba(255,255,255,0.04)',
+                                borderRadius: 'var(--r-sm)',
+                                background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                                 color: 'var(--primary)',
                                 fontSize: 12,
                                 border: 'none',
@@ -1249,7 +1281,7 @@ const InternDetail = () => {
                               }}
                             >
                               {isImage(f.mimetype) ? '~img' : '~doc'} {f.originalName}
-                              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>
+                              <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                                 ({formatFileSize(f.size)})
                               </span>
                             </button>
@@ -1261,8 +1293,8 @@ const InternDetail = () => {
                       <div
                         style={{
                           padding: '10px 14px',
-                          borderRadius: 6,
-                          background: 'rgba(14, 165, 233, 0.08)',
+                          borderRadius: 'var(--r-sm)',
+                          background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
                           marginBottom: 12,
                           borderLeft: '3px solid var(--primary)',
                         }}
@@ -1270,13 +1302,13 @@ const InternDetail = () => {
                         <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>
                           {t('intern.report.adminComment')}
                         </span>
-                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, margin: '4px 0 0' }}>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '4px 0 0' }}>
                           {report.commentaireAdmin}
                         </p>
                       </div>
                     )}
                     {report.status === 'VALIDE' && report.validePar && (
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
                         {report.valideAt
                           ? t('intern.report.validatedByOn', {
                               name: report.validePar.name,
@@ -1322,14 +1354,14 @@ const InternDetail = () => {
 const StatCard = ({ value, label, color }: { value: string; label: string; color: string }) => (
   <div className="ticket-stat-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
     <span style={{ color, fontWeight: 700, fontSize: 22, display: 'block' }}>{value}</span>
-    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, display: 'block' }}>{label}</span>
+    <span style={{ color: 'var(--text-secondary)', fontSize: 12, display: 'block' }}>{label}</span>
   </div>
 )
 
 const InfoField = ({ label, value, color }: { label: string; value: string; color?: string }) => (
   <div>
-    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, display: 'block', marginBottom: 2 }}>{label}</span>
-    <span style={{ color: color || 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: 500 }}>{value}</span>
+    <span style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block', marginBottom: 2 }}>{label}</span>
+    <span style={{ color: color || 'var(--text-primary)', fontSize: 14, fontWeight: 500 }}>{value}</span>
   </div>
 )
 

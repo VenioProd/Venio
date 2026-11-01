@@ -2,7 +2,7 @@
 .edu-workspace {
   --edu-sidebar-width: 240px;
   display: grid;
-  grid-template-columns: var(--edu-sidebar-width) 1fr;
+  grid-template-columns: var(--edu-sidebar-width) minmax(0, 1fr);
   gap: 0;
   min-height: calc(100vh - 60px);
   background: var(--bg-primary);
@@ -42,16 +42,16 @@
   justify-content: center;
   width: 26px;
   height: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.035);
-  color: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--text-primary) 3.5%, transparent);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .edu-sidebar-collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.95);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-primary);
 }
 
 .edu-sidebar.is-collapsed {
@@ -144,7 +144,9 @@
 }
 
 .edu-main {
-  padding: 24px 32px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 20px;
   overflow: auto;
 }
 
@@ -168,14 +170,15 @@
 /* ─── KPI grid ───────────────────────────────────────────────────────── */
 .edu-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
 
 .edu-kpi {
-  background: var(--bg-card);
+  background: var(--surface-glass);
   border: 1px solid var(--border-color);
+  box-shadow: var(--surface-shadow);
   border-radius: var(--r-lg);
   padding: 14px 16px;
 }
@@ -189,8 +192,10 @@
 }
 
 .edu-kpi-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 26px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
 }
 .edu-kpi-sub {
@@ -202,13 +207,14 @@
 /* ─── Cards grid (Classes) ──────────────────────────────────────────── */
 .edu-class-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: 14px;
 }
 
 .edu-class-card {
-  background: var(--bg-card);
+  background: var(--surface-glass);
   border: 1px solid var(--border-color);
+  box-shadow: var(--surface-shadow);
   border-radius: var(--r-lg);
   padding: 16px;
   cursor: pointer;
@@ -357,13 +363,13 @@
 
 /* ─── Buttons & inputs ──────────────────────────────────────────────── */
 .edu-btn {
-  background: var(--primary);
-  color: var(--primary-fg);
-  border: none;
+  background: var(--pill-bg);
+  color: var(--pill-tx);
+  border: 1px solid var(--border-strong);
   padding: 7px 14px;
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -769,7 +775,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 4px 4px 4px 18px;
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 .edu-session-row {
   display: flex;
@@ -794,8 +800,8 @@
   align-items: flex-start;
   padding: 8px 10px;
   border-radius: var(--r-md);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent);
 }
 @media (max-width: 720px) {
   .edu-session-row {
@@ -818,13 +824,13 @@
   align-items: center;
   justify-content: space-between;
   font-size: 10.5px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
   padding: 8px 6px 4px;
   font-weight: 600;
 }
 .edu-side-school-head .edu-side-school-count {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.65);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-secondary);
   padding: 1px 7px;
   border-radius: var(--r-pill);
   font-size: 10.5px;
@@ -832,7 +838,7 @@
 }
 .edu-side-classes-empty {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   padding: 6px;
 }
 
@@ -1468,12 +1474,13 @@
 /* Templates view — cards */
 .edu-template-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: 12px;
 }
 .edu-template-card {
-  background: var(--bg-card);
+  background: var(--surface-glass);
   border: 1px solid var(--border-color);
+  box-shadow: var(--surface-shadow);
   border-radius: var(--r-lg);
   padding: 14px 16px;
   cursor: pointer;
@@ -2164,7 +2171,7 @@
   gap: 6px;
 }
 .edu-template-preview {
-  border: 1px solid var(--border-color, rgba(127, 127, 127, 0.25));
+  border: 1px solid var(--border-color, color-mix(in srgb, var(--text-secondary) 25%, transparent));
   border-radius: var(--r-md);
   padding: 16px;
   margin: 16px 0;
@@ -2176,7 +2183,7 @@
 }
 .edu-template-rubric {
   min-width: 0;
-  border: 1px solid var(--border-color, rgba(127, 127, 127, 0.25));
+  border: 1px solid var(--border-color, color-mix(in srgb, var(--text-secondary) 25%, transparent));
   border-radius: var(--r-md);
 }
 .edu-template-rubric .edu-row {
@@ -2202,9 +2209,11 @@
 .edu-cockpit-cal {
   margin: 24px 0 16px;
   padding: 14px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
   border-radius: var(--r-lg);
-  background: radial-gradient(120% 120% at 0% 0%, var(--accent-soft), transparent 55%), rgba(255, 255, 255, 0.03);
+  background:
+    radial-gradient(120% 120% at 0% 0%, var(--accent-soft), transparent 55%),
+    color-mix(in srgb, var(--text-primary) 3%, transparent);
 }
 
 .edu-cockpit-cal-head {
@@ -2222,12 +2231,12 @@
   gap: 10px;
   padding: 12px 14px;
   border-radius: var(--r-md);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
 }
 .edu-cockpit-cal-state-error {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.35);
+  background: color-mix(in srgb, var(--critical) 8%, transparent);
+  border-color: color-mix(in srgb, var(--critical) 35%, transparent);
 }
 .edu-cockpit-cal-state-icon {
   display: inline-flex;
@@ -2236,7 +2245,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
   font-size: 14px;
   flex-shrink: 0;
 }
@@ -2254,7 +2263,7 @@
 .edu-cockpit-cal-day-head {
   font-size: 11px;
 
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-secondary);
   padding-left: 4px;
 }
 
@@ -2263,8 +2272,8 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
   border-left: 3px solid var(--edu-color, var(--primary));
   border-radius: var(--r-md);
   transition:
@@ -2272,7 +2281,7 @@
     transform 0.12s ease;
 }
 .edu-cockpit-cal-item:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
   transform: translateY(-1px);
 }
 .edu-cockpit-cal-item-main {
@@ -2284,7 +2293,7 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-bottom: 2px;
 }
 .edu-cockpit-cal-item-title {
@@ -2301,13 +2310,13 @@
   gap: 8px;
   flex-wrap: wrap;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 .edu-cockpit-cal-item-loose {
   font-size: 11px;
 
-  color: rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
   padding: 2px 6px;
   border-radius: var(--r-sm);
 }
@@ -2329,7 +2338,7 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
   margin-left: auto;
 }
 .edu-cockpit-cal-item-action {
@@ -2377,12 +2386,12 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
   border-radius: var(--r-md);
   padding: 8px 12px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary);
   font-family: inherit;
   transition:
     background 0.12s ease,
@@ -2390,7 +2399,7 @@
   min-width: 96px;
 }
 .edu-doc-counter:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
 }
 .edu-doc-counter.is-active {
   border-color: var(--primary);
@@ -2403,7 +2412,7 @@
 }
 .edu-doc-counter-label {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .edu-doc-filters {
@@ -2423,7 +2432,7 @@
 .edu-doc-filter-search svg {
   position: absolute;
   left: 10px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
   pointer-events: none;
 }
 .edu-doc-filter-search .edu-input {
@@ -2435,16 +2444,16 @@
 }
 
 .edu-doc-table-wrap {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
   border-radius: var(--r-md);
   overflow: auto;
-  background: rgba(255, 255, 255, 0.02);
+  background: color-mix(in srgb, var(--text-primary) 2%, transparent);
 }
 .edu-doc-table {
   font-size: 13px;
 }
 .edu-doc-table th {
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--text-primary) 3%, transparent);
 }
 .edu-doc-table td {
   vertical-align: top;
@@ -2455,7 +2464,7 @@
   align-items: flex-start;
 }
 .edu-doc-title-icon {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -2469,7 +2478,7 @@
 }
 .edu-doc-title-sub {
   font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2477,16 +2486,16 @@
 }
 
 .edu-doc-status-published {
-  background: rgba(34, 197, 94, 0.15);
+  background: color-mix(in srgb, var(--good) 15%, transparent);
   color: var(--good);
 }
 .edu-doc-status-draft {
-  background: rgba(245, 158, 11, 0.15);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
   color: var(--warn);
 }
 .edu-doc-status-archived {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.55);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-secondary);
 }
 
 .edu-doc-tags {
@@ -2500,13 +2509,13 @@
   gap: 3px;
   padding: 1px 6px;
   border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.75);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-secondary);
   font-size: 11px;
 }
 .edu-doc-tag-more {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   padding: 1px 4px;
 }
 
@@ -2514,16 +2523,16 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
   border-radius: var(--r-md);
   padding: 10px 12px;
   margin-bottom: 14px;
   font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-secondary);
 }
 .edu-doc-edit-meta strong {
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-secondary);
   font-weight: 500;
   margin-right: 4px;
 }
@@ -2547,5 +2556,70 @@
   .edu-doc-title-main,
   .edu-doc-title-sub {
     max-width: 220px;
+  }
+}
+
+/* Vues pédagogiques : titres hors hub, outils toujours visibles dans le hub. */
+.edu-workspace {
+  min-width: 0;
+  max-width: 100%;
+  font: 13.5px/1.5 var(--font-body);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+}
+.edu-workspace .admin-page-header {
+  margin-bottom: 4px;
+}
+.edu-workspace .admin-page-header__row {
+  padding-bottom: 0;
+}
+.edu-workspace .admin-page-header h1 {
+  font-size: 24px;
+}
+.edu-workspace .admin-page-header {
+  display: block;
+  width: 100%;
+}
+.admin-hub-panel .edu-main .admin-page-header__row > div:first-child {
+  display: none;
+}
+.admin-hub-panel .edu-main .admin-page-header__row {
+  flex-direction: row;
+  justify-content: flex-end;
+}
+.admin-hub-panel .edu-main .admin-page-header:not(:has(.admin-page-header__actions)) {
+  display: none;
+}
+.edu-workspace :is(.edu-row, .edu-form-group, .edu-kpi, .edu-class-card) {
+  min-width: 0;
+}
+.edu-workspace :is(h1, h2, h3, p) {
+  overflow-wrap: anywhere;
+}
+.edu-workspace :is(.edu-side-badge, .edu-class-card-stat strong, .edu-kpi-value) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.edu-workspace :is(input, select, textarea) {
+  max-width: 100%;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .edu-main {
+    padding: 14px;
+  }
+  .edu-main > div > .edu-row.between {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .edu-main [style*='grid-template-columns: 1fr 1fr'] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .edu-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .edu-kpi {
+    padding: 12px;
   }
 }

@@ -1,5 +1,7 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
 import React, { useEffect, useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+
 import { apiFetch } from '../../lib/api'
 import { SENSITIVE_ACTIONS, sensitiveActionHeaders } from '../../lib/sensitiveActions'
 import { useAuth } from '../../context/AuthContext'
@@ -46,13 +48,13 @@ const CATEGORY_LABEL_KEYS: Record<string, MessageKey> = {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  IA: '#0ea5e9',
-  DESIGN: '#ffffff',
-  DEV: '#0284c7',
-  MARKETING: '#f59e0b',
-  COMMUNICATION: '#22c55e',
-  GESTION: '#9b9b9b',
-  AUTRE: '#64748b',
+  IA: 'var(--primary)',
+  DESIGN: 'var(--text-primary)',
+  DEV: 'var(--primary)',
+  MARKETING: 'var(--warning)',
+  COMMUNICATION: 'var(--good)',
+  GESTION: 'var(--text-secondary)',
+  AUTRE: 'var(--text-muted)',
 }
 
 const emptyForm = {
@@ -230,24 +232,20 @@ const ToolAccessList = () => {
   }
 
   return (
-    <div className="portal-container">
+    <div className="portal-container lot-c-page tool-access-page">
       <div className="portal-card">
-        <div className="admin-breadcrumb">
-          <Link to="/admin">{tr('nav.admin')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{tr('adminTech.toolAccess.title')}</span>
-        </div>
-        <div className="admin-header">
-          <div>
-            <h1 style={{ marginBottom: 4 }}>{tr('adminTech.toolAccess.title')}</h1>
-            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: 13 }}>{tr('adminTech.toolAccess.subtitle')}</p>
-          </div>
-          {canWrite && (
-            <button className="portal-button" type="button" onClick={() => handleOpenForm()}>
-              {tr('adminTech.toolAccess.addButton')}
-            </button>
-          )}
-        </div>
+        <PageHeader
+          eyebrow={tr('adminOps.zone.team')}
+          title={tr('adminTech.toolAccess.title')}
+          subtitle={tr('adminTech.toolAccess.subtitle')}
+          actions={
+            canWrite && (
+              <button className="portal-button" type="button" onClick={() => handleOpenForm()}>
+                {tr('adminTech.toolAccess.addButton')}
+              </button>
+            )
+          }
+        />
       </div>
 
       <div className="portal-card" style={{ marginTop: 16 }}>
@@ -290,15 +288,21 @@ const ToolAccessList = () => {
                   width: 10,
                   height: 10,
                   borderRadius: '50%',
-                  background: CATEGORY_COLORS[category] || '#64748b',
+                  background: CATEGORY_COLORS[category] || 'var(--text-muted)',
                 }}
               />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: 'normal' }}>
                 {categoryLabel(category)}
               </span>
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({categoryTools.length})</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
+                gap: 12,
+              }}
+            >
               {categoryTools.map((tool) => (
                 <div key={tool._id} className="portal-card" style={{ padding: 20 }}>
                   <div
@@ -320,10 +324,10 @@ const ToolAccessList = () => {
                             style={{
                               fontSize: 11,
                               padding: '2px 8px',
-                              borderRadius: 20,
-                              background: 'rgba(14, 165, 233, 0.15)',
+                              borderRadius: 'var(--r-lg)',
+                              background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
                               color: 'var(--primary)',
-                              border: '1px solid rgba(14, 165, 233, 0.3)',
+                              border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
                               whiteSpace: 'nowrap',
                             }}
                           >
@@ -355,7 +359,7 @@ const ToolAccessList = () => {
                           background: 'none',
                           border: 'none',
                           cursor: 'pointer',
-                          color: copiedId === tool._id ? '#22c55e' : 'var(--text-muted)',
+                          color: copiedId === tool._id ? 'var(--good)' : 'var(--text-muted)',
                           fontSize: 16,
                         }}
                       >
@@ -386,7 +390,7 @@ const ToolAccessList = () => {
                                 background: 'none',
                                 border: 'none',
                                 cursor: 'pointer',
-                                color: '#ef4444',
+                                color: 'var(--critical)',
                                 fontSize: 14,
                               }}
                             >
@@ -403,7 +407,7 @@ const ToolAccessList = () => {
                       <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                         {tr('adminTech.toolAccess.login')}
                       </span>
-                      <span style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
                         {tool.login}
                       </span>
                     </div>
@@ -414,8 +418,8 @@ const ToolAccessList = () => {
                           style={{
                             fontSize: 13,
                             color: 'var(--text-primary)',
-                            fontFamily: 'monospace',
-                            letterSpacing: '0.05em',
+                            fontFamily: 'var(--font-mono)',
+                            letterSpacing: 'normal',
                           }}
                         >
                           {revealedPasswords[tool._id] || '••••••••'}
@@ -484,12 +488,12 @@ const ToolAccessList = () => {
         >
           <div
             style={{
-              background: '#0a0f1a',
-              borderRadius: 14,
+              background: 'var(--bg-secondary)',
+              borderRadius: 'var(--r-lg)',
               padding: 28,
               width: '100%',
               maxWidth: 480,
-              border: '1px solid rgba(14, 165, 233, 0.2)',
+              border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
               boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
             }}
             onClick={(event) => event.stopPropagation()}
@@ -595,9 +599,9 @@ const ToolAccessList = () => {
                         }
                         style={{
                           padding: '4px 12px',
-                          borderRadius: 20,
+                          borderRadius: 'var(--r-lg)',
                           border: `1px solid ${checked ? 'var(--primary)' : 'var(--border-color)'}`,
-                          background: checked ? 'rgba(14, 165, 233, 0.15)' : 'transparent',
+                          background: checked ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : 'transparent',
                           color: checked ? 'var(--primary)' : 'var(--text-muted)',
                           fontSize: 12,
                           cursor: 'pointer',

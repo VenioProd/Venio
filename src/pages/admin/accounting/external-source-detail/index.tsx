@@ -128,7 +128,7 @@ const ExternalSourceDetail = () => {
   if (loading) {
     return (
       <AccountingLayout title={t('accVat.esd.pageTitle')}>
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accVat.common.loading')}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('accVat.common.loading')}</p>
       </AccountingLayout>
     )
   }
@@ -169,9 +169,9 @@ const ExternalSourceDetail = () => {
           <button
             className="portal-button"
             style={{
-              background: 'rgba(248,113,113,0.12)',
-              borderColor: 'rgba(248,113,113,0.5)',
-              color: '#fca5a5',
+              background: 'color-mix(in srgb, var(--critical) 12%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--critical) 50%, transparent)',
+              color: 'var(--critical)',
             }}
             onClick={handleDelete}
           >
@@ -188,9 +188,9 @@ const ExternalSourceDetail = () => {
           display: 'flex',
           gap: 4,
           padding: 6,
-          borderRadius: 12,
-          background: 'rgba(15,15,20,0.6)',
-          border: '1px solid rgba(14, 165, 233, 0.18)',
+          borderRadius: 'var(--r-lg)',
+          background: 'color-mix(in srgb, var(--bg-secondary) 60%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--primary) 18%, transparent)',
           flexWrap: 'wrap',
         }}
       >
@@ -202,16 +202,16 @@ const ExternalSourceDetail = () => {
             style={{
               padding: '8px 16px',
               border: '1px solid transparent',
-              borderRadius: 8,
+              borderRadius: 'var(--r-md)',
               background:
                 activeTab === tab.id
-                  ? 'linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0.18) 100%)'
+                  ? 'linear-gradient(135deg, color-mix(in srgb, var(--primary) 25%, transparent) 0%, color-mix(in srgb, var(--primary) 18%, transparent) 100%)'
                   : 'transparent',
-              color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.65)',
+              color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-secondary)',
               cursor: 'pointer',
               fontSize: '0.88rem',
               fontWeight: 500,
-              borderColor: activeTab === tab.id ? 'rgba(14, 165, 233, 0.5)' : 'transparent',
+              borderColor: activeTab === tab.id ? 'color-mix(in srgb, var(--primary) 50%, transparent)' : 'transparent',
               transition: 'all 0.2s ease',
             }}
           >

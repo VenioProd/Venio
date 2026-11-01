@@ -156,12 +156,20 @@ const CriterionCard: React.FC<CriterionCardProps> = ({
             {t('orgs.qualiopi.criterion.indicatorCount', { count: criterion.indicators.length })}
           </span>
           <div className="qualiopi-mini-bar">
-            <div style={{ width: `${(progress.done / Math.max(progress.total, 1)) * 100}%`, background: '#22c55e' }} />
             <div
-              style={{ width: `${(progress.inProgress / Math.max(progress.total, 1)) * 100}%`, background: '#f59e0b' }}
+              style={{ width: `${(progress.done / Math.max(progress.total, 1)) * 100}%`, background: 'var(--good)' }}
             />
             <div
-              style={{ width: `${(progress.blocked / Math.max(progress.total, 1)) * 100}%`, background: '#ef4444' }}
+              style={{
+                width: `${(progress.inProgress / Math.max(progress.total, 1)) * 100}%`,
+                background: 'var(--warning)',
+              }}
+            />
+            <div
+              style={{
+                width: `${(progress.blocked / Math.max(progress.total, 1)) * 100}%`,
+                background: 'var(--critical)',
+              }}
             />
           </div>
           <span className="qualiopi-criterion-percent">{progress.percent}%</span>

@@ -46,42 +46,44 @@ export default function FiscalYearsSection({
           <div className="hint">{t('accVat.fiscal.emptyHint')}</div>
         </div>
       ) : (
-        <table className="accounting-table">
-          <thead>
-            <tr>
-              <th>{t('accVat.fiscal.colCode')}</th>
-              <th>{t('accVat.fiscal.colLabel')}</th>
-              <th>{t('accVat.fiscal.colPeriod')}</th>
-              <th>{t('accVat.fiscal.colStatus')}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {fiscalYears.map((fy) => (
-              <tr key={fy._id}>
-                <td className="code">{fy.code}</td>
-                <td>{fy.label}</td>
-                <td>
-                  {formatDate(fy.startDate)} → {formatDate(fy.endDate)}
-                </td>
-                <td>
-                  <span className={`accounting-badge ${fy.status === 'OUVERT' ? 'draft' : 'locked'}`}>
-                    {STATUS_KEYS[fy.status] ? t(STATUS_KEYS[fy.status]) : fy.status}
-                  </span>
-                </td>
-                <td>
-                  {fy.status === 'OUVERT' && canLock && (
-                    <div className="accounting-row-actions">
-                      <button className="danger" onClick={() => onClose(fy._id)}>
-                        {t('accVat.fiscal.close')}
-                      </button>
-                    </div>
-                  )}
-                </td>
+        <div className="accounting-table-scroll">
+          <table className="accounting-table">
+            <thead>
+              <tr>
+                <th>{t('accVat.fiscal.colCode')}</th>
+                <th>{t('accVat.fiscal.colLabel')}</th>
+                <th>{t('accVat.fiscal.colPeriod')}</th>
+                <th>{t('accVat.fiscal.colStatus')}</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {fiscalYears.map((fy) => (
+                <tr key={fy._id}>
+                  <td className="code">{fy.code}</td>
+                  <td>{fy.label}</td>
+                  <td>
+                    {formatDate(fy.startDate)} → {formatDate(fy.endDate)}
+                  </td>
+                  <td>
+                    <span className={`accounting-badge ${fy.status === 'OUVERT' ? 'draft' : 'locked'}`}>
+                      {STATUS_KEYS[fy.status] ? t(STATUS_KEYS[fy.status]) : fy.status}
+                    </span>
+                  </td>
+                  <td>
+                    {fy.status === 'OUVERT' && canLock && (
+                      <div className="accounting-row-actions">
+                        <button className="danger" onClick={() => onClose(fy._id)}>
+                          {t('accVat.fiscal.close')}
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {canManage && (

@@ -25,10 +25,8 @@ import {
 } from 'lucide-react'
 import {
   getClass,
-  updateClass,
   deleteClass,
   getClassHome,
-  updateNote,
   getNote,
   createNote,
   deleteNote,
@@ -572,7 +570,7 @@ function PropertiesPanel({
             value={klass.period.start?.slice(0, 10) ?? ''}
             onChange={(e) => onPatch({ period: { ...klass.period, start: e.target.value || null } })}
           />
-          <span style={{ color: 'rgba(255,255,255,0.4)' }}>→</span>
+          <span style={{ color: 'var(--text-muted)' }}>→</span>
           <input
             type="date"
             className="edu-cw-prop-input"
@@ -669,7 +667,7 @@ function PropValueInput({ prop, onChange }: { prop: EducationClassProperty; onCh
           checked={prop.value === 'true'}
           onChange={(e) => onChange(e.target.checked ? 'true' : 'false')}
         />
-        <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)' }}>
+        <span style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
           {prop.value === 'true' ? t('common.yes') : t('common.no')}
         </span>
       </label>

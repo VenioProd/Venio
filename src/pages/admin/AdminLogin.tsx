@@ -1,3 +1,7 @@
+import PageHeader from '../../components/admin/ui/PageHeader'
+import './OrganisationSysteme.css'
+import { Eye, EyeOff } from 'lucide-react'
+import './AdminPortal.css'
 import React, { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -68,12 +72,13 @@ const AdminLogin = () => {
   }
 
   return (
-    <div className="portal-container">
-      <div className="portal-card" style={{ maxWidth: '480px', margin: '0 auto' }}>
-        <h1 style={{ marginBottom: '8px' }}>{t('adminAccess.login.title')}</h1>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
-          {needs2FA ? t('adminAccess.login.enterCode') : t('adminAccess.login.adminOnly')}
-        </p>
+    <div className="portal-container lot-c-page admin-login-page">
+      <div className="portal-card">
+        <PageHeader
+          eyebrow={t('adminOps.zone.system')}
+          title={t('adminAccess.login.title')}
+          subtitle={needs2FA ? t('adminAccess.login.enterCode') : t('adminAccess.login.adminOnly')}
+        />
         <form onSubmit={handleSubmit} className="portal-list">
           {!needs2FA ? (
             <>
@@ -117,7 +122,7 @@ const AdminLogin = () => {
                   }}
                   aria-label={showPassword ? t('adminAccess.login.hidePassword') : t('adminAccess.login.showPassword')}
                 >
-                  {showPassword ? '🙈' : '👁'}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </>
@@ -186,7 +191,7 @@ const AdminLogin = () => {
               </button>
             </p>
           )}
-          {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
+          {success && <p style={{ color: 'var(--good)', fontSize: '14px' }}>{success}</p>}
         </form>
 
         {forgotMode && (
@@ -223,7 +228,7 @@ const AdminLogin = () => {
               required
             />
             {error && <div className="admin-error">{error}</div>}
-            {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
+            {success && <p style={{ color: 'var(--good)', fontSize: '14px' }}>{success}</p>}
             <button className="portal-button" type="submit" disabled={loading}>
               {loading ? t('adminAccess.login.sending') : t('adminAccess.login.sendLink')}
             </button>
@@ -283,7 +288,7 @@ const AdminLogin = () => {
               minLength={6}
             />
             {error && <div className="admin-error">{error}</div>}
-            {success && <p style={{ color: '#22c55e', fontSize: '14px' }}>{success}</p>}
+            {success && <p style={{ color: 'var(--good)', fontSize: '14px' }}>{success}</p>}
             <button className="portal-button" type="submit" disabled={loading}>
               {loading ? t('adminAccess.login.resetting') : t('adminAccess.login.reset')}
             </button>

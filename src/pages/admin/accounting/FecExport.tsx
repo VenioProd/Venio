@@ -143,16 +143,16 @@ const FecExport = () => {
             style={{
               marginTop: 16,
               padding: '12px 16px',
-              borderRadius: 10,
-              background: 'rgba(255,255,255,0.04)',
+              borderRadius: 'var(--r-md)',
+              background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               fontSize: '0.9rem',
-              color: 'rgba(255,255,255,0.85)',
+              color: 'var(--text-primary)',
             }}
           >
             <strong>{t('accAccounts.fec.effectivePeriod')}</strong> {formatDate(effectiveFrom)} →{' '}
             {formatDate(effectiveTo)}
             {!from && !to && selectedFy && (
-              <span style={{ color: 'rgba(255,255,255,0.55)', marginLeft: 6 }}>
+              <span style={{ color: 'var(--text-secondary)', marginLeft: 6 }}>
                 {t('accAccounts.fec.derivedFromYear')}
               </span>
             )}
@@ -167,7 +167,7 @@ const FecExport = () => {
             <span
               style={{
                 marginLeft: 12,
-                color: 'rgba(255,255,255,0.55)',
+                color: 'var(--text-secondary)',
                 fontSize: '0.85rem',
               }}
             >
@@ -181,9 +181,9 @@ const FecExport = () => {
         <div
           className="accounting-message"
           style={{
-            background: 'rgba(251,191,36,0.08)',
-            border: '1px solid rgba(251,191,36,0.35)',
-            color: '#fcd34d',
+            background: 'color-mix(in srgb, var(--warning) 8%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--warning) 35%, transparent)',
+            color: 'var(--warning)',
             margin: 0,
           }}
         >
@@ -195,31 +195,33 @@ const FecExport = () => {
         <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>{t('accAccounts.fec.previewTitle')}</h2>
         <p
           style={{
-            color: 'rgba(255,255,255,0.6)',
+            color: 'var(--text-secondary)',
             fontSize: '0.88rem',
             marginTop: 0,
           }}
         >
           {renderRich(t('accAccounts.fec.previewText'), { pipe: <span className="code">|</span> })}
         </p>
-        <table className="accounting-table">
-          <thead>
-            <tr>
-              <th style={{ width: 40 }}>#</th>
-              <th>{t('accAccounts.fec.colColumn')}</th>
-              <th>{t('accAccounts.col.description')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {FEC_COLUMNS.map((c, i) => (
-              <tr key={c.code}>
-                <td className="code">{i + 1}</td>
-                <td className="code">{c.code}</td>
-                <td>{t(c.labelKey)}</td>
+        <div className="accounting-table-scroll">
+          <table className="accounting-table">
+            <thead>
+              <tr>
+                <th style={{ width: 40 }}>#</th>
+                <th>{t('accAccounts.fec.colColumn')}</th>
+                <th>{t('accAccounts.col.description')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {FEC_COLUMNS.map((c, i) => (
+                <tr key={c.code}>
+                  <td className="code">{i + 1}</td>
+                  <td className="code">{c.code}</td>
+                  <td>{t(c.labelKey)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
     </AccountingLayout>
   )

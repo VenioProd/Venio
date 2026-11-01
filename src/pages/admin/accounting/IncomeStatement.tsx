@@ -46,82 +46,86 @@ const GroupSection = ({ title, totalLabel, groups, total, details, color }: Grou
         style={{
           margin: '0 0 12px 0',
           fontSize: '1rem',
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px',
+          textTransform: 'none',
+          letterSpacing: 'normal',
           color,
         }}
       >
         {title}
       </h2>
       {!groups || groups.length === 0 ? (
-        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>{t('accAccounts.income.noLines')}</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('accAccounts.income.noLines')}</p>
       ) : (
-        <table className="accounting-table">
-          <tbody>
-            {groups.map((g) => {
-              const isOpen = !!expanded[g.group]
-              const lines = details.get(g.group) || []
-              const hasLines = lines.length > 0
-              return (
-                <Fragment key={`grp-${g.group}`}>
-                  <tr
-                    style={{
-                      background: 'rgba(255,255,255,0.04)',
-                      cursor: hasLines ? 'pointer' : 'default',
-                    }}
-                    onClick={hasLines ? () => toggle(g.group) : undefined}
-                  >
-                    <td
+        <div className="accounting-table-scroll">
+          <table className="accounting-table">
+            <tbody>
+              {groups.map((g) => {
+                const isOpen = !!expanded[g.group]
+                const lines = details.get(g.group) || []
+                const hasLines = lines.length > 0
+                return (
+                  <Fragment key={`grp-${g.group}`}>
+                    <tr
                       style={{
-                        padding: '8px 14px',
-                        fontSize: '0.78rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        color: 'rgba(14, 165, 233, 0.85)',
-                        fontWeight: 600,
+                        background: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                        cursor: hasLines ? 'pointer' : 'default',
                       }}
+                      onClick={hasLines ? () => toggle(g.group) : undefined}
                     >
-                      {hasLines && (
-                        <span style={{ marginRight: 6, display: 'inline-block', width: 12 }}>{isOpen ? '▾' : '▸'}</span>
-                      )}
-                      {g.group} — {g.label}
-                    </td>
-                    <td
-                      className="amount"
-                      style={{
-                        padding: '8px 14px',
-                        fontWeight: 700,
-                        color: 'rgba(255,255,255,0.9)',
-                      }}
-                    >
-                      {formatEur(g.amount)}
-                    </td>
-                  </tr>
-                  {isOpen &&
-                    lines.map((l) => (
-                      <tr key={`l-${l.code}`}>
-                        <td style={{ paddingLeft: 32 }}>
-                          <span className="code" style={{ marginRight: 8 }}>
-                            {l.code}
+                      <td
+                        style={{
+                          padding: '8px 14px',
+                          fontSize: '0.78rem',
+                          textTransform: 'none',
+                          letterSpacing: 'normal',
+                          color: 'color-mix(in srgb, var(--primary) 85%, transparent)',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {hasLines && (
+                          <span style={{ marginRight: 6, display: 'inline-block', width: 12 }}>
+                            {isOpen ? '▾' : '▸'}
                           </span>
-                          {l.label}
-                        </td>
-                        <td className="amount">{formatEur(l.amount)}</td>
-                      </tr>
-                    ))}
-                </Fragment>
-              )
-            })}
-          </tbody>
-          <tfoot>
-            <tr style={{ borderTop: '2px solid rgba(14, 165, 233, 0.4)' }}>
-              <td style={{ fontWeight: 700, padding: '14px' }}>{totalLabel}</td>
-              <td className="amount" style={{ fontWeight: 700, color }}>
-                {formatEur(total)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+                        )}
+                        {g.group} — {g.label}
+                      </td>
+                      <td
+                        className="amount"
+                        style={{
+                          padding: '8px 14px',
+                          fontWeight: 700,
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        {formatEur(g.amount)}
+                      </td>
+                    </tr>
+                    {isOpen &&
+                      lines.map((l) => (
+                        <tr key={`l-${l.code}`}>
+                          <td style={{ paddingLeft: 32 }}>
+                            <span className="code" style={{ marginRight: 8 }}>
+                              {l.code}
+                            </span>
+                            {l.label}
+                          </td>
+                          <td className="amount">{formatEur(l.amount)}</td>
+                        </tr>
+                      ))}
+                  </Fragment>
+                )
+              })}
+            </tbody>
+            <tfoot>
+              <tr style={{ borderTop: '2px solid color-mix(in srgb, var(--primary) 40%, transparent)' }}>
+                <td style={{ fontWeight: 700, padding: '14px' }}>{totalLabel}</td>
+                <td className="amount" style={{ fontWeight: 700, color }}>
+                  {formatEur(total)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       )}
     </div>
   )
@@ -247,7 +251,7 @@ const IncomeStatement = () => {
         </div>
 
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>{t('accAccounts.common.loading')}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('accAccounts.common.loading')}</p>
         ) : !data ? (
           <div className="accounting-empty">{t('accAccounts.income.prompt')}</div>
         ) : (
@@ -269,7 +273,7 @@ const IncomeStatement = () => {
                 groups={data.chargesByGroup}
                 total={data.totalCharges}
                 details={chargesDetails}
-                color="#f87171"
+                color="var(--critical)"
               />
               <GroupSection
                 title={t('accAccounts.income.revenue')}
@@ -277,7 +281,7 @@ const IncomeStatement = () => {
                 groups={data.produitsByGroup}
                 total={data.totalProduits}
                 details={produitsDetails}
-                color="#4ade80"
+                color="var(--good)"
               />
             </div>
 
@@ -285,20 +289,20 @@ const IncomeStatement = () => {
               style={{
                 marginTop: 24,
                 padding: '24px',
-                borderRadius: 16,
+                borderRadius: 'var(--r-lg)',
                 background: isProfit
-                  ? 'linear-gradient(135deg, rgba(74,222,128,0.12) 0%, rgba(34,197,94,0.06) 100%)'
-                  : 'linear-gradient(135deg, rgba(248,113,113,0.12) 0%, rgba(239,68,68,0.06) 100%)',
-                border: `1px solid ${isProfit ? 'rgba(74,222,128,0.4)' : 'rgba(248,113,113,0.4)'}`,
+                  ? 'linear-gradient(135deg, color-mix(in srgb, var(--good) 12%, transparent) 0%, color-mix(in srgb, var(--good) 6%, transparent) 100%)'
+                  : 'linear-gradient(135deg, color-mix(in srgb, var(--critical) 12%, transparent) 0%, color-mix(in srgb, var(--critical) 6%, transparent) 100%)',
+                border: `1px solid ${isProfit ? 'color-mix(in srgb, var(--good) 40%, transparent)' : 'color-mix(in srgb, var(--critical) 40%, transparent)'}`,
                 textAlign: 'center',
               }}
             >
               <div
                 style={{
                   fontSize: '0.85rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.6px',
-                  color: 'rgba(255,255,255,0.55)',
+                  textTransform: 'none',
+                  letterSpacing: 'normal',
+                  color: 'var(--text-secondary)',
                   marginBottom: 8,
                 }}
               >
@@ -308,7 +312,7 @@ const IncomeStatement = () => {
                 style={{
                   fontSize: '2.2rem',
                   fontWeight: 800,
-                  color: isProfit ? '#4ade80' : '#f87171',
+                  color: isProfit ? 'var(--good)' : 'var(--critical)',
                   fontVariantNumeric: 'tabular-nums',
                 }}
               >
@@ -320,7 +324,7 @@ const IncomeStatement = () => {
                 style={{
                   marginTop: 10,
                   fontSize: '0.9rem',
-                  color: 'rgba(255,255,255,0.6)',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 {t('accAccounts.income.formula', {

@@ -67,16 +67,18 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
   return (
     <div className="pf-table-scroll" tabIndex={0} role="region" aria-label={headers.join(', ')}>
-      <table className="accounting-table">
-        <thead>
-          <tr>
-            {headers.map((header) => (
-              <th key={header}>{header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
+      <div className="accounting-table-scroll">
+        <table className="accounting-table">
+          <thead>
+            <tr>
+              {headers.map((header) => (
+                <th key={header}>{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>{children}</tbody>
+        </table>
+      </div>
     </div>
   )
 }

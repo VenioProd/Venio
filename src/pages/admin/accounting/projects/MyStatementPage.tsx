@@ -1,3 +1,4 @@
+import PageHeader from '../../../../components/admin/ui/PageHeader'
 import { useEffect, useState } from 'react'
 import { ApiError, apiFetch } from '../../../../lib/api'
 import { useI18n } from '../../../../context/I18nContext'
@@ -25,12 +26,11 @@ export default function MyStatementPage() {
   }, [attempt])
   return (
     <div className="pf-workspace">
-      <div className="admin-page-header">
-        <div>
-          <h1>{t('accProjects.myStatement.title')}</h1>
-          <p className="admin-page-subtitle">{t('accProjects.myStatement.subtitle')}</p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={t('accAccounts.layout.title')}
+        title={t('accProjects.myStatement.title')}
+        subtitle={t('accProjects.myStatement.subtitle')}
+      />
       {empty && <div className="accounting-card">{t('accProjects.myStatement.empty')}</div>}
       {error && (
         <p role="alert" className="admin-error">

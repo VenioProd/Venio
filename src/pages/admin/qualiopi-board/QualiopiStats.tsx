@@ -100,15 +100,15 @@ const QualiopiStats: React.FC<QualiopiStatsProps> = ({
         </div>
         <div className="qualiopi-legend">
           <span>
-            <span className="qualiopi-legend-dot" style={{ background: '#22c55e' }} />{' '}
+            <span className="qualiopi-legend-dot" style={{ background: 'var(--good)' }} />{' '}
             {t('orgs.qualiopi.stats.legendDone', { count: globalProgress.done })}
           </span>
           <span>
-            <span className="qualiopi-legend-dot" style={{ background: '#f59e0b' }} />{' '}
+            <span className="qualiopi-legend-dot" style={{ background: 'var(--warning)' }} />{' '}
             {t('orgs.qualiopi.stats.legendInProgress', { count: globalProgress.inProgress })}
           </span>
           <span>
-            <span className="qualiopi-legend-dot" style={{ background: '#ef4444' }} />{' '}
+            <span className="qualiopi-legend-dot" style={{ background: 'var(--critical)' }} />{' '}
             {t('orgs.qualiopi.stats.legendBlocked', { count: globalProgress.blocked })}
           </span>
           <span style={{ color: 'var(--text-muted)' }}>

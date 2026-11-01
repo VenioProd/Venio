@@ -3798,101 +3798,6 @@ a.portal-button {
    ═══════════════════════════════════════════════ */
 
 /* Hero header */
-.qualiopi-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 32px 36px;
-  margin-bottom: 28px;
-  border-radius: var(--r-lg);
-  background: var(--bg-card);
-  border: 1px solid var(--accent-border);
-  position: relative;
-  overflow: hidden;
-}
-
-.qualiopi-hero::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--primary);
-  background-size: 200% 100%;
-  animation: qualiopi-gradient 4s linear infinite;
-}
-
-@keyframes qualiopi-gradient {
-  0% {
-    background-position: 0% 0%;
-  }
-  100% {
-    background-position: 200% 0%;
-  }
-}
-
-.qualiopi-hero-content {
-  flex: 1;
-}
-
-.qualiopi-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 10px;
-  padding: 6px 12px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  transition: all 0.2s ease;
-}
-
-.qualiopi-back-btn:hover {
-  color: var(--primary-light);
-  border-color: var(--accent-border);
-  background: rgba(var(--primary-rgb), 0.05);
-}
-
-.qualiopi-hero-title {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--text-primary);
-  margin: 0;
-  font-family: var(--font-heading);
-  letter-spacing: -0.02em;
-}
-
-.qualiopi-hero-title span {
-  color: var(--primary-light);
-}
-
-.qualiopi-hero-subtitle {
-  color: var(--text-muted);
-  margin-top: 8px;
-  font-size: 14px;
-}
-
-.qualiopi-hero-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 16px 24px;
-  border: 2px solid var(--accent-border);
-  border-radius: var(--r-pill);
-  background: var(--bg-card);
-}
-
-.qualiopi-hero-badge span {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--primary-light);
-}
 
 .qualiopi-loading-spinner {
   width: 32px;
@@ -7814,37 +7719,6 @@ a.portal-button {
 
 [data-theme='light'] .crm-modal-actions {
   border-top-color: var(--border-color);
-}
-
-/* ===== Qualiopi Hero Light Mode ===== */
-[data-theme='light'] .qualiopi-hero {
-  background: var(--bg-card);
-  border-color: var(--accent-border);
-}
-
-[data-theme='light'] .qualiopi-hero-title {
-  color: var(--text-primary);
-}
-
-[data-theme='light'] .qualiopi-hero-subtitle {
-  color: var(--text-muted);
-}
-
-[data-theme='light'] .qualiopi-hero-badge {
-  background: var(--bg-card);
-  border-color: var(--accent-border);
-}
-
-[data-theme='light'] .qualiopi-back-btn {
-  color: var(--text-secondary);
-  border-color: var(--line-strong);
-  background: var(--bg-card);
-}
-
-[data-theme='light'] .qualiopi-back-btn:hover {
-  color: var(--primary-light);
-  border-color: var(--accent-border);
-  background: rgba(var(--primary-rgb), 0.05);
 }
 
 /* Qualiopi tabs */
