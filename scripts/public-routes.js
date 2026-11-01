@@ -7,12 +7,12 @@ export const publicRoutes = [
     path: '',
     priority: '1.0',
     changefreq: 'weekly',
-    title: 'Site web, conseil marketing et communication à Paris · Venio',
+    title: 'Conseil, communication et plateformes métier à Paris · Venio',
     description:
-      "On dessine et on code votre site à partir de ce que vous avez à dire, pas à partir d'un modèle. Le site vous appartient : n'importe quel développeur peut le reprendre après nous.",
-    h1: 'Sites web, plateformes et communication',
+      'Conseil stratégique, conseil en communication, sites web et plateformes métier sur mesure à Paris. Un livrable que vous gardez, un code qui vous appartient.',
+    h1: 'Stratégie, communication et plateformes métier sur mesure',
     content:
-      "Venio clarifie ce que vous avez à dire, puis le fait savoir : un site dessiné et codé pour vous, et une communication qui sert à quelque chose. Le site vous appartient — n'importe quel développeur peut le reprendre après nous.",
+      'Venio donne un cap clair, une communication qui porte et des outils conçus pour votre métier : un état des lieux écrit, un plan de communication qui tient, des sites et plateformes codés de zéro qui vous appartiennent.',
   },
   {
     path: '/services/sites',

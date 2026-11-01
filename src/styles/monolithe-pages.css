@@ -44,29 +44,32 @@
   transform: translateY(0);
 }
 
-/* Section head */
+/* En-têtes des sections éditoriales */
 .mp-page .mp-head {
   display: flex;
-  align-items: baseline;
-  gap: var(--mp-sp-m);
-  margin-bottom: var(--mp-sp-l);
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
 }
 .mp-page .mp-index {
-  font-size: clamp(56px, 8vw, 120px);
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1px var(--border-color);
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding-inline: 8px;
+  border: 1px solid var(--sy-line-2);
+  border-radius: 12px;
+  background: rgba(167, 139, 250, 0.08);
+  font: 400 12px var(--sy-mono);
+  color: var(--sy-vio);
   user-select: none;
   flex-shrink: 0;
 }
 .mp-page .mp-kicker {
-  font-size: clamp(11px, 1.1vw, 14px);
-  font-weight: 800;
-  letter-spacing: 0.18em;
+  font: 400 11.5px/1.6 var(--sy-mono);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--sy-mut);
 }
 
 /* ─── HERO ─── */
@@ -180,15 +183,15 @@
   max-width: 62ch;
 }
 .mp-page .mp-prose p {
-  font-size: clamp(16px, 1.7vw, 21px);
-  font-weight: 500;
+  font-size: clamp(16px, 1.5vw, 18px);
+  font-weight: 400;
   line-height: 1.55;
   color: var(--text-secondary);
 }
 .mp-page .mp-prose p.mp-strong {
   color: var(--text-primary);
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 /* ─── INUTILE SI (garde-fou) ─── */
@@ -210,88 +213,80 @@
   margin-right: 6px;
 }
 
-/* ─── PILIERS (méthode) ─── */
+/* Piliers et pôles — panneaux en verre fumé (.sy-glass). */
 .mp-page .mp-piliers {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
 }
 .mp-page .mp-pilier {
-  padding: var(--mp-sp-l) var(--mp-sp-m);
-  border-left: 1px solid var(--border-color);
-}
-.mp-page .mp-pilier:first-child {
-  border-left: none;
-  padding-left: 0;
+  min-width: 0;
+  padding: 28px;
 }
 .mp-page .mp-pilier-num {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  color: var(--primary);
-  margin-bottom: var(--mp-sp-s);
-  display: block;
+  display: inline-block;
+  padding: 5px 9px;
+  margin-bottom: 24px;
+  border: 1px solid color-mix(in srgb, var(--c) 25%, transparent);
+  border-radius: 999px;
+  color: var(--c);
+  font: 400 11.5px var(--sy-mono);
 }
 .mp-page .mp-pilier-titre {
-  font-size: clamp(18px, 2vw, 24px);
-  font-weight: 900;
+  font: 600 clamp(22px, 2vw, 28px)/1.15 var(--sy-sans);
   letter-spacing: -0.03em;
-  text-transform: uppercase;
-  margin-bottom: var(--mp-sp-xs);
+  margin-bottom: 12px;
 }
 .mp-page .mp-pilier-texte {
-  font-size: clamp(14px, 1.3vw, 16px);
-  color: var(--text-secondary);
-  line-height: 1.55;
-  font-weight: 500;
+  font-size: 15px;
+  color: var(--sy-mut);
+  line-height: 1.6;
 }
-
-/* ─── PÔLES / lignes ─── */
 .mp-page .mp-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--mp-sp-m);
-  padding: var(--mp-sp-l) 0;
-  border-top: 1px solid var(--border-color);
+  gap: 24px;
+  margin-top: 14px;
+  padding: clamp(24px, 4vw, 40px);
   text-decoration: none;
   color: inherit;
+  transition:
+    border-color 0.3s,
+    transform 0.3s var(--sy-ease);
 }
-.mp-page .mp-row:last-child {
-  border-bottom: 1px solid var(--border-color);
+.mp-page .mp-row:nth-child(1) {
+  --c: var(--sy-vio);
+}
+.mp-page .mp-row:nth-child(2) {
+  --c: var(--sy-sky);
+}
+.mp-page .mp-row:nth-child(3) {
+  --c: var(--sy-teal);
 }
 .mp-page .mp-row-name {
-  font-size: clamp(28px, 4.5vw, 64px);
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  text-transform: uppercase;
-  line-height: 1;
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
 }
 .mp-page .mp-row-desc {
-  font-size: clamp(13px, 1.4vw, 16px);
-  color: var(--text-secondary);
-  font-weight: 500;
+  font-size: 15px;
+  color: var(--sy-mut);
   margin-top: 10px;
 }
 .mp-page .mp-row-go {
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  white-space: nowrap;
-  transition: color 0.2s var(--mp-ease);
+  font: 500 14px/1.5 var(--sy-sans);
+  color: var(--c);
 }
-.mp-page .mp-row:hover .mp-row-go {
-  color: var(--primary);
-}
-.mp-page .mp-row:hover .mp-row-name {
-  color: var(--primary);
+.mp-page .mp-row:hover {
+  border-color: color-mix(in srgb, var(--c) 40%, transparent);
 }
 .mp-page .mp-row-go .mp-ar {
-  transition: transform 0.2s var(--mp-ease);
+  transition: transform 0.25s var(--sy-ease);
 }
 .mp-page .mp-row:hover .mp-row-go .mp-ar {
   transform: translate(3px, -3px);
@@ -733,14 +728,6 @@
   .mp-page .mp-testimonials {
     grid-template-columns: 1fr;
   }
-  .mp-page .mp-pilier {
-    border-left: none;
-    border-top: 1px solid var(--border-color);
-    padding: var(--mp-sp-m) 0;
-  }
-  .mp-page .mp-pilier:first-child {
-    border-top: none;
-  }
   .mp-page .mp-projet,
   .mp-page .mp-contact-grid,
   .mp-page .mp-method-step {
@@ -748,14 +735,6 @@
   }
 }
 @media (max-width: 600px) {
-  .mp-page .mp-head {
-    flex-direction: column;
-    gap: var(--mp-sp-xs);
-    align-items: flex-start;
-  }
-  .mp-page .mp-index {
-    font-size: clamp(44px, 16vw, 72px);
-  }
   .mp-page .mp-title {
     font-size: clamp(34px, 11vw, 56px);
   }
@@ -774,4 +753,116 @@
 /* Action de repli sous le double CTA des blocs de fin de page. */
 .mp-page .mp-cta-alt {
   margin: var(--mp-sp-m) 0 0;
+}
+
+/* ─── Pages secondaires — primitives de la charte Système ─── */
+html.theme-monolithe .sy-secondary {
+  --mp-max: calc(var(--sy-max) + 2 * var(--sy-gut));
+  --mp-gutter: var(--sy-gut);
+  --mp-ease: var(--sy-ease);
+  --c: var(--sy-sky);
+  background: var(--sy-bg);
+  color: var(--sy-tx);
+  font-family: var(--sy-sans);
+  overflow-wrap: break-word;
+  overflow: clip;
+}
+
+html.theme-monolithe .sy-secondary .sy-secondary-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 0;
+  padding-block: clamp(112px, 10vw, 140px) clamp(56px, 7vw, 96px);
+  border: 0;
+}
+
+html.theme-monolithe .sy-secondary .sy-secondary-title {
+  margin: 24px 0 0;
+  font-family: var(--sy-sans);
+  font-size: clamp(40px, 6.2vw, 88px);
+  font-weight: 600;
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+  text-transform: none;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+html.theme-monolithe .sy-secondary .sy-secondary-title.rp-h1--wide {
+  font-size: clamp(40px, 4.7vw, 68px);
+}
+
+html.theme-monolithe .sy-secondary .sy-secondary-title span,
+html.theme-monolithe .sy-secondary :is(.rp-sec h2 .rp-acc, .mt-h2 span, .ap-h2 span) {
+  background: var(--sy-grad);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+html.theme-monolithe .sy-secondary .sy-secondary-lede {
+  max-width: 52ch;
+  margin: 22px 0 0;
+  font-size: clamp(16px, 1.5vw, 19px);
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--sy-mut);
+}
+
+html.theme-monolithe .sy-secondary .sy-eyebrow {
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+
+html.theme-monolithe .sy-secondary .sy-eyebrow::before {
+  flex-shrink: 0;
+}
+
+html.theme-monolithe .sy-secondary :is(.rp-svc, .rp-tier, .mt-timeline > li, .rl-card, .mp-pilier):nth-child(5n + 1) {
+  --c: var(--sy-vio);
+}
+html.theme-monolithe .sy-secondary :is(.rp-svc, .rp-tier, .mt-timeline > li, .rl-card, .mp-pilier):nth-child(5n + 2) {
+  --c: var(--sy-sky);
+}
+html.theme-monolithe .sy-secondary :is(.rp-svc, .rp-tier, .mt-timeline > li, .rl-card, .mp-pilier):nth-child(5n + 3) {
+  --c: var(--sy-teal);
+}
+html.theme-monolithe .sy-secondary :is(.rp-svc, .rp-tier, .mt-timeline > li, .rl-card, .mp-pilier):nth-child(5n + 4) {
+  --c: var(--sy-mint);
+}
+html.theme-monolithe .sy-secondary :is(.rp-svc, .rp-tier, .mt-timeline > li, .rl-card, .mp-pilier):nth-child(5n + 5) {
+  --c: var(--sy-amber);
+}
+
+html.theme-monolithe .sy-secondary :is(.rp-tier, .rp-job, .rl-card):hover {
+  border-color: color-mix(in srgb, var(--c) 40%, transparent);
+}
+
+html.theme-monolithe .sy-secondary .sy-rv:focus-within {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+@media (max-width: 640px) {
+  html.theme-monolithe .sy-secondary .sy-secondary-title {
+    font-size: clamp(40px, 8vw, 50px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .sy-secondary *,
+  html.theme-monolithe .sy-secondary *::before,
+  html.theme-monolithe .sy-secondary *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  html.theme-monolithe .sy-secondary .sy-rv {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
 }

@@ -1,66 +1,39 @@
-/* ═══════════════════════════════════════════
-   Pages Sites web et Conseil & communication (refonte 2026).
-   S'appuie sur .mp-page (fond, conteneur, reveal) ; préfixe rp-.
-   Aucune couleur d'accent en dur : tokens de thème uniquement.
-   ═══════════════════════════════════════════ */
-
+/* Sites et conseil — mise en page, les surfaces viennent de .sy-glass. */
 .mp-page .rp-mono {
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  font: 400 11.5px/1.6 var(--sy-mono);
+  letter-spacing: 0.02em;
+  color: var(--sy-mut);
   font-variant-numeric: tabular-nums;
 }
 .mp-page .rp-acc {
-  color: var(--primary);
-}
-.mp-page .rp-eb {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 18px;
-}
-.mp-page .rp-eb i {
-  display: block;
-  width: 24px;
-  height: 1px;
-  flex-shrink: 0;
-  background: var(--primary);
+  color: var(--c, var(--sy-sky));
 }
 .mp-page .rp-sec {
   padding-block: var(--mp-sp-xl);
+  border-color: var(--sy-line);
 }
 .mp-page .rp-sec h2 {
-  font-size: clamp(28px, 3.6vw, 46px);
-  line-height: 1.08;
-  letter-spacing: -0.03em;
   max-width: 22ch;
+  margin: 16px 0 0;
+  font: 600 clamp(32px, 4.6vw, 58px)/1.02 var(--sy-sans);
+  letter-spacing: -0.045em;
 }
 .mp-page .rp-sub {
-  color: var(--text-secondary);
+  color: var(--sy-mut);
   max-width: 58ch;
   margin-top: 16px;
   font-size: 16.5px;
+  line-height: 1.6;
 }
 .mp-page .rp-h1 {
-  font-size: clamp(38px, 5.4vw, 68px);
-  line-height: 1.02;
-  letter-spacing: -0.04em;
-  font-weight: 900;
   max-width: 17ch;
 }
 .mp-page .rp-h1--wide {
   max-width: 15ch;
+  font-size: clamp(40px, 4.7vw, 68px);
 }
 .mp-page .rp-h1 .rp-acc {
   display: block;
-}
-.mp-page .rp-lede {
-  color: var(--text-secondary);
-  max-width: 52ch;
-  margin-top: 20px;
-  font-size: 17px;
 }
 .mp-page .rp-ctas {
   display: flex;
@@ -72,26 +45,16 @@
   margin-top: 16px;
 }
 .mp-page .rp-go {
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--primary);
-  transition: letter-spacing 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  font: 500 14px/1.5 var(--sy-sans);
+  color: var(--c, var(--sy-sky));
+  text-decoration: none;
 }
-.mp-page a:hover > .rp-go,
-.mp-page .rp-go:hover {
-  letter-spacing: 0.18em;
-}
-
-/* ─── Hero ─── */
-
-.mp-page .rp-hero {
-  position: relative;
-  overflow: hidden;
-  padding-block: clamp(48px, 6vw, 88px) clamp(56px, 7vw, 90px);
-  border-top: none;
+.mp-page .rp-job:hover .sy-arr {
+  transform: translateX(3px);
 }
 .mp-page .rp-hero > .mp-container {
   position: relative;
@@ -103,14 +66,8 @@
   gap: clamp(28px, 4vw, 56px);
   align-items: center;
 }
-@media (max-width: 900px) {
-  .mp-page .rp-hero-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
-/* ─── Comparatif ─── */
-
+/* Comparatif */
 .mp-page .rp-versus {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -119,28 +76,28 @@
   margin-top: 28px;
 }
 .mp-page .rp-vs-col {
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 26px;
-  background: var(--bg-card, var(--bg-primary));
+  padding: clamp(20px, 3vw, 30px);
   min-width: 0;
 }
 .mp-page .rp-vs-col h3 {
-  font-size: 22px;
-  margin: 10px 0 14px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin: 12px 0 18px;
 }
 .mp-page .rp-vs-col ul {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 .mp-page .rp-vs-col li {
   padding-left: 24px;
   position: relative;
-  color: var(--text-secondary);
+  color: var(--sy-mut);
   font-size: 15px;
+  line-height: 1.6;
 }
 .mp-page .rp-vs-no li::before {
   content: '✕';
@@ -148,26 +105,25 @@
   left: 0;
   top: 2px;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--sy-dim);
 }
 .mp-page .rp-vs-no h3 {
-  color: var(--text-secondary);
+  color: var(--sy-mut);
   text-decoration: line-through;
-  text-decoration-thickness: 1.5px;
-  text-decoration-color: var(--text-muted);
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--sy-dim);
 }
 .mp-page .rp-vs-yes {
-  border-color: var(--accent-border, var(--primary));
-  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.08), var(--bg-card, var(--bg-primary)) 70%);
+  --c: var(--sy-mint);
 }
 .mp-page .rp-vs-yes li {
-  color: var(--text-primary);
+  color: var(--sy-tx);
 }
 .mp-page .rp-vs-yes li::before {
   content: '✓';
   position: absolute;
   left: 0;
-  color: var(--primary);
+  color: var(--sy-mint);
 }
 .mp-page .rp-vs-mid {
   display: grid;
@@ -177,245 +133,272 @@
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  border: 1px solid var(--accent-border, var(--primary));
+  border: 1px solid var(--sy-line-2);
   display: grid;
   place-items: center;
-  font: 500 11px var(--font-mono, ui-monospace, monospace);
-  color: var(--primary);
-  background: var(--bg-primary);
-}
-@media (max-width: 820px) {
-  .mp-page .rp-versus {
-    grid-template-columns: 1fr;
-  }
-  .mp-page .rp-vs-mid {
-    justify-items: start;
-    padding-left: 20px;
-  }
+  font: 400 11px var(--sy-mono);
+  color: var(--sy-dim);
+  background: var(--sy-bg-2);
 }
 
-/* ─── Formules ─── */
-
+/* Formules : chaque vignette hérite de la couleur de sa carte. */
 .mp-page .rp-tiers {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
   margin-top: 40px;
 }
 .mp-page .rp-tier {
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
   padding: 18px;
-  background: var(--bg-card, var(--bg-primary));
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   min-width: 0;
   transition:
     border-color 0.3s,
-    transform 0.4s var(--mp-ease);
+    transform 0.4s var(--sy-ease);
 }
 .mp-page .rp-tier:hover {
-  border-color: var(--accent-border, var(--primary));
   transform: translateY(-3px);
 }
+.mp-page .rp-tier > .rp-mono {
+  color: var(--c);
+}
 .mp-page .rp-tier h3 {
-  font-size: 18px;
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
 }
 .mp-page .rp-tier p {
-  color: var(--text-secondary);
+  color: var(--sy-mut);
   font-size: 14px;
+  line-height: 1.6;
   margin: 0;
 }
 .mp-page .rp-tier ul {
   list-style: none;
   margin: 6px 0 10px;
   padding: 0;
-  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .mp-page .rp-tier li {
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 13.5px;
+  padding: 5px 10px;
+  border: 1px solid var(--sy-line-2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #d5d9e6;
+  font-size: 12px;
+  line-height: 1.5;
 }
 .mp-page .rp-tier .rp-go {
   margin-top: auto;
 }
 .mp-page .rp-tier-note {
   margin-top: 28px;
-  color: var(--text-secondary);
+  color: var(--sy-mut);
   font-size: 14.5px;
   max-width: 70ch;
 }
-@media (max-width: 1080px) {
-  .mp-page .rp-tiers {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (max-width: 700px) {
-  .mp-page .rp-tiers {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 460px) {
-  .mp-page .rp-tiers {
-    grid-template-columns: 1fr;
-  }
-}
 
-/* ─── Plaque « Ce qu'on coupe souvent » ─── */
-
+/* Plaque « Ce qu'on coupe souvent » */
 .mp-page .rp-plate {
-  background: var(--bg-card, var(--bg-primary));
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
   overflow: hidden;
   min-width: 0;
 }
 .mp-page .rp-plate-h {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--sy-line);
+}
+.mp-page .rp-plate-h .rp-acc {
+  color: var(--sy-mint);
 }
 .mp-page .rp-plate-b {
-  padding: 20px;
+  padding: 24px;
 }
 .mp-page .rp-cut {
   display: flex;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
-  padding: 13px 0;
+  padding: 16px 0;
   margin: 0;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--sy-line);
   font-size: 15px;
 }
 .mp-page .rp-cut:first-child {
   border-top: 0;
   padding-top: 0;
 }
+.mp-page .rp-cut:last-child {
+  padding-bottom: 0;
+}
 .mp-page .rp-cut s {
-  color: var(--text-secondary);
-  text-decoration-thickness: 1.5px;
+  color: var(--sy-mut);
+  text-decoration-thickness: 1px;
+}
+.mp-page .rp-cut .rp-acc {
+  color: var(--sy-teal);
 }
 
-/* ─── Prestations ─── */
-
+/* Prestations */
 .mp-page .rp-services {
-  margin-top: 32px;
-  border-top: 1px solid var(--border-color);
+  display: grid;
+  gap: 16px;
+  margin-top: 36px;
 }
 .mp-page .rp-svc {
   display: grid;
   grid-template-columns: 44px minmax(0, 1.4fr) minmax(0, 1fr);
   gap: 24px;
-  padding: 28px 0;
-  border-bottom: 1px solid var(--border-color);
+  padding: clamp(20px, 3vw, 30px);
   align-items: start;
 }
 .mp-page .rp-svc h3 {
-  font-size: 21px;
-  margin: 6px 0 8px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin: 6px 0 10px;
 }
 .mp-page .rp-svc p {
-  color: var(--text-secondary);
+  color: var(--sy-mut);
   font-size: 15px;
+  line-height: 1.6;
   margin: 0;
 }
 .mp-page .rp-svc .rp-liv {
-  margin-top: 10px;
-  font: 400 11px/1.6 var(--font-mono, ui-monospace, monospace);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--primary);
+  margin-top: 14px;
+  font: 400 12px/1.7 var(--sy-mono);
+  color: var(--c);
 }
 .mp-page .rp-nope {
   margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px dashed var(--border-color);
+  padding: 16px;
+  border: 1px solid var(--sy-line);
+  border-radius: 16px;
+  background: rgba(4, 5, 10, 0.35);
+}
+.mp-page .rp-nope > .rp-mono {
+  color: var(--sy-amber);
 }
 .mp-page .rp-nope p {
-  color: var(--text-primary);
+  color: var(--sy-mut);
   font-size: 14px;
+  line-height: 1.6;
   margin: 6px 0 0;
 }
 .mp-page .rp-svc .rp-nope {
   margin: 0;
-  padding: 0 0 0 18px;
-  border-top: 0;
-  border-left: 1px dashed var(--border-color);
-}
-@media (max-width: 820px) {
-  .mp-page .rp-svc {
-    grid-template-columns: 44px minmax(0, 1fr);
-  }
-  .mp-page .rp-svc .rp-nope {
-    grid-column: 2;
-    border-left: 0;
-    padding-left: 0;
-    border-top: 1px dashed var(--border-color);
-    padding-top: 12px;
-  }
 }
 
-/* ─── Et aussi ─── */
-
+/* Autres métiers */
 .mp-page .rp-jobs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 20px;
   margin-top: 40px;
 }
 .mp-page .rp-job {
-  background: var(--bg-card, var(--bg-primary));
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 24px;
+  --c: var(--sy-vio);
+  padding: 28px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   min-width: 0;
   color: inherit;
   text-decoration: none;
   transition:
     border-color 0.3s,
-    transform 0.4s var(--mp-ease);
+    transform 0.4s var(--sy-ease);
+}
+.mp-page .rp-job:nth-child(2) {
+  --c: var(--sy-teal);
 }
 .mp-page .rp-job:hover {
-  border-color: var(--accent-border, var(--primary));
   transform: translateY(-3px);
 }
+.mp-page .rp-job > .rp-mono {
+  color: var(--c);
+}
 .mp-page .rp-job h3 {
-  font-size: 21px;
-  line-height: 1.15;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
   margin: 0;
 }
 .mp-page .rp-job p {
-  color: var(--text-secondary);
+  color: var(--sy-mut);
   font-size: 15px;
+  line-height: 1.6;
   margin: 0;
 }
-@media (max-width: 700px) {
-  .mp-page .rp-jobs {
-    grid-template-columns: 1fr;
-  }
-}
-
 .mp-page .rp-faq-sec,
 .mp-page .rp-see-also {
   padding-block: var(--mp-sp-l);
+  border-color: var(--sy-line);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .mp-page .rp-tier,
-  .mp-page .rp-job,
-  .mp-page .rp-go {
-    transition: none;
+@media (max-width: 1080px) {
+  .mp-page .rp-tiers {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+@media (max-width: 900px) {
+  .mp-page .rp-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 820px) {
+  .mp-page .rp-versus {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .mp-page .rp-svc {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 16px;
+  }
+  .mp-page .rp-svc .rp-nope {
+    grid-column: 2;
+  }
+}
+@media (max-width: 700px) {
+  .mp-page .rp-tiers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mp-page .rp-jobs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 460px) {
+  .mp-page .rp-tiers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mp-page .rp-svc .rp-nope {
+    grid-column: 1 / -1;
+  }
+  .mp-page .rp-svc h3 {
+    font-size: 22px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
   .mp-page .rp-tier:hover,
-  .mp-page .rp-job:hover {
+  .mp-page .rp-job:hover,
+  .mp-page .rp-job:hover .sy-arr {
     transform: none;
   }
+}
+
+.mp-page :is(.rp-svc, .rp-job) .vn-ic {
+  color: var(--c);
+  border-color: color-mix(in srgb, var(--c) 25%, transparent);
+  background: color-mix(in srgb, var(--c) 8%, transparent);
+  border-radius: 14px;
 }

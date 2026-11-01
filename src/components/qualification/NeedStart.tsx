@@ -1,4 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useRef } from 'react'
+import { useDocumentVisible } from '../../hooks/useDocumentVisible'
+import { useInView } from '../../hooks/useInView'
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { useI18n } from '../../context/I18nContext'
 import { LineIcon } from '../graphics'
 import { NEED_CARDS } from './qualification'
@@ -15,26 +19,36 @@ interface NeedStartProps {
  */
 const NeedStart = ({ preset }: NeedStartProps) => {
   const { t } = useI18n()
+  const panelRef = useRef<HTMLElement>(null)
+  const inView = useInView(panelRef)
+  const reducedMotion = usePrefersReducedMotion()
+  const tabActive = useDocumentVisible()
   return (
-    <section className="qs" aria-labelledby="need-start-title" data-preset={preset || undefined}>
-      <div className="qs-inner">
-        <div>
-          <p className="qs-eyebrow">{t('pubForms.needStart.eyebrow')}</p>
+    <section
+      className={`qs sy-need-start sy-wrap${inView && tabActive && !reducedMotion ? ' is-animating' : ''}`}
+      ref={panelRef}
+      aria-labelledby="need-start-title"
+      data-preset={preset || undefined}
+    >
+      <div className="sy-need-panel">
+        <div className="sy-need-head">
+          <p className="sy-eyebrow">{t('pubForms.needStart.eyebrow')}</p>
           <h2 id="need-start-title">
-            {t('pubForms.needStart.titleLead')} <span>{t('pubForms.needStart.titleAccent')}</span>
+            {t('pubForms.needStart.titleLead')} <span className="sy-gt">{t('pubForms.needStart.titleAccent')}</span>
           </h2>
-          <p className="qs-sub">{t('pubForms.needStart.sub')}</p>
-          <p className="qs-trust">{t('pubForms.needStart.trust')}</p>
+          <p className="sy-need-sub">{t('pubForms.needStart.sub')}</p>
+          <p className="sy-need-trust">{t('pubForms.needStart.trust')}</p>
         </div>
-        <div className="cards">
+        <div className="sy-need-cards">
           {NEED_CARDS.map((c) => (
             <Link
               key={c.key}
               to={`/contact?besoin=${c.key}`}
-              className="card"
+              className="sy-need-card"
+              data-need={c.key}
               data-analytics-cta={`need_start_${c.key}`}
             >
-              <span className="ic">
+              <span className="sy-need-icon" aria-hidden="true">
                 <LineIcon name={c.icon} size="sm" />
               </span>
               <b>{t(c.titleKey)}</b>

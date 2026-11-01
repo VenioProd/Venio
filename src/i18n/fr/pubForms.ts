@@ -272,7 +272,7 @@ const fr = {
   'pubForms.needStart.titleAccent': 'votre besoin.',
   'pubForms.needStart.sub':
     "Cinq questions, trois minutes. On vous répond sous 48 h ouvrées avec une première lecture, et on vous dit aussi quand ce n'est pas pour nous.",
-  'pubForms.needStart.trust': 'Sans engagement · Réponse sous 48 h ouvrées · Devis écrit',
+  'pubForms.needStart.trust': 'Sans engagement · Réponse sous 48 h ouvrées · Proposition écrite',
 } as const
 
 export default fr

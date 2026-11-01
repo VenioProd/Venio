@@ -4,7 +4,7 @@
 html.theme-monolithe .mc-dual {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mc-sp-xs);
+  gap: 12px;
 }
 
 html.theme-monolithe .mc-dual--start {
@@ -25,5 +25,38 @@ html.theme-monolithe .mc-dual--center {
 
   html.theme-monolithe .mc-dual .mc-btn {
     width: 100%;
+  }
+}
+
+/* La surface des boutons suit la même pilule que le header. */
+html.theme-monolithe .mc-dual .mc-btn {
+  min-height: 44px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font: 500 15px/1.4 var(--sy-sans);
+  letter-spacing: -0.01em;
+  text-transform: none;
+  white-space: normal;
+  text-align: center;
+}
+html.theme-monolithe .mc-dual .mc-btn--ghost {
+  border-color: var(--sy-line-2);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--sy-tx);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+html.theme-monolithe .mc-dual .mc-btn--ghost:hover {
+  border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.08);
+}
+html.theme-monolithe .mc-dual .mc-btn:focus-visible,
+html.theme-monolithe .mc-sticky .mc-btn:focus-visible {
+  outline: 2px solid var(--sy-sky);
+  outline-offset: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .mc-dual .mc-btn {
+    transition: none;
   }
 }

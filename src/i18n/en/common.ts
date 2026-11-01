@@ -18,6 +18,8 @@ const en: Record<keyof typeof fr, string> = {
   'nav.menu': 'Menu',
   'nav.closeMenu': 'Close',
   'nav.openMenu': 'Open menu',
+  'nav.consulting': 'Consulting',
+  'nav.cta': 'Talk to us',
 
   // Admin
   'admin.dashboard': 'Dashboard',

@@ -3,12 +3,11 @@
    Le formulaire lui-même vit dans components/qualification.
    ═══════════════════════════════════════════ */
 
-.mp-page .mp-contact-hero {
+html.theme-monolithe .sy-secondary .mp-contact-hero {
   padding-bottom: var(--mp-sp-m);
 }
 
 .mp-page .mp-contact-title {
-  font-size: clamp(34px, 6vw, 84px);
   max-width: 17ch;
 }
 
@@ -21,16 +20,16 @@
   margin: var(--mp-sp-m) 0 0;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: var(--sy-mut);
 }
 
 .mp-page .mp-contact-direct a {
-  color: var(--text-primary);
+  color: var(--sy-tx);
   text-decoration: none;
-  border-bottom: 1px solid var(--primary);
+  border-bottom: 1px solid var(--sy-sky);
   transition: color 0.2s var(--mp-ease);
 }
 
 .mp-page .mp-contact-direct a:hover {
-  color: var(--primary);
+  color: var(--sy-sky);
 }

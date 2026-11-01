@@ -10,11 +10,14 @@ html.theme-monolithe .mc-sticky {
   inset-inline: 0;
   bottom: 0;
   z-index: 900;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  border-top: 1px solid var(--sy-line-2);
+  background: rgba(6, 7, 12, 0.82);
+  -webkit-backdrop-filter: saturate(160%) blur(20px);
+  backdrop-filter: saturate(160%) blur(20px);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.25);
   padding-block: var(--mc-sp-xs);
   padding-bottom: calc(var(--mc-sp-xs) + env(safe-area-inset-bottom, 0px));
-  animation: mc-sticky-in 0.35s var(--mc-ease) both;
+  animation: mc-sticky-in 0.35s var(--sy-ease) both;
 }
 
 @keyframes mc-sticky-in {
@@ -34,20 +37,24 @@ html.theme-monolithe .mc-sticky-inner {
 }
 
 html.theme-monolithe .mc-sticky-label {
+  font-weight: 400;
   margin: 0;
-  font-family: var(--mc-mono);
+  font-family: var(--sy-mono);
   font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--sy-mut);
 }
 
 /* Boutons compacts : la barre ne doit pas voler la hauteur du contenu. */
 html.theme-monolithe .mc-sticky .mc-btn {
-  padding: 11px 18px;
+  padding: 0 18px;
+  min-height: 40px;
+  font-size: 14px;
+  border-radius: 999px;
 }
 
-/* Sous 767px, la navigation mobile fixe (.mobile-bottom-nav, z-index 1002)
+/* Sous 767px, la navigation mobile fixe (.sy-nav-bottom, z-index 1002)
    occupe déjà le bas de l'écran : la barre passe au-dessus d'elle, sinon elle
    disparaît entièrement derrière — et c'est en mobile qu'elle sert le plus.
    64px est la valeur que Navbar.css réserve lui-même à cette navigation. */
@@ -98,6 +105,6 @@ html.theme-monolithe .mc-sticky .mc-btn {
    passé à la hauteur réelle par le composant quand la barre est visible : le
    pied de page public ne passe jamais sous la barre. Le repli à 0px couvre le
    cas où la feuille de socle ne serait pas chargée. */
-html.theme-monolithe footer {
+html.theme-monolithe .sy-footer {
   padding-bottom: calc(40px + var(--mc-sticky-h, 0px));
 }

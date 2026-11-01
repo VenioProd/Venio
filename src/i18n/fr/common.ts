@@ -16,6 +16,8 @@ const fr = {
   'nav.menu': 'Menu',
   'nav.closeMenu': 'Fermer',
   'nav.openMenu': 'Ouvrir le menu',
+  'nav.consulting': 'Conseil',
+  'nav.cta': 'Échanger avec nous',
 
   // Admin
   'admin.dashboard': 'Tableau de bord',

@@ -8,26 +8,26 @@
    ═══════════════════════════════════════════ */
 
 html.theme-monolithe {
-  /* Surfaces */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #141414;
-  --bg-card: #141414;
-  --bg-card-hover: #1c1c1c;
+  /* Surfaces — charte Système : quasi-noir, verre fumé */
+  --bg-primary: #04050a;
+  --bg-secondary: #0a0c14;
+  --bg-card: #0b0e17;
+  --bg-card-hover: #10131d;
 
   /* Texte */
-  --text-primary: #ffffff;
-  --text-secondary: #9b9b9b;
-  --text-muted: #6e6e6e;
-  --border-color: rgba(255, 255, 255, 0.14);
+  --text-primary: #eef0f7;
+  --text-secondary: #9aa1b4;
+  --text-muted: #646b80;
+  --border-color: rgba(255, 255, 255, 0.1);
 
   /* Pas de relief neumorphe */
   --neumorphism-light: transparent;
   --neumorphism-dark: transparent;
 
   /* Accent bleu (sky) */
-  --primary-rgb: 14, 165, 233;
+  --primary-rgb: 56, 189, 248;
   --primary-light-rgb: 125, 211, 252;
-  --primary-dark-rgb: 2, 132, 199;
+  --primary-dark-rgb: 14, 165, 233;
   --primary: rgb(var(--primary-rgb));
   --primary-light: rgb(var(--primary-light-rgb));
   --primary-dark: rgb(var(--primary-dark-rgb));
@@ -58,14 +58,14 @@ html.theme-monolithe {
   --ambient-mesh-layer-3: transparent;
   --ambient-mesh-layer-4: transparent;
 
-  /* Typographie Archivo */
-  --font-heading: 'Archivo', 'Cabinet Grotesk', sans-serif;
-  --font-body: 'Archivo', 'Cabinet Grotesk', sans-serif;
+  /* Typographie Geist (charte Système) */
+  --font-heading: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  /* Rayons — le brutalisme survit dans la grille, la typo et les filets,
-     plus dans les angles vifs. Trois valeurs pour tout le site public. */
-  --r-btn: 10px;
-  --r-card: 14px;
+  /* Rayons. Les boutons sont des pilules (systeme.css) ; --r-btn reste
+     celui des champs et petites cibles. */
+  --r-btn: 12px;
+  --r-card: 20px;
   --r-pill: 999px;
 }
 

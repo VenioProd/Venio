@@ -1,0 +1,1059 @@
+/* Composants Système : surfaces, illustrations et interactions de la maquette B. */
+html.theme-monolithe .sy-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Fond du hero, contenu par son parent positionné. */
+html.theme-monolithe .sy-hero-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+html.theme-monolithe .sy-aurora {
+  position: absolute;
+  inset: -10% -10% auto;
+  height: 1100px;
+  filter: blur(70px) saturate(140%);
+  opacity: 0.75;
+}
+html.theme-monolithe .sy-aurora i {
+  position: absolute;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+}
+html.theme-monolithe .sy-aurora i:nth-child(1) {
+  width: 52vw;
+  height: 40vw;
+  max-width: 800px;
+  max-height: 560px;
+  left: 8%;
+  top: 4%;
+  background: radial-gradient(closest-side, rgba(139, 92, 246, 0.55), transparent);
+  animation: sy-drift-one 22s ease-in-out infinite alternate;
+}
+html.theme-monolithe .sy-aurora i:nth-child(2) {
+  width: 46vw;
+  height: 36vw;
+  max-width: 720px;
+  max-height: 520px;
+  right: 6%;
+  top: 10%;
+  background: radial-gradient(closest-side, rgba(56, 189, 248, 0.45), transparent);
+  animation: sy-drift-two 26s ease-in-out infinite alternate;
+}
+html.theme-monolithe .sy-aurora i:nth-child(3) {
+  width: 40vw;
+  height: 30vw;
+  max-width: 640px;
+  max-height: 420px;
+  left: 34%;
+  top: 38%;
+  background: radial-gradient(closest-side, rgba(94, 234, 212, 0.28), transparent);
+  animation: sy-drift-three 30s ease-in-out infinite alternate;
+}
+@keyframes sy-drift-one {
+  to {
+    transform: translate(12%, 10%) scale(1.15);
+  }
+}
+@keyframes sy-drift-two {
+  to {
+    transform: translate(-14%, 14%) scale(0.9);
+  }
+}
+@keyframes sy-drift-three {
+  to {
+    transform: translate(10%, -18%) scale(1.2);
+  }
+}
+html.theme-monolithe .sy-grid-canvas,
+html.theme-monolithe .sy-hero-backdrop__grid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: min(100vh, 980px);
+  min-height: 640px;
+  z-index: 0;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 40%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 75% 70% at 50% 40%, #000 30%, transparent 78%);
+}
+html.theme-monolithe .sy-hero-backdrop__grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 255, 0.09) 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center;
+}
+
+/* Trois cartes et leur trajet. */
+html.theme-monolithe .sy-flow {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin-top: 70px;
+  height: 420px;
+}
+html.theme-monolithe .sy-flow__paths {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+html.theme-monolithe .sy-flow__track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1.5;
+}
+html.theme-monolithe .sy-flow__beam {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 2 14;
+  animation: sy-flow-dash 1.2s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.8));
+}
+html.theme-monolithe .sy-flow__dot {
+  fill: #e0f2fe;
+  opacity: 0;
+  filter: drop-shadow(0 0 7px #7dd3fc);
+}
+@keyframes sy-flow-dash {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+html.theme-monolithe .sy-flow__node {
+  position: absolute;
+  top: 50%;
+  width: 310px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--sy-tx);
+  border-radius: 22px;
+}
+html.theme-monolithe .sy-flow__node:nth-of-type(1) {
+  left: 16%;
+}
+html.theme-monolithe .sy-flow__node:nth-of-type(2) {
+  left: 50%;
+}
+html.theme-monolithe .sy-flow__node:nth-of-type(3) {
+  left: 84%;
+}
+html.theme-monolithe .sy-flow__card {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 230px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  border: 1px solid var(--sy-line-2);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 30px 70px -30px rgba(0, 0, 0, 0.9),
+    0 0 60px -20px var(--c);
+  transition:
+    transform 0.5s var(--sy-ease),
+    box-shadow 0.5s;
+}
+html.theme-monolithe .sy-flow__node:is(:hover, :focus-visible) .sy-flow__card {
+  transform: translateY(-6px);
+  box-shadow:
+    0 40px 80px -30px rgba(0, 0, 0, 0.9),
+    0 0 80px -10px var(--c);
+}
+html.theme-monolithe .sy-flow__card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--sy-ang), transparent 0 70%, var(--c) 82%, transparent 92%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: sy-flow-spin 6s linear infinite;
+  animation-delay: calc(var(--j) * -2s);
+}
+@keyframes sy-flow-spin {
+  to {
+    --sy-ang: 360deg;
+  }
+}
+html.theme-monolithe .sy-flow__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+html.theme-monolithe .sy-flow__label b {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+html.theme-monolithe .sy-flow__label small {
+  font-family: var(--sy-mono);
+  font-size: 11.5px;
+  color: var(--c);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+html.theme-monolithe .sy-mini-radar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150px;
+  height: 150px;
+  transform: translate(-50%, -50%);
+}
+html.theme-monolithe .sy-mini-radar i {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(167, 139, 250, 0.25);
+}
+html.theme-monolithe .sy-mini-radar i:nth-child(1) {
+  inset: 0;
+}
+html.theme-monolithe .sy-mini-radar i:nth-child(2) {
+  inset: 24px;
+}
+html.theme-monolithe .sy-mini-radar i:nth-child(3) {
+  inset: 50px;
+  background: rgba(167, 139, 250, 0.25);
+  box-shadow: 0 0 24px rgba(167, 139, 250, 0.7);
+  border: 0;
+}
+html.theme-monolithe .sy-mini-radar__sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(rgba(167, 139, 250, 0.55), transparent 25%);
+  animation: sy-radar-turn 4s linear infinite;
+}
+html.theme-monolithe .sy-mini-radar b {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  margin: -10px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font: 500 9.5px var(--sy-mono);
+  color: #0b0715;
+  background: #c4b5fd;
+  box-shadow: 0 0 14px rgba(196, 181, 253, 0.9);
+}
+@keyframes sy-radar-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+html.theme-monolithe .sy-mini-posts {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 120px;
+  height: 140px;
+  transform: translate(-50%, -50%);
+}
+html.theme-monolithe .sy-mini-posts span {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: #0f1320;
+  border: 1px solid var(--sy-line-2);
+  padding: 9px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  transform-origin: 50% 100%;
+  transform: rotate(var(--sy-fan));
+  animation: sy-posts-fan 6s var(--sy-ease) infinite;
+}
+html.theme-monolithe .sy-mini-posts span::before {
+  content: '';
+  height: 56px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.6), rgba(167, 139, 250, 0.35));
+}
+html.theme-monolithe .sy-mini-posts span::after {
+  content: '';
+  height: 6px;
+  width: 70%;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 0 rgba(255, 255, 255, 0.1);
+}
+html.theme-monolithe .sy-mini-posts span:nth-child(1) {
+  --sy-fan: -14deg;
+}
+html.theme-monolithe .sy-mini-posts span:nth-child(2) {
+  --sy-fan: 0deg;
+}
+html.theme-monolithe .sy-mini-posts span:nth-child(3) {
+  --sy-fan: 14deg;
+}
+@keyframes sy-posts-fan {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  30%,
+  70% {
+    transform: rotate(var(--sy-fan)) translateY(-4px);
+  }
+}
+html.theme-monolithe .sy-mini-app {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200px;
+  height: 140px;
+  transform: translate(-50%, -50%);
+  border-radius: 12px;
+  background: #0b0e17;
+  border: 1px solid var(--sy-line-2);
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  overflow: hidden;
+}
+html.theme-monolithe .sy-mini-app > i {
+  border-right: 1px solid var(--sy-line);
+  background: rgba(255, 255, 255, 0.02);
+}
+html.theme-monolithe .sy-mini-app > span {
+  padding: 10px;
+  display: grid;
+  gap: 7px;
+  align-content: start;
+}
+html.theme-monolithe .sy-mini-app em {
+  display: flex;
+  gap: 6px;
+}
+html.theme-monolithe .sy-mini-app s {
+  flex: 1;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(94, 234, 212, 0.12);
+  border: 1px solid rgba(94, 234, 212, 0.25);
+}
+html.theme-monolithe .sy-mini-app svg {
+  width: 100%;
+  height: 52px;
+}
+html.theme-monolithe .sy-mini-app path {
+  fill: none;
+  stroke: #5eead4;
+  stroke-width: 2;
+  stroke-dasharray: 220;
+  stroke-dashoffset: 0;
+  animation: sy-app-draw 4s var(--sy-ease) infinite;
+}
+@keyframes sy-app-draw {
+  0% {
+    stroke-dashoffset: 220;
+  }
+  45%,
+  85% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+html.theme-monolithe .sy-aurora i,
+html.theme-monolithe .sy-flow__beam,
+html.theme-monolithe .sy-flow__card::after,
+html.theme-monolithe .sy-mini-radar__sweep,
+html.theme-monolithe .sy-mini-posts span,
+html.theme-monolithe .sy-mini-app path {
+  animation-play-state: paused;
+}
+html.theme-monolithe .sy-motion-active .sy-aurora i,
+html.theme-monolithe .sy-motion-active .sy-flow__beam,
+html.theme-monolithe .sy-motion-active .sy-flow__card::after,
+html.theme-monolithe .sy-motion-active .sy-mini-radar__sweep,
+html.theme-monolithe .sy-motion-active .sy-mini-posts span,
+html.theme-monolithe .sy-motion-active .sy-mini-app path {
+  animation-play-state: running;
+}
+
+/* Offres et enveloppe des illustrations. */
+html.theme-monolithe .sy-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 56px;
+  align-items: center;
+}
+html.theme-monolithe .sy-feature--reverse {
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+}
+html.theme-monolithe .sy-feature--reverse .sy-feature__text {
+  order: 2;
+}
+html.theme-monolithe .sy-feature__text .sy-h2 {
+  font-size: clamp(32px, 3.8vw, 50px);
+}
+html.theme-monolithe .sy-feature__text .sy-sub {
+  max-width: 40ch;
+}
+html.theme-monolithe .sy-feature__visual {
+  min-width: 0;
+}
+html.theme-monolithe .sy-feature__actions {
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+html.theme-monolithe .sy-more-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--sy-line-2);
+  color: var(--sy-mut);
+  background: transparent;
+  font: 400 14px var(--sy-sans);
+  cursor: pointer;
+  transition:
+    color 0.3s,
+    border-color 0.3s;
+}
+html.theme-monolithe .sy-more-button span {
+  display: inline-block;
+  transition: transform 0.35s var(--sy-ease);
+}
+html.theme-monolithe .sy-more-button:hover {
+  color: var(--sy-tx);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+html.theme-monolithe .sy-is-open .sy-more-button span {
+  transform: rotate(45deg);
+}
+html.theme-monolithe .sy-feature__more {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.5s var(--sy-ease),
+    opacity 0.4s,
+    margin 0.4s,
+    visibility 0.5s;
+}
+html.theme-monolithe .sy-feature__more > div {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  gap: 8px;
+}
+html.theme-monolithe .sy-is-open .sy-feature__more {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  margin-top: 18px;
+}
+html.theme-monolithe .sy-feature__more p {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: #d5d9e6;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--sy-line);
+}
+html.theme-monolithe .sy-feature__more p > span {
+  font-family: var(--sy-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--sy-dim);
+  padding-top: 3px;
+}
+html.theme-monolithe .sy-feature__more .sy-feature__not-for > span {
+  color: var(--sy-amber);
+}
+html.theme-monolithe .sy-tilt-stage {
+  position: relative;
+  perspective: 1600px;
+  isolation: isolate;
+  min-width: 0;
+}
+html.theme-monolithe .sy-tilt-stage__inner {
+  transform-style: preserve-3d;
+  transition: transform 0.6s var(--sy-ease);
+  transform: rotateX(var(--sy-tilt-x, 0deg)) rotateY(var(--sy-tilt-y, 0deg));
+}
+html.theme-monolithe .sy-tilt-stage [data-depth] {
+  transition: translate 0.6s var(--sy-ease);
+}
+html.theme-monolithe .sy-tilt-stage__glow {
+  position: absolute;
+  inset: 10% 6%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--sy-glow) 40%, transparent), transparent);
+  filter: blur(50px);
+  z-index: -1;
+  pointer-events: none;
+}
+html.theme-monolithe .sy-tilt-stage__caption {
+  margin: 14px 0 0;
+  text-align: right;
+  color: var(--sy-dim);
+  font: 10.5px var(--sy-mono);
+}
+
+/* Les cinq formules conservent les vignettes du système graphique existant. */
+html.theme-monolithe .sy-formulas__head {
+  margin-top: 90px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+html.theme-monolithe .sy-formulas__head h3 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+html.theme-monolithe .sy-formulas__head a {
+  font-size: 14px;
+  color: var(--sy-mut);
+  text-decoration: none;
+}
+html.theme-monolithe .sy-formulas__head a:hover {
+  color: var(--sy-tx);
+}
+html.theme-monolithe .sy-formulas__grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+html.theme-monolithe .sy-formula {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  color: var(--sy-tx);
+  text-decoration: none;
+}
+html.theme-monolithe .sy-formula.is-in:is(:hover, :focus-visible) {
+  transform: translateY(-6px);
+}
+html.theme-monolithe .sy-formula__art {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  aspect-ratio: 4 / 3.2;
+  min-height: min-content;
+  border-radius: 12px;
+  background: #0b0e17;
+  border: 1px solid var(--sy-line);
+}
+html.theme-monolithe .sy-formula__art .vn-thumb {
+  grid-area: 1 / 1;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+}
+html.theme-monolithe .sy-formula__art .vn-thumb svg {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+}
+html.theme-monolithe .sy-formula__name {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+html.theme-monolithe .sy-formula__name b {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+html.theme-monolithe .sy-formula__name small {
+  font-family: var(--sy-mono);
+  color: var(--sy-dim);
+  font-size: 11px;
+}
+html.theme-monolithe .sy-formula__tag {
+  margin-top: 4px;
+  color: var(--sy-mut);
+  font-size: 13.5px;
+}
+html.theme-monolithe .sy-formula__includes {
+  position: relative;
+  grid-area: 1 / 1;
+  min-width: 0;
+  margin: -1px;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  background: rgba(8, 10, 18, 0.96);
+  border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 13px;
+  line-height: 1.35;
+}
+html.theme-monolithe .sy-formula__includes ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+}
+html.theme-monolithe .sy-formula__includes li {
+  display: flex;
+  gap: 8px;
+}
+html.theme-monolithe .sy-formula__includes li::before {
+  content: '✓';
+  color: var(--c);
+}
+html.theme-monolithe .sy-formula__includes > span {
+  margin-top: 4px;
+  font-weight: 500;
+  color: var(--c);
+}
+html.theme-monolithe .sy-formula:is(:hover, :focus-visible) .sy-formula__includes {
+  opacity: 1;
+}
+html.theme-monolithe .sy-formula--featured {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent),
+    0 20px 60px -20px color-mix(in srgb, var(--c) 50%, transparent);
+}
+
+/* Garanties et bulles accessibles au clavier. */
+html.theme-monolithe .sy-guarantees {
+  display: grid;
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  padding: 0;
+  overflow: visible;
+}
+html.theme-monolithe .sy-guarantees > span {
+  display: flex;
+  align-items: center;
+  padding: 18px 22px;
+  color: var(--sy-dim);
+  border-right: 1px solid var(--sy-line);
+}
+html.theme-monolithe .sy-guarantee {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  font-weight: 500;
+  font-size: 15px;
+  border-right: 1px solid var(--sy-line);
+  cursor: help;
+  border-radius: 12px;
+}
+html.theme-monolithe .sy-guarantee:last-child {
+  border-right: 0;
+}
+html.theme-monolithe .sy-guarantee i {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--sy-mint);
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+html.theme-monolithe .sy-guarantee svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.theme-monolithe .sy-guarantee__tip {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: calc(100% + 8px);
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #d5d9e6;
+  background: #10131d;
+  border: 1px solid var(--sy-line-2);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition:
+    opacity 0.3s,
+    transform 0.3s var(--sy-ease);
+  z-index: 10;
+}
+html.theme-monolithe .sy-guarantee:is(:hover, :focus) .sy-guarantee__tip {
+  opacity: 1;
+  transform: none;
+}
+
+/* Méthode : ligne lumineuse, puis livrables à la demande. */
+html.theme-monolithe .sy-steps {
+  position: relative;
+  margin-top: 60px;
+}
+html.theme-monolithe .sy-steps > ol {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+html.theme-monolithe .sy-steps__beam {
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  top: 29px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 2px;
+  overflow: hidden;
+}
+html.theme-monolithe .sy-steps__beam i {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  background: var(--sy-grad);
+  box-shadow: 0 0 18px rgba(125, 211, 252, 0.8);
+  transition: transform 2.6s var(--sy-ease) 0.2s;
+}
+html.theme-monolithe .sy-steps.sy-is-in .sy-steps__beam i {
+  transform: scaleX(1);
+}
+html.theme-monolithe .sy-step h3 {
+  margin: 0;
+  font: inherit;
+}
+html.theme-monolithe .sy-step button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sy-tx);
+  font-family: var(--sy-sans);
+  cursor: pointer;
+  border-radius: 18px;
+}
+html.theme-monolithe .sy-step__node {
+  position: relative;
+  z-index: 1;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: var(--sy-dim);
+  background: #0a0c14;
+  border: 1px solid var(--sy-line-2);
+  transition:
+    color 0.6s var(--sy-ease),
+    background 0.6s var(--sy-ease),
+    border-color 0.6s var(--sy-ease),
+    box-shadow 0.6s var(--sy-ease);
+  transition-delay: calc(var(--d) * 420ms + 300ms);
+}
+html.theme-monolithe .sy-step__node svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.theme-monolithe .sy-steps.sy-is-in .sy-step__node {
+  color: #05060b;
+  background: #eef0f7;
+  border-color: #eef0f7;
+  box-shadow:
+    0 0 0 6px rgba(125, 211, 252, 0.1),
+    0 0 30px rgba(125, 211, 252, 0.55);
+}
+html.theme-monolithe .sy-step__number {
+  margin-top: 18px;
+  font: 400 11.5px var(--sy-mono);
+  color: var(--sy-dim);
+}
+html.theme-monolithe .sy-step__title {
+  margin-top: 4px;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+html.theme-monolithe .sy-step__title small {
+  font-size: 14px;
+  color: var(--sy-dim);
+  font-weight: 400;
+  transition: transform 0.3s;
+}
+html.theme-monolithe .sy-step__more {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.5s var(--sy-ease),
+    opacity 0.4s,
+    visibility 0.5s;
+}
+html.theme-monolithe .sy-step__more > div {
+  min-height: 0;
+  overflow: hidden;
+}
+html.theme-monolithe .sy-step.sy-is-open .sy-step__more {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+}
+html.theme-monolithe .sy-step.sy-is-open small {
+  transform: rotate(45deg);
+}
+html.theme-monolithe .sy-step__cadence {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--sy-mut);
+}
+html.theme-monolithe .sy-step .sy-chips {
+  margin-top: 10px;
+}
+html.theme-monolithe .sy-step .sy-chips li {
+  font-size: 11.5px;
+  padding: 4px 8px;
+}
+
+html.theme-monolithe .sy-refs {
+  display: flex;
+  align-items: center;
+  gap: 10px 28px;
+  flex-wrap: wrap;
+  padding: 18px 24px;
+  border-radius: 18px;
+}
+html.theme-monolithe .sy-refs > span {
+  color: var(--sy-dim);
+}
+html.theme-monolithe .sy-refs a {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--sy-mut);
+  transition: color 0.25s;
+  text-decoration: none;
+}
+html.theme-monolithe .sy-refs a small {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--sy-dim);
+  margin-left: 4px;
+}
+html.theme-monolithe .sy-refs a:hover {
+  color: var(--sy-tx);
+}
+html.theme-monolithe .sy-refs .sy-refs__all {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sy-tx);
+}
+
+@media (max-width: 1080px) {
+  html.theme-monolithe .sy-feature,
+  html.theme-monolithe .sy-feature--reverse {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+  html.theme-monolithe .sy-feature--reverse .sy-feature__text {
+    order: 0;
+  }
+  html.theme-monolithe .sy-formulas__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  html.theme-monolithe .sy-steps > ol {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 40px;
+  }
+  html.theme-monolithe .sy-steps__beam {
+    display: none;
+  }
+  html.theme-monolithe .sy-guarantees {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  html.theme-monolithe .sy-guarantees > span,
+  html.theme-monolithe .sy-guarantee {
+    border-right: 0;
+    border-bottom: 1px solid var(--sy-line);
+  }
+  html.theme-monolithe .sy-guarantee:last-child {
+    border-bottom: 0;
+  }
+  html.theme-monolithe .sy-flow__node {
+    width: 230px;
+  }
+}
+@media (max-width: 900px) {
+  html.theme-monolithe .sy-flow {
+    height: auto;
+    display: grid;
+    gap: 54px;
+    justify-items: center;
+    margin-top: 56px;
+  }
+  html.theme-monolithe .sy-flow__node {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    width: min(300px, 100%);
+  }
+  html.theme-monolithe .sy-flow__node:nth-of-type(n) {
+    left: auto;
+  }
+  html.theme-monolithe .sy-flow__card {
+    height: 170px;
+  }
+}
+@media (max-width: 640px) {
+  html.theme-monolithe .sy-formulas__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  html.theme-monolithe .sy-formula:last-child {
+    grid-column: span 2;
+  }
+  html.theme-monolithe .sy-formula:last-child .sy-formula__art {
+    aspect-ratio: 8 / 3.4;
+  }
+  html.theme-monolithe .sy-formula__includes {
+    padding: 10px;
+    font-size: 11.5px;
+    gap: 6px;
+  }
+  html.theme-monolithe .sy-formula__includes ul {
+    gap: 6px;
+  }
+  html.theme-monolithe .sy-steps > ol {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 26px;
+  }
+  html.theme-monolithe .sy-step button {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+  html.theme-monolithe .sy-step__number {
+    display: none;
+  }
+  html.theme-monolithe .sy-step__title {
+    margin-top: 0;
+  }
+  html.theme-monolithe .sy-step__node {
+    width: 52px;
+    height: 52px;
+    flex: none;
+    border-radius: 16px;
+  }
+  html.theme-monolithe .sy-step__more {
+    padding-left: 68px;
+  }
+  html.theme-monolithe .sy-refs .sy-refs__all {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.theme-monolithe .sy-hero-backdrop *,
+  html.theme-monolithe .sy-flow *,
+  html.theme-monolithe .sy-flow *::after,
+  html.theme-monolithe .sy-feature *,
+  html.theme-monolithe .sy-tilt-stage *,
+  html.theme-monolithe .sy-formulas *,
+  html.theme-monolithe .sy-guarantees *,
+  html.theme-monolithe .sy-steps *,
+  html.theme-monolithe .sy-refs * {
+    animation: none !important;
+    transition: none !important;
+  }
+  html.theme-monolithe .sy-flow__node:is(:hover, :focus-visible) .sy-flow__card,
+  html.theme-monolithe .sy-formula.is-in:is(:hover, :focus-visible),
+  html.theme-monolithe .sy-tilt-stage__inner {
+    transform: none;
+  }
+  html.theme-monolithe .sy-tilt-stage [data-depth] {
+    translate: none !important;
+  }
+  html.theme-monolithe .sy-mini-app path {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  html.theme-monolithe .sy-flow__dot {
+    display: none;
+  }
+  html.theme-monolithe .sy-steps__beam i {
+    transform: scaleX(1);
+  }
+}

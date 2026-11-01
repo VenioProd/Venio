@@ -4,10 +4,11 @@ import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import TrustLine from '../components/conversion/TrustLine'
 import NeedStart from '../components/qualification/NeedStart'
-import { InstrumentRings, LineIcon, useSpotlight, type LineIconName } from '../components/graphics'
+import { LineIcon, useSpotlight, type LineIconName } from '../components/graphics'
 import { useI18n } from '../context/I18nContext'
 import type { MessageKey } from '../i18n'
 import { useReveal } from '../hooks/useReveal'
+import { HeroBackdrop } from '../components/systeme'
 import '../styles/monolithe-pages.css'
 import '../styles/refonte-pages.css'
 
@@ -78,11 +79,11 @@ const CUTS: [MessageKey, MessageKey][] = [
 
 const ConseilCommunication: React.FC = () => {
   const { t } = useI18n()
-  useReveal('.mp-page .mp-reveal', 'mp-visible')
+  useReveal('.sy-secondary .sy-rv', 'is-in')
   const jobsRef = useSpotlight<HTMLDivElement>()
 
   return (
-    <div className="mp-page">
+    <div className="mp-page sy-secondary">
       <SEO
         title={t('pubHome.advice.seoTitle')}
         description={t('pubHome.advice.seoDescription')}
@@ -90,18 +91,15 @@ const ConseilCommunication: React.FC = () => {
       />
       <StructuredData type="conseil-communication" />
 
-      <section className="rp-hero">
-        <InstrumentRings />
-        <div className="mp-container rp-hero-grid">
+      <section className="rp-hero sy-secondary-hero">
+        <HeroBackdrop />
+        <div className="mp-container rp-hero-grid sy-wrap">
           <div>
-            <p className="rp-mono rp-eb">
-              <i aria-hidden="true" />
-              {t('pubHome.advice.heroEyebrow')}
-            </p>
-            <h1 className="rp-h1 rp-h1--wide">
+            <p className="rp-mono rp-eb sy-eyebrow">{t('pubHome.advice.heroEyebrow')}</p>
+            <h1 className="rp-h1 rp-h1--wide sy-secondary-title">
               {t('pubHome.advice.title')} <span className="rp-acc vn-shine">{t('pubHome.advice.titleAccent')}</span>
             </h1>
-            <p className="rp-lede">{t('pubHome.advice.lede')}</p>
+            <p className="rp-lede sy-secondary-lede">{t('pubHome.advice.lede')}</p>
             <div className="rp-ctas vn-fx">
               <Link
                 to="/contact?besoin=com"
@@ -115,7 +113,7 @@ const ConseilCommunication: React.FC = () => {
               <TrustLine />
             </div>
           </div>
-          <div className="rp-plate">
+          <div className="rp-plate sy-glass">
             <div className="rp-plate-h">
               <span className="rp-mono">{t('pubHome.advice.cutsTitle')}</span>
               <span className="rp-mono rp-acc">{t('pubHome.advice.cutsBadge')}</span>
@@ -133,18 +131,15 @@ const ConseilCommunication: React.FC = () => {
       </section>
 
       <section id="prestations" className="rp-sec">
-        <div className="mp-container mp-reveal">
-          <p className="rp-mono rp-eb">
-            <i aria-hidden="true" />
-            {t('pubHome.advice.servicesEyebrow')}
-          </p>
+        <div className="mp-container sy-rv sy-wrap">
+          <p className="rp-mono rp-eb sy-eyebrow">{t('pubHome.advice.servicesEyebrow')}</p>
           <h2>
             {t('pubHome.advice.servicesTitle')}{' '}
             <span className="rp-acc">{t('pubHome.advice.servicesTitleAccent')}</span>
           </h2>
           <div className="rp-services">
             {PRESTATIONS.map((p, i) => (
-              <article key={p.index} className="rp-svc">
+              <article key={p.index} className="rp-svc sy-glass">
                 <LineIcon name={p.icon} delay={i * 90} />
                 <div>
                   <span className="rp-mono">
@@ -165,16 +160,17 @@ const ConseilCommunication: React.FC = () => {
       </section>
 
       <section id="et-aussi" className="rp-sec">
-        <div className="mp-container mp-reveal">
-          <p className="rp-mono rp-eb">
-            <i aria-hidden="true" />
-            {t('pubHome.advice.moreEyebrow')}
-          </p>
+        <div className="mp-container sy-rv sy-wrap">
+          <p className="rp-mono rp-eb sy-eyebrow">{t('pubHome.advice.moreEyebrow')}</p>
           <h2>
             {t('pubHome.advice.moreTitle')} <span className="rp-acc">{t('pubHome.advice.moreTitleAccent')}</span>
           </h2>
           <div className="rp-jobs" ref={jobsRef}>
-            <Link to="/contact?besoin=marque" className="rp-job vn-spot" data-analytics-cta="conseil_job_marque">
+            <Link
+              to="/contact?besoin=marque"
+              className="rp-job vn-spot sy-glass"
+              data-analytics-cta="conseil_job_marque"
+            >
               <LineIcon name="glyph" />
               <span className="rp-mono">{t('pubHome.advice.brandLabel')}</span>
               <h3>{t('pubHome.advice.brandTitle')}</h3>
@@ -183,9 +179,14 @@ const ConseilCommunication: React.FC = () => {
                 <span className="rp-mono">{t('pubHome.cta.nope')}</span>
                 <p>{t('pubHome.advice.brandNope')}</p>
               </div>
-              <span className="rp-go">{t('pubHome.advice.go')}</span>
+              <span className="rp-go">
+                {t('pubHome.advice.go').replace(/\s*→$/, '')}{' '}
+                <span className="sy-arr" aria-hidden="true">
+                  →
+                </span>
+              </span>
             </Link>
-            <Link to="/contact?besoin=outil" className="rp-job vn-spot" data-analytics-cta="conseil_job_outil">
+            <Link to="/contact?besoin=outil" className="rp-job vn-spot sy-glass" data-analytics-cta="conseil_job_outil">
               <LineIcon name="code" />
               <span className="rp-mono">{t('pubHome.advice.devLabel')}</span>
               <h3>{t('pubHome.advice.devTitle')}</h3>
@@ -194,7 +195,12 @@ const ConseilCommunication: React.FC = () => {
                 <span className="rp-mono">{t('pubHome.cta.nope')}</span>
                 <p>{t('pubHome.advice.devNope')}</p>
               </div>
-              <span className="rp-go">{t('pubHome.advice.go')}</span>
+              <span className="rp-go">
+                {t('pubHome.advice.go').replace(/\s*→$/, '')}{' '}
+                <span className="sy-arr" aria-hidden="true">
+                  →
+                </span>
+              </span>
             </Link>
           </div>
         </div>

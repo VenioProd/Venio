@@ -271,7 +271,7 @@ const en: Record<keyof typeof fr, string> = {
   'pubForms.needStart.titleAccent': 'your needs.',
   'pubForms.needStart.sub':
     "Five questions, three minutes. We reply within 48 business hours with a first read, and we'll also tell you when we're not the right fit.",
-  'pubForms.needStart.trust': 'No commitment · Reply within 48 business hours · Written quote',
+  'pubForms.needStart.trust': 'No commitment · Reply within 48 business hours · Written proposal',
 }
 
 export default en
