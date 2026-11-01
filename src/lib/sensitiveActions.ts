@@ -4,6 +4,7 @@
  * uniquement que l'interface a demandé la confirmation de l'action ciblée.
  */
 export const SENSITIVE_ACTIONS = {
+  PROJECT_DELETE: 'PROJECT_DELETE',
   AGENT_TOKEN_CREATE: 'AGENT_TOKEN_CREATE',
   AGENT_TOKEN_UPDATE: 'AGENT_TOKEN_UPDATE',
   AGENT_TOKEN_REVOKE: 'AGENT_TOKEN_REVOKE',

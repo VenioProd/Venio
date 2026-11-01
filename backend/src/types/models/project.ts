@@ -48,6 +48,7 @@ export interface IProject extends Document {
   isArchived: boolean
   tags: string[]
   sourceLead: Types.ObjectId | null
+  templateId: Types.ObjectId | null
   summary: string
   reminderAt: Date | null
   billing: IProjectBilling

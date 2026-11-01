@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projets optimisé (desktop) — Venio Admin</title>
+<meta name="description" content="Maquette desktop : page Projets en vue d’ensemble actionnable.">
+<meta name="color-scheme" content="dark light">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{--bg:#04050a;--line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.14);--tx:#eef0f7;--mut:#9aa1b4;--dim:#646b80;--dim-t:#7f869b;--sky:#38bdf8;--vio:#a78bfa;--teal:#5eead4;--mint:#34d399;--amber:#fbbf24;--rose:#f472b6;--grad:linear-gradient(92deg,#c4b5fd 0%,#7dd3fc 45%,#5eead4 100%);--sans:'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,monospace;--ease:cubic-bezier(.2,.7,.1,1);--r:14px;--sbw:248px;--f1:rgba(255,255,255,.03);--f2:rgba(255,255,255,.045);--f3:rgba(255,255,255,.065);--bar-bg:rgba(6,7,12,.7);--glass-a:rgba(255,255,255,.05);--glass-b:rgba(255,255,255,.015);--pill-bg:#f4f6fb;--pill-tx:#05060b;--shadow:0 1px 0 rgba(255,255,255,.05) inset,0 24px 48px -36px rgba(0,0,0,.8);--glow:rgba(124,92,255,.11)}
+:root[data-theme="light"]{--bg:#f5f6fa;--line:rgba(15,20,45,.1);--line-2:rgba(15,20,45,.18);--tx:#0d1020;--mut:#4a5167;--dim:#8a90a3;--dim-t:#62697e;--sky:#0284c7;--vio:#7c3aed;--teal:#0d9488;--mint:#047857;--amber:#b45309;--rose:#be185d;--grad:linear-gradient(92deg,#7c3aed 0%,#0284c7 50%,#0d9488 100%);--f1:rgba(15,20,45,.025);--f2:rgba(15,20,45,.04);--f3:rgba(15,20,45,.06);--bar-bg:rgba(245,246,250,.8);--glass-a:rgba(255,255,255,.9);--glass-b:rgba(255,255,255,.6);--pill-bg:#0d1020;--pill-tx:#fff;--shadow:0 1px 2px rgba(15,20,45,.05);--glow:rgba(124,92,255,.08);color-scheme:light}
+
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100dvh}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(720px 480px at 0% 0%,var(--glow),transparent 70%)}
+a{color:inherit;text-decoration:none}svg{display:block;max-width:100%}
+h1,h2,h3,p,ul{margin:0}ul{padding:0;list-style:none}
+button,select{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer;padding:0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px;border-radius:6px}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:var(--mono)}.num{font-variant-numeric:tabular-nums}
+.gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ic,.ic-sm{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic{width:16px;height:16px}.ic-sm{width:14px;height:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 16px;border-radius:999px;font-size:13.5px;font-weight:500;letter-spacing:-.01em;white-space:nowrap;transition:background .2s,transform .2s var(--ease)}
+.btn:active{transform:scale(.98)}.btn-sm{height:32px;padding:0 14px;font-size:13px}.btn-xs{height:28px;padding:0 12px;font-size:12.5px}
+.btn-primary{color:var(--pill-tx);background:var(--pill-bg);box-shadow:0 0 0 1px rgba(255,255,255,.4) inset,0 8px 28px -10px rgba(125,211,252,.55)}
+.btn-ghost{color:var(--tx);background:var(--f2);border:1px solid var(--line-2)}.btn-ghost:hover{background:var(--f3)}
+.btn-danger{color:var(--rose);background:color-mix(in srgb,var(--rose) 12%,transparent);border:1px solid color-mix(in srgb,var(--rose) 35%,transparent)}
+.icon-btn{position:relative;width:36px;height:36px;border-radius:10px;display:inline-grid;place-items:center;color:var(--mut);transition:background .2s,color .2s}
+.icon-btn:hover{background:var(--f2);color:var(--tx)}
+.dot-badge{position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--rose);box-shadow:0 0 0 2px var(--bg)}
+.glass{position:relative;border-radius:var(--r);background:linear-gradient(180deg,var(--glass-a),var(--glass-b));border:1px solid var(--line);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:var(--shadow)}
+kbd{font-family:var(--mono);font-size:11px;color:var(--dim-t);border:1px solid var(--line-2);border-radius:5px;padding:1px 5px;background:var(--f1)}
+
+/* Shell */
+.sb{position:fixed;inset:0 auto 0 0;width:var(--sbw);z-index:40;display:flex;flex-direction:column;background:rgba(255,255,255,.015);border-right:1px solid var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.main{position:relative;z-index:1;margin-left:var(--sbw);min-width:0}
+.sb-top{padding:12px 12px 8px;display:flex;flex-direction:column;gap:8px}
+.brand{display:flex;align-items:center;gap:10px;height:32px;padding:0 8px;font-weight:600;font-size:16px;letter-spacing:-.02em}
+.brand svg{width:22px;height:22px}
+.ws{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line-2);background:var(--f1);font-size:12.5px;width:100%}
+.ws i{width:6px;height:6px;border-radius:50%;background:var(--mint)}.ws span{flex:1;text-align:left}
+.sb-nav{flex:1;min-height:0;overflow-y:auto;padding:4px 12px 12px}
+.grp{margin-top:12px}
+.grp-l{display:flex;align-items:center;height:24px;padding:0 8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-t)}
+.ni{position:relative;display:flex;align-items:center;gap:10px;height:34px;padding:0 8px;border-radius:8px;font-size:13.5px;color:var(--mut)}
+.ni .ic{color:var(--dim-t)}.ni:hover{background:var(--f2);color:var(--tx)}.ni .lb{flex:1}
+.ni .cnt{font-family:var(--mono);font-size:11px;color:var(--mut);padding:0 6px;min-width:20px;text-align:center;line-height:18px;border-radius:999px;background:var(--f3)}
+.ni .cnt.hot{color:#05060b;background:var(--rose)}
+.ni[aria-current="page"]{color:var(--tx);background:var(--f3)}.ni[aria-current="page"] .ic{color:var(--sky)}
+.ni[aria-current="page"]::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:2px;border-radius:2px;background:var(--grad)}
+.sb-bot{padding:8px 12px 12px;border-top:1px solid var(--line)}
+.user{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px}
+.ring{display:block;flex:none;width:32px;height:32px;border-radius:50%;padding:1.5px;background:var(--grad)}
+.ring b{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--bg);font-size:11.5px;font-weight:600}
+.user-t{display:flex;flex-direction:column;line-height:1.25}.user-t b{font-size:13px;font-weight:500}.user-t small{font-family:var(--mono);font-size:11px;color:var(--dim-t)}
+.top{position:sticky;top:0;z-index:30;height:56px;display:flex;align-items:center;gap:12px;padding:0 32px;background:var(--bar-bg);border-bottom:1px solid var(--line);-webkit-backdrop-filter:saturate(160%) blur(16px);backdrop-filter:saturate(160%) blur(16px)}
+.crumb{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--dim-t)}.crumb i{font-style:normal;color:var(--dim)}.crumb b{font-weight:500;color:var(--tx)}
+.top-r{margin-left:auto;display:flex;align-items:center;gap:4px}.top-r .btn{margin-right:8px}
+.tabbar{display:none}
+
+/* Page */
+.page{padding:24px 32px 96px;max-width:1400px;margin:0 auto}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-family:var(--mono)}
+.eyebrow i{width:7px;height:7px;border-radius:2px;background:var(--c,var(--sky));box-shadow:0 0 12px var(--c,var(--sky))}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.ph h1{margin-top:8px;font-size:26px;line-height:1.15;letter-spacing:-.035em;font-weight:600}
+.ph h1 em{font-style:normal;color:var(--rose)}
+.ph-sub{margin-top:6px;color:var(--mut);font-size:14px}
+.ph-a{display:flex;gap:8px;align-items:center}
+.new{display:inline-flex;align-items:center;height:16px;padding:0 6px;border-radius:4px;font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--vio);background:color-mix(in srgb,var(--vio) 14%,transparent);border:1px solid color-mix(in srgb,var(--vio) 40%,transparent);vertical-align:middle;white-space:nowrap}
+.chip{--c:var(--sky);display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;font-weight:500;white-space:nowrap;color:var(--c);background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 28%,transparent)}
+.chip.dot::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;margin-right:6px}
+.c-amber{--c:var(--amber)}.c-rose{--c:var(--rose)}.c-vio{--c:var(--vio)}.c-sky{--c:var(--sky)}.c-mint{--c:var(--mint)}.c-teal{--c:var(--teal)}.c-mut{--c:var(--mut)}
+.av{flex:none;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:10px;font-weight:600;color:var(--c,var(--sky));background:color-mix(in srgb,var(--c,var(--sky)) 16%,var(--bg));border:1px solid color-mix(in srgb,var(--c,var(--sky)) 35%,transparent)}
+.count{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--mut);background:var(--f3);border-radius:999px;padding:0 7px;line-height:18px}
+.count.hot{color:#05060b;background:var(--rose)}
+.lnk{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--mut)}.lnk:hover{color:var(--tx)}
+
+/* Onglets du hub */
+.tabs{display:flex;gap:2px;margin-top:20px;border-bottom:1px solid var(--line)}
+.tab{position:relative;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;font-size:13.5px;color:var(--mut)}
+.tab:hover{color:var(--tx)}.tab[aria-selected="true"]{color:var(--tx)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:var(--grad)}
+.panel[hidden]{display:none}
+
+/* Pouls */
+.pulse{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:16px}
+.pc{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-left:1px solid var(--line);min-width:0}
+.pc:first-child{border-left:0}
+.pc-l{font-size:12px;color:var(--mut);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pc-v{font-size:22px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.2}
+.pc-v small{font-size:.55em;color:var(--mut);font-weight:500;margin-left:2px}
+.pc-s{font-family:var(--mono);font-size:11.5px;color:var(--dim-t)}
+.pc.hot .pc-v{color:var(--rose)}
+.pos{color:var(--mint)}.neg{color:var(--rose)}
+.meter{height:5px;border-radius:4px;background:var(--f3);overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;width:var(--p);border-radius:4px;background:var(--grad)}
+.meter.warn i{background:var(--amber)}.meter.bad i{background:var(--rose)}
+
+/* Grille */
+.grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 10px}
+.card-h h2{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;letter-spacing:-.01em;flex-wrap:wrap}
+
+/* File « À traiter » */
+.queue::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:2px;border-radius:2px;background:var(--rose);box-shadow:0 0 12px var(--rose)}
+.q-l{border-top:1px solid var(--line)}
+.q{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 12px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.q-l li:last-child .q{border-bottom:0}
+.q-t{min-width:0;display:flex;flex-direction:column;gap:2px}
+.q-t b{font-weight:500;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.q-t span{font-size:12.5px;color:var(--mut)}
+.q-t .why{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
+.q-a{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+/* Vues + filtres */
+.views{display:flex;gap:4px;padding:0 16px 8px;flex-wrap:wrap;align-items:center}
+.flt{height:28px;padding:0 10px;border-radius:8px;font-size:12.5px;color:var(--mut);display:inline-flex;align-items:center;gap:6px;border:1px solid transparent}
+.flt:hover{color:var(--tx)}.flt[aria-pressed="true"]{background:var(--f3);color:var(--tx);border-color:var(--line-2)}
+.flt.add{border:1px dashed var(--line-2)}
+.fbar{display:flex;gap:8px;padding:0 16px 12px;flex-wrap:wrap;align-items:center}
+.fld{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--f1);color:var(--mut);font-size:12.5px}
+.fld input{background:none;border:0;color:var(--tx);font:inherit;width:150px;outline:none;min-width:0}
+select.sel{height:32px;padding:0 26px 0 10px;border-radius:8px;border:1px solid var(--line);background:var(--f1);color:var(--mut);font-size:12.5px;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--dim-t) 50%),linear-gradient(135deg,var(--dim-t) 50%,transparent 50%);background-position:calc(100% - 14px) 14px,calc(100% - 9px) 14px;background-size:5px 5px;background-repeat:no-repeat}
+select.sel option{background:#10121c;color:#eef0f7}
+:root[data-theme="light"] select.sel option{background:#fff;color:#0d1020}
+
+/* Tableau */
+.tbl{border-top:1px solid var(--line)}
+.th,.tr{display:grid;grid-template-columns:24px minmax(0,1fr) 98px 92px 78px 104px 28px 28px;gap:10px;align-items:center;padding:0 16px}
+.th{height:34px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim-t);border-bottom:1px solid var(--line)}
+.tr{min-height:58px;border-bottom:1px solid var(--line);transition:background .15s}
+.tr:hover{background:var(--f1)}.tr[aria-selected="true"]{background:color-mix(in srgb,var(--sky) 7%,transparent)}
+.tr[hidden]{display:none}
+.cell-n{min-width:0;display:flex;flex-direction:column;line-height:1.35;padding:8px 0}
+.cell-n b{font-weight:500;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell-n span{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell-p{font-family:var(--mono);font-size:11.5px;color:var(--mut)}
+.cell-d{font-family:var(--mono);font-size:12px;color:var(--mut);line-height:1.3}.cell-d small{display:block;font-size:11px;color:var(--dim-t)}.cell-d.late{color:var(--rose)}.cell-d.soon{color:var(--amber)}
+.cell-b{font-family:var(--mono);font-size:11.5px;color:var(--mut)}.cell-b.bad{color:var(--rose)}.cell-b.warn{color:var(--amber)}
+.m-only{display:none}
+.chk{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin:0;border-radius:5px;border:1px solid var(--line-2);background:var(--f1);display:grid;place-items:center;cursor:pointer}
+.chk:checked{background:var(--sky);border-color:var(--sky)}
+.chk:checked::after{content:"";width:8px;height:4px;border-left:2px solid #05060b;border-bottom:2px solid #05060b;transform:rotate(-45deg) translate(1px,-1px)}
+.kebab{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--dim-t)}.kebab:hover{background:var(--f3);color:var(--tx)}
+.t-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;font-size:12.5px;color:var(--dim-t)}
+
+/* Barre d'actions groupées */
+.bulk{position:sticky;bottom:16px;z-index:35;margin:0 16px 16px;display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:14px;background:#10121c;border:1px solid var(--line-2);box-shadow:0 18px 50px -12px rgba(0,0,0,.8)}
+:root[data-theme="light"] .bulk{background:#fff;box-shadow:0 12px 36px -12px rgba(15,20,45,.3)}
+.bulk.on{display:flex}
+.bulk .n{font-weight:600;margin-right:4px}.bulk .sp{flex:1}
+.bulk select.sel{background-color:var(--f2)}
+
+/* Timeline + charge */
+.tl{padding:2px 16px 14px}
+.ev{display:grid;grid-template-columns:48px 12px minmax(0,1fr);gap:0 10px;padding:0 0 12px;position:relative}
+.ev:last-child{padding-bottom:0}
+.ev time{font-family:var(--mono);font-size:12px;color:var(--mut);line-height:20px}
+.pin{position:relative;display:flex;justify-content:center}
+.pin::before{content:"";width:7px;height:7px;margin-top:6px;border-radius:50%;background:var(--c,var(--sky));z-index:1}
+.pin::after{content:"";position:absolute;top:18px;bottom:-12px;width:1px;background:var(--line-2)}
+.ev:last-child .pin::after{display:none}
+.ev-t{line-height:1.35;min-width:0}.ev-t b{display:block;font-weight:500;font-size:13px}.ev-t span{font-size:12px;color:var(--mut)}
+.load{padding:0 16px 14px;display:flex;flex-direction:column;gap:10px}
+.ld{display:grid;grid-template-columns:24px minmax(0,1fr) 44px;gap:10px;align-items:center}
+.ld b{font-weight:500;font-size:13px;display:block}.ld span.s{font-size:12px;color:var(--mut)}
+.ld .p{font-family:var(--mono);font-size:12px;text-align:right}
+.ld .meter{margin-top:4px}
+
+/* Autres onglets */
+.list{border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);min-height:58px}
+.row:last-child{border-bottom:0}
+.row .cell-n{padding:0}
+.avs{display:flex}.avs .av{margin-left:-6px;border-color:var(--bg)}.avs .av:first-child{margin-left:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding:0 16px 16px}
+.pcard{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--f1);display:flex;flex-direction:column;gap:6px}
+.pcard b{font-weight:600;font-size:14px}.pcard span.s{font-size:12px;color:var(--mut)}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;z-index:80;padding:10px 16px;border-radius:12px;background:#10121c;border:1px solid var(--line-2);font-size:13px;transition:.25s var(--ease);max-width:calc(100vw - 32px)}
+:root[data-theme="light"] .toast{background:#fff}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.note{margin-top:16px;padding:12px 16px;border:1px dashed var(--line-2);border-radius:var(--r);color:var(--mut);font-size:12.5px}
+.note b{color:var(--tx);font-weight:500}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.001ms!important}}
+
+/* ---------- Tablette ---------- */
+@media (max-width:1099px){
+  :root{--sbw:64px}
+  .sb-top .brand span,.sb-top .ws,.grp-l,.ni .lb,.ni .cnt,.user-t{display:none}
+  .sb-top{align-items:center}.brand{padding:0}.ni{justify-content:center;padding:0}.sb-nav{padding:4px 10px}
+  .user{justify-content:center;padding:8px 0}
+  .top{padding:0 24px}.page{padding:20px 24px 96px}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .pulse{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .pc{padding:12px}.pc-v{font-size:19px}
+  .th,.tr{grid-template-columns:24px minmax(0,1fr) 98px 78px 104px 28px 28px}
+  .th .h-prog,.tr .cell-pr{display:none}
+}
+/* ---------- Mobile ---------- */
+@media (max-width:699px){
+  body{font-size:14px}
+  .sb,.top-r .hide-m,.crumb{display:none}
+  .main{margin-left:0}
+  .top{padding:0 16px;height:52px}.top::before{content:"Projets";font-weight:600;font-size:16px;letter-spacing:-.02em}
+  .page{padding:16px 16px 180px}
+  .ph h1{font-size:22px}.ph-sub{font-size:13px}
+  .ph-a{width:100%}.ph-a .btn{flex:1}
+  .tabs{margin:16px -16px 0;padding:0 8px;display:grid;grid-template-columns:repeat(4,1fr)}
+  .tab{justify-content:center;padding:0 4px;gap:5px;font-size:13px}.tab .count{display:none}
+  .pulse{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pc{border-left:0;border-top:1px solid var(--line)}
+  .pc:nth-child(-n+2){border-top:0}.pc:nth-child(even){border-left:1px solid var(--line)}
+  .pc:nth-child(5){grid-column:1/-1;border-left:0}
+  .side{grid-template-columns:minmax(0,1fr)}
+  .q{grid-template-columns:minmax(0,1fr)}.q-a{justify-content:flex-start}
+  .q-a .btn{height:36px}
+  .fld input{width:100%}.fld{flex:1 1 100%}
+  select.sel{flex:1 1 calc(50% - 4px);height:36px;min-width:0}
+  .flt{height:34px}
+  .th{display:none}
+  .tr{grid-template-columns:24px minmax(0,1fr) 28px;grid-template-areas:"c n k" ". m m" ". b b";gap:2px 10px;padding:12px 16px;align-items:start}
+  .tr>:nth-child(1){grid-area:c;padding-top:2px}.tr>.cell-n{grid-area:n;padding:0}.tr>.kebab{grid-area:k}
+  .tr>.cell-st,.tr>.cell-d,.tr>.cell-b,.tr>.cell-pr,.tr>.cell-r{display:none}
+  .tr .m-only{display:flex;grid-area:m;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+  .tr .m-only.b{grid-area:b;margin-top:6px;gap:12px}
+  .m-only .bar{flex:1;min-width:60px}
+  .row{grid-template-columns:minmax(0,1fr) auto}.row>:nth-child(2),.row>:nth-child(3){display:none}
+  .row .m-only{display:flex;grid-column:1/-1;gap:8px;flex-wrap:wrap}
+  .bulk{position:fixed;left:8px;right:8px;bottom:92px;margin:0}
+  .bulk select.sel{flex:1 1 calc(50% - 4px)}
+  .bulk .btn{flex:1}
+  .tabbar{position:fixed;z-index:60;left:0;right:0;bottom:0;height:84px;padding:0 8px 20px;display:grid;grid-template-columns:repeat(5,1fr);background:var(--bar-bg);border-top:1px solid var(--line);-webkit-backdrop-filter:saturate(160%) blur(18px);backdrop-filter:saturate(160%) blur(18px)}
+  .tb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--dim-t);position:relative}
+  .tb[aria-current="page"]{color:var(--tx)}.tb[aria-current="page"] .ic{color:var(--sky)}
+  .tb .dot-badge{top:6px;right:calc(50% - 16px)}
+  .toast{bottom:176px}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="lgB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4b5fd"/><stop offset=".5" stop-color="#7dd3fc"/><stop offset="1" stop-color="#5eead4"/></linearGradient></defs><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+<symbol id="n-home" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.6"/><rect x="14" y="3" width="7" height="5" rx="1.6"/><rect x="14" y="12" width="7" height="9" rx="1.6"/><rect x="3" y="16" width="7" height="5" rx="1.6"/></symbol>
+<symbol id="n-chart" viewBox="0 0 24 24"><path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/></symbol>
+<symbol id="n-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3 3-4.5 6-4.5s5.2 1.5 6 4.5M16 5a3 3 0 0 1 0 6M18 14.5c1.6.6 2.6 2 3 4.5"/></symbol>
+<symbol id="n-folder" viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></symbol>
+<symbol id="n-inbox" viewBox="0 0 24 24"><path d="M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5"/></symbol>
+<symbol id="n-life" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.6"/><path d="M5.6 5.6l3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"/></symbol>
+<symbol id="n-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+<symbol id="n-kanban" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16" rx="1.4"/><rect x="9.5" y="4" width="5" height="10" rx="1.4"/><rect x="16" y="4" width="5" height="13" rx="1.4"/></symbol>
+<symbol id="n-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+<symbol id="n-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol>
+<symbol id="n-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="n-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 21h4"/></symbol>
+<symbol id="n-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></symbol>
+<symbol id="n-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+<symbol id="n-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+</g></svg>
+<a class="sr" href="#main" style="left:8px;top:8px;z-index:100">Aller au contenu</a>
+<aside class="sb" aria-label="Navigation latérale"><div class="sb-top"><a class="brand" href="#" aria-label="Venio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5h4.2L12 15.2 16.8 4.5H21L13.6 20h-3.2z" fill="url(#lgB)"/></svg><span>Venio</span></a><button class="ws" type="button"><i></i><span>Venio · Paris</span></button></div>
+<nav class="sb-nav" aria-label="Principale"><div class="grp"><div class="grp-l">Pilotage</div>
+<a class="ni" href="#" aria-label="Accueil"><svg class="ic"><use href="#n-home"/></svg><span class="lb">Accueil</span><span class="cnt hot">9</span></a>
+<a class="ni" href="#" aria-label="Inbox"><svg class="ic"><use href="#n-inbox"/></svg><span class="lb">Inbox</span><span class="cnt">3</span></a>
+<a class="ni" href="#" aria-label="Analytics"><svg class="ic"><use href="#n-chart"/></svg><span class="lb">Analytics</span></a></div>
+<div class="grp"><div class="grp-l">Commercial</div><a class="ni" href="#" aria-label="CRM"><svg class="ic"><use href="#n-kanban"/></svg><span class="lb">CRM</span></a></div>
+<div class="grp"><div class="grp-l">Production</div>
+<a class="ni" href="#" aria-current="page" aria-label="Projets"><svg class="ic"><use href="#n-folder"/></svg><span class="lb">Projets</span><span class="cnt hot">3</span></a>
+<a class="ni" href="#" aria-label="Demandes"><svg class="ic"><use href="#n-life"/></svg><span class="lb">Demandes</span><span class="cnt">12</span></a>
+<a class="ni" href="#" aria-label="Calendrier"><svg class="ic"><use href="#n-cal"/></svg><span class="lb">Calendrier</span></a>
+<a class="ni" href="#" aria-label="Équipe"><svg class="ic"><use href="#n-users"/></svg><span class="lb">Équipe</span></a></div></nav>
+<div class="sb-bot"><a class="user" href="#"><span class="ring"><b>RB</b></span><span class="user-t"><b>Raphaël B.</b><small>Super admin</small></span></a></div></aside>
+<div class="main">
+<header class="top"><nav class="crumb"><span>Production</span><i>/</i><b aria-current="page">Projets</b></nav>
+<div class="top-r"><button class="btn btn-primary btn-sm hide-m" type="button"><svg class="ic-sm"><use href="#n-plus"/></svg>Créer</button><button class="icon-btn" type="button" aria-label="Activité"><svg class="ic"><use href="#n-bell"/></svg><span class="dot-badge"></span></button><button class="icon-btn" type="button" id="themeBtn" aria-label="Basculer le thème"><svg class="ic"><use href="#n-sun" id="themeUse"/></svg></button></div></header>
+<main class="page" id="main">
+<div class="ph"><div><span class="eyebrow" style="--c:var(--amber)"><i></i>Production · Projets</span>
+<h1><span class="gt">Projets</span> — <em>3 en retard</em>, 2 à risque</h1>
+<p class="ph-sub">18 actifs · 5 échéances cette semaine · 1 livré à facturer</p></div>
+<div class="ph-a"><button class="btn btn-ghost btn-sm" type="button">Importer un modèle</button><button class="btn btn-primary btn-sm" type="button"><svg class="ic-sm"><use href="#n-plus"/></svg>Nouveau projet</button></div></div>
+
+<div class="tabs" role="tablist" aria-label="Projets">
+<button class="tab" role="tab" aria-selected="true" data-p="clients">Clients <span class="count hot">24</span></button>
+<button class="tab" role="tab" aria-selected="false" data-p="internes">Internes <span class="count">9</span></button>
+<button class="tab" role="tab" aria-selected="false" data-p="plateformes">Plateformes <span class="count">5</span></button>
+<button class="tab" role="tab" aria-selected="false" data-p="modeles">Modèles <span class="count">7</span></button></div>
+
+<section class="panel" id="p-clients" role="tabpanel">
+<div class="glass pulse" aria-label="Indicateurs du portefeuille">
+<div class="pc"><span class="pc-l">Actifs</span><span class="pc-v">18</span><span class="pc-s">sur 24 · 6 terminés</span></div>
+<div class="pc hot"><span class="pc-l">En retard</span><span class="pc-v">3</span><span class="pc-s">1 de plus qu’hier</span></div>
+<div class="pc"><span class="pc-l">Échéances 7 j</span><span class="pc-v">5</span><span class="pc-s">2 dans les 48 h</span></div>
+<div class="pc"><span class="pc-l">Budget consommé <span class="new">nouveau</span></span><span class="pc-v">64<small>%</small></span><span class="pc-s">118 k€ sur 184 k€</span><div class="meter"><i style="--p:64%"></i></div></div>
+<div class="pc"><span class="pc-l">Charge équipe <span class="new">nouveau</span></span><span class="pc-v">87<small>%</small></span><span class="pc-s">1 personne surchargée</span><div class="meter warn"><i style="--p:87%"></i></div></div></div>
+
+<div class="grid"><div class="col">
+<div class="glass queue"><div class="card-h"><h2>À traiter <span class="count hot" id="qCount">4</span></h2><a class="lnk" href="#">Règles de risque <span class="new">nouveau</span></a></div><ul class="q-l" id="qList"><li><div class="q"><div class="q-t"><b>Refonte site Lumen</b><span>Lumen Studio · Camille M. · 18 000 €</span><div class="why"><span class="chip c-rose">12 j de retard</span><span class="chip c-rose">Budget 112 %</span> <span class="new">nouveau</span></div></div><div class="q-a"><button class="btn btn-xs btn-primary" type="button" data-act="Décaler l’échéance">Décaler l’échéance</button><button class="btn btn-xs btn-ghost" type="button" data-act="Relancer le client">Relancer le client</button><button class="btn btn-xs btn-ghost" type="button" data-act="Réassigner">Réassigner</button></div></div></li><li><div class="q"><div class="q-t"><b>Application Orsay</b><span>Orsay Conseil · Thomas L. · échéance 4 nov</span><div class="why"><span class="chip c-amber">38 % fait, 70 % attendu</span> <span class="new">nouveau</span><span class="chip c-amber">J−3</span></div></div><div class="q-a"><button class="btn btn-xs btn-primary" type="button" data-act="Réassigner">Réassigner</button><button class="btn btn-xs btn-ghost" type="button" data-act="Décaler l’échéance">Décaler l’échéance</button></div></div></li><li><div class="q"><div class="q-t"><b>Identité Maison Vael</b><span>Maison Vael · en attente de validation client</span><div class="why"><span class="chip c-amber">Sans activité depuis 16 j</span> <span class="new">nouveau</span></div></div><div class="q-a"><button class="btn btn-xs btn-primary" type="button" data-act="Relancer le client">Relancer le client</button><button class="btn btn-xs btn-ghost" type="button" data-act="Reprendre">Reprendre</button></div></div></li><li><div class="q"><div class="q-t"><b>Site vitrine Cèdre</b><span>Cèdre Avocats · livré le 28 oct</span><div class="why"><span class="chip c-sky">Livré, non facturé</span></div></div><div class="q-a"><button class="btn btn-xs btn-primary" type="button" data-act="Créer la facture">Créer la facture</button><button class="btn btn-xs btn-ghost" type="button" data-act="Archiver">Archiver</button></div></div></li></ul></div>
+
+<div class="glass"><div class="card-h"><h2>Portefeuille clients</h2><a class="lnk" href="#"><svg class="ic-sm"><use href="#n-kanban"/></svg>Vue tâches (kanban, Gantt)</a></div>
+<div class="views" role="group" aria-label="Vues"><button class="flt" aria-pressed="true" data-v="all">Tous <span class="count">8</span></button><button class="flt" aria-pressed="false" data-v="mine">Mes projets <span class="count">4</span></button><button class="flt" aria-pressed="false" data-v="late">En retard <span class="count">1</span></button><button class="flt" aria-pressed="false" data-v="risk">À risque <span class="count">3</span></button><button class="flt" aria-pressed="false" data-v="tobill">À facturer <span class="count">1</span></button><button class="flt add" type="button">+ Enregistrer la vue <span class="new">nouveau</span></button></div>
+<div class="fbar"><label class="fld"><svg class="ic-sm"><use href="#n-search"/></svg><span class="sr">Rechercher</span><input type="search" placeholder="Projet, client, n°…"></label>
+<select class="sel" aria-label="Statut"><option>Statut : tous</option><option>En cours</option><option>En attente</option><option>Terminé</option></select>
+<select class="sel" aria-label="Responsable"><option>Responsable : tous</option><option>Camille M.</option><option>Thomas L.</option><option>Raphaël B.</option></select>
+<select class="sel" aria-label="Priorité"><option>Priorité : toutes</option><option>Urgente</option><option>Haute</option></select>
+<select class="sel" aria-label="Tri"><option>Tri : urgence</option><option>Échéance</option><option>Budget</option></select></div>
+<div class="tbl" role="table" aria-label="Projets clients"><div class="th" role="row"><input class="chk" type="checkbox" id="all" aria-label="Tout sélectionner"><span>Projet</span><span>Statut</span><span class="h-prog">Avancement</span><span>Échéance</span><span>Budget <span class="new">nouveau</span></span><span>Resp.</span><span></span></div>
+<div id="rows"><div class="tr" role="row" data-v="late risk mine" aria-selected="false">
+<input class="chk" type="checkbox" aria-label="Sélectionner Refonte site Lumen">
+<div class="cell-n"><b>Refonte site Lumen</b><span>Lumen Studio · Urgente</span></div>
+<div class="cell-st"><span class="chip dot c-rose">En retard</span></div>
+<div class="cell-pr"><div class="cell-p num">64 %</div><div class="meter"><i style="--p:64%"></i></div></div>
+<div class="cell-d num late">−12 j<small>12 nov</small></div>
+<div class="cell-b num bad">112 %<small style="display:block;color:var(--dim-t)">18 000 €</small></div>
+<div class="cell-r"><span class="av" style="--c:var(--vio)" title="CM">CM</span></div>
+<button class="kebab" type="button" aria-label="Actions pour Refonte site Lumen"><svg class="ic"><use href="#n-more"/></svg></button>
+<div class="m-only"><span class="chip dot c-rose">En retard</span><span class="num mono neg" style="font-size:12px;color:var(--rose)">−12 j</span><span class="av" style="--c:var(--vio)" title="CM">CM</span></div>
+<div class="m-only b"><div class="meter bar"><i style="--p:64%"></i></div><span class="mono num" style="font-size:11.5px;color:var(--mut)">64 %</span><span class="mono num cell-b bad" style="font-size:11.5px">112 % budget</span></div>
+</div><div class="tr" role="row" data-v="risk soon" aria-selected="false">
+<input class="chk" type="checkbox" aria-label="Sélectionner Application Orsay">
+<div class="cell-n"><b>Application Orsay</b><span>Orsay Conseil · Haute</span></div>
+<div class="cell-st"><span class="chip dot c-sky">En cours</span></div>
+<div class="cell-pr"><div class="cell-p num">38 %</div><div class="meter"><i style="--p:38%"></i></div></div>
+<div class="cell-d num soon">J−3<small>4 nov</small></div>
+<div class="cell-b num ">71 %<small style="display:block;color:var(--dim-t)">24 000 €</small></div>
+<div class="cell-r"><span class="av" style="--c:var(--teal)" title="TL">TL</span></div>
+<button class="kebab" type="button" aria-label="Actions pour Application Orsay"><svg class="ic"><use href="#n-more"/></svg></button>
+<div class="m-only"><span class="chip dot c-sky">En cours</span><span class="num mono neg" style="font-size:12px;color:var(--mut)">J−3</span><span class="av" style="--c:var(--teal)" title="TL">TL</span></div>
+<div class="m-only b"><div class="meter bar"><i style="--p:38%"></i></div><span class="mono num" style="font-size:11.5px;color:var(--mut)">38 %</span><span class="mono num cell-b " style="font-size:11.5px">71 % budget</span></div>
+</div><div class="tr" role="row" data-v="risk mine" aria-selected="false">
+<input class="chk" type="checkbox" aria-label="Sélectionner Identité Maison Vael">
+<div class="cell-n"><b>Identité Maison Vael</b><span>Maison Vael · Normale</span></div>
+<div class="cell-st"><span class="chip dot c-amber">Attente client</span></div>
+<div class="cell-pr"><div class="cell-p num">80 %</div><div class="meter"><i style="--p:80%"></i></div></div>
+<div class="cell-d num ">18 nov<small></small></div>
+<div class="cell-b num warn">88 %<small style="display:block;color:var(--dim-t)">6 500 €</small></div>
+<div class="cell-r"><span class="av" style="--c:var(--vio)" title="CM">CM</span></div>
+<button class="kebab" type="button" aria-label="Actions pour Identité Maison Vael"><svg class="ic"><use href="#n-more"/></svg></button>
+<div class="m-only"><span class="chip dot c-amber">Attente client</span><span class="num mono " style="font-size:12px;color:var(--mut)">18 nov</span><span class="av" style="--c:var(--vio)" title="CM">CM</span></div>
+<div class="m-only b"><div class="meter bar"><i style="--p:80%"></i></div><span class="mono num" style="font-size:11.5px;color:var(--mut)">80 %</span><span class="mono num cell-b warn" style="font-size:11.5px">88 % budget</span></div>
+</div><div class="tr" role="row" data-v="mine" aria-selected="false">
+<input class="chk" type="checkbox" aria-label="Sélectionner Portail RH Kerno">
+<div class="cell-n"><b>Portail RH Kerno</b><span>Kerno · Haute</span></div>
+<div class="cell-st"><span class="chip dot c-sky">En cours</span></div>
+<div class="cell-pr"><div class="cell-p num">52 %</div><div class="meter"><i style="--p:52%"></i></div></div>
+<div class="cell-d num ">24 nov<small></small></div>
+<div class="cell-b num ">49 %<small style="display:block;color:var(--dim-t)">32 000 €</small></div>
+<div class="cell-r"><span class="av" style="--c:var(--amber)" title="RB">RB</span></div>
+<button class="kebab" type="button" aria-label="Actions pour Portail RH Kerno"><svg class="ic"><use href="#n-more"/></svg></button>
+<div class="m-only"><span class="chip dot c-sky">En cours</span><span class="num mono " style="font-size:12px;color:var(--mut)">24 nov</span><span class="av" style="--c:var(--amber)" title="RB">RB</span></div>
+<div class="m-only b"><div class="meter bar"><i style="--p:52%"></i></div><span class="mono num" style="font-size:11.5px;color:var(--mut)">52 %</span><span class="mono num cell-b " style="font-size:11.5px">49 % budget</span></div>
+</div><div class="tr" role="row" data-v="soon" aria-selected="false">
+<input class="chk" type="checkbox" aria-label="Sélectionner Campagne Atelier Noor">
+<div class="cell-n"><b>Campagne Atelier Noor</b><span>Atelier Noor · Normale</span></div>
+<div class="cell-st"><span class="chip dot c-sky">En cours</span></div>
+<div class="cell-pr"><div class="cell-p num">91 %</div><div class="meter"><i style="--p:91%"></i></div></div>
+<div class="cell-d num soon">J−5<small>6 nov</small></div>
+<div class="cell-b num warn">96 %<small style="display:block;color:var(--dim-t)">4 200 €</small></div>
+<div class="cell-r"><span class="av" style="--c:var(--teal)" title="TL">TL</span></div>
+<button class="kebab" type="button" aria-label="Actions pour Campagne Atelier Noor"><svg class="ic"><use href="#n-more"/></svg></button>
+<div class="m-only"><span class="chip dot c-sky">En cours</span><span class="num mono neg" style="font-size:12px;color:var(--mut)">J−5</span><span class="av" style="--c:var(--teal)" title="TL">TL</span></div>
+<div class="m-only b"><div class="meter bar"><i style="--p:91%"></i></div><span class="mono num" style="font-size:11.5px;color:var(--mut)">91 %</span><span class="mono num cell-b warn" style="font-size:11.5px">96 % budget</span></div>
+</div><div class="tr" role="row" data-v="mine" aria-selected="false">
+<input class="chk" type="checkbox" aria-label="Sélectionner Dashboard Helio">
+<div class="cell-n"><b>Dashboard Helio</b><span>Helio Énergie · Normale</span></div>
+<div class="cell-st"><span class="chip dot c-sky">En cours</span></div>
+<div class="cell-pr"><div class="cell-p num">25 %</div><div class="meter"><i style="--p:25%"></i></div></div>
+<div class="cell-d num ">12 déc<small></small></div>
+<div class="cell-b num ">22 %<small style="display:block;color:var(--dim-t)">15 000 €</small></div>
+<div class="cell-r"><span class="av" style="--c:var(--amber)" title="RB">RB</span></div>
+<button class="kebab" type="button" aria-label="Actions pour Dashboard Helio"><svg class="ic"><use href="#n-more"/></svg></button>
+<div class="m-only"><span class="chip dot c-sky">En cours</span><span class="num mono " style="font-size:12px;color:var(--mut)">12 déc</span><span class="av" style="--c:var(--amber)" title="RB">RB</span></div>
+<div class="m-only b"><div class="meter bar"><i style="--p:25%"></i></div><span class="mono num" style="font-size:11.5px;color:var(--mut)">25 %</span><span class="mono num cell-b " style="font-size:11.5px">22 % budget</span></div>
+</div><div class="tr" role="row" data-v="tobill" aria-selected="false">
+<input class="chk" type="checkbox" aria-label="Sélectionner Site vitrine Cèdre">
+<div class="cell-n"><b>Site vitrine Cèdre</b><span>Cèdre Avocats · —</span></div>
+<div class="cell-st"><span class="chip dot c-mint">Terminé</span></div>
+<div class="cell-pr"><div class="cell-p num">100 %</div><div class="meter"><i style="--p:100%"></i></div></div>
+<div class="cell-d num ">livré 28 oct<small></small></div>
+<div class="cell-b num ">100 %<small style="display:block;color:var(--dim-t)">3 800 €</small></div>
+<div class="cell-r"><span class="av" style="--c:var(--vio)" title="CM">CM</span></div>
+<button class="kebab" type="button" aria-label="Actions pour Site vitrine Cèdre"><svg class="ic"><use href="#n-more"/></svg></button>
+<div class="m-only"><span class="chip dot c-mint">Terminé</span><span class="num mono " style="font-size:12px;color:var(--mut)">livré 28 oct</span><span class="av" style="--c:var(--vio)" title="CM">CM</span></div>
+<div class="m-only b"><div class="meter bar"><i style="--p:100%"></i></div><span class="mono num" style="font-size:11.5px;color:var(--mut)">100 %</span><span class="mono num cell-b " style="font-size:11.5px">100 % budget</span></div>
+</div><div class="tr" role="row" data-v="" aria-selected="false">
+<input class="chk" type="checkbox" aria-label="Sélectionner Extranet Boréal">
+<div class="cell-n"><b>Extranet Boréal</b><span>Boréal Logistique · Normale</span></div>
+<div class="cell-st"><span class="chip dot c-sky">En cours</span></div>
+<div class="cell-pr"><div class="cell-p num">70 %</div><div class="meter"><i style="--p:70%"></i></div></div>
+<div class="cell-d num ">30 nov<small></small></div>
+<div class="cell-b num ">66 %<small style="display:block;color:var(--dim-t)">21 000 €</small></div>
+<div class="cell-r"><span class="av" style="--c:var(--teal)" title="TL">TL</span></div>
+<button class="kebab" type="button" aria-label="Actions pour Extranet Boréal"><svg class="ic"><use href="#n-more"/></svg></button>
+<div class="m-only"><span class="chip dot c-sky">En cours</span><span class="num mono " style="font-size:12px;color:var(--mut)">30 nov</span><span class="av" style="--c:var(--teal)" title="TL">TL</span></div>
+<div class="m-only b"><div class="meter bar"><i style="--p:70%"></i></div><span class="mono num" style="font-size:11.5px;color:var(--mut)">70 %</span><span class="mono num cell-b " style="font-size:11.5px">66 % budget</span></div>
+</div></div></div>
+<div class="bulk" id="bulk" role="region" aria-label="Actions groupées"><span class="n"><span id="bn">0</span> sélectionné(s)</span>
+<select class="sel" aria-label="Changer le statut"><option>Statut…</option><option>En cours</option><option>En attente</option><option>Terminé</option></select>
+<select class="sel" aria-label="Changer le responsable"><option>Responsable…</option><option>Camille M.</option><option>Thomas L.</option><option>Raphaël B.</option></select>
+<button class="btn btn-ghost btn-sm" type="button" data-bulk="archive">Archiver</button><button class="btn btn-danger btn-sm" type="button" data-bulk="delete">Supprimer</button><span class="sp"></span><button class="icon-btn" type="button" id="bclear" aria-label="Désélectionner"><svg class="ic"><use href="#n-x"/></svg></button></div>
+<div class="t-foot"><span>8 sur 24 · <a class="lnk" href="#" style="text-decoration:underline">Afficher les archivés</a></span><span class="mono">consommé = facturé ÷ budget</span></div></div>
+</div>
+
+<div class="col side">
+<div class="glass"><div class="card-h"><h2>Échéances · 14 jours <span class="new">nouveau</span></h2><a class="lnk" href="#">Calendrier</a></div><div class="tl">
+<div class="ev" style="--c:var(--rose)"><time>−12 j</time><span class="pin"></span><div class="ev-t"><b>Livraison Lumen</b><span>Camille M. · en retard</span></div></div>
+<div class="ev" style="--c:var(--amber)"><time>4 nov</time><span class="pin"></span><div class="ev-t"><b>Recette Orsay</b><span>Thomas L. · jalon</span></div></div>
+<div class="ev" style="--c:var(--amber)"><time>6 nov</time><span class="pin"></span><div class="ev-t"><b>Livraison Atelier Noor</b><span>Thomas L.</span></div></div>
+<div class="ev" style="--c:var(--sky)"><time>12 nov</time><span class="pin"></span><div class="ev-t"><b>Kick-off Boréal phase 2</b><span>Thomas L.</span></div></div>
+<div class="ev" style="--c:var(--sky)"><time>18 nov</time><span class="pin"></span><div class="ev-t"><b>Validation Vael</b><span>Camille M. · attend le client</span></div></div></div></div>
+<div class="glass"><div class="card-h"><h2>Charge par personne <span class="new">nouveau</span></h2><a class="lnk" href="#">Capacités</a></div><div class="load">
+<div class="ld"><span class="av" style="--c:var(--vio)" title="CM">CM</span><div><b>Camille M.</b><span class="s">5 projets · 31 tâches ouvertes</span><div class="meter bad"><i style="--p:100%"></i></div></div><span class="p neg">105 %</span></div>
+<div class="ld"><span class="av" style="--c:var(--teal)" title="TL">TL</span><div><b>Thomas L.</b><span class="s">4 projets · 24 tâches</span><div class="meter warn"><i style="--p:92%"></i></div></div><span class="p" style="color:var(--amber)">92 %</span></div>
+<div class="ld"><span class="av" style="--c:var(--amber)" title="RB">RB</span><div><b>Raphaël B.</b><span class="s">3 projets · 12 tâches</span><div class="meter"><i style="--p:64%"></i></div></div><span class="p">64 %</span></div></div></div>
+</div></div></section>
+
+<section class="panel" id="p-internes" role="tabpanel" hidden><div class="glass" style="margin-top:16px"><div class="card-h"><h2>Projets internes</h2><div class="ph-a"><select class="sel" aria-label="Entité"><option>Entité : toutes</option><option>Venio</option><option>Creatio</option><option>Decisio</option><option>Formatio</option><option>Arrow</option></select><button class="btn btn-ghost btn-xs" type="button">Missions · Pilotage Arrow</button></div></div>
+<div class="list">
+<div class="row"><div class="cell-n"><b>Refonte de l’onboarding</b><span>Venio · Dev, Design</span></div><div class="cell-st"><span class="chip dot c-sky">En cours</span></div><div class="avs"><span class="av" style="--c:var(--vio)" title="CM">CM</span><span class="av" style="--c:var(--teal)" title="TL">TL</span><span class="av" style="--c:var(--amber)" title="RB">RB</span></div><div class="cell-d num soon">J−6<small>7 nov</small></div><div class="m-only"><span class="chip dot c-sky">En cours</span></div></div>
+<div class="row"><div class="cell-n"><b>Lancement Formatio S1</b><span>Formatio · Formation, Marketing</span></div><div class="cell-st"><span class="chip dot c-amber">En attente</span></div><div class="avs"><span class="av" style="--c:var(--teal)" title="TL">TL</span><span class="av" style="--c:var(--amber)" title="RB">RB</span></div><div class="cell-d num">30 nov<small>&nbsp;</small></div><div class="m-only"><span class="chip dot c-amber">En attente</span></div></div>
+<div class="row"><div class="cell-n"><b>Pilotage Arrow T4</b><span>Arrow · Direction</span></div><div class="cell-st"><span class="chip dot c-sky">En cours</span></div><div class="avs"><span class="av" style="--c:var(--amber)" title="RB">RB</span></div><div class="cell-d num late">−3 j<small>29 oct</small></div><div class="m-only"><span class="chip dot c-sky">En cours</span></div></div></div></div></section>
+
+<section class="panel" id="p-plateformes" role="tabpanel" hidden><div class="glass" style="margin-top:16px"><div class="card-h"><h2>Plateformes</h2><span class="lnk">Dernier contrôle de santé il y a 4 min <span class="new">nouveau</span></span></div>
+<div class="cards"><div class="pcard"><b>Venio</b><span class="s">Production · Raphaël B.</span><span class="chip dot c-mint" style="align-self:flex-start">Saine</span></div><div class="pcard"><b>Creatio</b><span class="s">Design · Camille M.</span><span class="chip dot c-mint" style="align-self:flex-start">Saine</span></div><div class="pcard"><b>Decisio</b><span class="s">Conseil · Thomas L.</span><span class="chip dot c-amber" style="align-self:flex-start">À surveiller</span></div><div class="pcard"><b>Arrow</b><span class="s">Prospection · Raphaël B.</span><span class="chip dot c-rose" style="align-self:flex-start">Dégradée</span></div></div></div></section>
+
+<section class="panel" id="p-modeles" role="tabpanel" hidden><div class="glass" style="margin-top:16px"><div class="card-h"><h2>Modèles de projet</h2><button class="btn btn-ghost btn-xs" type="button">+ Modèle</button></div><div class="list">
+<div class="row"><div class="cell-n"><b>Site vitrine</b><span>4 phases · 18 tâches</span></div><div class="cell-n"><span>Utilisé 12 fois <span class="new">nouveau</span></span></div><div class="cell-n"><span>Budget type 4 500 €</span></div><button class="btn btn-primary btn-xs" type="button">Créer un projet</button></div>
+<div class="row"><div class="cell-n"><b>Application métier</b><span>6 phases · 41 tâches</span></div><div class="cell-n"><span>Utilisé 5 fois <span class="new">nouveau</span></span></div><div class="cell-n"><span>Budget type 22 000 €</span></div><button class="btn btn-primary btn-xs" type="button">Créer un projet</button></div>
+<div class="row"><div class="cell-n"><b>Identité de marque</b><span>3 phases · 12 tâches</span></div><div class="cell-n"><span>Utilisé 8 fois <span class="new">nouveau</span></span></div><div class="cell-n"><span>Budget type 6 000 €</span></div><button class="btn btn-primary btn-xs" type="button">Créer un projet</button></div></div></div></section>
+
+<p class="note"><b>Légende.</b> Le tag <span class="new">nouveau</span> marque une donnée ou une action absente aujourd’hui. Tout le reste existe déjà dans l’API.</p>
+</main></div>
+<div class="toast" id="toast" role="status"></div>
+<nav class="tabbar" aria-label="Navigation principale"><a class="tb" href="#"><svg class="ic" style="width:22px;height:22px"><use href="#n-home"/></svg>Accueil<span class="dot-badge"></span></a><a class="tb" href="#"><svg class="ic" style="width:22px;height:22px"><use href="#n-inbox"/></svg>Inbox</a><a class="tb" href="#" aria-current="page"><svg class="ic" style="width:22px;height:22px"><use href="#n-folder"/></svg>Projets</a><a class="tb" href="#"><svg class="ic" style="width:22px;height:22px"><use href="#n-kanban"/></svg>CRM</a><a class="tb" href="#"><svg class="ic" style="width:22px;height:22px"><use href="#n-more"/></svg>Plus</a></nav>
+<script>
+(function(){
+var $=function(s,r){return (r||document).querySelector(s)},$$=function(s,r){return [].slice.call((r||document).querySelectorAll(s))};
+document.addEventListener('click',function(e){var a=e.target.closest('a[href="#"]');if(a)e.preventDefault()});
+var root=document.documentElement;
+$('#themeBtn').addEventListener('click',function(){var l=root.getAttribute('data-theme')==='light';if(l)root.removeAttribute('data-theme');else root.setAttribute('data-theme','light');$('#themeUse').setAttribute('href',l?'#n-sun':'#n-moon')});
+function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('on')},2400)}
+$$('.tab').forEach(function(b){b.addEventListener('click',function(){$$('.tab').forEach(function(x){x.setAttribute('aria-selected',String(x===b))});$$('.panel').forEach(function(p){p.hidden=p.id!=='p-'+b.dataset.p})})});
+$$('.flt[data-v]').forEach(function(b){b.addEventListener('click',function(){$$('.flt[data-v]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});var f=b.dataset.v;$$('#rows .tr').forEach(function(r){var ok=f==='all'||r.dataset.v.split(' ').indexOf(f)>-1;r.hidden=!ok;if(!ok){var c=$('.chk',r);c.checked=false;r.setAttribute('aria-selected','false')}});sync()})});
+function sync(){var on=$$('#rows .tr:not([hidden]) .chk:checked');$$('#rows .tr').forEach(function(r){r.setAttribute('aria-selected',String($('.chk',r).checked))});$('#bn').textContent=on.length;$('#bulk').classList.toggle('on',on.length>0)}
+$$('#rows .chk').forEach(function(c){c.addEventListener('change',sync)});
+$('#all').addEventListener('change',function(e){$$('#rows .tr:not([hidden]) .chk').forEach(function(c){c.checked=e.target.checked});sync()});
+$('#bclear').addEventListener('click',function(){$$('#rows .chk,#all').forEach(function(c){c.checked=false});sync()});
+$$('[data-bulk]').forEach(function(b){b.addEventListener('click',function(){var n=$('#bn').textContent;var del=b.dataset.bulk==='delete';$$('#rows .chk:checked').forEach(function(c){c.closest('.tr').hidden=true;c.checked=false});sync();toast(n+(del?' projet(s) supprimé(s) — ':' projet(s) archivé(s) — ')+'Annuler (10 s)')})});
+$$('.q-a .btn').forEach(function(b){b.addEventListener('click',function(){var li=b.closest('li');toast(b.dataset.act+' — '+$('.q-t b',li).textContent);if(/Archiver|Créer la facture|Relancer/.test(b.dataset.act)){li.remove();$('#qCount').textContent=$$('#qList li').length}})});
+var pre=0;$$('#rows .chk').slice(0,pre).forEach(function(c){c.checked=true});sync();
+})();
+</script>
+</body></html>

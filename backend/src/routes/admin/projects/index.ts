@@ -12,6 +12,7 @@ import auth from '../../../middleware/auth.js'
 import { requireAdmin } from '../../../middleware/role.js'
 import { canReadProject } from '../../../lib/adminProjectAccess.js'
 import coreRouter from './core.js'
+import portfolioRouter from './portfolio.js'
 import sectionsRouter from './sections.js'
 import phasesRouter from './phases.js'
 import itemsRouter from './items.js'
@@ -34,6 +35,7 @@ router.use(async (req, res, next) => {
   }
 })
 
+router.use(portfolioRouter)
 router.use(coreRouter)
 router.use(sectionsRouter)
 router.use(phasesRouter)
