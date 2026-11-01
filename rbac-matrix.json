@@ -443,14 +443,6 @@
       "roles": ["SUPER_ADMIN"]
     },
     {
-      "id": "arrow",
-      "section": "Croissance",
-      "screen": "/admin/arrow-prospection",
-      "label": "Arrow prospection",
-      "permission": "view_crm",
-      "roles": []
-    },
-    {
       "id": "admin-accounts",
       "section": "Admin",
       "screen": "/admin/comptes-admin",

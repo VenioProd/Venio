@@ -17,6 +17,8 @@
     "migrate:project-update-timestamps:dry": "tsx src/scripts/backfillProjectUpdateTimestamps.ts --dry-run",
     "migrate:quote-references": "tsx src/scripts/backfillQuoteReferences.ts",
     "migrate:quote-references:dry": "tsx src/scripts/backfillQuoteReferences.ts --dry-run",
+    "migrate:arrow-schools": "tsx src/scripts/migrateArrowSchoolsToLeads.ts",
+    "migrate:arrow-schools:dry": "tsx src/scripts/migrateArrowSchoolsToLeads.ts --dry-run",
     "provision:consultant": "tsx src/scripts/provisionExternalConsultant.ts",
     "provision:consultant:dry": "tsx src/scripts/provisionExternalConsultant.ts --dry-run",
     "test": "vitest run",

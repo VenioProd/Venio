@@ -161,7 +161,7 @@ Réponse :
 | `read:toolaccess` / `write:toolaccess` | credentials tiers            | **sensible**     |
 | `read:resources` / `write:resources` | ressources entreprise          | —                |
 | `read:gestion` / `write:gestion` | tableaux de gestion                | —                |
-| `read:arrow` / `write:arrow` | pilotage + prospection Arrow         | —                |
+| `read:arrow` / `write:arrow` | pilotage Arrow uniquement         | —                |
 | `read:analytics`           | snapshots, rapports                    | lecture seule    |
 | `read:audit`               | AuditLog                               | **lecture seule** (immuable) |
 | `read:automations` / `write:automations` / `trigger:automations` | settings + déclenchement | — |
@@ -191,13 +191,17 @@ Réponse :
 | Tool Access      | `/tool-access`                   | `read:toolaccess`    | `write:toolaccess`     |
 | Ressources       | `/resources`                     | `read:resources`     | `write:resources`      |
 | Gestion          | `/gestion`                       | `read:gestion`       | `write:gestion`        |
-| Arrow            | `/arrow`                         | `read:arrow`         | `write:arrow`          |
+| Arrow (pilotage)  | `/arrow/pilotage`                 | `read:arrow`         | `write:arrow`          |
 | Analytics        | `/analytics`                     | `read:analytics`     | —                      |
 | Audit            | `/audit`                         | `read:audit`         | —                      |
 | Automations      | `/automations`                   | `read:automations`   | `write:automations` + `trigger:automations` |
 | Backup           | `/backup`                        | `read:backup`        | `manage:backup`        |
 | 2FA              | `/users/:id/2fa`                 | `read:2fa`           | `manage:2fa`           |
 | Users            | `/users`                         | `read:users`         | `write:users`          |
+
+La prospection des établissements Arrow utilise désormais les leads du CRM
+principal (`/leads`, `project: "ARROW"`), avec `read:crm` / `write:crm`.
+Les scopes Arrow restent réservés au pilotage.
 
 ## 8. Gestion des tokens (admin)
 

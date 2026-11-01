@@ -18,7 +18,6 @@ export {
   sendOverdueActionsEmail,
   sendEscalationEmail,
   sendProposalReminderEmail,
-  sendArrowSchoolAssignmentEmail,
 } from './templates/crm.js'
 export { sendWeeklyReportEmail } from './templates/report.js'
 export { sendTicketReplyEmail } from './templates/ticket.js'

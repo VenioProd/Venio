@@ -56,6 +56,7 @@ export const AGENT_SCOPES = [
   'write:resources',
   'read:gestion',
   'write:gestion',
+  // Pilotage Arrow uniquement ; les écoles sont désormais des leads (scopes crm).
   'read:arrow',
   'write:arrow',
 

@@ -24,16 +24,12 @@ import {
   DEFAULT_WORKLIST_THRESHOLDS,
   CRM_STATUSES,
   CRM_PRIORITIES,
+  CRM_PROJECTS,
   STATUS_MAP,
   PRIORITY_MAP,
   EMPTY_FORM,
   type CrmOption,
 } from './constants'
-import SchoolTable from '../arrow-prospection/SchoolTable'
-import SchoolFormPanel from '../arrow-prospection/SchoolFormPanel'
-import SchoolDetailModal from '../arrow-prospection/SchoolDetailModal'
-import { EMPTY_FORM as EMPTY_SCHOOL_FORM } from '../arrow-prospection/constants'
-import type { ArrowSchool, ArrowSchoolFormData } from '../../../types/arrow.types'
 
 const CrmBoard = () => {
   const { user } = useAuth()
@@ -67,7 +63,21 @@ const CrmBoard = () => {
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [filterPriority, setFilterPriority] = useState<string>('')
   const [filterAssignee, setFilterAssignee] = useState<string>('')
-  const [filterProject, setFilterProject] = useState<string>('')
+  const requestedProject = searchParams.get('project') || ''
+  const filterProject = CRM_PROJECTS.some((project) => project.key === requestedProject) ? requestedProject : ''
+  const setFilterProject = useCallback(
+    (project: string) => {
+      setSearchParams(
+        (params) => {
+          if (project) params.set('project', project)
+          else params.delete('project')
+          return params
+        },
+        { replace: true },
+      )
+    },
+    [setSearchParams],
+  )
   const [sortField, setSortField] = useState<string>('updatedAt')
   const [sortDir, setSortDir] = useState<string>('desc')
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
@@ -76,126 +86,6 @@ const CrmBoard = () => {
   const [form, setForm] = useState<LeadFormData>({ ...EMPTY_FORM })
 
   const [expandedLead, setExpandedLead] = useState<Lead | null>(null)
-
-  // ── Arrow Prospection ──
-  const [section, setSection] = useState<'leads' | 'arrow'>('leads')
-  const [schools, setSchools] = useState<ArrowSchool[]>([])
-  const [arrowLoading, setArrowLoading] = useState(false)
-  const [showSchoolForm, setShowSchoolForm] = useState(false)
-  const [editingSchool, setEditingSchool] = useState<ArrowSchool | null>(null)
-  const [schoolForm, setSchoolForm] = useState<ArrowSchoolFormData>({ ...EMPTY_SCHOOL_FORM })
-  const [selectedSchool, setSelectedSchool] = useState<ArrowSchool | null>(null)
-  const [schoolFocusSection, setSchoolFocusSection] = useState<'ecole' | 'contact' | 'prospection' | undefined>()
-  const [schoolSaving, setSchoolSaving] = useState(false)
-
-  const loadArrow = useCallback(async () => {
-    setArrowLoading(true)
-    try {
-      const data = await apiFetch<{ schools: ArrowSchool[] }>('/api/admin/arrow-prospection')
-      setSchools(data.schools)
-    } catch {
-    } finally {
-      setArrowLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (section === 'arrow') loadArrow()
-  }, [section, loadArrow])
-
-  const handleSchoolPatch = async (id: string, patch: Record<string, unknown>) => {
-    try {
-      await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
-      await loadArrow()
-    } catch {}
-  }
-
-  const handleSchoolSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSchoolSaving(true)
-    try {
-      const payload = {
-        ...schoolForm,
-        studentCount: schoolForm.studentCount ? Number(schoolForm.studentCount) : null,
-        nextActionAt: schoolForm.nextActionAt || null,
-        lastContactAt: schoolForm.lastContactAt || null,
-        assignedTo: schoolForm.assignedTo || null,
-      }
-      if (editingSchool) {
-        await apiFetch(`/api/admin/arrow-prospection/${editingSchool._id}`, {
-          method: 'PATCH',
-          body: JSON.stringify(payload),
-        })
-      } else {
-        await apiFetch('/api/admin/arrow-prospection', { method: 'POST', body: JSON.stringify(payload) })
-      }
-      setShowSchoolForm(false)
-      setEditingSchool(null)
-      await loadArrow()
-    } catch {
-    } finally {
-      setSchoolSaving(false)
-    }
-  }
-
-  const openSchoolEdit = (school: ArrowSchool) => {
-    setEditingSchool(school)
-    setSchoolForm({
-      name: school.name,
-      schoolType: school.schoolType,
-      city: school.city,
-      region: school.region,
-      studentCount: school.studentCount !== null ? String(school.studentCount) : '',
-      emailGeneral: school.emailGeneral,
-      contactName: school.contactName,
-      contactRole: school.contactRole,
-      contactEmail: school.contactEmail,
-      contactPhone: school.contactPhone,
-      status: school.status,
-      temperature: school.temperature,
-      source: school.source,
-      notes: school.notes,
-      nextActionAt: school.nextActionAt ? school.nextActionAt.slice(0, 10) : '',
-      lastContactAt: school.lastContactAt ? school.lastContactAt.slice(0, 10) : '',
-      assignedTo: school.assignedTo?._id || '',
-      relances: school.relances ?? [],
-    })
-    setShowSchoolForm(true)
-    setSelectedSchool(null)
-  }
-
-  const handleSchoolDelete = async (id: string) => {
-    try {
-      await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'DELETE' })
-      await loadArrow()
-    } catch {}
-  }
-
-  const handleTransferToArrow = async (leadId: string) => {
-    if (!window.confirm(t('crm.transfer.confirmOne'))) return
-    try {
-      await apiFetch(`/api/admin/arrow-prospection/transfer-lead/${leadId}`, { method: 'POST' })
-      await load()
-      setSection('arrow')
-      await loadArrow()
-    } catch (err: any) {
-      alert(err.message || t('crm.transfer.error'))
-    }
-  }
-
-  const handleTransferAllToArrow = async () => {
-    if (!window.confirm(t('crm.transfer.confirmAll', { count: totalLeads }))) return
-    try {
-      for (const lead of filteredLeads) {
-        await apiFetch(`/api/admin/arrow-prospection/transfer-lead/${lead._id}`, { method: 'POST' })
-      }
-      await load()
-      setSection('arrow')
-      await loadArrow()
-    } catch (err: any) {
-      alert(err.message || t('crm.transfer.error'))
-    }
-  }
 
   const adminsById = useMemo(() => {
     const map: Record<string, AdminUser> = {}
@@ -532,9 +422,22 @@ const CrmBoard = () => {
     setFilterPriority('')
     setFilterAssignee('')
     setFilterProject('')
-  }, [])
+  }, [setFilterProject])
 
-  const worklistOverdueCount = worklist?.counts.overdue ?? 0
+  const projectColumns = columns.map((column) => ({
+    ...column,
+    leads: (column.leads || []).filter((lead) => !filterProject || lead.project === filterProject),
+  }))
+  const projectGroups = worklist
+    ? {
+        overdue: worklist.groups.overdue.filter((lead) => !filterProject || lead.project === filterProject),
+        today: worklist.groups.today.filter((lead) => !filterProject || lead.project === filterProject),
+        upcoming: worklist.groups.upcoming.filter((lead) => !filterProject || lead.project === filterProject),
+        drifting: worklist.groups.drifting.filter((lead) => !filterProject || lead.project === filterProject),
+      }
+    : null
+
+  const worklistOverdueCount = projectGroups?.overdue.length ?? 0
   const lostReasons = worklist?.lostReasons ?? []
   const totalLeads = allLeads.length
   const activeFilters = [filterStatus, filterPriority, filterAssignee, filterProject, search].filter(Boolean).length
@@ -552,37 +455,8 @@ const CrmBoard = () => {
             <div>
               <h1>{t('crm.page.title')}</h1>
               <p style={{ color: 'var(--text-muted)', margin: '8px 0 0 0', fontSize: '15px' }}>
-                {section === 'leads' ? t('crm.page.subtitleLeads') : t('crm.page.subtitleArrow')}
+                {t('crm.page.subtitleLeads')}
               </p>
-              {/* Onglets */}
-              <div className="crm-section-tabs" style={{ display: 'flex', gap: 4, marginTop: 16 }}>
-                {(
-                  [
-                    ['leads', t('crm.page.tabLeads')],
-                    ['arrow', t('crm.page.tabArrow')],
-                  ] as const
-                ).map(([key, label]) => (
-                  <button
-                    key={key}
-                    className="crm-section-tab"
-                    onClick={() => setSection(key)}
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: 8,
-                      border: '1px solid',
-                      cursor: 'pointer',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      transition: 'all 0.15s',
-                      borderColor: section === key ? 'var(--primary)' : 'var(--border)',
-                      background: section === key ? 'var(--primary)' : 'transparent',
-                      color: section === key ? '#fff' : 'var(--text-muted)',
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
             </div>
             <div className="admin-actions portal-actions-reveal" style={{ gap: 8 }}>
               {/* View toggle */}
@@ -691,30 +565,9 @@ const CrmBoard = () => {
                 </span>
                 <span className="portal-action-label">{t('crm.page.exportCsv')}</span>
               </button>
-              {section === 'leads' && canManageCrm && (
-                <>
-                  <button
-                    className="portal-button secondary"
-                    onClick={handleTransferAllToArrow}
-                    title={t('crm.page.transferAllTitle')}
-                  >
-                    {t('crm.page.transferAll')}
-                  </button>
-                  <button className="portal-button" onClick={() => setShowForm((v) => !v)}>
-                    {showForm ? t('crm.page.hideForm') : t('crm.page.newLead')}
-                  </button>
-                </>
-              )}
-              {section === 'arrow' && canManageCrm && (
-                <button
-                  className="portal-button"
-                  onClick={() => {
-                    setEditingSchool(null)
-                    setSchoolForm({ ...EMPTY_SCHOOL_FORM, assignedTo: user?._id || '' })
-                    setShowSchoolForm(true)
-                  }}
-                >
-                  {t('crm.page.addSchool')}
+              {canManageCrm && (
+                <button className="portal-button" onClick={() => setShowForm((v) => !v)}>
+                  {showForm ? t('crm.page.hideForm') : t('crm.page.newLead')}
                 </button>
               )}
               {canManageCrm && (
@@ -744,7 +597,7 @@ const CrmBoard = () => {
         )}
 
         {/* Lead creation form (collapsible) */}
-        {section === 'leads' && showForm && canManageCrm && (
+        {showForm && canManageCrm && (
           <LeadFormPanel
             form={form}
             admins={admins}
@@ -756,54 +609,31 @@ const CrmBoard = () => {
           />
         )}
 
-        {/* Arrow school form panel */}
-        {section === 'arrow' && showSchoolForm && (
-          <SchoolFormPanel
-            form={schoolForm}
-            setForm={setSchoolForm}
-            onSubmit={handleSchoolSubmit}
-            onCancel={() => {
-              setShowSchoolForm(false)
-              setEditingSchool(null)
-            }}
-            loading={schoolSaving}
-            editing={editingSchool}
-            admins={admins}
-          />
-        )}
-
         {/* Main content area */}
         <div
           className="portal-card"
           style={{
             marginTop: 24,
-            padding: section === 'arrow' || viewMode === 'table' ? 0 : undefined,
+            padding: viewMode === 'table' ? 0 : undefined,
             overflow: 'visible',
           }}
         >
-          {/* ── Section Arrow ── */}
-          {section === 'arrow' ? (
-            arrowLoading ? (
-              <div className="admin-loading" style={{ padding: 32 }}>
-                {t('common.loading')}
-              </div>
-            ) : (
-              <SchoolTable
-                schools={schools}
-                admins={admins}
-                onEdit={openSchoolEdit}
-                onDelete={handleSchoolDelete}
-                onSelect={(s, section) => {
-                  setSelectedSchool(s)
-                  setSchoolFocusSection(section)
-                }}
-                onPatch={handleSchoolPatch}
-                canManage={canManageCrm}
-              />
-            )
-          ) : viewMode === 'file' ? (
+          {viewMode !== 'table' && (
+            <label className="crm-table-toolbar">
+              {t('crm.col.project')}
+              <select value={filterProject} onChange={(event) => setFilterProject(event.target.value)}>
+                <option value="">{t('crm.filters.allProjects')}</option>
+                {CRM_PROJECTS.map((project) => (
+                  <option key={project.key} value={project.key}>
+                    {t(project.labelKey)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {viewMode === 'file' ? (
             <WorklistView
-              groups={worklist?.groups ?? null}
+              groups={projectGroups}
               thresholds={worklist?.thresholds ?? DEFAULT_WORKLIST_THRESHOLDS}
               followUp={worklist?.followUp ?? DEFAULT_FOLLOW_UP}
               adminsById={adminsById}
@@ -821,7 +651,7 @@ const CrmBoard = () => {
             </div>
           ) : viewMode === 'kanban' ? (
             <div className="crm-board">
-              {columns.map((column) => (
+              {projectColumns.map((column) => (
                 <PipelineColumnComponent
                   key={column.status}
                   column={column}
@@ -871,37 +701,9 @@ const CrmBoard = () => {
               onDeleteLead={handleDeleteLead}
               onSetDeleteConfirm={setDeleteConfirm}
               onExpandLead={setExpandedLead}
-              onTransferToArrow={handleTransferToArrow}
-              onTransferSelectionToArrow={async (ids) => {
-                if (!window.confirm(t('crm.transfer.confirmSelection', { count: ids.length }))) return
-                for (const id of ids) {
-                  await apiFetch(`/api/admin/arrow-prospection/transfer-lead/${id}`, { method: 'POST' }).catch(() => {})
-                }
-                await load()
-                setSection('arrow')
-                await loadArrow()
-              }}
             />
           )}
         </div>
-
-        {/* Modal détail école Arrow */}
-        {selectedSchool && (
-          <SchoolDetailModal
-            school={selectedSchool}
-            admins={admins}
-            focusSection={schoolFocusSection}
-            onClose={() => {
-              setSelectedSchool(null)
-              setSchoolFocusSection(undefined)
-            }}
-            onSave={async (id, data) => {
-              await apiFetch(`/api/admin/arrow-prospection/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
-              await loadArrow()
-            }}
-            canManage={canManageCrm}
-          />
-        )}
 
         {/* Modal for interaction notes */}
         {expandedLead && (

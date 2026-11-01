@@ -41,6 +41,7 @@ describe('VENIO-104 — recette UI des rôles administrateur', () => {
     const itemIds = getVisibleNavigation(user(role)).map((item) => item.id)
 
     expect(itemIds).toEqual(expect.arrayContaining(visible))
+    expect(itemIds).not.toContain('arrow')
     for (const itemId of hidden) expect(itemIds).not.toContain(itemId)
   })
 })

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
 import LeadFilters from './LeadFilters'
@@ -41,8 +41,6 @@ interface LeadTableProps {
   onDeleteLead: (leadId: string) => Promise<void>
   onSetDeleteConfirm: (id: string | null) => void
   onExpandLead: (lead: Lead) => void
-  onTransferToArrow?: (leadId: string) => void
-  onTransferSelectionToArrow?: (ids: string[]) => void
 }
 
 const SortIcon = ({ field, sortField, sortDir }: { field: string; sortField: string; sortDir: string }) => {
@@ -98,26 +96,9 @@ const LeadTable: React.FC<LeadTableProps> = ({
   onDeleteLead,
   onSetDeleteConfirm,
   onExpandLead,
-  onTransferToArrow,
-  onTransferSelectionToArrow,
 }) => {
   const { t } = useI18n()
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-
-  const allIds = filteredLeads.map((l) => l._id)
-  const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id))
-  const someSelected = selected.size > 0
-
-  const toggleOne = (id: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-
-  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(allIds))
-
-  const colSpanTotal = canManageCrm ? (onTransferSelectionToArrow ? 15 : 14) : onTransferSelectionToArrow ? 14 : 13
+  const colSpanTotal = canManageCrm ? 14 : 13
 
   return (
     <div className="crm-table-container">
@@ -163,40 +144,10 @@ const LeadTable: React.FC<LeadTableProps> = ({
         </button>
       </div>
 
-      {/* Barre de sélection */}
-      {someSelected && onTransferSelectionToArrow && (
-        <div className="crm-selection-bar">
-          <span className="crm-selection-count">{t('crm.table.selectedCount', { count: selected.size })}</span>
-          <button
-            className="portal-button crm-selection-transfer"
-            onClick={() => {
-              onTransferSelectionToArrow([...selected])
-              setSelected(new Set())
-            }}
-          >
-            {t('crm.row.transferToArrow')}
-          </button>
-          <button className="crm-selection-clear" onClick={() => setSelected(new Set())}>
-            {t('crm.table.deselect')}
-          </button>
-        </div>
-      )}
-
       <div className="crm-table-scroll">
         <table className="crm-table">
           <thead>
             <tr>
-              {onTransferSelectionToArrow && (
-                <th className="crm-th crm-th-select">
-                  <input
-                    type="checkbox"
-                    className="crm-select-checkbox"
-                    checked={allSelected}
-                    onChange={toggleAll}
-                    aria-label={t('crm.table.selectAll')}
-                  />
-                </th>
-              )}
               <th className="crm-th crm-th-company" onClick={() => onToggleSort('company')}>
                 {t('crm.col.company')} <SortIcon field="company" sortField={sortField} sortDir={sortDir} />
               </th>
@@ -264,9 +215,6 @@ const LeadTable: React.FC<LeadTableProps> = ({
                         onDeleteLead={onDeleteLead}
                         onSetDeleteConfirm={onSetDeleteConfirm}
                         onExpandLead={onExpandLead}
-                        onTransferToArrow={onTransferToArrow}
-                        isSelected={selected.has(lead._id)}
-                        onToggleSelect={onTransferSelectionToArrow ? () => toggleOne(lead._id) : undefined}
                       />
                     ))}
                 </React.Fragment>

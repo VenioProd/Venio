@@ -30,9 +30,6 @@ interface LeadTableRowProps {
   onDeleteLead: (leadId: string) => Promise<void>
   onSetDeleteConfirm: (id: string | null) => void
   onExpandLead: (lead: Lead) => void
-  onTransferToArrow?: (leadId: string) => void
-  isSelected?: boolean
-  onToggleSelect?: () => void
 }
 
 const LeadTableRow: React.FC<LeadTableRowProps> = ({
@@ -48,9 +45,6 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
   onDeleteLead,
   onSetDeleteConfirm,
   onExpandLead,
-  onTransferToArrow,
-  isSelected,
-  onToggleSelect,
 }) => {
   const { t } = useI18n()
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
@@ -63,19 +57,8 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
 
   return (
     <tr
-      className={`crm-table-row ${isOverdue ? 'crm-row-overdue' : ''} ${isCold ? 'crm-row-cold' : ''} ${isStale ? 'crm-row-stale' : ''} ${isSelected ? 'crm-row-selected' : ''} ${onToggleSelect ? 'crm-row-selectable' : ''}`}
+      className={`crm-table-row ${isOverdue ? 'crm-row-overdue' : ''} ${isCold ? 'crm-row-cold' : ''} ${isStale ? 'crm-row-stale' : ''}`}
     >
-      {onToggleSelect && (
-        <td className="crm-td crm-td-select" onClick={(e) => e.stopPropagation()}>
-          <input
-            type="checkbox"
-            className="crm-select-checkbox"
-            checked={!!isSelected}
-            onChange={onToggleSelect}
-            aria-label={t('crm.row.select', { company: lead.company })}
-          />
-        </td>
-      )}
       <td className="crm-td crm-td-company">
         <span className="crm-row-color-indicator" style={{ background: groupColor }} />
         {lead.company}
@@ -204,27 +187,6 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
               onChange={(v) => onUpdateLead(lead._id, { status: v })}
               options={CRM_STATUSES.map((s) => ({ value: s.key, label: `\u2192 ${t(s.labelKey)}` }))}
             />
-            {/* Transfer to Arrow button */}
-            {onTransferToArrow && (
-              <button
-                className="crm-btn-notes"
-                onClick={() => onTransferToArrow(lead._id)}
-                title={t('crm.row.transferToArrow')}
-                style={{ color: 'var(--primary)' }}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                  <path d="M6 12v5c3 3 9 3 12 0v-5" />
-                </svg>
-              </button>
-            )}
             {/* Notes button */}
             <button className="crm-btn-notes" onClick={() => onExpandLead(lead)} title={t('crm.row.viewNotes')}>
               <svg

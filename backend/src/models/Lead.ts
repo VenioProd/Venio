@@ -15,6 +15,8 @@ const leadSchema = new mongoose.Schema<ILead>(
     contactPhone: { type: String, default: '' },
     source: { type: String, default: '' },
     project: { type: String, enum: ['', ...LEAD_PROJECTS], default: '' },
+    // Provenance de migration, indépendante des notes éditables. Absente des leads ordinaires.
+    legacyArrowSchoolId: { type: mongoose.Schema.Types.ObjectId, unique: true, sparse: true },
     status: {
       type: String,
       enum: ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST'],

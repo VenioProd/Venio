@@ -10,6 +10,7 @@ export interface ILead extends Document {
   source: string
   /** Projet concerné : ARTOSERA, VIGNO, ARROW, VENIO, AUTRE ou '' (non renseigné). */
   project: '' | 'ARTOSERA' | 'VIGNO' | 'ARROW' | 'VENIO' | 'AUTRE'
+  legacyArrowSchoolId?: Types.ObjectId
   status: CrmStatus
   priority: ProjectPriority
   budget: number | null

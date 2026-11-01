@@ -104,6 +104,11 @@ describe('Agent OpenAPI / router ↔ spec sync', () => {
 })
 
 describe('Agent OpenAPI / coverage by module', () => {
+  it('keeps Arrow pilotage and removes school prospecting endpoints', () => {
+    const paths = Object.keys(spec.paths as Record<string, unknown>)
+    expect(paths).toContain('/arrow/pilotage')
+    expect(paths.some((path) => path.startsWith('/arrow/schools'))).toBe(false)
+  })
   it('covers every business module delivered (lots 3-9)', () => {
     const paths = Object.keys((spec.paths as Record<string, unknown>) || {})
     const required: string[] = [
@@ -135,7 +140,7 @@ describe('Agent OpenAPI / coverage by module', () => {
       '/internal-projects',
       '/qualiopi/questionnaires',
       '/interns',
-      '/arrow/schools',
+      '/arrow/pilotage',
       '/analytics/snapshot',
       // Sensibles (lot 9)
       '/audit/log',
