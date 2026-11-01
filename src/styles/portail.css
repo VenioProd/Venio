@@ -1,12 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500;600&display=swap');
+
 /* ═══════════════════════════════════════════════════════════════════
    Charte PORTAIL — pages privées (admin + espace client)
    ───────────────────────────────────────────────────────────────────
    Scopée sur html.theme-portail, posée par App.tsx sur les routes
    /admin et /espace-client (login inclus).
 
-   Sélecteur volontairement plus spécifique que [data-theme="…"] et
-   [data-accent="…"] pour gagner la cascade : le mode clair et les
-   accents perso restent sans effet dans le portail.
+   Palette Système commune au sombre et au clair. Les accents personnels
+   restent neutralisés ; data-theme conserve le choix clair/sombre.
 
    Contrat : docs/superpowers/specs/2026-09-05-charte-pages-privees-design.md
    Trois règles tiennent toute la charte :
@@ -21,96 +22,130 @@
 /* ───────────────────────────────────────────────────────────────────
    JETONS
    ─────────────────────────────────────────────────────────────────── */
-html.theme-portail {
-  /* Surfaces — neutre à biais froid, accordé à l'accent bleu */
-  --bg-primary: #0a0c0f;
-  --bg-secondary: #141a20;
-  --bg-card: #141a20;
-  --bg-card-hover: #1b242c;
-  --surface-raised: #202a33;
+/* Les noms historiques restent l'API des pages. Les alias courts servent au
+   shell Système ; aucune palette parallèle n'est déclarée dans les composants.
+   Même source Google Fonts que AdminShell.css (requête mise en cache). */
+html.theme-portail,
+html.theme-portail[data-theme] {
+  color-scheme: dark;
+  --bg-primary: #04050a;
+  --bg-secondary: #0a0c14;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-card-hover: rgba(255, 255, 255, 0.065);
+  --bg-tertiary: rgba(255, 255, 255, 0.045);
+  --surface-sunken: var(--bg-card);
+  --surface-raised: var(--bg-card-hover);
+  --surface-strong: var(--bg-card-hover);
+  --surface-hover: var(--bg-tertiary);
+  --glass-a: rgba(255, 255, 255, 0.05);
+  --glass-b: rgba(255, 255, 255, 0.015);
+  --surface-glass: linear-gradient(180deg, var(--glass-a), var(--glass-b));
+  --surface-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 48px -36px rgba(0, 0, 0, 0.8);
+  --overlay-shadow: 0 24px 64px -24px rgba(0, 0, 0, 0.65);
+  --overlay-scrim: rgba(2, 3, 8, 0.6);
+  --surface-bar: rgba(6, 7, 12, 0.72);
 
-  /* Encres — contrastes mesurés sur --bg-primary :
-     primary 16,8:1 · secondary 8,2:1 · muted 5,4:1 (WCAG AA à 11,5 px) */
-  --text-primary: #e8eef3;
-  --text-secondary: #9daab3;
-  --text-muted: #7b8894;
-  --border-color: rgba(224, 238, 247, 0.09);
-  --line-strong: rgba(224, 238, 247, 0.16);
-
-  /* Pas de relief neumorphe */
+  --text-primary: #eef0f7;
+  --text-secondary: #9aa1b4;
+  --text-muted: #7f869b;
+  --text-decorative: #646b80;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --border-strong: var(--line-strong);
+  --ink-strong: var(--text-primary);
+  --ink-body: var(--text-primary);
+  --ink-soft: var(--text-secondary);
+  --ink-dim: var(--text-secondary);
+  --ink-faint: var(--text-muted);
+  --ink-ghost: var(--text-muted);
+  --ink-whisper: var(--text-decorative);
+  --line-faint: var(--border-color);
+  --line-soft: var(--border-color);
+  --line-vivid: var(--text-muted);
   --neumorphism-light: transparent;
   --neumorphism-dark: transparent;
 
-  /* Accent bleu ciel — sky 400 en remplissage, sky 300 en texte sur fond
-     sombre, sky 500 au survol. Jamais d'hexadécimal bleu ici : le test
-     themeAccentTokens l'interdit, tout passe par les triplets. */
+  /* Triplets conservés pour themeAccentTokens et les consommateurs rgba(). */
   --primary: rgb(var(--primary-rgb));
   --primary-light: rgb(var(--primary-light-rgb));
   --primary-dark: rgb(var(--primary-dark-rgb));
-  --primary-fg: #06202b;
   --primary-rgb: 56, 189, 248;
   --primary-light-rgb: 125, 211, 252;
   --primary-dark-rgb: 14, 165, 233;
-
-  /* Accents — surfaces conservées, glows coupés */
+  --primary-fg: var(--bg-primary);
+  --pill-bg: #f4f6fb;
+  --pill-tx: #05060b;
+  --brand-gradient: linear-gradient(92deg, #c4b5fd 0%, rgb(var(--primary-light-rgb)) 45%, var(--cat-3) 100%);
   --accent-soft: rgba(var(--primary-rgb), 0.07);
   --accent-medium: rgba(var(--primary-rgb), 0.14);
   --accent-border: rgba(var(--primary-rgb), 0.34);
   --accent-border-strong: rgba(var(--primary-rgb), 0.5);
-  --accent-glow-soft: transparent;
-  --accent-glow: transparent;
-  --accent-glow-strong: transparent;
+  --accent-glow-soft: rgba(var(--primary-rgb), 0.08);
+  --accent-glow: rgba(var(--primary-rgb), 0.12);
+  --accent-glow-strong: rgba(var(--primary-rgb), 0.18);
   --accent-surface: rgba(var(--primary-rgb), 0.09);
   --accent-surface-strong: rgba(var(--primary-rgb), 0.16);
   --accent-ring: rgba(var(--primary-rgb), 0.55);
-  --primary-glow: transparent;
-  --primary-glow-strong: transparent;
-  --primary-shadow: none;
-  --primary-shadow-strong: none;
+  --primary-glow: var(--accent-glow);
+  --primary-glow-strong: var(--accent-glow-strong);
+  --primary-shadow: 0 8px 28px -10px var(--accent-ring);
+  --primary-shadow-strong: 0 10px 34px -8px var(--accent-ring), 0 0 0 4px var(--accent-soft);
 
-  /* Statut — désaturé. Réservé à l'état, jamais une série de graphe,
-     jamais seul : toujours accompagné d'une icône ou d'un libellé. */
-  --good: #7fdba0;
-  --warning: #f7c268;
-  --serious: #f4a06a;
-  --critical: #ff8a8a;
-  --good-surface: rgba(127, 219, 160, 0.1);
-  --warning-surface: rgba(247, 194, 104, 0.1);
-  --serious-surface: rgba(244, 160, 106, 0.1);
-  --critical-surface: rgba(255, 138, 138, 0.1);
-
-  /* Catégoriel — miroir CSS de CHART_CATEGORICAL (src/lib/chartColors.ts).
-     Pour distinguer des catégories sans hiérarchie : langages, poles, series.
-     Ne jamais employer une couleur de statut a cette fin, et inversement.
-     Ecrit en rgb() : le test themeAccentTokens interdit les hexadecimaux
-     bleus dans cette feuille. */
-  --cat-1: rgb(2, 132, 199);
-  --cat-2: rgb(217, 119, 6);
-  --cat-3: rgb(225, 29, 72);
-  --cat-4: rgb(124, 58, 237);
-  --cat-5: rgb(5, 150, 105);
-
-  /* Alias historique des actions destructives (sidebars) */
+  /* Statuts : mint / amber / rose. Serious reste un alias d'alerte amber. */
+  --good: #34d399;
+  --warning: #fbbf24;
+  --serious: var(--warning);
+  --critical: #f472b6;
+  --good-surface: color-mix(in srgb, var(--good) 10%, transparent);
+  --warning-surface: color-mix(in srgb, var(--warning) 10%, transparent);
+  --serious-surface: var(--warning-surface);
+  --critical-surface: color-mix(in srgb, var(--critical) 10%, transparent);
   --mono-danger: var(--critical);
   --mono-danger-surface: var(--critical-surface);
-  --mono-danger-border: rgba(255, 138, 138, 0.32);
+  --mono-danger-border: color-mix(in srgb, var(--critical) 32%, transparent);
 
-  /* Rayons */
-  --r-hair: 2px; /* filets et barres decoratives de 2 a 3 px */
+  /* Catégories UI : sky, vio, teal, amber, mint. Les séries JS restent
+     sous le contrat distinct de src/lib/chartColors.ts. */
+  --cat-1: var(--primary);
+  --cat-2: #a78bfa;
+  --cat-3: #5eead4;
+  --cat-4: var(--warning);
+  --cat-5: var(--good);
+
+  --r-hair: 2px;
   --r-sm: 6px;
   --r-md: 10px;
-  --r-lg: 13px;
+  --r-lg: 14px;
   --r-pill: 999px;
+  --font-heading: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: var(--font-heading);
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Typographie */
-  --font-heading: 'Manrope', 'Cabinet Grotesk', system-ui, sans-serif;
-  --font-body: 'Manrope', 'Cabinet Grotesk', system-ui, sans-serif;
-  --font-mono: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace;
+  /* Alias de compatibilité du shell et des portails rendus dans body. */
+  --bg: var(--bg-primary);
+  --sheet: var(--bg-secondary);
+  --line: var(--border-color);
+  --line-2: var(--line-strong);
+  --tx: var(--text-primary);
+  --mut: var(--text-secondary);
+  --dim: var(--text-decorative);
+  --dim-t: var(--text-muted);
+  --sky: var(--primary);
+  --vio: var(--cat-2);
+  --teal: var(--cat-3);
+  --amber: var(--warning);
+  --mint: var(--good);
+  --rose: var(--critical);
+  --grad: var(--brand-gradient);
+  --sans: var(--font-body);
+  --mono: var(--font-mono);
+  --f1: var(--bg-card);
+  --f2: var(--bg-tertiary);
+  --f3: var(--bg-card-hover);
+  --bar-bg: var(--surface-bar);
+  --ease: cubic-bezier(0.2, 0.7, 0.1, 1);
 
-  /* Mesh ambiant neutralisé.
-     !important : theme.css redéfinit ces tokens via
-     [data-theme="dark"][data-accent="X"] (spécificité 0,2,0) si
-     l'utilisateur a un accent perso sauvegardé. */
+  /* Le mesh historique reste neutralisé ; le glass porte le relief. */
   --ambient-mesh-primary: transparent !important;
   --ambient-mesh-primary-soft: transparent !important;
   --ambient-mesh-secondary: transparent !important;
@@ -119,16 +154,47 @@ html.theme-portail {
   --ambient-mesh-layer-2: transparent !important;
   --ambient-mesh-layer-3: transparent !important;
   --ambient-mesh-layer-4: transparent !important;
-
-  /* Fonds des shells — aplatis */
-  --admin-shell-bg-base: #0a0c0f;
+  --admin-shell-bg-base: var(--bg-primary);
   --admin-shell-bg-glow-1: transparent !important;
   --admin-shell-bg-glow-2: transparent !important;
   --admin-shell-bg-glow-3: transparent !important;
-  --client-shell-bg-base: #0a0c0f;
+  --client-shell-bg-base: var(--bg-primary);
   --client-shell-bg-glow-1: transparent !important;
   --client-shell-bg-glow-2: transparent !important;
   --client-shell-bg-glow-3: transparent !important;
+}
+
+html.theme-portail[data-theme='light'] {
+  color-scheme: light;
+  --bg-primary: #f5f6fa;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(15, 20, 45, 0.025);
+  --bg-tertiary: rgba(15, 20, 45, 0.04);
+  --bg-card-hover: rgba(15, 20, 45, 0.06);
+  --glass-a: rgba(255, 255, 255, 0.9);
+  --glass-b: rgba(255, 255, 255, 0.6);
+  --surface-shadow: 0 1px 2px rgba(15, 20, 45, 0.05);
+  --overlay-shadow: 0 24px 64px -24px rgba(15, 20, 45, 0.22);
+  --overlay-scrim: rgba(15, 20, 45, 0.3);
+  --surface-bar: rgba(245, 246, 250, 0.8);
+  --text-primary: #0d1020;
+  --text-secondary: #4a5167;
+  --text-muted: #62697e;
+  --text-decorative: #8a90a3;
+  --border-color: rgba(15, 20, 45, 0.1);
+  --line-strong: rgba(15, 20, 45, 0.18);
+  --primary-rgb: 2, 132, 199;
+  --primary-light-rgb: 2, 132, 199;
+  --primary-dark-rgb: 3, 105, 161;
+  --primary-fg: #ffffff;
+  --pill-bg: var(--text-primary);
+  --pill-tx: #ffffff;
+  --good: #047857;
+  --warning: #b45309;
+  --critical: #be185d;
+  --cat-2: #7c3aed;
+  --cat-3: #0d9488;
+  --brand-gradient: linear-gradient(92deg, var(--cat-2) 0%, var(--primary) 50%, var(--cat-3) 100%);
 }
 
 /* Fond garanti partout (login sans shell inclus) */
@@ -139,6 +205,9 @@ html.theme-portail body {
 
 html.theme-portail body {
   font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-primary);
   font-weight: 400;
   letter-spacing: normal;
 }
@@ -160,11 +229,12 @@ html.theme-portail :is(h1, h2, h3, h4, h5, h6, button, label, th, .admin-tab, .a
 /* ───────────────────────────────────────────────────────────────────
    RAYONS — trois familles de formes.
    Contrôles à --r-md, surfaces à --r-lg, statuts en gélule.
-   Les !important tiennent le contrat tant que les écrans (lots 1→9)
-   portent encore leurs propres rayons hérités.
+   Les contrôles ont une valeur par défaut de spécificité nulle pour
+   laisser les primitives et le shell choisir leurs pilules et icônes.
+   Les adaptateurs de surfaces et statuts hérités restent explicites.
    ─────────────────────────────────────────────────────────────────── */
-html.theme-portail
-  :is(
+:where(html.theme-portail)
+  :where(
     button,
     input:not([type='checkbox']):not([type='radio']):not([type='range']),
     select,
@@ -185,7 +255,7 @@ html.theme-portail
     .project-form-section-icon,
     .client-project-document-icon
   ) {
-  border-radius: var(--r-md) !important;
+  border-radius: var(--r-md);
 }
 
 html.theme-portail
@@ -247,46 +317,7 @@ html.theme-portail
   border-radius: var(--r-pill) !important;
 }
 
-/* Aucune ombre décorative, aucun flottement au survol. */
-html.theme-portail
-  :is(
-    button,
-    input:not([type='checkbox']):not([type='radio']):not([type='range']),
-    select,
-    textarea,
-    .portal-card,
-    .portal-button,
-    .portal-input,
-    .portal-action-link,
-    .admin-widget,
-    .admin-stat-card,
-    .admin-table-wrapper,
-    .admin-list-item,
-    .admin-member-card,
-    .admin-badge,
-    .admin-tag,
-    .admin-card-btn,
-    .admin-document-item,
-    .admin-update-item,
-    .cloud-folder-card,
-    .priority-indicator,
-    .admin-empty-state,
-    .admin-error,
-    .admin-success,
-    .admin-info,
-    .client-card,
-    .client-dashboard-hero,
-    .client-dashboard-stat,
-    .client-project-card,
-    .client-project-hero,
-    .client-project-section,
-    .client-project-item,
-    .client-project-update,
-    .client-project-document
-  ) {
-  box-shadow: none !important;
-}
-
+/* Pas de flottement au survol des surfaces et actions héritées. */
 html.theme-portail
   :is(
     .admin-widget,
@@ -337,12 +368,12 @@ html.theme-portail
 }
 
 /* ───────────────────────────────────────────────────────────────────
-   EN-TÊTES DE PAGE — kicker, titre plein, filet d'accent arrondi
+   EN-TÊTES DE PAGE — titre plein, hiérarchie sobre
    ─────────────────────────────────────────────────────────────────── */
 html.theme-portail .admin-header h1,
 html.theme-portail .admin-page-header h1 {
   font-family: var(--font-heading);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.025em;
   background: none !important;
   -webkit-text-fill-color: var(--text-primary) !important;
@@ -351,13 +382,10 @@ html.theme-portail .admin-page-header h1 {
 }
 
 html.theme-portail .admin-page-header {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: none;
 }
 html.theme-portail .admin-page-header::after {
-  background: var(--primary) !important;
-  opacity: 1 !important;
-  height: 3px;
-  border-radius: var(--r-hair) !important;
+  display: none;
 }
 html.theme-portail .admin-page-subtitle {
   color: var(--text-secondary);
@@ -365,14 +393,16 @@ html.theme-portail .admin-page-subtitle {
 
 /* ───────────────────────────────────────────────────────────────────
    BOUTONS
-   Primaire : aplat d'accent, texte sombre, survol plus profond.
+   Primaire : pilule claire en sombre, encre en clair, halo discret.
    Secondaire : contour, survol par la surface.
    ─────────────────────────────────────────────────────────────────── */
 html.theme-portail .portal-button {
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  color: var(--primary-fg);
-  font-weight: 700;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill) !important;
+  background: var(--pill-bg);
+  color: var(--pill-tx);
+  box-shadow: var(--primary-shadow);
+  font-weight: 500;
   letter-spacing: normal;
   transition:
     background 0.16s ease,
@@ -380,15 +410,17 @@ html.theme-portail .portal-button {
     border-color 0.16s ease;
 }
 html.theme-portail .portal-button:hover:not(:disabled) {
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
-  color: var(--primary-fg);
+  background: var(--pill-bg);
+  border-color: transparent;
+  color: var(--pill-tx);
+  box-shadow: var(--primary-shadow-strong);
 }
 html.theme-portail .portal-button.secondary,
 html.theme-portail .admin-button.secondary {
-  background: transparent;
+  background: var(--bg-tertiary);
   border: 1px solid var(--line-strong);
   color: var(--text-primary);
+  box-shadow: none;
 }
 html.theme-portail .portal-button.secondary:hover:not(:disabled),
 html.theme-portail .admin-button.secondary:hover {
@@ -444,9 +476,12 @@ html.theme-portail textarea:focus {
   box-shadow: 0 0 0 3px var(--accent-medium) !important;
   background: var(--bg-card);
 }
-html.theme-portail .portal-container select,
-html.theme-portail .portal-container select option {
+html.theme-portail .portal-container select {
   background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+html.theme-portail .portal-container select option {
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
 }
 html.theme-portail .portal-container select option:checked {
@@ -457,8 +492,11 @@ html.theme-portail .portal-container select option:checked {
    CARTES & GRILLES
    ─────────────────────────────────────────────────────────────────── */
 html.theme-portail .portal-card {
-  background: var(--bg-card);
+  background: var(--surface-glass);
   border: 1px solid var(--border-color);
+  box-shadow: var(--surface-shadow);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 html.theme-portail
   :is(
@@ -472,8 +510,9 @@ html.theme-portail
     .admin-form-section,
     .project-form-section
   ) {
-  background: var(--bg-card) !important;
+  background: var(--surface-glass) !important;
   border: 1px solid var(--border-color) !important;
+  box-shadow: var(--surface-shadow);
 }
 html.theme-portail
   :is(
@@ -487,28 +526,31 @@ html.theme-portail
   ):hover {
   background: var(--bg-card-hover) !important;
   border-color: var(--line-strong) !important;
+  box-shadow: var(--surface-shadow);
 }
 
 /* Stat-cards : gros chiffre, libellé en casse normale, accent unifié */
 html.theme-portail .admin-stat-card {
-  background: var(--bg-card) !important;
+  background: var(--surface-glass) !important;
   border: 1px solid var(--border-color) !important;
-  border-left: 3px solid var(--primary) !important;
+  box-shadow: var(--surface-shadow);
+  border-left: 1px solid var(--border-color) !important;
 }
 html.theme-portail .admin-stat-card:hover {
   background: var(--bg-card-hover) !important;
+  box-shadow: var(--surface-shadow);
 }
 html.theme-portail .admin-stat-label,
 html.theme-portail .admin-widget-label {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   text-transform: none;
   letter-spacing: normal;
-  font-weight: 600;
+  font-weight: 400;
 }
 html.theme-portail .admin-stat-value,
 html.theme-portail .admin-widget-value {
-  font-family: var(--font-heading);
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-weight: 500;
   letter-spacing: -0.03em;
   color: var(--text-primary) !important;
   text-shadow: none !important;
@@ -525,18 +567,20 @@ html.theme-portail .admin-widget:nth-child(n) {
 }
 html.theme-portail .admin-widget:nth-child(n):hover {
   border-color: var(--line-strong) !important;
+  box-shadow: var(--surface-shadow);
 }
 html.theme-portail .admin-stat-card:nth-child(n) {
-  border-left-color: var(--primary) !important;
+  border-left-color: var(--border-color) !important;
 }
 
 /* ───────────────────────────────────────────────────────────────────
    TABLES — filets horizontaux, en-têtes en casse normale
    ─────────────────────────────────────────────────────────────────── */
 html.theme-portail .admin-table-wrapper {
-  background: var(--bg-card) !important;
+  background: var(--surface-glass) !important;
   border: 1px solid var(--border-color) !important;
-  overflow: hidden;
+  box-shadow: var(--surface-shadow);
+  overflow-x: auto;
 }
 html.theme-portail .admin-table th {
   background: none !important;
@@ -544,7 +588,7 @@ html.theme-portail .admin-table th {
   color: var(--text-muted) !important;
   text-transform: none;
   letter-spacing: normal;
-  font-weight: 600;
+  font-weight: 400;
   border-bottom: 1px solid var(--border-color);
 }
 html.theme-portail .admin-table td {
@@ -563,7 +607,7 @@ html.theme-portail :is(.admin-badge, .priority-indicator, .admin-card-role) {
   color: var(--text-secondary) !important;
   text-transform: none;
   letter-spacing: normal;
-  font-weight: 600;
+  font-weight: 500;
 }
 /* En cours / normal → accent */
 html.theme-portail .admin-badge.status-en-cours,
@@ -577,7 +621,7 @@ html.theme-portail .client-status-active {
 html.theme-portail .admin-badge.status-termine,
 html.theme-portail .client-status-done {
   background: var(--good-surface) !important;
-  border-color: rgba(127, 219, 160, 0.32) !important;
+  border-color: color-mix(in srgb, var(--good) 28%, transparent) !important;
   color: var(--good) !important;
 }
 /* Attente */
@@ -585,7 +629,7 @@ html.theme-portail .admin-badge.status-en-attente,
 html.theme-portail .priority-indicator.haute,
 html.theme-portail .client-status-pending {
   background: var(--warning-surface) !important;
-  border-color: rgba(247, 194, 104, 0.32) !important;
+  border-color: color-mix(in srgb, var(--warning) 28%, transparent) !important;
   color: var(--warning) !important;
 }
 /* Urgent / danger */
@@ -610,36 +654,6 @@ html.theme-portail .client-project-card-tag {
   color: var(--primary-light) !important;
   text-transform: none;
   letter-spacing: normal;
-}
-
-/* ───────────────────────────────────────────────────────────────────
-   ONGLETS — soulignés, casse normale
-   ─────────────────────────────────────────────────────────────────── */
-html.theme-portail .admin-tabs {
-  background: transparent !important;
-  border: none !important;
-  border-bottom: 1px solid var(--border-color) !important;
-  padding: 0;
-  gap: 0;
-}
-html.theme-portail .admin-tab {
-  color: var(--text-muted) !important;
-  text-transform: none;
-  letter-spacing: normal;
-  font-weight: 600;
-  border: none !important;
-  border-bottom: 2px solid transparent !important;
-  background: transparent !important;
-}
-html.theme-portail .admin-tab:hover:not(.active) {
-  color: var(--text-secondary) !important;
-  background: transparent !important;
-}
-html.theme-portail .admin-tab.active {
-  color: var(--text-primary) !important;
-  background: transparent !important;
-  border-bottom-color: var(--primary) !important;
-  text-shadow: none !important;
 }
 
 /* Onglets espace client */
@@ -674,7 +688,7 @@ html.theme-portail .admin-error {
 }
 html.theme-portail .admin-success {
   background: var(--good-surface) !important;
-  border: 1px solid rgba(127, 219, 160, 0.32) !important;
+  border: 1px solid color-mix(in srgb, var(--good) 28%, transparent) !important;
   color: var(--good) !important;
 }
 html.theme-portail .admin-info {
@@ -707,8 +721,9 @@ html.theme-portail .admin-breadcrumb span {
   color: var(--primary-light) !important;
 }
 html.theme-portail .admin-tooltip:hover::after {
-  background: var(--bg-card) !important;
+  background: var(--surface-glass) !important;
   border: 1px solid var(--border-color) !important;
+  box-shadow: var(--surface-shadow);
   border-radius: var(--r-md) !important;
   box-shadow: none !important;
 }
@@ -716,22 +731,12 @@ html.theme-portail .admin-tooltip:hover::before {
   border-top-color: var(--border-color) !important;
 }
 
-/* Formulaires : titre plein, filet latéral d'accent */
+/* Formulaires : titres pleins, sans barre décorative. */
 html.theme-portail .admin-form-section h2 {
-  background: none !important;
-  -webkit-text-fill-color: var(--text-primary) !important;
-  color: var(--text-primary) !important;
-  text-transform: none;
-  letter-spacing: -0.02em;
-  font-weight: 800;
-}
-html.theme-portail .admin-form-section::before,
-html.theme-portail .project-form-section::before {
-  background: var(--primary) !important;
-  box-shadow: none !important;
-  border-radius: var(--r-hair) !important;
-  display: block !important;
-  content: '' !important;
+  background: none;
+  -webkit-text-fill-color: var(--text-primary);
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -739,13 +744,14 @@ html.theme-portail .project-form-section::before {
    ─────────────────────────────────────────────────────────────────── */
 html.theme-portail .client-dashboard-hero,
 html.theme-portail .client-project-hero {
-  background: var(--bg-card) !important;
+  background: var(--surface-glass) !important;
   border: 1px solid var(--border-color) !important;
+  box-shadow: var(--surface-shadow);
 }
 html.theme-portail .client-dashboard-title,
 html.theme-portail .client-project-hero-title {
   font-family: var(--font-heading);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.025em;
   text-transform: none;
 }
@@ -760,12 +766,13 @@ html.theme-portail
     .client-progress-tasks,
     .client-progress-activity
   ) {
-  background: var(--bg-card) !important;
+  background: var(--surface-glass) !important;
   border: 1px solid var(--border-color) !important;
+  box-shadow: var(--surface-shadow);
 }
 html.theme-portail .client-dashboard-stat-value {
-  font-family: var(--font-heading);
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-weight: 500;
   letter-spacing: -0.03em;
 }
 html.theme-portail .client-dashboard-stat-label {
@@ -813,4 +820,122 @@ html.theme-portail ::selection {
 html.theme-portail *::-webkit-scrollbar-thumb {
   background: var(--line-strong);
   border-radius: var(--r-pill);
+}
+
+/* Dialogues, toasts et skeletons partagés avec le public : surcharge privée
+   ici pour préserver index.css et les pages publiques. */
+html.theme-portail .confirm-modal-overlay {
+  background: var(--overlay-scrim);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+html.theme-portail .confirm-modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--overlay-shadow);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+html.theme-portail .confirm-modal__header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+html.theme-portail .confirm-modal__title {
+  font-size: 18px;
+  font-weight: 600;
+}
+html.theme-portail .confirm-modal__body {
+  padding: 16px 20px;
+}
+html.theme-portail .confirm-modal__message {
+  font-size: 13.5px;
+  font-weight: 400;
+}
+html.theme-portail .confirm-modal__footer {
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color);
+}
+html.theme-portail .confirm-modal__btn {
+  min-height: 36px;
+  padding: 7px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill) !important;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font: 500 13.5px/1.4 var(--font-body);
+  letter-spacing: normal;
+}
+html.theme-portail .confirm-modal__btn--confirm,
+html.theme-portail .confirm-modal__btn--confirm.confirm-modal__btn--info {
+  background: var(--pill-bg);
+  color: var(--pill-tx);
+  border-color: transparent;
+}
+html.theme-portail .confirm-modal__btn--confirm.confirm-modal__btn--danger {
+  background: var(--critical-surface);
+  border-color: var(--mono-danger-border);
+  color: var(--critical);
+}
+html.theme-portail .confirm-modal__btn--confirm.confirm-modal__btn--warning {
+  background: var(--warning-surface);
+  border-color: color-mix(in srgb, var(--warning) 28%, transparent);
+  color: var(--warning);
+}
+html.theme-portail .confirm-modal__btn:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px var(--bg-card-hover);
+}
+html.theme-portail .confirm-modal__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+html.theme-portail .toast-container {
+  width: min(400px, calc(100vw - 32px));
+}
+html.theme-portail .toast-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--line-strong);
+  border-left-width: 2px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--overlay-shadow);
+  font-size: 13px;
+  font-weight: 400;
+}
+html.theme-portail .toast-message {
+  font-weight: 400;
+  letter-spacing: normal;
+}
+html.theme-portail .toast-close {
+  border-radius: var(--r-sm) !important;
+}
+html.theme-portail .toast-close:hover {
+  background: var(--bg-card-hover);
+}
+html.theme-portail .toast-progress {
+  height: 2px;
+  border-radius: var(--r-pill);
+}
+html.theme-portail .skeleton {
+  background: linear-gradient(90deg, var(--bg-card) 0%, var(--bg-card-hover) 50%, var(--bg-card) 100%);
+  background-size: 200% 100%;
+  border-radius: var(--r-sm);
+}
+html.theme-portail :is(.skeleton-card, .skeleton-stat) {
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+}
+html.theme-portail .skeleton-row {
+  height: 44px;
+  border-radius: var(--r-md);
+}
+@media (max-width: 767px) {
+  html.theme-portail .toast-container {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
+    left: auto;
+  }
+  html.theme-portail :is(.confirm-modal__btn, .confirm-modal__close) {
+    min-height: 44px;
+  }
 }

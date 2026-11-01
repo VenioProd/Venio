@@ -25,10 +25,11 @@ const allowlist: string[] = allowlistJson
 const root = process.cwd()
 const read = (path: string) => readFileSync(join(root, path), 'utf8')
 
-/** Les 36 feuilles couvertes par la charte. */
+/** Les 37 feuilles couvertes par la charte. */
 export const PORTAL_STYLESHEETS = [
   'src/components/AdminCommandPalette.css',
   'src/components/AdminShell.css',
+  'src/components/AdminSystemTokens.css',
   'src/components/AdminSidebar.css',
   'src/components/ClientShell.css',
   'src/components/ClientSidebar.css',
@@ -65,21 +66,37 @@ export const PORTAL_STYLESHEETS = [
   'src/styles/task-board.css',
 ] as const
 
-/** Palette de la section 4 de la spec. Seuls hexadécimaux tolérés. */
+/** Palette Système de la révision novembre 2026 de la spec. Seuls hexadécimaux tolérés. */
 const PALETTE = new Set(
   [
-    '#0a0c0f',
-    '#141a20',
-    '#1b242c',
-    '#202a33',
-    '#e8eef3',
-    '#9daab3',
-    '#7b8894',
-    '#06202b',
-    '#7fdba0',
-    '#f7c268',
-    '#f4a06a',
-    '#ff8a8a',
+    '#04050a',
+    '#0a0c14',
+    '#eef0f7',
+    '#9aa1b4',
+    '#7f869b',
+    '#646b80',
+    '#38bdf8',
+    '#a78bfa',
+    '#5eead4',
+    '#34d399',
+    '#fbbf24',
+    '#f472b6',
+    '#c4b5fd',
+    '#7dd3fc',
+    '#f4f6fb',
+    '#05060b',
+    '#f5f6fa',
+    '#ffffff',
+    '#0d1020',
+    '#4a5167',
+    '#62697e',
+    '#8a90a3',
+    '#0284c7',
+    '#7c3aed',
+    '#0d9488',
+    '#047857',
+    '#b45309',
+    '#be185d',
   ].map((h) => h.toLowerCase()),
 )
 

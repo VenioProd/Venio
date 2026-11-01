@@ -260,3 +260,35 @@
 [data-theme='light'] .notif-item-time {
   color: var(--ink-ghost);
 }
+
+/* Système — panneau opaque pour rester lisible au-dessus des cartes glass. */
+html.theme-portail .notif-bell-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+}
+html.theme-portail .notif-badge {
+  font: 500 10px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+html.theme-portail .notif-dropdown {
+  background: var(--bg-secondary);
+  border-color: var(--line-strong);
+  box-shadow: var(--overlay-shadow);
+}
+html.theme-portail .notif-dropdown-title {
+  font-size: 13.5px;
+}
+html.theme-portail .notif-item {
+  min-height: 44px;
+  border-radius: var(--r-sm) !important;
+}
+html.theme-portail .notif-item-message {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+html.theme-portail .notif-item-time {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

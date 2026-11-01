@@ -290,3 +290,124 @@ mêmes 36 fichiers.
 La refonte fonctionnelle esquissée dans les trois pistes — file de traitement universelle,
 fil du projet côté client, ateliers par métier — n'est pas couverte ici. Chacune fera sa
 propre spécification. Le site public, les e-mails et les PDF ne sont pas touchés.
+
+## Révision novembre 2026 : identité Système
+
+Cette révision remplace les décisions visuelles de septembre (§1, §3–5 et les
+points 1–2 de §12) pour les pages privées. Références validées, lues en entier :
+`docs/redesign/admin/01-cockpit.html` et `02-crm.html`. Les règles mécaniques
+restent : aucune capitale forcée, aucun interlettrage positif en em, aucun
+angle vif et rayons par `var(--r-*)`, polices par jetons. Les capitales et le
+tracking présents dans les maquettes ne sont donc pas reproduits.
+
+### Palette et typographie
+
+`src/styles/portail.css` reste le seul site de définition de la palette privée.
+Les noms historiques restent stables ; les alias courts du shell (`--bg`, `--tx`,
+`--sky`, `--f1`… et les anciens `--ink-*`/`--line-*`) y sont désormais déclarés.
+`AdminSystemTokens.css` ne contient plus de palette ni de pont local. Le choix
+`data-theme="light"` est respecté ; les accents personnels restent neutralisés
+par la spécificité de `html.theme-portail[data-theme]`.
+
+| Jeton / rôle | Avant | Système sombre | Système clair |
+| --- | --- | --- | --- |
+| `--bg-primary` | `#0a0c0f` | `#04050a` | `#f5f6fa` |
+| `--bg-secondary` (panneaux superposés) | `#141a20` | `#0a0c14` | `#ffffff` |
+| `--bg-card` | `#141a20` | blanc à 3 % | encre (15,20,45) à 2,5 % |
+| `--bg-card-hover` | `#1b242c` | blanc à 6,5 % | encre à 6 % |
+| `--surface-raised` | `#202a33` | alias `--bg-card-hover` | même alias |
+| `--text-primary` | `#e8eef3` | `#eef0f7` | `#0d1020` |
+| `--text-secondary` | `#9daab3` | `#9aa1b4` | `#4a5167` |
+| `--text-muted` | `#7b8894` | `#7f869b` | `#62697e` |
+| `--border-color` / `--line-strong` | encre froide à 9 / 16 % | blanc à 8 / 14 % | encre à 10 / 18 % |
+| `--primary-rgb` (sky) | 56,189,248 | 56,189,248 (`#38bdf8`) | 2,132,199 (`#0284c7`) |
+| `--good` (mint) | `#7fdba0` | `#34d399` | `#047857` |
+| `--warning` / `--serious` (amber) | `#f7c268` / `#f4a06a` | `#fbbf24` | `#b45309` |
+| `--critical` (rose) | `#ff8a8a` | `#f472b6` | `#be185d` |
+| `--cat-1` → `--cat-5` (catégories UI) | bleu, orange, rose, violet, vert | sky, vio `#a78bfa`, teal `#5eead4`, amber, mint | sky, vio `#7c3aed`, teal `#0d9488`, amber, mint |
+| `--pill-bg` / `--pill-tx` | aplat sky / texte sombre | `#f4f6fb` / `#05060b` | `#0d1020` / `#ffffff` |
+| `--brand-gradient` | aucun | 92°, `#c4b5fd` → sky clair `#7dd3fc` → teal | 92°, vio → sky → teal |
+| `--font-heading` / `--font-body` | Manrope | Geist | Geist |
+| `--font-mono` | DM Mono | Geist Mono | Geist Mono |
+| `--r-sm` / `--r-md` / `--r-lg` / `--r-pill` | 6 / 10 / 13 / 999 px | 6 / 10 / 14 / 999 px | identique |
+
+Les couleurs sky restent exprimées par triplets RGB pour respecter
+`themeAccentTokens.test.ts`. Les surfaces de statut sont calculées à partir de
+leur teinte avec `color-mix`, donc suivent le clair. `--text-decorative` (`#646b80`
+/ `#8a90a3`) sert aux décors, jamais au petit texte. Les séries de graphiques JS
+restent régies par `src/lib/chartColors.ts` et ne sont pas migrées dans ce lot ;
+les catégories UI CSS ne prétendent plus en être le miroir.
+
+Geist est chargé via la même URL Google Fonts que celle déjà utilisée par
+`AdminShell.css`, depuis `portail.css` pour couvrir aussi les logins et l'espace
+client. Les imports identiques bénéficient du cache navigateur. Aucun changement
+au chargement du site public ni aux fichiers du shell n'est requis.
+
+### Primitives communes
+
+Le corps passe à 13,5 px ; les titres de page à 22–28 px / 600 ; les titres de
+panneau à 13,5–16 px / 600. Les montants, dates, compteurs et KPI utilisent Geist
+Mono et les chiffres tabulaires. Le glass est un dégradé blanc 5 → 1,5 % en sombre,
+90 → 60 % en clair, avec filet fin et ombre discrète. Les panneaux superposés
+restent opaques pour que les contenus placés dessous ne dégradent pas la lecture.
+Le mesh historique et les barres décoratives des anciennes cartes restent coupés.
+La règle de septembre « fond ou filet, jamais les deux » (§6.5) est remplacée par
+ces surfaces glass avec filet. Le relief discret et le dégradé de marque sont
+réintroduits ; les cartes ne flottent toujours pas au survol.
+
+Le relevé des usages de `src/pages/admin` hors hubs a guidé le lot :
+`portal-input` dans 67 fichiers, `portal-button` dans 91, `portal-card` dans 42,
+puis les listes, formulaires, badges, erreurs et états vides `admin-*`.
+Les primitives admin sont regroupées en fin de `AdminPortal.css`, sans réécrire
+ses blocs métier ni leurs adaptations mobiles. Elles utilisent la charte révisée.
+
+| Famille | Classes concernées / comportement |
+| --- | --- |
+| Page et en-tête | `portal-container`, `admin-portal`, `admin-header`, `admin-page-header`, `admin-page-subtitle` ; titre sobre, pas de barre sous le titre, rythme 24 px |
+| Cartes et KPI | `portal-card`, `admin-widget`, `admin-stat-card`, `admin-form-section`, `project-form-section`, `admin-list-item` ; glass, rayons 14 px, padding 16–20 px, chiffre mono 28 px |
+| Tables | `admin-table-wrapper`, `admin-table`, `gestion-table-wrap`, `gestion-table` ; en-tête mono 10,5 px / 38 px, cellules hautes de 44 px minimum utile, filets horizontaux, survol neutre, défilement horizontal conservé |
+| Boutons | `portal-button` primaire clair, `.secondary` ghost, `.danger` rose ; `admin-button`, `admin-card-btn`, `portal-action-link` en pilule ; désactivé visible, pas de translation au survol |
+| Champs | `portal-input`, `custom-select-trigger/menu/option`, champs partagés de tâches ; hauteur 34–36 px, focus sky, listes natives opaques, texte 16 px sur mobile pour éviter le zoom iOS |
+| Chips | `admin-badge`, `admin-tag`, `priority-indicator`, `admin-card-role`, `portal-badge`, badges gestion/tâches ; 20 px minimum, teinte de statut et filet léger |
+| Segments | `admin-tabs` / `admin-tab`, `gestion-view-toggle`, `gestion-kpi-periods`, `gestion-gantt-mode-btn` ; fond translucide, segment actif neutre avec filet, défilement horizontal |
+| Dialogues et panneaux | `confirm-modal*`, `crm-modal*`, `ticket-quick-modal`, `decision-modal`, `crm-form-panel`, `crm-worklist-panel`, `task-modal` ; fond opaque, filet, ombre, voile léger ; dimensions et comportements métier conservés |
+| États et feedback | `admin-empty-state*`, `admin-error/success/info`, `admin-loading`, `gestion-empty-state`, `notif-*`, `toast-*` ; texte calme, statuts via jetons, toast au-dessus de la barre mobile |
+| Pagination et chargement | `accounting-pagination` et ses boutons, `skeleton*` ; commandes pilules, chiffres mono, lignes skeleton 44 px, animation neutralisée en mouvement réduit |
+
+Les styles communs aux pages publiques (`index.css`) ne sont pas réécrits :
+les dialogues, toasts et skeletons reçoivent leur variante privée dans
+`portail.css`. Le composant commun `ToastContainer.tsx` lit les jetons de statut
+avec ses anciennes couleurs en repli pour le public. Aucun TSX de page n'est modifié.
+Les cibles textuelles des primitives passent à 44 px sur mobile ; le focus visible
+et la réduction des mouvements de la charte restent actifs.
+
+### Contrat et suites de migration
+
+`AdminPortal.css` était déjà intégralement suivi et reste dans le contrat, sans
+exception. `AdminSystemTokens.css` rejoint la liste (37 feuilles). `PALETTE` est
+remplacée par les couleurs Système sombres/claires ; les règles mécaniques et la
+liste d'exceptions ne sont pas assouplies. Les anciennes valeurs de la charte ne
+restent pas dans la palette autorisée.
+
+La base n'est pas une validation visuelle écran par écran. Restent à reprendre :
+
+- CRM : `crm-toolbar*`, `crm-table`/`crm-th`/`crm-td`, `crm-group-*`,
+  `crm-card*`, `crm-column*`, `crm-worklist-*`, `crm-settings-*` (pipeline et réglages).
+- Cockpits historiques : `admin-command-*`, `dash-*`, `admin-customize-*` et les
+  composants `dashboard-*` (AdminDashboard, SuperAdminDashboard, MonEspace).
+- Tickets : `ticket-hero`, `ticket-stat-*`, `ticket-card*`, `ticket-tab*`,
+  `ticket-kpi-*`, formulaires et réponses propres à Tickets ; seules les primitives
+  et la surface de dialogue ont été reprises ici.
+- Qualiopi et questionnaires : `qualiopi-*`, `qq-*`, `decision-card*` ; les fiches,
+  grilles et éditeurs spécialisés conservent leur composition antérieure.
+- Gestion : détails `gantt-*`, `gestion-brief-*`, pièces jointes/commentaires
+  spécialisés ; tableaux, KPI, segments et cartes partagées sont déjà repris.
+- Modules ayant leur feuille dédiée : `accounting-*` hors pagination,
+  `dev-*`/`dpc-*`, `edu-*`, `beta-*`, `messaging-*` et `project-chat-*` ; ils héritent
+  de la palette, mais conservent leur mise en page et leurs densités propres.
+- Styles en ligne : couleurs/typographies de certains avatars, rôles et graphes
+  (ex. AgentTokensList), dimensions/paddings des actions et paginations sans classe
+  (AuditLog, DeliveryLog), boutons spécifiques des
+  anciennes fiches. Ils exigent une reprise dans les pages concernées.
+- Les hubs, `src/components/admin/ui/`, `App.tsx`, `AdminShell*`, `AdminSidebar*`
+  et `adminNavigation.ts` restent hors de ce lot et ne sont pas modifiés.
