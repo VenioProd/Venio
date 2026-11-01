@@ -38,6 +38,8 @@ export interface IPersonalTask extends Document {
   order: number
   isArchived: boolean
   sourceIdeaId: Types.ObjectId | null
+  leadId: Types.ObjectId | null
+  ruleId: Types.ObjectId | null
   createdAt: Date
   updatedAt: Date
 }

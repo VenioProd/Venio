@@ -15,6 +15,7 @@ import '../AdminPortal.css'
 
 import PipelineColumnComponent from './PipelineColumn'
 import LeadTable from './LeadTable'
+import RichLeadTable from './rich/RichLeadTable'
 import LeadFormPanel from './LeadFormPanel'
 import LeadDetailModal from './LeadDetailModal'
 import WorklistView from './worklist/WorklistView'
@@ -41,7 +42,10 @@ const CrmBoard = () => {
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
   const [searchParams, setSearchParams] = useSearchParams()
-  const [viewMode, setViewMode] = useState<string>(() => (searchParams.get('mode') === 'file' ? 'file' : 'table'))
+  const [viewMode, setViewMode] = useState<string>(() => {
+    const requested = searchParams.get('mode')
+    return requested === 'file' || requested === 'table' || requested === 'kanban' ? requested : 'liste'
+  })
 
   // File de travail : groupes, seuils d'alerte effectifs et délais de relance,
   // tous servis par /crm/worklist. Les seuils alimentent aussi les badges des
@@ -141,7 +145,8 @@ const CrmBoard = () => {
     setViewMode(mode)
     setSearchParams(
       (params) => {
-        if (mode === 'file') params.set('mode', 'file')
+        // Le Kanban et le tableau enrichi (défaut) ne sont pas portés par l'URL, comme avant.
+        if (mode === 'file' || mode === 'table') params.set('mode', mode)
         else params.delete('mode')
         return params
       },
@@ -477,9 +482,25 @@ const CrmBoard = () => {
                   {worklistOverdueCount > 0 && <span className="crm-view-btn-count">{worklistOverdueCount}</span>}
                 </button>
                 <button
+                  className={`crm-view-btn ${viewMode === 'liste' ? 'active' : ''}`}
+                  onClick={() => changeViewMode('liste')}
+                  title="Tableau enrichi"
+                  aria-label="Tableau enrichi"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6" />
+                    <line x1="8" y1="12" x2="21" y2="12" />
+                    <line x1="8" y1="18" x2="21" y2="18" />
+                    <line x1="3" y1="6" x2="3.01" y2="6" />
+                    <line x1="3" y1="12" x2="3.01" y2="12" />
+                    <line x1="3" y1="18" x2="3.01" y2="18" />
+                  </svg>
+                </button>
+                <button
                   className={`crm-view-btn ${viewMode === 'table' ? 'active' : ''}`}
                   onClick={() => changeViewMode('table')}
                   title={t('crm.page.viewTable')}
+                  aria-label={t('crm.page.viewTable')}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -607,11 +628,11 @@ const CrmBoard = () => {
           className="portal-card"
           style={{
             marginTop: 24,
-            padding: viewMode === 'table' ? 0 : undefined,
+            padding: viewMode === 'table' || viewMode === 'liste' ? 0 : undefined,
             overflow: 'visible',
           }}
         >
-          {viewMode !== 'table' && (
+          {viewMode !== 'table' && viewMode !== 'liste' && (
             <label className="crm-table-toolbar">
               {t('crm.col.project')}
               <select value={filterProject} onChange={(event) => setFilterProject(event.target.value)}>
@@ -638,10 +659,23 @@ const CrmBoard = () => {
               onAddNote={handleAddNote}
               onOpenDetail={setExpandedLead}
             />
-          ) : loading ? (
+          ) : loading && !(viewMode === 'liste' && allLeads.length > 0) ? (
             <div className="admin-loading" style={{ padding: 32 }}>
               {t('crm.page.loadingPipeline')}
             </div>
+          ) : viewMode === 'liste' ? (
+            <RichLeadTable
+              leads={allLeads}
+              admins={admins}
+              adminsById={adminsById}
+              canManageCrm={canManageCrm}
+              currentUserId={user?._id}
+              onOpenLead={setExpandedLead}
+              onReload={load}
+              onError={setError}
+              project={filterProject}
+              onProjectChange={setFilterProject}
+            />
           ) : viewMode === 'kanban' ? (
             <div className="crm-board">
               {projectColumns.map((column) => (

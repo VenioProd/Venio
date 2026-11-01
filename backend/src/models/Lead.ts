@@ -65,9 +65,42 @@ const leadSchema = new mongoose.Schema<ILead>(
     // pas casser l'agent ni les automatisations qui passent des leads à LOST.
     lostReason: { type: String, default: '' },
     lostComment: { type: String, default: '' },
+    // Enrichissement CRM : valeur pondérée, classement et suivi d'activité.
+    probability: { type: Number, min: 0, max: 100, default: null },
+    expectedCloseAt: { type: Date, default: null },
+    tags: { type: [{ type: String, trim: true, maxlength: 40 }], default: [] },
+    sourceDetail: { type: String, default: '', maxlength: 300 },
+    utm: { type: mongoose.Schema.Types.Mixed, default: null },
+    sector: { type: String, default: '', maxlength: 80 },
+    companySize: { type: String, default: '', maxlength: 40 },
+    nextActionLabel: { type: String, default: '', maxlength: 200 },
+    nextActionType: { type: String, enum: ['', 'CALL', 'EMAIL', 'MEETING', 'TASK', 'OTHER'], default: '' },
+    // Dénormalisés depuis Interaction (lastContactAt reste la date saisie à la main).
+    lastInteractionAt: { type: Date, default: null },
+    interactionsCount: { type: Number, default: 0 },
+    archivedAt: { type: Date, default: null },
+    // Suspend les règles d'automatisation pour ce seul lead.
+    automationPausedAt: { type: Date, default: null },
   },
   { timestamps: true },
 )
+
+// Probabilité par défaut selon l'étape, appliquée tant que personne ne l'a fixée à la main.
+export const STATUS_PROBABILITY: Record<string, number> = {
+  LEAD: 10,
+  QUALIFIED: 25,
+  CONTACTED: 35,
+  DEMO: 50,
+  PROPOSAL: 65,
+  WON: 100,
+  LOST: 0,
+}
+
+leadSchema.pre('validate', function () {
+  if (this.probability == null || (this.isModified('status') && !this.isModified('probability') && !this.isNew)) {
+    this.probability = STATUS_PROBABILITY[this.status] ?? 10
+  }
+})
 
 // Le modèle couvre aussi les sauvegardes de l'API agent et du planificateur.
 leadSchema.pre('save', async function () {
@@ -98,6 +131,8 @@ leadSchema.index({ company: 1 })
 leadSchema.index({ project: 1 })
 leadSchema.index({ clientAccountId: 1 })
 leadSchema.index({ externalRep: 1, updatedAt: -1 })
+leadSchema.index({ archivedAt: 1, status: 1 })
+leadSchema.index({ tags: 1 })
 leadSchema.index({ score: -1 }) // Index for sorting by score
 leadSchema.index({ status: 1, createdAt: -1 }) // Cohortes du pilotage
 

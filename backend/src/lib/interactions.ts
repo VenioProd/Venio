@@ -115,7 +115,7 @@ export interface LogInteractionInput {
 }
 
 export async function logInteraction(input: LogInteractionInput) {
-  return Interaction.create({
+  const interaction = await Interaction.create({
     lang: input.lang ?? null,
     clientRequestId: input.clientRequestId,
     clientRequestHash: input.clientRequestHash,
@@ -138,6 +138,13 @@ export async function logInteraction(input: LogInteractionInput) {
     })),
     deliveryStatus: input.deliveryStatus ?? 'NONE',
   })
+  if (input.subjectType === 'LEAD') {
+    // Compteurs du lead et déclencheur « interaction consignée » : jamais bloquants.
+    import('./crmRules.js')
+      .then((m) => m.onLeadInteraction(input.subjectId, interaction.occurredAt, String(interaction._id)))
+      .catch(() => {})
+  }
+  return interaction
 }
 
 /**

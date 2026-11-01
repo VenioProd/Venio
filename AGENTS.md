@@ -119,6 +119,10 @@ Notes that will save you a round trip:
 - **Feedback carries personal data** (tester name and email). `read:beta` exposes
   it; only request that scope when the task genuinely needs it.
 
+## CRM : vues, actions groupées, règles (`/crm/*`)
+
+Mêmes scopes `read:crm` / `write:crm`. `POST /crm/leads/bulk` (≤ 200 leads ; `delete` exige `confirm: true`), `GET /crm/leads/export` (CSV), `GET /crm/leads/:id/timeline|tasks|documents`, `GET|POST|PATCH|DELETE /crm/views`, `GET|POST|PATCH|DELETE /crm/rules` et `POST /crm/rules/:id/simulate`, `GET /crm/rules/runs`. Une règle créée par un agent est un brouillon : seul un token `admin:*` ou un humain l'active. Détail : `docs/api-agent.md`.
+
 ## Mutations require `Idempotency-Key`
 
 Every `POST`, `PATCH`, `PUT`, `DELETE` MUST include an `Idempotency-Key` header. Generate one UUID per logical operation.

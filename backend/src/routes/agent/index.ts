@@ -7,6 +7,7 @@ import { requestIdMiddleware, agentErrorHandler } from './_middleware/errors.js'
 import { AGENT_SCOPES } from '../../lib/agent/scopes.js'
 import { buildOpenApiSpec, extractRoutes } from '../../lib/agent/openapi.js'
 import crmRoutes from './crm.js'
+import crmExtrasRoutes from './crmExtras.js'
 import projectsRoutes from './projects.js'
 import templatesRoutes from './templates.js'
 import briefsRoutes from './briefs.js'
@@ -109,6 +110,7 @@ router.get('/whoami', requireScope('read:users'), (req: Request, res: Response) 
 
 // ── Sous-routeurs par module métier ─────────────────────────────────────────
 router.use('/', crmRoutes)
+router.use('/crm', crmExtrasRoutes)
 router.use('/', projectsRoutes)
 router.use('/', templatesRoutes)
 router.use('/', briefsRoutes)
