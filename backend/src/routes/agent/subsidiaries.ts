@@ -26,6 +26,17 @@ const router = express.Router()
 // Champs éditables via l'API agent (le coffre `credentials` et `documents`
 // sont volontairement exclus — gérés côté admin pour la sécurité).
 const EDITABLE_FIELDS = [
+  'nextcloud',
+  'devProject',
+  'features',
+  'pricing',
+  'competitors',
+  'leadProject',
+  'target',
+  'valueProposition',
+  'salesPitch',
+  'objections',
+  'pilotage',
   'name',
   'tagline',
   'sector',

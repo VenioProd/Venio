@@ -11,6 +11,8 @@ import Subsidiary, {
   LINK_TYPES,
   CREDENTIAL_CATEGORIES,
 } from '../../models/Subsidiary.js'
+import { LEAD_PROJECTS } from '../../models/Lead.js'
+import { subsidiaryCrm, subsidiaryDev, provisionSubsidiaryCloud } from '../../lib/subsidiaryDossier.js'
 import InternalProject, { ENTITIES } from '../../models/InternalProject.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 import { encryptSecret, decryptSecret } from '../../lib/secretBox.js'
@@ -54,6 +56,17 @@ async function uniqueSlug(base: string, excludeId?: string): Promise<string> {
 }
 
 const EDITABLE_FIELDS = [
+  'nextcloud',
+  'devProject',
+  'features',
+  'pricing',
+  'competitors',
+  'leadProject',
+  'target',
+  'valueProposition',
+  'salesPitch',
+  'objections',
+  'pilotage',
   'name',
   'tagline',
   'sector',
@@ -121,6 +134,7 @@ function sanitizeSubsidiary<T extends { credentials?: any[] }>(s: T): T {
 // GET /meta — listes pour les formulaires (statuts, santé, entités liables)
 router.get('/meta', (_req: Request, res: Response) => {
   res.json({
+    leadProjects: LEAD_PROJECTS,
     statuses: SUBSIDIARY_STATUSES,
     healths: SUBSIDIARY_HEALTHS,
     entities: ENTITIES,
@@ -144,12 +158,15 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       subsidiaries.map(async (s) => {
         const { counts } = await aggregateProjects(s.linkedEntity)
         const headcount = s.team?.length || 0 || s.kpis?.headcount || 0
-        return { ...sanitizeSubsidiary(s), projectCounts: counts, headcount }
+        const { indicators } = await subsidiaryCrm(s.leadProject, false)
+        return { ...sanitizeSubsidiary(s), indicators, projectCounts: counts, headcount }
       }),
     )
 
     return res.json({ subsidiaries: withCounts })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -164,10 +181,39 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     if (!subsidiary) return res.status(404).json({ error: 'Filiale introuvable' })
 
     const { projects, counts } = await aggregateProjects(subsidiary.linkedEntity)
+    const [crm, devSummary] = await Promise.all([
+      subsidiaryCrm(subsidiary.leadProject),
+      subsidiaryDev(subsidiary.devProject),
+    ])
     return res.json({
-      subsidiary: { ...sanitizeSubsidiary(subsidiary), linkedProjects: projects, projectCounts: counts },
+      subsidiary: {
+        ...sanitizeSubsidiary(subsidiary),
+        ...crm,
+        devSummary,
+        linkedProjects: projects,
+        projectCounts: counts,
+      },
     })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
+    return next(err)
+  }
+})
+
+// Provisioning is repeatable: MKCOL treats existing folders as success.
+router.post('/:id/nextcloud', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const subsidiary = await Subsidiary.findById(req.params.id)
+    if (!subsidiary) return res.status(404).json({ error: 'Filiale introuvable' })
+    subsidiary.nextcloud = await provisionSubsidiaryCloud(subsidiary.name, subsidiary.nextcloud?.path)
+    await subsidiary.save()
+    return res.json({ nextcloud: subsidiary.nextcloud })
+  } catch (err) {
+    const failure = err as Error & { status?: number; code?: string }
+    if (failure.status) return res.status(failure.status).json({ error: failure.message, code: failure.code })
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -188,6 +234,8 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       .lean()
     return res.status(201).json({ subsidiary: populated ? sanitizeSubsidiary(populated) : null })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -210,6 +258,8 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
       .lean()
     return res.json({ subsidiary: populated ? sanitizeSubsidiary(populated) : null })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -232,6 +282,8 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
     await subsidiary.deleteOne()
     return res.json({ success: true })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -262,6 +314,8 @@ router.post('/:id/documents', docUpload.single('file'), async (req: Request, res
     syncUploadToNextcloud(req.file, 'filiales', String(subsidiary._id))
     return res.status(201).json({ documents: subsidiary.documents })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -280,6 +334,8 @@ router.get('/:id/documents/:docId', async (req: Request, res: Response, next: Ne
     // dotfiles: 'allow' — le chemin peut contenir un segment commençant par « . »
     return res.sendFile(filePath, { dotfiles: 'allow' })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -303,6 +359,8 @@ router.delete('/:id/documents/:docId', async (req: Request, res: Response, next:
     await subsidiary.save()
     return res.json({ documents: subsidiary.documents })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -332,6 +390,8 @@ router.post('/:id/credentials', async (req: Request, res: Response, next: NextFu
       .status(201)
       .json({ credentials: sanitizeCredentials(subsidiary.credentials.map((c) => (c as any).toObject())) })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -355,6 +415,8 @@ router.patch('/:id/credentials/:credId', async (req: Request, res: Response, nex
     await subsidiary.save()
     return res.json({ credentials: sanitizeCredentials(subsidiary.credentials.map((c) => (c as any).toObject())) })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -370,6 +432,8 @@ router.delete('/:id/credentials/:credId', async (req: Request, res: Response, ne
     await subsidiary.save()
     return res.json({ credentials: sanitizeCredentials(subsidiary.credentials.map((c) => (c as any).toObject())) })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })
@@ -383,6 +447,8 @@ router.get('/:id/credentials/:credId/reveal', async (req: Request, res: Response
     if (!cred) return res.status(404).json({ error: 'Identifiant introuvable' })
     return res.json({ secret: decryptSecret((cred as any).secretEnc || '') })
   } catch (err) {
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
+      return res.status(400).json({ error: (err as Error).message })
     return next(err)
   }
 })

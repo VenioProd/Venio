@@ -67,7 +67,7 @@ const CrmBoard = () => {
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [filterPriority, setFilterPriority] = useState<string>('')
   const [filterAssignee, setFilterAssignee] = useState<string>('')
-  const [filterProject, setFilterProject] = useState<string>('')
+  const [filterProject, setFilterProject] = useState<string>(() => searchParams.get('project') || '')
   const [sortField, setSortField] = useState<string>('updatedAt')
   const [sortDir, setSortDir] = useState<string>('desc')
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
