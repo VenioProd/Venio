@@ -9,7 +9,7 @@ describe('SnoozePopover', () => {
     expect(screen.getByText(/Ce soir/)).toBeTruthy()
     expect(screen.getByText(/Demain/)).toBeTruthy()
     expect(screen.getByText('Lundi')).toBeTruthy()
-    expect(screen.getByText('Custom…')).toBeTruthy()
+    expect(screen.getByText('Personnalisé…')).toBeTruthy()
   })
 
   it('appelle onSnooze avec date+1h au clic 1h', () => {
