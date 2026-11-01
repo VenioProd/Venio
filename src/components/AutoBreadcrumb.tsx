@@ -64,7 +64,6 @@ const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   ressources: { labelKey: 'shell.breadcrumb.resources', to: '/admin/ressources' },
   'acces-outils': { labelKey: 'shell.breadcrumb.toolAccess', to: '/admin/acces-outils' },
   'mes-rapports': { labelKey: 'shell.breadcrumb.myReports', to: '/admin/mes-rapports' },
-  'arrow-prospection': { labelKey: 'shell.breadcrumb.arrowProspecting', to: '/admin/arrow-prospection' },
   analytics: { labelKey: 'shell.breadcrumb.analytics', to: '/admin/analytics' },
   calendrier: { labelKey: 'shell.breadcrumb.calendar', to: '/admin/calendrier' },
   templates: { labelKey: 'shell.breadcrumb.templates', to: '/admin/templates' },

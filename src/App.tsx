@@ -118,7 +118,6 @@ const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 const InternalProjectList = lazy(() => import('./pages/admin/InternalProjectList'))
 const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDetail'))
 const Resources = lazy(() => import('./pages/admin/Resources'))
-const ArrowProspection = lazy(() => import('./pages/admin/ArrowProspection'))
 const SubsidiaryList = lazy(() => import('./pages/admin/SubsidiaryList'))
 const SubsidiaryDetail = lazy(() => import('./pages/admin/SubsidiaryDetail'))
 const AgentTokensList = lazy(() => import('./pages/admin/AgentTokensList'))
@@ -646,7 +645,7 @@ function AppShell() {
                       path="arrow-prospection"
                       element={
                         <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
-                          <ArrowProspection />
+                          <Navigate to="/admin/crm?project=ARROW" replace />
                         </RequirePermission>
                       }
                     />

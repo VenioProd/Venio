@@ -3,12 +3,7 @@ import request from 'supertest'
 import type { Express } from 'express'
 import bcrypt from 'bcryptjs'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
 import Project from '../models/Project.js'
 import Lead from '../models/Lead.js'
@@ -56,9 +51,7 @@ describe('Agent ToolAccess / password masking', () => {
     expect(res.status).toBe(201)
     expect(res.body.password).toBeUndefined()
 
-    const list = await request(app)
-      .get('/api/v1/agent/tool-access')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const list = await request(app).get('/api/v1/agent/tool-access').set('Authorization', `Bearer ${plainSecret}`)
     expect(list.body.items[0].password).toBeUndefined()
   })
 
@@ -196,9 +189,7 @@ describe('Agent Interns', () => {
 describe('Agent Arrow', () => {
   it('pilotage singleton : GET + PUT (upsert)', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:arrow', 'write:arrow'])
-    const empty = await request(app)
-      .get('/api/v1/agent/arrow/pilotage')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const empty = await request(app).get('/api/v1/agent/arrow/pilotage').set('Authorization', `Bearer ${plainSecret}`)
     expect(empty.body.goals).toEqual([])
 
     const put = await request(app)
@@ -207,25 +198,8 @@ describe('Agent Arrow', () => {
       .send({ goals: ['+10 écoles signées', 'Q2 2026'] })
     expect(put.body.goals).toEqual(['+10 écoles signées', 'Q2 2026'])
 
-    const after = await request(app)
-      .get('/api/v1/agent/arrow/pilotage')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const after = await request(app).get('/api/v1/agent/arrow/pilotage').set('Authorization', `Bearer ${plainSecret}`)
     expect(after.body.goals).toEqual(['+10 écoles signées', 'Q2 2026'])
-  })
-
-  it('schools CRUD', async () => {
-    const { plainSecret } = await createAgentTokenInDb(['read:arrow', 'write:arrow'])
-    const create = await request(app)
-      .post('/api/v1/agent/arrow/schools')
-      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
-      .send({ name: 'Lycée Test', schoolType: 'LYCEE', city: 'Paris' })
-    expect(create.status).toBe(201)
-    expect(create.body.schoolType).toBe('LYCEE')
-
-    const filtered = await request(app)
-      .get('/api/v1/agent/arrow/schools?schoolType=LYCEE')
-      .set('Authorization', `Bearer ${plainSecret}`)
-    expect(filtered.body.total).toBe(1)
   })
 })
 
@@ -254,9 +228,7 @@ describe('Agent Analytics', () => {
       createdBy: adminId,
     })
 
-    const res = await request(app)
-      .get('/api/v1/agent/analytics/snapshot')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/analytics/snapshot').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(200)
     expect(res.body.users.clients).toBe(1)
     expect(res.body.crm.leads).toBe(1)
@@ -272,9 +244,7 @@ describe('Agent Analytics', () => {
       { company: 'B', status: 'WON', budget: 5000, createdBy: adminId },
       { company: 'C', status: 'WON', budget: 3000, createdBy: adminId },
     ])
-    const res = await request(app)
-      .get('/api/v1/agent/analytics/crm')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/analytics/crm').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(200)
     const won = res.body.byStatus.find((s: { _id: string }) => s._id === 'WON')
     expect(won.count).toBe(2)

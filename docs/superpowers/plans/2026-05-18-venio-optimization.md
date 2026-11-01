@@ -21,7 +21,7 @@ Stabiliser, sécuriser et optimiser Venio après audit du dépôt local le 18 ma
 1. Vitest racine scanne trop large, résultats trompeurs.
 2. `backend/src/index.ts` supprime des données demo/test au démarrage — dangereux en prod.
 3. Permissions dupliquées entre `backend/src/lib/permissions.ts` et `src/lib/permissions.ts`.
-4. Routes admin frontend sous-protégées: tickets, accès outils, projets internes, ressources, arrow-prospection, rapports, guide.
+4. Routes admin frontend sous-protégées: tickets, accès outils, projets internes, ressources, rapports, guide.
 5. Endpoints admin exposent des agrégats sans filtrage équivalent à la liste principale (tickets stats/KPI/archives).
 6. Mongoose signale des index dupliqués `slug` et `number`.
 7. Fichiers frontend de 700 à 1800 lignes.
@@ -146,7 +146,6 @@ Permissions dupliquées front/back. Routes admin sans `RequirePermission`. Endpo
 * `src/lib/__tests__/permissions-sync.test.ts`
 * `src/App.tsx`
 * `backend/src/routes/admin/tickets.ts`
-* `backend/src/routes/admin/arrowProspection.ts`
 * `backend/src/routes/admin/resources.ts`
 * `backend/src/routes/admin/internalProjects.ts`
 * `backend/src/routes/admin/toolAccess.ts`
@@ -172,7 +171,6 @@ Permissions dupliquées front/back. Routes admin sans `RequirePermission`. Endpo
 * `acces-outils` → permission dédiée ou `MANAGE_ADMINS`
 * `projets-internes` → `VIEW_PROJECTS` ou dédiée
 * `ressources` → `VIEW_CONTENT` ou dédiée
-* `arrow-prospection` → `VIEW_CRM` / `MANAGE_CRM`
 * `mes-rapports` selon rôle
 * `guide` peut rester ouvert aux admins
 4. `backend/src/routes/admin/tickets.ts`: même filtre auteur/permissions sur stats, archives, KPI, détails.

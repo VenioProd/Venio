@@ -2945,11 +2945,6 @@ a.portal-button {
   opacity: 0.75;
 }
 
-.crm-row-selected {
-  background: rgba(var(--primary-rgb), 0.07) !important;
-  outline: 1px solid rgba(var(--primary-rgb), 0.25);
-}
-
 /* Card states */
 .crm-card-cold {
   opacity: 0.6;
@@ -9518,22 +9513,6 @@ a.portal-button {
   min-width: 110px;
 }
 
-.crm-th.crm-th-select {
-  width: 36px;
-  padding: 14px 8px;
-}
-
-.crm-td.crm-td-select {
-  width: 36px;
-  padding: 0 8px;
-}
-
-.crm-select-checkbox {
-  width: 15px;
-  height: 15px;
-  cursor: pointer;
-}
-
 .crm-table-stats {
   display: flex;
   align-items: center;
@@ -9550,34 +9529,6 @@ a.portal-button {
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.5);
   transition: all 0.2s;
-}
-
-.crm-selection-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 20px;
-  background: rgba(14, 165, 233, 0.08);
-  border-bottom: 1px solid rgba(14, 165, 233, 0.2);
-}
-
-.crm-selection-count {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--primary);
-}
-
-.crm-selection-bar .crm-selection-transfer {
-  font-size: 12px;
-  padding: 5px 14px;
-}
-
-.crm-selection-clear {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 12px;
 }
 
 /* Barre de tri : réservée au mobile, où l'en-tête du tableau disparaît. */
@@ -9617,11 +9568,7 @@ a.portal-button {
     right: 4px;
   }
 
-  /* En-tête de page : onglets et actions tactiles, qui passent à la ligne au lieu d'être écrasés */
-  .crm-section-tab {
-    min-height: 44px;
-  }
-
+  /* En-tête de page : actions tactiles, qui passent à la ligne au lieu d'être écrasées */
   .crm-page-container .admin-actions {
     flex-wrap: wrap;
   }
@@ -9734,27 +9681,6 @@ a.portal-button {
     cursor: pointer;
   }
 
-  .crm-selection-bar {
-    flex-wrap: wrap;
-    padding: 12px;
-  }
-
-  .crm-selection-count {
-    flex: 1 1 100%;
-  }
-
-  .crm-selection-bar .crm-selection-transfer {
-    flex: 1 1 auto;
-    min-height: 44px;
-    font-size: 13px;
-  }
-
-  .crm-selection-clear {
-    min-height: 44px;
-    padding: 0 12px;
-    font-size: 13px;
-  }
-
   /* Tableau → cartes. L'en-tête est masqué (le tri passe par la barre dédiée). */
   .crm-table-scroll {
     overflow: visible;
@@ -9809,19 +9735,6 @@ a.portal-button {
   }
 
   .crm-td,
-  .crm-th.crm-th-select {
-    display: block;
-    min-width: 0;
-    max-width: none;
-    padding: 0;
-    border: none;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    overflow-wrap: anywhere;
-    font-size: 14px;
-  }
-
   .crm-td[data-label]::before {
     content: attr(data-label);
     display: block;
@@ -9838,27 +9751,6 @@ a.portal-button {
     align-items: center;
     gap: 6px 10px;
     font-size: 16px;
-  }
-
-  .crm-row-selectable .crm-td-company {
-    padding-right: 40px;
-  }
-
-  .crm-td.crm-td-select {
-    position: absolute;
-    top: 0;
-    right: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-  }
-
-  .crm-select-checkbox {
-    width: 20px;
-    height: 20px;
   }
 
   .crm-alerts-inline {

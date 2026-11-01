@@ -70,7 +70,6 @@ import adminInternRoutes from './routes/admin/interns/index.js'
 import adminEmailComposerRoutes from './routes/admin/emailComposer.js'
 import adminInternalProjectRoutes from './routes/admin/internalProjects.js'
 import adminArrowPilotageRoutes from './routes/admin/arrowPilotage.js'
-import adminArrowProspectionRoutes from './routes/admin/arrowProspection.js'
 import adminSubsidiaryRoutes from './routes/admin/subsidiaries.js'
 import adminResourceRoutes from './routes/admin/resources.js'
 import adminAccountingRoutes from './routes/admin/accounting/index.js'
@@ -376,7 +375,6 @@ app.use('/api/admin/interns', adminInternRoutes)
 app.use('/api/admin/email-composer', adminEmailComposerRoutes)
 app.use('/api/admin/internal-projects', adminInternalProjectRoutes)
 app.use('/api/admin/arrow-pilotage', adminArrowPilotageRoutes)
-app.use('/api/admin/arrow-prospection', adminArrowProspectionRoutes)
 app.use('/api/admin/subsidiaries', adminSubsidiaryRoutes)
 app.use('/api/admin/resources', adminResourceRoutes)
 app.use('/api/admin/accounting', auth, requireMfa, adminAccountingRoutes)

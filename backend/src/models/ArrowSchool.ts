@@ -1,5 +1,7 @@
 import mongoose from 'mongoose'
 
+// Modèle conservé uniquement pour le script : à supprimer après migration.
+
 const arrowSchoolSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
