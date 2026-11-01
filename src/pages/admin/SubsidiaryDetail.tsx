@@ -105,7 +105,7 @@ export default function SubsidiaryDetail() {
   if (!sub)
     return (
       <div className="platform-dossier">
-        <Link to="/admin/filiales">{t('orgs.subsidiary.detail.backLink')}</Link>
+        <Link to="/admin/projets/plateformes">{t('orgs.subsidiary.detail.backLink')}</Link>
         <p role="alert">{error || t('orgs.subsidiary.detail.notFound')}</p>
       </div>
     )
@@ -123,7 +123,7 @@ export default function SubsidiaryDetail() {
   ]
   return (
     <div className="platform-dossier">
-      <Link className="dossier-back" to="/admin/filiales">
+      <Link className="dossier-back" to="/admin/projets/plateformes">
         ← {t('orgs.subsidiary.detail.backLink')}
       </Link>
       <header className="dossier-hero" id="overview">
@@ -203,7 +203,7 @@ export default function SubsidiaryDetail() {
             </a>
           )}
           {sub.devProject && (
-            <Link className="dossier-button" to={`/admin/dev?project=${sub.devProject}`}>
+            <Link className="dossier-button" to={`/admin/dev/workspace?project=${sub.devProject}`}>
               {tr('dev')} ↗
             </Link>
           )}
@@ -307,7 +307,7 @@ export default function SubsidiaryDetail() {
                 method: 'DELETE',
                 headers: { 'Idempotency-Key': crypto.randomUUID() },
               })
-              navigate('/admin/filiales')
+              navigate('/admin/projets/plateformes')
             } catch (err) {
               showToast(err instanceof Error ? err.message : tr('saveError'), 'error')
             }

@@ -142,7 +142,7 @@ const AdminChangeRequestDetail = () => {
     <div className="portal-container">
       {/* useConfirm renvoie un ÉLÉMENT JSX (ou null), pas un composant. */}
       {ConfirmDialog}
-      <Link to="/admin/demandes-clients" className="portal-link">
+      <Link to="/admin/demandes/clients" className="portal-link">
         {t('changeReq.detail.back')}
       </Link>
 

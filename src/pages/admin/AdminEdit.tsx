@@ -236,7 +236,7 @@ const AdminEdit = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <Link to="/admin/comptes-admin">{t('projects.admin.adminAccounts')}</Link>
+          <Link to="/admin/equipe/comptes">{t('projects.admin.adminAccounts')}</Link>
           <span>/</span>
           <span style={{ color: 'var(--text-primary)' }}>{admin?.name || t('projects.admin.administrator')}</span>
         </div>
@@ -716,7 +716,7 @@ const AdminEdit = () => {
             <button className="portal-button" type="submit" disabled={loading}>
               {loading ? t('projects.admin.updating') : t('projects.admin.save')}
             </button>
-            <button className="portal-button secondary" type="button" onClick={() => navigate('/admin/comptes-admin')}>
+            <button className="portal-button secondary" type="button" onClick={() => navigate('/admin/equipe/comptes')}>
               {t('projects.admin.back')}
             </button>
           </div>

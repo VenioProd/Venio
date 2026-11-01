@@ -176,13 +176,13 @@ const SuperAdminDashboard = () => {
         label: t('adminOps.superDash.alertBriefsP1'),
         count: data.alerts.overdueBriefsP1,
         severity: 'critical',
-        to: '/admin/gestion?view=briefs',
+        to: '/admin/projets/clients?view=briefs',
       },
       {
         label: t('adminOps.superDash.alertTasks'),
         count: data.alerts.overdueTasks,
         severity: 'serious',
-        to: '/admin/gestion',
+        to: '/admin/projets/clients',
       },
       {
         label: t('adminOps.superDash.alertCrm'),
@@ -200,7 +200,7 @@ const SuperAdminDashboard = () => {
         label: t('adminOps.superDash.alertStaleProjects'),
         count: data.alerts.staleProjects,
         severity: 'warning',
-        to: '/admin/gestion',
+        to: '/admin/projets/clients',
       },
     ]
   }, [data, t])
@@ -374,14 +374,14 @@ const SuperAdminDashboard = () => {
                 value={data.team.clients}
                 accentColor={ACCENT}
                 accentRgb={ACCENT_RGB}
-                to="/admin/comptes-clients"
+                to="/admin/crm/comptes"
               />
               <DashKpiCard
                 label={t('adminOps.superDash.admins')}
                 value={data.team.admins}
                 accentColor={ACCENT}
                 accentRgb={ACCENT_RGB}
-                to="/admin/comptes-admin"
+                to="/admin/equipe/comptes"
                 icon={<ShieldCheck size={14} />}
               />
               <DashKpiCard
@@ -389,7 +389,7 @@ const SuperAdminDashboard = () => {
                 value={data.team.interns}
                 accentColor={STATUS.warning}
                 accentRgb={WARNING_RGB}
-                to="/admin/stagiaires"
+                to="/admin/equipe/membres"
               />
             </div>
             {teamLoadItems.length > 0 && (
@@ -409,13 +409,13 @@ const SuperAdminDashboard = () => {
               <Link to="/admin/projets/nouveau" className="portal-button secondary">
                 {t('adminOps.superDash.shortcutProject')}
               </Link>
-              <Link to="/admin/comptes-admin" className="portal-button secondary">
+              <Link to="/admin/equipe/comptes" className="portal-button secondary">
                 {t('adminOps.superDash.shortcutAdmin')}
               </Link>
-              <Link to="/admin/audit" className="portal-button secondary">
+              <Link to="/admin/systeme/audit" className="portal-button secondary">
                 {t('adminOps.superDash.shortcutAudit')}
               </Link>
-              <Link to="/admin/dev" className="portal-button secondary">
+              <Link to="/admin/dev/workspace" className="portal-button secondary">
                 <GitBranch size={14} style={{ marginRight: 4 }} />
                 {t('adminOps.superDash.shortcutDev')}
               </Link>

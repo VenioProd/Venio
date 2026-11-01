@@ -144,7 +144,7 @@ const ClientAccountNew = () => {
           <div className="admin-breadcrumb">
             <Link to="/admin">Admin</Link>
             <span>/</span>
-            <Link to="/admin/comptes-clients">{t('adminAccess.clientNew.breadcrumbList')}</Link>
+            <Link to="/admin/crm/comptes">{t('adminAccess.clientNew.breadcrumbList')}</Link>
             <span>/</span>
             <span style={{ color: 'var(--text-primary)' }}>{t('adminAccess.clientNew.breadcrumbCreated')}</span>
           </div>
@@ -196,7 +196,7 @@ const ClientAccountNew = () => {
               </Link>
               <Link
                 className="portal-button secondary"
-                to="/admin/comptes-clients"
+                to="/admin/crm/comptes"
                 style={{ textAlign: 'center', flex: 1 }}
               >
                 {t('adminAccess.clientNew.backToList')}
@@ -214,7 +214,7 @@ const ClientAccountNew = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <Link to="/admin/comptes-clients">{t('adminAccess.clientNew.breadcrumbList')}</Link>
+          <Link to="/admin/crm/comptes">{t('adminAccess.clientNew.breadcrumbList')}</Link>
           <span>/</span>
           <span style={{ color: 'var(--text-primary)' }}>{t('adminAccess.clientNew.breadcrumbNew')}</span>
         </div>
@@ -372,7 +372,7 @@ const ClientAccountNew = () => {
             <button className="portal-button" type="submit" disabled={loading}>
               {loading ? t('adminAccess.clientNew.creating') : t('adminAccess.clientNew.create')}
             </button>
-            <Link className="portal-button secondary" to="/admin/comptes-clients">
+            <Link className="portal-button secondary" to="/admin/crm/comptes">
               {t('common.cancel')}
             </Link>
           </div>

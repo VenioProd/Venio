@@ -67,7 +67,7 @@ describe('entrée « Demandes clients » de la sidebar admin', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('link', { name: 'Demandes' })).toHaveAttribute('href', '/admin/tickets')
+    expect(screen.getByRole('link', { name: 'Demandes' })).toHaveAttribute('href', '/admin/demandes/equipe')
     await waitFor(() => expect(screen.queryByLabelText(/demandes? à qualifier/)).not.toBeInTheDocument())
     expect(api.apiFetch).not.toHaveBeenCalledWith('/api/admin/change-requests/stats')
   })

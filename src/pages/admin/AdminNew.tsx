@@ -200,7 +200,7 @@ const AdminNew = () => {
           <div className="admin-breadcrumb">
             <Link to="/admin">Admin</Link>
             <span>/</span>
-            <Link to="/admin/comptes-admin">{t('projects.admin.adminAccounts')}</Link>
+            <Link to="/admin/equipe/comptes">{t('projects.admin.adminAccounts')}</Link>
             <span>/</span>
             <span style={{ color: 'var(--text-primary)' }}>{t('projects.admin.createdCrumb')}</span>
           </div>
@@ -277,7 +277,7 @@ const AdminNew = () => {
               </Link>
               <Link
                 className="portal-button secondary"
-                to="/admin/comptes-admin"
+                to="/admin/equipe/comptes"
                 style={{ textAlign: 'center', flex: 1 }}
               >
                 {t('projects.admin.backToList')}
@@ -295,7 +295,7 @@ const AdminNew = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <Link to="/admin/comptes-admin">{t('projects.admin.adminAccounts')}</Link>
+          <Link to="/admin/equipe/comptes">{t('projects.admin.adminAccounts')}</Link>
           <span>/</span>
           <span style={{ color: 'var(--text-primary)' }}>{t('projects.admin.newCrumb')}</span>
         </div>
@@ -448,7 +448,7 @@ const AdminNew = () => {
             <button className="portal-button" type="submit" disabled={loading}>
               {loading ? t('projects.admin.creating') : t('projects.admin.createAccount')}
             </button>
-            <Link className="portal-button secondary" to="/admin/comptes-admin">
+            <Link className="portal-button secondary" to="/admin/equipe/comptes">
               {t('projects.admin.cancel')}
             </Link>
           </div>

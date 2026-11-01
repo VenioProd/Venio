@@ -27,6 +27,7 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8')
 
 /** Les 36 feuilles couvertes par la charte. */
 export const PORTAL_STYLESHEETS = [
+  'src/components/admin/ui/AdminHub.css',
   'src/components/AdminCommandPalette.css',
   'src/components/AdminShell.css',
   'src/components/AdminSidebar.css',

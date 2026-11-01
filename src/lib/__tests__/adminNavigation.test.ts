@@ -43,28 +43,28 @@ describe('VENIO-99 — navigation et cockpit RBAC', () => {
 
   it('shows merged entries when any original module is accessible and chooses the first accessible route', () => {
     const rhEntries = getVisibleAdminNavigation(user('RH'))
-    expect(rhEntries.find((item) => item.id === 'requests')?.screen).toBe('/admin/tickets')
+    expect(rhEntries.find((item) => item.id === 'requests')?.screen).toBe('/admin/demandes/equipe')
     const comptable = user('COMPTABLE')
     expect(getVisibleAdminNavigation(comptable).some((item) => item.id === 'requests')).toBe(false)
     expect(
       getVisibleAdminNavigation({ ...comptable, grantedPermissions: ['view_change_requests'] }).find(
         (item) => item.id === 'requests',
       )?.screen,
-    ).toBe('/admin/demandes-clients')
+    ).toBe('/admin/demandes/clients')
     expect(
       getVisibleAdminNavigation({ ...comptable, grantedPermissions: ['manage_external_sales'] }).find(
         (item) => item.id === 'crm',
       )?.screen,
-    ).toBe('/admin/commerciaux-externes')
+    ).toBe('/admin/crm/partenaires')
     expect(
       getVisibleAdminNavigation({ ...comptable, grantedPermissions: ['view_beta'] }).find((item) => item.id === 'dev')
         ?.screen,
-    ).toBe('/admin/beta')
+    ).toBe('/admin/dev/recette')
     expect(
       getVisibleAdminNavigation({ ...comptable, grantedPermissions: ['view_education'] }).find(
         (item) => item.id === 'training',
       )?.screen,
-    ).toBe('/admin/education')
+    ).toBe('/admin/formation/pedagogie')
   })
 
   it('lights up merged entries on original module subpages without matching unrelated prefixes', () => {
@@ -73,10 +73,10 @@ describe('VENIO-99 — navigation et cockpit RBAC', () => {
       ['requests', '/admin/tickets/123'],
       ['team', '/admin/comptes-admin/123'],
       ['system', '/admin/webhooks/123'],
-      ['inbox', '/admin/emails'],
+      ['inbox', '/admin/inbox/envoi-groupe'],
       ['projects', '/admin/projets/123'],
       ['projects', '/admin/projets-internes/123'],
-      ['home', '/admin/dashboard'],
+      ['analytics', '/admin/analytics/business'],
     ]) {
       expect(entries.filter((item) => isAdminNavigationActive(item, path)).map((item) => item.id)).toEqual([id])
     }

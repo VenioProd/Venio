@@ -41,7 +41,7 @@ describe('rail Système', () => {
     )
     const rail = screen.getByRole('complementary')
     const requests = screen.getByRole('link', { name: 'Demandes' })
-    expect(requests).toHaveAttribute('href', '/admin/demandes-clients')
+    expect(requests).toHaveAttribute('href', '/admin/demandes/clients')
     expect(requests).toHaveAttribute('aria-current', 'page')
     expect(rail).toHaveAttribute('data-expanded', 'false')
     fireEvent.focus(requests)

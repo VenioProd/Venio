@@ -278,7 +278,7 @@ function TaskLine({ task }: { task: Task & { project?: { _id: string; name: stri
 function BriefLine({ brief }: { brief: DashBrief }) {
   const color = BRIEF_PRIORITY_COLORS[brief.briefPriority] || '#64748b'
   return (
-    <Link to="/admin/gestion?view=briefs" className="admin-command-line">
+    <Link to="/admin/projets/clients?view=briefs" className="admin-command-line">
       <span className="admin-command-dot" style={{ background: color }} />
       <span className="admin-command-line__main">
         <strong>{brief.intitule}</strong>
@@ -333,7 +333,7 @@ function MissionLine({ mission }: { mission: MissionSummary }) {
   const done = mission.steps?.filter((step) => step.done).length || 0
   const total = mission.steps?.length || 0
   return (
-    <Link to="/admin/gestion?view=missions" className="admin-command-line">
+    <Link to="/admin/projets/clients?view=missions" className="admin-command-line">
       <span
         className="admin-command-dot"
         style={{ background: mission.status === 'EN_COURS' ? '#38bdf8' : '#f59e0b' }}
@@ -432,7 +432,7 @@ export default function AdminDashboard() {
       data.overdueTasks.length > 0 && {
         label: t('adminAccess.dashboard.overdueTasks'),
         count: data.overdueTasks.length,
-        to: '/admin/gestion',
+        to: '/admin/projets/clients',
         tone: 'danger' as const,
         source: t('adminAccess.dashboard.sourceTasks'),
         owner: t('adminAccess.dashboard.ownerTeam'),
@@ -443,7 +443,7 @@ export default function AdminDashboard() {
       p1Briefs > 0 && {
         label: t('adminAccess.dashboard.p1Briefs'),
         count: p1Briefs,
-        to: '/admin/gestion?view=briefs',
+        to: '/admin/projets/clients?view=briefs',
         tone: 'danger' as const,
         source: t('adminAccess.dashboard.sourceBriefs'),
         owner: t('adminAccess.dashboard.ownerTeam'),
@@ -582,7 +582,7 @@ export default function AdminDashboard() {
             <Kpi
               label={t('adminAccess.dashboard.kpiOpenTasks')}
               value={data.myTasks.length}
-              to="/admin/gestion"
+              to="/admin/projets/clients"
               tone="pink"
               source={t('adminAccess.dashboard.sourceTasks')}
               owner={t('adminAccess.dashboard.ownerMe')}
@@ -673,7 +673,7 @@ export default function AdminDashboard() {
                         </Link>
                       )}
                       {canViewMessaging && (
-                        <Link to="/admin/messages">
+                        <Link to="/admin/inbox/conversations">
                           <MessageSquare size={15} />
                           {t('adminAccess.dashboard.shortcutMessages')}
                         </Link>
@@ -682,7 +682,7 @@ export default function AdminDashboard() {
                         <CircleDollarSign size={15} />
                         CRM
                       </Link>
-                      <Link to="/admin/dev">
+                      <Link to="/admin/dev/workspace">
                         <AlertTriangle size={15} />
                         Dev
                       </Link>

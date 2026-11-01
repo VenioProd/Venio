@@ -281,7 +281,7 @@ const ClientAccountDetail = () => {
         <div className="admin-breadcrumb">
           <Link to="/admin">Admin</Link>
           <span>/</span>
-          <Link to="/admin/comptes-clients">{t('adminAccess.clientDetail.breadcrumbList')}</Link>
+          <Link to="/admin/crm/comptes">{t('adminAccess.clientDetail.breadcrumbList')}</Link>
           <span>/</span>
           <span style={{ color: 'var(--text-primary)' }}>
             {client?.companyName || client?.name || t('adminAccess.clientDetail.loading')}

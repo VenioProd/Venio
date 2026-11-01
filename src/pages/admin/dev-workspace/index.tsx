@@ -310,7 +310,7 @@ const DevWorkspace = () => {
       } catch (e) {
         console.error(e)
         // Deep link to an issue that no longer exists: bounce back to workspace root.
-        if (location.pathname.startsWith('/admin/dev/issues/')) navigate('/admin/dev', { replace: true })
+        if (location.pathname.startsWith('/admin/dev/issues/')) navigate('/admin/dev/workspace', { replace: true })
       }
     },
     [location.pathname, navigate],
@@ -330,7 +330,7 @@ const DevWorkspace = () => {
     setSelectedIssue(null)
     setComments([])
     if (location.pathname.startsWith('/admin/dev/issues/')) {
-      navigate('/admin/dev', { replace: false })
+      navigate('/admin/dev/workspace', { replace: false })
     }
   }
 
@@ -342,7 +342,7 @@ const DevWorkspace = () => {
       setCommentDraft('')
       loadIssueDetail(deepIssueId)
     }
-    if (!deepIssueId && selectedIssue && location.pathname === '/admin/dev') {
+    if (!deepIssueId && selectedIssue && location.pathname === '/admin/dev/workspace') {
       setSelectedIssue(null)
       setComments([])
     }

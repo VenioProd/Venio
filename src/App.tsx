@@ -1,6 +1,6 @@
 import { lazyWithRetry as lazy } from './lib/lazyWithRetry'
 import ErrorBoundary from './components/ErrorBoundary'
-import { useEffect, Suspense } from 'react'
+import { useEffect, useRef, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import ToastContainer from './components/ToastContainer'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -16,6 +16,9 @@ import CookieConsent from './components/CookieConsent'
 import PublicAnalytics from './components/PublicAnalytics'
 import StickyCta from './components/conversion/StickyCta'
 import './App.css'
+import { ADMIN_HUBS } from './lib/adminHubs'
+import { LEGACY_ADMIN_LIST_ROUTES } from './lib/adminHubRoutes'
+import LegacyAdminRedirect from './components/admin/LegacyAdminRedirect'
 
 function ThemeSync() {
   const { user } = useAuth()
@@ -24,12 +27,6 @@ function ThemeSync() {
     if (user?.colorTheme) setColorAccent(user.colorTheme as ColorAccent)
   }, [user?.colorTheme])
   return null
-}
-
-function DashboardByRole() {
-  const { user } = useAuth()
-  if (user?.role === 'SUPER_ADMIN') return <SuperAdminDashboard />
-  return <AdminDashboard />
 }
 
 // Lazy-loaded: Site vitrine
@@ -82,55 +79,40 @@ const CommercialCommissions = lazy(() =>
 const AdminShell = lazy(() => import('./components/AdminShell'))
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
 const MfaSetup = lazy(() => import('./pages/admin/MfaSetup'))
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
-const SuperAdminDashboard = lazy(() => import('./pages/admin/SuperAdminDashboard'))
-const ClientAccountList = lazy(() => import('./pages/admin/ClientAccountList'))
 const ClientAccountNew = lazy(() => import('./pages/admin/ClientAccountNew'))
 const ClientAccountDetail = lazy(() => import('./pages/admin/client-detail'))
-const AdminList = lazy(() => import('./pages/admin/AdminList'))
 const AdminNew = lazy(() => import('./pages/admin/AdminNew'))
 const AdminEdit = lazy(() => import('./pages/admin/AdminEdit'))
 const ProjectForm = lazy(() => import('./pages/admin/project-form'))
 const AdminProjectDetail = lazy(() => import('./pages/admin/ProjectDetail'))
 const CrmBoard = lazy(() => import('./pages/admin/CrmBoard'))
 const CrmSettings = lazy(() => import('./pages/admin/crm-settings'))
-const ExternalSales = lazy(() => import('./pages/admin/ExternalSales'))
-const TemplateList = lazy(() => import('./pages/admin/TemplateList'))
-const Analytics = lazy(() => import('./pages/admin/analytics'))
 const Calendar = lazy(() => import('./pages/admin/Calendar'))
-const AuditLog = lazy(() => import('./pages/admin/AuditLog'))
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
-const QualiopiBoard = lazy(() => import('./pages/admin/QualiopiBoard'))
-const TicketList = lazy(() => import('./pages/admin/TicketList'))
-const AdminChangeRequests = lazy(() => import('./pages/admin/change-requests'))
 const AdminChangeRequestDetail = lazy(() => import('./pages/admin/change-requests/ChangeRequestDetail'))
-const GestionBoard = lazy(() => import('./pages/admin/GestionBoard'))
-const ToolAccessList = lazy(() => import('./pages/admin/ToolAccessList'))
-const Messaging = lazy(() => import('./pages/admin/Messaging'))
 const AdminGuide = lazy(() => import('./pages/admin/AdminGuide'))
 const ClientGuide = lazy(() => import('./pages/espace-client/ClientGuide'))
-const InternList = lazy(() => import('./pages/admin/InternList'))
 const InternDetail = lazy(() => import('./pages/admin/InternDetail'))
-const MyReports = lazy(() => import('./pages/admin/MyReports'))
-const EmailComposer = lazy(() => import('./pages/admin/EmailComposer'))
 const DecisionsList = lazy(() => import('./pages/admin/DecisionsList'))
 const SearchModal = lazy(() => import('./components/admin/SearchModal'))
-const InternalProjectList = lazy(() => import('./pages/admin/InternalProjectList'))
 const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDetail'))
 const Resources = lazy(() => import('./pages/admin/Resources'))
-const SubsidiaryList = lazy(() => import('./pages/admin/SubsidiaryList'))
 const SubsidiaryDetail = lazy(() => import('./pages/admin/SubsidiaryDetail'))
-const AgentTokensList = lazy(() => import('./pages/admin/AgentTokensList'))
-const Webhooks = lazy(() => import('./pages/admin/Webhooks'))
 const DevWorkspace = lazy(() => import('./pages/admin/dev-workspace'))
 const DevProjectCockpit = lazy(() => import('./pages/admin/dev-workspace/DevProjectCockpit'))
-const BetaWorkspace = lazy(() => import('./pages/admin/beta'))
 const BetaCampaignCockpit = lazy(() => import('./pages/admin/beta/CampaignCockpit'))
 const BetaTesterSpace = lazy(() => import('./pages/beta'))
-const SystemHealth = lazy(() => import('./pages/admin/SystemHealth'))
-const ActivityCenter = lazy(() => import('./pages/admin/ActivityCenter'))
-const EducationWorkspace = lazy(() => import('./pages/admin/education'))
-const MonEspace = lazy(() => import('./pages/admin/mon-espace'))
+
+const AccueilHub = lazy(() => import('./pages/admin/hubs/AccueilHub'))
+const InboxHub = lazy(() => import('./pages/admin/hubs/InboxHub'))
+const AnalyticsHub = lazy(() => import('./pages/admin/hubs/AnalyticsHub'))
+const CrmHub = lazy(() => import('./pages/admin/hubs/CrmHub'))
+const ProjetsHub = lazy(() => import('./pages/admin/hubs/ProjetsHub'))
+const DemandesHub = lazy(() => import('./pages/admin/hubs/DemandesHub'))
+const DevHub = lazy(() => import('./pages/admin/hubs/DevHub'))
+const EquipeHub = lazy(() => import('./pages/admin/hubs/EquipeHub'))
+const FormationHub = lazy(() => import('./pages/admin/hubs/FormationHub'))
+const SystemeHub = lazy(() => import('./pages/admin/hubs/SystemeHub'))
 
 // Lazy-loaded: Comptabilité (sous-section admin)
 const AccountingDashboard = lazy(() => import('./pages/admin/accounting/AccountingDashboard'))
@@ -184,8 +166,14 @@ function AppShell() {
   // et socle de conversion s'y accrochent tous les deux.
   const isPublicSite = !isPortal && !isPublicQuestionnaire && !isPrivateLinkSpace
 
+  const previousPath = useRef(location.pathname)
   useEffect(() => {
-    window.scrollTo(0, 0)
+    const hubOf = (path: string) =>
+      Object.entries(ADMIN_HUBS).find(([, hub]) => hub.tabs.some((tab) => tab.to === path))?.[0]
+    const previousHub = hubOf(previousPath.current)
+    const nextHub = hubOf(location.pathname)
+    if (!previousHub || previousHub !== nextHub) window.scrollTo(0, 0)
+    previousPath.current = location.pathname
   }, [location.pathname])
 
   // Thème Monolithe : scopé au site public (hors portail & questionnaire).
@@ -322,22 +310,50 @@ function AppShell() {
                       </ProtectedRoute>
                     }
                   >
-                    <Route index element={<MonEspace />} />
-                    <Route path="dashboard" element={<DashboardByRole />} />
+                    <Route index element={<AccueilHub />} />
+                    <Route path="mon-espace" element={<AccueilHub />} />
                     <Route path="decisions" element={<DecisionsList />} />
-                    <Route path="mon-espace" element={<MonEspace />} />
+                    {Object.entries(LEGACY_ADMIN_LIST_ROUTES).map(([path, to]) => (
+                      <Route key={path} path={path.slice('/admin/'.length)} element={<LegacyAdminRedirect to={to} />} />
+                    ))}
+                    {ADMIN_HUBS.inbox.tabs.map((tab) => (
+                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<InboxHub />} />
+                    ))}
+                    <Route path="inbox" element={<InboxHub />} />
+                    {ADMIN_HUBS.analytics.tabs.map((tab) => (
+                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<AnalyticsHub />} />
+                    ))}
+                    {ADMIN_HUBS.crm.tabs.map((tab) => (
+                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<CrmHub />} />
+                    ))}
+                    {ADMIN_HUBS.projets.tabs.map((tab) => (
+                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<ProjetsHub />} />
+                    ))}
+                    <Route path="projets" element={<ProjetsHub />} />
+                    {ADMIN_HUBS.demandes.tabs.map((tab) => (
+                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<DemandesHub />} />
+                    ))}
+                    <Route path="demandes" element={<DemandesHub />} />
+                    {ADMIN_HUBS.dev.tabs.map((tab) => (
+                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<DevHub />} />
+                    ))}
+                    {ADMIN_HUBS.equipe.tabs.map((tab) => (
+                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<EquipeHub />} />
+                    ))}
+                    <Route path="equipe" element={<EquipeHub />} />
+                    {ADMIN_HUBS.formation.tabs.map((tab) => (
+                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<FormationHub />} />
+                    ))}
+                    <Route path="formation" element={<FormationHub />} />
+                    {ADMIN_HUBS.systeme.tabs.map((tab) => (
+                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<SystemeHub />} />
+                    ))}
+                    <Route path="systeme" element={<SystemeHub />} />
+                    <Route path="crm/pipeline" element={<LegacyAdminRedirect to="/admin/crm" />} />
                     <Route path="profil" element={<AdminProfile />} />
                     <Route path="mon-releve" element={<MyAccountingStatement />} />
 
                     {/* Clients */}
-                    <Route
-                      path="comptes-clients"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.MANAGE_CLIENTS} redirectTo="/admin">
-                          <ClientAccountList />
-                        </RequirePermission>
-                      }
-                    />
                     <Route
                       path="comptes-clients/nouveau"
                       element={
@@ -357,14 +373,6 @@ function AppShell() {
 
                     {/* Admins */}
                     <Route
-                      path="comptes-admin"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                          <AdminList />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
                       path="comptes-admin/nouveau"
                       element={
                         <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
@@ -381,38 +389,14 @@ function AppShell() {
                       }
                     />
 
-                    {/* Agents API (tokens PAT pour Kuro et intégrations externes) */}
                     <Route
-                      path="agents"
+                      path="calendrier"
                       element={
-                        <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                          <AgentTokensList />
+                        <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
+                          <Calendar />
                         </RequirePermission>
                       }
                     />
-
-                    {/* Webhooks sortants (pipeline d'événements vers Kuro) */}
-                    <Route
-                      path="webhooks"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_WEBHOOKS} redirectTo="/admin">
-                          <Webhooks />
-                        </RequirePermission>
-                      }
-                    />
-
-                    {/* System health & activity center */}
-                    <Route
-                      path="health"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                          <SystemHealth />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route path="centre-activite" element={<ActivityCenter />} />
-
-                    {/* Projets */}
                     <Route
                       path="projets/nouveau"
                       element={
@@ -431,53 +415,11 @@ function AppShell() {
                     />
                     {/* Redirects: /admin/projects/* → /admin/projets/* */}
                     <Route path="projects/:id" element={<ProjectsRedirect />} />
-                    <Route path="projects" element={<Navigate to="/admin/gestion" replace />} />
-
-                    <Route
-                      path="analytics"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                          <Analytics />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="calendrier"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                          <Calendar />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="templates"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.EDIT_PROJECTS} redirectTo="/admin">
-                          <TemplateList />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="crm"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
-                          <CrmBoard />
-                        </RequirePermission>
-                      }
-                    />
                     <Route
                       path="crm/leads/:leadId"
                       element={
                         <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
                           <CrmBoard />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="commerciaux-externes"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.MANAGE_EXTERNAL_SALES} redirectTo="/admin">
-                          <ExternalSales />
                         </RequirePermission>
                       }
                     />
@@ -490,50 +432,10 @@ function AppShell() {
                       }
                     />
                     <Route
-                      path="audit"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                          <AuditLog />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="qualiopi"
-                      element={
-                        <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
-                          <QualiopiBoard />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="tickets"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_TICKETS} redirectTo="/admin">
-                          <TicketList />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="demandes-clients"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_CHANGE_REQUESTS} redirectTo="/admin">
-                          <AdminChangeRequests />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
                       path="demandes-clients/:id"
                       element={
                         <RequirePermission permission={PERMISSIONS.VIEW_CHANGE_REQUESTS} redirectTo="/admin">
                           <AdminChangeRequestDetail />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="dev"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_DEV} redirectTo="/admin">
-                          <DevWorkspace />
                         </RequirePermission>
                       }
                     />
@@ -554,14 +456,6 @@ function AppShell() {
                       }
                     />
                     <Route
-                      path="beta"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_BETA} redirectTo="/admin">
-                          <BetaWorkspace />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
                       path="beta/campaigns/:campaignId"
                       element={
                         <RequirePermission permission={PERMISSIONS.VIEW_BETA} redirectTo="/admin">
@@ -570,59 +464,11 @@ function AppShell() {
                       }
                     />
                     <Route
-                      path="education"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_EDUCATION} redirectTo="/admin">
-                          <EducationWorkspace />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="acces-outils"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.MANAGE_ADMINS} redirectTo="/admin">
-                          <ToolAccessList />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="gestion"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                          <GestionBoard />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="messages"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_MESSAGING} redirectTo="/admin">
-                          <Messaging />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="stagiaires"
-                      element={
-                        <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
-                          <InternList />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
                       path="stagiaires/:id"
                       element={
                         <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
                           <InternDetail />
                         </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="projets-internes"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                          <InternalProjectList />
-                        </RequirePermission>
                       }
                     />
                     <Route
@@ -642,22 +488,6 @@ function AppShell() {
                       }
                     />
                     <Route
-                      path="arrow-prospection"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
-                          <Navigate to="/admin/crm?project=ARROW" replace />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="filiales"
-                      element={
-                        <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin">
-                          <SubsidiaryList />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
                       path="filiales/:id"
                       element={
                         <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin">
@@ -665,24 +495,8 @@ function AppShell() {
                         </ProtectedRoute>
                       }
                     />
-                    <Route
-                      path="mes-rapports"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.VIEW_PROJECTS} redirectTo="/admin">
-                          <MyReports />
-                        </RequirePermission>
-                      }
-                    />
                     {/* Intentionnellement non protégé: accessible à tout admin authentifié (ProtectedRoute parent suffit) */}
                     <Route path="guide" element={<AdminGuide />} />
-                    <Route
-                      path="emails"
-                      element={
-                        <ProtectedRoute role={['SUPER_ADMIN', 'RH']} redirectTo="/admin/login">
-                          <EmailComposer />
-                        </ProtectedRoute>
-                      }
-                    />
 
                     {/* Comptabilité */}
                     <Route

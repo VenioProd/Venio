@@ -60,12 +60,12 @@ describe('Ambiance widgets', () => {
     )
     await screen.findByText('Aucun raccourci configuré')
     fireEvent.change(screen.getByLabelText('Libellé du raccourci'), { target: { value: 'Support' } })
-    fireEvent.change(screen.getByLabelText('Lien du raccourci'), { target: { value: '/admin/messages' } })
+    fireEvent.change(screen.getByLabelText('Lien du raccourci'), { target: { value: '/admin/inbox/conversations' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter un raccourci' }))
     await waitFor(() =>
-      expect(saveLayout).toHaveBeenCalledWith({ shortcuts: [{ label: 'Support', link: '/admin/messages' }] }),
+      expect(saveLayout).toHaveBeenCalledWith({ shortcuts: [{ label: 'Support', link: '/admin/inbox/conversations' }] }),
     )
-    expect(screen.getByRole('link', { name: 'Support' })).toHaveAttribute('href', '/admin/messages')
+    expect(screen.getByRole('link', { name: 'Support' })).toHaveAttribute('href', '/admin/inbox/conversations')
   })
   it('ShortcutsWidget refuse les liens externes non HTTPS et protocol-relative', async () => {
     render(

@@ -1,0 +1,134 @@
+.admin-hub {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.admin-page-header {
+  min-width: 0;
+  margin-bottom: 24px;
+}
+.admin-page-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 20px;
+}
+.admin-page-header__eyebrow {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font: 12px var(--font-mono);
+}
+.admin-page-header h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: clamp(26px, 4vw, 36px);
+}
+.admin-page-header__subtitle {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+}
+.admin-page-header__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.admin-hub-tabs {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border-bottom: 1px solid var(--border-color);
+}
+.admin-hub-tabs [role='tab'] {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  padding: 14px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: var(--r-sm);
+}
+.admin-hub-tabs [aria-selected='true'] {
+  color: var(--text-primary);
+}
+.admin-hub-tabs [aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  inset: auto 10px 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: var(--r-hair);
+}
+.admin-hub-tabs [role='tab']:focus-visible,
+.admin-hub-panel:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.admin-hub-tabs__count {
+  padding: 2px 7px;
+  color: var(--text-secondary);
+  background: var(--surface-raised);
+  border-radius: var(--r-pill);
+  font: 11px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+/* Contexte pour la migration des titres enfants : voir docs/redesign/admin/HUBS.md.
+   Aucun sélecteur générique h1/h2 : les pages gardent leurs titres jusqu'à leur migration. */
+.admin-hub-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-hub-panel[hidden] {
+  display: none;
+}
+.admin-hub-integrations {
+  display: grid;
+  gap: 32px;
+}
+.admin-decisions-digest {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+}
+.admin-decisions-digest__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.admin-decisions-digest h2 {
+  margin: 0;
+}
+.admin-decisions-digest ul {
+  display: grid;
+  gap: 12px;
+  padding-left: 20px;
+}
+.admin-decisions-digest__count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.admin-decisions-digest__meta {
+  margin-left: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+@media (max-width: 640px) {
+  .admin-page-header__row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+}

@@ -1,3 +1,4 @@
+import { ADMIN_MODULE_PATHS } from './adminHubRoutes'
 import type { User, UserRole } from '../types/auth.types'
 import { hasPermission, PERMISSIONS } from './permissions'
 import { getVisibleNavigation, NAVIGATION } from './rbac'
@@ -104,17 +105,26 @@ export function getVisibleAdminNavigation(user: User | null): AdminNavigationIte
   return ADMIN_NAVIGATION_GROUPS.flatMap((group) => {
     const destination = group.modules.flatMap((id) => visible.filter((item) => item.id === id))[0]
     if (!destination) return []
-    const paths = NAVIGATION.filter((item) => (group.modules as readonly string[]).includes(item.id)).map(
-      (item) => item.screen,
-    )
+    const paths = NAVIGATION.filter(
+      (item) =>
+        (group.modules as readonly string[]).includes(item.id) && !(group.id === 'home' && item.id === 'dashboard'),
+    ).flatMap((item) => [item.screen, ...(ADMIN_MODULE_PATHS[item.id] ? [ADMIN_MODULE_PATHS[item.id]] : [])])
     if (group.id === 'home') paths.push('/admin/mon-espace')
-    // Project creation/details live outside the historical /gestion list route.
-    if (group.id === 'projects') paths.push('/admin/projets')
+    if (group.id === 'analytics') paths.push('/admin/dashboard', '/admin/analytics/business')
+    if (group.id === 'projects') paths.push('/admin/projets', '/admin/filiales')
+    if (group.id === 'requests') paths.push('/admin/demandes')
+    if (group.id === 'team') paths.push('/admin/equipe')
+    if (group.id === 'training') paths.push('/admin/formation')
+    if (group.id === 'system') paths.push('/admin/systeme')
+    if (group.id === 'inbox') paths.push('/admin/inbox')
     return [
       {
         id: group.id,
         label: translate(GROUP_LABEL_KEYS[group.id]),
-        screen: destination.id === 'home' ? '/admin/mon-espace' : destination.screen,
+        screen:
+          destination.id === 'home' || (group.id === 'home' && destination.id === 'dashboard')
+            ? '/admin/mon-espace'
+            : (ADMIN_MODULE_PATHS[destination.id] ?? destination.screen),
         paths,
       },
     ]
@@ -267,14 +277,14 @@ const PALETTE_ACTIONS: PaletteActionDefinition[] = [
   {
     id: 'create-ticket',
     labelKey: 'shell.paletteAction.createTicket',
-    to: '/admin/tickets',
+    to: '/admin/demandes/equipe',
     permission: PERMISSIONS.CREATE_TICKETS,
     destination: 'tickets',
   },
   {
     id: 'send-message',
     labelKey: 'shell.paletteAction.sendMessage',
-    to: '/admin/messages',
+    to: '/admin/inbox/conversations',
     permission: PERMISSIONS.SEND_MESSAGES,
     destination: 'messages',
   },
@@ -290,7 +300,7 @@ export function getCommandPaletteItems(user: User | null): AdminCommandPaletteIt
     kind: 'module' as const,
     id: item.id,
     label: getNavigationLabel(item),
-    to: item.screen,
+    to: item.id === 'home' ? '/admin/mon-espace' : (ADMIN_MODULE_PATHS[item.id] ?? item.screen),
     zone: getNavigationZone(item),
   }))
   const visibleIds = new Set(visible.map((item) => item.id))

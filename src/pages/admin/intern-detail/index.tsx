@@ -124,7 +124,7 @@ const InternDetail = () => {
         status: res.intern.status,
       })
     } catch {
-      navigate('/admin/stagiaires')
+      navigate('/admin/equipe/membres')
     } finally {
       setLoading(false)
     }
@@ -181,7 +181,7 @@ const InternDetail = () => {
     if (!ok) return
     try {
       await apiFetch(`/api/admin/interns/${id}`, { method: 'DELETE' })
-      navigate('/admin/stagiaires')
+      navigate('/admin/equipe/membres')
     } catch {
       /* silent */
     }
@@ -317,7 +317,7 @@ const InternDetail = () => {
       {/* Hero */}
       <div className="ticket-hero">
         <div className="ticket-hero-content">
-          <Link to="/admin/stagiaires" className="ticket-back-btn">
+          <Link to="/admin/equipe/membres" className="ticket-back-btn">
             <svg
               width="16"
               height="16"

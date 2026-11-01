@@ -69,7 +69,7 @@ export function DevReviewWidget() {
           ))}
         </ul>
       )}
-      <Link to="/admin/dev" className="widget-footer-link">
+      <Link to="/admin/dev/workspace" className="widget-footer-link">
         {t('adminAccess.widgets.devOpen')}
       </Link>
     </div>
@@ -130,7 +130,7 @@ export function NextSessionWidget() {
       </div>
       {loaded && !session && <p className="widget-empty">{t('adminAccess.widgets.nextSessionEmpty')}</p>}
       {session && (
-        <Link to="/admin/education" className="widget-session">
+        <Link to="/admin/formation/pedagogie" className="widget-session">
           <span className="widget-session__name">{session.title || t('adminAccess.widgets.sessionFallback')}</span>
           {cls && (
             <span className="widget-session__class" style={{ color: cls.color, borderColor: cls.color }}>

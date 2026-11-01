@@ -110,8 +110,8 @@ export function GoalWidget() {
 }
 
 const SUGGESTED_SHORTCUTS: { labelKey: MessageKey; link: string }[] = [
-  { labelKey: 'adminAccess.widgets.shortcutMessages', link: '/admin/messages' },
-  { labelKey: 'adminAccess.widgets.shortcutProjects', link: '/admin/gestion' },
+  { labelKey: 'adminAccess.widgets.shortcutMessages', link: '/admin/inbox/conversations' },
+  { labelKey: 'adminAccess.widgets.shortcutProjects', link: '/admin/projets/clients' },
   { labelKey: 'adminAccess.widgets.shortcutAccounting', link: '/admin/comptabilite' },
 ]
 

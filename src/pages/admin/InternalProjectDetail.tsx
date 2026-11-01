@@ -133,7 +133,7 @@ export default function InternalProjectDetail() {
     try {
       await apiFetch(`/api/admin/internal-projects/${project._id}`, { method: 'DELETE' })
       showToast(t('projB.page.projectDeleted'), 'success')
-      navigate('/admin/projets-internes')
+      navigate('/admin/projets/internes')
     } catch (err: any) {
       showToast(err.message || t('projB.page.error'), 'error')
     }
@@ -470,7 +470,7 @@ export default function InternalProjectDetail() {
         <div className="admin-breadcrumb">
           <Link to="/admin">{t('projB.page.breadcrumbAdmin')}</Link>
           <span>/</span>
-          <Link to="/admin/projets-internes">{t('projB.page.breadcrumbProjects')}</Link>
+          <Link to="/admin/projets/internes">{t('projB.page.breadcrumbProjects')}</Link>
           <span>/</span>
           <span style={{ color: 'var(--text-primary)' }}>{project.name}</span>
         </div>
@@ -527,7 +527,7 @@ export default function InternalProjectDetail() {
           <div className="admin-actions portal-actions-reveal">
             <Link
               className="portal-button secondary portal-action-link"
-              to={`/admin/projets-internes?edit=${project._id}`}
+              to={`/admin/projets/internes?edit=${project._id}`}
             >
               <span className="portal-action-label">{t('common.edit')}</span>
             </Link>

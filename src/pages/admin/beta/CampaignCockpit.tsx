@@ -80,7 +80,7 @@ export default function CampaignCockpit() {
     <div className="beta-workspace">
       <header className="beta-header">
         <div className="beta-header-title">
-          <Link to="/admin/beta" className="beta-back" aria-label={t('beta.cockpit.backAria')}>
+          <Link to="/admin/dev/recette" className="beta-back" aria-label={t('beta.cockpit.backAria')}>
             <ArrowLeft size={16} aria-hidden />
           </Link>
           <div>

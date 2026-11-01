@@ -742,7 +742,7 @@ export default function MissionsTab({
 
           <div style={{ marginTop: 10, textAlign: 'right' }}>
             <Link
-              to="/admin/gestion?view=missions"
+              to="/admin/projets/clients?view=missions"
               style={{ fontSize: 12, color: 'var(--primary)', textDecoration: 'none' }}
             >
               {t('projB.tab.seeAll')}

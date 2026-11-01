@@ -85,7 +85,7 @@ export default function SubsidiaryList() {
                   </a>
                 )}
                 {sub.devProject && (
-                  <Link className="dossier-button" to={`/admin/dev?project=${sub.devProject}`}>
+                  <Link className="dossier-button" to={`/admin/dev/workspace?project=${sub.devProject}`}>
                     {t(dossierKey('dev'))} ↗
                   </Link>
                 )}

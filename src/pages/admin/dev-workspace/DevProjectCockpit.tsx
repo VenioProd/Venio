@@ -302,7 +302,7 @@ const DevProjectCockpit = () => {
     <div className="cockpit-page" style={{ ['--accent' as never]: project.color }}>
       <header className="cockpit-header">
         <div className="cockpit-header-left">
-          <button className="cockpit-back" onClick={() => navigate('/admin/dev')} title={t('devB.cockpit.backTitle')}>
+          <button className="cockpit-back" onClick={() => navigate('/admin/dev/workspace')} title={t('devB.cockpit.backTitle')}>
             <ArrowLeft size={14} />
           </button>
           <div className="cockpit-header-id">
@@ -320,12 +320,12 @@ const DevProjectCockpit = () => {
           <button className="cockpit-btn subtle" onClick={load} title={t('devB.common.refresh')}>
             <RefreshCw size={12} /> {t('devB.common.refresh')}
           </button>
-          <button className="cockpit-btn subtle" onClick={() => navigate(`/admin/dev?project=${project._id}`)}>
+          <button className="cockpit-btn subtle" onClick={() => navigate(`/admin/dev/workspace?project=${project._id}`)}>
             <ListChecks size={12} /> {t('devB.cockpit.seeIssues')}
           </button>
           <button
             className="cockpit-btn subtle"
-            onClick={() => navigate(`/admin/dev?project=${project._id}`)}
+            onClick={() => navigate(`/admin/dev/workspace?project=${project._id}`)}
             title={t('devB.cockpit.openInWorkspace')}
           >
             <ExternalLink size={12} /> Workspace
@@ -333,7 +333,7 @@ const DevProjectCockpit = () => {
           {canManage && (
             <button
               className="cockpit-btn primary"
-              onClick={() => navigate('/admin/dev')}
+              onClick={() => navigate('/admin/dev/workspace')}
               title={t('devB.cockpit.newIssueTitle')}
             >
               <Plus size={12} /> {t('devB.cockpit.newIssue')}

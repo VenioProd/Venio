@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { getVisibleNavigation, isNavigationItemVisible, NAVIGATION, RBAC_MATRIX } from '../rbac'
 import type { User, UserRole } from '../../types/auth.types'
+import { ADMIN_HUBS } from '../adminHubs'
+import { LEGACY_ADMIN_LIST_ROUTES } from '../adminHubRoutes'
 
 function user(role: UserRole): User {
   return {
@@ -47,10 +49,15 @@ describe('RBAC matrix / frontend navigation and screens', () => {
 
   it('references existing admin route screens', () => {
     const appSource = readFileSync(resolve(import.meta.dirname, '../../App.tsx'), 'utf8')
+    // App déclare les onglets et les alias par leurs registres partagés.
+    const routes = new Set([
+      ...[...appSource.matchAll(/path="([^"]+)"/g)].map((match) => `/admin/${match[1]}`),
+      ...Object.keys(LEGACY_ADMIN_LIST_ROUTES),
+      ...Object.values(ADMIN_HUBS).flatMap((hub) => hub.tabs.map((tab) => tab.to)),
+    ])
     for (const item of NAVIGATION) {
       if (item.screen === '/admin') continue
-      const routePath = item.screen.replace('/admin/', '')
-      expect(appSource).toContain(`path="${routePath}"`)
+      expect(routes, item.screen).toContain(item.screen)
     }
   })
 })

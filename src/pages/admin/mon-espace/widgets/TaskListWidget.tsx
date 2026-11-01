@@ -85,7 +85,7 @@ export default function TaskListWidget({ mode }: { mode: Mode }) {
             </button>
             <span className="widget-task__title">{t.title}</span>
             {t.source === 'PROJECT' && t.project && (
-              <Link to={`/admin/gestion`} className="widget-task__tag">
+              <Link to={`/admin/projets/clients`} className="widget-task__tag">
                 {t.project.name}
               </Link>
             )}
