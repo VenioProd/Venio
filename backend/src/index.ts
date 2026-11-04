@@ -33,6 +33,7 @@ import documentRoutes from './routes/documents.js'
 import adminUserRoutes from './routes/admin/users.js'
 import adminClientRoutes from './routes/admin/clients/index.js'
 import adminAdminsRoutes from './routes/admin/admins.js'
+import adminMembersRoutes from './routes/admin/members.js'
 // Router parent qui consolide tous les sous-routers sous /api/admin/projects
 // (core, sections, items, tasks, messages) — avant ce refactor, 5 mounts distincts.
 import adminProjectsRouter from './routes/admin/projects/index.js'
@@ -117,6 +118,7 @@ import { startRepoQualityScheduler } from './lib/dev/repoQualityScheduler.js'
 import { initSentry, Sentry } from './lib/sentry.js'
 import auth from './middleware/auth.js'
 import requireMfa from './middleware/mfa.js'
+import { requireAdmin } from './middleware/role.js'
 import apiNotFound from './middleware/apiNotFound.js'
 import { jsonBodyErrorHandler } from './middleware/jsonBodyErrors.js'
 
@@ -336,6 +338,7 @@ app.use('/api/notification-preferences', notificationPreferencesRoutes)
 app.use('/api/admin/users', auth, requireMfa, adminUserRoutes)
 app.use('/api/admin/clients', adminClientRoutes)
 app.use('/api/admin/admins', auth, requireMfa, adminAdminsRoutes)
+app.use('/api/admin/members', auth, requireMfa, requireAdmin, adminMembersRoutes)
 // Un seul mount pour /api/admin/projects — voir routes/admin/projects/index.ts
 app.use('/api/admin/projects', adminProjectsRouter)
 app.use('/api/admin/billing', adminBillingRoutes)

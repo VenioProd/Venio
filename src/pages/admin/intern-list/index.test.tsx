@@ -20,16 +20,19 @@ vi.mock('../../../components/admin/InternDocuments', () => ({ default: () => nul
 vi.mock('../../../components/admin/InternKpi', () => ({ default: () => null }))
 
 describe('InternList', () => {
-  it('ouvre le formulaire depuis un autre onglet que Équipe', async () => {
+  it('ouvre l’assistant de création depuis n’importe quel onglet', async () => {
     render(
       <MemoryRouter>
         <InternList />
       </MemoryRouter>,
     )
 
-    // Un super admin arrive sur le tableau de bord, où le formulaire n'est pas rendu
+    // Un super admin arrive sur le tableau de bord : l'assistant s'ouvre quand même
     fireEvent.click(await screen.findByRole('button', { name: '+ Nouveau membre' }))
 
-    expect(screen.getByRole('heading', { name: 'Nouveau stagiaire' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Nouveau membre' })).toBeInTheDocument()
+    for (const label of ['Super admin', 'RH', 'Commercial externe', 'Stagiaire', 'Alternant', 'Client']) {
+      expect(screen.getByRole('button', { name: new RegExp(`^${label}`) })).toBeInTheDocument()
+    }
   })
 })

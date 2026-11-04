@@ -13,6 +13,7 @@ import '../AdminPortal.css'
 import CommentModal from './CommentModal'
 import DashboardTab from './DashboardTab'
 import InternsTab from './InternsTab'
+import MemberWizard from './MemberWizard'
 import ParametresTab from './ParametresTab'
 import ReportsTab from './ReportsTab'
 import type { AdminUser } from './types'
@@ -37,6 +38,7 @@ const InternList = () => {
   const [notifRecipients, setNotifRecipients] = useState<Required<AdminUser>[]>([])
   const [notifSaving, setNotifSaving] = useState(false)
   const [notifSuccess, setNotifSuccess] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
 
   const {
     interns,
@@ -156,15 +158,22 @@ const InternList = () => {
             className="ticket-new-btn"
             onClick={() => {
               resetForm()
-              setShowForm(true)
-              // Le formulaire n'existe que dans l'onglet Équipe
-              setActiveTab('stagiaires')
+              setWizardOpen(true)
             }}
           >
             {t('intern.list.newMember')}
           </button>
         }
       />
+
+      {wizardOpen && (
+        <MemberWizard
+          admins={admins}
+          actorRole={user?.role}
+          onClose={() => setWizardOpen(false)}
+          onCreated={loadInterns}
+        />
+      )}
 
       {tabs.length > 1 && (
         <div className="ticket-tabs">
