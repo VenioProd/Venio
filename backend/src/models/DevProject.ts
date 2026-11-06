@@ -18,6 +18,8 @@ export interface IDevProject extends Document {
   description: string
   color: string
   status: DevProjectStatus
+  // Date de la dernière mise en archive ; null tant que le projet n'est pas ARCHIVED.
+  archivedAt: Date | null
   lead: mongoose.Types.ObjectId | null
   members: mongoose.Types.ObjectId[]
   createdBy: mongoose.Types.ObjectId
@@ -50,6 +52,7 @@ const devProjectSchema = new Schema<IDevProject>(
       enum: DEV_PROJECT_STATUSES,
       default: 'ACTIVE',
     },
+    archivedAt: { type: Date, default: null },
     lead: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },

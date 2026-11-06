@@ -22,6 +22,7 @@ import {
   suggestionListQuery,
   transitionSuggestion,
 } from '../../lib/dev/suggestions.js'
+import { AGENT_PROJECT_STATUSES, applyProjectStatus, parseIncludeArchived } from '../../lib/dev/projectArchive.js'
 import { computeStats, computeOverview, computeProjectCockpit } from '../../lib/dev/stats.js'
 import { createIssueWithRetry } from '../../lib/dev/createIssue.js'
 import { parseGithubPatch, mergeGithubLink } from '../../lib/dev/github.js'
@@ -104,16 +105,16 @@ router.get('/dev/stats', requireScope('read:dev'), async (req: Request, res: Res
     if (isObjectId(project)) {
       match.project = new mongoose.Types.ObjectId(project)
     }
-    const stats = await computeStats(match)
+    const stats = await computeStats(match, { includeArchived: parseIncludeArchived(req.query.includeArchived) })
     res.json(stats)
   } catch (err) {
     next(err)
   }
 })
 
-router.get('/dev/overview', requireScope('read:dev'), async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/dev/overview', requireScope('read:dev'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const overview = await computeOverview()
+    const overview = await computeOverview({ includeArchived: parseIncludeArchived(req.query.includeArchived) })
     res.json(overview)
   } catch (err) {
     next(err)
@@ -131,6 +132,9 @@ router.get('/dev/projects', requireScope('read:dev'), async (req: Request, res: 
       (DEV_PROJECT_STATUSES as readonly string[]).includes(req.query.status)
     ) {
       filter.status = req.query.status
+    } else if (!parseIncludeArchived(req.query.includeArchived)) {
+      // Par défaut, les projets archivés sont masqués (includeArchived=true pour les voir).
+      filter.status = { $ne: 'ARCHIVED' }
     }
     const [items, total] = await Promise.all([
       DevProject.find(filter).sort({ updatedAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
@@ -190,6 +194,39 @@ router.get('/dev/projects/:id', requireScope('read:dev'), param('id').isMongoId(
     next(err)
   }
 })
+
+router.patch(
+  '/dev/projects/:id',
+  requireScope('write:dev'),
+  param('id').isMongoId(),
+  body('status')
+    .isString()
+    .isIn([...AGENT_PROJECT_STATUSES])
+    .withMessage(`status doit valoir ${AGENT_PROJECT_STATUSES.join(' ou ')}`),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emit(req, res)) return
+    try {
+      const project = await DevProject.findById(req.params.id)
+      if (!project) return respondError(res, 404, 'NOT_FOUND', 'Projet introuvable')
+      const before = project.toObject()
+      const change = applyProjectStatus(project, req.body.status as (typeof AGENT_PROJECT_STATUSES)[number])
+      if (project.isModified()) await project.save()
+      const verb = change === 'archived' ? 'Archivage' : change === 'restored' ? 'Restauration' : 'Statut inchangé :'
+      res.locals.audit = {
+        action: change === 'archived' ? 'DEV_PROJECT_ARCHIVED' : change === 'restored' ? 'DEV_PROJECT_RESTORED' : undefined,
+        entityType: 'DevProject',
+        entityId: String(project._id),
+        entityRef: project.key,
+        summary: `${verb} projet dev "${project.key}"`,
+        before,
+        after: project.toObject(),
+      }
+      res.json(project.toObject())
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 router.get('/dev/projects/:id/dashboard', requireScope('read:dev'), param('id').isMongoId(), async (req, res, next) => {
   if (emit(req, res)) return

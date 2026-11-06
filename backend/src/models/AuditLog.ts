@@ -118,6 +118,9 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'PROJECT_SHEET_DEMO_ACCESS_UPDATE',
         'PROJECT_SHEET_DEMO_ACCESS_DELETE',
         'PROJECT_SHEET_DEMO_ACCESS_REVEAL',
+        // ── Dev Tracker : archivage des projets ──
+        'DEV_PROJECT_ARCHIVED',
+        'DEV_PROJECT_RESTORED',
       ],
     },
     ip: { type: String, default: '' },

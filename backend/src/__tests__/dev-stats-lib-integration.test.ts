@@ -143,11 +143,15 @@ describe('computeOverview', () => {
     })
     // Force ordering: bump VEN's updatedAt
     await DevProject.updateOne({ _id: projectId }, { $set: { updatedAt: new Date(Date.now() - 1000) } }, { timestamps: false })
-    const o = await computeOverview()
+    const o = await computeOverview({ includeArchived: true })
     const keys = o.projects.map((p) => p.key)
     // ACTIVE first (NEW, VEN), then ARCHIVED
     expect(keys[keys.length - 1]).toBe('ARC')
     expect(keys.indexOf('NEW')).toBeLessThan(keys.indexOf('VEN'))
+    // Par défaut, les projets archivés sont exclus de la vue d'ensemble.
+    const def = await computeOverview()
+    expect(def.projects.map((p) => p.key)).not.toContain('ARC')
+    expect(archived.key).toBe('ARC')
   })
 
   it('populates lead with name and email when present', async () => {
