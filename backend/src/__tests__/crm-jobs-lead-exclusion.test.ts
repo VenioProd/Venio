@@ -10,6 +10,8 @@ vi.mock('../automation/registry.js', () => ({
 }))
 vi.mock('../lib/notifications.js', () => ({ createNotification: vi.fn() }))
 vi.mock('../lib/logger.js', () => ({ default: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
+const { applyLeadChange } = vi.hoisted(() => ({ applyLeadChange: vi.fn(async (..._args: unknown[]) => ({})) }))
+vi.mock('../lib/crmLeadService.js', () => ({ applyLeadChange }))
 
 import { withActiveLeads, isLeadExcludedFromAutomation, ACTIVE_LEAD_FILTER } from '../automation/jobs/crmLeadScope.js'
 import { register as regArchive } from '../automation/jobs/crmAutoArchiveLost.js'
@@ -18,7 +20,6 @@ import { register as regInactive } from '../automation/jobs/crmInactiveLeadFollo
 import { register as regDemo } from '../automation/jobs/crmPostDemoFollowup.js'
 import { register as regProposal } from '../automation/jobs/crmProposalFollowup.js'
 import { register as regDrop } from '../automation/jobs/crmConversionDropAlert.js'
-import { register as regConvert } from '../automation/jobs/crmAutoConvert.js'
 
 const queries: Array<Record<string, unknown>> = []
 const chain = (result: unknown[]) => {
@@ -41,7 +42,7 @@ beforeEach(() => {
   queries.length = 0
   vi.clearAllMocks()
   vi.spyOn(mongoose, 'model').mockImplementation(((name: string) => (name === 'Lead' ? FakeLead : FakeUser)) as never)
-  for (const r of [regArchive, regHot, regInactive, regDemo, regProposal, regDrop, regConvert]) r()
+  for (const r of [regArchive, regHot, regInactive, regDemo, regProposal, regDrop]) r()
 })
 
 describe('crmLeadScope', () => {
@@ -84,20 +85,19 @@ describe('tâches CRM : exclusion des leads archivés / en pause', () => {
     }
   })
 
-  it("crm.auto_archive_lost pose archivedAt (et non isArchived)", async () => {
-    await registered['crm.auto_archive_lost'].execute(ctx())
-    const update = FakeLead.updateMany.mock.calls[0][1] as { $set: Record<string, unknown> }
-    expect(update.$set).toEqual({ archivedAt: now })
-    expect(FakeLead.updateMany.mock.calls[0][0]).toMatchObject({ status: 'LOST', archivedAt: null, automationPausedAt: null })
+  it("crm.auto_archive_lost archive par le service unique (archivedAt, et non isArchived)", async () => {
+    const lost = { _id: 'l-lost', status: 'LOST' }
+    FakeLead.find.mockImplementationOnce(((q: Record<string, unknown>) => (queries.push(q), chain([lost]))) as never)
+    const res = await registered['crm.auto_archive_lost'].execute(ctx())
+    expect(FakeLead.find.mock.calls[0][0]).toMatchObject({ status: 'LOST', archivedAt: null, automationPausedAt: null })
+    expect(FakeLead.updateMany).not.toHaveBeenCalled()
+    expect(applyLeadChange).toHaveBeenCalledWith(lost, { archivedAt: now }, expect.objectContaining({ actor: null, source: 'scheduler' }))
+    expect(res.details).toEqual({ archivedCount: 1 })
   })
 
-  it.each([
-    ['archivé', { archivedAt: new Date() }],
-    ['en pause', { automationPausedAt: new Date() }],
-  ])('crm.auto_convert ignore un lead %s', async (_l, flags) => {
-    FakeLead.findById.mockResolvedValue({ _id: 'l1', contactEmail: 'a@b.fr', ...flags })
-    const res = await registered['crm.auto_convert_won_lead'].execute(ctx({ leadId: 'l1', newStatus: 'WON' }))
-    expect(res.actionsExecuted).toEqual(['skipped:lead_archived_or_paused'])
-    expect(FakeUser.findOne).not.toHaveBeenCalled()
+  // crm.auto_convert_won_lead a été supprimé (chantier 2C) : la conversion d'un
+  // lead gagné passe uniquement par processWonLead, appelé par applyLeadChange.
+  it("crm.auto_convert_won_lead n'est plus enregistré", () => {
+    expect(registered['crm.auto_convert_won_lead']).toBeUndefined()
   })
 })

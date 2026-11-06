@@ -9,6 +9,8 @@ import { createNotification } from '../../lib/notifications.js'
 import { sendColdLeadsReminderEmail } from '../../lib/email.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
 import { withActiveLeads } from './crmLeadScope.js'
+import { parisDateKey, serverScheduleForParis } from './crmParisTime.js'
+import { crmJobAbstention } from './crmJobGuards.js'
 
 const DEFAULT_INACTIVE_DAYS = 7
 
@@ -17,7 +19,10 @@ const definition: AutomationDefinition = {
   title: 'Relance automatique des leads inactifs',
   domain: 'crm',
   triggerType: 'cron',
-  schedule: '09:00',
+  /** 09:00 heure de Paris, traduite à chaque passage en heure du serveur. */
+  get schedule() {
+    return serverScheduleForParis('09:00')
+  },
   channels: ['in_app', 'email'],
   recipientStrategy: ['lead_owner'],
   retryable: true,
@@ -25,9 +30,11 @@ const definition: AutomationDefinition = {
   defaultEnabled: true,
   permissionsScope: ['SUPER_ADMIN', 'ADMIN'],
 
-  buildIdempotencyKey: (ctx) => `crm.inactive_lead_followup:${ctx.dateKey}`,
+  buildIdempotencyKey: (ctx) => `crm.inactive_lead_followup:${parisDateKey(ctx.now)}`,
 
-  evaluate: async () => true,
+  // Règle « relance-7j » active, ou e-mail des leads froids du planificateur
+  // CRM activé : ce job s'abstient.
+  evaluate: async () => (await crmJobAbstention('inactiveLeadFollowUp', 'coldLeadEmailEnabled')) === null,
 
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
     const Lead = mongoose.model('Lead')

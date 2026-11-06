@@ -14,7 +14,6 @@ import { register as registerWeeklyManagerReport } from './jobs/weeklyManagerRep
 
 // Phase 2 jobs
 import { register as registerProjectAutoWorkspace } from './jobs/projectAutoWorkspace.js'
-import { register as registerCrmAutoConvert } from './jobs/crmAutoConvert.js'
 import { register as registerDeliverableNotification } from './jobs/deliverableNotification.js'
 import { register as registerDataIntegrityCheck } from './jobs/dataIntegrityCheck.js'
 import { register as registerClientHealthScore } from './jobs/clientHealthScore.js'
@@ -92,7 +91,8 @@ export function initAutomationEngine(): void {
 
   // ── Phase 2 — Business structure ─────────────────────────
   registerProjectAutoWorkspace()
-  registerCrmAutoConvert()
+  // crm.auto_convert_won_lead retiré : la conversion d'un lead gagné passe par
+  // processWonLead (lib/crmClientConversion.ts), appelé par applyLeadChange.
   registerDeliverableNotification()
   registerDataIntegrityCheck()
   registerClientHealthScore()

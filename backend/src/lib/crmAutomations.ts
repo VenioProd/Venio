@@ -2,12 +2,12 @@ import type { Types } from 'mongoose'
 import LeadActivity from '../models/LeadActivity.js'
 import Lead from '../models/Lead.js'
 import User from '../models/User.js'
-import { ADMIN_ROLES } from './permissions.js'
 import { sendLeadAssignmentEmail } from './email.js'
+import { CRM_ASSIGNABLE_ROLES } from './crmScope.js'
+import { nextSchedulerCursor } from '../models/SchedulerLock.js'
 
-// Round-robin state (in-memory, resets on server restart)
-// For production, consider storing in DB or Redis
-let lastAssignedIndex = -1
+/** Curseur du round-robin, en base : partagé entre instances et conservé aux redémarrages. */
+export const ROUND_ROBIN_CURSOR = 'crm:round-robin'
 
 export interface LeadSignalFields {
   status?: string
@@ -58,14 +58,20 @@ interface DuplicateCheckSettings {
 }
 
 /**
- * Get the next admin in round-robin rotation for lead assignment
+ * Prochain commercial du round-robin : uniquement les membres actifs des rôles
+ * habilités à suivre un lead (`CRM_ASSIGNABLE_ROLES`, ni lecture seule ni
+ * comptabilité), dans un ordre stable (ancienneté). Le curseur avance d'un cran
+ * à chaque appel, atomiquement : deux assignations simultanées ne tombent pas
+ * sur la même personne.
  */
 export async function getRoundRobinAssignee(): Promise<Types.ObjectId | null> {
-  const admins = await User.find({ role: { $in: ADMIN_ROLES } }).sort({ createdAt: 1 })
-  if (admins.length === 0) return null
-
-  lastAssignedIndex = (lastAssignedIndex + 1) % admins.length
-  return admins[lastAssignedIndex]._id as Types.ObjectId
+  const team = await User.find({ role: { $in: CRM_ASSIGNABLE_ROLES }, isActive: true })
+    .sort({ createdAt: 1, _id: 1 })
+    .select('_id')
+    .lean()
+  if (team.length === 0) return null
+  const seq = await nextSchedulerCursor(ROUND_ROBIN_CURSOR)
+  return team[(seq - 1) % team.length]._id as Types.ObjectId
 }
 
 /**

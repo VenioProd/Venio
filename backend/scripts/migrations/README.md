@@ -14,6 +14,7 @@ Elles ont été sorties d'ici pour ne plus pénaliser le boot et faciliter le re
 | [`003-notes-to-interactions.ts`](./003-notes-to-interactions.ts)               | 2026-08-27 | Reprend les `ClientNote` et les `LeadActivity` de type `NOTE` dans le journal des échanges (`Interaction`). Les sources sont conservées. |
 | [`004-crm-enrich.ts`](./004-crm-enrich.ts) | 2026-11-01 | Remplit `probability`, `lastInteractionAt`, `interactionsCount` des leads et crée les règles CRM prédéfinies (brouillons). |
 | [`005-crm-form-rule-source.ts`](./005-crm-form-rule-source.ts) | 2026-11-06 | Ajoute la source `FORMULAIRE_SITE` à la condition de la règle prédéfinie « nouveau-lead-formulaire » déjà en base. |
+| [`006-crm-post-demo-rule.ts`](./006-crm-post-demo-rule.ts) | 2026-11-06 | Insère en brouillon la règle prédéfinie « relance-post-demo » (et toute règle prédéfinie absente). Quand elle est active, le job `crm.post_demo_followup` s'abstient. |
 
 ## Exécuter une migration
 

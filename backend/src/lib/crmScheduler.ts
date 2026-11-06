@@ -1,3 +1,39 @@
+/**
+ * Planificateur CRM : tâches quotidiennes et hebdomadaires (e-mails de relance,
+ * escalade, rappels de tâches, factures, santé client, rapport hebdomadaire).
+ *
+ * ── Une seule source par comportement ───────────────────────────────────────
+ * Trois systèmes savent relancer : ce planificateur, les jobs du moteur
+ * d'automatisations (`automation/jobs/crm*.ts`) et les règles CRM (CrmRule).
+ * Pour un même comportement, une seule source agit, dans cet ordre de priorité :
+ *   1. la règle prédéfinie, si elle est ACTIVE (lecture en base, cache 60 s :
+ *      `isSystemRuleActive` dans `lib/crmRules.ts`) ;
+ *   2. sinon ce planificateur, si son réglage CRM est activé ;
+ *   3. sinon le job du moteur d'automatisations.
+ * Une règle ne s'abstient jamais à cause d'un job ou du planificateur.
+ *
+ * | Comportement               | Règle (systemKey)          | Planificateur (réglage)                         | Job (clé)                       |
+ * |----------------------------|----------------------------|-------------------------------------------------|---------------------------------|
+ * | Relance de proposition     | proposition-sans-reponse   | processProposalReminders (proposalReminderEnabled) | crm.proposal_followup        |
+ * | Relance de lead inactif    | relance-7j                 | processColdLeads (coldLeadEmailEnabled)         | crm.inactive_lead_followup      |
+ * | Relance après une démo     | relance-post-demo          | —                                               | crm.post_demo_followup          |
+ * | Alerte lead chaud          | lead-chaud-48h             | —                                               | crm.hot_lead_untreated_alert    |
+ * | Conversion d'un lead gagné | gagne-client-projet        | — (applyLeadChange → processWonLead, idempotent) | (crm.auto_convert_won_lead supprimé) |
+ * | Escalade d'un lead inactif | —                          | processEscalations (escalationEnabled)          | —                               |
+ * | Actions en retard          | —                          | processOverdueActions, processLeadFollowUps      | —                               |
+ * | Archivage des perdus       | —                          | —                                               | crm.auto_archive_lost           |
+ *
+ * ── Heures et jours ─────────────────────────────────────────────────────────
+ * Toutes les heures de déclenchement et la notion de « jour » sont celles de
+ * Paris (`automation/jobs/crmParisTime.ts`), quel que soit le fuseau du serveur.
+ * Une tâche quotidienne part à son heure, ou dans les `CATCH_UP_MINUTES` qui
+ * suivent si le serveur était arrêté à ce moment-là.
+ *
+ * ── Une seule exécution par occurrence ──────────────────────────────────────
+ * « Déjà fait aujourd'hui » est un verrou en base (`models/SchedulerLock.ts`),
+ * clé = tâche + jour (ou semaine) de Paris, pris par insertion unique : sûr avec
+ * plusieurs instances et après un redémarrage.
+ */
 import Lead from '../models/Lead.js'
 import LeadActivity from '../models/LeadActivity.js'
 import Task from '../models/Task.js'
@@ -10,7 +46,6 @@ import {
   getDaysSinceContact,
   getDaysOverdue,
   getDaysSinceStatusChange,
-  getDaysSinceUpdate,
   getRoundRobinAssignee,
   logLeadActivity,
 } from './crmAutomations.js'
@@ -28,16 +63,23 @@ import {
 import { invoicePaymentBalance } from './projectFinance/payments.js'
 import logger from './logger.js'
 import { withActiveLeads } from '../automation/jobs/crmLeadScope.js'
+import { parisParts, parisWeekKey, parseHHMM } from '../automation/jobs/crmParisTime.js'
+import { acquireSchedulerLock, releaseSchedulerLock } from '../models/SchedulerLock.js'
+import { isCoveredByActiveRule, SYSTEM_RULE_FOR } from './crmRules.js'
 
 interface SchedulerResult {
   processed: number
   sent: number
+  /** Règle active qui assure ce comportement : la tâche s'est abstenue. */
+  skippedForRule?: string
   error?: string
 }
 
 interface EscalationResult {
   processed: number
   escalated: number
+  reassigned?: number
+  notified?: number
   error?: string
 }
 
@@ -83,20 +125,7 @@ interface ClientHealthResult {
   error?: string
 }
 
-// Track last run times to avoid duplicate runs
-const lastRunTimes: Record<string, string | null> = {
-  coldLeads: null,
-  overdueActions: null,
-  escalation: null,
-  proposalReminder: null,
-  weeklyReport: null,
-  overdueTasks: null,
-  invoiceReminders: null,
-  taskReminders: null,
-  projectDeadlines: null,
-  briefReminders: null,
-  clientHealth: null,
-}
+const DAY_MS = 24 * 3600 * 1000
 
 /**
  * Process cold leads and send reminder emails
@@ -105,6 +134,9 @@ export async function processColdLeads(): Promise<SchedulerResult> {
   try {
     const settings = await CrmSettings.getSettings()
     if (!settings.coldLeadEmailEnabled) return { processed: 0, sent: 0 }
+    if (await isCoveredByActiveRule('inactiveLeadFollowUp')) {
+      return { processed: 0, sent: 0, skippedForRule: SYSTEM_RULE_FOR.inactiveLeadFollowUp }
+    }
 
     const threshold = new Date()
     threshold.setDate(threshold.getDate() - settings.coldLeadThresholdDays)
@@ -268,68 +300,142 @@ export async function processOverdueActions(): Promise<SchedulerResult> {
   }
 }
 
+/** Fenêtre d'escalade : verrou par lead et par épisode d'inactivité, conservé un an. */
+const ESCALATION_WINDOW_TTL_MS = 365 * DAY_MS
+const CLOSED_LEAD_STATUSES = ['WON', 'LOST']
+
+type EscalationLead = {
+  _id: { toString(): string }
+  createdAt?: Date | null
+  lastInteractionAt?: Date | null
+  lastContactAt?: Date | null
+  statusChangedAt?: Date | null
+}
+
 /**
- * Process escalations for inactive leads
+ * Dernier signe de vie d'un lead : échange consigné, contact saisi, changement
+ * de statut ou création — jamais `updatedAt`, que la moindre écriture technique
+ * (score, notification, règle) rafraîchit. Une réattribution automatique ouvre
+ * une nouvelle période : le nouveau commercial dispose du même délai.
  */
-export async function processEscalations(): Promise<EscalationResult> {
+export function escalationReference(lead: EscalationLead, lastAutoReassignAt?: Date | null): Date {
+  const times = [lead.lastInteractionAt, lead.lastContactAt, lead.statusChangedAt, lead.createdAt, lastAutoReassignAt]
+    .filter((d): d is Date => d != null)
+    .map((d) => new Date(d).getTime())
+  return new Date(times.length ? Math.max(...times) : 0)
+}
+
+const before = (field: string, threshold: Date) => ({ $or: [{ [field]: null }, { [field]: { $lt: threshold } }] })
+
+/**
+ * Escalade des leads inactifs.
+ *
+ * - Inactivité mesurée sur `lastInteractionAt`, `lastContactAt`,
+ *   `statusChangedAt` (et la création), pas sur `updatedAt`.
+ * - Un seul e-mail au manager par lead et par fenêtre d'inactivité (verrou
+ *   `crm-scheduler:escalation:<lead>:<dernier signe de vie>`), pas un par jour.
+ * - Au plus UNE réattribution automatique par lead (activité
+ *   `ESCALATION_REASSIGN`) ; ensuite, seulement l'alerte au manager.
+ * - La réattribution passe par `applyLeadChange` (source `scheduler`).
+ */
+export async function processEscalations(now: Date = new Date()): Promise<EscalationResult> {
   try {
     const settings = await CrmSettings.getSettings()
     if (!settings.escalationEnabled) return { processed: 0, escalated: 0 }
 
-    const threshold = new Date()
-    threshold.setDate(threshold.getDate() - settings.escalationThresholdDays)
+    const threshold = new Date(now.getTime() - settings.escalationThresholdDays * DAY_MS)
 
-    // Find leads that haven't been updated in X days
     const staleLeads = await Lead.find(withActiveLeads({
-      updatedAt: { $lt: threshold },
-      status: { $nin: ['WON', 'LOST'] },
+      status: { $nin: CLOSED_LEAD_STATUSES },
       assignedTo: { $ne: null },
+      createdAt: { $lt: threshold },
+      $and: [before('lastInteractionAt', threshold), before('lastContactAt', threshold), before('statusChangedAt', threshold)],
     })).populate('assignedTo', 'name email')
 
-    let escalated = 0
-    const manager = settings.escalationManagerId ? await User.findById(settings.escalationManagerId) : null
+    if (staleLeads.length === 0) return { processed: 0, escalated: 0, reassigned: 0, notified: 0 }
 
-    for (const lead of staleLeads) {
-      const daysSinceUpdate = getDaysSinceUpdate(lead)
-      const assignedTo = lead.assignedTo as unknown as {
-        _id?: { toString(): string }
-        name?: string
-        email?: string
-      } | null
-
-      if (settings.escalationAction === 'NOTIFY_MANAGER' || settings.escalationAction === 'BOTH') {
-        if (manager?.email) {
-          await sendEscalationEmail({
-            to: manager.email,
-            managerName: manager.name,
-            lead,
-            assigneeName: assignedTo?.name || 'Non assigné',
-            daysSinceAssignment: daysSinceUpdate,
-          })
-        }
-      }
-
-      if (settings.escalationAction === 'REASSIGN' || settings.escalationAction === 'BOTH') {
-        // Reassign to next admin in round-robin
-        const newAssignee = await getRoundRobinAssignee()
-        if (newAssignee && newAssignee.toString() !== assignedTo?._id?.toString()) {
-          const oldAssignee = assignedTo?._id
-          lead.assignedTo = newAssignee
-          await lead.save()
-          await logLeadActivity(
-            lead._id.toString(),
-            'ESCALATION_REASSIGN',
-            `Lead réassigné automatiquement après ${daysSinceUpdate} jours d'inactivité`,
-            { from: oldAssignee, to: newAssignee, days: daysSinceUpdate },
-            null,
-          )
-        }
-      }
-
-      escalated++
+    // Réattributions automatiques déjà faites (une seule par lead).
+    const reassignments = await LeadActivity.find({
+      leadId: { $in: staleLeads.map((l) => l._id) },
+      type: 'ESCALATION_REASSIGN',
+    }).select('leadId createdAt').lean()
+    const lastReassign = new Map<string, Date>()
+    for (const a of reassignments) {
+      const key = String(a.leadId)
+      const at = new Date(a.createdAt as Date)
+      if (!lastReassign.has(key) || lastReassign.get(key)! < at) lastReassign.set(key, at)
     }
 
-    return { processed: staleLeads.length, escalated }
+    const action = settings.escalationAction
+    const manager = settings.escalationManagerId ? await User.findById(settings.escalationManagerId) : null
+    let escalated = 0
+    let reassigned = 0
+    let notified = 0
+
+    for (const lead of staleLeads) {
+      const leadId = lead._id.toString()
+      const alreadyReassigned = lastReassign.has(leadId)
+      const reference = escalationReference(lead, lastReassign.get(leadId))
+      // Réattribué récemment : le nouveau commercial a encore le délai devant lui.
+      if (reference.getTime() >= threshold.getTime()) continue
+
+      const wantsReassign = (action === 'REASSIGN' || action === 'BOTH') && !alreadyReassigned
+      // Après l'unique réattribution, seule l'alerte au manager reste possible.
+      const wantsNotify = action === 'NOTIFY_MANAGER' || action === 'BOTH' || (action === 'REASSIGN' && alreadyReassigned)
+      const canNotify = wantsNotify && Boolean(manager?.email)
+      if (!wantsReassign && !canNotify) continue
+
+      const windowKey = `crm-scheduler:escalation:${leadId}:${reference.getTime()}`
+      if (!(await acquireSchedulerLock(windowKey, ESCALATION_WINDOW_TTL_MS, now))) continue
+
+      const days = Math.floor((now.getTime() - reference.getTime()) / DAY_MS)
+      const assignedTo = lead.assignedTo as unknown as { _id?: { toString(): string }; name?: string } | null
+      const previousAssignee = assignedTo?._id?.toString() ?? null
+      let acted = false
+
+      if (canNotify) {
+        const result = await sendEscalationEmail({
+          to: manager!.email,
+          managerName: manager!.name,
+          lead,
+          assigneeName: assignedTo?.name || 'Non assigné',
+          daysSinceAssignment: days,
+        })
+        if (result?.sent) {
+          notified++
+          acted = true
+        }
+      }
+
+      if (wantsReassign) {
+        let next = await getRoundRobinAssignee()
+        if (next && String(next) === previousAssignee) next = await getRoundRobinAssignee()
+        if (next && String(next) !== previousAssignee) {
+          const { applyLeadChange } = await import('./crmLeadService.js')
+          await applyLeadChange(lead._id.toString(), { assignedTo: String(next) }, {
+            actor: null,
+            source: 'scheduler',
+            settings,
+            labelSuffix: '(escalade automatique)',
+          })
+          await logLeadActivity(
+            leadId,
+            'ESCALATION_REASSIGN',
+            `Lead réassigné automatiquement après ${days} jours d'inactivité`,
+            { from: previousAssignee, to: String(next), days },
+            null,
+          )
+          reassigned++
+          acted = true
+        }
+      }
+
+      if (acted) escalated++
+      // Rien n'est parti (SMTP en panne, personne à qui réattribuer) : la fenêtre reste ouverte.
+      else await releaseSchedulerLock(windowKey)
+    }
+
+    return { processed: staleLeads.length, escalated, reassigned, notified }
   } catch (err) {
     logger.error({ data: err }, 'Error processing escalations:')
     return { processed: 0, escalated: 0, error: (err as Error).message }
@@ -343,6 +449,9 @@ export async function processProposalReminders(): Promise<SchedulerResult> {
   try {
     const settings = await CrmSettings.getSettings()
     if (!settings.proposalReminderEnabled) return { processed: 0, sent: 0 }
+    if (await isCoveredByActiveRule('proposalFollowUp')) {
+      return { processed: 0, sent: 0, skippedForRule: SYSTEM_RULE_FOR.proposalFollowUp }
+    }
 
     const threshold = new Date()
     threshold.setDate(threshold.getDate() - settings.proposalReminderDays)
@@ -759,101 +868,98 @@ export async function processClientHealthAutoUpdate(): Promise<ClientHealthResul
   }
 }
 
+/** Délai de rattrapage d'une tâche quotidienne manquée (serveur arrêté à l'heure prévue). */
+export const CATCH_UP_MINUTES = 120
+const DAILY_LOCK_TTL_MS = 3 * DAY_MS
+const WEEKLY_LOCK_TTL_MS = 14 * DAY_MS
+
+/** Vrai si l'heure de Paris est dans [heure prévue, heure prévue + rattrapage). */
+function isDue(minutesOfDay: number, target: number): boolean {
+  return minutesOfDay >= target && minutesOfDay < target + CATCH_UP_MINUTES
+}
+
 /**
- * Run all scheduled jobs (call this from a cron job or interval)
+ * Exécute `task` une seule fois pour l'occurrence `period` (jour ou semaine de
+ * Paris), toutes instances et redémarrages confondus. Rend `true` si cette
+ * exécution a pris le verrou. Une erreur levée libère le verrou (l'occurrence
+ * sera retentée au passage suivant) ; une erreur rendue par la tâche (déjà
+ * journalisée) le conserve : des e-mails ont pu partir.
  */
-export async function runScheduledJobs(): Promise<void> {
-  lastSchedulerRunAt = new Date().toISOString()
-  const now = new Date()
-  const currentHour = now.getHours()
-  const currentMinute = now.getMinutes()
-  const currentDay = now.getDay() // 0 = Sunday
+export async function runOnce(
+  task: string,
+  period: string,
+  ttlMs: number,
+  fn: () => Promise<unknown>,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const key = `crm-scheduler:${task}:${period}`
+  if (!(await acquireSchedulerLock(key, ttlMs, now))) return false
+  try {
+    await fn()
+  } catch (err) {
+    await releaseSchedulerLock(key).catch(() => {})
+    throw err
+  }
+  return true
+}
+
+/**
+ * Passage du planificateur (chaque minute). Les heures sont celles de Paris ;
+ * chaque tâche est protégée par un verrou en base (tâche + jour de Paris).
+ */
+export async function runScheduledJobs(now: Date = new Date()): Promise<void> {
+  lastSchedulerRunAt = now.toISOString()
+  const paris = parisParts(now)
+  const today = paris.dateKey
+  const thisWeek = parisWeekKey(now)
+  const daily = (task: string, fn: () => Promise<unknown>) => runOnce(task, today, DAILY_LOCK_TTL_MS, fn, now)
+  const weekly = (task: string, fn: () => Promise<unknown>) => runOnce(task, thisWeek, WEEKLY_LOCK_TTL_MS, fn, now)
 
   try {
     await processLeadFollowUps()
-    // Règles à déclencheur « état » : une fois par jour, après 09:00. Idempotent via la clé d'événement du jour.
-    if (currentHour >= 9 && lastRunTimes.crmRules !== now.toDateString()) {
-      lastRunTimes.crmRules = now.toDateString()
-      const { sweepRules } = await import('./crmRules.js')
-      await sweepRules(now)
+    // Règles à déclencheur « état » : une fois par jour de Paris, à partir de 09:00.
+    // Idempotent aussi via la clé d'événement du jour.
+    if (paris.hour >= 9) {
+      await daily('crmRules', async () => {
+        const { sweepRules } = await import('./crmRules.js')
+        await sweepRules(now)
+      })
     }
     const settings = await CrmSettings.getSettings()
 
-    // Daily jobs at 08:00 (CRM + task/brief/project reminders)
-    const [dailyHour, dailyMinute] = (settings.dailyOverdueEmailTime || '08:00').split(':').map(Number)
-    if (currentHour === dailyHour && currentMinute >= dailyMinute && currentMinute < dailyMinute + 5) {
-      // Check if already run today
-      const today = now.toDateString()
-      if (lastRunTimes.overdueActions !== today) {
-        logger.info('[CRM Scheduler] Running daily overdue actions job...')
-        await processOverdueActions()
-        await processColdLeads()
-        await processEscalations()
-        await processProposalReminders()
-        await processOverdueTasks()
-        lastRunTimes.overdueActions = today
-        lastRunTimes.coldLeads = today
-        lastRunTimes.escalation = today
-        lastRunTimes.proposalReminder = today
-        lastRunTimes.overdueTasks = today
-      }
-
-      // Task deadline reminders (08:00)
-      if (lastRunTimes.taskReminders !== today) {
-        logger.info('[CRM Scheduler] Running task deadline reminders...')
-        await processTaskDeadlineReminders()
-        lastRunTimes.taskReminders = today
-      }
-
-      // Project deadline alerts (08:00)
-      if (lastRunTimes.projectDeadlines !== today) {
-        logger.info('[CRM Scheduler] Running project deadline alerts...')
-        await processProjectDeadlineAlerts()
-        lastRunTimes.projectDeadlines = today
-      }
-
-      // Brief deadline reminders (08:00)
-      if (lastRunTimes.briefReminders !== today) {
-        logger.info('[CRM Scheduler] Running brief deadline reminders...')
-        await processBriefDeadlineReminders()
-        lastRunTimes.briefReminders = today
+    // Tâches quotidiennes à l'heure du rappel des retards (08:00 par défaut).
+    if (isDue(paris.minutesOfDay, parseHHMM(settings.dailyOverdueEmailTime, '08:00'))) {
+      const tasks: Array<[string, () => Promise<unknown>]> = [
+        ['overdueActions', processOverdueActions],
+        ['coldLeads', processColdLeads],
+        ['escalation', () => processEscalations(now)],
+        ['proposalReminder', processProposalReminders],
+        ['overdueTasks', processOverdueTasks],
+        ['taskReminders', processTaskDeadlineReminders],
+        ['projectDeadlines', processProjectDeadlineAlerts],
+        ['briefReminders', processBriefDeadlineReminders],
+      ]
+      for (const [task, fn] of tasks) {
+        if (await daily(task, fn)) logger.info(`[CRM Scheduler] ${task} (${today})`)
       }
     }
 
-    // Invoice reminders at 09:00
-    if (currentHour === 9 && currentMinute >= 0 && currentMinute < 5) {
-      const today = now.toDateString()
-      if (lastRunTimes.invoiceReminders !== today) {
-        logger.info('[CRM Scheduler] Running invoice reminders...')
-        await processInvoiceReminders()
-        lastRunTimes.invoiceReminders = today
-      }
+    // Relances de factures à 09:00.
+    if (isDue(paris.minutesOfDay, 9 * 60)) {
+      if (await daily('invoiceReminders', processInvoiceReminders)) logger.info('[CRM Scheduler] invoiceReminders')
     }
 
-    // Client health auto-update (weekly, same day as weekly report)
-    if (currentDay === settings.weeklyReportDay && currentHour === 6 && currentMinute >= 0 && currentMinute < 5) {
-      const thisWeek = `${now.getFullYear()}-W${Math.ceil((now.getDate() + 6 - currentDay) / 7)}`
-      if (lastRunTimes.clientHealth !== thisWeek) {
-        logger.info('[CRM Scheduler] Running client health auto-update...')
-        await processClientHealthAutoUpdate()
-        lastRunTimes.clientHealth = thisWeek
-      }
+    // Santé client : chaque semaine, le jour du rapport hebdomadaire, à 06:00.
+    if (paris.weekday === settings.weeklyReportDay && isDue(paris.minutesOfDay, 6 * 60)) {
+      if (await weekly('clientHealth', processClientHealthAutoUpdate)) logger.info('[CRM Scheduler] clientHealth')
     }
 
-    // Weekly report (run on configured day at configured time)
-    const [weeklyHour, weeklyMinute] = (settings.weeklyReportTime || '09:00').split(':').map(Number)
+    // Rapport hebdomadaire : jour et heure configurés.
     if (
-      currentDay === settings.weeklyReportDay &&
-      currentHour === weeklyHour &&
-      currentMinute >= weeklyMinute &&
-      currentMinute < weeklyMinute + 5
+      paris.weekday === settings.weeklyReportDay &&
+      isDue(paris.minutesOfDay, parseHHMM(settings.weeklyReportTime, '09:00'))
     ) {
-      const thisWeek = `${now.getFullYear()}-W${Math.ceil((now.getDate() + 6 - currentDay) / 7)}`
-      if (lastRunTimes.weeklyReport !== thisWeek) {
-        logger.info('[CRM Scheduler] Running weekly report job...')
-        await processWeeklyReport()
-        lastRunTimes.weeklyReport = thisWeek
-      }
+      if (await weekly('weeklyReport', processWeeklyReport)) logger.info('[CRM Scheduler] weeklyReport')
     }
   } catch (err) {
     lastSchedulerFailureAt = new Date().toISOString()
@@ -871,9 +977,9 @@ let lastSchedulerFailureAt: string | null = null
 export function startScheduler(): void {
   if (schedulerInterval) return
   logger.info('[CRM Scheduler] Starting scheduler...')
-  schedulerInterval = setInterval(runScheduledJobs, 60 * 1000) // Every minute
+  schedulerInterval = setInterval(() => void runScheduledJobs(), 60 * 1000) // Every minute
   // Run once immediately
-  runScheduledJobs()
+  void runScheduledJobs()
 }
 
 export function stopScheduler(): void {

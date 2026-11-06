@@ -8,13 +8,18 @@ import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
 import { withActiveLeads } from './crmLeadScope.js'
+import { parisDateKey, serverScheduleForParis } from './crmParisTime.js'
+import { crmJobAbstention } from './crmJobGuards.js'
 
 const definition: AutomationDefinition = {
   key: 'crm.post_demo_followup',
   title: 'Relance post-démo',
   domain: 'crm',
   triggerType: 'cron',
-  schedule: '09:00',
+  /** 09:00 heure de Paris, traduite à chaque passage en heure du serveur. */
+  get schedule() {
+    return serverScheduleForParis('09:00')
+  },
   channels: ['in_app'],
   recipientStrategy: ['lead_owner'],
   retryable: true,
@@ -22,9 +27,10 @@ const definition: AutomationDefinition = {
   defaultEnabled: true,
   permissionsScope: ['SUPER_ADMIN', 'ADMIN'],
 
-  buildIdempotencyKey: (ctx) => `crm.post_demo:${ctx.dateKey}`,
+  buildIdempotencyKey: (ctx) => `crm.post_demo:${parisDateKey(ctx.now)}`,
 
-  evaluate: async () => true,
+  // Règle « relance-post-demo » active : elle seule relance.
+  evaluate: async () => (await crmJobAbstention('postDemoFollowUp')) === null,
 
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
     const Lead = mongoose.model('Lead')
