@@ -2,7 +2,7 @@ import express, { type Request, type Response } from 'express'
 import rateLimit from 'express-rate-limit'
 import Lead from '../../models/Lead.js'
 import { logLeadActivity } from '../../lib/crmAutomations.js'
-import { emitLeadChanges } from '../../lib/crmRules.js'
+import { createLead } from '../../lib/crmLeadService.js'
 import { sendContactReceiptEmail } from '../../lib/email.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
@@ -60,21 +60,23 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
     const isNewLead = !lead
 
     if (!lead) {
-      lead = await Lead.create({
-        company: submission.company || 'Particulier',
-        contactName,
-        contactEmail: normalizedEmail,
-        contactPhone: submission.phone,
-        source: 'FORMULAIRE_SITE',
-        status: 'LEAD',
-        serviceType: submission.subject,
-        notes: qualification ? readableNote : '',
-        lastContactAt: now,
-        statusChangedAt: now,
-        createdBy: null,
-      })
-      // Même émission d'événements que l'admin : déclenche les règles « LEAD_CREATED ».
-      emitLeadChanges(lead, null)
+      // Même point d'entrée que l'admin : historique, score et événements des
+      // règles « LEAD_CREATED » (dont « nouveau-lead-formulaire »).
+      ;({ lead } = await createLead(
+        {
+          company: submission.company || 'Particulier',
+          contactName,
+          contactEmail: normalizedEmail,
+          contactPhone: submission.phone,
+          source: 'FORMULAIRE_SITE',
+          status: 'LEAD',
+          serviceType: submission.subject,
+          notes: qualification ? readableNote : '',
+          lastContactAt: now,
+          createdBy: null,
+        },
+        { actor: null, source: 'form' },
+      ))
     } else if (!CLOSED_STATUSES.includes(lead.status)) {
       // Lead existant : aucune donnée de la fiche n'est écrasée. La nouvelle demande est
       // consignée dans l'historique (activité ci-dessous) ; seule la date de dernière

@@ -1,7 +1,9 @@
 import bcrypt from 'bcryptjs'
 import User from '../models/User.js'
+import Lead from '../models/Lead.js'
+import Project from '../models/Project.js'
 import { createClientFolders } from './nextcloud.js'
-import { logLeadActivity } from './crmAutomations.js'
+import { autoCreateProjectFromLead, logLeadActivity } from './crmAutomations.js'
 import logger from './logger.js'
 
 export async function ensureClientForWonLead(
@@ -81,6 +83,74 @@ export async function ensureClientForWonLead(
   }
 
   return client
+}
+
+/**
+ * Projet issu d'un lead gagné, créé une seule fois : un lead n'a qu'un projet
+ * « auto-crm ». Rend `null` si un projet est déjà rattaché au lead ou s'il
+ * n'a pas de compte client.
+ */
+export async function ensureProjectForWonLead(lead: any, actorId: string | null = null): Promise<any> {
+  if (!lead || lead.status !== 'WON') return null
+  if (await Project.exists({ sourceLead: lead._id })) return null
+  return autoCreateProjectFromLead(lead, actorId)
+}
+
+export interface WonLeadOutcome {
+  /** Vrai si ce passage a obtenu le verrou et mené la conversion. */
+  processed: boolean
+  client: any
+  project: any
+}
+
+/**
+ * Conversion d'un lead gagné (compte client + projet), au plus une fois.
+ *
+ * Plusieurs chemins mènent à WON (fiche admin, action groupée, API agent,
+ * règle d'automatisation) et peuvent se croiser : le verrou est pris par une
+ * mise à jour conditionnelle atomique sur `wonProcessedAt`. Un seul appel
+ * l'obtient ; les autres rendent `processed: false` sans rien créer. En cas
+ * d'échec, le verrou est relâché pour qu'un passage ultérieur à WON réessaie.
+ *
+ * `wonProcessedAt` n'est pas (encore) déclaré dans le schéma Lead : l'écriture
+ * passe en `strict: false` et la lecture se fait côté base.
+ */
+export async function processWonLead(
+  lead: any,
+  actorId: string | null = null,
+  enableActivityLog: boolean = true,
+): Promise<WonLeadOutcome> {
+  const none: WonLeadOutcome = { processed: false, client: null, project: null }
+  if (!lead || lead.status !== 'WON') return none
+
+  const claimed = await Lead.findOneAndUpdate(
+    { _id: lead._id, status: 'WON', wonProcessedAt: null },
+    { $set: { wonProcessedAt: new Date() } },
+    { new: true, strict: false, projection: { _id: 1 } },
+  ).lean()
+  if (!claimed) return none
+
+  const release = () =>
+    Lead.updateOne({ _id: lead._id }, { $set: { wonProcessedAt: null } }, { strict: false }).catch(() => undefined)
+
+  let client: any
+  try {
+    client = await ensureClientForWonLead(lead, actorId, enableActivityLog)
+  } catch (err) {
+    await release()
+    throw err
+  }
+
+  let project: any = null
+  try {
+    project = await ensureProjectForWonLead(lead, actorId)
+  } catch (err) {
+    // Le compte client est créé : l'échec du projet ne doit pas faire échouer
+    // la mise à jour du lead. Le verrou relâché permet de retenter plus tard.
+    logger.warn({ data: (err as Error).message }, '[crm] Échec de création du projet du lead gagné')
+    await release()
+  }
+  return { processed: true, client, project }
 }
 
 // Helper to map lead source to client source enum

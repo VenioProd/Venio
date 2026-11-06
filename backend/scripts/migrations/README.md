@@ -13,6 +13,7 @@ Elles ont été sorties d'ici pour ne plus pénaliser le boot et faciliter le re
 | [`002-unset-conversation-slug-null.ts`](./002-unset-conversation-slug-null.ts) | 2024       | Retire `slug: null` sur les conversations DM/GROUP (fix index sparse unique).                                                            |
 | [`003-notes-to-interactions.ts`](./003-notes-to-interactions.ts)               | 2026-08-27 | Reprend les `ClientNote` et les `LeadActivity` de type `NOTE` dans le journal des échanges (`Interaction`). Les sources sont conservées. |
 | [`004-crm-enrich.ts`](./004-crm-enrich.ts) | 2026-11-01 | Remplit `probability`, `lastInteractionAt`, `interactionsCount` des leads et crée les règles CRM prédéfinies (brouillons). |
+| [`005-crm-form-rule-source.ts`](./005-crm-form-rule-source.ts) | 2026-11-06 | Ajoute la source `FORMULAIRE_SITE` à la condition de la règle prédéfinie « nouveau-lead-formulaire » déjà en base. |
 
 ## Exécuter une migration
 
