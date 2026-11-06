@@ -43,6 +43,7 @@ export interface ILead extends Document {
   interactionsCount: number
   archivedAt: Date | null
   automationPausedAt: Date | null
+  wonProcessedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
