@@ -172,7 +172,8 @@ describe('POST /api/contact', () => {
     expect(lead?.notes).toContain('Budget : 3 000 à 8 000 €')
     expect(lead?.notes).toContain('Activité : Cabinet d’avocats')
 
-    const activity = await LeadActivity.findOne({ leadId: lead!._id }).lean()
+    // Depuis le service unique, la création ajoute aussi une activité CREATED : on cible l'activité du formulaire.
+    const activity = await LeadActivity.findOne({ leadId: lead!._id, type: 'CONTACT_FORM_SUBMITTED' }).lean()
     expect(activity?.payload).toMatchObject({
       qualification: { need: ['site', 'com'], formule: 'business', budget: 'b2', reponse: 'appel' },
     })
