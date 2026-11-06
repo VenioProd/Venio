@@ -326,6 +326,8 @@ const authLimiter = rateLimit({
 })
 app.use('/api/avatars', avatarRoutes)
 app.use('/api/auth/login', loginLimiter)
+// Second temps de la connexion 2FA : même quota d'échecs que le mot de passe (VENIO-117).
+app.use('/api/auth/mfa/verify', loginLimiter)
 // App native : même quota de tentatives que le login web, partagé par IP.
 app.use('/api/auth/mobile/login', loginLimiter)
 app.use('/api/auth/mobile', authLimiter, mobileAuthRoutes)

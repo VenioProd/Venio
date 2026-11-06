@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import User from '../../models/User.js'
+import { passwordPolicyError } from '../../lib/auth/passwordPolicy.js'
 import Project from '../../models/Project.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 
@@ -36,6 +37,8 @@ router.post(
       if (!email || !password || !name) {
         return res.status(400).json({ error: 'Email, password, and name are required' })
       }
+      const weakPassword = passwordPolicyError(password, { email, name })
+      if (weakPassword) return res.status(400).json(weakPassword)
 
       const existing = await User.findOne({ email: email.toLowerCase().trim() })
       if (existing) {

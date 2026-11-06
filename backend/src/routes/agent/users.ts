@@ -6,6 +6,7 @@ import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
 import { revokeUserSessions } from '../../lib/session.js'
+import { passwordPolicyError } from '../../lib/auth/passwordPolicy.js'
 
 /**
  * Routes agent pour la gestion des Users (admins + super-admins).
@@ -108,7 +109,7 @@ router.post(
   body('email').isEmail(),
   body('name').isString().trim().isLength({ min: 1 }),
   body('role').isIn(ADMIN_ROLES as unknown as string[]),
-  body('password').optional().isString().isLength({ min: 8 }),
+  body('password').optional().isString(),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
@@ -116,6 +117,10 @@ router.post(
       const existing = await User.findOne({ email })
       if (existing) {
         return respondError(res, 409, 'EMAIL_ALREADY_EXISTS', `Email ${email} déjà utilisé`)
+      }
+      if (typeof req.body.password === 'string') {
+        const weakPassword = passwordPolicyError(req.body.password, { email, name: req.body.name })
+        if (weakPassword) return respondError(res, 400, weakPassword.code, weakPassword.error)
       }
       // Si pas de password fourni, on en génère un aléatoire — le user devra
       // utiliser le flux de reset password (UI admin) pour le définir.
@@ -185,7 +190,9 @@ router.patch('/users/:id', requireScope('write:users'), param('id').isMongoId(),
       user.jobTitle = req.body.jobTitle
     }
     if (typeof req.body.isActive === 'boolean') user.isActive = req.body.isActive
-    if (typeof req.body.password === 'string' && req.body.password.length >= 8) {
+    if (typeof req.body.password === 'string') {
+      const weakPassword = passwordPolicyError(req.body.password, { email: user.email, name: user.name })
+      if (weakPassword) return respondError(res, 400, weakPassword.code, weakPassword.error)
       user.passwordHash = await bcrypt.hash(req.body.password, 10)
       user.passwordChangedAt = new Date()
       revokeSessions = true

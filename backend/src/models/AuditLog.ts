@@ -29,6 +29,9 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'MFA_DISABLED',
         'MFA_STEP_UP',
         'MFA_RECOVERY_CODE_USED',
+        // ── auth (VENIO-116/117) ──
+        'MFA_RECOVERY_CODES_REGENERATED',
+        'MFA_RESET_BY_ADMIN',
         // ── App native ──
         'MOBILE_DEVICE_REVOKED',
         'MOBILE_REFRESH_REUSE',

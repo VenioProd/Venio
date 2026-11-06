@@ -20,6 +20,7 @@ Elles ont été sorties d'ici pour ne plus pénaliser le boot et faciliter le re
 | [`009-crm-revenue.ts`](./009-crm-revenue.ts) | 2026-11-06 | Crée la collection des objectifs commerciaux (`CrmGoal`) et son index unique `{period, entity, userId}`. Ne lit ni ne modifie aucune donnée existante ; `--dry-run` pour lister l'état des index. |
 | [`010-crm-rgpd.ts`](./010-crm-rgpd.ts) | 2026-11-06 | RGPD du CRM : base légale par défaut `LEGITIMATE_INTEREST` et `consent.status: UNKNOWN` sur les leads qui n'en ont pas, `doNotContact: false` ; index unique de la liste de suppression. N'écrase rien, ne touche pas `updatedAt`, n'anonymise rien ; `--dry-run` pour compter. |
 | [`011-crm-sequences.ts`](./011-crm-sequences.ts) | 2026-11-06 | Séquences d'e-mails du CRM (lot 5) : index des collections `crmsequences` et `crmsequenceenrollments` (file `{status, nextRunAt}`, unicité partielle de l'inscription ouverte `openKey`). Ne modifie aucun document ; `--dry-run` pour compter. |
+| [`013-auth-hardening.ts`](./013-auth-hardening.ts) | 2026-11-06 | Authentification (VENIO-116/117) : index des jetons de réinitialisation persistants `passwordresettokens` (empreinte unique, TTL `expiresAt`) et des défis de connexion 2FA `mfachallenges`. Ne modifie aucun document ; `--dry-run` pour compter. |
 
 ## Exécuter une migration
 
