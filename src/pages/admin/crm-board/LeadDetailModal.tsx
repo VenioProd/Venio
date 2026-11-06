@@ -7,6 +7,7 @@ import RevenueChain from '../../../components/admin/RevenueChain'
 import LeadEnrichedPanel from './rich/LeadEnrichedPanel'
 import MergeLeadDialog from './MergeLeadDialog'
 import LeadPrivacyPanel from './LeadPrivacyPanel'
+import LeadSequencesPanel from './sequences/LeadSequencesPanel'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
 import {
@@ -352,6 +353,8 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             onUpdateLead={onUpdateLead}
             onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
           />
+
+          <LeadSequencesPanel leadId={lead._id} canManageCrm={canManageCrm} />
 
           <div className="crm-modal-notes">
             <label className="crm-modal-label">{t('crm.detail.revenueChain')}</label>

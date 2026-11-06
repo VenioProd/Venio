@@ -29,6 +29,7 @@ import crmAuto from './crmAuto'
 import crmRich from './crmRich'
 import crmPrivacy from './crmPrivacy'
 import crmSuppression from './crmSuppression'
+import crmSeq from './crmSeq'
 import portfolio from './portfolio'
 
 const messages = {
@@ -62,6 +63,7 @@ const messages = {
   ...crmRich,
   ...crmPrivacy,
   ...crmSuppression,
+  ...crmSeq,
   ...portfolio,
 }
 
