@@ -385,3 +385,15 @@ describe('relance de proposition / seuil partagé', () => {
     expect(mail.sendProposalReminderEmail).toHaveBeenCalledTimes(1)
   })
 })
+
+
+describe('envoi groupé libre — rôles autorisés', () => {
+  it('refuse un VIEWER (403) et laisse passer un ADMIN', async () => {
+    as(team.viewer)
+    const denied = await request(app).post('/api/admin/email-composer/send').send({ subject: 'Test', body: 'Bonjour', recipients: ['x@example.test'] })
+    expect(denied.status).toBe(403)
+    as(team.admin)
+    const allowed = await request(app).post('/api/admin/email-composer/send').send({ subject: 'Test', body: 'Bonjour', recipients: ['x@example.test'] })
+    expect(allowed.status).not.toBe(403)
+  })
+})
