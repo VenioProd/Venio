@@ -25,6 +25,9 @@ export interface PilotageLead {
   budget?: number | null
   assignedTo?: string | null
   lostReason?: string | null
+  /** Probabilité de signature du lead (0–100), pour la valeur pondérée (voir crmRevenue.ts). */
+  probability?: number | null
+  archivedAt?: Date | string | null
 }
 
 export interface StatusTransition {

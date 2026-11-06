@@ -117,6 +117,9 @@ Toutes les routes exigent `auth` + `requireAdmin` et la permission indiquée.
 | POST | `/leads/:id/projects/:projectId` | `manage_crm` | rattachement à un projet |
 | DELETE | `/leads/:id/projects/:projectId` | `manage_crm` | détachement |
 | GET | `/pilotage` | `view_crm` | indicateurs de pilotage |
+| GET | `/forecast?months=&from=&entity=&userId=` | `view_crm` | prévision mensuelle (mois d'Europe/Paris de `expectedCloseAt`) : ouverts, brut, pondéré, catégories, réalisé, objectif |
+| GET | `/goals?period=&from=&to=` | `view_crm` | objectifs mensuels (cachés : entités hors périmètre, objectifs personnels d'un collègue) |
+| POST / PATCH / DELETE | `/goals`, `/goals/:id` | `manage_crm` + `administersCrm` | objectifs ; PATCH ne change que les cibles ; un administrateur restreint par entité reste dans ses entités |
 | GET | `/worklist` | `view_crm` | file de travail + seuils effectifs |
 | POST | `/leads/:id/convert-to-client` | `manage_crm` | conversion manuelle |
 | GET | `/settings` | `manage_crm` | lecture des réglages |
@@ -197,6 +200,16 @@ Garde : `read:crm` pour les GET, `write:crm` pour le reste. Les vues appartienne
 
 ---
 
+### Chiffre d'affaires, valeur pondérée, prévisions (chantier 3C)
+
+Définitions uniques, documentées en tête de `lib/crmRevenue.ts` :
+
+- **Valeur pondérée** d'un lead = budget × probabilité / 100, pour un lead ouvert (ni WON, ni LOST, ni archivé) avec un budget > 0, sinon 0. Probabilité du lead, à défaut celle de son étape (`STATUS_PROBABILITY`), à défaut 10. Utilisée par le pipeline du pilotage, la prévision et la colonne « Pondéré » de l'export CSV (`weightedOf` côté liste applique la même formule). Les taux observés de l'entonnoir restent affichés (`observedRate`) mais ne pondèrent plus rien.
+- **Signé / encaissé** : devis acceptés (`BillingDocument` QUOTE) et factures payées des projets rattachés par `Project.sourceLead`, **plus** les devis `QuoteProposal` SIGNED rattachés au lead par `leadId` sans être déjà couverts (document de facturation déjà compté, ou projet rattaché au lead). Montant d'un devis sans projet : ses lignes (`computeQuoteTotals`, TTC).
+- **Devises** : jamais additionnées. `revenue.signed/collected` = EUR ; `revenue.byCurrency` (et `byCurrency` de `/leads/:id/revenue`) rend un résumé par devise. Les budgets de leads n'ont pas de devise : EUR.
+- **Prévision** : mois d'Europe/Paris ; réalisé = leads WON du mois par `statusChangedAt` (budget). Retards (clôture prévue avant la fenêtre) et affaires sans date sont rendus à part (`overdue`, `unscheduled`). Catégories : engagé ≥ 70, probable 40–69, pipeline < 40.
+- **Objectifs** (`CrmGoal`, migration `009-crm-revenue`) : un par (mois, entité ou groupe, commercial ou équipe) ; la prévision joint l'objectif du périmètre exact demandé, jamais une somme d'autres objectifs.
+
 ## 5. Permissions et périmètre (résumé)
 
 Détail par rôle dans CRM_AUTOMATISATIONS.md §8.
@@ -241,3 +254,4 @@ Constats issus du code à la date de rédaction. Ils ne sont pas corrigés ici.
 - Tests CRM dans `backend/src/__tests__/` : `crm-routes-admin-leads`, `crm-routes-agent-leads`, `crm-routes-scope`, `crm-extras-routes`, `crm-delete-cascade`, `crm-permissions-governance`, `crm-lead-service`, `crm-automation-unify`, `crm-rules-engine`, `crm-scheduler-lead-exclusion`, `crm-jobs-lead-exclusion`, `agent-crm-integration`, `agent-crm-extras-integration`.
 - Lancer la suite : `docs/TESTS.md`.
 - Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `008-crm-dedup-normalized.ts` (détail dans CRM_AUTOMATISATIONS.md §10).
+- Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `009-crm-revenue.ts` (objectifs ; détail dans CRM_AUTOMATISATIONS.md §10).
