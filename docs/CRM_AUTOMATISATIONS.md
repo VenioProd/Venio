@@ -56,6 +56,13 @@ Document singleton, lu par `CrmSettings.getSettings()` (`backend/src/models/CrmS
 
 Les tâches `processOverdueTasks` (tâches en retard) et `processLeadFollowUps` (relances à effectuer) n'ont pas de réglage propre : elles tournent toujours (`backend/src/lib/crmScheduler.ts`).
 
+### 2.2 bis Données personnelles (RGPD)
+
+| Réglage | Défaut | Effet | Où c'est appliqué |
+|---|---|---|---|
+| `retentionMonths` | `36` (6 à 120) | Durée sans interaction ni modification au-delà de laquelle un lead non gagné est anonymisé | `lib/crmRetention.ts` |
+| `retentionPurgeEnabled` | `false` | Faux : le job `crm.retention_purge` ne fait que compter (simulation). Vrai : il anonymise | idem |
+
 ### 2.3 Pondérations du score (défaut)
 
 | Critère | Points |
@@ -85,7 +92,7 @@ Toute modification de lead passe par `applyLeadChange` (`backend/src/lib/crmLead
 | `agent` | API agent (`routes/agent/crm.ts`) | oui | non | oui |
 | `form` | formulaire public (`routes/public/contact.ts`) | oui | non | non |
 | `bulk` | action groupée (`routes/crmExtras.ts`), espace commercial (`routes/commercial/index.ts`) | non | non | non |
-| `rule` | action `SET_STATUS` (`lib/crmRules.ts`) | non | non | non |
+| `rule` | actions `SET_STATUS`, `ASSIGN`, `SET_FIELD`, `ADD_TAG`, `ARCHIVE` (`lib/crmRules.ts`) | non | non | non |
 | `scheduler` | escalade, archivage des perdus | non | non | non |
 
 Motif donné dans le code : une action groupée ou une règle ne doit pas produire 200 messages pour 200 leads ; une règle garde la main sur ses propres notifications.
@@ -136,8 +143,16 @@ Modèles de texte : `{contact}`, `{company}`, `{amount}` (`renderTemplate`).
 | Profondeur | `MAX_RULE_DEPTH = 3` : une chaîne règle → action → règle s'arrête au-delà | `crmRules.ts` |
 | Pas de rebouclage | une règle déjà présente dans `chain` n'est pas réexécutée | `fireLeadEvent` |
 | Idempotence | clé `eventKey` = règle + lead + événement, **index unique** : un rejeu n'exécute rien | `models/CrmRuleRun.ts`, `runRule` |
-| Actions idempotentes | `CREATE_TASK` ignore une tâche du même titre encore ouverte ; `ADD_TAG` ignore un tag présent | `runAction` |
+| Actions idempotentes | `CREATE_TASK` ignore une tâche du même titre encore ouverte ; `ADD_TAG` ignore un tag présent ; `SET_FIELD` ignore une valeur inchangée | `runAction` |
+| Écritures sans événement | les actions qui écrivent le lead passent par `applyLeadChange` avec `emit: false` ; seules `ASSIGN` et `SET_STATUS` émettent leur événement, avec la profondeur de la chaîne | `writeByRule`, `runAction` |
 | Simulation | `simulate: true` n'écrit rien | `simulateRule` |
+
+### 4.3 bis Opposition et désinscription (RGPD)
+
+- `SEND_EMAIL` vérifie `lead.doNotContact` et la liste de suppression (`SuppressionEntry`) avant de mettre l'e-mail en attente et de nouveau au moment de l'envoyer (`deliverEmail`) : si la personne s'est opposée, l'étape passe `SKIP` avec `payload.reason = 'DO_NOT_CONTACT'` (et `via` : `LEAD` ou `SUPPRESSION_LIST`) ; rien ne part.
+- Chaque e-mail envoyé par une règle porte un lien de désinscription signé (HMAC dérivé de `CREDENTIALS_KEY`, sinon `JWT_SECRET`, valable 365 jours) vers `GET /api/public/unsubscribe`, en pied de message et dans les en-têtes `List-Unsubscribe` / `List-Unsubscribe-Post`.
+- L'envoi manuel depuis la fiche (`POST /api/admin/interactions/:type/:id/email`) est limité à 10 destinataires ; pour un lead, il est refusé en entier (409 `DO_NOT_CONTACT`, activité `EMAIL_BLOCKED`) si le lead est opposé ou si une adresse figure dans la liste.
+- Le planificateur et les jobs `crm*` n'écrivent qu'à l'équipe (et aux clients pour les factures), jamais à un prospect : un test statique le vérifie (`crm-rgpd-rules.test.ts`).
 
 ### 4.4 Validation humaine
 
@@ -233,10 +248,11 @@ Enregistrés par `initAutomationEngine()` (`backend/src/automation/index.ts`). L
 | `crm.hot_lead_untreated_alert` | 08:30 quotidien | lead chaud sans activité 48 h | in_app, e-mail | règle `lead-chaud-48h` |
 | `crm.auto_archive_lost` | 03:00 quotidien | LOST depuis 30 j (`statusChangedAt`) | système | aucune |
 | `crm.conversion_drop_alert` | lundi 08:00 | chute du taux de conversion | in_app | aucune |
+| `crm.retention_purge` | 04:00 quotidien | lead non gagné sans interaction ni modification depuis `retentionMonths` | système | simulation tant que `retentionPurgeEnabled` est faux ; verrou `crm-scheduler:retentionPurge:<jour>` |
 
 Les abstentions sont évaluées par `crmJobAbstention` (`crmJobGuards.ts`) : la règle active prime, puis le réglage du planificateur. La clé d'idempotence de chaque job est une clé de jour ou de semaine de Paris (`buildIdempotencyKey`).
 
-Note : `crm.auto_archive_lost` est le seul job de `automation/jobs/crm*.ts` qui écrit sur les leads ; il passe par `applyLeadChange` (source `scheduler`).
+Note : `crm.auto_archive_lost` et `crm.retention_purge` sont les seuls jobs de `automation/jobs/crm*.ts` qui écrivent sur les leads ; ils passent par `applyLeadChange` (source `scheduler`). L'anonymisation vide nom, e-mail, téléphone et notes (« Anonymisé (conservation) »), neutralise le journal des échanges et les données personnelles de l'historique, pose `anonymizedAt` ; une adresse opposée reste dans la liste de suppression.
 
 ---
 
@@ -293,6 +309,7 @@ Scripts one-shot, idempotents, dans `backend/scripts/migrations/` (usage : `MONG
 | `004-crm-enrich.ts` | `probability` des leads existants selon l'étape ; `lastInteractionAt` et `interactionsCount` depuis le journal des échanges ; insertion des règles prédéfinies en brouillon. Les jobs historiques restent actifs jusqu'à désactivation manuelle de chaque job. |
 | `005-crm-form-rule-source.ts` | ajoute `FORMULAIRE_SITE` à la condition « source » de `nouveau-lead-formulaire` (`$addToSet`), sans toucher au reste. |
 | `006-crm-post-demo-rule.ts` | insère la règle `relance-post-demo` (et toute règle prédéfinie absente), en brouillon. |
+| `010-crm-rgpd.ts` | base légale par défaut `LEGITIMATE_INTEREST` (et `consent.status: UNKNOWN`, `doNotContact: false`) sur les leads qui n'en ont pas ; index de la liste de suppression. N'écrase rien, ne touche pas `updatedAt` ; `--dry-run`. |
 
 ---
 
@@ -302,7 +319,6 @@ Scripts one-shot, idempotents, dans `backend/scripts/migrations/` (usage : `MONG
 
 | Sujet | Constat (fichier) |
 |---|---|
-| Écritures hors service | Les actions `ASSIGN` (avec `userId` non vérifié), `SET_FIELD`, `ADD_TAG` et `ARCHIVE` de `crmRules.ts` écrivent directement le lead (`save`, `updateOne`), sans passer par `applyLeadChange`. `SET_STATUS` y passe. |
 | Agent et règles | Le contrôle `administersRules` n'est pas fourni à l'adaptateur agent (`routes/agent/crmExtras.ts`) : un agent avec `write:crm` peut créer, modifier, supprimer et **valider les e-mails en attente**. Seule l'activation exige `admin:*`. |
 | Périmètre `ADMIN` | Voir §8.2 : un `ADMIN` ne lit que ses leads. |
 | Seuil de relance proposition | Le job `crm.proposal_followup` relance à 5 j, le planificateur (`proposalReminderDays`) à 7 j par défaut. |
