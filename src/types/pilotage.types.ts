@@ -35,11 +35,16 @@ export interface PerformanceRow {
 export interface PipelineStageResult {
   stage: FunnelStage
   count: number
+  /** Probabilité moyenne des leads de l'étape (0–1), celle utilisée pour la pondération. */
   probability: number
+  /** Taux observé dans la cohorte (indicatif, hors calcul). */
+  observedRate?: number
   weighted: number
 }
 
 export interface PipelineResult {
+  /** Devise des montants (EUR). */
+  currency?: string
   total: number
   stages: PipelineStageResult[]
   withoutBudget: number
@@ -48,12 +53,21 @@ export interface PipelineResult {
   reliable: boolean
 }
 
+export interface RevenueSummary {
+  signed: number
+  collected: number
+  documents: number
+}
+
 export interface RevenueBlock {
+  /** Devise de signed / collected (EUR) : les autres devises sont dans byCurrency, jamais additionnées. */
+  currency?: string
   declaredBudget: number
   linkedProjects: number
   signed: number
   collected: number
   documents: number
+  byCurrency?: Record<string, RevenueSummary>
 }
 
 export interface PilotageResponse {
@@ -105,7 +119,8 @@ export interface LeadProposal {
   _id: string
   title: string
   status: string
-  project: string
+  /** Absent : devis rattaché au lead seul, sans projet. */
+  project: string | null
   billingDocument: string | null
   createdAt: string
 }
@@ -116,4 +131,68 @@ export interface LeadRevenueResponse {
   proposals: LeadProposal[]
   documents: LeadBillingDocument[]
   summary: { signed: number; collected: number; documents: number }
+  byCurrency?: Record<string, RevenueSummary>
+}
+
+// ─── Prévisions et objectifs ─────────────────────────────────────────────────
+
+export type ForecastCategory = 'committed' | 'probable' | 'pipeline'
+
+export interface ForecastBucket {
+  count: number
+  gross: number
+  weighted: number
+}
+
+export interface GoalProgress {
+  _id: string | null
+  entity: string | null
+  userId: string | null
+  amountTarget: number
+  wonCountTarget: number
+  amountProgress: number | null
+  countProgress: number | null
+  projectedAmount: number
+  projectedProgress: number | null
+}
+
+export interface ForecastMonth {
+  /** 'YYYY-MM', mois d'Europe/Paris. */
+  month: string
+  openCount: number
+  gross: number
+  weighted: number
+  categories: Record<ForecastCategory, ForecastBucket>
+  wonCount: number
+  wonAmount: number
+  goal: GoalProgress | null
+}
+
+export interface ForecastResponse {
+  currency: string
+  timeZone: string
+  from: string
+  months: ForecastMonth[]
+  overdue: ForecastBucket
+  unscheduled: ForecastBucket
+  totals: { openCount: number; gross: number; weighted: number; wonCount: number; wonAmount: number }
+  entity: string | null
+  userId: string | null
+}
+
+export interface CrmGoal {
+  _id: string
+  period: string
+  entity: string | null
+  userId: string | null
+  amountTarget: number
+  wonCountTarget: number
+}
+
+export interface CrmGoalInput {
+  period: string
+  entity: string | null
+  userId: string | null
+  amountTarget: number
+  wonCountTarget: number
 }
