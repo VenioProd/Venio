@@ -194,7 +194,8 @@ router.post(
         settings,
         validateAssignee: false,
       })
-      return res.status(201).json({ lead, duplicates })
+      // Forme historique { lead } conservée ; `duplicates` n'est ajouté que s'il y en a.
+      return res.status(201).json(duplicates.length > 0 ? { lead, duplicates } : { lead })
     } catch (err) {
       if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, ...err.details })
       return next(err)

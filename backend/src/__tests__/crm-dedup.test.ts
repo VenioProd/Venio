@@ -247,9 +247,9 @@ describe('création admin', () => {
     expect(await Lead.countDocuments()).toBe(2)
   })
 
-  it('duplicates est vide sans doublon', async () => {
+  it('forme historique { lead } sans doublon : pas de champ duplicates', async () => {
     const res = await create({ company: 'Unique' }).expect(201)
-    expect(res.body.duplicates).toEqual([])
+    expect(Object.keys(res.body)).toEqual(['lead'])
   })
 
   it('duplicateBlockOnCreate : 409 DUPLICATE_LEAD, rien n’est créé', async () => {
@@ -266,14 +266,14 @@ describe('création admin', () => {
     await resetCrmSettings({ duplicateDetectionEnabled: false, duplicateBlockOnCreate: true })
     await makeLead({ company: 'Acme' })
     const res = await create({ company: 'Acme' }).expect(201)
-    expect(res.body.duplicates).toEqual([])
+    expect(res.body).not.toHaveProperty('duplicates')
   })
 
   it('ne révèle pas les doublons hors périmètre', async () => {
     await makeLead({ company: 'Acme', assignedTo: team.admin.id, createdBy: team.admin.id })
     as(team.manager)
     const res = await create({ company: 'Acme' }).expect(201)
-    expect(res.body.duplicates).toEqual([])
+    expect(res.body).not.toHaveProperty('duplicates')
   })
 })
 
