@@ -16,6 +16,7 @@ Elles ont été sorties d'ici pour ne plus pénaliser le boot et faciliter le re
 | [`005-crm-form-rule-source.ts`](./005-crm-form-rule-source.ts) | 2026-11-06 | Ajoute la source `FORMULAIRE_SITE` à la condition de la règle prédéfinie « nouveau-lead-formulaire » déjà en base. |
 | [`006-crm-post-demo-rule.ts`](./006-crm-post-demo-rule.ts) | 2026-11-06 | Insère en brouillon la règle prédéfinie « relance-post-demo » (et toute règle prédéfinie absente). Quand elle est active, le job `crm.post_demo_followup` s'abstient. |
 | [`007-crm-lead-entity.ts`](./007-crm-lead-entity.ts) | 2026-11-06 | Pose `entity` (entité du groupe) sur les leads qui n'en ont pas, d'après `project` : `ARROW` → `ARROW`, le reste (dont `ARTOSERA`) → `VENIO`. N'écrase jamais une entité déjà posée ; `--dry-run` pour compter. |
+| [`009-crm-revenue.ts`](./009-crm-revenue.ts) | 2026-11-06 | Crée la collection des objectifs commerciaux (`CrmGoal`) et son index unique `{period, entity, userId}`. Ne lit ni ne modifie aucune donnée existante ; `--dry-run` pour lister l'état des index. |
 
 ## Exécuter une migration
 

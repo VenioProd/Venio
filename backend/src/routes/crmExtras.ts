@@ -12,6 +12,7 @@ import CrmSettings from '../models/CrmSettings.js'
 import { applyLeadChange, assertLostReason, deleteLeadCascade, isLeadChangeError, type LeadChangeContext } from '../lib/crmLeadService.js'
 import { approveRun, rejectRun, retryRun, simulateRule } from '../lib/crmRules.js'
 import { isAssignableCrmUser } from '../lib/crmScope.js'
+import { weightedValue } from '../lib/crmRevenue.js'
 import { entityCondition, isGroupEntity, leadEntityOf, type GroupEntity } from '../lib/groupEntities.js'
 
 /**
@@ -60,7 +61,8 @@ export const EXPORT_COLUMNS: Record<string, { label: string; value: (l: any) => 
   assignedTo: { label: 'Commercial', value: (l) => l.assignedTo?.name ?? '' },
   budget: { label: 'Montant', value: (l) => l.budget },
   probability: { label: 'Probabilité (%)', value: (l) => l.probability },
-  weighted: { label: 'Pondéré', value: (l) => (l.budget != null && l.probability != null ? Math.round((l.budget * l.probability) / 100) : '') },
+  // Définition unique de la valeur pondérée : lib/crmRevenue.ts (0 pour un lead fermé, archivé ou sans budget).
+  weighted: { label: 'Pondéré', value: (l) => weightedValue(l) },
   expectedCloseAt: { label: 'Clôture prévue', value: (l) => (l.expectedCloseAt ? new Date(l.expectedCloseAt).toISOString().slice(0, 10) : '') },
   lastInteractionAt: { label: 'Dernière interaction', value: (l) => (l.lastInteractionAt ? new Date(l.lastInteractionAt).toISOString().slice(0, 10) : '') },
   nextActionLabel: { label: 'Prochaine action', value: (l) => l.nextActionLabel },
