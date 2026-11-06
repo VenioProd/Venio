@@ -271,6 +271,8 @@ export type AuditAction =
   | 'CRM_LEAD_PERSONAL_DATA_EXPORT'
   | 'CRM_LEAD_ANONYMIZE'
   | 'CRM_LEAD_UNSUBSCRIBE'
+  | 'CRM_SUPPRESSION_ADD'
+  | 'CRM_SUPPRESSION_REMOVE'
 
 // ─── Agent (API Bearer + scopes) ───
 export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'

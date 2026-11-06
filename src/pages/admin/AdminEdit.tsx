@@ -10,6 +10,7 @@ import type { MessageKey } from '../../i18n'
 import { getPermissionsForRole, PERMISSIONS } from '../../lib/permissions'
 import type { User } from '../../types/auth.types'
 import CustomSelect from '../../components/admin/CustomSelect'
+import { CRM_ENTITIES } from './crm-board/constants'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -80,6 +81,8 @@ const AdminEdit = () => {
   })
   const [customMode, setCustomMode] = useState(false)
   const [customPermissions, setCustomPermissions] = useState<string[]>([])
+  // Périmètre CRM par entité ; vide = toutes les entités.
+  const [crmEntities, setCrmEntities] = useState<string[]>([])
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [savedPassword, setSavedPassword] = useState<string | null>(null)
@@ -110,6 +113,7 @@ const AdminEdit = () => {
         const data = await apiFetch<{ user: User }>(`/api/admin/admins/${userId}`)
         const u = data.user
         setAdmin(u)
+        setCrmEntities(Array.isArray(u.crmEntities) ? u.crmEntities : [])
         setForm({
           name: u.name || '',
           title: u.title || '',
@@ -190,6 +194,7 @@ const AdminEdit = () => {
       }
       // Stagiaire
       if (isSuperAdmin) {
+        payload.crmEntities = crmEntities
         payload.markAsStagiaire = isStagiaire
         if (isStagiaire) {
           payload.internInfo = {
@@ -464,6 +469,38 @@ const AdminEdit = () => {
                 </div>
               )}
             </div>
+          )}
+          {isSuperAdmin && form.role !== 'SUPER_ADMIN' && (
+            <fieldset
+              style={{ border: 'none', padding: 0, margin: 0 }}
+              aria-describedby="admin-crm-entities-help"
+            >
+              <legend style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                {t('crmSuppression.entities.title')}
+              </legend>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+                {CRM_ENTITIES.map((entity) => (
+                  <label
+                    key={entity.key}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={crmEntities.includes(entity.key)}
+                      onChange={() =>
+                        setCrmEntities((prev) =>
+                          prev.includes(entity.key) ? prev.filter((key) => key !== entity.key) : [...prev, entity.key],
+                        )
+                      }
+                    />
+                    {t(entity.labelKey)}
+                  </label>
+                ))}
+              </div>
+              <p id="admin-crm-entities-help" style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>
+                {t('crmSuppression.entities.help')}
+              </p>
+            </fieldset>
           )}
           {/* Section Stagiaire */}
           {isSuperAdmin && (
