@@ -382,11 +382,11 @@ describe('admin CRM leads / PATCH', () => {
       expect((await Lead.findById(lead._id).lean())?.statusChangedAt?.toISOString()).toBe(when.toISOString())
     })
 
-    it('ne journalise pas si activityLogging est désactivé', async () => {
+    it('journalise toujours STATUS_CHANGE (pilotage) même si activityLogging est désactivé, et rien d\'autre', async () => {
       await resetCrmSettings({ activityLogging: false })
       const lead = await makeLead()
       await request(app).patch(`/api/admin/crm/leads/${lead._id}`).send({ status: 'DEMO' }).expect(200)
-      expect(await LeadActivity.countDocuments({ leadId: lead._id })).toBe(0)
+      expect(await activityTypes(lead._id)).toEqual(['STATUS_CHANGE'])
     })
 
     it('CONTACTED renseigne lastContactAt s\'il est vide et le conserve sinon', async () => {
@@ -503,14 +503,16 @@ describe('admin CRM leads / PATCH', () => {
   })
 
   describe('auto-qualification', () => {
-    it('un PATCH qui complète budget + source qualifie un lead LEAD et journalise AUTO_QUALIFIED', async () => {
+    it('un PATCH qui complète budget + source qualifie un lead LEAD et journalise un STATUS_CHANGE marqué auto', async () => {
       const lead = await makeLead()
       const res = await request(app)
         .patch(`/api/admin/crm/leads/${lead._id}`)
         .send({ budget: 4000, source: 'Salon' })
         .expect(200)
       expect(res.body.lead.status).toBe('QUALIFIED')
-      expect(await activityTypes(lead._id)).toContain('AUTO_QUALIFIED')
+      const change = await LeadActivity.findOne({ leadId: lead._id, type: 'STATUS_CHANGE' }).lean()
+      expect(change).toBeTruthy()
+      expect((change as { payload?: { auto?: string } }).payload?.auto).toBe('AUTO_QUALIFIED')
     })
 
     it('ne qualifie pas si le réglage est désactivé ou si le statut n\'est plus LEAD', async () => {
