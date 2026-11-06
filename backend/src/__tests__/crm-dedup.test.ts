@@ -354,8 +354,8 @@ describe('fusion POST /leads/:id/merge', () => {
     await Interaction.create({ subjectType: 'LEAD', subjectId: source._id, kind: 'CALL', occurredAt: new Date(), author: team.superAdmin.id })
     await PersonalTask.create({ title: 'Rappeler', userId: team.superAdmin.id, leadId: source._id } as never)
     await CrmRuleRun.create({ rule: oid(), lead: source._id, eventKey: 'k1', trigger: 'LEAD_CREATED', status: 'OK' } as never)
-    const quote = await QuoteProposal.create({ leadId: source._id, createdBy: team.superAdmin.id, title: 'Devis', reference: 'D-1' } as never)
-    const project = await Project.create({ name: 'Projet', client: clientId, sourceLead: source._id } as never)
+    const quote = await new QuoteProposal({ leadId: source._id, createdBy: team.superAdmin.id, title: 'Devis', reference: 'D-1' }).save()
+    const project = await new Project({ name: 'Projet', client: clientId, sourceLead: source._id } as never).save()
 
     const res = await merge(target._id, source._id).expect(200)
     expect(String(res.body.lead._id)).toBe(String(target._id))
