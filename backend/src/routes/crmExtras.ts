@@ -40,6 +40,8 @@ export interface CrmExtrasAdapters {
    * `write` (cas de l'agent, cadré par ses scopes) ; l'admin le réserve.
    */
   canAdministerRules?: (req: Request) => boolean
+  /** Valider, refuser ou relancer une exécution de règle (e-mails en attente). Par défaut : canAdministerRules. */
+  canApproveRuns?: (req: Request) => boolean
 }
 
 const STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
@@ -82,6 +84,7 @@ const isId = (v: unknown): v is string => typeof v === 'string' && mongoose.isVa
 export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
   const router = express.Router()
   const administersRules = (req: Request) => (a.canAdministerRules ? a.canAdministerRules(req) : true)
+  const approvesRuns = (req: Request) => (a.canApproveRuns ? a.canApproveRuns(req) : administersRules(req))
   const RULES_ADMIN_MESSAGE = 'La gestion des règles d’automatisation est réservée aux administrateurs du CRM'
   const wrap =
     (fn: (req: Request, res: Response) => Promise<unknown>): RequestHandler =>
@@ -361,7 +364,7 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
 
   const runAction = (fn: (id: string, actorId: string | null) => Promise<unknown>, label: string) =>
     [...a.write, ...a.idem, wrap(async (req, res) => {
-      if (!administersRules(req)) return a.fail(res, 403, 'CRM_ADMIN_REQUIRED', RULES_ADMIN_MESSAGE)
+      if (!approvesRuns(req)) return a.fail(res, 403, 'CRM_ADMIN_REQUIRED', RULES_ADMIN_MESSAGE)
       if (!isId(req.params.id)) return a.fail(res, 400, 'VALIDATION_ERROR', 'Identifiant invalide')
       const me = await a.actor(req)
       const run = await fn(req.params.id, me.id)

@@ -144,6 +144,21 @@ describe('Agent CRM / règles', () => {
     expect(await CrmRuleRun.countDocuments()).toBe(0)
   })
 
+  it('refuse de valider, refuser ou relancer une exécution sans admin:*', async () => {
+    const { plainSecret } = await createAgentTokenInDb(['read:crm', 'write:crm'])
+    const created = await post('/rules', plainSecret, rule)
+    const lead = await Lead.create({ company: 'Galerie' })
+    const run = await CrmRuleRun.create({ rule: created.body._id, lead: lead._id, eventKey: 'k1', trigger: 'LEAD_INACTIVE', status: 'PENDING' })
+    for (const action of ['approve', 'reject', 'retry']) {
+      const res = await post(`/rules/runs/${run._id}/${action}`, plainSecret, {})
+      expect(res.status).toBe(403)
+    }
+    expect((await CrmRuleRun.findById(run._id))!.status).toBe('PENDING')
+    const master = await createAgentTokenInDb(['admin:*'])
+    const rejected = await post(`/rules/runs/${run._id}/reject`, master.plainSecret, {})
+    expect(rejected.status).not.toBe(403)
+  })
+
   it('les règles système ne se suppriment pas', async () => {
     const { plainSecret } = await createAgentTokenInDb(['write:crm'])
     const { seedCrmRules } = await import('../lib/crmRules.js')
