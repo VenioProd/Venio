@@ -14,6 +14,8 @@ const personalTaskSchema = new mongoose.Schema<IPersonalTask>(
     // Tâche rattachée à un lead du CRM ; `ruleId` marque celles créées par une règle.
     leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', default: null },
     ruleId: { type: mongoose.Schema.Types.ObjectId, ref: 'CrmRule', default: null },
+    // Tâche créée par une étape de séquence CRM.
+    sequenceId: { type: mongoose.Schema.Types.ObjectId, ref: 'CrmSequence', default: null },
     sourceIdeaId: { type: mongoose.Schema.Types.ObjectId, ref: 'WorkspaceNote', default: null },
   },
   { timestamps: true }

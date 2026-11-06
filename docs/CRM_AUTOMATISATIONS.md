@@ -153,7 +153,7 @@ Modèles de texte : `{contact}`, `{company}`, `{amount}` (`renderTemplate`).
 - Chaque e-mail envoyé par une règle porte un lien de désinscription signé (HMAC dérivé de `CREDENTIALS_KEY`, sinon `JWT_SECRET`, valable 365 jours) vers `GET /api/public/unsubscribe`, en pied de message et dans les en-têtes `List-Unsubscribe` / `List-Unsubscribe-Post`.
 - L'envoi manuel depuis la fiche (`POST /api/admin/interactions/:type/:id/email`) est limité à 10 destinataires ; pour un lead, il est refusé en entier (409 `DO_NOT_CONTACT`, activité `EMAIL_BLOCKED`) si le lead est opposé ou si une adresse figure dans la liste.
 - L'envoi groupé libre (`POST /api/admin/email-composer/send`) contrôle chaque destinataire (`lib/crmBulkEmailGuard.ts`) : une adresse de la liste de suppression ou portée par un lead opposé (`doNotContact`) est retirée de l'envoi, l'envoi continue pour les autres ; la réponse liste les adresses retirées dans `blocked` (`email`, `reason: DO_NOT_CONTACT`, `via`). Chaque lead concerné reçoit une activité `EMAIL_BLOCKED` (`payload.channel = 'email_composer'`) et le serveur journalise le nombre d'adresses retirées (sans les adresses). Les destinataires sont normalisés (minuscules) et dédoublonnés.
-- Le planificateur et les jobs `crm*` n'écrivent qu'à l'équipe (et aux clients pour les factures), jamais à un prospect : un test statique le vérifie (`crm-rgpd-rules.test.ts`).
+- Le planificateur et les jobs `crm*` n'écrivent qu'à l'équipe (et aux clients pour les factures), jamais directement à un prospect : un test statique le vérifie (`crm-rgpd-rules.test.ts`). Seule exception, le job `crm.sequences` (§7.5) : il délègue à `lib/crmSequences.ts`, qui revérifie l'opposition avant chaque e-mail et envoie par `deliverEmail` (même fonction que les règles, lien de désinscription compris) ; un test statique le vérifie (`crm-sequences-engine.test.ts`).
 
 ### 4.4 Validation humaine
 
@@ -249,11 +249,23 @@ Enregistrés par `initAutomationEngine()` (`backend/src/automation/index.ts`). L
 | `crm.hot_lead_untreated_alert` | 08:30 quotidien | lead chaud sans activité 48 h | in_app, e-mail | règle `lead-chaud-48h` |
 | `crm.auto_archive_lost` | 03:00 quotidien | LOST depuis 30 j (`statusChangedAt`) | système | aucune |
 | `crm.conversion_drop_alert` | lundi 08:00 | chute du taux de conversion | in_app | aucune |
+| `crm.sequences` | toutes les 5 minutes | étapes échues des inscriptions actives (§7.5) | e-mail au prospect, tâche | séquence non `ACTIVE` ; verrou par étape |
 | `crm.retention_purge` | 04:00 quotidien | lead non gagné sans interaction ni modification depuis `retentionMonths` | système | simulation tant que `retentionPurgeEnabled` est faux ; verrou `crm-scheduler:retentionPurge:<jour>` |
 
 Les abstentions sont évaluées par `crmJobAbstention` (`crmJobGuards.ts`) : la règle active prime, puis le réglage du planificateur. La clé d'idempotence de chaque job est une clé de jour ou de semaine de Paris (`buildIdempotencyKey`).
 
 Note : `crm.auto_archive_lost` et `crm.retention_purge` sont les seuls jobs de `automation/jobs/crm*.ts` qui écrivent sur les leads ; ils passent par `applyLeadChange` (source `scheduler`). L'anonymisation vide nom, e-mail, téléphone et notes (« Anonymisé (conservation) »), neutralise le journal des échanges et les données personnelles de l'historique, pose `anonymizedAt` ; une adresse opposée reste dans la liste de suppression.
+
+### 7.5 Séquences d'e-mails (`lib/crmSequences.ts`, lot 5)
+
+- **Étapes** : `EMAIL` (objet et texte), `TASK` (tâche personnelle confiée au responsable du lead — `assignedTo`, à défaut `createdBy`), `WAIT` (attente seule). Chaque étape attend `delayDays` jours calendaires depuis l'étape précédente (ou l'inscription) puis s'exécute à `sendHourParis` (8 à 19, défaut 9) heure de Paris, **un jour ouvré** : samedi et dimanche reportent au lundi. Délai nul et heure passée : tout de suite si l'on est dans la plage (lundi–vendredi, 08:00–20:00 Paris), sinon le jour ouvré suivant. Variables : `{contact}`, `{company}`, `{amount}` (comme les règles) et `{owner}` (nom du responsable).
+- **Activation** : créer, modifier, activer, suspendre une séquence = `administersCrm` (agent : `admin:*`). Une séquence naît `DRAFT` ; tant qu'elle n'est pas `ACTIVE`, ses inscriptions attendent et rien ne part.
+- **Inscription** (`manage_crm` + périmètre d'écriture, 200 leads par appel) : refus motivés — `ANONYMIZED`, `DO_NOT_CONTACT`, `SUPPRESSED` (liste de suppression), `NO_EMAIL` (si la séquence a une étape e-mail), `CLOSED` (WON/LOST), `ARCHIVED`, `ENTITY_MISMATCH` (séquence d'une entité), `ALREADY_ENROLLED`, `NOT_FOUND` (inexistant ou hors périmètre). Une seule inscription ouverte par séquence et lead (index unique partiel `openKey`) ; réinscription possible après arrêt ou fin. Activité `SEQUENCE_ENROLLED`.
+- **Moteur** : job `crm.sequences` toutes les 5 minutes → `runSequenceTick` (200 inscriptions échues au plus par passage). Chaque étape est protégée par un `SchedulerLock` `crm-sequence:<inscription>:<étape>` (TTL 60 jours) : deux passages ou deux instances concurrents n'exécutent l'étape qu'une fois, y compris après redémarrage ; l'avancement est conditionnel (`currentStep` inchangé). Un verrou présent depuis plus de 15 minutes sur une inscription non avancée (instance arrêtée pendant l'étape) fait passer l'étape **sans la rejouer** (au plus un envoi). Un envoi refusé par le serveur SMTP rend le verrou : nouvelle tentative une heure plus tard, arrêt `SEND_FAILED` au 3e échec. Lead en automatisation suspendue : report d'un jour ouvré.
+- **Avant chaque étape** : arrêt si le lead est anonymisé, opposé, archivé, à un statut d'arrêt (`stopOn.statuses`, défaut WON/LOST), ou si le prospect a répondu (`stopOn.reply` : une `Interaction` `direction: IN` sur le lead datée après l'inscription). **Avant chaque e-mail** : adresse valide et `checkProspectContact` (opposition + liste de suppression) ; puis `deliverEmail` (lien de désinscription, `Interaction` sortante sur le lead). Le moteur n'écrit jamais le lead.
+- **Arrêts immédiats** : `applyLeadChange` appelle `stopSequencesOnLeadChange` après chaque écriture (tous canaux, même `emit: false`) — opposition (`DO_NOT_CONTACT`), lien de désinscription (`UNSUBSCRIBE`), anonymisation, archivage, passage à un statut d'arrêt ; `logInteraction` appelle `stopSequencesOnInboundInteraction` pour un échange entrant (`REPLY`). Désinscription manuelle : `MANUAL`. Activités `SEQUENCE_STOPPED`, `SEQUENCE_COMPLETED`.
+- **RGPD** : le journal d'une inscription ne contient pas l'adresse ; l'anonymisation vide ses messages ; l'export des données personnelles inclut les inscriptions ; la suppression d'un lead supprime ses inscriptions.
+- **Limites connues** : modifier les étapes d'une séquence active s'applique aux inscriptions en cours selon leur index d'étape ; le statut d'inscription `PAUSED` existe dans le modèle mais n'est pas encore exposé par l'API.
 
 ---
 
@@ -315,6 +327,7 @@ Scripts one-shot, idempotents, dans `backend/scripts/migrations/` (usage : `MONG
 | `005-crm-form-rule-source.ts` | ajoute `FORMULAIRE_SITE` à la condition « source » de `nouveau-lead-formulaire` (`$addToSet`), sans toucher au reste. |
 | `006-crm-post-demo-rule.ts` | insère la règle `relance-post-demo` (et toute règle prédéfinie absente), en brouillon. |
 | `008-crm-dedup-normalized.ts` | remplit `contactEmailNormalized`, `contactPhoneNormalized`, `companyNormalized` des leads et crée leurs index ; idempotente, `--dry-run`. À lancer avant ou avec le déploiement. |
+| `011-crm-sequences.ts` | index des séquences et des inscriptions (`{status, nextRunAt}`, unicité partielle `openKey`) ; ne modifie aucun document ; `--dry-run`. À lancer avec le déploiement. |
 | `010-crm-rgpd.ts` | base légale par défaut `LEGITIMATE_INTEREST` (et `consent.status: UNKNOWN`, `doNotContact: false`) sur les leads qui n'en ont pas ; index de la liste de suppression. N'écrase rien, ne touche pas `updatedAt` ; `--dry-run`. |
 
 ---
@@ -333,4 +346,4 @@ Scripts one-shot, idempotents, dans `backend/scripts/migrations/` (usage : `MONG
 
 ## 12. Pistes non implémentées
 
-Les idées de la version précédente (relance e-mail automatique, intégration calendrier, enrichissement externe, prédiction de conversion, workflows par source) ne sont pas dans le code. Elles relèvent d'un futur chantier et ne doivent pas être lues comme des fonctions existantes.
+Depuis le lot 5, les relances e-mail automatiques en plusieurs étapes existent sous forme de séquences (§7.5). Les autres idées de la version précédente (intégration calendrier, enrichissement externe, prédiction de conversion, workflows par source) ne sont pas dans le code. Elles relèvent d'un futur chantier et ne doivent pas être lues comme des fonctions existantes.

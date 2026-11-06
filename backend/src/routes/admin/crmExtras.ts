@@ -20,6 +20,8 @@ const router = createCrmExtrasRouter({
   // tout le groupe : réservé au super-admin et à l'administrateur.
   canActivateRules: (req: Request) => administersCrm(req),
   canAdministerRules: (req: Request) => administersCrm(req),
+  // Séquences : les concevoir et les activer engage le groupe (e-mails aux prospects).
+  canAdministerSequences: (req: Request) => administersCrm(req),
 })
 
 export default router

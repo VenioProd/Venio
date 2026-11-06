@@ -321,6 +321,9 @@ Sous `/api/v1/agent/crm/*`, scopes `read:crm` (GET) et `write:crm` (mutations), 
 | `GET/POST /crm/rules`, `GET/PATCH/DELETE /crm/rules/:id`, `GET /crm/rules/catalog` | Règles déclencheur → conditions → actions. |
 | `POST /crm/rules/:id/simulate` | Leads concernés aujourd'hui, sans effet (`record: true` consigne des exécutions `SIM`). |
 | `GET /crm/rules/runs`, `POST /crm/rules/runs/:id/approve\|reject\|retry` | Journal d'exécution ; validation des e-mails en attente ; relance d'une erreur. |
+| `GET /crm/sequences`, `GET /crm/sequences/:id`, `GET /crm/sequences/:id/enrollments?status=&page=&pageSize=`, `GET /crm/leads/:id/sequences` | Séquences d'e-mails (étapes, critères d'arrêt, statistiques) et inscriptions (`read:crm`). |
+| `POST /crm/sequences/:id/enroll`, `POST /crm/sequences/:id/unenroll` | `{ leadIds (≤ 200) }` (`write:crm`). Réponse : `enrolled[]` et `refused[] { leadId, reason }` (`NOT_FOUND`, `ANONYMIZED`, `DO_NOT_CONTACT`, `SUPPRESSED`, `NO_EMAIL`, `CLOSED`, `ARCHIVED`, `ENTITY_MISMATCH`, `ALREADY_ENROLLED`). |
+| `POST /crm/sequences`, `PATCH/DELETE /crm/sequences/:id` | Créer (toujours `DRAFT`), modifier, activer (`status: ACTIVE`), suspendre, supprimer une séquence : **scope `admin:*` exigé** (403 `CRM_ADMIN_REQUIRED` sinon). |
 
 Garde-fous : une règle créée par l'agent naît en `DRAFT` ; l'activer (`PATCH status: ACTIVE`) exige le scope `admin:*`, et modifier le contenu d'une règle active la remet en `PAUSED`. Les règles `system` ne se suppriment pas. Les leads portent désormais `probability`, `expectedCloseAt`, `tags`, `sourceDetail`, `sector`, `nextActionLabel`, `archivedAt`, `automationPausedAt` (écriture via `PATCH /leads/:id` : `archived`, `automationPaused` booléens). `GET /leads` exclut les leads archivés sauf `?archived=true` et accepte `?tag=`.
 

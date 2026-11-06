@@ -15,6 +15,7 @@ import { isAssignableCrmUser } from '../lib/crmScope.js'
 import { weightedValue } from '../lib/crmRevenue.js'
 import { entityCondition, isGroupEntity, leadEntityOf, type GroupEntity } from '../lib/groupEntities.js'
 import { buildActorFromReq, recordAudit } from '../lib/audit/auditHelpers.js'
+import { createCrmSequencesRouter } from './crmSequences.js'
 
 /**
  * Routes CRM « enrichies » (vues, actions groupées, export, fiche, règles),
@@ -44,6 +45,8 @@ export interface CrmExtrasAdapters {
   canAdministerRules?: (req: Request) => boolean
   /** Valider, refuser ou relancer une exécution de règle (e-mails en attente). Par défaut : canAdministerRules. */
   canApproveRuns?: (req: Request) => boolean
+  /** Créer, modifier, activer, suspendre ou supprimer une séquence d'e-mails. Par défaut : refusé. */
+  canAdministerSequences?: (req: Request) => boolean
 }
 
 const STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
@@ -452,6 +455,9 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
     if (!rule) return a.fail(res, 404, 'NOT_FOUND', 'Règle introuvable')
     res.json(await simulateRule(rule, { record: req.body?.record === true }))
   }))
+
+  // ───────────────── Séquences d'e-mails (lot 5) ─────────────────
+  router.use(createCrmSequencesRouter(a))
 
   return router
 }
