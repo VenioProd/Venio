@@ -120,6 +120,7 @@ export interface ICrmSettings extends Document {
   duplicateCheckEmail: boolean
   duplicateCheckCompany: boolean
   duplicateCheckPhone: boolean
+  duplicateBlockOnCreate: boolean
   proposalReminderEnabled: boolean
   proposalReminderDays: number
   weeklyReportEnabled: boolean

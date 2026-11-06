@@ -109,6 +109,8 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
     duplicateCheckEmail: { type: Boolean, default: true },
     duplicateCheckCompany: { type: Boolean, default: true },
     duplicateCheckPhone: { type: Boolean, default: false },
+    // Refuse (409) la création d'un lead qui a des doublons probables ; sinon la réponse les signale seulement.
+    duplicateBlockOnCreate: { type: Boolean, default: false },
 
     // ═══════════════════════════════════════════════════════════════
     // PROPOSAL REMINDER
