@@ -40,6 +40,8 @@ export interface IUser extends Document {
   jobTitle: string
   grantedPermissions: string[]
   deniedPermissions: string[]
+  /** Entités du groupe auxquelles le CRM de l'utilisateur est restreint ; vide = aucune restriction. */
+  crmEntities?: string[]
   passwordChangedAt: Date | null
   lastLoginAt: Date | null
   lastLoginIp: string

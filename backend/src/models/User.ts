@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import type { IUser } from '../types/models/index.js'
+import { GROUP_ENTITIES } from '../lib/groupEntities.js'
 
 const userAddressSchema = new mongoose.Schema(
   {
@@ -81,6 +82,8 @@ const userSchema = new mongoose.Schema<IUser>(
     // Fine-grained permission overrides
     grantedPermissions: { type: [String], default: [] },
     deniedPermissions: { type: [String], default: [] },
+    // Périmètre CRM par entité du groupe (lib/groupEntities). Vide : aucune restriction.
+    crmEntities: { type: [{ type: String, enum: [...GROUP_ENTITIES] }], default: [] },
     // Security tracking
     passwordChangedAt: { type: Date, default: null },
     lastLoginAt: { type: Date, default: null },

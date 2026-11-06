@@ -48,7 +48,7 @@ export async function resolveSubject(
       res.status(403).json({ error: 'Forbidden' })
       return null
     }
-    const lead = await Lead.findById(subjectId).select('company contactName contactEmail assignedTo createdBy')
+    const lead = await Lead.findById(subjectId).select('company contactName contactEmail assignedTo createdBy entity')
     if (!lead || (mode === 'write' ? isLeadOutOfScope(req, lead) : !canReadLead(req, lead))) {
       res.status(404).json({ error: 'Lead not found' })
       return null

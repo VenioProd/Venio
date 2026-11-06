@@ -23,12 +23,17 @@ import logger from '../../lib/logger.js'
 import idempotentRequest from '../../middleware/idempotentRequest.js'
 import {
   administersCrm,
+  applyEntityQuery,
   canReadLead,
   isAssignableCrmUser,
+  LEAD_SCOPE_FIELDS,
   leadScopeFilter,
   isLeadOutOfScope,
+  readsUnrestrictedCrm,
   readsWholeCrm,
+  resolveWriteEntity,
 } from '../../lib/crmScope.js'
+import { GROUP_ENTITIES, isGroupEntity } from '../../lib/groupEntities.js'
 import { summariseRevenue, weightedPipeline, type RevenueDocument } from '../../lib/crmRevenue.js'
 import Project from '../../models/Project.js'
 import BillingDocument from '../../models/BillingDocument.js'
@@ -72,6 +77,7 @@ router.get(
       if (typeof req.query.project === 'string' && (LEAD_PROJECTS as readonly string[]).includes(req.query.project)) {
         filter.project = req.query.project
       }
+      applyEntityQuery(req, filter, req.query.entity)
       if (req.query.search) {
         const q = String(req.query.search)
           .trim()
@@ -103,7 +109,9 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const leads = await Lead.find({ ...leadScopeFilter(req), archivedAt: null }).sort({ updatedAt: -1 })
+      const filter: Record<string, unknown> = { ...leadScopeFilter(req), archivedAt: null }
+      applyEntityQuery(req, filter, req.query.entity)
+      const leads = await Lead.find(filter).sort({ updatedAt: -1 })
       const columns = CRM_STATUSES.map((status) => ({
         status,
         leads: leads.filter((lead) => lead.status === status),
@@ -126,6 +134,10 @@ router.post(
     .optional({ values: 'falsy' })
     .isIn([...LEAD_PROJECTS])
     .withMessage('Projet invalide'),
+  body('entity')
+    .optional({ values: 'falsy' })
+    .isIn([...GROUP_ENTITIES])
+    .withMessage('Entité invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -134,6 +146,10 @@ router.post(
       }
 
       const payload: Record<string, any> = normalizeLeadPatch(req.body || {})
+      // Périmètre par entité : un utilisateur restreint ne crée que dans ses entités.
+      if (!resolveWriteEntity(req, payload)) {
+        return res.status(403).json({ error: "Cette entité du groupe est hors de votre périmètre CRM", code: 'LEAD_ENTITY_FORBIDDEN' })
+      }
 
       // Un lead ne se confie qu'à un membre actif de l'équipe habilité à le suivre.
       // Seul l'assigné choisi est contrôlé : l'attribution par défaut (soi-même,
@@ -179,6 +195,10 @@ router.patch(
     .optional({ values: 'falsy' })
     .isIn([...LEAD_PROJECTS])
     .withMessage('Projet invalide'),
+  body('entity')
+    .optional({ values: 'falsy' })
+    .isIn([...GROUP_ENTITIES])
+    .withMessage('Entité invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -195,6 +215,10 @@ router.patch(
 
       const oldAssignee = lead.assignedTo?.toString() || null
       const payload = normalizeLeadPatch(req.body || {})
+      // Un lead ne sort pas du périmètre d'entités de qui le modifie.
+      if (!resolveWriteEntity(req, payload, lead)) {
+        return res.status(403).json({ error: "Cette entité du groupe est hors de votre périmètre CRM", code: 'LEAD_ENTITY_FORBIDDEN' })
+      }
 
       // Le lead d'un collègue ne se reprend pas : l'assignation ouvre des
       // droits (devis), et en être le créateur ne suffit pas pour la changer.
@@ -270,7 +294,7 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const lead = await Lead.findById(req.params.id).select('assignedTo createdBy')
+      const lead = await Lead.findById(req.params.id).select(LEAD_SCOPE_FIELDS)
       if (!lead || !canReadLead(req, lead)) {
         return res.status(404).json({ error: 'Lead not found' })
       }
@@ -288,7 +312,7 @@ router.get(
 
 /** Charge le lead en vérifiant son existence et le périmètre de l'utilisateur. */
 async function loadLeadInScope(req: Request, res: Response) {
-  const lead = await Lead.findById(req.params.id).select('company clientAccountId assignedTo createdBy budget')
+  const lead = await Lead.findById(req.params.id).select(`company clientAccountId budget ${LEAD_SCOPE_FIELDS}`)
   if (!lead || isLeadOutOfScope(req, lead)) {
     res.status(404).json({ error: 'Lead not found' })
     return null
@@ -470,11 +494,14 @@ router.get(
       const now = new Date()
       const { period, since } = resolvePeriod(req.query.period, now)
       const seesEveryone = readsWholeCrm(req)
+      // Périmètre de lecture, restreint au besoin à une entité du groupe (?entity=).
+      const scope: Record<string, unknown> = leadScopeFilter(req)
+      applyEntityQuery(req, scope, req.query.entity)
 
       // Cohorte : les leads CRÉÉS dans la fenêtre. Un taux de conversion mesuré
       // sur deux populations différentes ne veut rien dire — c'est l'erreur que
       // corrige ce chantier.
-      const leadDocs = await Lead.find({ createdAt: { $gte: since }, ...leadScopeFilter(req) })
+      const leadDocs = await Lead.find({ createdAt: { $gte: since }, ...scope })
         .select('status createdAt source budget assignedTo lostReason')
         .lean()
 
@@ -542,6 +569,7 @@ router.get(
       return res.json({
         period,
         since: since.toISOString(),
+        entity: isGroupEntity(req.query.entity) ? req.query.entity : null,
         funnel,
         revenue: {
           declaredBudget,
@@ -552,7 +580,7 @@ router.get(
         // date de création : ce n'est pas la cohorte, seulement ses taux.
         pipeline: weightedPipeline(
           (
-            await Lead.find({ status: { $nin: ['WON', 'LOST'] }, ...leadScopeFilter(req) })
+            await Lead.find({ status: { $nin: ['WON', 'LOST'] }, ...scope })
               .select('status createdAt budget')
               .lean()
           ).map((lead) => ({
@@ -588,7 +616,9 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const settings = await CrmSettings.getSettings()
-      const leads = await Lead.find({ status: { $nin: ['WON', 'LOST'] }, ...leadScopeFilter(req) }).lean()
+      const filter: Record<string, unknown> = { status: { $nin: ['WON', 'LOST'] }, ...leadScopeFilter(req) }
+      applyEntityQuery(req, filter, req.query.entity)
+      const leads = await Lead.find(filter).lean()
 
       const thresholds = {
         coldEnabled: settings.coldLeadAlertEnabled,
@@ -798,7 +828,7 @@ router.post(
       // Seuls les doublons du périmètre de lecture sont renvoyés : la détection ne doit pas
       // révéler les leads d'un collègue.
       let duplicates = found
-      if (!readsWholeCrm(req) && found.length > 0) {
+      if (!readsUnrestrictedCrm(req) && found.length > 0) {
         const readable = await Lead.distinct('_id', { _id: { $in: found.map((d) => d._id) }, ...leadScopeFilter(req) })
         const readableIds = new Set(readable.map(String))
         duplicates = found.filter((d) => readableIds.has(String(d._id)))
