@@ -112,8 +112,8 @@ export interface WonLeadOutcome {
  * l'obtient ; les autres rendent `processed: false` sans rien créer. En cas
  * d'échec, le verrou est relâché pour qu'un passage ultérieur à WON réessaie.
  *
- * `wonProcessedAt` n'est pas (encore) déclaré dans le schéma Lead : l'écriture
- * passe en `strict: false` et la lecture se fait côté base.
+ * `wonProcessedAt` est déclaré dans le schéma Lead (`models/Lead.ts`, défaut
+ * `null`) : les écritures passent par le schéma, sans `strict: false`.
  */
 export async function processWonLead(
   lead: any,
@@ -126,12 +126,12 @@ export async function processWonLead(
   const claimed = await Lead.findOneAndUpdate(
     { _id: lead._id, status: 'WON', wonProcessedAt: null },
     { $set: { wonProcessedAt: new Date() } },
-    { new: true, strict: false, projection: { _id: 1 } },
+    { new: true, projection: { _id: 1 } },
   ).lean()
   if (!claimed) return none
 
   const release = () =>
-    Lead.updateOne({ _id: lead._id }, { $set: { wonProcessedAt: null } }, { strict: false }).catch(() => undefined)
+    Lead.updateOne({ _id: lead._id }, { $set: { wonProcessedAt: null } }).catch(() => undefined)
 
   let client: any
   try {
