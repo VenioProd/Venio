@@ -39,6 +39,11 @@ vi.mock('../lib/email.js', () => ({
   sendTaskReminderEmail: vi.fn(), sendBriefReminderEmail: vi.fn(),
 }))
 vi.mock('../lib/projectFinance/payments.js', () => ({ invoicePaymentBalance: vi.fn() }))
+// Aucune règle active : les tâches ne s'abstiennent pas (abstention testée dans crm-automation-unify.test.ts).
+vi.mock('../lib/crmRules.js', () => ({
+  isCoveredByActiveRule: vi.fn(async () => false),
+  SYSTEM_RULE_FOR: { proposalFollowUp: 'proposition-sans-reponse', inactiveLeadFollowUp: 'relance-7j' },
+}))
 vi.mock('../lib/logger.js', () => ({ default: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 
 import {

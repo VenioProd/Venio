@@ -613,6 +613,19 @@ export const SEED_RULES: Array<Partial<ICrmRule> & { systemKey: string }> = [
     limits: { perLead: 'DAYS', days: 2, maxPerRun: 50 },
   },
   {
+    systemKey: 'relance-post-demo',
+    name: 'Relance 3 jours après une démo sans suite',
+    description: 'Équivalent de l’ancien job crmPostDemoFollowup',
+    system: true,
+    trigger: { type: 'LEAD_INACTIVE', params: { days: 3, statuses: ['DEMO'] } },
+    conditions: { op: 'AND', items: [] },
+    actions: [
+      { type: 'CREATE_TASK', params: { title: 'Relancer {contact} après la démo', dueInDays: 1, assignTo: 'owner' } },
+      { type: 'NOTIFY', params: { recipients: 'owner', title: 'Suivi post-démo : {company}', message: 'Aucun échange depuis la démo il y a 3 jours.' } },
+    ],
+    limits: { perLead: 'DAYS', days: 7, maxPerRun: 50 },
+  },
+  {
     systemKey: 'perdu-archiver',
     name: 'Perdu → tag et relance à 6 mois',
     description: 'Garde la porte ouverte sans encombrer le pipeline',
@@ -622,6 +635,46 @@ export const SEED_RULES: Array<Partial<ICrmRule> & { systemKey: string }> = [
     limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
   },
 ]
+
+// ───────────────────── Une seule source par comportement ─────────────────────
+
+/**
+ * Comportements que les tâches planifiées (`lib/crmScheduler.ts`,
+ * `automation/jobs/crm*.ts`) assurent aussi : quand la règle prédéfinie est
+ * ACTIVE, elle seule agit et les tâches s'abstiennent. L'inverse n'existe pas :
+ * une règle ne consulte jamais les tâches. Table complète en tête de
+ * `crmScheduler.ts`.
+ */
+export const SYSTEM_RULE_FOR = {
+  proposalFollowUp: 'proposition-sans-reponse',
+  inactiveLeadFollowUp: 'relance-7j',
+  postDemoFollowUp: 'relance-post-demo',
+  hotLeadAlert: 'lead-chaud-48h',
+} as const
+export type CoveredBehavior = keyof typeof SYSTEM_RULE_FOR
+
+/** Durée du cache des règles actives : une activation est prise en compte en moins d'une minute. */
+export const SYSTEM_RULE_CACHE_MS = 60_000
+let activeSystemKeys: { keys: Set<string>; at: number } | null = null
+
+/** Vrai si la règle prédéfinie `systemKey` est ACTIVE (lecture en base, cache court). */
+export async function isSystemRuleActive(systemKey: string, now: number = Date.now()): Promise<boolean> {
+  if (!activeSystemKeys || now - activeSystemKeys.at >= SYSTEM_RULE_CACHE_MS) {
+    const rules = await CrmRule.find({ status: 'ACTIVE', systemKey: { $exists: true, $ne: null } }).select('systemKey').lean()
+    activeSystemKeys = { keys: new Set(rules.map((r) => String(r.systemKey))), at: now }
+  }
+  return activeSystemKeys.keys.has(systemKey)
+}
+
+/** Vrai si la règle qui couvre ce comportement est active : la tâche planifiée doit alors s'abstenir. */
+export function isCoveredByActiveRule(behavior: CoveredBehavior, now?: number): Promise<boolean> {
+  return isSystemRuleActive(SYSTEM_RULE_FOR[behavior], now)
+}
+
+/** Vide le cache (tests, ou après une activation qui doit valoir immédiatement). */
+export function resetSystemRuleCache(): void {
+  activeSystemKeys = null
+}
 
 /** Insère les règles prédéfinies absentes, en brouillon : rien ne se déclenche avant activation humaine. */
 export async function seedCrmRules(): Promise<number> {

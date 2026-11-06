@@ -31,7 +31,7 @@ export const LEAD_PRIORITIES = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE'] as const
 export const LEAD_TEMPERATURES = ['FROID', 'TIEDE', 'CHAUD', 'TRES_CHAUD'] as const
 const CLOSED_STATUSES = ['WON', 'LOST']
 
-export type LeadChangeSource = 'admin' | 'bulk' | 'agent' | 'form' | 'rule'
+export type LeadChangeSource = 'admin' | 'bulk' | 'agent' | 'form' | 'rule' | 'scheduler'
 
 export interface LeadChangeContext {
   /** Utilisateur à l'origine du changement ; `null` pour le système (formulaire, règle, agent sans identité). */
@@ -62,7 +62,9 @@ interface SourcePolicy {
  * Ce qui diffère volontairement d'un canal à l'autre. L'action groupée et les
  * règles n'envoient ni e-mail ni notification par lead : 200 leads traités ne
  * doivent pas produire 200 messages, et une règle qui change un statut garde
- * la main sur ses propres notifications.
+ * la main sur ses propres notifications. Les tâches planifiées (escalade,
+ * archivage des perdus) suivent la même politique que les règles : elles
+ * envoient elles-mêmes leurs alertes, une fois par lead et par fenêtre.
  */
 export const SOURCE_POLICY: Record<LeadChangeSource, SourcePolicy> = {
   admin: { autoQualify: true, assignmentEmail: true, statusNotifications: true },
@@ -70,6 +72,7 @@ export const SOURCE_POLICY: Record<LeadChangeSource, SourcePolicy> = {
   form: { autoQualify: true, assignmentEmail: false, statusNotifications: false },
   bulk: { autoQualify: false, assignmentEmail: false, statusNotifications: false },
   rule: { autoQualify: false, assignmentEmail: false, statusNotifications: false },
+  scheduler: { autoQualify: false, assignmentEmail: false, statusNotifications: false },
 }
 
 /** Erreur métier : la route la traduit dans son propre format d'erreur. */
