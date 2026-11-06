@@ -5,7 +5,7 @@ import { apiFetch } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useI18n } from '../../../context/I18nContext'
 import { translate } from '../../../i18n'
-import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
+import { canAdministerCrm } from '../../../lib/crmAccess'
 import type { AdminUser } from '../../../types/crm.types'
 import type { CrmSettingsData, CrmSettingsMessage } from './types'
 import AssignmentSection from './AssignmentSection'
@@ -23,7 +23,7 @@ import '../AdminPortal.css'
 export default function CrmSettings() {
   const { user } = useAuth()
   const { t } = useI18n()
-  const canManage = hasPermission(user, PERMISSIONS.MANAGE_CRM)
+  const canManage = canAdministerCrm(user)
 
   const [settings, setSettings] = useState<CrmSettingsData | null>(null)
   const [admins, setAdmins] = useState<AdminUser[]>([])
@@ -154,6 +154,12 @@ export default function CrmSettings() {
       />
 
       {message && <div className={`crm-settings-message crm-settings-message-${message.type}`}>{message.text}</div>}
+
+      {!canManage && (
+        <div className="crm-settings-message crm-settings-readonly" role="note">
+          {t('crm.settings.readOnly')}
+        </div>
+      )}
 
       <div className="crm-settings-grid">
         <AssignmentSection {...sectionProps} admins={admins} />

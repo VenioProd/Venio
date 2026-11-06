@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CrmAutomations from './index'
 
 const apiFetch = vi.fn()
+const auth = vi.hoisted(() => ({ role: 'ADMIN' }))
+vi.mock('../../../../context/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'u1', role: auth.role } }) }))
 vi.mock('../../../../lib/api', () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }))
 
 const rule = (over: Record<string, unknown> = {}) => ({
@@ -37,6 +39,7 @@ const run = (id: string, status: string, over: Record<string, unknown> = {}) => 
 const calls = () => apiFetch.mock.calls.map(([url, opts]) => ({ url: String(url), method: (opts as RequestInit | undefined)?.method ?? 'GET', body: (opts as RequestInit | undefined)?.body }))
 
 beforeEach(() => {
+  auth.role = 'ADMIN'
   apiFetch.mockReset()
   apiFetch.mockImplementation(async (url: string, opts?: RequestInit) => {
     if (url === '/api/admin/crm/rules') return { items: [rule(), systemRule] }
@@ -96,5 +99,62 @@ describe('onglet Automatisations', () => {
     fireEvent.click(screen.getByText('Lead b'))
     fireEvent.click(await screen.findByRole('button', { name: 'Relancer l’exécution' }))
     await waitFor(() => expect(calls().some((c) => c.method === 'POST' && c.url.endsWith('/runs/b/retry'))).toBe(true))
+  })
+
+  it.each(['MANAGER', 'COMMERCIAL'])('est en lecture seule pour %s : bandeau, création, bascule et suppression désactivées', async (role) => {
+    auth.role = role
+    apiFetch.mockImplementation(async (url: string) => {
+      if (url === '/api/admin/crm/rules') return { items: [rule(), systemRule] }
+      if (url.startsWith('/api/admin/crm/rules/runs?')) return { items: [run('p', 'PENDING'), run('b', 'ERR')], page: 1, pageSize: 50, total: 2 }
+      return {}
+    })
+    render(<CrmAutomations />)
+    await screen.findByText('Relance après 7 jours')
+    expect(screen.getByText(/Lecture seule/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+ Nouvelle règle' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '+ Nouvelle règle' })).toHaveAttribute('title', 'Réservé aux administrateurs')
+    const toggle = screen.getByRole('button', { name: 'Activer la règle « Relance après 7 jours »' })
+    expect(toggle).toBeDisabled()
+    fireEvent.click(toggle)
+    const card = screen.getByTestId('rule-r1')
+    expect(within(card).getByRole('button', { name: /Modifier/ })).toBeDisabled()
+    expect(within(card).getByRole('button', { name: /Dupliquer/ })).toBeDisabled()
+    expect(within(card).getByRole('button', { name: /Supprimer/ })).toBeDisabled()
+    expect(within(screen.getByTestId('rule-r2')).getByRole('button', { name: /Dupliquer/ })).toBeDisabled()
+    // la simulation (lecture) reste disponible
+    expect(within(card).getByRole('button', { name: /Simuler/ })).toBeEnabled()
+    expect(calls().filter((c) => c.method !== 'GET')).toEqual([])
+  })
+
+  it('désactive la validation et la relance des exécutions pour un MANAGER', async () => {
+    auth.role = 'MANAGER'
+    apiFetch.mockImplementation(async (url: string) => {
+      if (url === '/api/admin/crm/rules') return { items: [rule()] }
+      if (url.startsWith('/api/admin/crm/rules/runs?')) return { items: [run('p', 'PENDING'), run('b', 'ERR')], page: 1, pageSize: 50, total: 2 }
+      return {}
+    })
+    render(<CrmAutomations />)
+    await screen.findByText('Relance après 7 jours')
+    fireEvent.click(screen.getByRole('tab', { name: 'Journal d’exécution' }))
+    fireEvent.click(await screen.findByText('Lead p'))
+    expect(screen.getByRole('button', { name: 'Approuver et envoyer' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Refuser' })).toBeDisabled()
+    fireEvent.click(screen.getByText('Lead b'))
+    expect(screen.getByRole('button', { name: 'Relancer l’exécution' })).toBeDisabled()
+    expect(calls().filter((c) => c.method !== 'GET')).toEqual([])
+  })
+
+  it('désactive les modèles de règle pour un non-administrateur et les laisse actifs pour un ADMIN', async () => {
+    auth.role = 'COMMERCIAL'
+    const { unmount } = render(<CrmAutomations />)
+    await screen.findByText('Relance après 7 jours')
+    fireEvent.click(screen.getByRole('tab', { name: 'Modèles' }))
+    for (const b of screen.getAllByRole('button', { name: /^Utiliser le modèle/ })) expect(b).toBeDisabled()
+    unmount()
+    auth.role = 'SUPER_ADMIN'
+    render(<CrmAutomations />)
+    await screen.findByText('Relance après 7 jours')
+    expect(screen.queryByText(/Lecture seule/)).toBeNull()
+    expect(screen.getByRole('button', { name: '+ Nouvelle règle' })).toBeEnabled()
   })
 })

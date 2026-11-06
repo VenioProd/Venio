@@ -113,6 +113,9 @@ const fr = {
   'crmAuto.retry': 'Réessayer',
   'crmAuto.pendingNotice': '{count, plural, one {# e-mail en attente de validation avant envoi.} other {# e-mails en attente de validation avant envoi.}}',
   'crmAuto.review': 'Examiner',
+  'crmAuto.readOnly':
+    'Lecture seule : seuls les administrateurs créent, modifient, activent ou suppriment les règles et valident leurs exécutions.',
+  'crmAuto.adminOnly': 'Réservé aux administrateurs',
   'crmAuto.newRule': '+ Nouvelle règle',
   'crmAuto.loadingRules': 'Chargement des règles…',
   'crmAuto.runsNote': '{count, plural, one {# exécution au journal (90 derniers jours).} other {# exécutions au journal (90 derniers jours).}}',

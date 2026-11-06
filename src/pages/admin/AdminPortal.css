@@ -3073,6 +3073,11 @@ a.portal-button {
   color: var(--good);
 }
 
+.crm-settings-readonly {
+  background: var(--surface-2, rgba(127, 127, 127, 0.1));
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+}
+
 .crm-settings-message-error {
   background: var(--critical-surface);
   border: 1px solid var(--mono-danger-border);
