@@ -104,6 +104,20 @@ Les routeurs sont montés dans `backend/src/index.ts` :
 
 Route publique : `GET`/`POST /api/public/unsubscribe?token=…` (`routes/public/unsubscribe.ts`) — lien de désinscription signé des e-mails envoyés par les règles ; pose `doNotContact`, inscrit l'adresse dans la liste de suppression, page HTML de confirmation (audit `CRM_LEAD_UNSUBSCRIBE`).
 
+### 4.0 Liste « ne pas contacter » — `routes/admin/crmSuppression.ts` (`/api/admin/crm/suppression`)
+
+Montée avant `crmExtras` et `crm` dans `index.ts`. Écran : réglages CRM, section « Liste “ne pas contacter” » (`pages/admin/crm-settings/SuppressionSection.tsx`).
+
+| Méthode | Chemin | Permission | Rôle |
+|---|---|---|---|
+| GET | `/?q=&page=&limit=` | `view_crm` | liste paginée (25 par défaut, 100 max, du plus récent au plus ancien) ; `q` : fragment d'adresse, insensible à la casse ; `canAdminister` indique si l'appelant peut modifier |
+| POST | `/` | `manage_crm` + `administersCrm` | ajout manuel `{ email, reason: MANUAL (défaut) ou OPPOSITION }` ; 409 si l'adresse existe déjà ; audit `CRM_SUPPRESSION_ADD` |
+| DELETE | `/:id` | `manage_crm` + `administersCrm` | retrait ; audit `CRM_SUPPRESSION_REMOVE` |
+
+Retirer une adresse ne modifie **pas** `doNotContact` des leads : l'opposition posée sur une fiche reste en vigueur (rappelé dans l'interface). Les raisons `UNSUBSCRIBE` et `ANONYMIZED` ne s'ajoutent pas à la main.
+
+Périmètre par entité : le super-admin renseigne `crmEntities` d'un membre dans la page d'édition (`pages/admin/AdminEdit.tsx`, cases Venio/Creatio/Decisio/Formatio/Arrow ; vide = toutes les entités) ; la liste des membres affiche un badge pour les membres restreints.
+
 ### 4.1 Admin — `routes/admin/crm.ts` (`/api/admin/crm`)
 
 Toutes les routes exigent `auth` + `requireAdmin` et la permission indiquée.
