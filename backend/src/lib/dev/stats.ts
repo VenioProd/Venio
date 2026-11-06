@@ -10,6 +10,7 @@ import DevIssue, {
 import DevIssueComment from '../../models/DevIssueComment.js'
 import DevIssueEvent, { type DevIssueEventType } from '../../models/DevIssueEvent.js'
 import DevProject from '../../models/DevProject.js'
+import { archivedProjectIds } from './projectArchive.js'
 import { CLOSED_ISSUE_STATUSES } from './issueMutations.js'
 import { BLOCKER_MATCH, BLOCKER_EXPRESSION } from './blockers.js'
 
@@ -76,7 +77,29 @@ export interface StatsPayload {
 const CLOSED_STATUSES = CLOSED_ISSUE_STATUSES
 const ACTIVE_MATCH = { archivedAt: null }
 
-export async function computeStats(match: Record<string, unknown> = {}): Promise<StatsPayload> {
+export interface ArchiveScopeOptions {
+  /** Réintègre les projets ARCHIVED dans les compteurs (par défaut : exclus). */
+  includeArchived?: boolean
+}
+
+/**
+ * Exclut les tickets des projets archivés d'un filtre, sauf si un projet précis est demandé
+ * (un projet archivé reste consultable) ou si includeArchived est actif.
+ */
+async function withoutArchivedProjects(
+  match: Record<string, unknown>,
+  opts: ArchiveScopeOptions,
+): Promise<Record<string, unknown>> {
+  if (opts.includeArchived || match.project !== undefined) return match
+  const ids = await archivedProjectIds()
+  return ids.length ? { ...match, project: { $nin: ids } } : match
+}
+
+export async function computeStats(
+  match: Record<string, unknown> = {},
+  opts: ArchiveScopeOptions = {},
+): Promise<StatsPayload> {
+  match = await withoutArchivedProjects(match, opts)
   const now = Date.now()
   const day = 24 * 60 * 60 * 1000
   const since14 = new Date(now - 14 * day)
@@ -90,7 +113,7 @@ export async function computeStats(match: Record<string, unknown> = {}): Promise
       DevIssue.aggregate([{ $match: scopedMatch }, { $group: { _id: '$priority', count: { $sum: 1 } } }]),
       DevIssue.countDocuments(scopedMatch),
       DevIssue.countDocuments(openMatch),
-      DevProject.countDocuments({ status: { $ne: 'ARCHIVED' } }),
+      DevProject.countDocuments(opts.includeArchived ? {} : { status: { $ne: 'ARCHIVED' } }),
       DevIssue.countDocuments({ ...openMatch, priority: 'URGENT' }),
       DevIssue.countDocuments({ ...openMatch, ...BLOCKER_MATCH }),
       DevIssue.countDocuments({ ...scopedMatch, status: 'DONE', completedAt: { $gte: since7 } }),
@@ -172,8 +195,8 @@ function emptyByStatus(): Record<DevIssueStatus, number> {
   }
 }
 
-export async function computeOverview(): Promise<OverviewPayload> {
-  const projectsRaw = await DevProject.find({})
+export async function computeOverview(opts: ArchiveScopeOptions = {}): Promise<OverviewPayload> {
+  const projectsRaw = await DevProject.find(opts.includeArchived ? {} : { status: { $ne: 'ARCHIVED' } })
     .populate<{ lead: { _id: mongoose.Types.ObjectId; name: string; email: string } | null }>('lead', 'name email')
     .lean()
 
@@ -270,13 +293,14 @@ export async function computeOverview(): Promise<OverviewPayload> {
   const day = 24 * 60 * 60 * 1000
   const since14 = new Date(now - 14 * day)
   const since7 = new Date(now - 7 * day)
+  const doneScope = await withoutArchivedProjects(ACTIVE_MATCH, opts)
   const [completed7d, completed14d] = await Promise.all([
-    DevIssue.countDocuments({ ...ACTIVE_MATCH, status: 'DONE', completedAt: { $gte: since7 } }),
-    DevIssue.countDocuments({ ...ACTIVE_MATCH, status: 'DONE', completedAt: { $gte: since14 } }),
+    DevIssue.countDocuments({ ...doneScope, status: 'DONE', completedAt: { $gte: since7 } }),
+    DevIssue.countDocuments({ ...doneScope, status: 'DONE', completedAt: { $gte: since14 } }),
   ])
 
   const kpis: OverviewKpis = {
-    totalProjects: projects.filter((p) => p.status !== 'ARCHIVED').length,
+    totalProjects: opts.includeArchived ? projects.length : projects.filter((p) => p.status !== 'ARCHIVED').length,
     activeProjects: projects.filter((p) => p.status === 'ACTIVE').length,
     totalOpen: projects.reduce((s, p) => s + p.counts.open, 0),
     urgent: projects.reduce((s, p) => s + p.counts.urgent, 0),

@@ -4,6 +4,10 @@ import {
   fetchDevDailyPriorities,
   fetchDevProjectCockpit,
   launchDevAgentRun,
+  listDevProjects,
+  fetchDevOverview,
+  fetchDevStats,
+  setDevProjectArchived,
   type DevIssueStatus,
 } from './dev'
 
@@ -133,5 +137,48 @@ describe('launchDevAgentRun', () => {
     expect(options.method).toBe('POST')
     expect(new Headers(options.headers).get('Idempotency-Key')).toBe('idem-venio-49')
     expect(options.body).toBe(JSON.stringify({ issueId: 'issue-49', recommendationId: 'issue-stale-issue-49' }))
+  })
+})
+
+describe('archivage des projets dev', () => {
+  const ORIGINAL_FETCH = global.fetch
+  afterEach(() => {
+    global.fetch = ORIGINAL_FETCH
+  })
+  const mockOk = () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({ projects: [] }),
+    })
+    global.fetch = fetchMock as unknown as typeof fetch
+    return fetchMock
+  }
+
+  it('n’envoie pas includeArchived par défaut', async () => {
+    const m = mockOk()
+    await listDevProjects()
+    await fetchDevOverview()
+    await fetchDevStats()
+    for (const call of m.mock.calls) expect(call[0] as string).not.toContain('includeArchived')
+  })
+
+  it('envoie includeArchived=true quand on affiche les archivés', async () => {
+    const m = mockOk()
+    await listDevProjects(undefined, { includeArchived: true })
+    await fetchDevOverview({ includeArchived: true })
+    await fetchDevStats('p1', { includeArchived: true })
+    for (const call of m.mock.calls) expect(call[0] as string).toContain('includeArchived=true')
+  })
+
+  it('archive et restaure via PATCH status', async () => {
+    const m = mockOk()
+    await setDevProjectArchived('p1', true)
+    await setDevProjectArchived('p1', false)
+    expect(m.mock.calls[0]![0]).toContain('/api/admin/dev/projects/p1')
+    expect(m.mock.calls[0]![1].method).toBe('PATCH')
+    expect(JSON.parse(m.mock.calls[0]![1].body)).toEqual({ status: 'ARCHIVED' })
+    expect(JSON.parse(m.mock.calls[1]![1].body)).toEqual({ status: 'ACTIVE' })
   })
 })

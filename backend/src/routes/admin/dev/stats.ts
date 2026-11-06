@@ -2,6 +2,7 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import mongoose from 'mongoose'
 import { requirePermission } from '../../../middleware/role.js'
 import { PERMISSIONS } from '../../../lib/permissions.js'
+import { parseIncludeArchived } from '../../../lib/dev/projectArchive.js'
 import { computeStats, computeOverview, computeProjectCockpit } from '../../../lib/dev/stats.js'
 import { computeDailyPriorities } from '../../../lib/dev/dailyPriorities.js'
 import DevIssue from '../../../models/DevIssue.js'
@@ -25,7 +26,7 @@ router.get(
       if (typeof project === 'string' && mongoose.isValidObjectId(project)) {
         match.project = new mongoose.Types.ObjectId(project)
       }
-      const stats = await computeStats(match)
+      const stats = await computeStats(match, { includeArchived: parseIncludeArchived(req.query.includeArchived) })
       res.json(stats)
     } catch (err) {
       next(err)
@@ -36,9 +37,9 @@ router.get(
 router.get(
   '/overview',
   requirePermission(PERMISSIONS.VIEW_DEV),
-  async (_req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const overview = await computeOverview()
+      const overview = await computeOverview({ includeArchived: parseIncludeArchived(req.query.includeArchived) })
       res.json(overview)
     } catch (err) {
       next(err)

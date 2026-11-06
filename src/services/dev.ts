@@ -30,6 +30,7 @@ export interface DevProject {
   description: string
   color: string
   status: DevProjectStatus
+  archivedAt?: string | null
   lead: UserRef | null
   members: UserRef[]
   createdBy: UserRef | null
@@ -306,8 +307,19 @@ function qs(params: Record<string, string | undefined>): string {
 }
 
 // Projects
-export function listDevProjects(status?: DevProjectStatus | 'all'): Promise<{ projects: DevProject[] }> {
-  return apiFetch(`/api/admin/dev/projects${qs({ status })}`)
+export function listDevProjects(
+  status?: DevProjectStatus | 'all',
+  opts: { includeArchived?: boolean } = {},
+): Promise<{ projects: DevProject[] }> {
+  return apiFetch(`/api/admin/dev/projects${qs({ status, includeArchived: opts.includeArchived ? 'true' : undefined })}`)
+}
+
+/** Archive (ARCHIVED) ou restaure (ACTIVE) un projet ; les tickets ne sont pas modifiés. */
+export function setDevProjectArchived(id: string, archived: boolean): Promise<DevProject> {
+  return apiFetch(`/api/admin/dev/projects/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: archived ? 'ARCHIVED' : 'ACTIVE' }),
+  })
 }
 
 export function createDevProject(data: {
@@ -430,8 +442,8 @@ export function deleteDevIssueComment(issueId: string, commentId: string): Promi
 }
 
 // Stats
-export function fetchDevStats(project?: string): Promise<DevStats> {
-  return apiFetch(`/api/admin/dev/stats${qs({ project })}`)
+export function fetchDevStats(project?: string, opts: { includeArchived?: boolean } = {}): Promise<DevStats> {
+  return apiFetch(`/api/admin/dev/stats${qs({ project, includeArchived: opts.includeArchived ? 'true' : undefined })}`)
 }
 
 // Overview (KPIs + per-project counts)
@@ -474,8 +486,8 @@ export interface DevOverview {
   projects: DevOverviewProject[]
 }
 
-export function fetchDevOverview(): Promise<DevOverview> {
-  return apiFetch('/api/admin/dev/overview')
+export function fetchDevOverview(opts: { includeArchived?: boolean } = {}): Promise<DevOverview> {
+  return apiFetch(`/api/admin/dev/overview${qs({ includeArchived: opts.includeArchived ? 'true' : undefined })}`)
 }
 
 // Daily command center — normalized P0 signals across active projects.

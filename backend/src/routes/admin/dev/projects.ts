@@ -9,6 +9,8 @@ import { notifyUsers } from '../../../lib/notifyHelpers.js'
 import { invalidateCodeMetricsCache, refreshProjectCodeMetrics } from '../../../lib/dev/codeMetrics.js'
 import { CLOSED_ISSUE_STATUSES } from '../../../lib/dev/issueMutations.js'
 import { computeProgress } from '../../../lib/dev/stats.js'
+import { applyProjectStatus, parseIncludeArchived, projectAuditAction } from '../../../lib/dev/projectArchive.js'
+import { buildActorFromReq, recordAudit } from '../../../lib/audit/auditHelpers.js'
 
 const router = express.Router()
 
@@ -84,7 +86,10 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_DEV),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const filter: Record<string, unknown> = { status: { $ne: 'ARCHIVED' } }
+      // Les projets archivés sont masqués par défaut ; includeArchived=true les réintègre.
+      const filter: Record<string, unknown> = parseIncludeArchived(req.query.includeArchived)
+        ? {}
+        : { status: { $ne: 'ARCHIVED' } }
       const { status } = req.query
       if (typeof status === 'string' && (DEV_PROJECT_STATUSES as readonly string[]).includes(status)) {
         filter.status = status
@@ -314,6 +319,8 @@ router.patch(
 
       const oldMembers = project.members.map((id) => String(id))
       const oldLead = project.lead ? String(project.lead) : null
+      const before = project.toObject()
+      let statusChange: ReturnType<typeof applyProjectStatus> = null
 
       if (typeof req.body?.name === 'string') project.name = req.body.name.trim().slice(0, 120)
       if (typeof req.body?.description === 'string') project.description = req.body.description.trim().slice(0, 2000)
@@ -323,7 +330,7 @@ router.patch(
         typeof req.body?.status === 'string' &&
         (DEV_PROJECT_STATUSES as readonly string[]).includes(req.body.status)
       ) {
-        project.status = req.body.status as typeof project.status
+        statusChange = applyProjectStatus(project, req.body.status as typeof project.status)
       }
       if (req.body?.lead === null) project.lead = null
       else if (isObjectId(req.body?.lead)) project.lead = new mongoose.Types.ObjectId(req.body.lead)
@@ -341,6 +348,18 @@ router.patch(
       }
 
       await project.save()
+      if (statusChange) {
+        await recordAudit({
+          action: projectAuditAction(statusChange),
+          actor: buildActorFromReq(req),
+          entityType: 'DevProject',
+          entityId: String(project._id),
+          entityRef: project.key,
+          summary: `${statusChange === 'archived' ? 'Archivage' : 'Restauration'} projet dev "${project.key}"`,
+          before: { status: before.status, archivedAt: before.archivedAt ?? null },
+          after: { status: project.status, archivedAt: project.archivedAt ?? null },
+        })
+      }
       // Drop any cached code-metrics if the repo configuration changed.
       if (githubPatch !== undefined) {
         invalidateCodeMetricsCache()
@@ -385,8 +404,18 @@ router.delete(
       if (!project) return res.status(404).json({ error: 'Projet introuvable' })
 
       const archivedAt = new Date()
-      project.status = 'ARCHIVED'
+      const statusChange = applyProjectStatus(project, 'ARCHIVED')
       await project.save()
+      if (statusChange) {
+        await recordAudit({
+          action: projectAuditAction(statusChange),
+          actor: buildActorFromReq(req),
+          entityType: 'DevProject',
+          entityId: String(project._id),
+          entityRef: project.key,
+          summary: `Archivage projet dev "${project.key}" (suppression)`,
+        })
+      }
       const archivedIssues = await DevIssue.updateMany(
         { project: project._id, archivedAt: null },
         { $set: { archivedAt } },

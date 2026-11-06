@@ -172,6 +172,7 @@ const DevWorkspace = () => {
     return s && SORT_VALUES.includes(s) ? s : 'activity'
   })
   const [showAllProjects, setShowAllProjects] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const [showReviewQueue, setShowReviewQueue] = useState(false)
   const [showPalette, setShowPalette] = useState(false)
   const [dragOverCol, setDragOverCol] = useState<DevIssueStatus | null>(null)
@@ -210,7 +211,7 @@ const DevWorkspace = () => {
 
   const loadProjects = useCallback(async () => {
     try {
-      const data = await listDevProjects()
+      const data = await listDevProjects(undefined, { includeArchived: showArchived })
       setProjects(data.projects)
       if (data.projects.length && !quickCreate.project) {
         setQuickCreate((q) => ({ ...q, project: data.projects[0]!._id }))
@@ -218,7 +219,7 @@ const DevWorkspace = () => {
     } catch (e) {
       console.error(e)
     }
-  }, [quickCreate.project])
+  }, [quickCreate.project, showArchived])
 
   const loadIssues = useCallback(async () => {
     const request = ++issueRequest.current
@@ -241,12 +242,12 @@ const DevWorkspace = () => {
 
   const loadStats = useCallback(async () => {
     try {
-      const s = await fetchDevStats(filters.project)
+      const s = await fetchDevStats(filters.project, { includeArchived: showArchived })
       setStats(s)
     } catch (e) {
       console.error(e)
     }
-  }, [filters.project])
+  }, [filters.project, showArchived])
 
   const loadAnalyticsIssues = useCallback(async () => {
     const request = ++analyticsRequest.current
@@ -266,12 +267,12 @@ const DevWorkspace = () => {
 
   const loadOverview = useCallback(async () => {
     try {
-      const data = await fetchDevOverview()
+      const data = await fetchDevOverview({ includeArchived: showArchived })
       setOverview(data)
     } catch (e) {
       console.error(e)
     }
-  }, [])
+  }, [showArchived])
 
   const loadDailyPriorities = useCallback(async () => {
     try {
@@ -797,7 +798,7 @@ const DevWorkspace = () => {
       .map((p) => {
         const active = (p.counts.byStatus.IN_PROGRESS || 0) + (p.counts.byStatus.IN_REVIEW || 0)
         return {
-          project: { _id: p._id, key: p.key, name: p.name, color: p.color },
+          project: { _id: p._id, key: p.key, name: p.name, color: p.color, status: p.status },
           total: p.counts.total,
           done: p.counts.done,
           active,
@@ -1100,11 +1101,15 @@ const DevWorkspace = () => {
             </section>
           )}
 
-          {projectOverview.length > 0 && (
+          {(projectOverview.length > 0 || showArchived) && (
             <section className="dev-project-overview-block" aria-label={t('devA.projects.aria')}>
               <div className="dev-project-strip-header">
                 <span>{t('devA.projects.heading')}</span>
                 <small>{t('devA.projects.sortNote')}</small>
+                <label className="dev-project-archived-toggle">
+                  <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />{' '}
+                  {t('devA.projects.showArchived')}
+                </label>
                 {projectOverview.length > 6 && (
                   <button type="button" className="dev-project-toggle" onClick={() => setShowAllProjects((v) => !v)}>
                     {showAllProjects ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
@@ -1138,6 +1143,9 @@ const DevWorkspace = () => {
                     >
                       <span className="dev-project-card-key">{project.key}</span>
                       <strong>{project.name}</strong>
+                      {project.status === 'ARCHIVED' && (
+                        <span className="dev-project-card-archived">{t('devA.projects.archivedBadge')}</span>
+                      )}
                       <span className="dev-project-card-meta">
                         {t('devA.projects.doneActive', { done, total, active })}
                       </span>
