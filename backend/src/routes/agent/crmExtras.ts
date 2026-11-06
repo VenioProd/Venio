@@ -9,7 +9,8 @@ import { createCrmExtrasRouter } from '../crmExtras.js'
 /**
  * Équivalent agent des routes CRM enrichies (/api/v1/agent/crm/*).
  * Scopes inchangés : lecture `read:crm`, écriture `write:crm`.
- * Garde-fou : un agent crée des règles en brouillon ; l'activer exige `admin:*`.
+ * Garde-fou : un agent crée des règles en brouillon ; les activer, ou valider/refuser/relancer
+ * une exécution, exige `admin:*`.
  */
 const router = createCrmExtrasRouter({
   read: [requireScope('read:crm')],
@@ -24,7 +25,10 @@ const router = createCrmExtrasRouter({
   },
   leadScope: () => ({}),
   writeScope: () => ({}),
+  entityScope: () => null,
   canActivateRules: (req: Request) => (req.agentToken?.scopes ?? []).includes(ADMIN_WILDCARD_SCOPE),
+  // Valider/refuser/relancer une exécution (e-mails en attente de validation humaine) exige aussi `admin:*`.
+  canApproveRuns: (req: Request) => (req.agentToken?.scopes ?? []).includes(ADMIN_WILDCARD_SCOPE),
 })
 
 export default router

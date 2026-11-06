@@ -16,6 +16,8 @@ export interface Lead {
   contactPhone?: string
   source?: string
   project?: string
+  /** Entité du groupe : VENIO, CREATIO, DECISIO, FORMATIO, ARROW (absente = VENIO). */
+  entity?: string
   budget?: number | null
   priority?: string
   status: string
@@ -59,6 +61,7 @@ export interface LeadFormData {
   contactPhone: string
   source: string
   project: string
+  entity: string
   budget: string
   priority: string
   status: string

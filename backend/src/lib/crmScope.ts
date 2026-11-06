@@ -4,6 +4,14 @@ import Lead from '../models/Lead.js'
 import User from '../models/User.js'
 import { ADMIN_ROLES } from './permissions.js'
 import type { AdminRole } from '../types/enums.js'
+import {
+  entityCondition,
+  entityFromProject,
+  isGroupEntity,
+  leadEntityOf,
+  normalizeEntityList,
+  type GroupEntity,
+} from './groupEntities.js'
 
 /**
  * Périmètre CRM. En lecture, le super-admin et le commercial voient tout le
@@ -14,18 +22,88 @@ import type { AdminRole } from '../types/enums.js'
  * Vit ici plutôt que dans une route parce que plusieurs routers l'appliquent
  * (le CRM, le journal des échanges, l'app native) : une règle de sécurité
  * dupliquée finit par diverger.
+ *
+ * Périmètre par entité du groupe : un utilisateur dont `crmEntities` n'est
+ * pas vide ne lit et n'écrit que les leads de ces entités, EN PLUS des règles
+ * ci-dessus. Le super-admin n'est jamais restreint ; une liste vide laisse le
+ * comportement inchangé.
  */
 type ScopedRequest = Pick<Request, 'user'>
-type ScopedLead = { assignedTo?: unknown; createdBy?: unknown }
+type ScopedLead = { assignedTo?: unknown; createdBy?: unknown; entity?: unknown }
 
+/** Champs à sélectionner pour pouvoir appliquer `canReadLead` / `isLeadOutOfScope`. */
+export const LEAD_SCOPE_FIELDS = 'assignedTo createdBy entity'
+
+/** Lit tout le CRM selon son rôle (les entités peuvent encore le restreindre). */
 export function readsWholeCrm(req: ScopedRequest): boolean {
   return req.user!.role === 'SUPER_ADMIN' || req.user!.role === 'COMMERCIAL'
 }
 
+/** Entités auxquelles l'utilisateur est restreint ; `null` : aucune restriction. */
+export function crmEntityRestriction(req: ScopedRequest): GroupEntity[] | null {
+  if (req.user!.role === 'SUPER_ADMIN') return null
+  const entities = normalizeEntityList(req.user!.crmEntities)
+  return entities.length > 0 ? entities : null
+}
+
+/** Lit tout le CRM, sans restriction d'entité : aucun filtre à appliquer. */
+export function readsUnrestrictedCrm(req: ScopedRequest): boolean {
+  return readsWholeCrm(req) && crmEntityRestriction(req) === null
+}
+
+function entityAllowed(req: ScopedRequest, lead: ScopedLead): boolean {
+  const entities = crmEntityRestriction(req)
+  return entities === null || entities.includes(leadEntityOf(lead))
+}
+
+function withEntityRestriction(req: ScopedRequest, filter: Record<string, unknown>): Record<string, unknown> {
+  const entities = crmEntityRestriction(req)
+  return entities === null ? filter : { ...filter, entity: entityCondition(entities) }
+}
+
 /** Filtre de lecture. */
 export function leadScopeFilter(req: ScopedRequest): Record<string, unknown> {
-  if (readsWholeCrm(req)) return {}
-  return { $or: [{ assignedTo: req.user!.id }, { createdBy: req.user!.id }] }
+  if (readsWholeCrm(req)) return withEntityRestriction(req, {})
+  return withEntityRestriction(req, { $or: [{ assignedTo: req.user!.id }, { createdBy: req.user!.id }] })
+}
+
+/** Filtre d'écriture (actions groupées) : plus étroit que la lecture. */
+export function leadWriteScopeFilter(req: ScopedRequest): Record<string, unknown> {
+  if (req.user!.role === 'SUPER_ADMIN') return {}
+  return withEntityRestriction(req, { $or: [{ assignedTo: req.user!.id }, { createdBy: req.user!.id }] })
+}
+
+/**
+ * Filtre `?entity=` d'une liste, combiné au périmètre déjà posé sur `filter`.
+ * Une valeur inconnue est ignorée ; une entité hors périmètre ne renvoie rien.
+ */
+export function applyEntityQuery(req: ScopedRequest, filter: Record<string, unknown>, raw: unknown): void {
+  if (!isGroupEntity(raw)) return
+  const entities = crmEntityRestriction(req)
+  filter.entity = entities === null || entities.includes(raw) ? entityCondition([raw]) : { $in: [] }
+}
+
+/**
+ * Contrôle d'écriture de l'entité d'un lead créé ou modifié par un utilisateur
+ * restreint. Sans entité demandée à la création, l'entité déduite du projet
+ * est gardée si elle est permise, sinon la première entité du périmètre.
+ * Renvoie `false` si l'entité visée sort du périmètre (rien n'est écrit).
+ * Complète `payload.entity` à la création.
+ */
+export function resolveWriteEntity(
+  req: ScopedRequest,
+  payload: Record<string, any>,
+  existing: ScopedLead | null = null,
+): boolean {
+  const entities = crmEntityRestriction(req)
+  if (entities === null) return true
+  if (payload.entity === undefined) {
+    if (existing) return true
+    const inferred = entityFromProject(payload.project)
+    payload.entity = entities.includes(inferred) ? inferred : entities[0]
+    return true
+  }
+  return entities.includes(payload.entity)
 }
 
 /**
@@ -48,12 +126,13 @@ export async function isAssignableCrmUser(id: unknown): Promise<boolean> {
 }
 
 export function canReadLead(req: ScopedRequest, lead: ScopedLead): boolean {
-  return readsWholeCrm(req) || !isLeadOutOfScope(req, lead)
+  return (readsWholeCrm(req) && entityAllowed(req, lead)) || !isLeadOutOfScope(req, lead)
 }
 
 /** Contrôle d'écriture. */
 export function isLeadOutOfScope(req: ScopedRequest, lead: ScopedLead): boolean {
   if (req.user!.role === 'SUPER_ADMIN') return false
+  if (!entityAllowed(req, lead)) return true
   const userId = req.user!.id
   return lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId
 }
@@ -68,7 +147,7 @@ export async function readableProposalFilter(
   readableProjectIds: string[] | null,
 ): Promise<Record<string, unknown>> {
   const onProject = readableProjectIds === null ? { project: { $ne: null } } : { project: { $in: readableProjectIds } }
-  const onLead = readsWholeCrm(req)
+  const onLead = readsUnrestrictedCrm(req)
     ? { project: null }
     : { project: null, leadId: { $in: await Lead.distinct('_id', leadScopeFilter(req)) } }
   return { $or: [onProject, onLead] }

@@ -7,6 +7,7 @@ import {
   CRM_STATUSES,
   CRM_SOURCES,
   CRM_PROJECTS,
+  CRM_ENTITIES,
   CRM_TEMPERATURES,
   EMPTY_FORM,
   SERVICE_TYPE_LABEL_KEYS,
@@ -95,6 +96,15 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               options={[
                 { value: '', label: t('crm.form.project') },
                 ...CRM_PROJECTS.map((p) => ({ value: p.key, label: t(p.labelKey) })),
+              ]}
+            />
+            <CustomSelect
+              className="portal-input"
+              value={form.entity}
+              onChange={(v) => onFormChange({ ...form, entity: v })}
+              options={[
+                { value: '', label: t('crm.form.entity') },
+                ...CRM_ENTITIES.map((e) => ({ value: e.key, label: t(e.labelKey) })),
               ]}
             />
             <input

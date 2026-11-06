@@ -21,6 +21,7 @@ import {
   isLeadChangeError,
   normalizeLeadPatch,
 } from '../../lib/crmLeadService.js'
+import { entityCondition, GROUP_ENTITIES, isGroupEntity } from '../../lib/groupEntities.js'
 
 /**
  * Routes agent pour le CRM : clients, leads, contacts, notes, activities.
@@ -280,6 +281,8 @@ router.get('/leads', requireScope('read:crm'), async (req: Request, res: Respons
     if (typeof req.query.project === 'string' && (LEAD_PROJECTS as readonly string[]).includes(req.query.project)) {
       filter.project = req.query.project
     }
+    // Entité du groupe (un lead sans entité compte comme VENIO).
+    if (isGroupEntity(req.query.entity)) filter.entity = entityCondition([req.query.entity])
 
     const sort = parseSort(req.query.sort, { updatedAt: -1 }, [
       'createdAt',
@@ -348,6 +351,10 @@ router.post(
     .optional({ values: 'falsy' })
     .isIn([...LEAD_PROJECTS])
     .withMessage('Projet invalide'),
+  body('entity')
+    .optional({ values: 'falsy' })
+    .isIn([...GROUP_ENTITIES])
+    .withMessage('Entité invalide'),
   body('budget').optional({ nullable: true }).isNumeric(),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
@@ -386,6 +393,10 @@ router.patch(
     .optional({ values: 'falsy' })
     .isIn([...LEAD_PROJECTS])
     .withMessage('Projet invalide'),
+  body('entity')
+    .optional({ values: 'falsy' })
+    .isIn([...GROUP_ENTITIES])
+    .withMessage('Entité invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {

@@ -8,8 +8,11 @@ import LeadEnrichedPanel from './rich/LeadEnrichedPanel'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
 import {
+  CRM_ENTITIES,
   CRM_STATUSES,
   CRM_TEMPERATURES,
+  ENTITY_MAP,
+  leadEntity,
   PROJECT_MAP,
   SERVICE_TYPE_LABEL_KEYS,
   TEMPERATURE_MAP,
@@ -139,6 +142,9 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               )}
             </p>
             <p>
+              <strong>{t('crm.detail.entity')}</strong> {t(ENTITY_MAP[leadEntity(lead)]!.labelKey)}
+            </p>
+            <p>
               <strong>{t('crm.detail.temperature')}</strong>{' '}
               {TEMPERATURE_MAP[lead.leadTemperature || '']
                 ? t(TEMPERATURE_MAP[lead.leadTemperature || ''].labelKey)
@@ -205,6 +211,18 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                       onUpdateLead(lead._id, { status: v })
                     }}
                     options={CRM_STATUSES.map((s) => ({ value: s.key, label: t(s.labelKey) }))}
+                  />
+                </div>
+                <div className="crm-modal-quick-field">
+                  <label>{t('crm.col.entity')}</label>
+                  <CustomSelect
+                    className="portal-input"
+                    value={leadEntity(lead)}
+                    onChange={(v) => {
+                      onLeadChange((prev) => (prev ? { ...prev, entity: v } : prev))
+                      onUpdateLead(lead._id, { entity: v })
+                    }}
+                    options={CRM_ENTITIES.map((e) => ({ value: e.key, label: t(e.labelKey) }))}
                   />
                 </div>
                 <div className="crm-modal-quick-field">

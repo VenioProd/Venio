@@ -27,6 +27,9 @@ import {
   CRM_STATUSES,
   CRM_PRIORITIES,
   CRM_PROJECTS,
+  CRM_ENTITIES,
+  leadEntity,
+  parseEntityParam,
   STATUS_MAP,
   PRIORITY_MAP,
   EMPTY_FORM,
@@ -82,6 +85,25 @@ const CrmBoard = () => {
       )
     },
     [setSearchParams],
+  )
+  // Entité du groupe, portée par l'URL (?entity=) comme le projet : commune à toutes les vues.
+  const filterEntity = parseEntityParam(searchParams.get('entity'))
+  const setFilterEntity = useCallback(
+    (entity: string) => {
+      setSearchParams(
+        (params) => {
+          if (entity) params.set('entity', entity)
+          else params.delete('entity')
+          return params
+        },
+        { replace: true },
+      )
+    },
+    [setSearchParams],
+  )
+  const matchesEntity = useCallback(
+    (lead: Lead) => !filterEntity || leadEntity(lead) === filterEntity,
+    [filterEntity],
   )
   const [sortField, setSortField] = useState<string>('updatedAt')
   const [sortDir, setSortDir] = useState<string>('desc')
@@ -209,6 +231,7 @@ const CrmBoard = () => {
     })
     return leads
   }, [columns])
+  const entityLeads = useMemo(() => allLeads.filter(matchesEntity), [allLeads, matchesEntity])
 
   // Les notifications pointent /admin/crm/leads/:leadId : la fiche s'ouvre une fois le pipeline chargé.
   const { leadId: linkedLeadId } = useParams()
@@ -221,7 +244,7 @@ const CrmBoard = () => {
 
   // Filtered & sorted leads for table view
   const filteredLeads = useMemo(() => {
-    let leads = [...allLeads]
+    let leads = [...entityLeads]
 
     if (search) {
       const q = search.toLowerCase()
@@ -260,7 +283,7 @@ const CrmBoard = () => {
     })
 
     return leads
-  }, [allLeads, search, filterStatus, filterPriority, filterAssignee, filterProject, sortField, sortDir])
+  }, [entityLeads, search, filterStatus, filterPriority, filterAssignee, filterProject, sortField, sortDir])
 
   // Group leads by status for Monday.com style
   const groupedLeads = useMemo(() => {
@@ -285,6 +308,8 @@ const CrmBoard = () => {
         contactPhone: form.contactPhone,
         source: form.source,
         project: form.project,
+        // Sans choix explicite, le serveur déduit l'entité du projet.
+        ...(form.entity ? { entity: form.entity } : {}),
         budget: form.budget === '' ? null : Number(form.budget),
         priority: form.priority,
         status: form.status,
@@ -429,25 +454,27 @@ const CrmBoard = () => {
     setFilterPriority('')
     setFilterAssignee('')
     setFilterProject('')
-  }, [setFilterProject])
+    setFilterEntity('')
+  }, [setFilterProject, setFilterEntity])
 
+  const keepLead = (lead: Lead) => (!filterProject || lead.project === filterProject) && matchesEntity(lead)
   const projectColumns = columns.map((column) => ({
     ...column,
-    leads: (column.leads || []).filter((lead) => !filterProject || lead.project === filterProject),
+    leads: (column.leads || []).filter(keepLead),
   }))
   const projectGroups = worklist
     ? {
-        overdue: worklist.groups.overdue.filter((lead) => !filterProject || lead.project === filterProject),
-        today: worklist.groups.today.filter((lead) => !filterProject || lead.project === filterProject),
-        upcoming: worklist.groups.upcoming.filter((lead) => !filterProject || lead.project === filterProject),
-        drifting: worklist.groups.drifting.filter((lead) => !filterProject || lead.project === filterProject),
+        overdue: worklist.groups.overdue.filter(keepLead),
+        today: worklist.groups.today.filter(keepLead),
+        upcoming: worklist.groups.upcoming.filter(keepLead),
+        drifting: worklist.groups.drifting.filter(keepLead),
       }
     : null
 
   const worklistOverdueCount = projectGroups?.overdue.length ?? 0
   const lostReasons = worklist?.lostReasons ?? []
-  const totalLeads = allLeads.length
-  const activeFilters = [filterStatus, filterPriority, filterAssignee, filterProject, search].filter(Boolean).length
+  const totalLeads = entityLeads.length
+  const activeFilters = [filterStatus, filterPriority, filterAssignee, filterProject, filterEntity, search].filter(Boolean).length
 
   return (
     <CrmThresholdsContext.Provider value={worklist?.thresholds ?? DEFAULT_WORKLIST_THRESHOLDS}>
@@ -633,6 +660,17 @@ const CrmBoard = () => {
             overflow: 'visible',
           }}
         >
+          <label className="crm-table-toolbar crm-entity-filter">
+            {t('crm.col.entity')}
+            <select value={filterEntity} onChange={(event) => setFilterEntity(event.target.value)}>
+              <option value="">{t('crm.filters.allEntities')}</option>
+              {CRM_ENTITIES.map((entity) => (
+                <option key={entity.key} value={entity.key}>
+                  {t(entity.labelKey)}
+                </option>
+              ))}
+            </select>
+          </label>
           {viewMode !== 'table' && viewMode !== 'liste' && (
             <label className="crm-table-toolbar">
               {t('crm.col.project')}
@@ -666,7 +704,7 @@ const CrmBoard = () => {
             </div>
           ) : viewMode === 'liste' ? (
             <RichLeadTable
-              leads={allLeads}
+              leads={entityLeads}
               admins={admins}
               adminsById={adminsById}
               canManageCrm={canManageCrm}
