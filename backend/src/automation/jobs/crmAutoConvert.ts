@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import { isLeadExcludedFromAutomation } from './crmLeadScope.js'
 
 const definition: AutomationDefinition = {
   key: 'crm.auto_convert_won_lead',
@@ -36,6 +37,13 @@ const definition: AutomationDefinition = {
     if (!lead) {
       return {
         actionsExecuted: ['skipped:lead_not_found'],
+        recipientsNotified: [],
+      }
+    }
+
+    if (isLeadExcludedFromAutomation(lead as { archivedAt?: Date | null; automationPausedAt?: Date | null })) {
+      return {
+        actionsExecuted: ['skipped:lead_archived_or_paused'],
         recipientsNotified: [],
       }
     }

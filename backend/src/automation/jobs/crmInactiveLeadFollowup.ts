@@ -8,6 +8,7 @@ import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import { sendColdLeadsReminderEmail } from '../../lib/email.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import { withActiveLeads } from './crmLeadScope.js'
 
 const DEFAULT_INACTIVE_DAYS = 7
 
@@ -35,12 +36,11 @@ const definition: AutomationDefinition = {
     const inactiveDays = (ctx.settings.config?.inactiveDays as number) || DEFAULT_INACTIVE_DAYS
     const threshold = new Date(ctx.now.getTime() - inactiveDays * 24 * 3600_000)
 
-    const inactiveLeads = await Lead.find({
+    const inactiveLeads = await Lead.find(withActiveLeads({
       status: { $nin: ['WON', 'LOST'] },
-      isArchived: { $ne: true },
       updatedAt: { $lt: threshold },
       assignedTo: { $ne: null },
-    }).populate('assignedTo', 'email name')
+    })).populate('assignedTo', 'email name')
 
     // Group leads by assignee
     const byAssignee = new Map<string, { user: { _id: string; email: string; name: string }; leads: typeof inactiveLeads }>()
