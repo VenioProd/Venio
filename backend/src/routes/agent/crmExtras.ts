@@ -29,6 +29,8 @@ const router = createCrmExtrasRouter({
   canActivateRules: (req: Request) => (req.agentToken?.scopes ?? []).includes(ADMIN_WILDCARD_SCOPE),
   // Valider/refuser/relancer une exécution (e-mails en attente de validation humaine) exige aussi `admin:*`.
   canApproveRuns: (req: Request) => (req.agentToken?.scopes ?? []).includes(ADMIN_WILDCARD_SCOPE),
+  // Créer, modifier ou activer une séquence exige `admin:*` ; inscrire des leads, `write:crm`.
+  canAdministerSequences: (req: Request) => (req.agentToken?.scopes ?? []).includes(ADMIN_WILDCARD_SCOPE),
 })
 
 export default router

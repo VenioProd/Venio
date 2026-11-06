@@ -4,6 +4,7 @@ import LeadActivity from '../models/LeadActivity.js'
 import Interaction from '../models/Interaction.js'
 import PersonalTask from '../models/PersonalTask.js'
 import CrmRuleRun from '../models/CrmRuleRun.js'
+import CrmSequenceEnrollment from '../models/CrmSequenceEnrollment.js'
 import User from '../models/User.js'
 import CrmSettings from '../models/CrmSettings.js'
 import type { ICrmSettings } from '../types/models/index.js'
@@ -361,6 +362,14 @@ export async function applyLeadChange(
     if (becameWon) notifyWon(lead, ctx.actor)
   }
 
+  // Séquences : opposition, désinscription, anonymisation, archivage ou statut d'arrêt
+  // closent les inscriptions ouvertes du lead, quel que soit le canal (et même sans émission
+  // d'événements). Import différé : le module des séquences importe les règles, qui importent ce service.
+  if (!created) {
+    const { stopSequencesOnLeadChange } = await import('./crmSequences.js')
+    await stopSequencesOnLeadChange(lead, before, ctx.actor)
+  }
+
   if (ctx.emit !== false) emitLeadChanges(lead, before, ctx.actor)
 
   return { lead, created, before, transitions, assigneeChanged, won }
@@ -373,7 +382,7 @@ export function createLead(patch: Record<string, any>, ctx: LeadChangeContext): 
 
 /**
  * Supprime un lead et ce qui n'a de sens que rattaché à lui : historique,
- * échanges, tâches, exécutions de règles. Les projets et devis restent (ils
+ * échanges, tâches, exécutions de règles, inscriptions aux séquences. Les projets et devis restent (ils
  * portent du chiffre d'affaires).
  */
 export async function deleteLeadCascade(lead: Pick<LeadDoc, '_id'>): Promise<void> {
@@ -382,6 +391,7 @@ export async function deleteLeadCascade(lead: Pick<LeadDoc, '_id'>): Promise<voi
     Interaction.deleteMany({ subjectType: 'LEAD', subjectId: lead._id }),
     PersonalTask.deleteMany({ leadId: lead._id }),
     CrmRuleRun.deleteMany({ lead: lead._id }),
+    CrmSequenceEnrollment.deleteMany({ lead: lead._id }),
   ])
   await Lead.deleteOne({ _id: lead._id })
 }

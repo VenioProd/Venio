@@ -5,6 +5,9 @@ import LeadActivity from '../models/LeadActivity.js'
 import Interaction from '../models/Interaction.js'
 import PersonalTask from '../models/PersonalTask.js'
 import CrmRuleRun from '../models/CrmRuleRun.js'
+import CrmSequenceEnrollment from '../models/CrmSequenceEnrollment.js'
+// Modèle référencé par le populate de l'export.
+import '../models/CrmSequence.js'
 import SuppressionEntry, { type SuppressionReason } from '../models/SuppressionEntry.js'
 import { logLeadActivity } from './crmAutomations.js'
 
@@ -330,6 +333,8 @@ export async function anonymizeLead(
     { $unset: { 'steps.$[].payload': '' } },
   )
   await CrmRuleRun.updateMany({ lead: lead._id, status: 'PENDING' }, { $set: { status: 'SKIP' } })
+  // Journal des séquences : les objets d'e-mails rendus peuvent porter le nom du contact.
+  await CrmSequenceEnrollment.updateMany({ lead: lead._id, 'history.0': { $exists: true } }, { $set: { 'history.$[].message': '' } })
   await logLeadActivity(lead._id, 'ANONYMIZED', label, { reason: opts.reason, source: opts.source }, opts.actor)
   return { anonymized: true }
 }
@@ -341,12 +346,13 @@ export async function buildPersonalDataExport(leadId: Types.ObjectId | string) {
   const lead = await Lead.findById(leadId).lean()
   if (!lead) return null
   const email = normalizeEmail(lead.contactEmail)
-  const [activities, interactions, tasks, ruleRuns, suppression] = await Promise.all([
+  const [activities, interactions, tasks, ruleRuns, suppression, sequenceEnrollments] = await Promise.all([
     LeadActivity.find({ leadId: lead._id }).sort({ createdAt: 1, _id: 1 }).lean(),
     Interaction.find({ subjectType: 'LEAD', subjectId: lead._id }).sort({ occurredAt: 1, _id: 1 }).lean(),
     PersonalTask.find({ leadId: lead._id }).select('title status dueDate createdAt').sort({ createdAt: 1 }).lean(),
     CrmRuleRun.find({ lead: lead._id }).select('ruleName trigger status steps createdAt').sort({ createdAt: 1 }).lean(),
     email ? SuppressionEntry.findOne({ emailNormalized: email }).select('emailNormalized reason createdAt').lean() : null,
+    CrmSequenceEnrollment.find({ lead: lead._id }).populate('sequence', 'name').select('-openKey').sort({ createdAt: 1 }).lean(),
   ])
   return {
     format: 'venio-crm-personal-data/v1',
@@ -357,6 +363,7 @@ export async function buildPersonalDataExport(leadId: Types.ObjectId | string) {
     tasks,
     ruleRuns,
     suppression: suppression ?? null,
+    sequenceEnrollments,
   }
 }
 

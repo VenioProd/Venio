@@ -51,6 +51,7 @@ export const ADMIN_HUBS = {
       { id: 'comptes', labelKey: 'shell.hub.crm.comptes', to: '/admin/crm/comptes', modules: ['clients'] },
       { id: 'partenaires', labelKey: 'shell.hub.crm.partenaires', to: '/admin/crm/partenaires', modules: ['external-sales'] },
       { id: 'automatisations', labelKey: 'shell.hub.crm.automatisations', to: '/admin/crm/automatisations', modules: ['crm'] },
+      { id: 'sequences', labelKey: 'crmSeq.section', to: '/admin/crm/sequences', modules: ['crm'] },
     ],
   },
   projets: {

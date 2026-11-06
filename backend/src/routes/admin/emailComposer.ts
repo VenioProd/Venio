@@ -9,6 +9,14 @@ import { sendBulkEmail, EmailTransportUnavailableError } from '../../lib/email/s
 import { logBlockedRecipients, screenBulkRecipients } from '../../lib/crmBulkEmailGuard.js'
 
 const router = express.Router()
+
+/** Envoi groupé libre : réservé à la direction et aux RH (pas aux lecteurs, comptables, stagiaires…). */
+export const EMAIL_COMPOSER_SEND_ROLES = ['SUPER_ADMIN', 'ADMIN', 'RH'] as const
+function requireComposerSender(req: Request, res: Response, next: NextFunction): void {
+  const role = (req as Request & { user?: { role?: string } }).user?.role
+  if (role && (EMAIL_COMPOSER_SEND_ROLES as readonly string[]).includes(role)) return next()
+  res.status(403).json({ error: 'Envoi groupé réservé aux administrateurs et aux RH' })
+}
 router.use(auth)
 router.use(requireAdmin)
 
@@ -37,6 +45,7 @@ router.get('/recipients', requireAdmin, async (req: Request, res: Response, next
 router.post(
   '/send',
   requireAdmin,
+  requireComposerSender,
   body('subject').trim().notEmpty().withMessage("L'objet est requis"),
   body('body').trim().notEmpty().withMessage('Le corps du message est requis'),
   body('recipients').isArray({ min: 1 }).withMessage('Au moins un destinataire est requis'),

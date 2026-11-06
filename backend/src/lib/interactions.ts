@@ -161,6 +161,12 @@ export async function logInteraction(input: LogInteractionInput) {
         await syncLeadLastInteraction(input.subjectId)
       })
       .catch(() => {})
+    // Un échange entrant (réponse du prospect) arrête les séquences qui le demandent.
+    if (interaction.direction === 'IN') {
+      import('./crmSequences.js')
+        .then((m) => m.stopSequencesOnInboundInteraction(input.subjectId, interaction.occurredAt))
+        .catch(() => {})
+    }
   }
   return interaction
 }

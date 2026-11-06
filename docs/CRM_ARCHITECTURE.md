@@ -41,6 +41,7 @@ Le **point d'entrée unique** des écritures de lead est `applyLeadChange` (`lib
 | `crmPilotage.ts` | Calculs purs du pilotage (entonnoir, vitesses, groupes) : aucune écriture |
 | `crmRevenue.ts` | Chiffre d'affaires rattaché aux leads (calculs purs, comme `crmPilotage.ts`) |
 | `crmPrivacy.ts` | RGPD : opposition et liste de suppression (`checkProspectContact`), lien de désinscription signé, anonymisation (`anonymizeLead`), export des données (`buildPersonalDataExport`), migration 010 |
+| `crmSequences.ts` | Séquences d'e-mails (lot 5) : validation, inscription et refus (`enrollLeads`), désinscription, moteur (`runSequenceTick`, `processEnrollment`), calendrier jours ouvrés / heure de Paris (`computeNextRunAt`, `isInSendWindow`), arrêts automatiques (`stopSequencesOnLeadChange`, `stopSequencesOnInboundInteraction`), statistiques, migration 011 |
 | `crmRetention.ts` | Durée de conservation : sélection des leads à anonymiser (`runRetentionPurge`), simulation tant que la purge n'est pas activée |
 | `permissions.ts` | Permissions par rôle (`view_crm`, `manage_crm`) et `ADMIN_ROLES` |
 | `agent/scopes.ts` | Scopes agent (`read:crm`, `write:crm`, `admin:*`) |
@@ -52,7 +53,7 @@ Le **point d'entrée unique** des écritures de lead est `applyLeadChange` (`lib
 | `crmParisTime.ts` | Heure de Paris : `parisParts`, `parisDateKey`, `parisWeekKey`, `parseHHMM`, `serverScheduleForParis` |
 | `crmJobGuards.ts` | `crmJobAbstention` : abstention d'un job au profit de la règle active ou du planificateur |
 | `crmLeadScope.ts` | Filtre `withActiveLeads` (hors archivés et automatisation suspendue) |
-| `crmInactiveLeadFollowup.ts`, `crmPostDemoFollowup.ts`, `crmProposalFollowup.ts`, `crmHotLeadAlert.ts`, `crmAutoArchiveLost.ts`, `crmConversionDropAlert.ts`, `crmRetentionPurge.ts` | Jobs CRM enregistrés par `automation/index.ts` |
+| `crmInactiveLeadFollowup.ts`, `crmPostDemoFollowup.ts`, `crmProposalFollowup.ts`, `crmHotLeadAlert.ts`, `crmAutoArchiveLost.ts`, `crmConversionDropAlert.ts`, `crmRetentionPurge.ts`, `crmSequences.ts` | Jobs CRM enregistrés par `automation/index.ts` |
 
 ### 2.3 Modèles (`models/`)
 
@@ -67,7 +68,9 @@ Le **point d'entrée unique** des écritures de lead est `applyLeadChange` (`lib
 | `CrmView` | Vue enregistrée | `scope` `PRIVATE`/`TEAM`, `filters`, `columns`, `sort`, `mode` `table`/`kanban`, `pinned` |
 | `SchedulerLock` | Verrous et curseurs | un document par occurrence (clé `_id`), TTL sur `expiresAt` ; curseur `crm:round-robin` sans expiration |
 | `Interaction` | Échanges (appels, e-mails) liés à un lead | `subjectType: 'LEAD'` ; purgé avec le lead |
-| `PersonalTask` | Tâches personnelles | peut porter `leadId` et `ruleId` ; purgées avec le lead |
+| `PersonalTask` | Tâches personnelles | peut porter `leadId`, `ruleId` et `sequenceId` (tâche créée par une étape de séquence) ; purgées avec le lead |
+| `CrmSequence` | Séquence d'e-mails (lot 5) | `name`, `entity` (optionnelle), `status` `DRAFT`/`ACTIVE`/`PAUSED`, `steps[]` (`type` `EMAIL`/`TASK`/`WAIT`, `delayDays`, `sendHourParis` 8–19, `subject`, `body`, `taskTitle`), `stopOn` (`reply`, `statusChange`, `statuses` défaut `WON`/`LOST`), `createdBy`, `activatedAt` |
+| `CrmSequenceEnrollment` | Inscription d'un lead à une séquence | `sequence`, `lead`, `currentStep`, `status` `ACTIVE`/`COMPLETED`/`STOPPED`/`PAUSED`, `nextRunAt`, `stoppedReason`, `attempts`, `history[]` ; index `{status, nextRunAt}` ; `openKey` (posé tant que l'inscription est ouverte) sous index unique partiel : une inscription ouverte par couple séquence / lead ; supprimées avec le lead |
 
 Modèles des types : `types/models/crm.ts`, `types/models/lead.ts`, `types/models/index.ts`.
 
@@ -222,6 +225,22 @@ Garde : `read:crm` pour les GET, `write:crm` pour le reste. Les vues appartienne
 | POST | `/rules/:id/simulate` | simulation |
 | POST | `/rules/runs/:id/approve`, `/reject`, `/retry` | validation des exécutions (voir §7) |
 
+### 4.5 Séquences d'e-mails — `routes/crmSequences.ts` (monté par `crmExtras`, admin et agent)
+
+Lecture : garde `read` (`view_crm` ; agent `read:crm`). Inscription : garde `write` (`manage_crm` ; agent `write:crm`) + périmètre d'écriture des leads (`writeScope`, un lead hors périmètre est refusé `NOT_FOUND`). Conception : `canAdministerSequences` (`administersCrm` côté admin, scope `admin:*` côté agent ; refusé si l'adaptateur ne le fournit pas).
+
+| Méthode | Chemin | Garde | Rôle |
+|---|---|---|---|
+| GET | `/sequences` | lecture | liste + `stats` (inscrits, en cours, terminés, arrêtés par raison ; restreintes aux leads lisibles) + `canAdminister` |
+| GET | `/sequences/:id` | lecture | détail + `stats` |
+| POST | `/sequences` | conception | création, toujours en `DRAFT` |
+| PATCH | `/sequences/:id` | conception | modification ; `status` `ACTIVE` (409 `EMPTY_SEQUENCE` sans étape), `PAUSED`, `DRAFT` |
+| DELETE | `/sequences/:id` | conception | 409 `HAS_OPEN_ENROLLMENTS` tant que des leads sont inscrits |
+| POST | `/sequences/:id/enroll` | écriture | `{ leadIds }` (200 au plus) → `enrolled[]`, `refused[] { leadId, reason }` |
+| POST | `/sequences/:id/unenroll` | écriture | arrêt `MANUAL` des inscriptions ouvertes des leads donnés |
+| GET | `/sequences/:id/enrollments?status=&page=&pageSize=` | lecture | inscriptions (leads lisibles seulement) |
+| GET | `/leads/:id/sequences` | lecture | inscriptions d'un lead |
+
 ---
 
 ### Chiffre d'affaires, valeur pondérée, prévisions (chantier 3C)
@@ -279,4 +298,6 @@ Constats issus du code à la date de rédaction. Ils ne sont pas corrigés ici.
 - Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `009-crm-revenue.ts` (objectifs ; détail dans CRM_AUTOMATISATIONS.md §10).
 - Tests du périmètre ADMIN, du rattachement de projet, de l'envoi groupé et du seuil de relance de proposition (chantier 4A) : `crm-admin-scope`.
 - Tests RGPD : `crm-rgpd-privacy`, `crm-rgpd-rules`, `crm-rgpd-routes`, `crm-rgpd-retention`.
+- Tests des séquences (lot 5) : `crm-sequences-engine` (calendrier, inscription, moteur, arrêts), `crm-sequences-routes` (droits, refus, agent).
+- Migration `backend/scripts/migrations/011-crm-sequences.ts` (index des séquences ; logique `ensureSequenceIndexes`).
 - Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `010-crm-rgpd.ts` (détail dans CRM_AUTOMATISATIONS.md §10).

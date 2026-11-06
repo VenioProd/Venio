@@ -6,6 +6,7 @@ const CrmBoard = lazy(() => import('../CrmBoard'))
 const ClientAccountList = lazy(() => import('../ClientAccountList'))
 const ExternalSales = lazy(() => import('../ExternalSales'))
 const CrmAutomations = lazy(() => import('../crm-board/automations'))
+const CrmSequences = lazy(() => import('../crm-board/sequences'))
 
 export default function CrmHub() {
   return (
@@ -16,6 +17,7 @@ export default function CrmHub() {
         comptes: <ClientAccountList />,
         partenaires: <ExternalSales />,
         automatisations: <CrmAutomations />,
+        sequences: <CrmSequences />,
       }}
     />
   )

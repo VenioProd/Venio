@@ -5,6 +5,7 @@ import { useI18n } from '../../../../context/I18nContext'
 import type { MessageKey } from '../../../../i18n'
 import type { AdminUser, Lead } from '../../../../types/crm.types'
 import NewBadge from './NewBadge'
+import EnrollDialog from '../sequences/EnrollDialog'
 import { CRM_PROJECTS, CRM_STATUSES, CRM_TEMPERATURES } from '../constants'
 import {
   COLUMN_GROUPS,
@@ -104,6 +105,7 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
   const [pending, setPending] = useState<{ action: BulkAction; payload?: Record<string, unknown>; label: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
+  const [enrollOpen, setEnrollOpen] = useState(false)
   const colsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -458,10 +460,19 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
           </select>
           <button type="button" className="rich-btn" disabled={busy} onClick={() => { const tag = window.prompt(t('crmRich.bulk.tagPrompt'))?.trim(); if (tag) void runBulk('tag', { tag }) }}>{t('crmRich.bulk.tag')}</button>
           <button type="button" className="rich-btn" disabled={busy} onClick={() => setPending({ action: 'archive', label: t('crmRich.bulk.archiveConfirm', { count: selected.size }) })}>{t('crmRich.bulk.archive')}</button>
+          <button type="button" className="rich-btn" disabled={busy} onClick={() => setEnrollOpen(true)}>{t('crmSeq.bulk.add')}</button>
           <button type="button" className="rich-btn" onClick={exportSelected}>{t('crmRich.bulk.export')}</button>
           <button type="button" className="rich-btn rich-btn--danger" disabled={busy} onClick={() => setPending({ action: 'delete', label: t('crmRich.bulk.deleteConfirm', { count: selected.size }) })}>{t('crmRich.bulk.delete')}</button>
           <button type="button" className="rich-x" aria-label={t('crmRich.bulk.clearAria')} onClick={() => setSelected(new Set())}>×</button>
         </div>
+      )}
+
+      {enrollOpen && selected.size > 0 && (
+        <EnrollDialog
+          leadIds={[...selected]}
+          leadLabels={Object.fromEntries(leads.filter((l) => selected.has(l._id)).map((l) => [l._id, l.company]))}
+          onClose={() => setEnrollOpen(false)}
+        />
       )}
 
       <ConfirmModal
