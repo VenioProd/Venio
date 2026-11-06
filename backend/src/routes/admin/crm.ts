@@ -48,6 +48,12 @@ const router = express.Router()
 router.use(auth)
 router.use(requireAdmin)
 
+// Un identifiant de lead mal formé est une erreur de requête (400), pas une erreur serveur (500).
+router.param('id', (_req: Request, res: Response, next: NextFunction, id: string) => {
+  if (!mongoose.isValidObjectId(id)) return res.status(400).json({ error: 'Identifiant invalide' })
+  return next()
+})
+
 const CRM_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
 const DEFAULT_FOLLOW_UP_DAYS = 3
 
