@@ -15,6 +15,7 @@ import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import AuditLog from '../../models/AuditLog.js'
 import { buildActorFromReq, recordAudit } from '../../lib/audit/auditHelpers.js'
 import { readSessionCookie, revokeSession, revokeUserSessions, setSessionCookie } from '../../lib/session.js'
+import { normalizeEntityList } from '../../lib/groupEntities.js'
 
 const router = express.Router()
 
@@ -80,6 +81,8 @@ router.post(
       const allPermValues = Object.values(PERMISSIONS) as string[]
       let grantedPermissions: string[] = []
       let deniedPermissions: string[] = []
+      // Périmètre CRM par entité du groupe (SUPER_ADMIN only) ; vide = aucune restriction.
+      let crmEntities: string[] = []
       if (req.user!.role === 'SUPER_ADMIN') {
         if (Array.isArray(req.body.grantedPermissions)) {
           grantedPermissions = req.body.grantedPermissions.filter((p: string) => allPermValues.includes(p))
@@ -87,6 +90,7 @@ router.post(
         if (Array.isArray(req.body.deniedPermissions)) {
           deniedPermissions = req.body.deniedPermissions.filter((p: string) => allPermValues.includes(p))
         }
+        crmEntities = normalizeEntityList(req.body.crmEntities)
       }
 
       const passwordHash = await bcrypt.hash(password, 10)
@@ -98,6 +102,7 @@ router.post(
         jobTitle: typeof req.body.jobTitle === 'string' ? req.body.jobTitle : '',
         grantedPermissions,
         deniedPermissions,
+        crmEntities,
       })
 
       // Trigger internal user onboarding
@@ -275,6 +280,8 @@ router.patch(
         if (Array.isArray(req.body.deniedPermissions)) {
           user.deniedPermissions = req.body.deniedPermissions.filter((p: string) => allPermValues.includes(p))
         }
+        // Le périmètre est relu à chaque requête (lib/session) : pas de révocation de session nécessaire.
+        if (Array.isArray(req.body.crmEntities)) user.crmEntities = normalizeEntityList(req.body.crmEntities)
       }
       if (req.body.jobTitle !== undefined) user.jobTitle = String(req.body.jobTitle)
 

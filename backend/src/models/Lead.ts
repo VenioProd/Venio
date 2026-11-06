@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 import type { ILead } from '../types/models/index.js'
 import { createNotification } from '../lib/notifications.js'
 import logger from '../lib/logger.js'
+import { DEFAULT_GROUP_ENTITY, GROUP_ENTITIES } from '../lib/groupEntities.js'
 
 // Projet / produit concerné par le lead. Vide pour les leads historiques.
 export const LEAD_PROJECTS = ['ARTOSERA', 'VIGNO', 'ARROW', 'VENIO', 'AUTRE'] as const
@@ -15,6 +16,8 @@ const leadSchema = new mongoose.Schema<ILead>(
     contactPhone: { type: String, default: '' },
     source: { type: String, default: '' },
     project: { type: String, enum: ['', ...LEAD_PROJECTS], default: '' },
+    // Entité du groupe qui porte l'affaire (voir lib/groupEntities). Distincte du projet.
+    entity: { type: String, enum: [...GROUP_ENTITIES], default: DEFAULT_GROUP_ENTITY },
     // Provenance de migration, indépendante des notes éditables. Absente des leads ordinaires.
     legacyArrowSchoolId: { type: mongoose.Schema.Types.ObjectId, unique: true, sparse: true },
     status: {
@@ -131,6 +134,7 @@ leadSchema.index({ status: 1, priority: 1 })
 leadSchema.index({ assignedTo: 1, nextActionAt: 1 })
 leadSchema.index({ company: 1 })
 leadSchema.index({ project: 1 })
+leadSchema.index({ entity: 1, status: 1 })
 leadSchema.index({ clientAccountId: 1 })
 leadSchema.index({ externalRep: 1, updatedAt: -1 })
 leadSchema.index({ archivedAt: 1, status: 1 })

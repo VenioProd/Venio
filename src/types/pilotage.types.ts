@@ -59,6 +59,8 @@ export interface RevenueBlock {
 export interface PilotageResponse {
   period: PilotagePeriod
   since: string
+  /** Entité du groupe filtrée (?entity=), `null` : tout le périmètre. */
+  entity?: string | null
   funnel: { stages: FunnelStageResult[]; total: number }
   velocity: {
     stages: VelocityStageResult[]

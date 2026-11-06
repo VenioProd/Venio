@@ -3,7 +3,7 @@ import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
 import { formatDate, formatMoney } from '../../../i18n/format'
 import type { Lead, AdminUser } from '../../../types/crm.types'
-import { PRIORITY_MAP, PROJECT_MAP, SOURCE_LABEL_KEYS, getLeadAlerts, labelOfValue } from './constants'
+import { ENTITY_MAP, PRIORITY_MAP, PROJECT_MAP, SOURCE_LABEL_KEYS, getLeadAlerts, labelOfValue, leadEntity } from './constants'
 import { useCrmThresholds } from './thresholdsContext'
 
 interface LeadCardProps {
@@ -33,6 +33,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
   const assigned = adminsById[lead.assignedTo || '']
   const projectInfo = PROJECT_MAP[lead.project || '']
+  const entityInfo = ENTITY_MAP[leadEntity(lead)]!
   const alerts = getLeadAlerts(lead, useCrmThresholds())
   const isCold = alerts.some((a) => a.type === 'cold')
   const isStale = alerts.some((a) => a.type === 'stale')
@@ -61,6 +62,14 @@ const LeadCard: React.FC<LeadCardProps> = ({
         </div>
       )}
       <div className="crm-card-row">
+        <span
+          className="crm-project-pill crm-entity-pill"
+          data-entity={entityInfo.key}
+          title={t('crm.col.entity')}
+          style={{ '--project-color': entityInfo.color } as React.CSSProperties}
+        >
+          {t(entityInfo.labelKey)}
+        </span>
         {projectInfo && (
           <span className="crm-project-pill" style={{ '--project-color': projectInfo.color } as React.CSSProperties}>
             {t(projectInfo.labelKey)}

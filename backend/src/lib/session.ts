@@ -128,7 +128,7 @@ export async function authenticateSession(
   }).lean()
   if (!session) return null
 
-  const user = await User.findById(session.userId).select('role status isActive email name sessionVersion').lean()
+  const user = await User.findById(session.userId).select('role status isActive email name sessionVersion crmEntities').lean()
   if (
     !user ||
     !user.isActive ||
@@ -163,5 +163,6 @@ export async function authenticateSession(
     mfaEnrollmentOnly: session.mfaEnrollmentOnly || undefined,
     impersonatorId: session.impersonatorId ? String(session.impersonatorId) : undefined,
     deviceId: session.deviceId ? String(session.deviceId) : undefined,
+    crmEntities: user.crmEntities?.length ? [...user.crmEntities] : undefined,
   }
 }

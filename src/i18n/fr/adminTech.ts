@@ -254,6 +254,7 @@ const fr = {
   'adminTech.pilotage.subtext':
     'Sur les leads créés pendant la période — un taux mesuré sur deux populations différentes ne voudrait rien dire.',
   'adminTech.pilotage.periodLabel': "Période d'analyse",
+  'adminTech.pilotage.entityLabel': 'Entité du groupe',
   'adminTech.pilotage.loading': 'Chargement du pilotage…',
   'adminTech.pilotage.funnelTitle': 'Entonnoir — {count, plural, one {# lead} other {# leads}}',
   'adminTech.pilotage.velocityTitle': 'Vélocité',

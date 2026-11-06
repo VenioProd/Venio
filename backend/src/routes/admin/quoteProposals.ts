@@ -28,7 +28,7 @@ const router = express.Router()
 async function canReadProposal(req: Request, proposal: { project?: unknown; leadId?: unknown }): Promise<boolean> {
   if (proposal.project) return canReadProject(req.user!, String(proposal.project))
   if (!proposal.leadId) return false
-  const lead = await Lead.findById(proposal.leadId).select('assignedTo createdBy').lean()
+  const lead = await Lead.findById(proposal.leadId).select('assignedTo createdBy entity').lean()
   return Boolean(lead) && canReadLead(req, lead!)
 }
 
@@ -123,7 +123,7 @@ async function quoteTarget(req: Request, res: Response, wanted: { project?: stri
     }
     return { project: project._id, client: project.client, leadId: null }
   }
-  const lead = await Lead.findById(wanted.leadId).select('assignedTo createdBy clientAccountId').lean()
+  const lead = await Lead.findById(wanted.leadId).select('assignedTo createdBy entity clientAccountId').lean()
   if (!lead || !canReadLead(req, lead)) {
     res.status(404).json({ error: 'Lead non trouvé' })
     return null

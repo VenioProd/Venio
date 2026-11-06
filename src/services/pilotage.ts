@@ -1,8 +1,10 @@
 import { apiFetch } from '../lib/api'
 import type { LeadProject, LeadRevenueResponse, PilotagePeriod, PilotageResponse } from '../types/pilotage.types'
 
-export function fetchPilotage(period: PilotagePeriod): Promise<PilotageResponse> {
-  return apiFetch(`/api/admin/crm/pilotage?period=${period}`)
+export function fetchPilotage(period: PilotagePeriod, entity?: string): Promise<PilotageResponse> {
+  const query = new URLSearchParams({ period })
+  if (entity) query.set('entity', entity)
+  return apiFetch(`/api/admin/crm/pilotage?${query}`)
 }
 
 export function fetchLeadRevenue(leadId: string): Promise<LeadRevenueResponse> {

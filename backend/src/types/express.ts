@@ -12,6 +12,8 @@ export interface JwtPayload {
   impersonatorId?: string
   /** Appareil natif (MobileDevice) quand la requête est authentifiée par Bearer. */
   deviceId?: string
+  /** Périmètre CRM par entité du groupe ; absent ou vide = aucune restriction. */
+  crmEntities?: string[]
   iat?: number
   exp?: number
 }

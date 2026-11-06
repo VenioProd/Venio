@@ -12,6 +12,7 @@ import { processWonLead, type WonLeadOutcome } from './crmClientConversion.js'
 import { normalizeEnrichedLeadFields } from './crmLeadFields.js'
 import { emitLeadChanges } from './crmRules.js'
 import { isAssignableCrmUser } from './crmScope.js'
+import { entityFromProject, isGroupEntity } from './groupEntities.js'
 import { createNotification } from './notifications.js'
 import { notifySuperAdmins } from './notifyHelpers.js'
 
@@ -130,6 +131,8 @@ export function normalizeLeadPatch(
   if (body.contactPhone !== undefined) payload.contactPhone = String(body.contactPhone || '')
   if (body.source !== undefined) payload.source = String(body.source || '')
   if (typeof body.project === 'string' && (['', ...LEAD_PROJECTS] as string[]).includes(body.project)) payload.project = body.project
+  // Entité du groupe : valeur connue seulement ; une valeur inconnue est ignorée comme les autres énumérations.
+  if (isGroupEntity(body.entity)) payload.entity = body.entity
   if (typeof body.status === 'string' && (CRM_STATUSES as readonly string[]).includes(body.status)) payload.status = body.status
   if (typeof body.priority === 'string' && (LEAD_PRIORITIES as readonly string[]).includes(body.priority)) payload.priority = body.priority
   if (body.budget !== undefined) {
@@ -264,6 +267,8 @@ export async function applyLeadChange(
   const transitions: LeadChangeResult['transitions'] = []
 
   Object.assign(lead, patch)
+  // Sans entité explicite, un nouveau lead prend celle de son projet (Arrow → ARROW, le reste → VENIO).
+  if (created && patch.entity === undefined) lead.entity = entityFromProject(lead.project)
 
   const enterStatus = (from: string, to: string, auto: boolean) => {
     transitions.push({ from, to, auto })

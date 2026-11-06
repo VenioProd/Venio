@@ -24,6 +24,7 @@ const router = createCrmExtrasRouter({
   },
   leadScope: () => ({}),
   writeScope: () => ({}),
+  entityScope: () => null,
   canActivateRules: (req: Request) => (req.agentToken?.scopes ?? []).includes(ADMIN_WILDCARD_SCOPE),
 })
 

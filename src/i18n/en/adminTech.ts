@@ -256,6 +256,7 @@ const en: Record<keyof typeof fr, string> = {
   'adminTech.pilotage.subtext':
     'Based on leads created during the period — a rate measured across two different populations would mean nothing.',
   'adminTech.pilotage.periodLabel': 'Analysis period',
+  'adminTech.pilotage.entityLabel': 'Group entity',
   'adminTech.pilotage.loading': 'Loading sales performance…',
   'adminTech.pilotage.funnelTitle': 'Funnel — {count, plural, one {# lead} other {# leads}}',
   'adminTech.pilotage.velocityTitle': 'Velocity',

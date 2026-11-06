@@ -12,6 +12,7 @@ import CrmSettings from '../models/CrmSettings.js'
 import { applyLeadChange, assertLostReason, deleteLeadCascade, isLeadChangeError, type LeadChangeContext } from '../lib/crmLeadService.js'
 import { approveRun, rejectRun, retryRun, simulateRule } from '../lib/crmRules.js'
 import { isAssignableCrmUser } from '../lib/crmScope.js'
+import { entityCondition, isGroupEntity, leadEntityOf, type GroupEntity } from '../lib/groupEntities.js'
 
 /**
  * Routes CRM « enrichies » (vues, actions groupées, export, fiche, règles),
@@ -29,6 +30,8 @@ export interface CrmExtrasAdapters {
   leadScope: (req: Request) => Record<string, unknown>
   /** Périmètre d'écriture : plus étroit que la lecture (le commercial ne modifie que ses leads). */
   writeScope: (req: Request) => Record<string, unknown>
+  /** Entités du groupe permises (`null` : toutes) ; sert au filtre `?entity=`, en plus de `leadScope`. */
+  entityScope?: (req: Request) => GroupEntity[] | null
   /** Un humain peut activer une règle ; un agent seulement avec le scope `admin:*`. */
   canActivateRules: (req: Request) => boolean
   /**
@@ -49,6 +52,7 @@ export const EXPORT_COLUMNS: Record<string, { label: string; value: (l: any) => 
   contactEmail: { label: 'E-mail', value: (l) => l.contactEmail },
   status: { label: 'Statut', value: (l) => l.status },
   project: { label: 'Plateforme', value: (l) => l.project },
+  entity: { label: 'Entité', value: (l) => leadEntityOf(l) },
   source: { label: 'Source', value: (l) => l.source },
   sourceDetail: { label: 'Détail de la source', value: (l) => l.sourceDetail },
   assignedTo: { label: 'Commercial', value: (l) => l.assignedTo?.name ?? '' },
@@ -64,7 +68,7 @@ export const EXPORT_COLUMNS: Record<string, { label: string; value: (l: any) => 
   tags: { label: 'Tags', value: (l) => (l.tags ?? []).join(' | ') },
   sector: { label: 'Secteur', value: (l) => l.sector },
 }
-const DEFAULT_EXPORT = ['company', 'contactName', 'contactEmail', 'status', 'project', 'source', 'assignedTo', 'budget', 'probability', 'weighted', 'nextActionAt']
+const DEFAULT_EXPORT = ['company', 'contactName', 'contactEmail', 'status', 'project', 'entity', 'source', 'assignedTo', 'budget', 'probability', 'weighted', 'nextActionAt']
 
 /** Protège contre l'injection de formules dans un tableur, puis échappe pour le CSV. */
 export function csvCell(value: unknown): string {
@@ -229,6 +233,10 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
     if (columns.length === 0) return a.fail(res, 400, 'VALIDATION_ERROR', `columns : ${Object.keys(EXPORT_COLUMNS).join(', ')}`)
     const filter: Record<string, unknown> = { ...a.leadScope(req), archivedAt: req.query.archived === 'true' ? { $ne: null } : null }
     if (typeof req.query.status === 'string' && STATUSES.includes(req.query.status)) filter.status = req.query.status
+    if (isGroupEntity(req.query.entity)) {
+      const allowed = a.entityScope?.(req) ?? null
+      filter.entity = allowed === null || allowed.includes(req.query.entity) ? entityCondition([req.query.entity]) : { $in: [] }
+    }
     if (typeof req.query.ids === 'string' && req.query.ids) {
       filter._id = { $in: req.query.ids.split(',').filter(isId).slice(0, 1000) }
     }
