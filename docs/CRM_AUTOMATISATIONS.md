@@ -1,284 +1,316 @@
-# Automatisations CRM Venio
+# Automatisations du CRM Venio
 
-Ce document liste toutes les automatisations implémentées dans le CRM Venio, ainsi que les automatisations potentielles à envisager pour de futures améliorations.
-
----
-
-## Système de configuration
-
-**Toutes les automatisations sont désactivables** via l'interface de configuration accessible depuis le CRM (`/admin/crm/settings`). Les paramètres sont stockés dans la collection MongoDB `CrmSettings`.
-
-### Modèle de configuration
-
-Le modèle `CrmSettings` est un singleton qui contient tous les paramètres d'automatisation :
-
-| Paramètre | Type | Défaut | Description |
-|-----------|------|--------|-------------|
-| `roundRobinEnabled` | Boolean | `true` | Attribution round-robin |
-| `autoQualifyEnabled` | Boolean | `true` | Auto-qualification |
-| `autoLastContactOnContacted` | Boolean | `true` | Màj date contact |
-| `autoNextActionOnDemo` | Boolean | `true` | Rappel post-démo |
-| `demoFollowUpDays` | Number | `1` | Délai rappel démo (jours) |
-| `autoNextActionOnProposal` | Boolean | `true` | Rappel post-proposition |
-| `proposalFollowUpDays` | Number | `3` | Délai rappel proposition |
-| `clearNextActionOnClose` | Boolean | `true` | Nettoyer action à WON/LOST |
-| `emailOnAssignment` | Boolean | `true` | Email d'assignation |
-| `activityLogging` | Boolean | `true` | Journalisation activités |
-| `coldLeadAlertEnabled` | Boolean | `true` | Alerte leads froids |
-| `coldLeadThresholdDays` | Number | `7` | Seuil lead froid |
-| `coldLeadEmailEnabled` | Boolean | `false` | Email rappel leads froids |
-| `overdueAlertEnabled` | Boolean | `true` | Alerte actions en retard |
-| `dailyOverdueEmailEnabled` | Boolean | `false` | Email quotidien retards |
-| `dailyOverdueEmailTime` | String | `"08:00"` | Heure email quotidien |
-| `staleLeadAlertEnabled` | Boolean | `true` | Alerte leads bloqués |
-| `staleLeadThresholdDays` | Number | `14` | Seuil lead bloqué |
-| `escalationEnabled` | Boolean | `false` | Escalade sur inactivité |
-| `escalationThresholdDays` | Number | `10` | Seuil escalade |
-| `escalationAction` | Enum | `"NOTIFY_MANAGER"` | Action : NOTIFY_MANAGER, REASSIGN, BOTH |
-| `escalationManagerId` | ObjectId | `null` | Manager à notifier |
-| `scoringEnabled` | Boolean | `false` | Scoring automatique |
-| `scoringWeights` | Object | (voir ci-dessous) | Pondérations du scoring |
-| `duplicateDetectionEnabled` | Boolean | `true` | Détection doublons |
-| `duplicateCheckEmail` | Boolean | `true` | Vérifier email |
-| `duplicateCheckCompany` | Boolean | `true` | Vérifier entreprise |
-| `duplicateCheckPhone` | Boolean | `false` | Vérifier téléphone |
-| `proposalReminderEnabled` | Boolean | `false` | Rappel proposition |
-| `proposalReminderDays` | Number | `7` | Délai rappel proposition |
-| `weeklyReportEnabled` | Boolean | `false` | Rapport hebdomadaire |
-| `weeklyReportDay` | Number | `1` | Jour (0=Dim, 1=Lun...) |
-| `weeklyReportTime` | String | `"09:00"` | Heure envoi |
-| `weeklyReportRecipients` | Array | `[]` | Emails destinataires |
+Ce document décrit les automatisations **telles qu'elles sont codées** sur `main` (commit `2c764cb1`, lots 1 et 2 en production). Chaque affirmation renvoie au fichier source. Pour l'architecture générale, les modèles et la liste complète des routes, voir [CRM_ARCHITECTURE.md](./CRM_ARCHITECTURE.md).
 
 ---
 
-## Automatisations implémentées
+## 1. Principe : une source par comportement
 
-### 1. Assignation automatique (Round-robin)
+Trois mécanismes peuvent relancer un lead : le **planificateur CRM**, les **jobs du moteur d'automatisations** et les **règles CRM** (`CrmRule`). Pour un même comportement, une seule source agit, dans cet ordre :
 
-**Déclencheur :** Création d'un lead sans assignation  
-**Action :** Assigne automatiquement le lead au prochain admin dans la rotation  
-**Configurable :** `roundRobinEnabled`  
-**Fichier :** `backend/src/lib/crmAutomations.js` → `getRoundRobinAssignee()`
+1. la **règle prédéfinie** correspondante, si elle est `ACTIVE` ;
+2. sinon le **planificateur**, si son réglage est activé ;
+3. sinon le **job** du moteur.
 
-### 2. Auto-qualification
+Source : table de correspondance en tête de `backend/src/lib/crmScheduler.ts`, garde `isCoveredByActiveRule` dans `backend/src/lib/crmRules.ts`, abstention des jobs dans `backend/src/automation/jobs/crmJobGuards.ts`.
 
-**Déclencheur :** Lead avec budget ET source renseignés  
-**Action :** Passe automatiquement le statut de LEAD à QUALIFIED  
-**Configurable :** `autoQualifyEnabled`  
-**Fichier :** `backend/src/routes/admin/crm.js`
+Les règles ne consultent jamais les tâches : l'inverse seul est vrai.
 
-### 3. Date de dernier contact (CONTACTED)
+---
 
-**Déclencheur :** Statut passe à CONTACTED  
-**Action :** Met à jour `lastContactAt` à la date actuelle (si non défini)  
-**Configurable :** `autoLastContactOnContacted`  
-**Fichier :** `backend/src/routes/admin/crm.js`
+## 2. Réglages (`CrmSettings`)
 
-### 4. Rappel post-démo
+Document singleton, lu par `CrmSettings.getSettings()` (`backend/src/models/CrmSettings.ts`). Modifiable par `PATCH /api/admin/crm/settings`, réservé à `SUPER_ADMIN` et `ADMIN` (`administersCrm`, `backend/src/routes/admin/crm.ts`). L'écran est `/admin/crm/settings` (`src/pages/admin/crm-settings/`).
 
-**Déclencheur :** Statut passe à DEMO  
-**Action :** Définit `nextActionAt` à J+X (configurable, défaut 1 jour)  
-**Configurable :** `autoNextActionOnDemo`, `demoFollowUpDays`  
-**Fichier :** `backend/src/routes/admin/crm.js`
+### 2.1 Réglages qui pilotent les automatisations de lead
 
-### 5. Rappel proposition commerciale
+| Réglage | Défaut | Effet | Où c'est appliqué |
+|---|---|---|---|
+| `roundRobinEnabled` | `true` | Attribution tournante | `crmAutomations.ts` (`getRoundRobinAssignee`) |
+| `autoQualifyEnabled` | `true` | LEAD → QUALIFIED (budget > 0 et source renseignés) | `crmLeadService.ts` (`applyLeadChange`) |
+| `autoLastContactOnContacted` | `true` | Pose `lastContactAt` à l'arrivée en CONTACTED | `crmLeadService.ts` (`applyStatusAutomations`) |
+| `autoNextActionOnDemo` / `demoFollowUpDays` | `true` / `1` | Pose `nextActionAt` à J+n à l'arrivée en DEMO | idem |
+| `autoNextActionOnProposal` / `proposalFollowUpDays` | `true` / `3` | Pose `nextActionAt` à J+n à l'arrivée en PROPOSAL | idem |
+| `clearNextActionOnClose` | `true` | Vide `nextActionAt` à WON / LOST | idem |
+| `emailOnAssignment` | `true` | E-mail au commercial nouvellement assigné (canal `admin` seulement) | `crmLeadService.ts` |
+| `activityLogging` | `true` | Journalise création, statut, assignation, archivage, conversion | `crmLeadService.ts`, `crmClientConversion.ts` |
+| `scoringEnabled` / `scoringWeights` | `false` / voir §2.3 | Calcule `score` à chaque écriture | `crmAutomations.ts` (`calculateLeadScore`) |
+| `duplicateDetectionEnabled`, `duplicateCheckEmail`, `duplicateCheckCompany` (`true`), `duplicateCheckPhone` (`false`) | voir colonne | Recherche de doublons à la saisie (pas automatique à toute création) | `crmAutomations.ts` (`checkDuplicateLead`), appelée par `POST /api/admin/crm/check-duplicate` (`routes/admin/crm.ts`) et par la création côté espace commercial (`routes/commercial/index.ts`) |
+| `lostReasons` | `Prix`, `Délai`, `Concurrent`, `Sans réponse`, `Hors cible`, `Projet annulé` | Liste fermée des motifs de perte | `crmLeadService.ts` (`assertLostReason`) |
+| `defaultCloserId` | `null` | Destinataire des dossiers « prêts à closer » (vide : super-admins) | `models/CrmSettings.ts` |
 
-**Déclencheur :** Statut passe à PROPOSAL  
-**Action :** Définit `nextActionAt` à J+X (configurable, défaut 3 jours)  
-**Configurable :** `autoNextActionOnProposal`, `proposalFollowUpDays`  
-**Fichier :** `backend/src/routes/admin/crm.js`
+### 2.2 Réglages des tâches planifiées
 
-### 6. Nettoyage des rappels (WON/LOST)
+| Réglage | Défaut | Tâche concernée |
+|---|---|---|
+| `coldLeadEmailEnabled` / `coldLeadThresholdDays` | `false` / `7` | E-mail « leads froids » (`processColdLeads`) |
+| `dailyOverdueEmailEnabled` / `dailyOverdueEmailTime` | `false` / `08:00` | E-mail « actions en retard » (`processOverdueActions`) et heure de la série quotidienne |
+| `escalationEnabled` / `escalationThresholdDays` / `escalationAction` / `escalationManagerId` | `false` / `10` / `NOTIFY_MANAGER` / `null` | Escalade (`processEscalations`) |
+| `proposalReminderEnabled` / `proposalReminderDays` | `false` / `7` | Rappel de proposition (`processProposalReminders`) |
+| `weeklyReportEnabled`, `weeklyReportDay` (0 = dimanche), `weeklyReportTime`, `weeklyReportRecipients` | `false`, `1`, `09:00`, `[]` | Rapport hebdomadaire (`processWeeklyReport`) |
+| `invoiceRemindersEnabled` / `invoiceReminderDays` | `true` / `7` | Relances de factures (`processInvoiceReminders`) |
+| `taskRemindersEnabled` | `true` | Rappels d'échéance de tâches (`processTaskDeadlineReminders`) |
+| `projectNotificationsEnabled` | `true` | Alertes d'échéance de projet (`processProjectDeadlineAlerts`) |
+| `briefRemindersEnabled` | `true` | Rappels d'échéance de brief (`processBriefDeadlineReminders`) |
+| `clientHealthAutoUpdate` | `true` | Mise à jour automatique de la santé client (`processClientHealthAutoUpdate`) |
 
-**Déclencheur :** Statut passe à WON ou LOST  
-**Action :** Supprime `nextActionAt` (plus besoin de relance)  
-**Configurable :** `clearNextActionOnClose`  
-**Fichier :** `backend/src/routes/admin/crm.js`
+Les tâches `processOverdueTasks` (tâches en retard) et `processLeadFollowUps` (relances à effectuer) n'ont pas de réglage propre : elles tournent toujours (`backend/src/lib/crmScheduler.ts`).
 
-### 7. Log d'activité automatique
+### 2.3 Pondérations du score (défaut)
 
-**Déclencheur :** Création de lead, changement de statut, réassignation  
-**Action :** Crée une entrée dans `LeadActivity` avec le type, label et payload  
-**Configurable :** `activityLogging`  
-**Fichier :** `backend/src/lib/crmAutomations.js` → `logLeadActivity()`
-
-### 8. Email de notification d'assignation
-
-**Déclencheur :** Lead assigné à un commercial  
-**Action :** Envoie un email au commercial avec les détails du lead  
-**Configurable :** `emailOnAssignment`  
-**Fichier :** `backend/src/lib/email.js` → `sendLeadAssignmentEmail()`
-
-### 9. Alertes visuelles (Frontend)
-
-**Types d'alertes :**
-- **Lead froid** : Pas de contact depuis X jours (badge gris) - `coldLeadAlertEnabled`, `coldLeadThresholdDays`
-- **Action en retard** : `nextActionAt` dépassé (badge rouge) - `overdueAlertEnabled`
-- **Lead bloqué** : Même statut depuis X jours (badge orange) - `staleLeadAlertEnabled`, `staleLeadThresholdDays`
-
-**Affichage :** Badges dans le tableau, les cartes Kanban et les lignes de la file de travail  
-**Fichier :** `src/pages/admin/crm-board/constants.ts` → `getLeadAlerts(lead, thresholds)`  
-**Seuils :** servis par `GET /crm/worklist` et distribués via `CrmThresholdsContext`. Les valeurs ne
-sont plus codées en dur : les réglages de `/admin/crm/settings` s'appliquent réellement.
-
-### 10. File de travail commerciale
-
-**Déclencheur :** Ouverture du mode « File » du board CRM (`/admin/crm?mode=file`)  
-**Action :** Range les leads actifs en quatre groupes — en retard, aujourd'hui, à venir 7 j, à ne pas
-laisser filer — et permet de reporter, marquer contacté, changer le statut et ajouter une note sans
-quitter la vue  
-**Fichier :** `backend/src/lib/crmAutomations.js` → `buildWorklist()`, `src/pages/admin/crm-board/worklist/`  
-**Partagée avec :** le Centre d'activité (`/admin/centre-activite`), qui en tire sa section « Relances CRM »
-
-### 11. Conversion lead WON → Client
-
-**Déclencheur :** Clic sur "Créer client" pour un lead WON  
-**Action :** Crée un utilisateur CLIENT avec les infos du lead pré-remplies  
-**Endpoint :** `POST /api/admin/crm/leads/:id/convert-to-client`
-
-### 12. Scoring automatique des leads
-
-**Déclencheur :** Création ou mise à jour d'un lead  
-**Action :** Calcul d'un score 0-100 basé sur budget, source, priorité, infos contact  
-**Configurable :** `scoringEnabled`, `scoringWeights`  
-**Fichier :** `backend/src/lib/crmAutomations.js` → `calculateLeadScore()`
-
-**Pondérations par défaut :**
 | Critère | Points |
-|---------|--------|
-| Budget > 10K€ | 30 |
-| Budget 1K-10K€ | 15 |
-| Budget < 1K€ | 5 |
-| Source : Recommandation | 25 |
-| Source : Publicité | 15 |
-| Source : Autre | 10 |
-| Priorité : Urgente | 20 |
-| Priorité : Haute | 15 |
-| Priorité : Normale | 5 |
-| Email renseigné | 10 |
-| Téléphone renseigné | 10 |
+|---|---|
+| Budget > 10 000 € (`budgetHigh`) | 30 |
+| Budget 1 000 – 10 000 € (`budgetMedium`) | 15 |
+| Budget < 1 000 € (`budgetLow`) | 5 |
+| Source recommandation / publicité / autre | 25 / 15 / 10 |
+| Priorité urgente / haute / normale | 20 / 15 / 5 |
+| E-mail / téléphone renseigné | 10 / 10 |
 
-### 13. Détection de doublons
+### 2.4 Alertes de la file de travail
 
-**Déclencheur :** Création d'un lead  
-**Action :** Vérifie si un lead similaire existe (email, entreprise, téléphone)  
-**Configurable :** `duplicateDetectionEnabled`, `duplicateCheckEmail`, `duplicateCheckCompany`, `duplicateCheckPhone`  
-**Endpoint :** `POST /api/admin/crm/check-duplicate`  
-**Fichier :** `backend/src/lib/crmAutomations.js` → `checkDuplicateLead()`
-
-### 14. Email de rappel leads froids
-
-**Déclencheur :** Job quotidien (scheduler)  
-**Action :** Envoie un email aux commerciaux listant leurs leads sans contact récent  
-**Configurable :** `coldLeadEmailEnabled`, `coldLeadThresholdDays`  
-**Fichier :** `backend/src/lib/crmScheduler.js` → `processColdLeads()`
-
-### 15. Email quotidien des actions en retard
-
-**Déclencheur :** Job quotidien à l'heure configurée  
-**Action :** Email récapitulatif au commercial avec ses leads en retard  
-**Configurable :** `dailyOverdueEmailEnabled`, `dailyOverdueEmailTime`  
-**Fichier :** `backend/src/lib/crmScheduler.js` → `processOverdueActions()`
-
-### 16. Escalade sur inactivité
-
-**Déclencheur :** Lead non mis à jour depuis X jours  
-**Action :** Notifier le manager ET/OU réassigner automatiquement  
-**Configurable :** `escalationEnabled`, `escalationThresholdDays`, `escalationAction`, `escalationManagerId`  
-**Fichier :** `backend/src/lib/crmScheduler.js` → `processEscalations()`
-
-### 17. Rappel avant expiration proposition
-
-**Déclencheur :** Lead en PROPOSAL depuis X jours  
-**Action :** Email de rappel au commercial pour relancer  
-**Configurable :** `proposalReminderEnabled`, `proposalReminderDays`  
-**Fichier :** `backend/src/lib/crmScheduler.js` → `processProposalReminders()`
-
-### 18. Rapport hebdomadaire automatique
-
-**Déclencheur :** Chaque semaine au jour/heure configurés  
-**Action :** Email avec stats : nouveaux leads, conversions, pipeline  
-**Configurable :** `weeklyReportEnabled`, `weeklyReportDay`, `weeklyReportTime`, `weeklyReportRecipients`  
-**Fichier :** `backend/src/lib/crmScheduler.js` → `processWeeklyReport()`
+`coldLeadAlertEnabled`, `coldLeadThresholdDays` (7), `overdueAlertEnabled`, `staleLeadAlertEnabled`, `staleLeadThresholdDays` (14) ne déclenchent aucun envoi. Ils servent les badges de la file (`buildWorklist`, `backend/src/lib/crmAutomations.ts`) et sont distribués à l'interface par `GET /api/admin/crm/worklist`.
 
 ---
 
-## Automatisations futures (suggestions)
+## 3. Point d'entrée unique : `applyLeadChange`
 
-### Haute priorité
+Toute modification de lead passe par `applyLeadChange` (`backend/src/lib/crmLeadService.ts`) : fiche admin, action groupée, API agent, formulaire public, règles, planificateur et archivage automatique. Une même modification produit donc partout les mêmes effets : historique des statuts, automatisations de statut, score, conversion d'un lead gagné, événements de règles.
 
-#### Auto-relance par email
-**Déclencheur :** Lead en statut CONTACTED/DEMO depuis X jours sans réponse  
-**Action :** Envoyer un email de relance automatique au contact du lead  
-**Complexité :** Élevée (templates email, opt-out, tracking)
+### 3.1 Politique par canal (`SOURCE_POLICY`)
 
-### Moyenne priorité
+| Source (`LeadChangeSource`) | Appelant (fichier) | Auto-qualification | E-mail d'assignation | Notification de statut |
+|---|---|---|---|---|
+| `admin` | fiche (`routes/admin/crm.ts`) | oui | oui | oui |
+| `agent` | API agent (`routes/agent/crm.ts`) | oui | non | oui |
+| `form` | formulaire public (`routes/public/contact.ts`) | oui | non | non |
+| `bulk` | action groupée (`routes/crmExtras.ts`), espace commercial (`routes/commercial/index.ts`) | non | non | non |
+| `rule` | action `SET_STATUS` (`lib/crmRules.ts`) | non | non | non |
+| `scheduler` | escalade, archivage des perdus | non | non | non |
 
-#### Intégration calendrier
-**Déclencheur :** Création d'une prochaine action (`nextActionAt`)  
-**Action :** Créer un événement dans Google Calendar / Outlook  
-**Complexité :** Élevée (OAuth, API externes)
+Motif donné dans le code : une action groupée ou une règle ne doit pas produire 200 messages pour 200 leads ; une règle garde la main sur ses propres notifications.
 
-### Basse priorité
+### 3.2 Effets appliqués à chaque écriture
 
-#### Prédiction de conversion (ML)
-**Déclencheur :** Analyse des leads  
-**Action :** Score de probabilité de conversion basé sur l'historique  
-**Complexité :** Très élevée (ML, données historiques suffisantes)
-
-#### Enrichissement automatique des leads
-**Déclencheur :** Création d'un lead avec email  
-**Action :** Récupérer infos entreprise via API (Clearbit, Hunter, etc.)  
-**Complexité :** Moyenne (API tierces payantes)
-
-#### Workflow personnalisé par source
-**Déclencheur :** Lead créé selon sa source (Ads, Referral, etc.)  
-**Action :** Appliquer un workflow différent (délais, templates, assignation)  
-**Complexité :** Élevée (configuration UI, moteur de règles)
+1. **Validation** avant écriture : motif de perte dans la liste fermée, assigné actif et habilité (`CRM_ASSIGNABLE_ROLES`). Erreur `LeadChangeError` (400) ou 404.
+2. **Transition de statut** : enregistrée dans `transitions`, puis `statusChangedAt` mis à jour et automatisations de statut appliquées (voir §2.1).
+3. **Auto-qualification** si la politique l'autorise, le réglage est actif, le lead est en LEAD et `shouldAutoQualify` est vrai (budget > 0 et source renseignée).
+4. **Score** recalculé si `scoringEnabled`.
+5. **Historique** (`LeadActivity`) : `CREATED`, `STATUS_CHANGE` (toujours consigné, même si `activityLogging` est coupé), `ASSIGNED`, `ARCHIVED` / `RESTORED`.
+6. **Notifications** : e-mail d'assignation (`notifyAssignment`) ; notification au créateur et à l'assigné à chaque changement de statut hors WON ; notification `CRM_LEAD_CONVERTED` aux super-admins à la première passe en WON.
+7. **Conversion WON** : `processWonLead` (§6).
+8. **Événements de règles** émis via `emitLeadChanges` (sauf si `emit: false`).
 
 ---
 
-## Architecture technique
+## 4. Moteur de règles (`CrmRule`)
 
-### Modèles concernés
-- `Lead` : Prospect avec pipeline de vente (inclut maintenant `score`)
-- `LeadActivity` : Historique des actions sur un lead
-- `CrmSettings` : Configuration des automatisations (singleton)
-- `User` : Client converti depuis un lead WON
+Code : `backend/src/lib/crmRules.ts` ; modèles `models/CrmRule.ts` et `models/CrmRuleRun.ts` ; routes `routes/crmExtras.ts` (§8).
 
-### Fichiers clés
-- `backend/src/models/CrmSettings.js` : Modèle de configuration
-- `backend/src/lib/crmAutomations.js` : Helpers d'automatisation
-- `backend/src/lib/crmScheduler.js` : Jobs planifiés (emails, escalade, rapports)
-- `backend/src/routes/admin/crm.js` : Routes API avec logique d'automatisation
-- `backend/src/lib/email.js` : Envoi d'emails
-- `src/pages/admin/CrmBoard.jsx` : Interface CRM avec alertes visuelles
-- `src/pages/admin/CrmSettings.jsx` : Interface de configuration
+### 4.1 Vocabulaire
 
-### Endpoints API
+| Élément | Valeurs (source) |
+|---|---|
+| Déclencheurs | `LEAD_CREATED`, `STATUS_CHANGED`, `LEAD_ASSIGNED`, `INTERACTION_LOGGED` (événements) ; `LEAD_INACTIVE`, `ACTION_OVERDUE`, `SCORE_AT_LEAST` (balayage quotidien) — `models/CrmRule.ts` |
+| Conditions (champs) | `status`, `project`, `source`, `budget`, `probability`, `leadTemperature`, `score`, `tags`, `assignedTo`, `externalRep`, `daysSinceActivity`, `daysInStage`, `archived` |
+| Opérateurs | `eq`, `neq`, `in`, `nin`, `gt`, `gte`, `lt`, `lte`, `contains`, `empty`, `notEmpty` ; groupe `AND` ou `OR` |
+| Actions | `CREATE_TASK`, `NOTIFY`, `ASSIGN`, `SET_STATUS`, `ADD_TAG`, `SET_FIELD`, `SEND_EMAIL`, `CREATE_CLIENT`, `CREATE_PROJECT`, `ARCHIVE` |
+| Champs modifiables (`SET_FIELD`) | `priority`, `leadTemperature`, `probability`, `nextActionLabel`, `sector` |
+| Statuts d'une règle | `DRAFT` (défaut), `ACTIVE`, `PAUSED` |
+| Limites | `perLead` : `ONCE`, `DAYS` (défaut), `NONE` ; `days` (1–365, défaut 7) ; `maxPerRun` (1–500, défaut 50) |
 
-| Méthode | Route | Description |
-|---------|-------|-------------|
-| GET | `/api/admin/crm/leads` | Liste des leads |
-| GET | `/api/admin/crm/pipeline` | Pipeline groupé par statut |
-| GET | `/api/admin/crm/worklist` | File de travail groupée + seuils effectifs |
-| GET | `/api/admin/crm/leads/:id/activities` | Historique d'un lead |
-| POST | `/api/admin/crm/leads/:id/notes` | Ajouter une note datée (LeadActivity) |
-| POST | `/api/admin/crm/leads` | Créer un lead |
-| PATCH | `/api/admin/crm/leads/:id` | Mettre à jour un lead |
-| DELETE | `/api/admin/crm/leads/:id` | Supprimer un lead |
-| POST | `/api/admin/crm/leads/:id/convert-to-client` | Convertir en client |
-| GET | `/api/admin/crm/settings` | Lire la configuration |
-| PATCH | `/api/admin/crm/settings` | Modifier la configuration |
-| POST | `/api/admin/crm/check-duplicate` | Vérifier les doublons |
+Modèles de texte : `{contact}`, `{company}`, `{amount}` (`renderTemplate`).
 
-### Scheduler
+### 4.2 Cycle d'exécution
 
-Le scheduler (`crmScheduler.js`) s'exécute chaque minute et vérifie les conditions pour :
-- Emails leads froids (quotidien)
-- Emails actions en retard (quotidien à l'heure configurée)
-- Escalades (quotidien)
-- Rappels proposition (quotidien)
-- Rapport hebdomadaire (jour/heure configurés)
+- **Filtre** : déclencheur (`matchesTrigger`), puis conditions (`evaluateConditions`).
+- **Lead ignoré** s'il est archivé ou si `automationPausedAt` est posé (`fireLeadEvent`, `candidatesFor`).
+- **Limite par lead** (`throttled`) : une exécution `OK`, `PENDING`, `RUNNING` ou `ERR` existante dans la fenêtre bloque la suivante.
+- **Journal** : une `CrmRuleRun` par exécution, avec une étape par action (`OK`, `SKIP`, `PENDING`, `ERR`). Une action en `ERR` interrompt la liste d'actions. Pendant le balayage quotidien, un lead bloqué par la limite par lead n'écrit pas de ligne `SKIP` (`quietSkip`).
+- **Statistiques** : `stats.runs`, `stats.ok`, `stats.errors`, `stats.lastRunAt` sur la règle.
 
-Le scheduler démarre automatiquement avec le serveur backend.
+### 4.3 Anti-boucle
+
+| Garde | Mécanisme | Fichier |
+|---|---|---|
+| Profondeur | `MAX_RULE_DEPTH = 3` : une chaîne règle → action → règle s'arrête au-delà | `crmRules.ts` |
+| Pas de rebouclage | une règle déjà présente dans `chain` n'est pas réexécutée | `fireLeadEvent` |
+| Idempotence | clé `eventKey` = règle + lead + événement, **index unique** : un rejeu n'exécute rien | `models/CrmRuleRun.ts`, `runRule` |
+| Actions idempotentes | `CREATE_TASK` ignore une tâche du même titre encore ouverte ; `ADD_TAG` ignore un tag présent | `runAction` |
+| Simulation | `simulate: true` n'écrit rien | `simulateRule` |
+
+### 4.4 Validation humaine
+
+- Seule l'action **`SEND_EMAIL`** est soumise à validation : si `requireApproval` est vrai (défaut, et forcé à `true` au seed), l'étape passe `PENDING` et le payload est conservé. Les autres actions s'exécutent directement.
+- `POST /rules/runs/:id/approve` envoie l'e-mail (`deliverEmail`, trace dans la timeline). `POST /rules/runs/:id/reject` passe les étapes en `SKIP`. `POST /rules/runs/:id/retry` rejoue une exécution en `ERR` (`retryRun`).
+- Administration des règles (création, modification, suppression, validation, rejet, rejeu) : `administersRules`, réservée à `SUPER_ADMIN` et `ADMIN` côté admin (`routes/admin/crmExtras.ts`).
+- Activation (`status: ACTIVE`) : `canActivateRules`, mêmes rôles côté admin ; côté agent, le scope `admin:*` (voir §8.3). Modifier les actions, le déclencheur ou les conditions d'une règle active la repasse en `PAUSED` si l'auteur n'a pas le droit d'activer.
+
+---
+
+## 5. Règles prédéfinies
+
+Catalogue `SEED_RULES` dans `backend/src/lib/crmRules.ts`. Insérées par `seedCrmRules()` en **brouillon** (`status: DRAFT`, `requireApproval: true`) et jamais modifiées ensuite (`$setOnInsert`). Rien ne se déclenche avant activation humaine.
+
+| `systemKey` | Déclencheur | Conditions | Actions | Comportement remplacé (source désactivée quand la règle est ACTIVE) |
+|---|---|---|---|---|
+| `relance-7j` | `LEAD_INACTIVE` 7 j, statuts CONTACTED / DEMO / PROPOSAL | aucune | tâche « Relancer {contact} » (J+1) ; notification au responsable | Relance de lead inactif (`crm.inactive_lead_followup`, `processColdLeads`) |
+| `proposition-sans-reponse` | `LEAD_INACTIVE` 5 j, statut PROPOSAL | budget ≥ 10 000 | e-mail de relance (**validé avant envoi**) ; tâche « Appeler {contact} » | Relance de proposition (`crm.proposal_followup`, `processProposalReminders`) |
+| `relance-post-demo` (système) | `LEAD_INACTIVE` 3 j, statut DEMO | aucune | tâche « Relancer {contact} après la démo » ; notification | Relance post-démo (`crm.post_demo_followup`) |
+| `lead-chaud-48h` (système) | `SCORE_AT_LEAST` 70 | `daysSinceActivity` ≥ 2 | notification aux admins | Alerte lead chaud (`crm.hot_lead_untreated_alert`) |
+| `gagne-client-projet` | `STATUS_CHANGED` vers WON | aucune | création du compte client, du projet, notification aux admins | aucune source de relance : la conversion WON est aussi faite par `processWonLead` (§6), idempotente |
+| `nouveau-lead-formulaire` | `LEAD_CREATED` | source ∈ {`Site web`, `Formulaire`, `Site`, `FORMULAIRE_SITE`} | assignation tournante ; e-mail d'accusé de réception (**validé avant envoi**) ; tâche « Qualifier {company} sous 24 h » | — |
+| `perdu-archiver` | `STATUS_CHANGED` vers LOST | aucune | tag `recontacter-6m` ; tâche « Reprendre contact » à J+180 | — |
+
+Les lignes « système » sont celles pour lesquelles `system: true` est posé ; `SYSTEM_RULE_FOR` (`crmRules.ts`) indique quelles relances sont couvertes par une règle.
+
+---
+
+## 6. Conversion d'un lead gagné
+
+Code : `backend/src/lib/crmClientConversion.ts`.
+
+- Déclenchée par `applyLeadChange` dès qu'un lead est en WON (quel que soit le canal).
+- **Au plus une fois** : verrou atomique sur `wonProcessedAt` (`findOneAndUpdate` conditionnel). Un second passage rend `processed: false` sans rien créer.
+- Crée ou rattache le **compte client** (`ensureClientForWonLead`) : recherche par `clientAccountId`, puis par e-mail (rôle `CLIENT`) ; sinon création avec `role: CLIENT`, `status: ACTIF`, et dossiers Nextcloud en arrière-plan.
+- Crée le **projet** « auto-crm » (`ensureProjectForWonLead`), un seul par lead (`sourceLead`).
+- En cas d'échec du compte client, le verrou est relâché et l'erreur remonte. En cas d'échec du projet, le lead reste à jour et le verrou est relâché pour une nouvelle tentative.
+- Le verrou est le champ `wonProcessedAt` du schéma `Lead` (`models/Lead.ts`, défaut `null`). Le commentaire de `crmClientConversion.ts` qui dit le contraire est périmé ; l'écriture reste faite avec `strict: false`.
+
+---
+
+## 7. Planificateur et jobs
+
+### 7.1 Heures : fuseau de Paris
+
+Toutes les heures et toutes les notions de « jour » ou de « semaine » sont celles de **Europe/Paris**, quel que soit le fuseau du serveur (`backend/src/automation/jobs/crmParisTime.ts` : `parisParts`, `parisDateKey`, `parisWeekKey`, `parseHHMM`, `serverScheduleForParis`).
+
+### 7.2 Planificateur (`backend/src/lib/crmScheduler.ts`)
+
+`startScheduler()` (appelé au démarrage dans `backend/src/index.ts`) lance `runScheduledJobs()` chaque minute.
+
+| Moment (Paris) | Tâche | Réglage | Abstention par règle |
+|---|---|---|---|
+| Chaque minute | `processLeadFollowUps` : notification in-app `LEAD_FOLLOW_UP_DUE` quand `nextActionAt` est échue (une fois par échéance, via `followUpNotifiedFor`) | aucun | non |
+| Chaque jour, dès 09:00 | `sweepRules` : balayage des règles à déclencheur d'état | règles ACTIVE | — |
+| Chaque jour à `dailyOverdueEmailTime` (08:00), rattrapage 120 min | `processOverdueActions` | `dailyOverdueEmailEnabled` | non |
+| idem | `processColdLeads` | `coldLeadEmailEnabled` | oui : `inactiveLeadFollowUp` |
+| idem | `processEscalations` | `escalationEnabled` | non |
+| idem | `processProposalReminders` | `proposalReminderEnabled` | oui : `proposalFollowUp` |
+| idem | `processOverdueTasks` | aucun | non |
+| idem | `processTaskDeadlineReminders` | `taskRemindersEnabled` | non |
+| idem | `processProjectDeadlineAlerts` | `projectNotificationsEnabled` | non |
+| idem | `processBriefDeadlineReminders` | `briefRemindersEnabled` | non |
+| Chaque jour à 09:00 | `processInvoiceReminders` | `invoiceRemindersEnabled` | — |
+| Jour du rapport, 06:00 | `processClientHealthAutoUpdate` | `clientHealthAutoUpdate` | — |
+| Jour du rapport, `weeklyReportTime` | `processWeeklyReport` | `weeklyReportEnabled` | — |
+
+**Escalade** (`processEscalations`) :
+- inactivité mesurée sur `lastInteractionAt`, `lastContactAt`, `statusChangedAt`, `createdAt` (jamais `updatedAt`) ;
+- `escalationAction` : `NOTIFY_MANAGER` (e-mail au manager), `REASSIGN` (réattribution tournante), `BOTH` ;
+- **une seule** réattribution automatique par lead (activité `ESCALATION_REASSIGN`) ; ensuite seule l'alerte au manager reste possible ;
+- la réattribution passe par `applyLeadChange` (source `scheduler`) ;
+- un e-mail au manager par lead et par épisode d'inactivité ; la fenêtre reste ouverte si rien n'est parti.
+
+**Rapport hebdomadaire** : nouveaux leads de la semaine, qualifications (transitions vers QUALIFIED), gains et pertes de la semaine, pipeline actif et valeur, taux de conversion = gains / (gains + pertes) sur la semaine.
+
+### 7.3 Verrous et « une seule exécution »
+
+- Chaque occurrence est protégée par un document `SchedulerLock` de clé `crm-scheduler:<tâche>:<jour ou semaine de Paris>` (`backend/src/models/SchedulerLock.ts`, `runOnce`). Insertion unique : une seule instance ou un seul passage l'obtient, y compris après redémarrage.
+- TTL du verrou : 3 jours pour une tâche quotidienne, 14 jours pour une tâche hebdomadaire, 365 jours pour une fenêtre d'escalade (`crm-scheduler:escalation:<lead>:<dernier signe de vie>`).
+- Une erreur levée par la tâche libère le verrou (retentative au passage suivant). Une erreur rendue par la tâche le conserve, car des e-mails ont pu partir.
+- Rattrapage : une tâche quotidienne manquée (serveur arrêté) part dans les `CATCH_UP_MINUTES` = 120 minutes qui suivent son heure.
+
+### 7.4 Jobs du moteur d'automatisations (`backend/src/automation/jobs/crm*.ts`)
+
+Enregistrés par `initAutomationEngine()` (`backend/src/automation/index.ts`). Les heures sont traduites en heure du serveur à chaque passage (`serverScheduleForParis`).
+
+| Clé | Heure (Paris) | Seuil | Canaux | Abstention |
+|---|---|---|---|---|
+| `crm.inactive_lead_followup` | 09:00 quotidien | 7 j (`config.inactiveDays`) | in_app, e-mail | règle `relance-7j` ou `coldLeadEmailEnabled` |
+| `crm.post_demo_followup` | 09:00 quotidien | 3 j après passage en DEMO | in_app | règle `relance-post-demo` |
+| `crm.proposal_followup` | 09:00 quotidien | 5 j après passage en PROPOSAL | in_app | règle `proposition-sans-reponse` ou `proposalReminderEnabled` |
+| `crm.hot_lead_untreated_alert` | 08:30 quotidien | lead chaud sans activité 48 h | in_app, e-mail | règle `lead-chaud-48h` |
+| `crm.auto_archive_lost` | 03:00 quotidien | LOST depuis 30 j (`statusChangedAt`) | système | aucune |
+| `crm.conversion_drop_alert` | lundi 08:00 | chute du taux de conversion | in_app | aucune |
+
+Les abstentions sont évaluées par `crmJobAbstention` (`crmJobGuards.ts`) : la règle active prime, puis le réglage du planificateur. La clé d'idempotence de chaque job est une clé de jour ou de semaine de Paris (`buildIdempotencyKey`).
+
+Note : `crm.auto_archive_lost` est le seul job de `automation/jobs/crm*.ts` qui écrit sur les leads ; il passe par `applyLeadChange` (source `scheduler`).
+
+---
+
+## 8. Droits et périmètre
+
+Code : `backend/src/lib/permissions.ts`, `backend/src/lib/crmScope.ts`, `backend/src/middleware/role.ts`.
+
+### 8.1 Permissions CRM par rôle
+
+| Rôle | `view_crm` | `manage_crm` | Commentaire (source) |
+|---|---|---|---|
+| `SUPER_ADMIN` | oui | oui | toutes les permissions |
+| `ADMIN` | oui | oui | + `administersCrm` : réglages, règles |
+| `MANAGER` | oui | oui | |
+| `COMMERCIAL` | oui | oui | lit tout le CRM (§8.2) |
+| `STAGIAIRE` | oui | non | consultation seule : « ses leads passent par un commercial ou un administrateur » |
+| `RH`, `COMPTABLE`, `VIEWER` | non | non | |
+| `COMMERCIAL_EXTERNE` | non | non | espace propre (`/api/commercial`) |
+
+Assignables à un lead (`CRM_ASSIGNABLE_ROLES`) : tous les rôles d'admin sauf `VIEWER` et `COMPTABLE`.
+
+### 8.2 Périmètre
+
+| Fonction (`crmScope.ts`) | Règle codée |
+|---|---|
+| `readsWholeCrm` | vrai pour `SUPER_ADMIN` et `COMMERCIAL` |
+| `leadScopeFilter` (lecture) | les autres rôles ne voient que les leads où ils sont `assignedTo` ou `createdBy` |
+| `isLeadOutOfScope` (écriture) | seul `SUPER_ADMIN` sort du périmètre ; pour les autres, `assignedTo` ou `createdBy` doit être l'utilisateur |
+| `administersCrm` | `SUPER_ADMIN` ou `ADMIN` |
+
+Point à confirmer : tel que codé, un `ADMIN` (qui a `manage_crm`) ne lit et n'écrit que ses propres leads, comme un `MANAGER`. Voir `CRM_ARCHITECTURE.md`, section « Points d'attention ».
+
+### 8.3 Agents (API Bearer)
+
+Scopes : `read:crm` (lecture), `write:crm` (écriture), `admin:*` (`ADMIN_WILDCARD_SCOPE`, `backend/src/lib/agent/scopes.ts`). Un agent sans `admin:*` peut écrire sur le CRM avec `write:crm`, mais la règle qu'il crée reste en brouillon et il ne peut pas l'activer (voir §11 pour le contrôle des validations).
+
+---
+
+## 9. Suivi à consulter
+
+- Journal des exécutions : `GET /api/admin/crm/rules/runs` (filtre `status`, pagination).
+- Journal des événements de lead : `GET /api/admin/crm/leads/:id/activities`.
+- Santé du planificateur : `getCrmSchedulerHealth()` (`lib/crmScheduler.ts`), lue par la route de santé admin (`routes/admin/health.ts`).
+- Journaux serveur : `logger` (`backend/src/lib/logger.ts`).
+
+---
+
+## 10. Migrations de données
+
+Scripts one-shot, idempotents, dans `backend/scripts/migrations/` (usage : `MONGODB_URI=… npx tsx scripts/migrations/<fichier>` depuis `backend/`).
+
+| Fichier | Objet |
+|---|---|
+| `004-crm-enrich.ts` | `probability` des leads existants selon l'étape ; `lastInteractionAt` et `interactionsCount` depuis le journal des échanges ; insertion des règles prédéfinies en brouillon. Les jobs historiques restent actifs jusqu'à désactivation manuelle de chaque job. |
+| `005-crm-form-rule-source.ts` | ajoute `FORMULAIRE_SITE` à la condition « source » de `nouveau-lead-formulaire` (`$addToSet`), sans toucher au reste. |
+| `006-crm-post-demo-rule.ts` | insère la règle `relance-post-demo` (et toute règle prédéfinie absente), en brouillon. |
+
+---
+
+## 11. Points d'attention
+
+Écarts entre le code et ce qu'on pourrait attendre. Ils ne sont pas corrigés par ce document.
+
+| Sujet | Constat (fichier) |
+|---|---|
+| Écritures hors service | Les actions `ASSIGN` (avec `userId` non vérifié), `SET_FIELD`, `ADD_TAG` et `ARCHIVE` de `crmRules.ts` écrivent directement le lead (`save`, `updateOne`), sans passer par `applyLeadChange`. `SET_STATUS` y passe. |
+| Agent et règles | Le contrôle `administersRules` n'est pas fourni à l'adaptateur agent (`routes/agent/crmExtras.ts`) : un agent avec `write:crm` peut créer, modifier, supprimer et **valider les e-mails en attente**. Seule l'activation exige `admin:*`. |
+| Périmètre `ADMIN` | Voir §8.2 : un `ADMIN` ne lit que ses leads. |
+| Seuil de relance proposition | Le job `crm.proposal_followup` relance à 5 j, le planificateur (`proposalReminderDays`) à 7 j par défaut. |
+| Doublon règle / job | `crm.proposal_followup` et `processProposalReminders` ont des seuils différents ; la règle `proposition-sans-reponse` prime sur les deux. |
+| Relance post-démo | Aucun réglage du planificateur ; seule la règle `relance-post-demo` ou le job la couvre. |
+
+---
+
+## 12. Pistes non implémentées
+
+Les idées de la version précédente (relance e-mail automatique, intégration calendrier, enrichissement externe, prédiction de conversion, workflows par source) ne sont pas dans le code. Elles relèvent d'un futur chantier et ne doivent pas être lues comme des fonctions existantes.
