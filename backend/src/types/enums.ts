@@ -266,6 +266,11 @@ export type AuditAction =
   | 'WEBHOOK_DELIVERY_REPLAY'
   | 'EXTERNAL_SALES_REASSIGN'
   | 'EXTERNAL_SALES_COMMISSIONS_PAID'
+  // ── CRM : données personnelles (chantier 3D) ──
+  | 'CRM_LEADS_EXPORT'
+  | 'CRM_LEAD_PERSONAL_DATA_EXPORT'
+  | 'CRM_LEAD_ANONYMIZE'
+  | 'CRM_LEAD_UNSUBSCRIBE'
 
 // ─── Agent (API Bearer + scopes) ───
 export type AgentTokenStatus = 'ACTIVE' | 'REVOKED'

@@ -59,6 +59,7 @@ import adminQualiopiRoutes from './routes/admin/qualiopi.js'
 import adminQualiopiQuestRoutes from './routes/admin/qualiopiQuestionnaires.js'
 import publicQuestionnaireRoutes from './routes/public/questionnaire.js'
 import publicContactRoutes from './routes/public/contact.js'
+import publicUnsubscribeRoutes from './routes/public/unsubscribe.js'
 import publicAnalyticsRoutes from './routes/public/analytics.js'
 import artoseraDevisRoutes from './routes/public/artoseraDevis.js'
 import { withArtoseraSiteCorsBypass } from './lib/artosera/origin.js'
@@ -241,7 +242,10 @@ app.use(
       // Les liens de paiement portent un jeton secret dans l'URL : il ne doit jamais atteindre les journaux.
       req: (req: { url?: string; headers?: Record<string, unknown> }) => ({
         ...req,
-        url: req.url?.replace(/\/(payer|api\/public\/pay)\/[^/?#]+/, '/$1/[REDACTED]'),
+        // Idem pour le jeton des liens de désinscription du CRM.
+        url: req.url
+          ?.replace(/\/(payer|api\/public\/pay)\/[^/?#]+/, '/$1/[REDACTED]')
+          .replace(/(\/api\/public\/unsubscribe[^#]*[?&]token=)[^&#]*/, '$1[REDACTED]'),
         headers: { ...req.headers, referer: undefined },
       }),
     },
@@ -372,6 +376,8 @@ app.use('/api/admin/qualiopi', adminQualiopiRoutes)
 app.use('/api/admin/qualiopi-questionnaires', adminQualiopiQuestRoutes)
 app.use('/api/questionnaire', publicQuestionnaireRoutes)
 app.use('/api/contact', publicContactRoutes)
+// Lien de désinscription des e-mails de prospection du CRM (RGPD).
+app.use('/api/public/unsubscribe', publicUnsubscribeRoutes)
 app.use('/api/public/analytics', publicAnalyticsRoutes)
 app.use('/api/admin/tickets', adminTicketRoutes)
 app.use('/api/admin/change-requests', adminChangeRequestRoutes)

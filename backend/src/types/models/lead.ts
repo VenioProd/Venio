@@ -46,6 +46,17 @@ export interface ILead extends Document {
   archivedAt: Date | null
   automationPausedAt: Date | null
   wonProcessedAt: Date | null
+  // ── RGPD (chantier 3D) ──
+  consent: {
+    status: 'UNKNOWN' | 'GRANTED' | 'WITHDRAWN'
+    basis: 'CONSENT' | 'LEGITIMATE_INTEREST' | 'CONTRACT'
+    source: string
+    at: Date | null
+  }
+  doNotContact: boolean
+  doNotContactAt: Date | null
+  doNotContactReason: string
+  anonymizedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }

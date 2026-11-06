@@ -133,6 +133,9 @@ export interface ICrmSettings extends Document {
   briefRemindersEnabled: boolean
   clientHealthAutoUpdate: boolean
   invoiceReminderDays: number
+  // ── RGPD (chantier 3D) ──
+  retentionMonths: number
+  retentionPurgeEnabled: boolean
   createdAt: Date
   updatedAt: Date
 }

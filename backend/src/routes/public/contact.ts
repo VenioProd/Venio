@@ -8,6 +8,7 @@ import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
 import { validateContactSubmission } from '../../lib/publicContact.js'
 import { qualificationHeadline, qualificationLines } from '../../lib/contactQualification.js'
+import { isEmailSuppressed } from '../../lib/crmPrivacy.js'
 
 const router = express.Router()
 
@@ -74,6 +75,9 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
           notes: qualification ? readableNote : '',
           lastContactAt: now,
           createdBy: null,
+          // Demande entrante : le traitement repose sur l'intérêt légitime (répondre à la
+          // demande), pas sur un consentement à la prospection, qui reste inconnu.
+          consent: { status: 'UNKNOWN', basis: 'LEGITIMATE_INTEREST', source: 'FORMULAIRE_SITE' },
         },
         { actor: null, source: 'form' },
       ))
@@ -84,6 +88,9 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
       await Lead.updateOne({ _id: lead._id }, { $max: { lastInteractionAt: now } })
     }
 
+    // Une adresse de la liste « ne pas contacter » qui écrit de nouveau : l'équipe le voit dans l'historique.
+    const suppressed = await isEmailSuppressed(normalizedEmail)
+
     await logLeadActivity(
       lead._id,
       'CONTACT_FORM_SUBMITTED',
@@ -93,6 +100,8 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
         subject: submission.subject,
         message: submission.message,
         consent: true,
+        legalBasis: 'LEGITIMATE_INTEREST',
+        ...(suppressed ? { suppressed: true } : {}),
         ...(qualification ? { qualification, qualificationSummary: qualificationText.split('\n') } : {}),
       },
     )

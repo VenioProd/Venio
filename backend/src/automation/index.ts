@@ -38,6 +38,7 @@ import { register as registerCrmPostDemoFollowup } from './jobs/crmPostDemoFollo
 import { register as registerCrmProposalFollowup } from './jobs/crmProposalFollowup.js'
 import { register as registerCrmAutoArchiveLost } from './jobs/crmAutoArchiveLost.js'
 import { register as registerCrmConversionDropAlert } from './jobs/crmConversionDropAlert.js'
+import { register as registerCrmRetentionPurge } from './jobs/crmRetentionPurge.js'
 
 // V2.1 — Security & foundations
 import { register as registerSecurityBruteForce } from './jobs/securityBruteForce.js'
@@ -117,6 +118,7 @@ export function initAutomationEngine(): void {
   registerCrmProposalFollowup()
   registerCrmAutoArchiveLost()
   registerCrmConversionDropAlert()
+  registerCrmRetentionPurge()
 
   // ── V2.1 — Security & foundations ─────────────────────────
   registerSecurityBruteForce()

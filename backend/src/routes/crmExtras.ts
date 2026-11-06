@@ -13,6 +13,7 @@ import { applyLeadChange, assertLostReason, deleteLeadCascade, isLeadChangeError
 import { approveRun, rejectRun, retryRun, simulateRule } from '../lib/crmRules.js'
 import { isAssignableCrmUser } from '../lib/crmScope.js'
 import { entityCondition, isGroupEntity, leadEntityOf, type GroupEntity } from '../lib/groupEntities.js'
+import { buildActorFromReq, recordAudit } from '../lib/audit/auditHelpers.js'
 
 /**
  * Routes CRM « enrichies » (vues, actions groupées, export, fiche, règles),
@@ -47,6 +48,8 @@ export interface CrmExtrasAdapters {
 const STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
 const BULK_MAX = 200
 const BULK_ACTIONS = ['assign', 'status', 'tag', 'archive', 'restore', 'delete'] as const
+/** Plafond de lignes d'un export CSV ; atteint, la réponse porte l'en-tête X-Export-Truncated. */
+export const EXPORT_MAX_ROWS = 5000
 
 export const EXPORT_COLUMNS: Record<string, { label: string; value: (l: any) => unknown }> = {
   company: { label: 'Entreprise', value: (l) => l.company },
@@ -243,9 +246,36 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
     if (typeof req.query.ids === 'string' && req.query.ids) {
       filter._id = { $in: req.query.ids.split(',').filter(isId).slice(0, 1000) }
     }
-    const leads = await Lead.find(filter).populate('assignedTo', 'name').sort({ createdAt: -1 }).limit(5000).lean()
+    // Une ligne de plus que le plafond : on sait s'il a été atteint sans compter toute la base.
+    const fetched = await Lead.find(filter).populate('assignedTo', 'name').sort({ createdAt: -1 }).limit(EXPORT_MAX_ROWS + 1).lean()
+    const truncated = fetched.length > EXPORT_MAX_ROWS
+    const leads = truncated ? fetched.slice(0, EXPORT_MAX_ROWS) : fetched
     const rows = [columns.map((c) => csvCell(EXPORT_COLUMNS[c].label)).join(';')]
     for (const lead of leads) rows.push(columns.map((c) => csvCell(EXPORT_COLUMNS[c].value(lead))).join(';'))
+
+    // RGPD : un export sort des données personnelles de l'application ; il est tracé (qui, quand, quoi, combien).
+    const me = await a.actor(req)
+    const actor = buildActorFromReq(req)
+    await recordAudit({
+      action: 'CRM_LEADS_EXPORT',
+      actor: { ...actor, type: actor.type === 'SYSTEM' && me.id ? 'USER' : actor.type, userId: actor.userId || me.id || undefined },
+      entityType: 'Lead',
+      summary: `Export CSV de ${leads.length} lead(s)${truncated ? ' (tronqué)' : ''}`,
+      extra: {
+        rows: leads.length,
+        truncated,
+        columns,
+        filters: {
+          archived: req.query.archived === 'true',
+          status: typeof req.query.status === 'string' ? req.query.status : null,
+          entity: typeof req.query.entity === 'string' ? req.query.entity : null,
+          ids: typeof req.query.ids === 'string' && req.query.ids ? req.query.ids.split(',').length : 0,
+        },
+        ...(req.agentToken?.id ? { channel: 'agent', tokenId: String(req.agentToken.id) } : { channel: 'admin' }),
+      },
+    })
+
+    if (truncated) res.setHeader('X-Export-Truncated', String(EXPORT_MAX_ROWS))
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
     res.setHeader('Content-Disposition', 'attachment; filename="crm-leads.csv"')
     res.send('﻿' + rows.join('\r\n'))

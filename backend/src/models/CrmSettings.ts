@@ -133,6 +133,14 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
     briefRemindersEnabled: { type: Boolean, default: true },
     clientHealthAutoUpdate: { type: Boolean, default: true },
     invoiceReminderDays: { type: Number, default: 7 }, // Days after due date to send reminder
+
+    // ═══════════════════════════════════════════════════════════════
+    // RGPD : CONSERVATION DES DONNÉES (chantier 3D)
+    // ═══════════════════════════════════════════════════════════════
+    // Durée sans interaction ni modification au-delà de laquelle un lead non gagné est anonymisé.
+    retentionMonths: { type: Number, default: 36, min: 6, max: 120 },
+    // Tant qu'il est faux, la purge quotidienne ne fait que compter (simulation).
+    retentionPurgeEnabled: { type: Boolean, default: false },
   },
   { timestamps: true },
 )
