@@ -287,6 +287,18 @@ La prospection des établissements Arrow utilise désormais les leads du CRM
 principal (`/leads`, `project: "ARROW"`), avec `read:crm` / `write:crm`.
 Les scopes Arrow restent réservés au pilotage.
 
+### Projets du Dev Tracker : archivage
+
+| Méthode + chemin | Scope | Rôle |
+|---|---|---|
+| `GET /dev/projects` | `read:dev` | Liste paginée. **Les projets archivés sont exclus par défaut** ; `includeArchived=true` les réintègre, `status=ARCHIVED` ne renvoie qu'eux. |
+| `GET /dev/projects/:id` | `read:dev` | Détail ; un projet archivé reste consultable. |
+| `PATCH /dev/projects/:id` | `write:dev` | `{status: "ACTIVE" \| "ARCHIVED"}` : archive (pose `archivedAt`) ou restaure (`archivedAt: null`). Idempotent. Les tickets ne sont pas modifiés. Tracé dans l'audit (`DEV_PROJECT_ARCHIVED` / `DEV_PROJECT_RESTORED`). `400` pour un autre statut, `404` si le projet n'existe pas. |
+| `GET /dev/stats`, `GET /dev/overview` | `read:dev` | Les tickets et compteurs des projets archivés sont exclus par défaut ; `includeArchived=true` les réintègre. `GET /dev/stats?project=<id>` sur un projet archivé reste possible. |
+
+Côté admin, `PATCH /api/admin/dev/projects/:id` (permission `manage_dev`) accepte le même `status`,
+et `GET /api/admin/dev/projects|stats|overview` acceptent aussi `includeArchived=true`.
+
 ### Boîte à idées (suggestions de features)
 
 Scopes inchangés : `read:dev` pour lire, `write:dev` pour écrire. Les tokens
