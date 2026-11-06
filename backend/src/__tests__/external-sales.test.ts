@@ -419,7 +419,7 @@ describe('pilotage par l’équipe', () => {
   it('crée un compte commercial externe depuis l’équipe, sans le mêler à la liste interne', async () => {
     const res = await as(superAdmin).post('/api/admin/admins', {
       email: 'carla@example.test',
-      password: 'secret123',
+      password: 'Basalte-Comete-2026',
       name: 'Carla',
       role: 'COMMERCIAL_EXTERNE',
     })
