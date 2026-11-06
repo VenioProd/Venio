@@ -7,6 +7,7 @@ import { ADMIN_HUBS } from '../../../lib/adminHubs'
 
 const GestionBoard = lazy(() => import('../GestionBoard'))
 const InternalProjectList = lazy(() => import('../InternalProjectList'))
+const ProjectSheetList = lazy(() => import('../project-sheets/ProjectSheetList'))
 const SubsidiaryList = lazy(() => import('../SubsidiaryList'))
 const TemplateList = lazy(() => import('../TemplateList'))
 
@@ -35,6 +36,7 @@ export default function ProjetsHub() {
       panels={{
         clients: <ClientsPanel />,
         internes: <InternalProjectList />,
+        fiches: <ProjectSheetList />,
         plateformes: <SubsidiaryList />,
         modeles: <TemplateList />,
       }}

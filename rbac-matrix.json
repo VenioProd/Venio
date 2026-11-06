@@ -468,6 +468,23 @@
       "roles": []
     },
     {
+      "id": "project-sheets",
+      "section": "Croissance",
+      "screen": "/admin/projets/fiches",
+      "label": "Fiches projets",
+      "permission": null,
+      "roles": [
+        "SUPER_ADMIN",
+        "ADMIN",
+        "MANAGER",
+        "RH",
+        "COMMERCIAL",
+        "COMPTABLE",
+        "VIEWER",
+        "STAGIAIRE"
+      ]
+    },
+    {
       "id": "subsidiaries",
       "section": "Croissance",
       "screen": "/admin/filiales",

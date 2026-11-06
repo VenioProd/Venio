@@ -41,6 +41,7 @@ export const ADMIN_MODULE_PATHS: Readonly<Record<string, string>> = {
   projects: '/admin/projets/clients',
   'internal-projects': '/admin/projets/internes',
   subsidiaries: '/admin/projets/plateformes',
+  'project-sheets': '/admin/projets/fiches',
   templates: '/admin/projets/modeles',
   'change-requests': '/admin/demandes/clients',
   tickets: '/admin/demandes/equipe',

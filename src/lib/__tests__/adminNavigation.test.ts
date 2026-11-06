@@ -30,13 +30,13 @@ describe('VENIO-99 — navigation et cockpit RBAC', () => {
     }
   })
 
-  it('groups the 31 sidebar modules into exactly 13 entries and four zones', () => {
+  it('groups the 32 sidebar modules into exactly 13 entries and four zones', () => {
     const zones = getVisibleNavigationZones(user('SUPER_ADMIN'))
     expect(zones.map((zone) => zone.id)).toEqual(['Pilotage', 'Commercial', 'Production', 'Organisation'])
     const entries = zones.flatMap((zone) => zone.items)
     expect(entries.map((item) => item.id)).toEqual(ADMIN_NAVIGATION_GROUPS.map((group) => group.id))
     expect(entries).toHaveLength(13)
-    expect(ADMIN_NAVIGATION_GROUPS.flatMap((group) => [...group.modules])).toHaveLength(31)
+    expect(ADMIN_NAVIGATION_GROUPS.flatMap((group) => [...group.modules])).toHaveLength(32)
     expect(entries.find((item) => item.id === 'home')?.screen).toBe('/admin/mon-espace')
     expect(entries.map((item) => item.id)).not.toEqual(expect.arrayContaining(['arrow', 'subsidiaries', 'guide']))
   })
@@ -80,11 +80,22 @@ describe('VENIO-99 — navigation et cockpit RBAC', () => {
       ['inbox', '/admin/inbox/envoi-groupe'],
       ['projects', '/admin/projets/123'],
       ['projects', '/admin/projets-internes/123'],
+      ['projects', '/admin/projets/fiches'],
+      ['projects', '/admin/projets/fiches/arrow'],
       ['analytics', '/admin/analytics/business'],
     ]) {
       expect(entries.filter((item) => isAdminNavigationActive(item, path)).map((item) => item.id)).toEqual([id])
     }
     expect(entries.filter((item) => isAdminNavigationActive(item, '/admin/tickets-other'))).toEqual([])
+  })
+
+  it('expose les fiches projets à tous les rôles admin, dans le groupe Projets', () => {
+    for (const role of ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] as UserRole[]) {
+      const entries = getVisibleAdminNavigation(user(role))
+      expect(entries.find((item) => item.id === 'projects')?.paths, role).toContain('/admin/projets/fiches')
+    }
+    const group = ADMIN_NAVIGATION_GROUPS.find((entry) => entry.id === 'projects')!
+    expect([...group.modules]).toContain('project-sheets')
   })
 
   it('retains legacy modules and guide in the palette but excludes Arrow', () => {
