@@ -61,6 +61,7 @@ export const ADMIN_HUBS = {
     tabs: [
       { id: 'clients', labelKey: 'shell.hub.projets.clients', to: '/admin/projets/clients', modules: ['projects'] },
       { id: 'internes', labelKey: 'shell.hub.projets.internes', to: '/admin/projets/internes', modules: ['internal-projects'] },
+      { id: 'fiches', labelKey: 'shell.hub.projets.fiches', to: '/admin/projets/fiches', modules: ['project-sheets'] },
       { id: 'plateformes', labelKey: 'shell.hub.projets.plateformes', to: '/admin/projets/plateformes', modules: ['subsidiaries'] },
       { id: 'modeles', labelKey: 'shell.hub.projets.modeles', to: '/admin/projets/modeles', modules: ['templates'] },
     ],

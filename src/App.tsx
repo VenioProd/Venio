@@ -98,6 +98,7 @@ const SearchModal = lazy(() => import('./components/admin/SearchModal'))
 const InternalProjectDetail = lazy(() => import('./pages/admin/InternalProjectDetail'))
 const Resources = lazy(() => import('./pages/admin/Resources'))
 const SubsidiaryDetail = lazy(() => import('./pages/admin/SubsidiaryDetail'))
+const ProjectSheetDetail = lazy(() => import('./pages/admin/project-sheets/ProjectSheetDetail'))
 const DevWorkspace = lazy(() => import('./pages/admin/dev-workspace'))
 const DevProjectCockpit = lazy(() => import('./pages/admin/dev-workspace/DevProjectCockpit'))
 const BetaCampaignCockpit = lazy(() => import('./pages/admin/beta/CampaignCockpit'))
@@ -492,6 +493,17 @@ function AppShell() {
                       element={
                         <ProtectedRoute role={['SUPER_ADMIN']} redirectTo="/admin">
                           <SubsidiaryDetail />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="projets/fiches/:slug"
+                      element={
+                        <ProtectedRoute
+                          role={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE']}
+                          redirectTo="/admin"
+                        >
+                          <ProjectSheetDetail />
                         </ProtectedRoute>
                       }
                     />

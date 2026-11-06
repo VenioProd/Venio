@@ -31,6 +31,7 @@ import crmPrivacy from './crmPrivacy'
 import crmSuppression from './crmSuppression'
 import crmSeq from './crmSeq'
 import portfolio from './portfolio'
+import projectSheets from './projectSheets'
 
 const messages = {
   ...accAccounts,
@@ -65,6 +66,7 @@ const messages = {
   ...crmSuppression,
   ...crmSeq,
   ...portfolio,
+  ...projectSheets,
 }
 
 export default messages

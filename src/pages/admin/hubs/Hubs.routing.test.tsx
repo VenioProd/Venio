@@ -129,7 +129,7 @@ const cases = [
     hub: 'projets',
     legacy: '/admin/gestion',
     to: '/admin/projets/clients',
-    visible: ['Clients', 'Internes'],
+    visible: ['Clients', 'Internes', 'Fiches projets'],
     grant: ['view_projects'],
     deny: ['edit_projects'],
   },

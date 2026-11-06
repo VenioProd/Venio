@@ -31,6 +31,7 @@ const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   agents: { labelKey: 'shell.navItem.agents', to: '/admin/agents' },
   webhooks: { labelKey: 'shell.navItem.webhooks', to: '/admin/webhooks' },
   filiales: { labelKey: 'shell.navItem.subsidiaries', to: '/admin/filiales' },
+  fiches: { labelKey: 'shell.breadcrumb.projectSheets', to: '/admin/projets/fiches' },
   'comptes-clients': { labelKey: 'shell.breadcrumb.clientAccounts', to: '/admin/comptes-clients' },
   'comptes-admin': { labelKey: 'shell.breadcrumb.adminAccounts', to: '/admin/comptes-admin' },
   crm: { labelKey: 'shell.breadcrumb.crm', to: '/admin/crm' },
