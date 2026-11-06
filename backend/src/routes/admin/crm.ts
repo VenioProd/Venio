@@ -12,6 +12,7 @@ import CrmSettings from '../../models/CrmSettings.js'
 import { ADMIN_ROLES, PERMISSIONS } from '../../lib/permissions.js'
 import { getRoundRobinAssignee, logLeadActivity, checkDuplicateLead, buildWorklist } from '../../lib/crmAutomations.js'
 import { ensureClientForWonLead } from '../../lib/crmClientConversion.js'
+import { mergeLeads } from '../../lib/crmLeadMerge.js'
 import {
   applyLeadChange,
   createLead,
@@ -170,6 +171,21 @@ router.post(
       }
       payload.createdBy = req.user!.id
 
+      // Doublons probables dans le périmètre de lecture de l'appelant : signalés dans la
+      // réponse, ou bloquants (409) si le réglage `duplicateBlockOnCreate` est actif.
+      const duplicates = settings.duplicateDetectionEnabled
+        ? await checkDuplicateLead(payload as any, settings, null, {
+            scope: readsUnrestrictedCrm(req) ? null : leadScopeFilter(req),
+          })
+        : []
+      if (duplicates.length > 0 && settings.duplicateBlockOnCreate) {
+        return res.status(409).json({
+          error: 'Des leads existants correspondent à ce prospect (doublon probable)',
+          code: 'DUPLICATE_LEAD',
+          duplicates,
+        })
+      }
+
       // Historique, automatisations de statut, auto-qualification, score,
       // conversion WON et événements : tout passe par le service.
       const { lead } = await createLead(payload, {
@@ -178,9 +194,36 @@ router.post(
         settings,
         validateAssignee: false,
       })
-      return res.status(201).json({ lead })
+      // Forme historique { lead } conservée ; `duplicates` n'est ajouté que s'il y en a.
+      return res.status(201).json(duplicates.length > 0 ? { lead, duplicates } : { lead })
     } catch (err) {
       if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, ...err.details })
+      return next(err)
+    }
+  },
+)
+
+// Fusion : `sourceId` est absorbé par le lead de l'URL (la cible), puis supprimé.
+router.post(
+  '/leads/:id/merge',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  idempotentRequest,
+  body('sourceId').isMongoId().withMessage('Identifiant du lead à fusionner invalide'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
+      }
+      const [target, source] = await Promise.all([Lead.findById(req.params.id), Lead.findById(req.body.sourceId)])
+      // Écriture sur les deux leads : hors périmètre, ils n'existent pas pour l'appelant.
+      if (!target || isLeadOutOfScope(req, target)) return res.status(404).json({ error: 'Lead not found' })
+      if (!source || isLeadOutOfScope(req, source)) return res.status(404).json({ error: 'Lead à fusionner introuvable' })
+
+      const result = await mergeLeads(target, source, req.user!.id)
+      return res.json({ lead: result.lead, merged: { sourceId: String(source._id), moved: result.moved, filledFields: result.filledFields } })
+    } catch (err) {
+      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, code: err.code, ...err.details })
       return next(err)
     }
   },
@@ -824,15 +867,14 @@ router.post(
       }
 
       const { company, contactEmail, contactPhone, excludeId } = req.body
-      const found = await checkDuplicateLead({ company, contactEmail, contactPhone }, settings, excludeId)
       // Seuls les doublons du périmètre de lecture sont renvoyés : la détection ne doit pas
-      // révéler les leads d'un collègue.
-      let duplicates = found
-      if (!readsUnrestrictedCrm(req) && found.length > 0) {
-        const readable = await Lead.distinct('_id', { _id: { $in: found.map((d) => d._id) }, ...leadScopeFilter(req) })
-        const readableIds = new Set(readable.map(String))
-        duplicates = found.filter((d) => readableIds.has(String(d._id)))
-      }
+      // révéler les leads d'un collègue. Le périmètre est dans la requête, la limite vient après.
+      const duplicates = await checkDuplicateLead(
+        { company, contactEmail, contactPhone },
+        settings,
+        mongoose.isValidObjectId(excludeId) ? excludeId : null,
+        { scope: readsUnrestrictedCrm(req) ? null : leadScopeFilter(req) },
+      )
       return res.json({ duplicates, enabled: true })
     } catch (err) {
       return next(err)

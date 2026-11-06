@@ -1,7 +1,9 @@
 import express, { type Request, type Response } from 'express'
 import rateLimit from 'express-rate-limit'
 import Lead from '../../models/Lead.js'
-import { logLeadActivity } from '../../lib/crmAutomations.js'
+import CrmSettings from '../../models/CrmSettings.js'
+import { checkDuplicateLead, logLeadActivity } from '../../lib/crmAutomations.js'
+import { normalizeEmail } from '../../lib/crmDedup.js'
 import { createLead } from '../../lib/crmLeadService.js'
 import { sendContactReceiptEmail } from '../../lib/email.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
@@ -53,10 +55,18 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
 
   try {
     // Comparaison normalisée (trim + minuscules), insensible à la casse des fiches existantes.
-    const normalizedEmail = String(submission.email ?? '').trim().toLowerCase()
-    let lead = await Lead.findOne({ contactEmail: { $regex: `^\\s*${escapeRegex(normalizedEmail)}\\s*$`, $options: 'i' } }).sort({
-      updatedAt: -1,
-    })
+    // Le champ `contactEmailNormalized` est indexé (migration 008) ; les fiches pas encore migrées
+    // (champ absent) restent trouvées par l'ancienne comparaison tolérante.
+    const normalizedEmail = normalizeEmail(submission.email)
+    let lead = await Lead.findOne({
+      $or: [
+        { contactEmailNormalized: normalizedEmail },
+        {
+          contactEmailNormalized: { $exists: false },
+          contactEmail: { $regex: `^\\s*${escapeRegex(normalizedEmail)}\\s*$`, $options: 'i' },
+        },
+      ],
+    }).sort({ updatedAt: -1 })
     const isNewLead = !lead
 
     if (!lead) {
@@ -77,6 +87,21 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
         },
         { actor: null, source: 'form' },
       ))
+      // Même e-mail : déjà traité ci-dessus. Téléphone ou entreprise identiques : le lead est créé quand
+      // même (le formulaire ne refuse jamais), et le doublon probable est consigné pour l'équipe.
+      const settings = await CrmSettings.getSettings()
+      if (settings.duplicateDetectionEnabled) {
+        const duplicates = await checkDuplicateLead(lead, settings, lead._id)
+        if (duplicates.length > 0) {
+          await logLeadActivity(
+            lead._id,
+            'POSSIBLE_DUPLICATE',
+            'Doublon possible avec un lead existant',
+            { duplicateIds: duplicates.map((duplicate: { _id: unknown }) => String(duplicate._id)) },
+            null,
+          )
+        }
+      }
     } else if (!CLOSED_STATUSES.includes(lead.status)) {
       // Lead existant : aucune donnée de la fiche n'est écrasée. La nouvelle demande est
       // consignée dans l'historique (activité ci-dessous) ; seule la date de dernière

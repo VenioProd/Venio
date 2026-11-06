@@ -9,6 +9,7 @@ import CrmSettings from '../models/CrmSettings.js'
 import type { ICrmSettings } from '../types/models/index.js'
 import { calculateLeadScore, logLeadActivity, notifyAssignment, shouldAutoQualify } from './crmAutomations.js'
 import { processWonLead, type WonLeadOutcome } from './crmClientConversion.js'
+import { normalizedLeadFields } from './crmDedup.js'
 import { normalizeEnrichedLeadFields } from './crmLeadFields.js'
 import { emitLeadChanges } from './crmRules.js'
 import { isAssignableCrmUser } from './crmScope.js'
@@ -152,7 +153,8 @@ export function normalizeLeadPatch(
   if (body.assignedTo !== undefined) {
     payload.assignedTo = opts.lenientAssignee ? (isObjectId(body.assignedTo) ? body.assignedTo : null) : body.assignedTo || null
   }
-  return { ...payload, ...normalizeEnrichedLeadFields(body) }
+  // Valeurs normalisées pour la détection de doublons (voir lib/crmDedup), déduites des champs saisis présents.
+  return { ...payload, ...normalizeEnrichedLeadFields(body), ...normalizedLeadFields(payload) }
 }
 
 // ───────────────────────── Validation ─────────────────────────
@@ -266,7 +268,8 @@ export async function applyLeadChange(
   const before = existing ? { status: String(existing.status), assignedTo: existing.assignedTo } : null
   const transitions: LeadChangeResult['transitions'] = []
 
-  Object.assign(lead, patch)
+  // Les appelants qui n'ont pas passé par normalizeLeadPatch (formulaire, fusion) obtiennent quand même les champs normalisés.
+  Object.assign(lead, normalizedLeadFields(patch), patch)
   // Sans entité explicite, un nouveau lead prend celle de son projet (Arrow → ARROW, le reste → VENIO).
   if (created && patch.entity === undefined) lead.entity = entityFromProject(lead.project)
 

@@ -4,6 +4,7 @@ import type { ILead } from '../types/models/index.js'
 import { createNotification } from '../lib/notifications.js'
 import logger from '../lib/logger.js'
 import { DEFAULT_GROUP_ENTITY, GROUP_ENTITIES } from '../lib/groupEntities.js'
+import { normalizeCompanyName, normalizeEmail, normalizePhone } from '../lib/crmDedup.js'
 
 // Projet / produit concerné par le lead. Vide pour les leads historiques.
 export const LEAD_PROJECTS = ['ARTOSERA', 'VIGNO', 'ARROW', 'VENIO', 'AUTRE'] as const
@@ -86,6 +87,11 @@ const leadSchema = new mongoose.Schema<ILead>(
     automationPausedAt: { type: Date, default: null },
     // Posé une seule fois, atomiquement, par la conversion d'un lead gagné (crmClientConversion) : verrou d'idempotence.
     wonProcessedAt: { type: Date, default: null },
+    // ── Dédoublonnage (3B) ──
+    // Valeurs normalisées des champs saisis (voir lib/crmDedup), tenues à jour par le service et le hook ci-dessous.
+    contactEmailNormalized: { type: String, default: '' },
+    contactPhoneNormalized: { type: String, default: '' },
+    companyNormalized: { type: String, default: '' },
   },
   { timestamps: true },
 )
@@ -105,6 +111,13 @@ leadSchema.pre('validate', function () {
   if (this.probability == null || (this.isModified('status') && !this.isModified('probability') && !this.isNew)) {
     this.probability = STATUS_PROBABILITY[this.status] ?? 10
   }
+})
+
+// Les champs normalisés suivent les champs saisis, quel que soit le chemin d'écriture (service, règle, script).
+leadSchema.pre('validate', function () {
+  if (this.isNew || this.isModified('contactEmail')) this.contactEmailNormalized = normalizeEmail(this.contactEmail)
+  if (this.isNew || this.isModified('contactPhone')) this.contactPhoneNormalized = normalizePhone(this.contactPhone)
+  if (this.isNew || this.isModified('company')) this.companyNormalized = normalizeCompanyName(this.company)
 })
 
 // Le modèle couvre aussi les sauvegardes de l'API agent et du planificateur.
@@ -141,6 +154,10 @@ leadSchema.index({ archivedAt: 1, status: 1 })
 leadSchema.index({ tags: 1 })
 leadSchema.index({ score: -1 }) // Index for sorting by score
 leadSchema.index({ status: 1, createdAt: -1 }) // Cohortes du pilotage
+// Détection de doublons : égalités exactes sur les valeurs normalisées.
+leadSchema.index({ contactEmailNormalized: 1 })
+leadSchema.index({ contactPhoneNormalized: 1 })
+leadSchema.index({ companyNormalized: 1 })
 
 syncTombstones(leadSchema, 'leads')
 

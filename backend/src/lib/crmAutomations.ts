@@ -5,6 +5,7 @@ import User from '../models/User.js'
 import { sendLeadAssignmentEmail } from './email.js'
 import { CRM_ASSIGNABLE_ROLES } from './crmScope.js'
 import { nextSchedulerCursor } from '../models/SchedulerLock.js'
+import { MIN_PHONE_DIGITS, normalizeCompanyName, normalizeEmail, normalizePhone } from './crmDedup.js'
 
 /** Curseur du round-robin, en base : partagé entre instances et conservé aux redémarrages. */
 export const ROUND_ROBIN_CURSOR = 'crm:round-robin'
@@ -322,43 +323,57 @@ export function calculateLeadScore(lead: LeadData, weights: ScoringWeights = {})
   return Math.min(score, 100)
 }
 
+/** Options de `checkDuplicateLead`. */
+export interface DuplicateCheckOptions {
+  /** Périmètre de lecture de l'appelant (`leadScopeFilter`), appliqué dans la requête : `null` = tout le CRM. */
+  scope?: Record<string, unknown> | null
+  /** Nombre maximal de doublons renvoyés, compté APRÈS application du périmètre (défaut : 10). */
+  limit?: number
+}
+
 /**
- * Check for duplicate leads
+ * Doublons probables d'un lead, d'après les réglages `duplicateCheck*` :
+ * égalité exacte sur l'e-mail normalisé (trim + minuscules), le téléphone
+ * normalisé (chiffres, +33/0033 → 0) et le nom d'entreprise normalisé
+ * (minuscules, sans accents ni ponctuation). Les champs normalisés sont ceux
+ * stockés sur les leads (voir lib/crmDedup, migration 008).
+ *
+ * Le périmètre est dans la requête : la limite ne peut pas être consommée par
+ * des leads que l'appelant n'a pas le droit de voir.
  */
 export async function checkDuplicateLead(
   leadData: LeadData,
   settings: DuplicateCheckSettings,
   excludeId: Types.ObjectId | string | null = null,
+  options: DuplicateCheckOptions = {},
 ) {
   const conditions: Record<string, unknown>[] = []
 
-  if (settings.duplicateCheckEmail && leadData.contactEmail && leadData.contactEmail.trim()) {
-    conditions.push({ contactEmail: { $regex: new RegExp(`^${escapeRegex(leadData.contactEmail.trim())}$`, 'i') } })
+  if (settings.duplicateCheckEmail) {
+    const email = normalizeEmail(leadData.contactEmail)
+    if (email) conditions.push({ contactEmailNormalized: email })
   }
 
-  if (settings.duplicateCheckCompany && leadData.company && leadData.company.trim()) {
-    conditions.push({ company: { $regex: new RegExp(`^${escapeRegex(leadData.company.trim())}$`, 'i') } })
+  if (settings.duplicateCheckCompany) {
+    const company = normalizeCompanyName(leadData.company)
+    if (company) conditions.push({ companyNormalized: company })
   }
 
-  if (settings.duplicateCheckPhone && leadData.contactPhone && leadData.contactPhone.trim()) {
-    // Normalize phone for comparison (remove spaces, dashes, etc.)
-    const normalizedPhone = leadData.contactPhone.replace(/[\s.()-]/g, '')
-    if (normalizedPhone.length >= 8) {
-      conditions.push({
-        contactPhone: { $regex: new RegExp(escapeRegex(normalizedPhone).replace(/^0/, '(0|\\+33)'), 'i') },
-      })
-    }
+  if (settings.duplicateCheckPhone) {
+    const phone = normalizePhone(leadData.contactPhone)
+    if (phone.length >= MIN_PHONE_DIGITS) conditions.push({ contactPhoneNormalized: phone })
   }
 
   if (conditions.length === 0) return []
 
-  const query: Record<string, unknown> = { $or: conditions }
-  if (excludeId) {
-    query._id = { $ne: excludeId }
-  }
+  const clauses: Record<string, unknown>[] = [{ $or: conditions }]
+  if (excludeId) clauses.push({ _id: { $ne: excludeId } })
+  if (options.scope && Object.keys(options.scope).length > 0) clauses.push(options.scope)
 
-  const duplicates = await Lead.find(query).select('company contactName contactEmail contactPhone status').limit(10)
-  return duplicates
+  return Lead.find({ $and: clauses })
+    .select('company contactName contactEmail contactPhone status archivedAt assignedTo updatedAt')
+    .sort({ updatedAt: -1 })
+    .limit(options.limit ?? 10)
 }
 
 /**
@@ -421,7 +436,3 @@ export async function autoCreateProjectFromLead(lead: LeadData, actorId: Types.O
   return project
 }
 
-// Helper to escape regex special characters
-function escapeRegex(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}

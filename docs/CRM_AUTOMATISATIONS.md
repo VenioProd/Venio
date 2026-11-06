@@ -35,7 +35,7 @@ Document singleton, lu par `CrmSettings.getSettings()` (`backend/src/models/CrmS
 | `emailOnAssignment` | `true` | E-mail au commercial nouvellement assigné (canal `admin` seulement) | `crmLeadService.ts` |
 | `activityLogging` | `true` | Journalise création, statut, assignation, archivage, conversion | `crmLeadService.ts`, `crmClientConversion.ts` |
 | `scoringEnabled` / `scoringWeights` | `false` / voir §2.3 | Calcule `score` à chaque écriture | `crmAutomations.ts` (`calculateLeadScore`) |
-| `duplicateDetectionEnabled`, `duplicateCheckEmail`, `duplicateCheckCompany` (`true`), `duplicateCheckPhone` (`false`) | voir colonne | Recherche de doublons à la saisie (pas automatique à toute création) | `crmAutomations.ts` (`checkDuplicateLead`), appelée par `POST /api/admin/crm/check-duplicate` (`routes/admin/crm.ts`) et par la création côté espace commercial (`routes/commercial/index.ts`) |
+| `duplicateDetectionEnabled`, `duplicateCheckEmail`, `duplicateCheckCompany` (`true`), `duplicateCheckPhone` (`false`), `duplicateBlockOnCreate` (`false`) | voir colonne | Détection de doublons : égalité exacte sur les champs normalisés `contactEmailNormalized`, `contactPhoneNormalized`, `companyNormalized` (`lib/crmDedup.ts`, migration 008). À la création admin et agent : doublons renvoyés dans `duplicates` (409 `DUPLICATE_LEAD` si `duplicateBlockOnCreate`) ; formulaire public : jamais refusé, activité `POSSIBLE_DUPLICATE` | `crmAutomations.ts` (`checkDuplicateLead`), `POST /api/admin/crm/check-duplicate`, `routes/admin/crm.ts`, `routes/agent/crm.ts`, `routes/public/contact.ts`, `routes/commercial/index.ts` |
 | `lostReasons` | `Prix`, `Délai`, `Concurrent`, `Sans réponse`, `Hors cible`, `Projet annulé` | Liste fermée des motifs de perte | `crmLeadService.ts` (`assertLostReason`) |
 | `defaultCloserId` | `null` | Destinataire des dossiers « prêts à closer » (vide : super-admins) | `models/CrmSettings.ts` |
 
@@ -293,6 +293,7 @@ Scripts one-shot, idempotents, dans `backend/scripts/migrations/` (usage : `MONG
 | `004-crm-enrich.ts` | `probability` des leads existants selon l'étape ; `lastInteractionAt` et `interactionsCount` depuis le journal des échanges ; insertion des règles prédéfinies en brouillon. Les jobs historiques restent actifs jusqu'à désactivation manuelle de chaque job. |
 | `005-crm-form-rule-source.ts` | ajoute `FORMULAIRE_SITE` à la condition « source » de `nouveau-lead-formulaire` (`$addToSet`), sans toucher au reste. |
 | `006-crm-post-demo-rule.ts` | insère la règle `relance-post-demo` (et toute règle prédéfinie absente), en brouillon. |
+| `008-crm-dedup-normalized.ts` | remplit `contactEmailNormalized`, `contactPhoneNormalized`, `companyNormalized` des leads et crée leurs index ; idempotente, `--dry-run`. À lancer avant ou avec le déploiement. |
 
 ---
 
