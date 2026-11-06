@@ -1,5 +1,6 @@
 import type { Types } from 'mongoose'
 import Interaction from '../models/Interaction.js'
+import Lead from '../models/Lead.js'
 import LeadActivity from '../models/LeadActivity.js'
 import ClientActivity from '../models/ClientActivity.js'
 import type { InteractionSubjectType, InteractionKind, InteractionDirection } from '../types/models/index.js'
@@ -114,6 +115,19 @@ export interface LogInteractionInput {
   audio?: { filename: string; originalName: string; mimeType: string; size: number }
 }
 
+/**
+ * Aligne les dénormalisés du lead sur ses échanges réels : `lastInteractionAt`
+ * = date de l'échange le plus récent (null s'il n'en reste aucun), et, avec
+ * `recount`, `interactionsCount` = nombre d'échanges restants. Sans `recount`,
+ * seul le compteur est laissé intact (il est incrémenté ailleurs à l'enregistrement).
+ */
+export async function syncLeadLastInteraction(leadId: Types.ObjectId | string, options: { recount?: boolean } = {}): Promise<void> {
+  const latest = await Interaction.findOne({ subjectType: 'LEAD', subjectId: leadId }).sort({ occurredAt: -1 }).select('occurredAt').lean()
+  const set: Record<string, unknown> = { lastInteractionAt: latest ? latest.occurredAt : null }
+  if (options.recount) set.interactionsCount = await Interaction.countDocuments({ subjectType: 'LEAD', subjectId: leadId })
+  await Lead.updateOne({ _id: leadId }, { $set: set })
+}
+
 export async function logInteraction(input: LogInteractionInput) {
   const interaction = await Interaction.create({
     lang: input.lang ?? null,
@@ -141,7 +155,11 @@ export async function logInteraction(input: LogInteractionInput) {
   if (input.subjectType === 'LEAD') {
     // Compteurs du lead et déclencheur « interaction consignée » : jamais bloquants.
     import('./crmRules.js')
-      .then((m) => m.onLeadInteraction(input.subjectId, interaction.occurredAt, String(interaction._id)))
+      .then(async (m) => {
+        await m.onLeadInteraction(input.subjectId, interaction.occurredAt, String(interaction._id))
+        // onLeadInteraction pose la date de CET échange : un échange antérieur ne doit pas faire reculer le lead.
+        await syncLeadLastInteraction(input.subjectId)
+      })
       .catch(() => {})
   }
   return interaction

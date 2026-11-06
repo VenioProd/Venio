@@ -1,8 +1,6 @@
 import express, { type NextFunction, type Request, type RequestHandler, type Response } from 'express'
 import mongoose from 'mongoose'
 import Lead from '../models/Lead.js'
-import LeadActivity from '../models/LeadActivity.js'
-import Interaction from '../models/Interaction.js'
 import PersonalTask from '../models/PersonalTask.js'
 import QuoteProposal from '../models/QuoteProposal.js'
 import Project from '../models/Project.js'
@@ -11,7 +9,7 @@ import CrmRule, { CONDITION_FIELDS, CONDITION_OPERATORS, RULE_ACTIONS, RULE_TRIG
 import CrmRuleRun from '../models/CrmRuleRun.js'
 import { buildTimeline } from '../lib/interactions.js'
 import CrmSettings from '../models/CrmSettings.js'
-import { applyLeadChange, assertLostReason, isLeadChangeError, type LeadChangeContext } from '../lib/crmLeadService.js'
+import { applyLeadChange, assertLostReason, deleteLeadCascade, isLeadChangeError, type LeadChangeContext } from '../lib/crmLeadService.js'
 import { approveRun, rejectRun, retryRun, simulateRule } from '../lib/crmRules.js'
 import { isAssignableCrmUser } from '../lib/crmScope.js'
 
@@ -173,8 +171,8 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
 
     const me = await a.actor(req)
     const scope = a.writeScope(req)
-    // Tout passe par le service de lead, sauf la suppression : historique,
-    // automatisations de statut, conversion WON et événements identiques à la fiche.
+    // Tout passe par le service de lead : historique, automatisations de statut,
+    // conversion WON, événements et cascade de suppression identiques à la fiche.
     const change: LeadChangeContext = {
       actor: me.id,
       source: 'bulk',
@@ -192,13 +190,8 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
           continue
         }
         if (action === 'delete') {
-          await Promise.all([
-            LeadActivity.deleteMany({ leadId: lead._id }),
-            Interaction.deleteMany({ subjectType: 'LEAD', subjectId: lead._id }),
-            PersonalTask.deleteMany({ leadId: lead._id }),
-            CrmRuleRun.deleteMany({ lead: lead._id }),
-          ])
-          await Lead.deleteOne({ _id: lead._id })
+          // Même cascade que la suppression unitaire (service de lead).
+          await deleteLeadCascade(lead)
         } else if (action === 'assign') {
           await applyLeadChange(lead, { assignedTo: payload.userId }, change)
         } else if (action === 'status') {

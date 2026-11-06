@@ -12,6 +12,7 @@ import SalesCommission from '../../models/SalesCommission.js'
 import CrmSettings from '../../models/CrmSettings.js'
 import { logLeadActivity, checkDuplicateLead } from '../../lib/crmAutomations.js'
 import { logInteraction } from '../../lib/interactions.js'
+import { applyLeadChange, isLeadChangeError } from '../../lib/crmLeadService.js'
 import { notifyUsers } from '../../lib/notifyHelpers.js'
 import { ADMIN_ROLES } from '../../lib/permissions.js'
 import {
@@ -277,21 +278,18 @@ router.patch(
         return res.status(409).json({ error: 'Ce lead est entre les mains de l’équipe', code: 'LEAD_CLOSED' })
       }
       const payload = repLeadPayload(req.body)
-      const previousStatus = lead.status
-      lead.set(payload)
-      if (payload.status && payload.status !== previousStatus) lead.statusChangedAt = new Date()
-      await lead.save()
-      if (payload.status && payload.status !== previousStatus) {
-        await logLeadActivity(
-          lead._id,
-          'STATUS_CHANGE',
-          `Statut : ${previousStatus} → ${lead.status}`,
-          { from: previousStatus, to: lead.status },
-          req.user!.id,
-        )
-      }
-      return res.json({ lead: toRepLead(lead) })
+      // Service unique : historique STATUS_CHANGE, automatisations de statut, score
+      // et événements des règles. Politique « bulk » : ni auto-qualification ni
+      // notification, comme avant pour l'externe ; la source journalisée reste « commercial ».
+      const result = await applyLeadChange(lead, payload, {
+        actor: req.user!.id,
+        source: 'bulk',
+        validateAssignee: false,
+        activityMeta: { source: 'commercial' },
+      })
+      return res.json({ lead: toRepLead(result.lead) })
     } catch (err) {
+      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, ...err.details })
       return next(err)
     }
   },
