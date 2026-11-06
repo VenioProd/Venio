@@ -63,10 +63,10 @@ describe('réglages CRM — liste « ne pas contacter »', () => {
     await screen.findByText('user1@exemple.test')
     fireEvent.change(screen.getByLabelText('Rechercher une adresse'), { target: { value: ' user ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Rechercher' }))
-    await waitFor(() => expect(listings.at(-1)!.url).toContain('q=user'))
+    await waitFor(() => expect(listings[listings.length - 1].url).toContain('q=user'))
     fireEvent.click(await screen.findByRole('button', { name: 'Suivant' }))
     expect(await screen.findByText('user26@exemple.test')).toBeInTheDocument()
-    expect(listings.at(-1)!.url).toContain('page=2')
+    expect(listings[listings.length - 1].url).toContain('page=2')
   })
 
   it('ADMIN : ajoute une adresse avec sa raison', async () => {
