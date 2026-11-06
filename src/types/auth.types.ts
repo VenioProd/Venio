@@ -56,6 +56,8 @@ export interface User {
   customPermissions?: string[]
   grantedPermissions?: string[]
   deniedPermissions?: string[]
+  /** Périmètre CRM par entité du groupe ; vide = toutes les entités. */
+  crmEntities?: string[]
   companyName?: string
   phone?: string
   website?: string

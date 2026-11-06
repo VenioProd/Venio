@@ -204,7 +204,7 @@ describe('VENIO-104 — permissions backend and data scoping', () => {
       if (scenario.canReadCrm) {
         const companies = crm.body.leads.map((lead: { company: string }) => lead.company)
         const expectedCompanies =
-          scenario.role === 'SUPER_ADMIN' || scenario.role === 'COMMERCIAL'
+          scenario.role === 'SUPER_ADMIN' || scenario.role === 'ADMIN' || scenario.role === 'COMMERCIAL'
             ? scenarios.map(({ role }) => `VENIO-104 lead ${role}`)
             : [`VENIO-104 lead ${scenario.role}`]
         expect(companies.sort()).toEqual(expectedCompanies.sort())

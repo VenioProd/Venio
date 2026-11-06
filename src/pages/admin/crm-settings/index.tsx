@@ -18,6 +18,7 @@ import ScoringSection from './ScoringSection'
 import DuplicatesSection from './DuplicatesSection'
 import ReportsSection from './ReportsSection'
 import RetentionSection from './RetentionSection'
+import SuppressionSection from './SuppressionSection'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 
@@ -173,6 +174,7 @@ export default function CrmSettings() {
         <DuplicatesSection {...sectionProps} />
         <ReportsSection {...sectionProps} handleRecipientsChange={handleRecipientsChange} />
         <RetentionSection {...sectionProps} />
+        <SuppressionSection canManage={canManage} />
       </div>
 
       {saving && <div className="crm-settings-saving">{t('crm.common.saving')}</div>}

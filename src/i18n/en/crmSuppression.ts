@@ -1,0 +1,52 @@
+/** "Do not contact" list and per-entity scope (workstream 4B). */
+const en = {
+  'crmSuppression.title': '"Do not contact" list',
+  'crmSuppression.intro':
+    'Addresses on this list no longer receive any prospecting email (automation rules and emails sent from a lead).',
+  'crmSuppression.removeNotice':
+    'Removing an address from the list does not change the "do not contact" flag set on lead records: it stays in force.',
+  'crmSuppression.readOnly': 'View only: only CRM administrators can edit this list.',
+  'crmSuppression.loadError': 'Unable to load the list.',
+  'crmSuppression.search': 'Search an address',
+  'crmSuppression.searchPlaceholder': 'Address or part of an address',
+  'crmSuppression.searchButton': 'Search',
+  'crmSuppression.clear': 'Clear',
+  'crmSuppression.empty': 'No address on the list.',
+  'crmSuppression.emptySearch': 'No address matches this search.',
+  'crmSuppression.total': '{count} address(es)',
+  'crmSuppression.col.email': 'Address',
+  'crmSuppression.col.reason': 'Reason',
+  'crmSuppression.col.date': 'Added on',
+  'crmSuppression.col.by': 'By',
+  'crmSuppression.col.actions': 'Actions',
+  'crmSuppression.by.person': 'The person / the system',
+  'crmSuppression.reason.UNSUBSCRIBE': 'Unsubscribed',
+  'crmSuppression.reason.MANUAL': 'Manual entry',
+  'crmSuppression.reason.OPPOSITION': 'Objection',
+  'crmSuppression.reason.ANONYMIZED': 'Anonymised lead',
+  'crmSuppression.add.title': 'Add an address',
+  'crmSuppression.add.email': 'Address not to contact',
+  'crmSuppression.add.reason': 'Reason for adding',
+  'crmSuppression.add.button': 'Add',
+  'crmSuppression.add.done': 'Address added to the list.',
+  'crmSuppression.add.invalid': 'Invalid email address.',
+  'crmSuppression.add.duplicate': 'This address is already on the list.',
+  'crmSuppression.add.error': 'Unable to add the address.',
+  'crmSuppression.remove.button': 'Remove',
+  'crmSuppression.remove.label': 'Remove {email}',
+  'crmSuppression.remove.confirmTitle': 'Remove this address?',
+  'crmSuppression.remove.confirmMessage':
+    '{email} will be able to receive prospecting emails again. The flag set on lead records is not changed.',
+  'crmSuppression.remove.confirm': 'Remove from list',
+  'crmSuppression.remove.done': 'Address removed from the list.',
+  'crmSuppression.remove.error': 'Unable to remove the address.',
+  'crmSuppression.page': 'Page {page} of {pages}',
+  'crmSuppression.prev': 'Previous',
+  'crmSuppression.next': 'Next',
+  'crmSuppression.entities.title': 'CRM scope by entity',
+  'crmSuppression.entities.help':
+    'Empty = all entities. Otherwise the person only sees and edits leads of the ticked entities (super-admins are never restricted).',
+  'crmSuppression.entities.badge': 'Entities: {entities}',
+} as const
+
+export default en

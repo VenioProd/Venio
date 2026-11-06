@@ -10,6 +10,7 @@ import { useI18n } from '../../context/I18nContext'
 import type { MessageKey } from '../../i18n'
 import ConfirmModal from '../../components/ConfirmModal'
 import type { User } from '../../types/auth.types'
+import { CRM_ENTITIES } from './crm-board/constants'
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 
@@ -272,6 +273,26 @@ const AdminList = () => {
                     >
                       {admin.title || roleLabel(admin.role) || admin.role}
                     </span>
+                    {admin.role !== 'SUPER_ADMIN' && admin.crmEntities && admin.crmEntities.length > 0 && (
+                      <span
+                        className="admin-card-role"
+                        data-testid="crm-entities-badge"
+                        style={{
+                          background: 'color-mix(in srgb, var(--cat-2) 12%, transparent)',
+                          borderColor: 'color-mix(in srgb, var(--cat-2) 40%, transparent)',
+                          color: 'var(--cat-2)',
+                        }}
+                      >
+                        {t('crmSuppression.entities.badge', {
+                          entities: admin.crmEntities
+                            .map((key) => {
+                              const option = CRM_ENTITIES.find((entity) => entity.key === key)
+                              return option ? t(option.labelKey) : key
+                            })
+                            .join(', '),
+                        })}
+                      </span>
+                    )}
                     {admin.tags?.includes('STAGIAIRE') && (
                       <span
                         className="admin-card-role"

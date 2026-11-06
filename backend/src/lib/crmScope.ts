@@ -14,10 +14,12 @@ import {
 } from './groupEntities.js'
 
 /**
- * Périmètre CRM. En lecture, le super-admin et le commercial voient tout le
- * CRM (cadrage de l'espace commercial du 23 octobre 2026) ; les autres rôles,
- * les leads qui leur sont assignés ou qu'ils ont créés. En écriture, seul le
- * super-admin sort de ce périmètre.
+ * Périmètre CRM. En lecture, le super-admin, l'administrateur et le
+ * commercial voient tout le CRM (cadrage de l'espace commercial du 23 octobre
+ * 2026, étendu à l'administrateur le 6 novembre 2026) ; les autres rôles, les
+ * leads qui leur sont assignés ou qu'ils ont créés. En écriture, le
+ * super-admin et l'administrateur sortent de ce périmètre ; le commercial
+ * n'écrit que sur ses leads.
  *
  * Vit ici plutôt que dans une route parce que plusieurs routers l'appliquent
  * (le CRM, le journal des échanges, l'app native) : une règle de sécurité
@@ -25,8 +27,8 @@ import {
  *
  * Périmètre par entité du groupe : un utilisateur dont `crmEntities` n'est
  * pas vide ne lit et n'écrit que les leads de ces entités, EN PLUS des règles
- * ci-dessus. Le super-admin n'est jamais restreint ; une liste vide laisse le
- * comportement inchangé.
+ * ci-dessus. Le super-admin n'est jamais restreint ; l'administrateur l'est
+ * si sa liste est posée ; une liste vide laisse le comportement inchangé.
  */
 type ScopedRequest = Pick<Request, 'user'>
 type ScopedLead = { assignedTo?: unknown; createdBy?: unknown; entity?: unknown }
@@ -36,7 +38,18 @@ export const LEAD_SCOPE_FIELDS = 'assignedTo createdBy entity'
 
 /** Lit tout le CRM selon son rôle (les entités peuvent encore le restreindre). */
 export function readsWholeCrm(req: ScopedRequest): boolean {
-  return req.user!.role === 'SUPER_ADMIN' || req.user!.role === 'COMMERCIAL'
+  const role = req.user!.role
+  return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'COMMERCIAL'
+}
+
+/**
+ * Écrit sur tout le CRM selon son rôle (les entités peuvent encore restreindre
+ * l'administrateur). Plus étroit que la lecture : le commercial lit tout mais
+ * n'écrit que sur ses leads.
+ */
+export function writesWholeCrm(req: ScopedRequest): boolean {
+  const role = req.user!.role
+  return role === 'SUPER_ADMIN' || role === 'ADMIN'
 }
 
 /** Entités auxquelles l'utilisateur est restreint ; `null` : aucune restriction. */
@@ -70,6 +83,7 @@ export function leadScopeFilter(req: ScopedRequest): Record<string, unknown> {
 /** Filtre d'écriture (actions groupées) : plus étroit que la lecture. */
 export function leadWriteScopeFilter(req: ScopedRequest): Record<string, unknown> {
   if (req.user!.role === 'SUPER_ADMIN') return {}
+  if (writesWholeCrm(req)) return withEntityRestriction(req, {})
   return withEntityRestriction(req, { $or: [{ assignedTo: req.user!.id }, { createdBy: req.user!.id }] })
 }
 
@@ -133,6 +147,7 @@ export function canReadLead(req: ScopedRequest, lead: ScopedLead): boolean {
 export function isLeadOutOfScope(req: ScopedRequest, lead: ScopedLead): boolean {
   if (req.user!.role === 'SUPER_ADMIN') return false
   if (!entityAllowed(req, lead)) return true
+  if (writesWholeCrm(req)) return false
   const userId = req.user!.id
   return lead.assignedTo?.toString() !== userId && lead.createdBy?.toString() !== userId
 }

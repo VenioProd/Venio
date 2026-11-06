@@ -333,7 +333,8 @@ it('ne synchronise les étapes, ni leurs suppressions, sans view_phases', async 
 })
 
 it('ne montre les leads entrants que dans le périmètre CRM de lecture', async () => {
-  const admin = await User.create({ name: 'Adm', email: 'adm@test.invalid', passwordHash: 'x', role: 'ADMIN' })
+  // MANAGER : périmètre CRM limité à ses leads (l'ADMIN lit tout le CRM depuis le chantier 4A).
+  const admin = await User.create({ name: 'Adm', email: 'adm@test.invalid', passwordHash: 'x', role: 'MANAGER' })
   const device = await MobileDevice.create({
     userId: admin._id,
     name: 'iPad',

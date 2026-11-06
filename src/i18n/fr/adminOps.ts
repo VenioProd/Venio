@@ -260,6 +260,8 @@ const fr = {
   'adminOps.email.bodyRequired': 'Le corps du message est requis',
   'adminOps.email.sentOk':
     '{count, plural, one {Email envoyé à # destinataire} other {Email envoyé à # destinataires}}',
+  'adminOps.email.blockedDnc': 'Bloqué : ne pas contacter',
+  'adminOps.email.blockedSummary': '{count} adresse(s) retirée(s) (ne pas contacter), {sent} envoyé(s)',
   'adminOps.email.sentPartial':
     '{sent, plural, one {# envoyé} other {# envoyés}}, {failed, plural, one {# échec} other {# échecs}}',
   'adminOps.email.sendError': "Erreur lors de l'envoi",

@@ -1,0 +1,52 @@
+/** Liste « ne pas contacter » et périmètre par entité (chantier 4B). */
+const fr = {
+  'crmSuppression.title': 'Liste « ne pas contacter »',
+  'crmSuppression.intro':
+    'Les adresses de cette liste ne reçoivent plus aucun e-mail de prospection (règles d’automatisation et envois depuis une fiche).',
+  'crmSuppression.removeNotice':
+    'Retirer une adresse de la liste ne modifie pas l’opposition (« ne pas contacter ») posée sur les fiches des leads : elle reste en vigueur.',
+  'crmSuppression.readOnly': 'Consultation uniquement : seuls les administrateurs du CRM modifient cette liste.',
+  'crmSuppression.loadError': 'Impossible de charger la liste.',
+  'crmSuppression.search': 'Rechercher une adresse',
+  'crmSuppression.searchPlaceholder': 'Adresse ou fragment d’adresse',
+  'crmSuppression.searchButton': 'Rechercher',
+  'crmSuppression.clear': 'Effacer',
+  'crmSuppression.empty': 'Aucune adresse dans la liste.',
+  'crmSuppression.emptySearch': 'Aucune adresse ne correspond à cette recherche.',
+  'crmSuppression.total': '{count} adresse(s)',
+  'crmSuppression.col.email': 'Adresse',
+  'crmSuppression.col.reason': 'Raison',
+  'crmSuppression.col.date': 'Inscrite le',
+  'crmSuppression.col.by': 'Par',
+  'crmSuppression.col.actions': 'Actions',
+  'crmSuppression.by.person': 'La personne / le système',
+  'crmSuppression.reason.UNSUBSCRIBE': 'Désinscription',
+  'crmSuppression.reason.MANUAL': 'Ajout manuel',
+  'crmSuppression.reason.OPPOSITION': 'Opposition',
+  'crmSuppression.reason.ANONYMIZED': 'Lead anonymisé',
+  'crmSuppression.add.title': 'Ajouter une adresse',
+  'crmSuppression.add.email': 'Adresse à ne pas contacter',
+  'crmSuppression.add.reason': 'Raison de l’ajout',
+  'crmSuppression.add.button': 'Ajouter',
+  'crmSuppression.add.done': 'Adresse ajoutée à la liste.',
+  'crmSuppression.add.invalid': 'Adresse e-mail invalide.',
+  'crmSuppression.add.duplicate': 'Cette adresse est déjà dans la liste.',
+  'crmSuppression.add.error': 'Impossible d’ajouter l’adresse.',
+  'crmSuppression.remove.button': 'Retirer',
+  'crmSuppression.remove.label': 'Retirer {email}',
+  'crmSuppression.remove.confirmTitle': 'Retirer cette adresse ?',
+  'crmSuppression.remove.confirmMessage':
+    '{email} pourra de nouveau recevoir des e-mails de prospection. L’opposition posée sur les fiches des leads n’est pas modifiée.',
+  'crmSuppression.remove.confirm': 'Retirer de la liste',
+  'crmSuppression.remove.done': 'Adresse retirée de la liste.',
+  'crmSuppression.remove.error': 'Impossible de retirer l’adresse.',
+  'crmSuppression.page': 'Page {page} sur {pages}',
+  'crmSuppression.prev': 'Précédent',
+  'crmSuppression.next': 'Suivant',
+  'crmSuppression.entities.title': 'Périmètre CRM par entité',
+  'crmSuppression.entities.help':
+    'Vide = toutes les entités. Sinon, la personne ne voit et ne modifie que les leads des entités cochées (le super-admin n’est jamais restreint).',
+  'crmSuppression.entities.badge': 'Entités : {entities}',
+} as const
+
+export default fr

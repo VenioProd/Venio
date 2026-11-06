@@ -6,6 +6,7 @@ import { requirePermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
 import User from '../../models/User.js'
 import { sendBulkEmail, EmailTransportUnavailableError } from '../../lib/email/send.js'
+import { logBlockedRecipients, screenBulkRecipients } from '../../lib/crmBulkEmailGuard.js'
 
 const router = express.Router()
 router.use(auth)
@@ -61,17 +62,28 @@ router.post(
         ctaLabel?: string
       }
 
+      // RGPD : chaque adresse est contrôlée (liste de suppression, opposition
+      // d'un lead). Les adresses bloquées sont retirées et rendues dans
+      // `blocked` ; l'envoi continue pour les autres.
+      const screening = await screenBulkRecipients(recipients)
+      await logBlockedRecipients(screening, req.user!.id ?? null, { channel: 'email_composer' })
+      const blocked = screening.blocked
+
+      if (screening.allowed.length === 0) {
+        return res.json({ sent: 0, failed: 0, total: 0, results: [], blocked })
+      }
+
       // Chemin d'envoi partagé avec le journal des échanges (lib/email/send.ts).
       const { results, sent, failed, total } = await sendBulkEmail({
         subject,
         body: messageBody,
-        recipients: recipients.map((email: string) => ({ email })),
+        recipients: screening.allowed.map((email: string) => ({ email })),
         senderName: (req.user as { name?: string }).name,
         ctaUrl,
         ctaLabel,
       })
 
-      return res.json({ sent, failed, total, results })
+      return res.json({ sent, failed, total, results, blocked })
     } catch (err) {
       if (err instanceof EmailTransportUnavailableError) {
         return res.status(503).json({ error: err.message })

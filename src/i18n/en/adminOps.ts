@@ -259,6 +259,8 @@ const en: Record<keyof typeof fr, string> = {
   'adminOps.email.subjectRequired': 'The subject is required',
   'adminOps.email.bodyRequired': 'The message body is required',
   'adminOps.email.sentOk': '{count, plural, one {Email sent to # recipient} other {Email sent to # recipients}}',
+  'adminOps.email.blockedDnc': 'Blocked: do not contact',
+  'adminOps.email.blockedSummary': '{count} address(es) removed (do not contact), {sent} sent',
   'adminOps.email.sentPartial':
     '{sent, plural, one {# sent} other {# sent}}, {failed, plural, one {# failure} other {# failures}}',
   'adminOps.email.sendError': 'Error while sending',
