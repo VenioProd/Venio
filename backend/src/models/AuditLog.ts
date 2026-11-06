@@ -106,6 +106,8 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'CRM_LEAD_PERSONAL_DATA_EXPORT',
         'CRM_LEAD_ANONYMIZE',
         'CRM_LEAD_UNSUBSCRIBE',
+        'CRM_SUPPRESSION_ADD',
+        'CRM_SUPPRESSION_REMOVE',
       ],
     },
     ip: { type: String, default: '' },
