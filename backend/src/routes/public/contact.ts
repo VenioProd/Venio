@@ -2,6 +2,7 @@ import express, { type Request, type Response } from 'express'
 import rateLimit from 'express-rate-limit'
 import Lead from '../../models/Lead.js'
 import { logLeadActivity } from '../../lib/crmAutomations.js'
+import { emitLeadChanges } from '../../lib/crmRules.js'
 import { sendContactReceiptEmail } from '../../lib/email.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
@@ -9,6 +10,9 @@ import { validateContactSubmission } from '../../lib/publicContact.js'
 import { qualificationHeadline, qualificationLines } from '../../lib/contactQualification.js'
 
 const router = express.Router()
+
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, (char) => '\\' + char)
+const CLOSED_STATUSES = ['WON', 'LOST']
 
 const acceptedResponse = {
   ok: true,
@@ -48,14 +52,18 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
     .join('\n\n')
 
   try {
-    let lead = await Lead.findOne({ contactEmail: submission.email }).sort({ updatedAt: -1 })
+    // Comparaison normalisée (trim + minuscules), insensible à la casse des fiches existantes.
+    const normalizedEmail = String(submission.email ?? '').trim().toLowerCase()
+    let lead = await Lead.findOne({ contactEmail: { $regex: `^\\s*${escapeRegex(normalizedEmail)}\\s*$`, $options: 'i' } }).sort({
+      updatedAt: -1,
+    })
     const isNewLead = !lead
 
     if (!lead) {
       lead = await Lead.create({
         company: submission.company || 'Particulier',
         contactName,
-        contactEmail: submission.email,
+        contactEmail: normalizedEmail,
         contactPhone: submission.phone,
         source: 'FORMULAIRE_SITE',
         status: 'LEAD',
@@ -65,18 +73,13 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
         statusChangedAt: now,
         createdBy: null,
       })
-    } else {
-      lead.contactName = contactName
-      // Un formulaire sans champ téléphone ne doit pas effacer un numéro connu.
-      if (submission.phone) lead.contactPhone = submission.phone
-      if (submission.company) lead.company = submission.company
-      lead.serviceType = submission.subject
-      if (qualification) {
-        const stamp = `${now.toISOString().slice(0, 10)} · nouvelle demande`
-        lead.notes = [lead.notes, `${stamp}\n${readableNote}`].filter(Boolean).join('\n\n')
-      }
-      lead.lastContactAt = now
-      await lead.save()
+      // Même émission d'événements que l'admin : déclenche les règles « LEAD_CREATED ».
+      emitLeadChanges(lead, null)
+    } else if (!CLOSED_STATUSES.includes(lead.status)) {
+      // Lead existant : aucune donnée de la fiche n'est écrasée. La nouvelle demande est
+      // consignée dans l'historique (activité ci-dessous) ; seule la date de dernière
+      // interaction avance, sans jamais reculer.
+      await Lead.updateOne({ _id: lead._id }, { $max: { lastInteractionAt: now } })
     }
 
     await logLeadActivity(
