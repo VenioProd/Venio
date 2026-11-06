@@ -48,6 +48,10 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
+      // Force NODE_ENV=test dans les workers : avec NODE_ENV=production, React
+      // charge son build de production et testing-library échoue
+      // (« act(...) is not supported in production builds of React »).
+      env: { NODE_ENV: 'test' },
       globals: true,
       environment: 'jsdom',
       setupFiles: './src/test/setup.ts',

@@ -1,6 +1,10 @@
 import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
+    // Force NODE_ENV=test dans les workers, même si l'environnement hôte
+    // exporte NODE_ENV=production (CI, shell de déploiement) : sinon les
+    // gardes « production » du code applicatif changent le comportement testé.
+    env: { NODE_ENV: 'test' },
     globals: true,
     environment: 'node',
     setupFiles: ['./src/__tests__/helpers/listenLoopback.ts'],
