@@ -7,10 +7,10 @@
   cursor: pointer;
 }
 .crm-privacy-panel .crm-privacy-note {
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 .crm-privacy-panel .crm-privacy-error {
-  color: var(--danger, #dc2626);
+  color: var(--critical, #f472b6);
   font-size: 13px;
 }
