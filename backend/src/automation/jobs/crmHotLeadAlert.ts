@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import { withActiveLeads } from './crmLeadScope.js'
 
 const definition: AutomationDefinition = {
   key: 'crm.hot_lead_untreated_alert',
@@ -31,12 +32,11 @@ const definition: AutomationDefinition = {
 
     const fortyEightHoursAgo = new Date(ctx.now.getTime() - 48 * 3600_000)
 
-    const hotLeads = await Lead.find({
+    const hotLeads = await Lead.find(withActiveLeads({
       leadTemperature: { $in: ['CHAUD', 'TRES_CHAUD'] },
       status: { $nin: ['WON', 'LOST'] },
-      isArchived: { $ne: true },
       updatedAt: { $lt: fortyEightHoursAgo },
-    }).populate('assignedTo', '_id email name')
+    })).populate('assignedTo', '_id email name')
 
     if (hotLeads.length === 0) {
       return { actionsExecuted: [], recipientsNotified: [], details: { hotLeadsFound: 0 } }

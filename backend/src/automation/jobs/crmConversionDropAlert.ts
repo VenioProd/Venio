@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import { withActiveLeads } from './crmLeadScope.js'
 
 const definition: AutomationDefinition = {
   key: 'crm.conversion_drop_alert',
@@ -35,25 +36,25 @@ const definition: AutomationDefinition = {
     const sixtyDaysAgo = new Date(ctx.now.getTime() - 60 * 24 * 3600_000)
 
     // Current period: last 30 days
-    const currentWon = await Lead.countDocuments({
+    const currentWon = await Lead.countDocuments(withActiveLeads({
       status: 'WON',
       updatedAt: { $gte: thirtyDaysAgo },
-    })
+    }))
 
     // Previous period: 60-30 days ago
-    const previousWon = await Lead.countDocuments({
+    const previousWon = await Lead.countDocuments(withActiveLeads({
       status: 'WON',
       updatedAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
-    })
+    }))
 
     // Also compare total new leads
-    const currentNewLeads = await Lead.countDocuments({
+    const currentNewLeads = await Lead.countDocuments(withActiveLeads({
       createdAt: { $gte: thirtyDaysAgo },
-    })
+    }))
 
-    const previousNewLeads = await Lead.countDocuments({
+    const previousNewLeads = await Lead.countDocuments(withActiveLeads({
       createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
-    })
+    }))
 
     const actionsExecuted: string[] = ['conversion_analysis']
     const recipientsNotified: string[] = []
