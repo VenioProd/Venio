@@ -3,6 +3,7 @@ import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
 import { CRM_SERVICE_TYPES, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { LeadFormData, AdminUser } from '../../../types/crm.types'
+import DuplicatesBanner from './DuplicatesBanner'
 import {
   CRM_STATUSES,
   CRM_SOURCES,
@@ -172,6 +173,7 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               onChange={(e) => onFormChange({ ...form, notes: e.target.value })}
             />
           </div>
+          <DuplicatesBanner company={form.company} contactEmail={form.contactEmail} contactPhone={form.contactPhone} />
           <div style={{ marginTop: 12 }}>
             <textarea
               className="portal-input"

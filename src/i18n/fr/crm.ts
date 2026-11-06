@@ -284,6 +284,25 @@ const fr = {
   'crm.logContact.notePlaceholder': "Ce qui s'est dit…",
   'crm.logContact.noFollowUpHint':
     "Sans prochaine relance, ce lead sortira de vos échéances et n'apparaîtra plus que s'il dérive.",
+  'crm.settings.duplicates.block': 'Bloquer la création en cas de doublon',
+  'crm.settings.duplicates.blockDesc':
+    'Refuser de créer un lead qui a des doublons probables. Sinon, la création réussit et les doublons sont seulement signalés.',
+  'crm.duplicates.title': '{count, plural, one {# doublon probable} other {# doublons probables}}',
+  'crm.duplicates.archived': 'archivé',
+  'crm.duplicates.hint': 'Vérifiez avant de créer : un lead existant peut déjà couvrir ce prospect.',
+  'crm.merge.open': 'Fusionner dans…',
+  'crm.merge.title': 'Fusionner « {company} » dans…',
+  'crm.merge.search': 'Rechercher un lead (entreprise, e-mail, téléphone)',
+  'crm.merge.suggestions': 'Doublons probables',
+  'crm.merge.results': 'Résultats',
+  'crm.merge.none': 'Aucun lead trouvé.',
+  'crm.merge.confirm': 'Fusionner « {source} » dans « {target} » ? « {source} » sera supprimé.',
+  'crm.merge.consequences':
+    '« {target} » garde ses valeurs et complète ses champs vides. Historique, échanges, tâches, devis et projets sont rattachés à « {target} ». Cette action est irréversible.',
+  'crm.merge.back': 'Retour',
+  'crm.merge.submit': 'Fusionner',
+  'crm.merge.merging': 'Fusion…',
+  'crm.merge.error': 'Erreur lors de la fusion',
 } as const
 
 export default fr

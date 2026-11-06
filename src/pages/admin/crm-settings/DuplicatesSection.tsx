@@ -78,6 +78,22 @@ const DuplicatesSection: React.FC<SectionProps> = ({ settings, canManage, update
               <span className="crm-toggle-slider" />
             </label>
           </div>
+
+          <div className="crm-settings-item crm-settings-item-sub">
+            <div className="crm-settings-item-info">
+              <h3>{t('crm.settings.duplicates.block')}</h3>
+              <p>{t('crm.settings.duplicates.blockDesc')}</p>
+            </div>
+            <label className="crm-toggle">
+              <input
+                type="checkbox"
+                checked={Boolean(settings.duplicateBlockOnCreate)}
+                onChange={(e) => updateSetting('duplicateBlockOnCreate', e.target.checked)}
+                disabled={!canManage}
+              />
+              <span className="crm-toggle-slider" />
+            </label>
+          </div>
         </>
       )}
     </section>
