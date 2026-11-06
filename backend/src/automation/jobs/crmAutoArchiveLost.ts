@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
 import logger from '../../lib/logger.js'
+import { withActiveLeads } from './crmLeadScope.js'
 
 const definition: AutomationDefinition = {
   key: 'crm.auto_archive_lost',
@@ -31,12 +32,11 @@ const definition: AutomationDefinition = {
     const thirtyDaysAgo = new Date(ctx.now.getTime() - 30 * 24 * 3600_000)
 
     const result = await Lead.updateMany(
-      {
+      withActiveLeads({
         status: 'LOST',
-        isArchived: { $ne: true },
         updatedAt: { $lt: thirtyDaysAgo },
-      },
-      { $set: { isArchived: true } },
+      }),
+      { $set: { archivedAt: ctx.now } },
     )
 
     const archivedCount = result.modifiedCount || 0

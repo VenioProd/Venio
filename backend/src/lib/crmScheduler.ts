@@ -27,6 +27,7 @@ import {
 } from './email.js'
 import { invoicePaymentBalance } from './projectFinance/payments.js'
 import logger from './logger.js'
+import { withActiveLeads } from '../automation/jobs/crmLeadScope.js'
 
 interface SchedulerResult {
   processed: number
@@ -109,11 +110,11 @@ export async function processColdLeads(): Promise<SchedulerResult> {
     threshold.setDate(threshold.getDate() - settings.coldLeadThresholdDays)
 
     // Get cold leads grouped by assignee
-    const coldLeads = await Lead.find({
+    const coldLeads = await Lead.find(withActiveLeads({
       lastContactAt: { $lt: threshold },
       status: { $nin: ['WON', 'LOST'] },
       assignedTo: { $ne: null },
-    }).populate('assignedTo', 'name email')
+    })).populate('assignedTo', 'name email')
 
     // Group by assignee
     const byAssignee: Record<
@@ -165,26 +166,26 @@ export async function processColdLeads(): Promise<SchedulerResult> {
 
 export async function processLeadFollowUps(): Promise<{ notified: number }> {
   const now = new Date()
-  const leads = await Lead.find({
+  const leads = await Lead.find(withActiveLeads({
     nextActionAt: { $lte: now, $ne: null },
     status: { $nin: ['WON', 'LOST'] },
     assignedTo: { $ne: null },
     // Ne relit pas, à chaque minute, les échéances déjà notifiées.
     $expr: { $ne: ['$followUpNotifiedFor', '$nextActionAt'] },
-  }).select('assignedTo nextActionAt followUpNotifiedFor company')
+  })).select('assignedTo nextActionAt followUpNotifiedFor company')
   let notified = 0
   for (const lead of leads) {
     const due = lead.nextActionAt!
     // Au premier passage, les anciennes échéances sont consommées sans rafale de notifications.
     const stale = !lead.followUpNotifiedFor && due.getTime() < now.getTime() - 7 * 86400000
     const result = await Lead.updateOne(
-      {
+      withActiveLeads({
         _id: lead._id,
         nextActionAt: due,
         assignedTo: lead.assignedTo,
         status: { $nin: ['WON', 'LOST'] },
         followUpNotifiedFor: { $ne: due },
-      },
+      }),
       { $set: { followUpNotifiedFor: due } },
     )
     if (!result.modifiedCount || stale) continue
@@ -212,11 +213,11 @@ export async function processOverdueActions(): Promise<SchedulerResult> {
     const now = new Date()
 
     // Get overdue leads grouped by assignee
-    const overdueLeads = await Lead.find({
+    const overdueLeads = await Lead.find(withActiveLeads({
       nextActionAt: { $lt: now },
       status: { $nin: ['WON', 'LOST'] },
       assignedTo: { $ne: null },
-    }).populate('assignedTo', 'name email')
+    })).populate('assignedTo', 'name email')
 
     // Group by assignee
     const byAssignee: Record<
@@ -279,11 +280,11 @@ export async function processEscalations(): Promise<EscalationResult> {
     threshold.setDate(threshold.getDate() - settings.escalationThresholdDays)
 
     // Find leads that haven't been updated in X days
-    const staleLeads = await Lead.find({
+    const staleLeads = await Lead.find(withActiveLeads({
       updatedAt: { $lt: threshold },
       status: { $nin: ['WON', 'LOST'] },
       assignedTo: { $ne: null },
-    }).populate('assignedTo', 'name email')
+    })).populate('assignedTo', 'name email')
 
     let escalated = 0
     const manager = settings.escalationManagerId ? await User.findById(settings.escalationManagerId) : null
@@ -347,11 +348,11 @@ export async function processProposalReminders(): Promise<SchedulerResult> {
     threshold.setDate(threshold.getDate() - settings.proposalReminderDays)
 
     // Find leads in PROPOSAL status for more than X days
-    const proposalLeads = await Lead.find({
+    const proposalLeads = await Lead.find(withActiveLeads({
       status: 'PROPOSAL',
       statusChangedAt: { $lt: threshold },
       assignedTo: { $ne: null },
-    }).populate('assignedTo', 'name email')
+    })).populate('assignedTo', 'name email')
 
     let sent = 0
     for (const lead of proposalLeads) {
@@ -395,15 +396,15 @@ export async function processWeeklyReport(): Promise<WeeklyReportResult> {
     // courant : sinon un lead passé QUALIFIED puis DEMO dans la même semaine
     // n'apparaîtrait nulle part.
     const [newLeads, qualified, won, lost, allActive] = await Promise.all([
-      Lead.countDocuments({ createdAt: { $gte: weekAgo } }),
+      Lead.countDocuments(withActiveLeads({ createdAt: { $gte: weekAgo } })),
       LeadActivity.countDocuments({
         type: 'STATUS_CHANGE',
         'payload.to': 'QUALIFIED',
         createdAt: { $gte: weekAgo },
       }),
-      Lead.countDocuments({ status: 'WON', statusChangedAt: { $gte: weekAgo } }),
-      Lead.countDocuments({ status: 'LOST', statusChangedAt: { $gte: weekAgo } }),
-      Lead.find({ status: { $nin: ['WON', 'LOST'] } }),
+      Lead.countDocuments(withActiveLeads({ status: 'WON', statusChangedAt: { $gte: weekAgo } })),
+      Lead.countDocuments(withActiveLeads({ status: 'LOST', statusChangedAt: { $gte: weekAgo } })),
+      Lead.find(withActiveLeads({ status: { $nin: ['WON', 'LOST'] } })),
     ])
 
     const totalActive = allActive.length

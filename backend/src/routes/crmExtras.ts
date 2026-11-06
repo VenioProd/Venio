@@ -6,7 +6,6 @@ import Interaction from '../models/Interaction.js'
 import PersonalTask from '../models/PersonalTask.js'
 import QuoteProposal from '../models/QuoteProposal.js'
 import Project from '../models/Project.js'
-import User from '../models/User.js'
 import CrmView from '../models/CrmView.js'
 import CrmRule, { CONDITION_FIELDS, CONDITION_OPERATORS, RULE_ACTIONS, RULE_TRIGGERS } from '../models/CrmRule.js'
 import CrmRuleRun from '../models/CrmRuleRun.js'
@@ -14,6 +13,7 @@ import { buildTimeline } from '../lib/interactions.js'
 import { ensureClientForWonLead } from '../lib/crmClientConversion.js'
 import { autoCreateProjectFromLead, logLeadActivity } from '../lib/crmAutomations.js'
 import { approveRun, emitLeadChanges, rejectRun, retryRun, simulateRule } from '../lib/crmRules.js'
+import { isAssignableCrmUser } from '../lib/crmScope.js'
 
 /**
  * Routes CRM « enrichies » (vues, actions groupées, export, fiche, règles),
@@ -33,6 +33,12 @@ export interface CrmExtrasAdapters {
   writeScope: (req: Request) => Record<string, unknown>
   /** Un humain peut activer une règle ; un agent seulement avec le scope `admin:*`. */
   canActivateRules: (req: Request) => boolean
+  /**
+   * Gouvernance des règles : créer, modifier ou supprimer une règle, valider,
+   * refuser ou relancer une exécution. Par défaut ouvert à quiconque passe
+   * `write` (cas de l'agent, cadré par ses scopes) ; l'admin le réserve.
+   */
+  canAdministerRules?: (req: Request) => boolean
 }
 
 const STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
@@ -73,6 +79,8 @@ const isId = (v: unknown): v is string => typeof v === 'string' && mongoose.isVa
 
 export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
   const router = express.Router()
+  const administersRules = (req: Request) => (a.canAdministerRules ? a.canAdministerRules(req) : true)
+  const RULES_ADMIN_MESSAGE = 'La gestion des règles d’automatisation est réservée aux administrateurs du CRM'
   const wrap =
     (fn: (req: Request, res: Response) => Promise<unknown>): RequestHandler =>
     (req: Request, res: Response, next: NextFunction) => {
@@ -147,7 +155,9 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
     if (!(BULK_ACTIONS as readonly string[]).includes(action)) return a.fail(res, 400, 'VALIDATION_ERROR', `action : ${BULK_ACTIONS.join(', ')}`)
     if (action === 'delete' && confirm !== true) return a.fail(res, 400, 'CONFIRMATION_REQUIRED', 'La suppression exige confirm: true')
     if (action === 'assign' && !isId(payload.userId)) return a.fail(res, 400, 'VALIDATION_ERROR', 'payload.userId requis')
-    if (action === 'assign' && !(await User.exists({ _id: payload.userId }))) return a.fail(res, 400, 'VALIDATION_ERROR', 'Commercial introuvable')
+    if (action === 'assign' && !(await isAssignableCrmUser(payload.userId))) {
+      return a.fail(res, 400, 'VALIDATION_ERROR', 'Commercial introuvable, inactif ou non habilité à suivre un lead')
+    }
     if (action === 'status' && !STATUSES.includes(payload.status)) return a.fail(res, 400, 'VALIDATION_ERROR', 'payload.status invalide')
     const tag = String(payload.tag ?? '').trim().slice(0, 40)
     if (action === 'tag' && !tag) return a.fail(res, 400, 'VALIDATION_ERROR', 'payload.tag requis')
@@ -312,6 +322,7 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
   }))
 
   router.post('/rules', ...a.write, ...a.idem, wrap(async (req, res) => {
+    if (!administersRules(req)) return a.fail(res, 403, 'CRM_ADMIN_REQUIRED', RULES_ADMIN_MESSAGE)
     const data = rulePayload(req.body || {})
     if (!data.name || !data.trigger || !data.actions?.length) return a.fail(res, 400, 'VALIDATION_ERROR', 'name, trigger et au moins une action sont requis')
     const me = await a.actor(req)
@@ -325,6 +336,12 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
     if (typeof req.query.status === 'string' && ['OK', 'ERR', 'SKIP', 'SIM', 'PENDING'].includes(req.query.status)) filter.status = req.query.status
     if (isId(req.query.rule)) filter.rule = req.query.rule
     if (isId(req.query.lead)) filter.lead = req.query.lead
+    // Le journal ne montre que les exécutions portant sur des leads lisibles.
+    const scope = a.leadScope(req)
+    if (Object.keys(scope).length > 0) {
+      const readable = await Lead.distinct('_id', scope)
+      filter.$and = [{ lead: { $in: readable } }]
+    }
     const page = Math.max(1, Number(req.query.page) || 1)
     const pageSize = Math.min(200, Math.max(1, Number(req.query.pageSize) || 50))
     const [items, total] = await Promise.all([
@@ -336,6 +353,7 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
 
   const runAction = (fn: (id: string, actorId: string | null) => Promise<unknown>, label: string) =>
     [...a.write, ...a.idem, wrap(async (req, res) => {
+      if (!administersRules(req)) return a.fail(res, 403, 'CRM_ADMIN_REQUIRED', RULES_ADMIN_MESSAGE)
       if (!isId(req.params.id)) return a.fail(res, 400, 'VALIDATION_ERROR', 'Identifiant invalide')
       const me = await a.actor(req)
       const run = await fn(req.params.id, me.id)
@@ -354,6 +372,7 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
   }))
 
   router.patch('/rules/:id', ...a.write, ...a.idem, wrap(async (req, res) => {
+    if (!administersRules(req)) return a.fail(res, 403, 'CRM_ADMIN_REQUIRED', RULES_ADMIN_MESSAGE)
     if (!isId(req.params.id)) return a.fail(res, 400, 'VALIDATION_ERROR', 'Identifiant invalide')
     const rule = await CrmRule.findById(req.params.id)
     if (!rule) return a.fail(res, 404, 'NOT_FOUND', 'Règle introuvable')
@@ -375,6 +394,7 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
   }))
 
   router.delete('/rules/:id', ...a.write, ...a.idem, wrap(async (req, res) => {
+    if (!administersRules(req)) return a.fail(res, 403, 'CRM_ADMIN_REQUIRED', RULES_ADMIN_MESSAGE)
     if (!isId(req.params.id)) return a.fail(res, 400, 'VALIDATION_ERROR', 'Identifiant invalide')
     const rule = await CrmRule.findById(req.params.id)
     if (!rule) return a.fail(res, 404, 'NOT_FOUND', 'Règle introuvable')

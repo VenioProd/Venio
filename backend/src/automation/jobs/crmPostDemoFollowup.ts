@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
+import { withActiveLeads } from './crmLeadScope.js'
 
 const definition: AutomationDefinition = {
   key: 'crm.post_demo_followup',
@@ -30,12 +31,11 @@ const definition: AutomationDefinition = {
 
     const threeDaysAgo = new Date(ctx.now.getTime() - 3 * 24 * 3600_000)
 
-    const leads = await Lead.find({
+    const leads = await Lead.find(withActiveLeads({
       status: 'DEMO',
       statusChangedAt: { $lt: threeDaysAgo },
-      isArchived: { $ne: true },
       assignedTo: { $ne: null },
-    }).populate('assignedTo', '_id name')
+    })).populate('assignedTo', '_id name')
 
     const actionsExecuted: string[] = []
     const recipientsNotified: string[] = []

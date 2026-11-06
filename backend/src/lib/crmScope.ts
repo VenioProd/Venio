@@ -1,5 +1,9 @@
 import type { Request } from 'express'
+import mongoose from 'mongoose'
 import Lead from '../models/Lead.js'
+import User from '../models/User.js'
+import { ADMIN_ROLES } from './permissions.js'
+import type { AdminRole } from '../types/enums.js'
 
 /**
  * Périmètre CRM. En lecture, le super-admin et le commercial voient tout le
@@ -22,6 +26,25 @@ export function readsWholeCrm(req: ScopedRequest): boolean {
 export function leadScopeFilter(req: ScopedRequest): Record<string, unknown> {
   if (readsWholeCrm(req)) return {}
   return { $or: [{ assignedTo: req.user!.id }, { createdBy: req.user!.id }] }
+}
+
+/**
+ * Gouvernance du CRM : réglages globaux (destinataires des rapports, escalade,
+ * closer…), règles d'automatisation et validation de leurs exécutions. Ces
+ * gestes engagent tout le groupe ; ils sont réservés au super-admin et à
+ * l'administrateur, en plus de la permission `manage_crm` exigée par la route.
+ */
+export function administersCrm(req: ScopedRequest): boolean {
+  return req.user!.role === 'SUPER_ADMIN' || req.user!.role === 'ADMIN'
+}
+
+/** Rôles auxquels un lead peut être attribué : l'équipe, sans les profils en lecture seule ni la comptabilité. */
+export const CRM_ASSIGNABLE_ROLES: AdminRole[] = ADMIN_ROLES.filter((role) => role !== 'VIEWER' && role !== 'COMPTABLE')
+
+/** Vrai si `id` désigne un utilisateur actif de l'équipe à qui l'on peut confier un lead. */
+export async function isAssignableCrmUser(id: unknown): Promise<boolean> {
+  if (typeof id !== 'string' || !mongoose.isObjectIdOrHexString(id)) return false
+  return Boolean(await User.exists({ _id: id, role: { $in: CRM_ASSIGNABLE_ROLES }, isActive: true }))
 }
 
 export function canReadLead(req: ScopedRequest, lead: ScopedLead): boolean {
