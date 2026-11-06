@@ -580,6 +580,15 @@ router.get(
   },
 )
 
+/**
+ * Rattacher ou détacher un projet déplace du chiffre d'affaires d'un lead : c'est
+ * une écriture sur le lead. Garde : `manage_crm` + périmètre d'écriture du lead
+ * (`isLeadOutOfScope`, via `loadLeadInScope`), et non `administersCrm` seul :
+ * le commercial rattache les projets de ses propres leads, le super-admin et
+ * l'administrateur ceux de tout lead, l'administrateur restreint par entité
+ * seulement dans ses entités. Le projet doit en outre être lisible. Hors
+ * périmètre : 404, comme les autres écritures du lead.
+ */
 router.post(
   '/leads/:id/projects/:projectId',
   requirePermission(PERMISSIONS.MANAGE_CRM),

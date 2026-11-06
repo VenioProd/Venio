@@ -433,7 +433,8 @@ describe('pilotage par l’équipe', () => {
 
 describe('devis rattachés à un lead seul', () => {
   it('suivent le périmètre CRM du lead, en liste, en détail et dans la synchro mobile', async () => {
-    const commercial = await account('ADMIN', 'Chloe')
+    // MANAGER : périmètre CRM limité à ses leads (l'ADMIN lit tout le CRM depuis le chantier 4A).
+    const commercial = await account('MANAGER', 'Chloe')
     const foreign = await Lead.create({ company: 'Hors périmètre', assignedTo: alex.id, createdBy: alex.id })
     const own = await Lead.create({ company: 'Le sien', assignedTo: commercial.id, createdBy: commercial.id })
     const [foreignQuote, ownQuote] = await QuoteProposal.create([

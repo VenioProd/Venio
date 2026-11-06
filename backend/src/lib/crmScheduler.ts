@@ -66,6 +66,7 @@ import { withActiveLeads } from '../automation/jobs/crmLeadScope.js'
 import { parisParts, parisWeekKey, parseHHMM } from '../automation/jobs/crmParisTime.js'
 import { acquireSchedulerLock, releaseSchedulerLock } from '../models/SchedulerLock.js'
 import { isCoveredByActiveRule, SYSTEM_RULE_FOR } from './crmRules.js'
+import { proposalReminderCutoff, proposalReminderDaysOf } from './crmProposalReminder.js'
 
 interface SchedulerResult {
   processed: number
@@ -453,8 +454,8 @@ export async function processProposalReminders(): Promise<SchedulerResult> {
       return { processed: 0, sent: 0, skippedForRule: SYSTEM_RULE_FOR.proposalFollowUp }
     }
 
-    const threshold = new Date()
-    threshold.setDate(threshold.getDate() - settings.proposalReminderDays)
+    // Seuil partagé avec le job crm.proposal_followup (lib/crmProposalReminder.ts).
+    const threshold = proposalReminderCutoff(new Date(), proposalReminderDaysOf(settings))
 
     // Find leads in PROPOSAL status for more than X days
     const proposalLeads = await Lead.find(withActiveLeads({

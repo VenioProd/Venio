@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────
 // crm.proposal_followup
-// Rappel de suivi après envoi de proposition (5 jours)
+// Rappel de suivi après envoi de proposition (CrmSettings.proposalReminderDays, 7 j par défaut)
 // ─────────────────────────────────────────────────────────────
 
 import mongoose from 'mongoose'
@@ -10,6 +10,7 @@ import type { AutomationDefinition, AutomationContext, AutomationResult } from '
 import { withActiveLeads } from './crmLeadScope.js'
 import { parisDateKey, serverScheduleForParis } from './crmParisTime.js'
 import { crmJobAbstention } from './crmJobGuards.js'
+import { getProposalReminderDays, proposalReminderCutoff } from '../../lib/crmProposalReminder.js'
 
 const definition: AutomationDefinition = {
   key: 'crm.proposal_followup',
@@ -36,11 +37,13 @@ const definition: AutomationDefinition = {
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
     const Lead = mongoose.model('Lead')
 
-    const fiveDaysAgo = new Date(ctx.now.getTime() - 5 * 24 * 3600_000)
+    // Même seuil que le rappel e-mail du planificateur (lib/crmProposalReminder.ts).
+    const days = await getProposalReminderDays()
+    const cutoff = proposalReminderCutoff(ctx.now, days)
 
     const leads = await Lead.find(withActiveLeads({
       status: 'PROPOSAL',
-      statusChangedAt: { $lt: fiveDaysAgo },
+      statusChangedAt: { $lt: cutoff },
       assignedTo: { $ne: null },
     })).populate('assignedTo', '_id name')
 
@@ -71,7 +74,7 @@ const definition: AutomationDefinition = {
     return {
       actionsExecuted,
       recipientsNotified,
-      details: { leadsFound: leads.length },
+      details: { leadsFound: leads.length, thresholdDays: days },
     }
   },
 }

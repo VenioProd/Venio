@@ -12,6 +12,11 @@ vi.mock('../lib/notifications.js', () => ({ createNotification: vi.fn() }))
 vi.mock('../lib/logger.js', () => ({ default: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 const { applyLeadChange } = vi.hoisted(() => ({ applyLeadChange: vi.fn(async (..._args: unknown[]) => ({})) }))
 vi.mock('../lib/crmLeadService.js', () => ({ applyLeadChange }))
+// Le job de relance de proposition lit son seuil dans CrmSettings : sans base ici.
+vi.mock('../lib/crmProposalReminder.js', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getProposalReminderDays: vi.fn(async () => 7),
+}))
 
 import { withActiveLeads, isLeadExcludedFromAutomation, ACTIVE_LEAD_FILTER } from '../automation/jobs/crmLeadScope.js'
 import { register as regArchive } from '../automation/jobs/crmAutoArchiveLost.js'
