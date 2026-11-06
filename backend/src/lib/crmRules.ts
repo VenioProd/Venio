@@ -6,8 +6,8 @@ import PersonalTask from '../models/PersonalTask.js'
 import CrmRule, { type ICrmRule, type IRuleAction, type IRuleCondition, type RuleTrigger } from '../models/CrmRule.js'
 import CrmRuleRun, { type IRunStep } from '../models/CrmRuleRun.js'
 import { ADMIN_ROLES } from './permissions.js'
-import { autoCreateProjectFromLead, getRoundRobinAssignee, logLeadActivity } from './crmAutomations.js'
-import { ensureClientForWonLead } from './crmClientConversion.js'
+import { getRoundRobinAssignee, logLeadActivity } from './crmAutomations.js'
+import { ensureClientForWonLead, ensureProjectForWonLead } from './crmClientConversion.js'
 import { createNotification } from './notifications.js'
 import { sendBulkEmail } from './email/send.js'
 import { logInteraction } from './interactions.js'
@@ -215,11 +215,13 @@ async function runAction(
       if (lead.status === to) return skip('Déjà à ce statut')
       if (sim) return ok(`Passerait le lead à ${to}`)
       const from = lead.status
-      lead.status = to as LeadDoc['status']
-      lead.statusChangedAt = new Date()
-      await lead.save()
-      await logLeadActivity(lead._id, 'STATUS_CHANGE', `Statut: ${from} → ${to}`, { from, to, ruleId: rule._id }, null)
-      await fireLeadEvent(lead.id, { type: 'STATUS_CHANGED', key: `status:${to}:${lead.statusChangedAt.getTime()}`, from, to }, next(ctx, rule))
+      // Même chemin que la fiche : historique, automatisations de statut et
+      // conversion WON. Import différé : le service importe ce module.
+      // L'événement est émis ici, avec la profondeur de la chaîne de règles.
+      const { applyLeadChange } = await import('./crmLeadService.js')
+      await applyLeadChange(lead, { status: to }, { actor: null, source: 'rule', emit: false, activityMeta: { ruleId: rule._id } })
+      const changedAt = lead.statusChangedAt ?? new Date()
+      await fireLeadEvent(lead.id, { type: 'STATUS_CHANGED', key: `status:${to}:${changedAt.getTime()}`, from, to }, next(ctx, rule))
       return ok(`Statut ${from} → ${to}`)
     }
     case 'ADD_TAG': {
@@ -262,7 +264,8 @@ async function runAction(
       if (await Project.exists({ sourceLead: lead._id })) return skip('Projet déjà créé pour ce lead')
       if (!lead.clientAccountId) return skip('Aucun compte client lié')
       if (sim) return ok('Créerait le projet')
-      const project = await autoCreateProjectFromLead(lead as any, null)
+      // Contrôle d'existence repris au moment de créer : la conversion WON du service a pu passer entre-temps.
+      const project = await ensureProjectForWonLead(lead, null)
       return project ? ok(`Projet « ${project.name} » créé`, { projectId: String(project._id) }) : skip('Projet non créé')
     }
     case 'ARCHIVE': {
@@ -579,7 +582,7 @@ export const SEED_RULES: Array<Partial<ICrmRule> & { systemKey: string }> = [
     name: 'Nouveau lead de formulaire → assignation + e-mail',
     description: 'Réponse rapide, propriétaire désigné',
     trigger: { type: 'LEAD_CREATED', params: {} },
-    conditions: { op: 'AND', items: [{ field: 'source', operator: 'in', value: ['Site web', 'Formulaire', 'Site'] }] },
+    conditions: { op: 'AND', items: [{ field: 'source', operator: 'in', value: ['Site web', 'Formulaire', 'Site', 'FORMULAIRE_SITE'] }] },
     actions: [
       { type: 'ASSIGN', params: { strategy: 'round_robin' } },
       { type: 'SEND_EMAIL', params: { subject: 'Nous avons bien reçu votre demande', body: 'Bonjour {contact},\n\nMerci pour votre message, nous revenons vers vous très vite.' } },
