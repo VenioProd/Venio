@@ -35,7 +35,9 @@ Le **point d'entrée unique** des écritures de lead est `applyLeadChange` (`lib
 | `crmClientConversion.ts` | Conversion WON idempotente : `processWonLead`, `ensureClientForWonLead`, `ensureProjectForWonLead` |
 | `crmRules.ts` | Moteur de règles, règles prédéfinies (`SEED_RULES`), garde `isCoveredByActiveRule`, validation et rejeu |
 | `crmScheduler.ts` | Planificateur (`runScheduledJobs`, `startScheduler`), tâches quotidiennes et hebdomadaires, verrous |
-| `crmScope.ts` | Périmètre de lecture et d'écriture, `administersCrm`, `isAssignableCrmUser` |
+| `crmScope.ts` | Périmètre de lecture et d'écriture (`readsWholeCrm`, `writesWholeCrm`), `administersCrm`, `isAssignableCrmUser` |
+| `crmBulkEmailGuard.ts` | Envoi groupé libre : retrait des destinataires « ne pas contacter » (`screenBulkRecipients`) et journal (`logBlockedRecipients`) |
+| `crmProposalReminder.ts` | Seuil unique de relance de proposition (`proposalReminderDays`), partagé par le job et le planificateur |
 | `crmPilotage.ts` | Calculs purs du pilotage (entonnoir, vitesses, groupes) : aucune écriture |
 | `crmRevenue.ts` | Chiffre d'affaires rattaché aux leads (calculs purs, comme `crmPilotage.ts`) |
 | `crmPrivacy.ts` | RGPD : opposition et liste de suppression (`checkProspectContact`), lien de désinscription signé, anonymisation (`anonymizeLead`), export des données (`buildPersonalDataExport`), migration 010 |
@@ -122,8 +124,8 @@ Toutes les routes exigent `auth` + `requireAdmin` et la permission indiquée.
 | POST | `/leads/:id/anonymize` | `manage_crm` + `administersCrm` | anonymisation à la demande (audit `CRM_LEAD_ANONYMIZE`) |
 | GET | `/leads/:id/revenue` | `view_crm` | chiffre d'affaires du lead |
 | GET | `/leads/:id/project-candidates` | `view_crm` | projets rattachables |
-| POST | `/leads/:id/projects/:projectId` | `manage_crm` | rattachement à un projet |
-| DELETE | `/leads/:id/projects/:projectId` | `manage_crm` | détachement |
+| POST | `/leads/:id/projects/:projectId` | `manage_crm` + écriture sur le lead + projet lisible | rattachement à un projet |
+| DELETE | `/leads/:id/projects/:projectId` | `manage_crm` + écriture sur le lead + projet lisible | détachement |
 | GET | `/pilotage` | `view_crm` | indicateurs de pilotage |
 | GET | `/forecast?months=&from=&entity=&userId=` | `view_crm` | prévision mensuelle (mois d'Europe/Paris de `expectedCloseAt`) : ouverts, brut, pondéré, catégories, réalisé, objectif |
 | GET | `/goals?period=&from=&to=` | `view_crm` | objectifs mensuels (cachés : entités hors périmètre, objectifs personnels d'un collègue) |
@@ -225,8 +227,9 @@ Détail par rôle dans CRM_AUTOMATISATIONS.md §8.
 | Élément | Source |
 |---|---|
 | `view_crm` / `manage_crm` par rôle | `lib/permissions.ts` (`ROLE_PERMISSIONS`) |
-| Lecture de tout le CRM : `SUPER_ADMIN`, `COMMERCIAL` | `lib/crmScope.ts` (`readsWholeCrm`) |
-| Écriture hors périmètre : `SUPER_ADMIN` seul | `lib/crmScope.ts` (`isLeadOutOfScope`) |
+| Lecture de tout le CRM : `SUPER_ADMIN`, `ADMIN`, `COMMERCIAL` | `lib/crmScope.ts` (`readsWholeCrm`) |
+| Écriture sur tout le CRM : `SUPER_ADMIN`, `ADMIN` | `lib/crmScope.ts` (`writesWholeCrm`, `isLeadOutOfScope`) |
+| Restriction par entité (`crmEntities`) : tous sauf `SUPER_ADMIN`, y compris `ADMIN` | `lib/crmScope.ts` (`crmEntityRestriction`) |
 | Réglages et règles (administration du groupe) : `SUPER_ADMIN`, `ADMIN` | `lib/crmScope.ts` (`administersCrm`) |
 | Assignables : rôles admin sauf `VIEWER` et `COMPTABLE` | `lib/crmScope.ts` (`CRM_ASSIGNABLE_ROLES`) |
 
@@ -250,9 +253,7 @@ Constats issus du code à la date de rédaction. Ils ne sont pas corrigés ici.
 | Sujet | Constat | Fichier |
 |---|---|---|
 | Validation des e-mails par agent | Le contrôle `administersRules` vaut `true` quand l'adaptateur n'en fournit pas : l'agent avec `write:crm` peut approuver, rejeter et rejouer les exécutions. Seule l'activation exige `admin:*`. | `routes/crmExtras.ts` (`administersRules`), `routes/agent/crmExtras.ts` (pas de `canAdministerRules`) |
-| Périmètre `ADMIN` | `readsWholeCrm` ne retient que `SUPER_ADMIN` et `COMMERCIAL` : un `ADMIN` (avec `manage_crm`) ne voit et ne modifie que ses leads. À confirmer par Raphael. | `lib/crmScope.ts` |
-| Seuils de relance proposition | Job à 5 j, planificateur à `proposalReminderDays` (7 j par défaut). | `automation/jobs/crmProposalFollowup.ts`, `lib/crmScheduler.ts` |
-| Routes de rattachement de projet | `POST`/`DELETE /leads/:id/projects/:projectId` sont en `manage_crm` sans contrôle `administersCrm` ; à vérifier si le rattachement doit suivre le périmètre. | `routes/admin/crm.ts` |
+| Envoi groupé libre | `POST /api/admin/email-composer/send` n'exige que `requireAdmin` (tout rôle d'admin, y compris `VIEWER`) ; les destinataires « ne pas contacter » sont retirés depuis le chantier 4A, mais aucune permission n'est contrôlée. | `routes/admin/emailComposer.ts` |
 
 ---
 
@@ -262,5 +263,6 @@ Constats issus du code à la date de rédaction. Ils ne sont pas corrigés ici.
 - Lancer la suite : `docs/TESTS.md`.
 - Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `008-crm-dedup-normalized.ts` (détail dans CRM_AUTOMATISATIONS.md §10).
 - Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `009-crm-revenue.ts` (objectifs ; détail dans CRM_AUTOMATISATIONS.md §10).
+- Tests du périmètre ADMIN, du rattachement de projet, de l'envoi groupé et du seuil de relance de proposition (chantier 4A) : `crm-admin-scope`.
 - Tests RGPD : `crm-rgpd-privacy`, `crm-rgpd-rules`, `crm-rgpd-routes`, `crm-rgpd-retention`.
 - Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `010-crm-rgpd.ts` (détail dans CRM_AUTOMATISATIONS.md §10).

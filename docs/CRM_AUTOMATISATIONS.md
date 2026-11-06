@@ -152,6 +152,7 @@ Modèles de texte : `{contact}`, `{company}`, `{amount}` (`renderTemplate`).
 - `SEND_EMAIL` vérifie `lead.doNotContact` et la liste de suppression (`SuppressionEntry`) avant de mettre l'e-mail en attente et de nouveau au moment de l'envoyer (`deliverEmail`) : si la personne s'est opposée, l'étape passe `SKIP` avec `payload.reason = 'DO_NOT_CONTACT'` (et `via` : `LEAD` ou `SUPPRESSION_LIST`) ; rien ne part.
 - Chaque e-mail envoyé par une règle porte un lien de désinscription signé (HMAC dérivé de `CREDENTIALS_KEY`, sinon `JWT_SECRET`, valable 365 jours) vers `GET /api/public/unsubscribe`, en pied de message et dans les en-têtes `List-Unsubscribe` / `List-Unsubscribe-Post`.
 - L'envoi manuel depuis la fiche (`POST /api/admin/interactions/:type/:id/email`) est limité à 10 destinataires ; pour un lead, il est refusé en entier (409 `DO_NOT_CONTACT`, activité `EMAIL_BLOCKED`) si le lead est opposé ou si une adresse figure dans la liste.
+- L'envoi groupé libre (`POST /api/admin/email-composer/send`) contrôle chaque destinataire (`lib/crmBulkEmailGuard.ts`) : une adresse de la liste de suppression ou portée par un lead opposé (`doNotContact`) est retirée de l'envoi, l'envoi continue pour les autres ; la réponse liste les adresses retirées dans `blocked` (`email`, `reason: DO_NOT_CONTACT`, `via`). Chaque lead concerné reçoit une activité `EMAIL_BLOCKED` (`payload.channel = 'email_composer'`) et le serveur journalise le nombre d'adresses retirées (sans les adresses). Les destinataires sont normalisés (minuscules) et dédoublonnés.
 - Le planificateur et les jobs `crm*` n'écrivent qu'à l'équipe (et aux clients pour les factures), jamais à un prospect : un test statique le vérifie (`crm-rgpd-rules.test.ts`).
 
 ### 4.4 Validation humaine
@@ -190,7 +191,7 @@ Code : `backend/src/lib/crmClientConversion.ts`.
 - Crée ou rattache le **compte client** (`ensureClientForWonLead`) : recherche par `clientAccountId`, puis par e-mail (rôle `CLIENT`) ; sinon création avec `role: CLIENT`, `status: ACTIF`, et dossiers Nextcloud en arrière-plan.
 - Crée le **projet** « auto-crm » (`ensureProjectForWonLead`), un seul par lead (`sourceLead`).
 - En cas d'échec du compte client, le verrou est relâché et l'erreur remonte. En cas d'échec du projet, le lead reste à jour et le verrou est relâché pour une nouvelle tentative.
-- Le verrou est le champ `wonProcessedAt` du schéma `Lead` (`models/Lead.ts`, défaut `null`). Le commentaire de `crmClientConversion.ts` qui dit le contraire est périmé ; l'écriture reste faite avec `strict: false`.
+- Le verrou est le champ `wonProcessedAt` du schéma `Lead` (`models/Lead.ts`, défaut `null`) ; les écritures passent par le schéma (plus de `strict: false`).
 
 ---
 
@@ -244,7 +245,7 @@ Enregistrés par `initAutomationEngine()` (`backend/src/automation/index.ts`). L
 |---|---|---|---|---|
 | `crm.inactive_lead_followup` | 09:00 quotidien | 7 j (`config.inactiveDays`) | in_app, e-mail | règle `relance-7j` ou `coldLeadEmailEnabled` |
 | `crm.post_demo_followup` | 09:00 quotidien | 3 j après passage en DEMO | in_app | règle `relance-post-demo` |
-| `crm.proposal_followup` | 09:00 quotidien | 5 j après passage en PROPOSAL | in_app | règle `proposition-sans-reponse` ou `proposalReminderEnabled` |
+| `crm.proposal_followup` | 09:00 quotidien | `proposalReminderDays` (7 j par défaut) après passage en PROPOSAL, même seuil que `processProposalReminders` (`lib/crmProposalReminder.ts`) | in_app | règle `proposition-sans-reponse` ou `proposalReminderEnabled` |
 | `crm.hot_lead_untreated_alert` | 08:30 quotidien | lead chaud sans activité 48 h | in_app, e-mail | règle `lead-chaud-48h` |
 | `crm.auto_archive_lost` | 03:00 quotidien | LOST depuis 30 j (`statusChangedAt`) | système | aucune |
 | `crm.conversion_drop_alert` | lundi 08:00 | chute du taux de conversion | in_app | aucune |
@@ -278,12 +279,16 @@ Assignables à un lead (`CRM_ASSIGNABLE_ROLES`) : tous les rôles d'admin sauf `
 
 | Fonction (`crmScope.ts`) | Règle codée |
 |---|---|
-| `readsWholeCrm` | vrai pour `SUPER_ADMIN` et `COMMERCIAL` |
+| `readsWholeCrm` | vrai pour `SUPER_ADMIN`, `ADMIN` et `COMMERCIAL` |
+| `writesWholeCrm` | vrai pour `SUPER_ADMIN` et `ADMIN` |
 | `leadScopeFilter` (lecture) | les autres rôles ne voient que les leads où ils sont `assignedTo` ou `createdBy` |
-| `isLeadOutOfScope` (écriture) | seul `SUPER_ADMIN` sort du périmètre ; pour les autres, `assignedTo` ou `createdBy` doit être l'utilisateur |
+| `isLeadOutOfScope`, `leadWriteScopeFilter` (écriture) | `SUPER_ADMIN` et `ADMIN` sortent du périmètre ; pour les autres (dont `COMMERCIAL`), `assignedTo` ou `createdBy` doit être l'utilisateur |
+| `crmEntityRestriction` | une liste `crmEntities` non vide restreint lecture et écriture à ces entités, pour tous les rôles sauf `SUPER_ADMIN` (l'`ADMIN` restreint lit et écrit tout le CRM **de ses entités**) |
 | `administersCrm` | `SUPER_ADMIN` ou `ADMIN` |
 
-Point à confirmer : tel que codé, un `ADMIN` (qui a `manage_crm`) ne lit et n'écrit que ses propres leads, comme un `MANAGER`. Voir `CRM_ARCHITECTURE.md`, section « Points d'attention ».
+Décision de Raphael (6 novembre 2026) : un `ADMIN` voit et modifie tous les leads, sous réserve de sa restriction d'entités. Conséquences : liste, fiche, modification, suppression, fusion, actions groupées, export, doublons, journal des échanges, prévisions par commercial et objectifs personnels des collègues suivent `readsWholeCrm` / `writesWholeCrm`.
+
+Rattacher ou détacher un projet (`POST`/`DELETE /leads/:id/projects/:projectId`) est une écriture sur le lead : `manage_crm` + périmètre d'écriture du lead (`isLeadOutOfScope`), et le projet doit être lisible (`canReadProject`). Le commercial rattache donc les projets de ses leads ; l'administrateur ceux de tout lead de ses entités. `administersCrm` seul n'aurait pas suffi : il ignorerait la restriction d'entités de l'administrateur et priverait le commercial du rattachement de ses propres leads.
 
 ### 8.3 Agents (API Bearer)
 
@@ -321,9 +326,7 @@ Scripts one-shot, idempotents, dans `backend/scripts/migrations/` (usage : `MONG
 | Sujet | Constat (fichier) |
 |---|---|
 | Agent et règles | Le contrôle `administersRules` n'est pas fourni à l'adaptateur agent (`routes/agent/crmExtras.ts`) : un agent avec `write:crm` peut créer, modifier, supprimer et **valider les e-mails en attente**. Seule l'activation exige `admin:*`. |
-| Périmètre `ADMIN` | Voir §8.2 : un `ADMIN` ne lit que ses leads. |
-| Seuil de relance proposition | Le job `crm.proposal_followup` relance à 5 j, le planificateur (`proposalReminderDays`) à 7 j par défaut. |
-| Doublon règle / job | `crm.proposal_followup` et `processProposalReminders` ont des seuils différents ; la règle `proposition-sans-reponse` prime sur les deux. |
+| Doublon règle / job | `crm.proposal_followup` et `processProposalReminders` partagent `proposalReminderDays` ; la règle `proposition-sans-reponse` (5 j, ses propres conditions) prime sur les deux. |
 | Relance post-démo | Aucun réglage du planificateur ; seule la règle `relance-post-demo` ou le job la couvre. |
 
 ---
