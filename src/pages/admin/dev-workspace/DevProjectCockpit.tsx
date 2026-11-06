@@ -33,6 +33,7 @@ import {
   Users,
   XCircle,
 } from 'lucide-react'
+import ArchiveProjectButton from './ArchiveProjectButton'
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
   fetchDevProjectCockpit,
@@ -339,6 +340,14 @@ const DevProjectCockpit = () => {
             >
               <ExternalLink size={12} /> Workspace
             </button>
+            {canManage && (
+              <ArchiveProjectButton
+                projectId={project._id}
+                projectName={project.name}
+                archived={project.status === 'ARCHIVED'}
+                onChanged={() => void load()}
+              />
+            )}
             {canManage && (
               <button
                 className="cockpit-btn primary"
