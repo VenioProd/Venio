@@ -3,7 +3,7 @@ import auth from '../../middleware/auth.js'
 import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import idempotentRequest from '../../middleware/idempotentRequest.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
-import { leadScopeFilter } from '../../lib/crmScope.js'
+import { administersCrm, leadScopeFilter } from '../../lib/crmScope.js'
 import { createCrmExtrasRouter } from '../crmExtras.js'
 
 /** Vues, actions groupées, export, fiche et règles du CRM — montées sous /api/admin/crm. */
@@ -15,7 +15,10 @@ const router = createCrmExtrasRouter({
   actor: async (req: Request) => ({ id: req.user!.id, isSuper: req.user!.role === 'SUPER_ADMIN' }),
   leadScope: (req: Request) => leadScopeFilter(req),
   writeScope: (req: Request) => (req.user!.role === 'SUPER_ADMIN' ? {} : { $or: [{ assignedTo: req.user!.id }, { createdBy: req.user!.id }] }),
-  canActivateRules: () => true,
+  // Créer, activer, modifier ou supprimer une règle et valider ses exécutions engage
+  // tout le groupe : réservé au super-admin et à l'administrateur.
+  canActivateRules: (req: Request) => administersCrm(req),
+  canAdministerRules: (req: Request) => administersCrm(req),
 })
 
 export default router

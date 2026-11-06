@@ -28,7 +28,14 @@ import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import logger from '../../lib/logger.js'
 import idempotentRequest from '../../middleware/idempotentRequest.js'
-import { canReadLead, leadScopeFilter, isLeadOutOfScope, readsWholeCrm } from '../../lib/crmScope.js'
+import {
+  administersCrm,
+  canReadLead,
+  isAssignableCrmUser,
+  leadScopeFilter,
+  isLeadOutOfScope,
+  readsWholeCrm,
+} from '../../lib/crmScope.js'
 import { summariseRevenue, weightedPipeline, type RevenueDocument } from '../../lib/crmRevenue.js'
 import Project from '../../models/Project.js'
 import BillingDocument from '../../models/BillingDocument.js'
@@ -158,6 +165,11 @@ router.post(
       }
 
       const payload: Record<string, any> = normalizeLeadPayload(req.body || {})
+
+      // Un lead ne se confie qu'à un membre actif de l'équipe habilité à le suivre.
+      if (payload.assignedTo && !(await isAssignableCrmUser(payload.assignedTo))) {
+        return res.status(400).json({ error: 'Commercial introuvable, inactif ou non habilité à suivre un lead' })
+      }
 
       // Load settings for automation control
       const settings = await CrmSettings.getSettings()
@@ -876,17 +888,87 @@ router.get(
   },
 )
 
+/** Domaines dont les adresses peuvent recevoir le rapport hebdomadaire sans être un compte de l'équipe. */
+function reportAllowedDomains(): string[] {
+  return (process.env.CRM_REPORT_ALLOWED_DOMAINS ?? 'venio.paris')
+    .split(',')
+    .map((d) => d.trim().toLowerCase().replace(/^@/, ''))
+    .filter(Boolean)
+}
+
+const REPORT_RECIPIENTS_MAX = 20
+const SIMPLE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/**
+ * Le rapport hebdomadaire part hors de l'application : ses destinataires sont
+ * des comptes actifs de l'équipe, ou des adresses du domaine de l'entreprise.
+ */
+async function validateReportRecipients(value: unknown): Promise<{ ok: true; emails: string[] } | { ok: false; error: string }> {
+  if (!Array.isArray(value) || !value.every((v) => typeof v === 'string')) {
+    return { ok: false, error: 'weeklyReportRecipients : liste d’adresses e-mail attendue' }
+  }
+  const emails = [...new Set(value.map((v) => v.trim().toLowerCase()).filter(Boolean))]
+  if (emails.length > REPORT_RECIPIENTS_MAX) {
+    return { ok: false, error: `${REPORT_RECIPIENTS_MAX} destinataires au maximum pour le rapport hebdomadaire` }
+  }
+  const malformed = emails.filter((e) => !SIMPLE_EMAIL.test(e))
+  if (malformed.length) return { ok: false, error: `Adresse invalide : ${malformed.join(', ')}` }
+  const domains = reportAllowedDomains()
+  const outsideDomain = emails.filter((e) => !domains.includes(e.slice(e.lastIndexOf('@') + 1)))
+  const staff = outsideDomain.length
+    ? await User.find({ email: { $in: outsideDomain }, role: { $in: ADMIN_ROLES }, isActive: true }).select('email').lean()
+    : []
+  const staffEmails = new Set(staff.map((u) => u.email))
+  const rejected = outsideDomain.filter((e) => !staffEmails.has(e))
+  if (rejected.length) {
+    return {
+      ok: false,
+      error: `Destinataire non autorisé (ni membre actif de l’équipe, ni adresse de l’entreprise) : ${rejected.join(', ')}`,
+    }
+  }
+  return { ok: true, emails }
+}
+
+/** Champs dont la valeur est contrôlée : ils ne se modifient qu'entiers, jamais par chemin pointé. */
+const GUARDED_SETTINGS = ['weeklyReportRecipients', 'escalationManagerId', 'defaultCloserId']
+
 // Update CRM settings
 router.patch(
   '/settings',
   requirePermission(PERMISSIONS.MANAGE_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Les réglages s'appliquent à tout le groupe : réservés aux administrateurs du CRM.
+      if (!administersCrm(req)) {
+        return res.status(403).json({ error: 'Les réglages du CRM sont réservés aux administrateurs', code: 'CRM_ADMIN_REQUIRED' })
+      }
       const updates = req.body || {}
       // Remove fields that shouldn't be updated directly
       delete updates._id
       delete updates.createdAt
       delete updates.updatedAt
+
+      const dotted = Object.keys(updates).find((key) => GUARDED_SETTINGS.some((field) => key.startsWith(`${field}.`)))
+      if (dotted) return res.status(400).json({ error: `${dotted} : ce réglage se modifie en entier` })
+
+      if (updates.weeklyReportRecipients !== undefined) {
+        const check = await validateReportRecipients(updates.weeklyReportRecipients)
+        if (!check.ok) return res.status(400).json({ error: check.error })
+        updates.weeklyReportRecipients = check.emails
+      }
+
+      // Le responsable d'escalade reçoit les alertes : un membre actif de l'équipe, ou personne.
+      if (updates.escalationManagerId !== undefined) {
+        const managerId = updates.escalationManagerId || null
+        const manager =
+          typeof managerId === 'string' && mongoose.isObjectIdOrHexString(managerId)
+            ? await User.exists({ _id: managerId, role: { $in: ADMIN_ROLES }, isActive: true })
+            : null
+        if (managerId && !manager) {
+          return res.status(400).json({ error: 'Le responsable d’escalade doit être un membre actif de l’équipe' })
+        }
+        updates.escalationManagerId = managerId
+      }
 
       // Le closer reçoit les dossiers des externes : un membre actif de l'équipe, ou personne.
       if (updates.defaultCloserId !== undefined) {
@@ -921,7 +1003,15 @@ router.post(
       }
 
       const { company, contactEmail, contactPhone, excludeId } = req.body
-      const duplicates = await checkDuplicateLead({ company, contactEmail, contactPhone }, settings, excludeId)
+      const found = await checkDuplicateLead({ company, contactEmail, contactPhone }, settings, excludeId)
+      // Seuls les doublons du périmètre de lecture sont renvoyés : la détection ne doit pas
+      // révéler les leads d'un collègue.
+      let duplicates = found
+      if (!readsWholeCrm(req) && found.length > 0) {
+        const readable = await Lead.distinct('_id', { _id: { $in: found.map((d) => d._id) }, ...leadScopeFilter(req) })
+        const readableIds = new Set(readable.map(String))
+        duplicates = found.filter((d) => readableIds.has(String(d._id)))
+      }
       return res.json({ duplicates, enabled: true })
     } catch (err) {
       return next(err)

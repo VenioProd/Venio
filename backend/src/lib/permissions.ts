@@ -187,13 +187,14 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Permission>> = {
     PERMISSIONS.CREATE_TICKETS,
     PERMISSIONS.VIEW_CHANGE_REQUESTS,
   ]),
+  // Le stagiaire consulte le CRM sans le modifier : ses leads passent par un
+  // commercial ou un administrateur (audit CRM du 6 novembre 2026).
   STAGIAIRE: new Set([
     PERMISSIONS.VIEW_PROJECTS,
     PERMISSIONS.MANAGE_TASKS,
     PERMISSIONS.VIEW_CONTENT,
     PERMISSIONS.VIEW_PHASES,
     PERMISSIONS.VIEW_CRM,
-    PERMISSIONS.MANAGE_CRM,
     PERMISSIONS.VIEW_MESSAGING,
     PERMISSIONS.SEND_MESSAGES,
     PERMISSIONS.VIEW_TICKETS,
