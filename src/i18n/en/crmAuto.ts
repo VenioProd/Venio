@@ -115,6 +115,9 @@ const en: Record<keyof typeof fr, string> = {
   'crmAuto.retry': 'Try again',
   'crmAuto.pendingNotice': '{count, plural, one {# email is} other {# emails are}} waiting for approval before sending.',
   'crmAuto.review': 'Review',
+  'crmAuto.readOnly':
+    'Read-only: only administrators can create, edit, enable or delete rules and approve their runs.',
+  'crmAuto.adminOnly': 'Administrators only',
   'crmAuto.newRule': '+ New rule',
   'crmAuto.loadingRules': 'Loading rules…',
   'crmAuto.runsNote': '{count, plural, one {# execution} other {# executions}} in the log (last 90 days).',

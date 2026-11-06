@@ -16,6 +16,7 @@ import {
 
 interface RulesPanelProps {
   rules: CrmRule[]
+  canAdminister: boolean
   busyId: string | null
   onToggle: (rule: CrmRule) => void
   onEdit: (rule: CrmRule) => void
@@ -33,9 +34,10 @@ function Arrow() {
   )
 }
 
-function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimulate }: {
+function RuleCard({ rule, busy, canAdminister, onToggle, onEdit, onDuplicate, onDelete, onSimulate }: {
   rule: CrmRule
   busy: boolean
+  canAdminister: boolean
   onToggle: () => void
   onEdit: () => void
   onDuplicate: () => void
@@ -43,6 +45,7 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
   onSimulate: () => void
 }) {
   const { t } = useI18n()
+  const lockTitle = canAdminister ? undefined : t('crmAuto.adminOnly')
   const trig = describeTrigger(rule.trigger)
   const active = rule.status === 'ACTIVE'
   const conds = rule.conditions?.items ?? []
@@ -74,7 +77,8 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
           className="crm-auto-tog"
           aria-pressed={active}
           aria-label={t('crmAuto.rule.activateAria', { name: rule.name })}
-          disabled={busy}
+          disabled={busy || !canAdminister}
+          title={lockTitle}
           onClick={onToggle}
         >
           <span className="crm-auto-sw" aria-hidden="true" />
@@ -124,18 +128,18 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
           {t('crmAuto.rule.simulate')}
         </button>
         {rule.system ? (
-          <button type="button" className="crm-auto-link" onClick={onDuplicate} disabled={busy} aria-label={t('crmAuto.rule.duplicateAria', { name: rule.name })}>
+          <button type="button" className="crm-auto-link" onClick={onDuplicate} disabled={busy || !canAdminister} title={lockTitle} aria-label={t('crmAuto.rule.duplicateAria', { name: rule.name })}>
             {t('crmAuto.rule.duplicate')}
           </button>
         ) : (
           <>
-            <button type="button" className="crm-auto-link" onClick={onEdit} aria-label={t('crmAuto.rule.editAria', { name: rule.name })}>
+            <button type="button" className="crm-auto-link" onClick={onEdit} disabled={!canAdminister} title={lockTitle} aria-label={t('crmAuto.rule.editAria', { name: rule.name })}>
               {t('common.edit')}
             </button>
-            <button type="button" className="crm-auto-link" onClick={onDuplicate} disabled={busy} aria-label={t('crmAuto.rule.duplicateAria', { name: rule.name })}>
+            <button type="button" className="crm-auto-link" onClick={onDuplicate} disabled={busy || !canAdminister} title={lockTitle} aria-label={t('crmAuto.rule.duplicateAria', { name: rule.name })}>
               {t('crmAuto.rule.duplicate')}
             </button>
-            <button type="button" className="crm-auto-link" onClick={onDelete} disabled={busy} aria-label={t('crmAuto.rule.deleteAria', { name: rule.name })}>
+            <button type="button" className="crm-auto-link" onClick={onDelete} disabled={busy || !canAdminister} title={lockTitle} aria-label={t('crmAuto.rule.deleteAria', { name: rule.name })}>
               {t('common.delete')}
             </button>
           </>
@@ -145,7 +149,7 @@ function RuleCard({ rule, busy, onToggle, onEdit, onDuplicate, onDelete, onSimul
   )
 }
 
-export default function RulesPanel({ rules, busyId, onToggle, onEdit, onDuplicate, onDelete, onSimulated, onNew }: RulesPanelProps) {
+export default function RulesPanel({ rules, canAdminister, busyId, onToggle, onEdit, onDuplicate, onDelete, onSimulated, onNew }: RulesPanelProps) {
   const { t } = useI18n()
   const [sim, setSim] = useState<{ rule: CrmRule; result: SimulationResult | null; error: string | null; recording: boolean } | null>(null)
 
@@ -174,9 +178,11 @@ export default function RulesPanel({ rules, busyId, onToggle, onEdit, onDuplicat
     return (
       <div className="crm-auto-empty crm-auto-glass">
         <p>{t('crmAuto.rule.none')}</p>
-        <button type="button" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" onClick={onNew} style={{ marginTop: 12 }}>
-          {t('crmAuto.rule.create')}
-        </button>
+        {canAdminister && (
+          <button type="button" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" onClick={onNew} style={{ marginTop: 12 }}>
+            {t('crmAuto.rule.create')}
+          </button>
+        )}
       </div>
     )
   }
@@ -188,6 +194,7 @@ export default function RulesPanel({ rules, busyId, onToggle, onEdit, onDuplicat
             key={rule._id}
             rule={rule}
             busy={busyId === rule._id}
+            canAdminister={canAdminister}
             onToggle={() => onToggle(rule)}
             onEdit={() => onEdit(rule)}
             onDuplicate={() => onDuplicate(rule)}
