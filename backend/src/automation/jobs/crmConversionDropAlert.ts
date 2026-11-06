@@ -8,13 +8,17 @@ import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
 import { withActiveLeads } from './crmLeadScope.js'
+import { parisParts, parisWeekKey, serverScheduleForParis } from './crmParisTime.js'
 
 const definition: AutomationDefinition = {
   key: 'crm.conversion_drop_alert',
   title: 'Alerte chute du taux de conversion',
   domain: 'crm',
   triggerType: 'cron',
-  schedule: 'monday:08:00',
+  /** Lundi 08:00 heure de Paris, traduit à chaque passage en heure du serveur. */
+  get schedule() {
+    return serverScheduleForParis('monday:08:00')
+  },
   channels: ['in_app'],
   recipientStrategy: ['super_admins'],
   retryable: true,
@@ -22,10 +26,10 @@ const definition: AutomationDefinition = {
   defaultEnabled: true,
   permissionsScope: ['SUPER_ADMIN'],
 
-  buildIdempotencyKey: (ctx) => `crm.conversion_drop:${ctx.weekKey}`,
+  buildIdempotencyKey: (ctx) => `crm.conversion_drop:${parisWeekKey(ctx.now)}`,
 
   evaluate: async (ctx: AutomationContext) => {
-    return ctx.now.getDay() === 1
+    return parisParts(ctx.now).weekday === 1
   },
 
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {

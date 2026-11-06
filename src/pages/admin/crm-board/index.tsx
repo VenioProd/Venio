@@ -383,6 +383,7 @@ const CrmBoard = () => {
 
   const handleDrop = async (event: React.DragEvent<HTMLDivElement>, status: string) => {
     event.preventDefault()
+    if (!canManageCrm) return
     const leadId = event.dataTransfer.getData('text/plain')
     if (!leadId) return
     await handleUpdateLead(leadId, { status })

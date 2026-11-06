@@ -1,8 +1,6 @@
 import express, { type NextFunction, type Request, type RequestHandler, type Response } from 'express'
 import mongoose from 'mongoose'
 import Lead from '../models/Lead.js'
-import LeadActivity from '../models/LeadActivity.js'
-import Interaction from '../models/Interaction.js'
 import PersonalTask from '../models/PersonalTask.js'
 import QuoteProposal from '../models/QuoteProposal.js'
 import Project from '../models/Project.js'
@@ -10,9 +8,9 @@ import CrmView from '../models/CrmView.js'
 import CrmRule, { CONDITION_FIELDS, CONDITION_OPERATORS, RULE_ACTIONS, RULE_TRIGGERS } from '../models/CrmRule.js'
 import CrmRuleRun from '../models/CrmRuleRun.js'
 import { buildTimeline } from '../lib/interactions.js'
-import { ensureClientForWonLead } from '../lib/crmClientConversion.js'
-import { autoCreateProjectFromLead, logLeadActivity } from '../lib/crmAutomations.js'
-import { approveRun, emitLeadChanges, rejectRun, retryRun, simulateRule } from '../lib/crmRules.js'
+import CrmSettings from '../models/CrmSettings.js'
+import { applyLeadChange, assertLostReason, deleteLeadCascade, isLeadChangeError, type LeadChangeContext } from '../lib/crmLeadService.js'
+import { approveRun, rejectRun, retryRun, simulateRule } from '../lib/crmRules.js'
 import { isAssignableCrmUser } from '../lib/crmScope.js'
 
 /**
@@ -162,8 +160,27 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
     const tag = String(payload.tag ?? '').trim().slice(0, 40)
     if (action === 'tag' && !tag) return a.fail(res, 400, 'VALIDATION_ERROR', 'payload.tag requis')
 
+    const settings = await CrmSettings.getSettings()
+    const lostReason = action === 'status' && payload.status === 'LOST' && typeof payload.lostReason === 'string' ? payload.lostReason.trim() : undefined
+    try {
+      assertLostReason(lostReason, settings)
+    } catch (err) {
+      if (isLeadChangeError(err)) return a.fail(res, 400, 'VALIDATION_ERROR', err.message)
+      throw err
+    }
+
     const me = await a.actor(req)
     const scope = a.writeScope(req)
+    // Tout passe par le service de lead : historique, automatisations de statut,
+    // conversion WON, événements et cascade de suppression identiques à la fiche.
+    const change: LeadChangeContext = {
+      actor: me.id,
+      source: 'bulk',
+      settings,
+      labelSuffix: '(action groupée)',
+      // L'assigné est contrôlé une fois, avant la boucle.
+      validateAssignee: false,
+    }
     const results: Array<{ id: string; ok: boolean; error?: string }> = []
     for (const id of [...new Set<string>(ids)]) {
       try {
@@ -172,40 +189,23 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
           results.push({ id, ok: false, error: 'Lead introuvable' })
           continue
         }
-        const before = { status: lead.status, assignedTo: lead.assignedTo }
         if (action === 'delete') {
-          await Promise.all([
-            LeadActivity.deleteMany({ leadId: lead._id }),
-            Interaction.deleteMany({ subjectType: 'LEAD', subjectId: lead._id }),
-            PersonalTask.deleteMany({ leadId: lead._id }),
-            CrmRuleRun.deleteMany({ lead: lead._id }),
-          ])
-          await Lead.deleteOne({ _id: lead._id })
+          // Même cascade que la suppression unitaire (service de lead).
+          await deleteLeadCascade(lead)
         } else if (action === 'assign') {
-          lead.assignedTo = payload.userId
-          await lead.save()
-          await logLeadActivity(lead._id, 'ASSIGNED', 'Lead réassigné (action groupée)', { to: payload.userId }, me.id)
-          emitLeadChanges(lead, before, me.id)
+          await applyLeadChange(lead, { assignedTo: payload.userId }, change)
         } else if (action === 'status') {
           if (lead.status !== payload.status) {
-            const from = lead.status
-            lead.status = payload.status
-            lead.statusChangedAt = new Date()
-            if (payload.status === 'LOST' && typeof payload.lostReason === 'string') lead.lostReason = payload.lostReason
-            await lead.save()
-            await logLeadActivity(lead._id, 'STATUS_CHANGE', `Statut: ${from} → ${payload.status}`, { from, to: payload.status }, me.id)
-            if (payload.status === 'WON') {
-              await ensureClientForWonLead(lead, me.id, true)
-              autoCreateProjectFromLead(lead as any, me.id).catch(() => {})
-            }
-            emitLeadChanges(lead, before, me.id)
+            await applyLeadChange(lead, { status: payload.status, ...(lostReason !== undefined ? { lostReason } : {}) }, change)
           }
         } else if (action === 'tag') {
-          await Lead.updateOne({ _id: lead._id }, payload.mode === 'remove' ? { $pull: { tags: tag } } : { $addToSet: { tags: tag } })
+          const tags: string[] = lead.tags ?? []
+          const next = payload.mode === 'remove' ? tags.filter((t) => t !== tag) : tags.includes(tag) ? tags : [...tags, tag]
+          if (next.length !== tags.length) await applyLeadChange(lead, { tags: next }, change)
         } else if (action === 'archive') {
-          await Lead.updateOne({ _id: lead._id }, { $set: { archivedAt: new Date() } })
+          await applyLeadChange(lead, { archivedAt: new Date() }, change)
         } else if (action === 'restore') {
-          await Lead.updateOne({ _id: lead._id }, { $set: { archivedAt: null } })
+          await applyLeadChange(lead, { archivedAt: null }, change)
         }
         results.push({ id, ok: true })
       } catch (err) {

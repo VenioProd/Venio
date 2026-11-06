@@ -81,6 +81,8 @@ const leadSchema = new mongoose.Schema<ILead>(
     archivedAt: { type: Date, default: null },
     // Suspend les règles d'automatisation pour ce seul lead.
     automationPausedAt: { type: Date, default: null },
+    // Posé une seule fois, atomiquement, par la conversion d'un lead gagné (crmClientConversion) : verrou d'idempotence.
+    wonProcessedAt: { type: Date, default: null },
   },
   { timestamps: true },
 )

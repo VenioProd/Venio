@@ -11,16 +11,25 @@ import ClientActivity from '../../models/ClientActivity.js'
 import { requireScope } from './_middleware/auth.js'
 import { parsePagination, paginatedResponse } from './_middleware/pagination.js'
 import { respondError } from './_middleware/errors.js'
-import { normalizeEnrichedLeadFields } from '../../lib/crmLeadFields.js'
-import { emitLeadChanges } from '../../lib/crmRules.js'
+import {
+  CRM_STATUSES,
+  LEAD_PRIORITIES as PRIORITIES,
+  LEAD_TEMPERATURES as TEMPERATURES,
+  applyLeadChange,
+  createLead,
+  deleteLeadCascade,
+  isLeadChangeError,
+  normalizeLeadPatch,
+} from '../../lib/crmLeadService.js'
 
 /**
  * Routes agent pour le CRM : clients, leads, contacts, notes, activities.
  *
- * Périmètre V1 délibérément focalisé sur le CRUD. Les effets composés
- * (auto-conversion lead→client sur status=WON, round-robin assignment,
- * auto-création de projet, etc.) restent dans les routes admin. Un agent
- * qui veut ces effets peut les chaîner via plusieurs appels.
+ * Les créations et modifications de lead passent par le service commun
+ * (lib/crmLeadService) : historique des statuts, automatisations de statut,
+ * score, conversion d'un lead gagné (compte client + projet, une seule fois)
+ * et événements des règles sont les mêmes que dans l'admin. Seul le
+ * tourniquet d'attribution reste propre à l'admin.
  *
  * Toutes les routes sont protégées par scope :
  *   - GET   → read:crm
@@ -37,9 +46,6 @@ import { emitLeadChanges } from '../../lib/crmRules.js'
 
 const router = express.Router()
 
-const CRM_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST'] as const
-const PRIORITIES = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE'] as const
-const TEMPERATURES = ['FROID', 'TIEDE', 'CHAUD', 'TRES_CHAUD'] as const
 
 // ───────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -47,6 +53,13 @@ const TEMPERATURES = ['FROID', 'TIEDE', 'CHAUD', 'TRES_CHAUD'] as const
 
 function isValidObjectId(id: unknown): boolean {
   return typeof id === 'string' && mongoose.isValidObjectId(id)
+}
+
+/** Erreur métier du service de lead, rendue au format de l'API agent. */
+function respondLeadChangeError(res: Response, err: unknown): boolean {
+  if (!isLeadChangeError(err)) return false
+  respondError(res, err.status, err.status === 404 ? 'NOT_FOUND' : err.code, err.message, err.details)
+  return true
 }
 
 function emitValidationError(req: Request, res: Response): boolean {
@@ -345,12 +358,11 @@ router.post(
       if (!fallbackAdmin) {
         return respondError(res, 500, 'NO_ADMIN', 'Aucun SUPER_ADMIN trouvé pour assigner le lead')
       }
-      const payload = normalizeLeadPayload(req.body || {})
-      const lead = await Lead.create({
-        ...payload,
-        createdBy: fallbackAdmin._id,
-        assignedTo: payload.assignedTo || null,
-      })
+      const payload = normalizeLeadPatch(req.body || {}, { lenientAssignee: true })
+      const { lead } = await createLead(
+        { ...payload, createdBy: fallbackAdmin._id, assignedTo: payload.assignedTo || null },
+        { actor: null, source: 'agent' },
+      )
       res.locals.audit = {
         entityType: 'Lead',
         entityId: String(lead._id),
@@ -358,9 +370,9 @@ router.post(
         summary: `Création du lead "${lead.company}"`,
         after: lead.toObject(),
       }
-      emitLeadChanges(lead, null)
       res.status(201).json(lead.toObject())
     } catch (err) {
+      if (respondLeadChangeError(res, err)) return
       next(err)
     }
   },
@@ -380,14 +392,8 @@ router.patch(
       const lead = await Lead.findById(req.params.id)
       if (!lead) return respondError(res, 404, 'NOT_FOUND', 'Lead introuvable')
       const before = lead.toObject()
-      const emitBefore = { status: lead.status, assignedTo: lead.assignedTo }
-      const payload = normalizeLeadPayload(req.body || {})
-      Object.assign(lead, payload)
-      if (payload.status && payload.status !== before.status) {
-        ;(lead as unknown as { statusChangedAt: Date }).statusChangedAt = new Date()
-      }
-      await lead.save()
-      emitLeadChanges(lead, emitBefore)
+      const payload = normalizeLeadPatch(req.body || {}, { lenientAssignee: true })
+      await applyLeadChange(lead, payload, { actor: null, source: 'agent' })
       res.locals.audit = {
         entityType: 'Lead',
         entityId: String(lead._id),
@@ -398,6 +404,7 @@ router.patch(
       }
       res.json(lead.toObject())
     } catch (err) {
+      if (respondLeadChangeError(res, err)) return
       next(err)
     }
   },
@@ -413,7 +420,8 @@ router.delete(
       const lead = await Lead.findById(req.params.id)
       if (!lead) return respondError(res, 404, 'NOT_FOUND', 'Lead introuvable')
       const before = lead.toObject()
-      await Lead.deleteOne({ _id: lead._id })
+      // Historique, échanges, tâches et exécutions de règles partent avec le lead.
+      await deleteLeadCascade(lead)
       res.locals.audit = {
         entityType: 'Lead',
         entityId: String(lead._id),
@@ -701,46 +709,6 @@ function parseSort(raw: unknown, fallback: Record<string, 1 | -1>, whitelist: st
   const field = desc ? raw.slice(1) : raw
   if (!whitelist.includes(field)) return fallback
   return { [field]: desc ? -1 : 1 } as Record<string, 1 | -1>
-}
-
-function normalizeLeadPayload(body: Record<string, unknown>): Record<string, unknown> {
-  const payload: Record<string, unknown> = {}
-  if (body.company !== undefined) payload.company = String(body.company || '').trim()
-  if (body.contactName !== undefined) payload.contactName = String(body.contactName || '')
-  if (body.contactEmail !== undefined) payload.contactEmail = String(body.contactEmail || '')
-  if (body.contactPhone !== undefined) payload.contactPhone = String(body.contactPhone || '')
-  if (body.source !== undefined) payload.source = String(body.source || '')
-  if (typeof body.project === 'string' && (['', ...LEAD_PROJECTS] as string[]).includes(body.project)) {
-    payload.project = body.project
-  }
-  if (typeof body.status === 'string' && (CRM_STATUSES as readonly string[]).includes(body.status)) {
-    payload.status = body.status
-  }
-  if (typeof body.priority === 'string' && (PRIORITIES as readonly string[]).includes(body.priority)) {
-    payload.priority = body.priority
-  }
-  if (body.budget !== undefined) {
-    const value = Number(body.budget)
-    payload.budget = Number.isNaN(value) ? null : value
-  }
-  if (body.nextActionAt !== undefined) {
-    payload.nextActionAt = body.nextActionAt ? new Date(body.nextActionAt as string) : null
-  }
-  if (body.lastContactAt !== undefined) {
-    payload.lastContactAt = body.lastContactAt ? new Date(body.lastContactAt as string) : null
-  }
-  if (body.notes !== undefined) payload.notes = String(body.notes || '')
-  if (body.serviceType !== undefined) payload.serviceType = String(body.serviceType || '')
-  if (typeof body.leadTemperature === 'string' && (TEMPERATURES as readonly string[]).includes(body.leadTemperature)) {
-    payload.leadTemperature = body.leadTemperature
-  }
-  if (body.interactionNotes !== undefined) payload.interactionNotes = String(body.interactionNotes || '')
-  if (body.assignedTo !== undefined) {
-    payload.assignedTo =
-      typeof body.assignedTo === 'string' && isValidObjectId(body.assignedTo) ? body.assignedTo : null
-  }
-  Object.assign(payload, normalizeEnrichedLeadFields(body))
-  return payload
 }
 
 export default router

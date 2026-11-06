@@ -27,6 +27,7 @@ const FILTERS: Array<{ key: JournalFilter; labelKey: MessageKey }> = [
 const PAGE_SIZE = 50
 
 interface RunsJournalProps {
+  canAdminister: boolean
   filter: JournalFilter
   onFilterChange: (filter: JournalFilter) => void
   /** Incrémenté par le parent quand les données ont pu changer. */
@@ -38,14 +39,16 @@ interface RunsJournalProps {
 
 const stepLabel = (step: RunStep) => step.message || actionLabel(step.action)
 
-function RunRow({ run, open, onToggle, onAct, busy }: {
+function RunRow({ run, open, onToggle, onAct, busy, canAdminister }: {
   run: CrmRuleRun
+  canAdminister: boolean
   open: boolean
   onToggle: () => void
   onAct: (kind: 'approve' | 'reject' | 'retry', run: CrmRuleRun) => void
   busy: boolean
 }) {
   const { t } = useI18n()
+  const lockTitle = canAdminister ? undefined : t('crmAuto.adminOnly')
   const panelId = `crm-auto-run-${run._id}`
   const base = new Date(run.createdAt).getTime()
   const pendingStep = run.steps.find((s) => s.status === 'PENDING' && s.payload)
@@ -95,16 +98,16 @@ function RunRow({ run, open, onToggle, onAct, busy }: {
           <div className="crm-auto-det-actions">
             {run.status === 'PENDING' && (
               <>
-                <button type="button" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" disabled={busy} onClick={() => onAct('approve', run)}>
+                <button type="button" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" disabled={busy || !canAdminister} title={lockTitle} onClick={() => onAct('approve', run)}>
                   {t('crmAuto.journal.approve')}
                 </button>
-                <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={busy} onClick={() => onAct('reject', run)}>
+                <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={busy || !canAdminister} title={lockTitle} onClick={() => onAct('reject', run)}>
                   {t('crmAuto.journal.reject')}
                 </button>
               </>
             )}
             {run.status === 'ERR' && (
-              <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={busy} onClick={() => onAct('retry', run)}>
+              <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={busy || !canAdminister} title={lockTitle} onClick={() => onAct('retry', run)}>
                 {t('crmAuto.journal.retryRun')}
               </button>
             )}
@@ -116,7 +119,7 @@ function RunRow({ run, open, onToggle, onAct, busy }: {
   )
 }
 
-export default function RunsJournal({ filter, onFilterChange, version, onChanged, onError }: RunsJournalProps) {
+export default function RunsJournal({ canAdminister, filter, onFilterChange, version, onChanged, onError }: RunsJournalProps) {
   const { t } = useI18n()
   const [items, setItems] = useState<CrmRuleRun[]>([])
   const [total, setTotal] = useState(0)
@@ -150,6 +153,7 @@ export default function RunsJournal({ filter, onFilterChange, version, onChanged
   }, [load, version])
 
   const act = async (kind: 'approve' | 'reject' | 'retry', run: CrmRuleRun) => {
+    if (!canAdminister) return
     setBusyId(run._id)
     try {
       if (kind === 'approve') await approveRun(run._id)
@@ -188,7 +192,7 @@ export default function RunsJournal({ filter, onFilterChange, version, onChanged
         ) : (
           <ul className="crm-auto-runs" aria-label={t('crmAuto.journal.listAria')}>
             {items.map((run) => (
-              <RunRow key={run._id} run={run} open={openId === run._id} busy={busyId === run._id} onToggle={() => setOpenId(openId === run._id ? null : run._id)} onAct={(k, r) => void act(k, r)} />
+              <RunRow key={run._id} run={run} canAdminister={canAdminister} open={openId === run._id} busy={busyId === run._id} onToggle={() => setOpenId(openId === run._id ? null : run._id)} onAct={(k, r) => void act(k, r)} />
             ))}
           </ul>
         )}

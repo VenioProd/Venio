@@ -8,13 +8,18 @@ import { registerAutomation } from '../registry.js'
 import { createNotification } from '../../lib/notifications.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
 import { withActiveLeads } from './crmLeadScope.js'
+import { parisDateKey, serverScheduleForParis } from './crmParisTime.js'
+import { crmJobAbstention } from './crmJobGuards.js'
 
 const definition: AutomationDefinition = {
   key: 'crm.hot_lead_untreated_alert',
   title: 'Alerte leads chauds non traités',
   domain: 'crm',
   triggerType: 'cron',
-  schedule: '08:30',
+  /** 08:30 heure de Paris, traduite à chaque passage en heure du serveur. */
+  get schedule() {
+    return serverScheduleForParis('08:30')
+  },
   channels: ['in_app', 'email'],
   recipientStrategy: ['lead_owner', 'admins'],
   retryable: true,
@@ -22,9 +27,10 @@ const definition: AutomationDefinition = {
   defaultEnabled: true,
   permissionsScope: ['SUPER_ADMIN', 'ADMIN'],
 
-  buildIdempotencyKey: (ctx) => `crm.hot_lead:${ctx.dateKey}`,
+  buildIdempotencyKey: (ctx) => `crm.hot_lead:${parisDateKey(ctx.now)}`,
 
-  evaluate: async () => true,
+  // Règle « lead-chaud-48h » active : elle seule alerte.
+  evaluate: async () => (await crmJobAbstention('hotLeadAlert')) === null,
 
   execute: async (ctx: AutomationContext): Promise<AutomationResult> => {
     const Lead = mongoose.model('Lead')

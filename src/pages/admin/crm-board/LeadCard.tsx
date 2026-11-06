@@ -40,8 +40,8 @@ const LeadCard: React.FC<LeadCardProps> = ({
   return (
     <div
       className={`crm-card ${isOverdue ? 'crm-overdue' : ''} ${isCold ? 'crm-card-cold' : ''} ${isStale ? 'crm-card-stale' : ''}`}
-      draggable
-      onDragStart={(e) => onDragStart(e, lead._id)}
+      draggable={canManageCrm}
+      onDragStart={canManageCrm ? (e) => onDragStart(e, lead._id) : undefined}
     >
       <button type="button" className="crm-card-title" onClick={() => onOpenDetail(lead)}>
         {lead.company}
@@ -80,18 +80,20 @@ const LeadCard: React.FC<LeadCardProps> = ({
         )}
       </div>
       <div className="crm-card-row crm-card-assignee" style={{ marginTop: 8 }}>
-        <CustomSelect
-          className="portal-input"
-          value={lead.assignedTo || ''}
-          onChange={(v) => onUpdateLead(lead._id, { assignedTo: v || null })}
-          options={[
-            { value: '', label: t('crm.common.unassigned') },
-            ...admins.map((a) => ({ value: a._id, label: a.name })),
-          ]}
-        />
-        {assigned && (
+        {canManageCrm && (
+          <CustomSelect
+            className="portal-input"
+            value={lead.assignedTo || ''}
+            onChange={(v) => onUpdateLead(lead._id, { assignedTo: v || null })}
+            options={[
+              { value: '', label: t('crm.common.unassigned') },
+              ...admins.map((a) => ({ value: a._id, label: a.name })),
+            ]}
+          />
+        )}
+        {(assigned || !canManageCrm) && (
           <span className="crm-card-meta" style={{ margin: 0 }}>
-            {assigned.name}
+            {assigned ? assigned.name : t('crm.common.unassigned')}
           </span>
         )}
       </div>

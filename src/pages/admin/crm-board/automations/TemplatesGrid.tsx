@@ -106,7 +106,7 @@ export const ruleTemplates = (): RuleTemplate[] => [
   },
 ]
 
-export default function TemplatesGrid({ onUse }: { onUse: (template: RuleTemplate) => void }) {
+export default function TemplatesGrid({ onUse, canAdminister }: { onUse: (template: RuleTemplate) => void; canAdminister: boolean }) {
   const { t: tt } = useI18n()
   return (
     <div className="crm-auto-tpls">
@@ -114,7 +114,7 @@ export default function TemplatesGrid({ onUse }: { onUse: (template: RuleTemplat
         <article className="crm-auto-tpl crm-auto-glass" key={t.id}>
           <h3>{t.title}</h3>
           <p>{t.summary}</p>
-          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => onUse(t)} aria-label={tt('crmAuto.tpl.useAria', { title: t.title })}>
+          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={!canAdminister} title={canAdminister ? undefined : tt('crmAuto.adminOnly')} onClick={() => onUse(t)} aria-label={tt('crmAuto.tpl.useAria', { title: t.title })}>
             {tt('crmAuto.tpl.use')}
           </button>
         </article>

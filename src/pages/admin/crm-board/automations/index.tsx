@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../../../../context/AuthContext'
 import { useI18n } from '../../../../context/I18nContext'
+import { canAdministerCrm } from '../../../../lib/crmAccess'
 import type { MessageKey } from '../../../../i18n'
 import Dialog from './Dialog'
 import RuleBuilder from './RuleBuilder'
@@ -28,6 +30,9 @@ const errorText = (e: unknown, fallback: string) => (e instanceof Error && e.mes
 
 export default function CrmAutomations() {
   const { t } = useI18n()
+  const { user } = useAuth()
+  // Réservé SUPER_ADMIN / ADMIN : miroir de la règle serveur (administersCrm).
+  const canAdminister = canAdministerCrm(user)
   const [rules, setRules] = useState<CrmRule[]>([])
   const [recent, setRecent] = useState<CrmRuleRun[]>([])
   const [recentTotal, setRecentTotal] = useState(0)
@@ -73,6 +78,7 @@ export default function CrmAutomations() {
   }
 
   const toggle = async (rule: CrmRule) => {
+    if (!canAdminister) return
     setBusyId(rule._id)
     setProblem(null)
     try {
@@ -87,6 +93,7 @@ export default function CrmAutomations() {
   }
 
   const duplicate = async (rule: CrmRule) => {
+    if (!canAdminister) return
     setBusyId(rule._id)
     setProblem(null)
     try {
@@ -102,7 +109,7 @@ export default function CrmAutomations() {
   }
 
   const confirmDelete = async () => {
-    if (!toDelete) return
+    if (!toDelete || !canAdminister) return
     const rule = toDelete
     setToDelete(null)
     setBusyId(rule._id)
@@ -135,7 +142,7 @@ export default function CrmAutomations() {
     ]
   }, [rules, recent, pending, t])
 
-  const applyTemplate = (template: { draft: RuleDraft }) => setBuilder({ rule: null, draft: template.draft })
+  const applyTemplate = (template: { draft: RuleDraft }) => canAdminister && setBuilder({ rule: null, draft: template.draft })
 
   return (
     <div className="crm-auto">
@@ -151,6 +158,11 @@ export default function CrmAutomations() {
         ))}
       </section>
 
+      {!canAdminister && (
+        <div className="crm-auto-notice" role="note">
+          <span>{t('crmAuto.readOnly')}</span>
+        </div>
+      )}
       {loadError && (
         <div className="crm-auto-notice crm-auto-notice--err" role="alert">
           <span>{loadError}</span>
@@ -196,7 +208,14 @@ export default function CrmAutomations() {
             </button>
           ))}
         </div>
-        <button type="button" id="crm-auto-new" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" onClick={() => setBuilder({ rule: null, draft: emptyDraft() })}>
+        <button
+          type="button"
+          id="crm-auto-new"
+          className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+          disabled={!canAdminister}
+          title={canAdminister ? undefined : t('crmAuto.adminOnly')}
+          onClick={() => setBuilder({ rule: null, draft: emptyDraft() })}
+        >
           {t('crmAuto.newRule')}
         </button>
       </div>
@@ -208,6 +227,7 @@ export default function CrmAutomations() {
           ) : (
             <RulesPanel
               rules={rules}
+              canAdminister={canAdminister}
               busyId={busyId}
               onToggle={(r) => void toggle(r)}
               onEdit={(r) => setBuilder({ rule: r, draft: draftFromRule(r) })}
@@ -224,6 +244,7 @@ export default function CrmAutomations() {
       <div role="tabpanel" id="crm-auto-panel-journal" aria-labelledby={tabId(1)} hidden={section !== 'journal'}>
         {section === 'journal' && (
           <RunsJournal
+            canAdminister={canAdminister}
             filter={filter}
             onFilterChange={setFilter}
             version={version}
@@ -236,11 +257,11 @@ export default function CrmAutomations() {
         )}
       </div>
       <div role="tabpanel" id="crm-auto-panel-modeles" aria-labelledby={tabId(2)} hidden={section !== 'modeles'}>
-        {section === 'modeles' && <TemplatesGrid onUse={applyTemplate} />}
+        {section === 'modeles' && <TemplatesGrid canAdminister={canAdminister} onUse={applyTemplate} />}
       </div>
       {recentTotal > 0 && section === 'regles' && <p className="crm-auto-note">{t('crmAuto.runsNote', { count: recentTotal })}</p>}
 
-      {builder && (
+      {builder && canAdminister && (
         <RuleBuilder
           rule={builder.rule}
           draft={builder.draft}
@@ -253,7 +274,7 @@ export default function CrmAutomations() {
           }}
         />
       )}
-      {toDelete && (
+      {toDelete && canAdminister && (
         <Dialog titleId="crm-auto-del-t" onClose={() => setToDelete(null)}>
           <h3 id="crm-auto-del-t">{t('crmAuto.deleteTitle')}</h3>
           <p>{t('crmAuto.deleteBody', { name: toDelete.name })}</p>

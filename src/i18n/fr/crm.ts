@@ -241,6 +241,8 @@ const fr = {
   'crm.settings.updateError': 'Erreur lors de la mise à jour',
   'crm.settings.cannotLoad': 'Impossible de charger les paramètres',
   'crm.settings.backToCrm': 'Retour au CRM',
+  'crm.settings.readOnly':
+    'Lecture seule : seuls les administrateurs peuvent modifier ces réglages, qui s’appliquent à toute l’équipe.',
   'crm.settings.title': 'Configuration des automatisations CRM',
   'crm.settings.cat.scoring': 'Scoring',
   'crm.settings.cat.duplicates': 'Détection doublons',
