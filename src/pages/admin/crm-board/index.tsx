@@ -786,6 +786,13 @@ const CrmBoard = () => {
             onLeadChange={setExpandedLead}
             onUpdateLead={handleUpdateLead}
             onConvertToClient={handleConvertToClient}
+            mergeCandidates={allLeads}
+            onMerged={async () => {
+              // Le lead de la fiche a été absorbé puis supprimé : on ferme la fiche et on recharge.
+              setExpandedLead(null)
+              if (linkedLeadId) navigate('/admin/crm', { replace: true })
+              await load()
+            }}
           />
         )}
 

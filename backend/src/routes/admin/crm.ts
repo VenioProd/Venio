@@ -12,6 +12,7 @@ import CrmSettings from '../../models/CrmSettings.js'
 import { ADMIN_ROLES, PERMISSIONS } from '../../lib/permissions.js'
 import { getRoundRobinAssignee, logLeadActivity, checkDuplicateLead, buildWorklist } from '../../lib/crmAutomations.js'
 import { ensureClientForWonLead } from '../../lib/crmClientConversion.js'
+import { mergeLeads } from '../../lib/crmLeadMerge.js'
 import {
   applyLeadChange,
   createLead,
@@ -25,6 +26,7 @@ import {
   administersCrm,
   applyEntityQuery,
   canReadLead,
+  crmEntityRestriction,
   isAssignableCrmUser,
   LEAD_SCOPE_FIELDS,
   leadScopeFilter,
@@ -33,8 +35,26 @@ import {
   readsWholeCrm,
   resolveWriteEntity,
 } from '../../lib/crmScope.js'
-import { GROUP_ENTITIES, isGroupEntity } from '../../lib/groupEntities.js'
-import { summariseRevenue, weightedPipeline, type RevenueDocument } from '../../lib/crmRevenue.js'
+import { GROUP_ENTITIES, isGroupEntity, leadEntityOf } from '../../lib/groupEntities.js'
+import { anonymizeLead, buildPersonalDataExport, isEmailSuppressed } from '../../lib/crmPrivacy.js'
+import { clampRetentionMonths } from '../../lib/crmRetention.js'
+import { buildActorFromReq, recordAudit } from '../../lib/audit/auditHelpers.js'
+import {
+  DEFAULT_CURRENCY,
+  DEFAULT_FORECAST_MONTHS,
+  MAX_FORECAST_MONTHS,
+  MONTH_PATTERN,
+  addMonths,
+  buildForecast,
+  leadRevenueEntries,
+  parisMonth,
+  signedByLeadFromEntries,
+  summariseRevenue,
+  summariseRevenueByCurrency,
+  weightedPipeline,
+  type RevenueDocument,
+} from '../../lib/crmRevenue.js'
+import CrmGoal from '../../models/CrmGoal.js'
 import Project from '../../models/Project.js'
 import BillingDocument from '../../models/BillingDocument.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
@@ -170,6 +190,21 @@ router.post(
       }
       payload.createdBy = req.user!.id
 
+      // Doublons probables dans le périmètre de lecture de l'appelant : signalés dans la
+      // réponse, ou bloquants (409) si le réglage `duplicateBlockOnCreate` est actif.
+      const duplicates = settings.duplicateDetectionEnabled
+        ? await checkDuplicateLead(payload as any, settings, null, {
+            scope: readsUnrestrictedCrm(req) ? null : leadScopeFilter(req),
+          })
+        : []
+      if (duplicates.length > 0 && settings.duplicateBlockOnCreate) {
+        return res.status(409).json({
+          error: 'Des leads existants correspondent à ce prospect (doublon probable)',
+          code: 'DUPLICATE_LEAD',
+          duplicates,
+        })
+      }
+
       // Historique, automatisations de statut, auto-qualification, score,
       // conversion WON et événements : tout passe par le service.
       const { lead } = await createLead(payload, {
@@ -178,9 +213,36 @@ router.post(
         settings,
         validateAssignee: false,
       })
-      return res.status(201).json({ lead })
+      // Forme historique { lead } conservée ; `duplicates` n'est ajouté que s'il y en a.
+      return res.status(201).json(duplicates.length > 0 ? { lead, duplicates } : { lead })
     } catch (err) {
       if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, ...err.details })
+      return next(err)
+    }
+  },
+)
+
+// Fusion : `sourceId` est absorbé par le lead de l'URL (la cible), puis supprimé.
+router.post(
+  '/leads/:id/merge',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  idempotentRequest,
+  body('sourceId').isMongoId().withMessage('Identifiant du lead à fusionner invalide'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
+      }
+      const [target, source] = await Promise.all([Lead.findById(req.params.id), Lead.findById(req.body.sourceId)])
+      // Écriture sur les deux leads : hors périmètre, ils n'existent pas pour l'appelant.
+      if (!target || isLeadOutOfScope(req, target)) return res.status(404).json({ error: 'Lead not found' })
+      if (!source || isLeadOutOfScope(req, source)) return res.status(404).json({ error: 'Lead à fusionner introuvable' })
+
+      const result = await mergeLeads(target, source, req.user!.id)
+      return res.json({ lead: result.lead, merged: { sourceId: String(source._id), moved: result.moved, filledFields: result.filledFields } })
+    } catch (err) {
+      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, code: err.code, ...err.details })
       return next(err)
     }
   },
@@ -308,6 +370,104 @@ router.get(
   },
 )
 
+// ─── Données personnelles (RGPD, chantier 3D) ────────────────────────────────
+
+/**
+ * Lead visé par une demande de droits (accès, effacement) : réservé à
+ * l'administration du CRM (`administersCrm`), qui traite ces demandes pour tout
+ * le groupe, dans la limite des entités de l'utilisateur.
+ */
+async function loadLeadForDataRights(req: Request, res: Response) {
+  if (!administersCrm(req)) {
+    res.status(403).json({ error: 'Les demandes sur les données personnelles sont réservées aux administrateurs du CRM', code: 'CRM_ADMIN_REQUIRED' })
+    return null
+  }
+  const lead = await Lead.findById(req.params.id)
+  const allowed = crmEntityRestriction(req)
+  if (!lead || (allowed !== null && !allowed.includes(leadEntityOf(lead)))) {
+    res.status(404).json({ error: 'Lead not found' })
+    return null
+  }
+  return lead
+}
+
+/** Statut RGPD affiché dans la fiche : consentement, opposition, présence dans la liste de suppression. */
+router.get(
+  '/leads/:id/privacy',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await Lead.findById(req.params.id).select(`consent doNotContact doNotContactAt doNotContactReason anonymizedAt contactEmail ${LEAD_SCOPE_FIELDS}`)
+      if (!lead || !canReadLead(req, lead)) return res.status(404).json({ error: 'Lead not found' })
+      return res.json({
+        consent: lead.consent,
+        doNotContact: Boolean(lead.doNotContact),
+        doNotContactAt: lead.doNotContactAt ?? null,
+        doNotContactReason: lead.doNotContactReason ?? '',
+        anonymizedAt: lead.anonymizedAt ?? null,
+        suppressed: await isEmailSuppressed(lead.contactEmail),
+        canAdminister: administersCrm(req),
+      })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+/** Droit d'accès : export JSON complet du lead, de son historique et de ses échanges. */
+router.get(
+  '/leads/:id/personal-data',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await loadLeadForDataRights(req, res)
+      if (!lead) return undefined
+      const data = await buildPersonalDataExport(lead._id)
+      if (!data) return res.status(404).json({ error: 'Lead not found' })
+      await recordAudit({
+        action: 'CRM_LEAD_PERSONAL_DATA_EXPORT',
+        actor: buildActorFromReq(req),
+        entityType: 'Lead',
+        entityId: String(lead._id),
+        entityRef: lead.company,
+        summary: 'Export des données personnelles d’un lead',
+        extra: { activities: data.activities.length, interactions: data.interactions.length },
+      })
+      res.setHeader('Content-Disposition', `attachment; filename="lead-${String(lead._id)}-donnees-personnelles.json"`)
+      return res.json(data)
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+/** Droit à l'effacement : anonymisation (le lead reste pour les statistiques, sans donnée personnelle). */
+router.post(
+  '/leads/:id/anonymize',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  idempotentRequest,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await loadLeadForDataRights(req, res)
+      if (!lead) return undefined
+      if (lead.anonymizedAt) return res.status(409).json({ error: 'Lead déjà anonymisé', code: 'ALREADY_ANONYMIZED' })
+      await anonymizeLead(lead, { actor: req.user!.id, source: 'admin', reason: 'REQUEST' })
+      await recordAudit({
+        action: 'CRM_LEAD_ANONYMIZE',
+        actor: buildActorFromReq(req),
+        entityType: 'Lead',
+        entityId: String(lead._id),
+        entityRef: lead.company,
+        summary: 'Anonymisation d’un lead (demande de la personne)',
+      })
+      return res.json({ lead })
+    } catch (err) {
+      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, ...err.details })
+      return next(err)
+    }
+  },
+)
+
 // ─── Chaîne lead → devis → chiffre d'affaires ────────────────────────────────
 
 /** Charge le lead en vérifiant son existence et le périmètre de l'utilisateur. */
@@ -335,7 +495,10 @@ router.get(
         .lean()
       const projectIds = projects.map((project) => project._id)
 
-      const [documents, proposals] = await Promise.all([
+      // Devis rattachés au lead lui-même (leadId), avec ou sans projet : ceux
+      // d'un projet non lisible par l'utilisateur sont écartés.
+      const readableProject = ids === null ? {} : { project: { $in: [null, ...ids] } }
+      const [documents, projectProposals, leadProposals] = await Promise.all([
         projectIds.length === 0
           ? Promise.resolve([])
           : BillingDocument.find({ project: { $in: projectIds } })
@@ -348,14 +511,34 @@ router.get(
               .select('title status project billingDocument createdAt')
               .sort({ createdAt: -1 })
               .lean(),
+        QuoteProposal.find({ leadId: lead._id, ...readableProject })
+          .select('title status project billingDocument createdAt leadId lines selectedOptionalLineIds')
+          .sort({ createdAt: -1 })
+          .lean(),
       ])
+
+      const seen = new Set(projectProposals.map((proposal) => String(proposal._id)))
+      const proposals = [
+        ...projectProposals,
+        ...leadProposals
+          .filter((proposal) => !seen.has(String(proposal._id)))
+          .map(({ lines: _lines, selectedOptionalLineIds: _selected, leadId: _leadId, ...proposal }) => proposal),
+      ]
+      const entries = leadRevenueEntries({
+        documents: documents as unknown as Parameters<typeof leadRevenueEntries>[0]['documents'],
+        leadByProject: new Map(projectIds.map((projectId) => [String(projectId), String(lead._id)])),
+        proposals: leadProposals as unknown as Parameters<typeof leadRevenueEntries>[0]['proposals'],
+      })
+      const revenueDocuments = entries.map((entry) => entry.document)
 
       return res.json({
         lead: { _id: String(lead._id), company: lead.company, budget: lead.budget ?? null },
         projects,
         proposals,
         documents,
-        summary: summariseRevenue(documents as unknown as RevenueDocument[]),
+        // EUR (devise par défaut) ; les autres devises, jamais additionnées, sont dans byCurrency.
+        summary: summariseRevenue(revenueDocuments),
+        byCurrency: summariseRevenueByCurrency(revenueDocuments),
       })
     } catch (err) {
       return next(err)
@@ -502,7 +685,7 @@ router.get(
       // sur deux populations différentes ne veut rien dire — c'est l'erreur que
       // corrige ce chantier.
       const leadDocs = await Lead.find({ createdAt: { $gte: since }, ...scope })
-        .select('status createdAt source budget assignedTo lostReason')
+        .select('status createdAt source budget assignedTo lostReason probability archivedAt')
         .lean()
 
       const leads: PilotageLead[] = leadDocs.map((lead) => ({
@@ -550,19 +733,29 @@ router.get(
         cohortProjects.length === 0
           ? []
           : await BillingDocument.find({ project: { $in: cohortProjects.map((project) => project._id) } })
-              .select('type status total project')
+              .select('type status total currency project')
               .lean()
 
+      // Devis rattachés directement aux leads de la cohorte (sans projet, ou
+      // projet non rattaché par sourceLead). Ceux d'un projet non lisible sont écartés.
+      const cohortProposals = await QuoteProposal.find({
+        leadId: { $in: leadDocs.map((lead) => lead._id) },
+        status: 'SIGNED',
+        ...(ids === null ? {} : { project: { $in: [null, ...ids] } }),
+      })
+        .select('leadId project billingDocument status lines selectedOptionalLineIds')
+        .lean()
+
       // Montant signé par lead, pour confronter le budget déclaré au réel dans
-      // les ventilations par source et par commercial.
-      const leadByProject = new Map(cohortProjects.map((project) => [String(project._id), String(project.sourceLead)]))
-      const signedByLead = new Map<string, number>()
-      for (const document of cohortDocuments) {
-        const leadId = leadByProject.get(String(document.project))
-        if (!leadId) continue
-        const { signed } = summariseRevenue([document as unknown as RevenueDocument])
-        if (signed > 0) signedByLead.set(leadId, (signedByLead.get(leadId) ?? 0) + signed)
-      }
+      // les ventilations par source et par commercial (EUR, sans mélange de devises).
+      const entries = leadRevenueEntries({
+        documents: cohortDocuments as unknown as Parameters<typeof leadRevenueEntries>[0]['documents'],
+        leadByProject: new Map(cohortProjects.map((project) => [String(project._id), String(project.sourceLead)])),
+        proposals: cohortProposals as unknown as Parameters<typeof leadRevenueEntries>[0]['proposals'],
+      })
+      const signedByLead = signedByLeadFromEntries(entries)
+      const revenueDocuments = entries.map((entry) => entry.document)
+      const byCurrency = summariseRevenueByCurrency(revenueDocuments)
 
       const declaredBudget = leads.reduce((sum, lead) => sum + (lead.budget ?? 0), 0)
 
@@ -572,22 +765,28 @@ router.get(
         entity: isGroupEntity(req.query.entity) ? req.query.entity : null,
         funnel,
         revenue: {
+          currency: DEFAULT_CURRENCY,
           declaredBudget,
           linkedProjects: cohortProjects.length,
-          ...summariseRevenue(cohortDocuments as unknown as RevenueDocument[]),
+          // signed / collected / documents : EUR uniquement. Les autres devises
+          // ne sont jamais additionnées : voir byCurrency.
+          ...byCurrency[DEFAULT_CURRENCY]!,
+          byCurrency,
         },
         // Le pipeline porte sur les affaires EN COURS, quelle que soit leur
         // date de création : ce n'est pas la cohorte, seulement ses taux.
         pipeline: weightedPipeline(
           (
-            await Lead.find({ status: { $nin: ['WON', 'LOST'] }, ...scope })
-              .select('status createdAt budget')
+            await Lead.find({ status: { $nin: ['WON', 'LOST'] }, archivedAt: null, ...scope })
+              .select('status createdAt budget probability archivedAt')
               .lean()
           ).map((lead) => ({
             _id: String(lead._id),
             status: lead.status,
             createdAt: lead.createdAt,
             budget: lead.budget,
+            probability: lead.probability,
+            archivedAt: lead.archivedAt,
           })),
           funnel,
         ),
@@ -804,6 +1003,18 @@ router.patch(
         updates.defaultCloserId = closerId
       }
 
+      // Conservation (RGPD) : durée bornée ; l'activation de la purge est un booléen explicite.
+      if (updates.retentionMonths !== undefined) {
+        const months = Number(updates.retentionMonths)
+        if (!Number.isInteger(months) || months !== clampRetentionMonths(months)) {
+          return res.status(400).json({ error: 'retentionMonths : nombre entier de mois entre 6 et 120' })
+        }
+        updates.retentionMonths = months
+      }
+      if (updates.retentionPurgeEnabled !== undefined && typeof updates.retentionPurgeEnabled !== 'boolean') {
+        return res.status(400).json({ error: 'retentionPurgeEnabled : booléen attendu' })
+      }
+
       const settings = await CrmSettings.updateSettings(updates)
       return res.json({ settings })
     } catch (err) {
@@ -824,16 +1035,257 @@ router.post(
       }
 
       const { company, contactEmail, contactPhone, excludeId } = req.body
-      const found = await checkDuplicateLead({ company, contactEmail, contactPhone }, settings, excludeId)
       // Seuls les doublons du périmètre de lecture sont renvoyés : la détection ne doit pas
-      // révéler les leads d'un collègue.
-      let duplicates = found
-      if (!readsUnrestrictedCrm(req) && found.length > 0) {
-        const readable = await Lead.distinct('_id', { _id: { $in: found.map((d) => d._id) }, ...leadScopeFilter(req) })
-        const readableIds = new Set(readable.map(String))
-        duplicates = found.filter((d) => readableIds.has(String(d._id)))
-      }
+      // révéler les leads d'un collègue. Le périmètre est dans la requête, la limite vient après.
+      const duplicates = await checkDuplicateLead(
+        { company, contactEmail, contactPhone },
+        settings,
+        mongoose.isValidObjectId(excludeId) ? excludeId : null,
+        { scope: readsUnrestrictedCrm(req) ? null : leadScopeFilter(req) },
+      )
       return res.json({ duplicates, enabled: true })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+// ── Chantier 3C : prévisions et objectifs ────────────────────────────────────
+
+/**
+ * Prévision mensuelle (mois d'Europe/Paris de `expectedCloseAt`) : leads ouverts,
+ * brut, pondéré (définition unique : lib/crmRevenue.ts), réalisé (leads WON du
+ * mois, par `statusChangedAt`), catégories engagé / probable / pipeline, et
+ * objectif du mois avec son avancement. Montants en EUR (devise des budgets).
+ * Filtres : `months` (1–24, défaut 6), `from` (YYYY-MM, défaut mois courant),
+ * `entity`, `userId` (commercial ; hors équipe élargie, soi-même uniquement).
+ */
+router.get(
+  '/forecast',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const rawMonths = req.query.months
+      const months = rawMonths === undefined ? DEFAULT_FORECAST_MONTHS : Number(rawMonths)
+      if (!Number.isInteger(months) || months < 1 || months > MAX_FORECAST_MONTHS) {
+        return res.status(400).json({ error: 'months doit être un entier entre 1 et ' + MAX_FORECAST_MONTHS })
+      }
+      const rawFrom = req.query.from
+      if (rawFrom !== undefined && (typeof rawFrom !== 'string' || !MONTH_PATTERN.test(rawFrom))) {
+        return res.status(400).json({ error: 'from doit être au format YYYY-MM' })
+      }
+      const from = typeof rawFrom === 'string' ? rawFrom : parisMonth(new Date())
+
+      const rawUser = req.query.userId
+      let userId: string | null = null
+      if (rawUser !== undefined && rawUser !== '') {
+        if (typeof rawUser !== 'string' || !mongoose.isValidObjectId(rawUser)) {
+          return res.status(400).json({ error: 'userId invalide' })
+        }
+        if (!readsWholeCrm(req) && rawUser !== req.user!.id) {
+          return res.status(403).json({ error: 'Les prévisions d’un autre commercial ne sont pas accessibles' })
+        }
+        userId = rawUser
+      }
+
+      const entity = isGroupEntity(req.query.entity) ? req.query.entity : null
+      const scope: Record<string, unknown> = leadScopeFilter(req)
+      applyEntityQuery(req, scope, req.query.entity)
+      if (userId) scope.assignedTo = userId
+
+      // Fenêtre d'interrogation élargie de deux jours de part et d'autre : le
+      // classement dans le bon mois de Paris se fait ensuite, instant par instant.
+      const windowStart = new Date(from + '-01T00:00:00.000Z')
+      windowStart.setUTCDate(windowStart.getUTCDate() - 2)
+      const windowEnd = new Date(addMonths(from, months) + '-01T00:00:00.000Z')
+      windowEnd.setUTCDate(windowEnd.getUTCDate() + 2)
+
+      const [open, won] = await Promise.all([
+        Lead.find({ ...scope, status: { $nin: ['WON', 'LOST'] }, archivedAt: null })
+          .select('status budget probability expectedCloseAt archivedAt')
+          .lean(),
+        Lead.find({ ...scope, status: 'WON', statusChangedAt: { $gte: windowStart, $lt: windowEnd } })
+          .select('status budget statusChangedAt')
+          .lean(),
+      ])
+
+      const restriction = crmEntityRestriction(req)
+      const entityVisible = entity === null ? restriction === null : restriction === null || restriction.includes(entity)
+      const goals = entityVisible
+        ? await CrmGoal.find({ period: { $gte: from, $lt: addMonths(from, months) }, entity, userId }).lean()
+        : []
+
+      return res.json({
+        ...buildForecast([...open, ...won] as unknown as Parameters<typeof buildForecast>[0], {
+          from,
+          months,
+          goals,
+          scope: { entity, userId },
+        }),
+        entity,
+        userId,
+        categories: { committed: { min: 70 }, probable: { min: 40, max: 69 }, pipeline: { max: 39 } },
+      })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+function serializeGoal(goal: {
+  _id: unknown
+  period: string
+  entity?: string | null
+  userId?: unknown
+  amountTarget: number
+  wonCountTarget: number
+  createdAt?: Date
+  updatedAt?: Date
+}) {
+  return {
+    _id: String(goal._id),
+    period: goal.period,
+    entity: goal.entity ?? null,
+    userId: goal.userId ? String(goal.userId) : null,
+    amountTarget: goal.amountTarget,
+    wonCountTarget: goal.wonCountTarget,
+    createdAt: goal.createdAt,
+    updatedAt: goal.updatedAt,
+  }
+}
+
+function parseTarget(value: unknown, integer: boolean): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1e12) return null
+  if (integer && !Number.isInteger(value)) return null
+  return integer ? value : Math.round(value * 100) / 100
+}
+
+function requireCrmAdmin(req: Request, res: Response): boolean {
+  if (administersCrm(req)) return true
+  res.status(403).json({ error: 'Les objectifs sont réservés aux administrateurs du CRM', code: 'CRM_ADMIN_REQUIRED' })
+  return false
+}
+
+/** Objectifs lisibles : ceux d'une entité hors périmètre et ceux d'un autre commercial restent cachés. */
+router.get(
+  '/goals',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { period, from, to } = req.query
+      for (const value of [period, from, to]) {
+        if (value !== undefined && (typeof value !== 'string' || !MONTH_PATTERN.test(value))) {
+          return res.status(400).json({ error: 'Les périodes doivent être au format YYYY-MM' })
+        }
+      }
+      const filter: Record<string, unknown> = {}
+      if (typeof period === 'string') filter.period = period
+      else if (typeof from === 'string' || typeof to === 'string') {
+        filter.period = {
+          ...(typeof from === 'string' ? { $gte: from } : {}),
+          ...(typeof to === 'string' ? { $lte: to } : {}),
+        }
+      }
+      const restriction = crmEntityRestriction(req)
+      const and: Record<string, unknown>[] = []
+      if (restriction !== null) and.push({ $or: [{ entity: null }, { entity: { $in: restriction } }] })
+      if (!readsWholeCrm(req)) and.push({ $or: [{ userId: null }, { userId: req.user!.id }] })
+      if (and.length > 0) filter.$and = and
+
+      const goals = await CrmGoal.find(filter).sort({ period: 1, entity: 1 }).lean()
+      return res.json({ goals: goals.map(serializeGoal) })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+router.post(
+  '/goals',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!requireCrmAdmin(req, res)) return
+      const { period, entity = null, userId = null } = req.body ?? {}
+      if (typeof period !== 'string' || !MONTH_PATTERN.test(period)) {
+        return res.status(400).json({ error: 'period doit être au format YYYY-MM' })
+      }
+      if (entity !== null && !isGroupEntity(entity)) return res.status(400).json({ error: 'Entité inconnue' })
+      const amountTarget = parseTarget(req.body?.amountTarget ?? 0, false)
+      const wonCountTarget = parseTarget(req.body?.wonCountTarget ?? 0, true)
+      if (amountTarget === null || wonCountTarget === null) {
+        return res.status(400).json({ error: 'Les objectifs doivent être des nombres positifs (nombre de gains entier)' })
+      }
+      if (userId !== null && !(await isAssignableCrmUser(userId))) {
+        return res.status(400).json({ error: 'Commercial inconnu ou inactif' })
+      }
+      // Un administrateur restreint à des entités ne fixe pas d'objectif hors d'elles, ni pour tout le groupe.
+      const restriction = crmEntityRestriction(req)
+      if (restriction !== null && (entity === null || !restriction.includes(entity))) {
+        return res.status(403).json({ error: 'Entité hors de votre périmètre', code: 'CRM_ENTITY_FORBIDDEN' })
+      }
+
+      try {
+        const goal = await CrmGoal.create({ period, entity, userId, amountTarget, wonCountTarget, createdBy: req.user!.id })
+        return res.status(201).json({ goal: serializeGoal(goal) })
+      } catch (err) {
+        if ((err as { code?: number }).code === 11000) {
+          return res.status(409).json({ error: 'Un objectif existe déjà pour ce mois et ce périmètre', code: 'CRM_GOAL_EXISTS' })
+        }
+        throw err
+      }
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+/** Seules les cibles se modifient ; changer de mois ou de périmètre, c'est supprimer puis recréer. */
+router.patch(
+  '/goals/:id',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!requireCrmAdmin(req, res)) return
+      const goal = await CrmGoal.findById(req.params.id)
+      if (!goal) return res.status(404).json({ error: 'Objectif introuvable' })
+      const restriction = crmEntityRestriction(req)
+      if (restriction !== null && (goal.entity === null || !restriction.includes(goal.entity))) {
+        return res.status(403).json({ error: 'Entité hors de votre périmètre', code: 'CRM_ENTITY_FORBIDDEN' })
+      }
+
+      if (req.body?.amountTarget !== undefined) {
+        const amountTarget = parseTarget(req.body.amountTarget, false)
+        if (amountTarget === null) return res.status(400).json({ error: 'amountTarget invalide' })
+        goal.amountTarget = amountTarget
+      }
+      if (req.body?.wonCountTarget !== undefined) {
+        const wonCountTarget = parseTarget(req.body.wonCountTarget, true)
+        if (wonCountTarget === null) return res.status(400).json({ error: 'wonCountTarget invalide' })
+        goal.wonCountTarget = wonCountTarget
+      }
+      await goal.save()
+      return res.json({ goal: serializeGoal(goal) })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+router.delete(
+  '/goals/:id',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!requireCrmAdmin(req, res)) return
+      const goal = await CrmGoal.findById(req.params.id)
+      if (!goal) return res.status(404).json({ error: 'Objectif introuvable' })
+      const restriction = crmEntityRestriction(req)
+      if (restriction !== null && (goal.entity === null || !restriction.includes(goal.entity))) {
+        return res.status(403).json({ error: 'Entité hors de votre périmètre', code: 'CRM_ENTITY_FORBIDDEN' })
+      }
+      await goal.deleteOne()
+      return res.json({ success: true })
     } catch (err) {
       return next(err)
     }

@@ -1,10 +1,12 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
 import InteractionTimeline from '../../../components/admin/InteractionTimeline'
 import RevenueChain from '../../../components/admin/RevenueChain'
 import LeadEnrichedPanel from './rich/LeadEnrichedPanel'
+import MergeLeadDialog from './MergeLeadDialog'
+import LeadPrivacyPanel from './LeadPrivacyPanel'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
 import {
@@ -28,6 +30,10 @@ interface LeadDetailModalProps {
   onLeadChange: (updater: (prev: Lead | null) => Lead | null) => void
   onUpdateLead: (leadId: string, patch: Record<string, unknown>) => Promise<void>
   onConvertToClient: (lead: Lead) => void
+  /** Autres leads connus du tableau, proposés comme cible d'une fusion. */
+  mergeCandidates?: Lead[]
+  /** Appelé après une fusion réussie : le lead de la fiche n'existe plus. */
+  onMerged?: (target: { _id: string; company: string }) => void
 }
 
 const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
@@ -39,8 +45,11 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   onLeadChange,
   onUpdateLead,
   onConvertToClient,
+  mergeCandidates = [],
+  onMerged,
 }) => {
   const { t } = useI18n()
+  const [merging, setMerging] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef(onClose)
   useEffect(() => {
@@ -337,6 +346,13 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
           />
 
+          <LeadPrivacyPanel
+            lead={lead}
+            canManageCrm={canManageCrm}
+            onUpdateLead={onUpdateLead}
+            onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
+          />
+
           <div className="crm-modal-notes">
             <label className="crm-modal-label">{t('crm.detail.revenueChain')}</label>
             <RevenueChain leadId={lead._id} canManage={canManageCrm} />
@@ -352,10 +368,26 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             />
           </div>
           <div className="crm-modal-actions">
+            {canManageCrm && onMerged && (
+              <button type="button" className="portal-button secondary" onClick={() => setMerging(true)}>
+                {t('crm.merge.open')}
+              </button>
+            )}
             <button className="portal-button secondary" onClick={onClose}>
               {t('common.close')}
             </button>
           </div>
+          {merging && (
+            <MergeLeadDialog
+              lead={lead}
+              candidates={mergeCandidates}
+              onCancel={() => setMerging(false)}
+              onMerged={(target) => {
+                setMerging(false)
+                onMerged?.(target)
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

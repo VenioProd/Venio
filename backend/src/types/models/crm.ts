@@ -120,6 +120,7 @@ export interface ICrmSettings extends Document {
   duplicateCheckEmail: boolean
   duplicateCheckCompany: boolean
   duplicateCheckPhone: boolean
+  duplicateBlockOnCreate: boolean
   proposalReminderEnabled: boolean
   proposalReminderDays: number
   weeklyReportEnabled: boolean
@@ -133,6 +134,9 @@ export interface ICrmSettings extends Document {
   briefRemindersEnabled: boolean
   clientHealthAutoUpdate: boolean
   invoiceReminderDays: number
+  // ── RGPD (chantier 3D) ──
+  retentionMonths: number
+  retentionPurgeEnabled: boolean
   createdAt: Date
   updatedAt: Date
 }

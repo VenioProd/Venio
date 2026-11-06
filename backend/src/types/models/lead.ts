@@ -46,6 +46,24 @@ export interface ILead extends Document {
   archivedAt: Date | null
   automationPausedAt: Date | null
   wonProcessedAt: Date | null
+  // ── Dédoublonnage (3B) ──
+  /** E-mail de contact normalisé (trim + minuscules), pour la détection de doublons. */
+  contactEmailNormalized: string
+  /** Téléphone normalisé (chiffres seuls, +33/0033 ramené à 0). */
+  contactPhoneNormalized: string
+  /** Nom d'entreprise normalisé (minuscules, sans accents ni ponctuation). */
+  companyNormalized: string
+  // ── RGPD (chantier 3D) ──
+  consent: {
+    status: 'UNKNOWN' | 'GRANTED' | 'WITHDRAWN'
+    basis: 'CONSENT' | 'LEGITIMATE_INTEREST' | 'CONTRACT'
+    source: string
+    at: Date | null
+  }
+  doNotContact: boolean
+  doNotContactAt: Date | null
+  doNotContactReason: string
+  anonymizedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }

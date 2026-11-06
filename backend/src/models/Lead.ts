@@ -4,9 +4,14 @@ import type { ILead } from '../types/models/index.js'
 import { createNotification } from '../lib/notifications.js'
 import logger from '../lib/logger.js'
 import { DEFAULT_GROUP_ENTITY, GROUP_ENTITIES } from '../lib/groupEntities.js'
+import { normalizeCompanyName, normalizeEmail, normalizePhone } from '../lib/crmDedup.js'
 
 // Projet / produit concerné par le lead. Vide pour les leads historiques.
 export const LEAD_PROJECTS = ['ARTOSERA', 'VIGNO', 'ARROW', 'VENIO', 'AUTRE'] as const
+
+// ── RGPD (chantier 3D) ──
+export const CONSENT_STATUSES = ['UNKNOWN', 'GRANTED', 'WITHDRAWN'] as const
+export const LEGAL_BASES = ['CONSENT', 'LEGITIMATE_INTEREST', 'CONTRACT'] as const
 
 const leadSchema = new mongoose.Schema<ILead>(
   {
@@ -86,6 +91,31 @@ const leadSchema = new mongoose.Schema<ILead>(
     automationPausedAt: { type: Date, default: null },
     // Posé une seule fois, atomiquement, par la conversion d'un lead gagné (crmClientConversion) : verrou d'idempotence.
     wonProcessedAt: { type: Date, default: null },
+    // ── Dédoublonnage (3B) ──
+    // Valeurs normalisées des champs saisis (voir lib/crmDedup), tenues à jour par le service et le hook ci-dessous.
+    contactEmailNormalized: { type: String, default: '' },
+    contactPhoneNormalized: { type: String, default: '' },
+    companyNormalized: { type: String, default: '' },
+    // ── RGPD (chantier 3D) ──
+    // Base légale et consentement du traitement des données du contact (voir lib/crmPrivacy).
+    consent: {
+      type: new mongoose.Schema(
+        {
+          status: { type: String, enum: [...CONSENT_STATUSES], default: 'UNKNOWN' },
+          basis: { type: String, enum: [...LEGAL_BASES], default: 'LEGITIMATE_INTEREST' },
+          source: { type: String, default: '', maxlength: 80 },
+          at: { type: Date, default: null },
+        },
+        { _id: false },
+      ),
+      default: () => ({}),
+    },
+    // Opposition du contact : aucun e-mail de prospection ne part vers ce lead.
+    doNotContact: { type: Boolean, default: false },
+    doNotContactAt: { type: Date, default: null },
+    doNotContactReason: { type: String, default: '', maxlength: 200 },
+    // Données personnelles effacées (conservation échue ou demande de la personne).
+    anonymizedAt: { type: Date, default: null },
   },
   { timestamps: true },
 )
@@ -105,6 +135,13 @@ leadSchema.pre('validate', function () {
   if (this.probability == null || (this.isModified('status') && !this.isModified('probability') && !this.isNew)) {
     this.probability = STATUS_PROBABILITY[this.status] ?? 10
   }
+})
+
+// Les champs normalisés suivent les champs saisis, quel que soit le chemin d'écriture (service, règle, script).
+leadSchema.pre('validate', function () {
+  if (this.isNew || this.isModified('contactEmail')) this.contactEmailNormalized = normalizeEmail(this.contactEmail)
+  if (this.isNew || this.isModified('contactPhone')) this.contactPhoneNormalized = normalizePhone(this.contactPhone)
+  if (this.isNew || this.isModified('company')) this.companyNormalized = normalizeCompanyName(this.company)
 })
 
 // Le modèle couvre aussi les sauvegardes de l'API agent et du planificateur.
@@ -141,6 +178,12 @@ leadSchema.index({ archivedAt: 1, status: 1 })
 leadSchema.index({ tags: 1 })
 leadSchema.index({ score: -1 }) // Index for sorting by score
 leadSchema.index({ status: 1, createdAt: -1 }) // Cohortes du pilotage
+// Détection de doublons : égalités exactes sur les valeurs normalisées.
+leadSchema.index({ contactEmailNormalized: 1 })
+leadSchema.index({ contactPhoneNormalized: 1 })
+leadSchema.index({ companyNormalized: 1 })
+// ── RGPD (chantier 3D) ── : candidats de la purge de conservation
+leadSchema.index({ anonymizedAt: 1, updatedAt: 1 })
 
 syncTombstones(leadSchema, 'leads')
 

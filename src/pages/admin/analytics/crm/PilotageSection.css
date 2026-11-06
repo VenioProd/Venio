@@ -345,3 +345,119 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ── Prévisions et objectifs ───────────────────────────────────────────────── */
+
+.forecast-table td,
+.forecast-table th {
+  white-space: nowrap;
+}
+
+.forecast-bars {
+  margin-top: 18px;
+}
+
+.forecast-legend {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.forecast-legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: var(--r-sm);
+  background: var(--primary);
+  vertical-align: middle;
+}
+
+.forecast-legend-item.is-weighted::before {
+  background: color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.forecast-legend-item.is-goal::before {
+  width: 2px;
+  background: var(--warning);
+}
+
+.forecast-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.forecast-bar-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 150px;
+  align-items: center;
+  gap: 10px;
+}
+
+.forecast-bar-track {
+  position: relative;
+  height: 16px;
+  border-radius: var(--r-sm);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.forecast-bar-weighted,
+.forecast-bar-realised {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.forecast-bar-weighted {
+  background: color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.forecast-bar-realised {
+  background: var(--primary);
+}
+
+.forecast-bar-goal {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--warning);
+}
+
+.forecast-goals {
+  margin-top: 24px;
+}
+
+.forecast-goal-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.forecast-goal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.forecast-goal-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.forecast-goals input[type='number'] {
+  width: 110px;
+}

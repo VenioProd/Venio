@@ -21,6 +21,8 @@ import {
   isLeadChangeError,
   normalizeLeadPatch,
 } from '../../lib/crmLeadService.js'
+import CrmSettings from '../../models/CrmSettings.js'
+import { checkDuplicateLead } from '../../lib/crmAutomations.js'
 import { entityCondition, GROUP_ENTITIES, isGroupEntity } from '../../lib/groupEntities.js'
 
 /**
@@ -366,6 +368,15 @@ router.post(
         return respondError(res, 500, 'NO_ADMIN', 'Aucun SUPER_ADMIN trouvé pour assigner le lead')
       }
       const payload = normalizeLeadPatch(req.body || {}, { lenientAssignee: true })
+      // Doublons probables (tout le CRM : le jeton agent n'a pas de périmètre de lecture restreint).
+      // Signalés dans la réponse, ou refus 409 si le réglage `duplicateBlockOnCreate` est actif.
+      const settings = await CrmSettings.getSettings()
+      const duplicates = settings.duplicateDetectionEnabled ? await checkDuplicateLead(payload as any, settings) : []
+      if (duplicates.length > 0 && settings.duplicateBlockOnCreate) {
+        return respondError(res, 409, 'DUPLICATE_LEAD', 'Des leads existants correspondent à ce prospect (doublon probable)', {
+          duplicates,
+        })
+      }
       const { lead } = await createLead(
         { ...payload, createdBy: fallbackAdmin._id, assignedTo: payload.assignedTo || null },
         { actor: null, source: 'agent' },
@@ -377,7 +388,8 @@ router.post(
         summary: `Création du lead "${lead.company}"`,
         after: lead.toObject(),
       }
-      res.status(201).json(lead.toObject())
+      // Forme historique conservée ; `duplicates` n'est ajouté que s'il y en a.
+      res.status(201).json(duplicates.length > 0 ? { ...lead.toObject(), duplicates } : lead.toObject())
     } catch (err) {
       if (respondLeadChangeError(res, err)) return
       next(err)

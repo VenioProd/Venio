@@ -17,6 +17,7 @@ import EscalationSection from './EscalationSection'
 import ScoringSection from './ScoringSection'
 import DuplicatesSection from './DuplicatesSection'
 import ReportsSection from './ReportsSection'
+import RetentionSection from './RetentionSection'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 
@@ -171,6 +172,7 @@ export default function CrmSettings() {
         <ScoringSection {...sectionProps} updateNestedSetting={updateNestedSetting} />
         <DuplicatesSection {...sectionProps} />
         <ReportsSection {...sectionProps} handleRecipientsChange={handleRecipientsChange} />
+        <RetentionSection {...sectionProps} />
       </div>
 
       {saving && <div className="crm-settings-saving">{t('crm.common.saving')}</div>}

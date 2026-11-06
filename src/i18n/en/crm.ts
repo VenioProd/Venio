@@ -285,6 +285,25 @@ const en: Record<keyof typeof fr, string> = {
   'crm.logContact.notePlaceholder': 'What was said…',
   'crm.logContact.noFollowUpHint':
     'Without a next follow-up, this lead will drop out of your due list and only reappear if it drifts.',
+  'crm.settings.duplicates.block': 'Block creation when a duplicate exists',
+  'crm.settings.duplicates.blockDesc':
+    'Refuse to create a lead that has likely duplicates. Otherwise creation succeeds and duplicates are only flagged.',
+  'crm.duplicates.title': '{count, plural, one {# likely duplicate} other {# likely duplicates}}',
+  'crm.duplicates.archived': 'archived',
+  'crm.duplicates.hint': 'Check before creating: an existing lead may already cover this prospect.',
+  'crm.merge.open': 'Merge into…',
+  'crm.merge.title': 'Merge “{company}” into…',
+  'crm.merge.search': 'Search a lead (company, email, phone)',
+  'crm.merge.suggestions': 'Likely duplicates',
+  'crm.merge.results': 'Results',
+  'crm.merge.none': 'No lead found.',
+  'crm.merge.confirm': 'Merge “{source}” into “{target}”? “{source}” will be deleted.',
+  'crm.merge.consequences':
+    '“{target}” keeps its values and fills its empty fields. History, interactions, tasks, quotes and projects move to “{target}”. This cannot be undone.',
+  'crm.merge.back': 'Back',
+  'crm.merge.submit': 'Merge',
+  'crm.merge.merging': 'Merging…',
+  'crm.merge.error': 'Error while merging',
 }
 
 export default en

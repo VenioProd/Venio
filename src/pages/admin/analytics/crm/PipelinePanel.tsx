@@ -1,7 +1,7 @@
 import React from 'react'
 import { useI18n } from '../../../../context/I18nContext'
 import type { PipelineResult, RevenueBlock } from '../../../../types/pilotage.types'
-import { STAGE_LABEL_KEYS, formatEuro, formatPercent } from './constants'
+import { STAGE_LABEL_KEYS, formatAmount, formatEuro, formatPercent } from './constants'
 
 interface PipelinePanelProps {
   pipeline: PipelineResult
@@ -18,6 +18,10 @@ interface PipelinePanelProps {
 const PipelinePanel: React.FC<PipelinePanelProps> = ({ pipeline, revenue }) => {
   const { t } = useI18n()
   const stages = pipeline.stages.filter((stage) => stage.count > 0)
+  // Les autres devises ne sont jamais additionnées à l'euro : on les liste à part.
+  const otherCurrencies = Object.entries(revenue.byCurrency ?? {}).filter(
+    ([currency, sums]) => currency !== 'EUR' && (sums.signed > 0 || sums.collected > 0),
+  )
 
   return (
     <div className="pilotage-revenue">
@@ -41,15 +45,29 @@ const PipelinePanel: React.FC<PipelinePanelProps> = ({ pipeline, revenue }) => {
         </div>
       </div>
 
+      {otherCurrencies.length > 0 && (
+        <p className="pilotage-note">
+          {t('adminTech.pilotage.otherCurrencies', {
+            list: otherCurrencies
+              .map(([currency, sums]) =>
+                t('adminTech.pilotage.currencyLine', {
+                  currency,
+                  signed: formatAmount(sums.signed, currency),
+                  collected: formatAmount(sums.collected, currency),
+                }),
+              )
+              .join(' · '),
+          })}
+        </p>
+      )}
+
       {revenue.linkedProjects === 0 && <p className="pilotage-coverage">{t('adminTech.pilotage.noLinkedProjects')}</p>}
 
       <h4 className="pilotage-subtitle" style={{ marginTop: 18 }}>
         {t('adminTech.pilotage.weightedPipeline', { amount: formatEuro(pipeline.total) })}
       </h4>
 
-      {!pipeline.reliable && (
-        <p className="pilotage-coverage">{t('adminTech.pilotage.unreliable', { count: pipeline.cohortSize })}</p>
-      )}
+      <p className="pilotage-note">{t('adminTech.pilotage.weightedDefinition')}</p>
 
       {stages.length === 0 ? (
         <p className="pilotage-empty">{t('adminTech.pilotage.noDeals')}</p>

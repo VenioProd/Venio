@@ -12,6 +12,9 @@ import { resolveSubject } from '../../lib/interactionAccess.js'
 import { buildTimeline, logInteraction, syncLeadLastInteraction, TIMELINE_MAX_ENTRIES } from '../../lib/interactions.js'
 import { sendBulkEmail, deliveryStatusFrom, EmailTransportUnavailableError } from '../../lib/email/send.js'
 import type { InteractionKind } from '../../types/models/index.js'
+import Lead from '../../models/Lead.js'
+import { logLeadActivity } from '../../lib/crmAutomations.js'
+import { DO_NOT_CONTACT, MANUAL_EMAIL_MAX_RECIPIENTS, normalizeEmail, suppressedAmong } from '../../lib/crmPrivacy.js'
 
 const router = express.Router()
 
@@ -207,6 +210,13 @@ router.post('/:subjectType/:subjectId/email', async (req: Request, res: Response
     }
 
     const requested: unknown = req.body?.recipients
+    // Destinataires libres : un envoi depuis la fiche reste un échange, pas une campagne.
+    if (Array.isArray(requested) && requested.length > MANUAL_EMAIL_MAX_RECIPIENTS) {
+      return res.status(400).json({
+        error: `${MANUAL_EMAIL_MAX_RECIPIENTS} destinataires au maximum par envoi`,
+        code: 'TOO_MANY_RECIPIENTS',
+      })
+    }
     const recipients =
       Array.isArray(requested) && requested.length > 0
         ? requested.map((entry) =>
@@ -221,6 +231,33 @@ router.post('/:subjectType/:subjectId/email', async (req: Request, res: Response
     const valid = recipients.filter((recipient) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.email))
     if (valid.length === 0) {
       return res.status(400).json({ error: 'Aucun destinataire valide' })
+    }
+
+    // RGPD : un prospect qui s'est opposé, ou une adresse de la liste de
+    // suppression, ne reçoit rien. L'envoi est refusé en entier (pas de
+    // message partiel) et le refus est consigné dans l'historique du lead.
+    if (subject.type === 'LEAD') {
+      const lead = await Lead.findById(subject.id).select('doNotContact')
+      const suppressed = await suppressedAmong(valid.map((recipient) => recipient.email))
+      const blockedEmails = valid.map((recipient) => normalizeEmail(recipient.email)).filter((email) => suppressed.has(email))
+      if (lead?.doNotContact || blockedEmails.length > 0) {
+        const via = lead?.doNotContact ? 'LEAD' : 'SUPPRESSION_LIST'
+        await logLeadActivity(
+          subject.id,
+          'EMAIL_BLOCKED',
+          'E-mail non envoyé : ne pas contacter',
+          { reason: DO_NOT_CONTACT, via, blockedCount: lead?.doNotContact ? valid.length : blockedEmails.length },
+          req.user!.id,
+        ).catch(() => {})
+        return res.status(409).json({
+          error: lead?.doNotContact
+            ? 'Ce contact s’est opposé à la prospection : aucun e-mail ne peut lui être envoyé'
+            : 'Une ou plusieurs adresses figurent dans la liste « ne pas contacter »',
+          code: DO_NOT_CONTACT,
+          via,
+          blocked: lead?.doNotContact ? valid.map((recipient) => normalizeEmail(recipient.email)) : blockedEmails,
+        })
+      }
     }
 
     let outcome

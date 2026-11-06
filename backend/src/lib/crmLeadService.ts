@@ -9,7 +9,9 @@ import CrmSettings from '../models/CrmSettings.js'
 import type { ICrmSettings } from '../types/models/index.js'
 import { calculateLeadScore, logLeadActivity, notifyAssignment, shouldAutoQualify } from './crmAutomations.js'
 import { processWonLead, type WonLeadOutcome } from './crmClientConversion.js'
+import { normalizedLeadFields } from './crmDedup.js'
 import { normalizeEnrichedLeadFields } from './crmLeadFields.js'
+import { normalizePrivacyPatch, preparePrivacyChange } from './crmPrivacy.js'
 import { emitLeadChanges } from './crmRules.js'
 import { isAssignableCrmUser } from './crmScope.js'
 import { entityFromProject, isGroupEntity } from './groupEntities.js'
@@ -44,7 +46,7 @@ export interface LeadChangeContext {
   emit?: boolean
   /** Contrôler que l'assigné est un membre actif habilité (défaut : oui). */
   validateAssignee?: boolean
-  /** Complète le payload des activités STATUS_CHANGE (ex. `ruleId`). */
+  /** Complète le payload des activités STATUS_CHANGE, ASSIGNED et ARCHIVED / RESTORED (ex. `ruleId`). */
   activityMeta?: Record<string, unknown>
   /** Suffixe ajouté aux libellés d'activité, ex. « (action groupée) ». */
   labelSuffix?: string
@@ -152,7 +154,8 @@ export function normalizeLeadPatch(
   if (body.assignedTo !== undefined) {
     payload.assignedTo = opts.lenientAssignee ? (isObjectId(body.assignedTo) ? body.assignedTo : null) : body.assignedTo || null
   }
-  return { ...payload, ...normalizeEnrichedLeadFields(body) }
+  // Valeurs normalisées pour la détection de doublons (voir lib/crmDedup), déduites des champs saisis présents.
+  return { ...payload, ...normalizeEnrichedLeadFields(body), ...normalizePrivacyPatch(body), ...normalizedLeadFields(payload) }
 }
 
 // ───────────────────────── Validation ─────────────────────────
@@ -245,9 +248,11 @@ async function resolveLead(target: LeadTarget): Promise<LeadDoc | null> {
  */
 export async function applyLeadChange(
   target: LeadTarget,
-  patch: Record<string, any>,
+  input: Record<string, any>,
   ctx: LeadChangeContext,
 ): Promise<LeadChangeResult> {
+  // Copie : la préparation RGPD complète le patch (dates), sans toucher à l'objet de l'appelant.
+  const patch: Record<string, any> = { ...input }
   const policy = SOURCE_POLICY[ctx.source]
   const settings = ctx.settings ?? (await CrmSettings.getSettings())
   const suffix = ctx.labelSuffix ? ` ${ctx.labelSuffix}` : ''
@@ -262,11 +267,15 @@ export async function applyLeadChange(
   const assigneeTouched = patch.assignedTo !== undefined && String(patch.assignedTo ?? '') !== String(oldAssignee ?? '')
   if (assigneeTouched && ctx.validateAssignee !== false) await assertAssignable(patch.assignedTo)
 
+  // Consentement et opposition : fusion avec l'existant, dates posées ici.
+  const privacyEvents = preparePrivacyChange(existing, patch, ctx.source)
+
   const lead: LeadDoc = existing ?? new Lead({})
   const before = existing ? { status: String(existing.status), assignedTo: existing.assignedTo } : null
   const transitions: LeadChangeResult['transitions'] = []
 
-  Object.assign(lead, patch)
+  // Les appelants qui n'ont pas passé par normalizeLeadPatch (formulaire, fusion) obtiennent quand même les champs normalisés.
+  Object.assign(lead, normalizedLeadFields(patch), patch)
   // Sans entité explicite, un nouveau lead prend celle de son projet (Arrow → ARROW, le reste → VENIO).
   if (created && patch.entity === undefined) lead.entity = entityFromProject(lead.project)
 
@@ -317,16 +326,20 @@ export async function applyLeadChange(
   const newAssignee = lead.assignedTo ? String(lead.assignedTo) : null
   const assigneeChanged = created ? Boolean(newAssignee) : newAssignee !== oldAssignee
   if (!created && assigneeChanged && settings.activityLogging) {
-    await logLeadActivity(lead._id, 'ASSIGNED', `Lead réassigné${suffix}`, { from: oldAssignee, to: newAssignee }, ctx.actor)
+    await logLeadActivity(lead._id, 'ASSIGNED', `Lead réassigné${suffix}`, { from: oldAssignee, to: newAssignee, ...(ctx.activityMeta ?? {}) }, ctx.actor)
   }
   if (!created && patch.archivedAt !== undefined && settings.activityLogging) {
     await logLeadActivity(
       lead._id,
       lead.archivedAt ? 'ARCHIVED' : 'RESTORED',
       `${lead.archivedAt ? 'Lead archivé' : 'Lead restauré'}${suffix}`,
-      {},
+      { ...(ctx.activityMeta ?? {}) },
       ctx.actor,
     )
+  }
+  // Consentement et opposition : toujours consignés, ils prouvent le respect des droits de la personne.
+  for (const event of privacyEvents) {
+    await logLeadActivity(lead._id, event.type, `${event.label}${suffix}`, event.payload, ctx.actor)
   }
 
   // ── Notifications ──
