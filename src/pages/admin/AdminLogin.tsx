@@ -9,6 +9,10 @@ import { useI18n } from '../../context/I18nContext'
 import { apiFetch } from '../../lib/api'
 import { isAdminRole } from '../../lib/permissions'
 import '../espace-client/ClientPortal.css'
+import SecondFactorStep from '../../components/auth/SecondFactorStep'
+import PasswordStrengthMeter from '../../components/auth/PasswordStrengthMeter'
+import { MIN_PASSWORD_LENGTH } from '../../lib/passwordPolicy'
+import type { LoginResult } from '../../types/auth.types'
 
 const AdminLogin = () => {
   const { user, login, logout } = useAuth()
@@ -17,13 +21,15 @@ const AdminLogin = () => {
   const [searchParams] = useSearchParams()
   const resetToken = searchParams.get('reset')
   const [form, setForm] = useState<{ email: string; password: string }>({ email: '', password: '' })
-  const [totpCode, setTotpCode] = useState('')
-  const [needs2FA, setNeeds2FA] = useState(false)
+  const [mfaToken, setMfaToken] = useState<string | null>(null)
+  const needs2FA = mfaToken !== null
   const [forgotMode, setForgotMode] = useState(false)
   const [resetMode, setResetMode] = useState(!!resetToken)
   const [newPassword, setNewPassword] = useState('')
   const [error, setError] = useState<string>('')
-  const [success, setSuccess] = useState('')
+  const [success, setSuccess] = useState(
+    searchParams.get('passwordChanged') === '1' ? t('security.password.changed') : '',
+  )
   const [loading, setLoading] = useState<boolean>(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -39,31 +45,37 @@ const AdminLogin = () => {
     return <Navigate to="/commercial" replace />
   }
 
+  // Suite commune après le mot de passe seul ou après le second facteur.
+  const afterSignIn = async (result: LoginResult) => {
+    if (result.mfaEnrollmentRequired) {
+      navigate('/admin/mfa-setup', { replace: true })
+      return
+    }
+    if (result.user?.role === 'COMMERCIAL_EXTERNE') {
+      navigate(result.passwordNeedsUpgrade ? '/commercial/securite?renforcer=1' : '/commercial', { replace: true })
+      return
+    }
+    if (!result.user || !isAdminRole(result.user.role)) {
+      await logout()
+      setMfaToken(null)
+      setError(t('adminAccess.login.adminOnly'))
+      return
+    }
+    navigate(result.passwordNeedsUpgrade ? '/admin/securite?renforcer=1' : '/admin', { replace: true })
+  }
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const result = await login(form.email, form.password, needs2FA ? totpCode : undefined)
-      if (result.requires2FA) {
-        setNeeds2FA(true)
+      const result = await login(form.email, form.password)
+      if (result.mfaToken) {
+        setMfaToken(result.mfaToken)
         setLoading(false)
         return
       }
-      if (result.mfaEnrollmentRequired) {
-        navigate('/admin/mfa-setup', { replace: true })
-        return
-      }
-      if (result.user?.role === 'COMMERCIAL_EXTERNE') {
-        navigate('/commercial', { replace: true })
-        return
-      }
-      if (!result.user || !isAdminRole(result.user.role)) {
-        await logout()
-        setError(t('adminAccess.login.adminOnly'))
-        return
-      }
-      navigate('/admin', { replace: true })
+      await afterSignIn(result)
     } catch (err: unknown) {
       setError((err as Error).message || t('adminAccess.login.failed'))
     } finally {
@@ -79,8 +91,22 @@ const AdminLogin = () => {
           title={t('adminAccess.login.title')}
           subtitle={needs2FA ? t('adminAccess.login.enterCode') : t('adminAccess.login.adminOnly')}
         />
-        <form onSubmit={handleSubmit} className="portal-list">
-          {!needs2FA ? (
+        {needs2FA && mfaToken && (
+          <SecondFactorStep
+            mfaToken={mfaToken}
+            onVerified={(result) => {
+              afterSignIn(result).catch((err: unknown) =>
+                setError((err as Error).message || t('adminAccess.login.failed')),
+              )
+            }}
+            onRestart={(message) => {
+              setMfaToken(null)
+              setError(message ?? '')
+            }}
+          />
+        )}
+        <form onSubmit={handleSubmit} className="portal-list" hidden={needs2FA}>
+          {!needs2FA && (
             <>
               <input
                 className="portal-input"
@@ -126,50 +152,11 @@ const AdminLogin = () => {
                 </button>
               </div>
             </>
-          ) : (
-            <input
-              className="portal-input"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              placeholder={t('adminAccess.login.codePlaceholder')}
-              value={totpCode}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                setTotpCode(event.target.value.replace(/\D/g, '').slice(0, 6))
-              }
-              maxLength={6}
-              required
-              autoFocus
-            />
           )}
           {error && <div className="admin-error">{error}</div>}
           <button className="portal-button" type="submit" disabled={loading}>
-            {loading
-              ? t('adminAccess.login.signingIn')
-              : needs2FA
-                ? t('adminAccess.login.verify')
-                : t('adminAccess.login.signIn')}
+            {loading ? t('adminAccess.login.signingIn') : t('adminAccess.login.signIn')}
           </button>
-          {needs2FA && (
-            <button
-              type="button"
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--primary)',
-                cursor: 'pointer',
-                fontSize: '14px',
-                marginTop: '8px',
-              }}
-              onClick={() => {
-                setNeeds2FA(false)
-                setTotpCode('')
-                setError('')
-              }}
-            >
-              {t('adminAccess.login.back')}
-            </button>
-          )}
           {!needs2FA && !forgotMode && !resetMode && (
             <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px' }}>
               <button
@@ -194,7 +181,9 @@ const AdminLogin = () => {
           {success && <p style={{ color: 'var(--good)', fontSize: '14px' }}>{success}</p>}
         </form>
 
-        {forgotMode && (
+        {needs2FA && error && <div className="admin-error">{error}</div>}
+
+        {forgotMode && !needs2FA && (
           <form
             onSubmit={async (e) => {
               e.preventDefault()
@@ -281,12 +270,14 @@ const AdminLogin = () => {
             <input
               className="portal-input"
               type="password"
+              autoComplete="new-password"
               placeholder={t('adminAccess.login.newPasswordPlaceholder')}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={MIN_PASSWORD_LENGTH}
             />
+            <PasswordStrengthMeter password={newPassword} />
             {error && <div className="admin-error">{error}</div>}
             {success && <p style={{ color: 'var(--good)', fontSize: '14px' }}>{success}</p>}
             <button className="portal-button" type="submit" disabled={loading}>

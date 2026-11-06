@@ -74,6 +74,8 @@ const userSchema = new mongoose.Schema<IUser>(
     twoFactorSecret: { type: String, default: null, select: false },
     twoFactorEnabled: { type: Boolean, default: false },
     twoFactorRecoveryCodeHashes: { type: [String], default: [], select: false },
+    // Dernier pas TOTP accepté : un code déjà utilisé ne passe plus (anti-rejeu, VENIO-117).
+    twoFactorLastUsedStep: { type: Number, default: null, select: false },
     // Set lazily at the first privileged login after rollout: existing admins
     // retain access long enough to enroll without a deployment lock-out.
     mfaGraceUntil: { type: Date, default: null },

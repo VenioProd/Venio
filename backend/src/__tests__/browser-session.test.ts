@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs'
 import express from 'express'
 import request from 'supertest'
 import { TOTP } from 'otpauth'
-import authRoutes, { resetTokens } from '../routes/auth.js'
+import authRoutes from '../routes/auth.js'
+import { issuePasswordResetToken } from '../lib/auth/passwordReset.js'
 import twoFactorRoutes from '../routes/admin/twoFactor.js'
 import auth from '../middleware/auth.js'
 import User from '../models/User.js'
@@ -133,11 +134,11 @@ describe('browser sessions', () => {
       passwordHash: await bcrypt.hash('old-password', 10),
     })
     const { token } = await createSession(String(user._id))
-    resetTokens.set('valid-reset-token', { userId: String(user._id), expiresAt: Date.now() + 60_000 })
+    const { token: resetToken } = await issuePasswordResetToken(user._id)
 
     await request(app)
       .post('/api/auth/reset-password')
-      .send({ token: 'valid-reset-token', password: 'new-password' })
+      .send({ token: resetToken, password: 'Gentiane-Orbite-58' })
       .expect(200)
 
     await request(app).get('/protected').set('Cookie', `venio_session=${token}`).expect(401)
@@ -208,7 +209,7 @@ describe('browser sessions', () => {
     await request(adminApp)
       .patch(`/api/admin/admins/${target._id}`)
       .set('Cookie', actorCookie ?? '')
-      .send({ role: 'MANAGER', deniedPermissions: ['manage_dev'], password: 'new-password' })
+      .send({ role: 'MANAGER', deniedPermissions: ['manage_dev'], password: 'Gentiane-Orbite-58' })
       .expect(200)
 
     await request(adminApp).get('/api/auth/me').set('Cookie', `venio_session=${token}`).expect(401)

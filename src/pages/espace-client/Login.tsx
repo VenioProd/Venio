@@ -5,8 +5,12 @@ import { useAuth } from '../../context/AuthContext'
 import { apiFetch } from '../../lib/api'
 import { isAdminRole } from '../../lib/permissions'
 import './ClientPortal.css'
+import SecondFactorStep from '../../components/auth/SecondFactorStep'
+import PasswordStrengthMeter from '../../components/auth/PasswordStrengthMeter'
+import { MIN_PASSWORD_LENGTH } from '../../lib/passwordPolicy'
+import type { LoginResult } from '../../types/auth.types'
 
-type Mode = 'login' | 'forgot' | 'reset'
+type Mode = 'login' | 'mfa' | 'forgot' | 'reset'
 
 const ClientLogin = () => {
   const { t } = useI18n()
@@ -22,7 +26,10 @@ const ClientLogin = () => {
   const [password, setPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [success, setSuccess] = useState(
+    searchParams.get('passwordChanged') === '1' ? t('security.password.changed') : '',
+  )
+  const [mfaToken, setMfaToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -37,17 +44,30 @@ const ClientLogin = () => {
     return <Navigate to="/admin" replace />
   }
 
+  const afterSignIn = (result: LoginResult) => {
+    if (result.user?.role && isAdminRole(result.user.role)) {
+      navigate(result.passwordNeedsUpgrade ? '/admin/securite?renforcer=1' : '/admin', { replace: true })
+      return
+    }
+    if (result.passwordNeedsUpgrade) {
+      navigate('/espace-client/securite?renforcer=1', { replace: true })
+      return
+    }
+    navigate(returnTo || '/espace-client', { replace: true })
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
       const result = await login(email, password)
-      if (result.user?.role && isAdminRole(result.user.role)) {
-        navigate('/admin', { replace: true })
+      if (result.mfaToken) {
+        setMfaToken(result.mfaToken)
+        setMode('mfa')
         return
       }
-      navigate(returnTo || '/espace-client', { replace: true })
+      afterSignIn(result)
     } catch (err: unknown) {
       setError((err as Error).message || t('client.login.signInError'))
     } finally {
@@ -168,6 +188,22 @@ const ClientLogin = () => {
           </>
         )}
 
+        {mode === 'mfa' && mfaToken && (
+          <>
+            <h1>{t('security.login.codeTitle')}</h1>
+            <SecondFactorStep
+              mfaToken={mfaToken}
+              errorStyle={{ color: '#ef4444' }}
+              onVerified={afterSignIn}
+              onRestart={(message) => {
+                setMfaToken(null)
+                setMode('login')
+                setError(message ?? '')
+              }}
+            />
+          </>
+        )}
+
         {mode === 'forgot' && (
           <>
             <h1>{t('client.login.forgotTitle')}</h1>
@@ -217,12 +253,14 @@ const ClientLogin = () => {
               <input
                 className="portal-input"
                 type="password"
+                autoComplete="new-password"
                 placeholder={t('client.login.newPasswordPlaceholder')}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={MIN_PASSWORD_LENGTH}
               />
+              <PasswordStrengthMeter password={newPassword} />
               {error && <p style={{ color: '#ef4444' }}>{error}</p>}
               {success && <p style={{ color: '#22c55e' }}>{success}</p>}
               <button className="portal-button" type="submit" disabled={loading}>

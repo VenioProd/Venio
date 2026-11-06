@@ -88,6 +88,7 @@ const AdminList = () => {
   const [impersonating, setImpersonating] = useState<string | null>(null)
   const [resetting, setResetting] = useState<string | null>(null)
   const [resendingCredentials, setResendingCredentials] = useState<string | null>(null)
+  const [resettingTwoFactor, setResettingTwoFactor] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -132,6 +133,23 @@ const AdminList = () => {
       showToast((err as Error).message || t('adminAccess.admins.genericError'), 'error')
     } finally {
       setResetting(null)
+    }
+  }
+
+  // Authentificateur perdu : le super-admin retire la 2FA du membre (action auditée).
+  const handleResetTwoFactor = async (adminId: string) => {
+    if (!window.confirm(t('adminAccess.admins.resetTwoFactorConfirm'))) return
+    setResettingTwoFactor(adminId)
+    try {
+      await apiFetch(`/api/admin/2fa/users/${adminId}/reset`, { method: 'POST' })
+      setAdmins((current) =>
+        current.map((item) => (item._id === adminId ? { ...item, twoFactorEnabled: false } : item)),
+      )
+      showToast(t('adminAccess.admins.resetTwoFactorDone'), 'success')
+    } catch (err: unknown) {
+      showToast((err as Error).message || t('adminAccess.admins.genericError'), 'error')
+    } finally {
+      setResettingTwoFactor(null)
     }
   }
 
@@ -342,6 +360,17 @@ const AdminList = () => {
                             ? t('adminAccess.admins.sending')
                             : t('adminAccess.admins.resendCredentials')}
                         </button>
+                        {admin.twoFactorEnabled && (
+                          <button
+                            className="admin-card-btn admin-card-btn--edit"
+                            type="button"
+                            onClick={() => handleResetTwoFactor(admin._id)}
+                            disabled={resettingTwoFactor === admin._id}
+                            style={{ flex: '1 1 100%' }}
+                          >
+                            {t('adminAccess.admins.resetTwoFactor')}
+                          </button>
+                        )}
                       </>
                     )}
                     <Link className="admin-card-btn admin-card-btn--edit" to={`/admin/comptes-admin/${admin._id}`}>

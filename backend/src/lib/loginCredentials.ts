@@ -4,16 +4,24 @@ import type { HydratedDocument } from 'mongoose'
 import User from '../models/User.js'
 import AuditLog from '../models/AuditLog.js'
 import type { IUser } from '../types/models/index.js'
-import { consumeRecoveryCode, graceEndsAt, isMfaEnabled, requiresMfa, verifyTotp } from './mfa.js'
+import { graceEndsAt, requiresMfa } from './mfa.js'
+import { passwordNeedsUpgrade } from './auth/passwordPolicy.js'
+import { TWO_FACTOR_SELECT, consumeRecoveryCodeOnce, verifyTotpOnce } from './auth/twoFactor.js'
+
+// Empreinte factice : un e-mail inconnu coûte le même temps de hachage qu'un
+// mot de passe faux, la durée de réponse ne trahit pas l'existence du compte.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('venio-timing-equalizer', 10)
 
 export type CredentialCheck =
   | { kind: 'rejected'; status: number; body: { error: string } }
-  | { kind: 'mfa_required' }
+  | { kind: 'mfa_required'; user: HydratedDocument<IUser>; passwordNeedsUpgrade: boolean }
   | {
       kind: 'accepted'
       user: HydratedDocument<IUser>
       mfaVerifiedAt: Date | null
       mfaEnrollmentOnly: boolean
+      /** Mot de passe valide mais hors politique (VENIO-117) : à renforcer, sans blocage. */
+      passwordNeedsUpgrade: boolean
     }
 
 export function requestIp(req: Request): string {
@@ -24,8 +32,13 @@ export function requestIp(req: Request): string {
 /**
  * Vérification commune au login navigateur et au login de l'app native :
  * mot de passe, compte actif, second facteur et période de grâce MFA, avec les
- * mêmes entrées de journal d'audit. Les modifications du document (codes de
- * secours consommés, grâce initialisée) sont à enregistrer par l'appelant.
+ * mêmes entrées de journal d'audit. Les modifications du document (grâce
+ * initialisée) sont à enregistrer par l'appelant.
+ *
+ * Un compte dont la 2FA est active reçoit `mfa_required` tant qu'aucun code
+ * n'accompagne le mot de passe. Le navigateur poursuit en deux temps
+ * (POST /api/auth/mfa/verify) ; l'app native renvoie identifiants et code
+ * dans la même requête, parcours conservé ici.
  */
 export async function checkLoginCredentials(
   req: Request,
@@ -40,10 +53,9 @@ export async function checkLoginCredentials(
     )
   }
 
-  const user = await User.findOne({ email: String(email).toLowerCase().trim() }).select(
-    '+twoFactorSecret +twoFactorRecoveryCodeHashes',
-  )
+  const user = await User.findOne({ email: String(email).toLowerCase().trim() }).select(TWO_FACTOR_SELECT)
   if (!user) {
+    await bcrypt.compare(String(password ?? ''), DUMMY_PASSWORD_HASH)
     audit('LOGIN_FAILED', undefined, { reason: 'user_not_found' })
     return { kind: 'rejected', status: 401, body: { error: 'Identifiants invalides' } }
   }
@@ -63,36 +75,20 @@ export async function checkLoginCredentials(
     }
   }
 
+  const needsUpgrade = passwordNeedsUpgrade(password, { email: user.email, name: user.name })
   let mfaVerifiedAt: Date | null = null
   let mfaEnrollmentOnly = false
-  // Check 2FA, including a single-use recovery code when the authenticator
-  // is unavailable. A recovery code is consumed atomically with the login.
-  if (isMfaEnabled() && user.twoFactorEnabled && user.twoFactorSecret) {
-    if (!totpCode && !recoveryCode) return { kind: 'mfa_required' }
-    const validTotp = totpCode && verifyTotp(user.twoFactorSecret, user.email, totpCode)
-    const recovery = validTotp
-      ? { valid: false, hashes: user.twoFactorRecoveryCodeHashes ?? [] }
-      : await consumeRecoveryCode(user.twoFactorRecoveryCodeHashes ?? [], recoveryCode)
-    if (!validTotp && !recovery.valid) {
+  // 2FA volontaire ou obligatoire : dès qu'elle est active sur le compte, elle
+  // est demandée. Le code de secours est consommé atomiquement avec la connexion.
+  if (user.twoFactorEnabled && user.twoFactorSecret) {
+    if (!totpCode && !recoveryCode) return { kind: 'mfa_required', user, passwordNeedsUpgrade: needsUpgrade }
+    const validTotp = Boolean(totpCode) && (await verifyTotpOnce(user, totpCode))
+    const validRecovery = !validTotp && Boolean(recoveryCode) && (await consumeRecoveryCodeOnce(user, recoveryCode))
+    if (!validTotp && !validRecovery) {
       audit('LOGIN_FAILED', user._id, { reason: '2fa_invalid' })
       return { kind: 'rejected', status: 401, body: { error: 'Code 2FA invalide' } }
     }
-    if (recovery.valid) {
-      // Consommation atomique en base : deux connexions simultanées avec le
-      // même code ne peuvent pas réussir toutes les deux. Le tableau en mémoire
-      // n'est pas réécrit, pour qu'une sauvegarde ultérieure du document ne
-      // fasse pas renaître un code consommé entre-temps par une autre requête.
-      const usedHash = (user.twoFactorRecoveryCodeHashes ?? []).find((hash) => !recovery.hashes.includes(hash))
-      const pulled = await User.updateOne(
-        { _id: user._id, twoFactorRecoveryCodeHashes: usedHash },
-        { $pull: { twoFactorRecoveryCodeHashes: usedHash } },
-      )
-      if (pulled.modifiedCount !== 1) {
-        audit('LOGIN_FAILED', user._id, { reason: '2fa_invalid' })
-        return { kind: 'rejected', status: 401, body: { error: 'Code 2FA invalide' } }
-      }
-      audit('MFA_RECOVERY_CODE_USED', user._id)
-    }
+    if (validRecovery) audit('MFA_RECOVERY_CODE_USED', user._id)
     mfaVerifiedAt = new Date()
   } else if (requiresMfa(user.role)) {
     // Rolling grace is initialized on first login, rather than at deploy,
@@ -101,5 +97,5 @@ export async function checkLoginCredentials(
     if (user.mfaGraceUntil.getTime() <= Date.now()) mfaEnrollmentOnly = true
   }
 
-  return { kind: 'accepted', user, mfaVerifiedAt, mfaEnrollmentOnly }
+  return { kind: 'accepted', user, mfaVerifiedAt, mfaEnrollmentOnly, passwordNeedsUpgrade: needsUpgrade }
 }

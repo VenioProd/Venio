@@ -11,6 +11,7 @@ import AuditLog from '../models/AuditLog.js'
 import MobileDevice from '../models/MobileDevice.js'
 import { createSession, revokeUserSessions } from '../lib/session.js'
 import { createRecoveryCodes, createTotpSecret } from '../lib/mfa.js'
+import { generateTotp } from '../lib/auth/totp.js'
 import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
 
 const app = express()
@@ -151,16 +152,20 @@ describe('auth native', () => {
     expect(me.body.user).not.toHaveProperty('twoFactorRecoveryCodeHashes')
   })
 
-  it('invalide un appareil émis avec une version périmée, et redemande la MFA quand elle est réarmée', async () => {
-    await createUser({ twoFactorEnabled: true, twoFactorSecret: createTotpSecret() })
-    const a = (await login().expect(200)).body
+  it('invalide un appareil émis avec une version périmée, et redemande la MFA quand elle est activée après coup', async () => {
+    const secret = createTotpSecret()
+    await createUser({ twoFactorEnabled: true, twoFactorSecret: secret })
+    // 2FA volontaire (VENIO-117) : demandée même MFA_ENABLED désactivée.
+    expect((await login().expect(200)).body).toEqual({ requires2FA: true })
+    const a = (await login(DEVICE, { totpCode: generateTotp(secret) }).expect(200)).body
     // Course : le mot de passe a changé entre la vérification et l'émission.
     await MobileDevice.updateOne({ _id: a.device.id }, { $inc: { sessionVersion: -1 } })
     await asBearer(a.accessToken).expect(401)
 
-    // Connecté MFA désactivée, puis MFA réarmée : le refresh échoue.
+    // Connecté sans second facteur, puis 2FA activée sur le compte : le refresh échoue.
+    await User.updateMany({}, { $set: { twoFactorEnabled: false } })
     const b = (await login({ ...DEVICE, installationId: 'install-0002' }).expect(200)).body
-    process.env.MFA_ENABLED = 'true'
+    await User.updateMany({}, { $set: { twoFactorEnabled: true } })
     await request(app).post('/api/auth/mobile/refresh').send({ refreshToken: b.refreshToken }).expect(401)
   })
 

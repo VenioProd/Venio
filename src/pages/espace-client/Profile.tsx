@@ -9,6 +9,7 @@ import NotificationPreferencesPanel from '../../components/NotificationPreferenc
 import UserAvatar from '../../components/UserAvatar'
 import AvatarCropModal from '../../components/AvatarCropModal'
 import './ClientPortal.css'
+import { passwordIssue } from '../../lib/passwordPolicy'
 
 const ClientProfile = () => {
   const { t } = useI18n()
@@ -56,8 +57,13 @@ const ClientProfile = () => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setPasswordError('')
-    if (passwordForm.newPassword.length < 6) {
-      setPasswordError(t('client.profile.passwordTooShort'))
+    const issue = passwordIssue(passwordForm.newPassword, { email: user?.email, name: user?.name })
+    if (issue) {
+      setPasswordError(
+        issue === 'tooShort'
+          ? t('client.profile.passwordTooShort')
+          : t(`security.issue.${issue}` as 'security.issue.tooShort'),
+      )
       return
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -355,7 +361,10 @@ const ClientProfile = () => {
       </div>
 
       <div className="portal-card">
-        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>{t('client.profile.passwordTitle')}</h2>
+        <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>{t('client.profile.passwordTitle')}</h2>
+        <p style={{ marginTop: 0, marginBottom: '16px', fontSize: '14px' }}>
+          <Link to="/espace-client/securite">{t('security.navLink')}</Link>
+        </p>
         <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label

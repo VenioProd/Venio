@@ -116,7 +116,7 @@ describe('Agent Users / admin CRUD', () => {
     const res = await request(app)
       .post('/api/v1/agent/users')
       .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
-      .send({ email: 'NEW@v.test', name: 'New Admin', role: 'ADMIN', password: 'verylongpwd' })
+      .send({ email: 'NEW@v.test', name: 'New Admin', role: 'ADMIN', password: 'Orbite-Gentiane-58' })
     expect(res.status).toBe(201)
     expect(res.body.email).toBe('new@v.test')
     expect(res.body.role).toBe('ADMIN')
@@ -225,7 +225,7 @@ describe('Agent Users / admin CRUD', () => {
     await request(app)
       .patch(`/api/v1/agent/users/${target._id}`)
       .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
-      .send({ password: 'replacement-password' })
+      .send({ password: 'Lichen-Basalte-77' })
       .expect(200)
 
     await request(app).get('/admin-sensitive').set('Cookie', `venio_session=${token}`).expect(401)

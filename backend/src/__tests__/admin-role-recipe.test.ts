@@ -77,10 +77,13 @@ async function loginAs(role: RecipeRole) {
 
   if (scenarioFor(role).requiresMfa) {
     expect(initialLogin.status).toBe(200)
-    expect(initialLogin.body).toEqual({ requires2FA: true })
+    expect(initialLogin.body).toMatchObject({ mfaRequired: true, requires2FA: true })
+    // La recette se reconnecte plusieurs fois dans le même pas de 30 s : on
+    // lève l'anti-rejeu TOTP (VENIO-117), qui refuserait sinon le même code.
+    await User.updateOne({ _id: user.id }, { $set: { twoFactorLastUsedStep: null } })
     const completedLogin = await agent
-      .post('/api/auth/login')
-      .send({ email: user.email, password, totpCode: currentTotp(role) })
+      .post('/api/auth/mfa/verify')
+      .send({ mfaToken: initialLogin.body.mfaToken, code: currentTotp(role) })
     expect(completedLogin.status).toBe(200)
     expect(completedLogin.headers['set-cookie']?.[0]).toContain('HttpOnly')
   } else {

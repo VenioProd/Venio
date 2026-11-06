@@ -13,6 +13,7 @@ import UserAvatar from '../../components/UserAvatar'
 import AvatarCropModal from '../../components/AvatarCropModal'
 import LanguageSelect from '../../components/LanguageSelect'
 import '../espace-client/ClientPortal.css'
+import { passwordIssue } from '../../lib/passwordPolicy'
 
 const ROLE_LABELS: Record<string, { labelKey: MessageKey; color: string }> = {
   SUPER_ADMIN: { labelKey: 'adminAccess.profile.roleSuperAdmin', color: 'var(--primary)' },
@@ -68,8 +69,13 @@ const AdminProfile = () => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setPasswordError('')
-    if (passwordForm.newPassword.length < 6) {
-      setPasswordError(t('adminAccess.profile.passwordTooShort'))
+    const issue = passwordIssue(passwordForm.newPassword, { email: user?.email, name: user?.name })
+    if (issue) {
+      setPasswordError(
+        issue === 'tooShort'
+          ? t('adminAccess.profile.passwordTooShort')
+          : t(`security.issue.${issue}` as 'security.issue.tooShort'),
+      )
       return
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -381,7 +387,12 @@ const AdminProfile = () => {
       </div>
 
       <div className="portal-card">
-        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>{t('adminAccess.profile.passwordHeading')}</h2>
+        <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>{t('adminAccess.profile.passwordHeading')}</h2>
+        <p style={{ marginTop: 0, marginBottom: '16px', fontSize: '14px' }}>
+          <Link to={user?.role === 'COMMERCIAL_EXTERNE' ? '/commercial/securite' : '/admin/securite'}>
+            {t('security.navLink')}
+          </Link>
+        </p>
         <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label

@@ -9,7 +9,8 @@ import { ADMIN_ROLES, PERMISSIONS, STAFF_ROLES, getPermissionsForRole } from '..
 import type { UserRole } from '../../types/enums.js'
 import { triggerAutomations } from '../../automation/trigger.js'
 import { sendAdminCredentials, sendPasswordResetEmail } from '../../lib/email.js'
-import { resetTokens } from '../auth.js'
+import { issuePasswordResetToken, invalidatePasswordResetTokens } from '../../lib/auth/passwordReset.js'
+import { passwordPolicyError } from '../../lib/auth/passwordPolicy.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import AuditLog from '../../models/AuditLog.js'
@@ -46,7 +47,7 @@ router.post(
   '/',
   requirePermission(PERMISSIONS.MANAGE_ADMINS),
   body('email').isEmail().withMessage('Email invalide'),
-  body('password').isLength({ min: 6 }).withMessage('Mot de passe: minimum 6 caractères'),
+  body('password').isString().withMessage('Mot de passe requis'),
   body('name').trim().notEmpty().withMessage('Le nom est requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -56,6 +57,8 @@ router.post(
       }
 
       const { email, password, name, role } = req.body || {}
+      const weakPassword = passwordPolicyError(password, { email, name })
+      if (weakPassword) return res.status(400).json(weakPassword)
 
       const normalizedEmail = email.toLowerCase().trim()
       const existing = await User.findOne({ email: normalizedEmail })
@@ -148,7 +151,7 @@ router.patch(
   requirePermission(PERMISSIONS.MANAGE_ADMINS),
   body('isAssociate').optional().isBoolean({ strict: true }).withMessage('Statut associé invalide'),
   body('role').optional().isIn(STAFF_ROLES).withMessage('Rôle invalide'),
-  body('password').optional().isLength({ min: 6 }).withMessage('Mot de passe: minimum 6 caractères'),
+  body('password').optional().isString().withMessage('Mot de passe invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -199,9 +202,12 @@ router.patch(
       if (name !== undefined) user.name = name
       if (req.body.title !== undefined) (user as any).title = req.body.title
       if (password) {
+        const weakPassword = passwordPolicyError(password, { email: user.email, name: name ?? user.name })
+        if (weakPassword) return res.status(400).json(weakPassword)
         user.passwordHash = await bcrypt.hash(password, 10)
         user.passwordChangedAt = new Date()
         revokeSessions = true
+        await invalidatePasswordResetTokens(user._id)
       }
 
       // Marquer comme stagiaire (SUPER_ADMIN only)
@@ -420,11 +426,8 @@ router.post(
         return res.status(404).json({ error: 'Utilisateur introuvable' })
       }
 
-      const token = crypto.randomBytes(32).toString('hex')
-      resetTokens.set(token, {
-        userId: user._id.toString(),
-        expiresAt: Date.now() + 3600000, // 1 hour
-      })
+      // Jeton persistant (1 h, usage unique) ; les liens précédents sont invalidés.
+      const { token } = await issuePasswordResetToken(user._id)
 
       const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
       const loginPath = STAFF_ROLES.includes(user.role as UserRole) ? '/admin/login' : '/espace-client/login'
@@ -460,6 +463,7 @@ router.post(
       user.sessionVersion = (user.sessionVersion ?? 0) + 1
       await user.save()
       await revokeUserSessions(user._id.toString())
+      await invalidatePasswordResetTokens(user._id)
 
       const result = await sendAdminCredentials({
         to: user.email,

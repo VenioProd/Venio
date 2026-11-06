@@ -89,6 +89,7 @@ const CrmBoard = lazy(() => import('./pages/admin/CrmBoard'))
 const CrmSettings = lazy(() => import('./pages/admin/crm-settings'))
 const Calendar = lazy(() => import('./pages/admin/Calendar'))
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
+const AccountSecurity = lazy(() => import('./pages/account/AccountSecurity'))
 const AdminChangeRequestDetail = lazy(() => import('./pages/admin/change-requests/ChangeRequestDetail'))
 const AdminGuide = lazy(() => import('./pages/admin/AdminGuide'))
 const ClientGuide = lazy(() => import('./pages/espace-client/ClientGuide'))
@@ -269,6 +270,7 @@ function AppShell() {
                     <Route path="fichiers" element={<ClientMyFiles />} />
                     <Route path="guide" element={<ClientGuide />} />
                     <Route path="profil" element={<ClientProfile />} />
+                    <Route path="securite" element={<AccountSecurity />} />
                     {/* « nouvelle » avant « :id » : sinon le mot serait capturé comme identifiant. */}
                     <Route path="demandes" element={<ClientChangeRequests />} />
                     <Route path="demandes/nouvelle" element={<ClientChangeRequestNew />} />
@@ -291,6 +293,7 @@ function AppShell() {
                     <Route path="leads/:id" element={<CommercialLeadDetail />} />
                     <Route path="clients" element={<CommercialClients />} />
                     <Route path="commissions" element={<CommercialCommissions />} />
+                    <Route path="securite" element={<AccountSecurity />} />
                   </Route>
 
                   {/* Admin */}
@@ -352,6 +355,7 @@ function AppShell() {
                     <Route path="systeme" element={<SystemeHub />} />
                     <Route path="crm/pipeline" element={<LegacyAdminRedirect to="/admin/crm" />} />
                     <Route path="profil" element={<AdminProfile />} />
+                    <Route path="securite" element={<AccountSecurity />} />
                     <Route path="mon-releve" element={<MyAccountingStatement />} />
 
                     {/* Clients */}
