@@ -108,6 +108,13 @@ const auditLogSchema = new mongoose.Schema<IAuditLog>(
         'CRM_LEAD_UNSUBSCRIBE',
         'CRM_SUPPRESSION_ADD',
         'CRM_SUPPRESSION_REMOVE',
+        // ── Fiches projets ──
+        'PROJECT_SHEET_CREATE',
+        'PROJECT_SHEET_UPDATE',
+        'PROJECT_SHEET_DEMO_ACCESS_CREATE',
+        'PROJECT_SHEET_DEMO_ACCESS_UPDATE',
+        'PROJECT_SHEET_DEMO_ACCESS_DELETE',
+        'PROJECT_SHEET_DEMO_ACCESS_REVEAL',
       ],
     },
     ip: { type: String, default: '' },
