@@ -26,6 +26,12 @@
   gap: 4px;
 }
 
+.pilotage-entity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .pilotage-periods button {
   padding: 5px 12px;
   border-radius: var(--r-pill);

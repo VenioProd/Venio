@@ -12,6 +12,7 @@ import PerformanceTable from './PerformanceTable'
 import CoverageNotice from './CoverageNotice'
 import PipelinePanel from './PipelinePanel'
 import { PILOTAGE_PERIODS, displayKey } from './constants'
+import { CRM_ENTITIES } from '../../crm-board/constants'
 import './PilotageSection.css'
 
 /**
@@ -22,6 +23,8 @@ import './PilotageSection.css'
 const PilotageSection: React.FC = () => {
   const { t } = useI18n()
   const [period, setPeriod] = useState<PilotagePeriod>('90d')
+  // Entité du groupe ('' : tout le périmètre de l'utilisateur).
+  const [entity, setEntity] = useState<string>('')
   const [data, setData] = useState<PilotageResponse | null>(null)
   const [admins, setAdmins] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,14 +33,14 @@ const PilotageSection: React.FC = () => {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setData(await fetchPilotage(period))
+      setData(await (entity ? fetchPilotage(period, entity) : fetchPilotage(period)))
       setError('')
     } catch (err) {
       setError((err as Error).message || translate('adminTech.pilotage.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [period])
+  }, [period, entity])
 
   useEffect(() => {
     void load()
@@ -61,6 +64,21 @@ const PilotageSection: React.FC = () => {
           <h3>{t('adminTech.pilotage.title')}</h3>
           <p className="pilotage-subtext">{t('adminTech.pilotage.subtext')}</p>
         </div>
+        <label className="pilotage-entity">
+          <span className="pilotage-subtext">{t('adminTech.pilotage.entityLabel')}</span>
+          <select
+            aria-label={t('adminTech.pilotage.entityLabel')}
+            value={entity}
+            onChange={(event) => setEntity(event.target.value)}
+          >
+            <option value="">{t('crm.filters.allEntities')}</option>
+            {CRM_ENTITIES.map((option) => (
+              <option key={option.key} value={option.key}>
+                {t(option.labelKey)}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="pilotage-periods" role="group" aria-label={t('adminTech.pilotage.periodLabel')}>
           {PILOTAGE_PERIODS.map((option) => (
             <button

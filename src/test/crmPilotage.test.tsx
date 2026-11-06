@@ -139,6 +139,18 @@ describe('PilotageSection', () => {
     await waitFor(() => expect(services.fetchPilotage).toHaveBeenCalledWith('30d'))
   })
 
+  it('recharge en filtrant par entité du groupe, et revient à tout le périmètre', async () => {
+    render(<PilotageSection />)
+    await screen.findByText('Par source')
+    expect(services.fetchPilotage).toHaveBeenLastCalledWith('90d')
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Entité du groupe' }), { target: { value: 'ARROW' } })
+    await waitFor(() => expect(services.fetchPilotage).toHaveBeenLastCalledWith('90d', 'ARROW'))
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Entité du groupe' }), { target: { value: '' } })
+    await waitFor(() => expect(services.fetchPilotage).toHaveBeenLastCalledWith('90d'))
+  })
+
   it("affiche l'erreur plutôt qu'une page vide", async () => {
     services.fetchPilotage.mockRejectedValue(new Error('Boom'))
     render(<PilotageSection />)

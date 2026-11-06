@@ -80,6 +80,17 @@ export const CRM_PROJECTS: CrmOption[] = [
   { key: 'AUTRE', labelKey: 'crm.project.other', color: 'var(--text-muted)' },
 ]
 
+// Entité du groupe qui porte l'affaire (distincte du projet). Un lead sans
+// entité (antérieur à la migration) compte comme Venio, la valeur par défaut.
+export const CRM_ENTITIES: CrmOption[] = [
+  { key: 'VENIO', labelKey: 'crm.entity.venio', color: 'var(--cat-2)' },
+  { key: 'CREATIO', labelKey: 'crm.entity.creatio', color: 'var(--cat-3)' },
+  { key: 'DECISIO', labelKey: 'crm.entity.decisio', color: 'var(--warning)' },
+  { key: 'FORMATIO', labelKey: 'crm.entity.formatio', color: 'var(--good)' },
+  { key: 'ARROW', labelKey: 'crm.entity.arrow', color: 'var(--primary)' },
+]
+export const DEFAULT_ENTITY = 'VENIO'
+
 export const CRM_TEMPERATURES: CrmOption[] = [
   { key: 'FROID', labelKey: 'crm.temperature.cold', color: 'var(--text-muted)' },
   { key: 'TIEDE', labelKey: 'crm.temperature.warm', color: 'var(--warning)' },
@@ -91,6 +102,14 @@ export const STATUS_MAP: Record<string, CrmOption> = Object.fromEntries(CRM_STAT
 export const PRIORITY_MAP: Record<string, CrmOption> = Object.fromEntries(CRM_PRIORITIES.map((p) => [p.key, p]))
 export const PROJECT_MAP: Record<string, CrmOption> = Object.fromEntries(CRM_PROJECTS.map((p) => [p.key, p]))
 export const TEMPERATURE_MAP: Record<string, CrmOption> = Object.fromEntries(CRM_TEMPERATURES.map((t) => [t.key, t]))
+export const ENTITY_MAP: Record<string, CrmOption> = Object.fromEntries(CRM_ENTITIES.map((e) => [e.key, e]))
+
+/** Entité effective d'un lead : absente ou inconnue → Venio. */
+export const leadEntity = (lead: Pick<Lead, 'entity'>): string =>
+  lead.entity && ENTITY_MAP[lead.entity] ? lead.entity : DEFAULT_ENTITY
+
+/** Valeur `?entity=` acceptée par le CRM ; une valeur inconnue est ignorée. */
+export const parseEntityParam = (value: string | null): string => (value && ENTITY_MAP[value] ? value : '')
 
 export const EMPTY_FORM = {
   company: '',
@@ -99,6 +118,8 @@ export const EMPTY_FORM = {
   contactPhone: '',
   source: '',
   project: '',
+  // Vide : le serveur déduit l'entité du projet (Arrow → ARROW, sinon VENIO).
+  entity: '',
   budget: '',
   priority: 'NORMALE',
   status: 'LEAD',
