@@ -29,6 +29,7 @@ Le **point d'entrée unique** des écritures de lead est `applyLeadChange` (`lib
 | Fichier | Rôle |
 |---|---|
 | `crmLeadService.ts` | Point d'entrée unique : `applyLeadChange`, `createLead`, `deleteLeadCascade`, `normalizeLeadPatch`, `SOURCE_POLICY`, `LeadChangeError` |
+| `crmDedup.ts`, `crmLeadMerge.ts` | Normalisation e-mail / téléphone / entreprise (champs `*Normalized` de `Lead`) ; fusion de deux leads (`mergeLeads`) |
 | `crmLeadFields.ts` | Normalisation des champs enrichis (`normalizeEnrichedLeadFields`), dont `automationPaused` |
 | `crmAutomations.ts` | Round-robin (`getRoundRobinAssignee`), journal (`logLeadActivity`), score, auto-qualification, doublons, file de travail (`buildWorklist`), projet issu d'un lead gagné |
 | `crmClientConversion.ts` | Conversion WON idempotente : `processWonLead`, `ensureClientForWonLead`, `ensureProjectForWonLead` |
@@ -120,7 +121,8 @@ Toutes les routes exigent `auth` + `requireAdmin` et la permission indiquée.
 | POST | `/leads/:id/convert-to-client` | `manage_crm` | conversion manuelle |
 | GET | `/settings` | `manage_crm` | lecture des réglages |
 | PATCH | `/settings` | `manage_crm` + `administersCrm` | modification des réglages |
-| POST | `/check-duplicate` | `manage_crm` | recherche de doublons |
+| POST | `/check-duplicate` | `manage_crm` | recherche de doublons (champs normalisés, périmètre de lecture dans la requête) |
+| POST | `/leads/:id/merge` | `manage_crm` + écriture sur les deux leads | fusion : `:id` (cible) absorbe `sourceId`, puis la source est supprimée (`lib/crmLeadMerge.ts`) |
 
 ### 4.2 Admin — `routes/crmExtras.ts` (monté sous `/api/admin/crm`)
 
@@ -238,4 +240,4 @@ Constats issus du code à la date de rédaction. Ils ne sont pas corrigés ici.
 
 - Tests CRM dans `backend/src/__tests__/` : `crm-routes-admin-leads`, `crm-routes-agent-leads`, `crm-routes-scope`, `crm-extras-routes`, `crm-delete-cascade`, `crm-permissions-governance`, `crm-lead-service`, `crm-automation-unify`, `crm-rules-engine`, `crm-scheduler-lead-exclusion`, `crm-jobs-lead-exclusion`, `agent-crm-integration`, `agent-crm-extras-integration`.
 - Lancer la suite : `docs/TESTS.md`.
-- Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts` (détail dans CRM_AUTOMATISATIONS.md §10).
+- Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `008-crm-dedup-normalized.ts` (détail dans CRM_AUTOMATISATIONS.md §10).
