@@ -7,6 +7,9 @@ const MFA_ENROLLMENT_ALLOWED_PATHS = new Set([
   '/api/admin/2fa/setup',
   '/api/admin/2fa/status',
   '/api/admin/2fa/verify',
+  '/api/auth/2fa/status',
+  '/api/auth/2fa/setup',
+  '/api/auth/2fa/confirm',
 ])
 
 /**

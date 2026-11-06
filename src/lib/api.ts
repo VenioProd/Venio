@@ -17,7 +17,7 @@ export class ApiError extends Error {
 // ─── Internal helper ────────────────────────────────────────────────────────
 
 function handleAuth401(path: string): void {
-  if (path.includes('/auth/login')) return
+  if (path.includes('/auth/login') || path.includes('/auth/mfa/verify')) return
   if (typeof window === 'undefined') return
   const currentPath = window.location.pathname
   // Déjà sur une page de connexion : rediriger rechargerait la page en boucle

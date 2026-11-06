@@ -4,6 +4,7 @@ import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
+import { passwordPolicyError } from '../../../lib/auth/passwordPolicy.js'
 import auth from '../../../middleware/auth.js'
 import { requireAdmin } from '../../../middleware/role.js'
 import Intern from '../../../models/Intern.js'
@@ -465,6 +466,14 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Champs requis : nom, email, poste, date debut, date fin' })
     }
 
+    // Politique VENIO-117. Sans mot de passe saisi, un secret aléatoire inconnu
+    // est posé (plus de mot de passe par défaut partagé) : les identifiants se
+    // transmettent ensuite par « Renvoyer les identifiants ».
+    if (password) {
+      const weakPassword = passwordPolicyError(password, { email, name })
+      if (weakPassword) return res.status(400).json(weakPassword)
+    }
+
     // Verifier si l'email existe deja
     const existing = await User.findOne({ email: email.toLowerCase() })
     if (existing) {
@@ -473,7 +482,7 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
 
     // Creer le compte User avec role ADMIN + tag STAGIAIRE ou ALTERNANT
     const internType: 'STAGIAIRE' | 'ALTERNANT' = type === 'ALTERNANT' ? 'ALTERNANT' : 'STAGIAIRE'
-    const passwordHash = await bcrypt.hash(password || 'Stage2026!', 10)
+    const passwordHash = await bcrypt.hash(password || crypto.randomBytes(18).toString('base64url'), 10)
     const newUser = await User.create({
       email: email.toLowerCase(),
       passwordHash,

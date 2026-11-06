@@ -1,19 +1,19 @@
 import express, { Request, Response, NextFunction } from 'express'
-import { TOTP } from 'otpauth'
-import QRCode from 'qrcode'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import User from '../../models/User.js'
 import { createNotification } from '../../lib/notifications.js'
 import AuditLog from '../../models/AuditLog.js'
+import { graceEndsAt, isMfaEnabled, requiresMfa } from '../../lib/mfa.js'
 import {
-  createRecoveryCodes,
-  consumeRecoveryCode,
-  createTotpSecret,
-  graceEndsAt,
-  isMfaEnabled,
-  verifyTotp,
-} from '../../lib/mfa.js'
+  clearTwoFactor,
+  confirmTwoFactorEnrollment,
+  loadTwoFactorUser,
+  startTwoFactorEnrollment,
+  verifySecondFactor,
+} from '../../lib/auth/twoFactor.js'
+import { buildActorFromReq, recordAudit } from '../../lib/audit/auditHelpers.js'
+import { securityPagePath } from '../accountSecurity.js'
 import { notifySuperAdmins } from '../../lib/notifyHelpers.js'
 import { revokeSession, readSessionCookie, setSessionCookie } from '../../lib/session.js'
 
@@ -42,33 +42,12 @@ function requireMfaFeature(_req: Request, res: Response, next: NextFunction): vo
 // POST /api/admin/2fa/setup — Generate TOTP secret and QR code
 router.post('/setup', requireMfaFeature, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.user!.id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes')
+    const user = await loadTwoFactorUser(req.user!.id)
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
-
-    if (user.twoFactorEnabled) {
-      return res.status(400).json({ error: '2FA déjà activé' })
-    }
-
-    // OTPAuth accepts RFC 4648 base32 secrets only.
-    const secret = createTotpSecret()
-
-    const totp = new TOTP({
-      issuer: 'Venio',
-      label: user.email,
-      algorithm: 'SHA1',
-      digits: 6,
-      period: 30,
-      secret,
-    })
-
-    const otpauthUrl = totp.toString()
-    const qrDataUrl = await QRCode.toDataURL(otpauthUrl)
-
-    // Store secret temporarily (not yet enabled)
-    user.twoFactorSecret = secret
-    await user.save()
-
-    return res.json({ secret, qrDataUrl })
+    // Secret chiffré au repos, non actif tant qu'un premier code ne l'a pas confirmé.
+    const started = await startTwoFactorEnrollment(user)
+    if ('error' in started) return res.status(400).json({ error: '2FA déjà activé' })
+    return res.json({ secret: started.secret, qrDataUrl: started.qrDataUrl, otpauthUri: started.otpauthUri })
   } catch (err) {
     return next(err)
   }
@@ -80,29 +59,16 @@ router.post('/verify', requireMfaFeature, async (req: Request, res: Response, ne
     const { code } = req.body
     if (!code) return res.status(400).json({ error: 'Code requis' })
 
-    const user = await User.findById(req.user!.id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes')
+    const user = await loadTwoFactorUser(req.user!.id)
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
-    if (!user.twoFactorSecret) return res.status(400).json({ error: 'Aucune configuration 2FA en cours' })
-
-    const totp = new TOTP({
-      issuer: 'Venio',
-      label: user.email,
-      algorithm: 'SHA1',
-      digits: 6,
-      period: 30,
-      secret: user.twoFactorSecret,
-    })
-
-    const delta = totp.validate({ token: String(code), window: 1 })
-    if (delta === null) {
+    const outcome = await confirmTwoFactorEnrollment(user, code)
+    if ('error' in outcome) {
+      if (outcome.error === 'NO_PENDING_SETUP')
+        return res.status(400).json({ error: 'Aucune configuration 2FA en cours' })
+      if (outcome.error === 'ALREADY_ENABLED') return res.status(400).json({ error: '2FA déjà activé' })
       return res.status(400).json({ error: 'Code invalide' })
     }
-
-    user.twoFactorEnabled = true
-    const recovery = await createRecoveryCodes()
-    user.twoFactorRecoveryCodeHashes = recovery.hashes
-    user.mfaGraceUntil = null
-    await user.save()
+    const recovery = { codes: outcome.recoveryCodes }
 
     // The code has just been verified: rotate any enrollment-only or stale
     // session into a normal, freshly stepped-up session.
@@ -137,19 +103,15 @@ router.post('/verify', requireMfaFeature, async (req: Request, res: Response, ne
 // POST /api/admin/2fa/disable — Disable 2FA
 router.post('/disable', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.user!.id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes')
+    const user = await loadTwoFactorUser(req.user!.id)
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
 
     const { code } = req.body || {}
-    if (!user.twoFactorSecret || !verifyTotp(user.twoFactorSecret, user.email, code)) {
+    if (!user.twoFactorSecret || !(await verifySecondFactor(user, { code })).ok) {
       return res.status(400).json({ error: 'Un code MFA valide est requis pour désactiver la MFA' })
     }
 
-    user.twoFactorSecret = null
-    user.twoFactorEnabled = false
-    user.twoFactorRecoveryCodeHashes = []
-    user.mfaGraceUntil = graceEndsAt()
-    await user.save()
+    await clearTwoFactor(user._id, { mfaGraceUntil: graceEndsAt() })
 
     AuditLog.create({
       userId: user._id,
@@ -184,17 +146,12 @@ router.post('/disable', async (req: Request, res: Response, next: NextFunction) 
 // POST /api/admin/2fa/step-up — exchange a TOTP/recovery code for a 15 minute MFA claim.
 router.post('/step-up', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.user!.id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes')
+    const user = await loadTwoFactorUser(req.user!.id)
     if (!user?.twoFactorEnabled || !user.twoFactorSecret) return res.status(400).json({ error: 'MFA non configurée' })
     const { code, recoveryCode } = req.body || {}
-    const validTotp = code && verifyTotp(user.twoFactorSecret, user.email, code)
-    const recovery = validTotp
-      ? { valid: false, hashes: user.twoFactorRecoveryCodeHashes ?? [] }
-      : await consumeRecoveryCode(user.twoFactorRecoveryCodeHashes ?? [], recoveryCode)
-    if (!validTotp && !recovery.valid) return res.status(401).json({ error: 'Code MFA invalide' })
-    if (recovery.valid) {
-      user.twoFactorRecoveryCodeHashes = recovery.hashes
-      await user.save()
+    const factor = await verifySecondFactor(user, { code, recoveryCode })
+    if (!factor.ok) return res.status(401).json({ error: 'Code MFA invalide' })
+    if (factor.method === 'recovery') {
       AuditLog.create({
         userId: user._id,
         email: user.email,
@@ -224,9 +181,52 @@ router.post('/step-up', async (req: Request, res: Response, next: NextFunction) 
 // GET /api/admin/2fa/status — Check if 2FA is enabled
 router.get('/status', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.user!.id).select('+twoFactorSecret +twoFactorRecoveryCodeHashes')
+    const user = await User.findById(req.user!.id).select('twoFactorEnabled')
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
     return res.json({ enabled: user.twoFactorEnabled, enforced: isMfaEnabled() })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// POST /api/admin/2fa/users/:userId/reset — le super-admin retire la 2FA d'un membre
+// (authentificateur perdu, codes de secours épuisés). Audité ; le membre est prévenu.
+router.post('/users/:userId/reset', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: "Seul le Super Admin peut réinitialiser la 2FA d'un membre" })
+    }
+    if (req.user!.impersonatorId || req.user!.deviceId) {
+      return res.status(403).json({ error: 'Action réservée au navigateur, en votre nom propre.' })
+    }
+    if (!/^[a-f\d]{24}$/i.test(String(req.params.userId)))
+      return res.status(400).json({ error: 'Identifiant invalide' })
+    if (String(req.params.userId) === String(req.user!.id)) {
+      return res.status(400).json({ error: 'Utilisez la page Sécurité pour votre propre compte.' })
+    }
+    const target = await User.findById(req.params.userId).select('email name role twoFactorEnabled')
+    if (!target) return res.status(404).json({ error: 'Utilisateur introuvable' })
+    if (!target.twoFactorEnabled) return res.status(400).json({ error: "La 2FA n'est pas activée sur ce compte" })
+
+    await clearTwoFactor(target._id, requiresMfa(target.role) ? { mfaGraceUntil: graceEndsAt() } : {})
+    await recordAudit({
+      action: 'MFA_RESET_BY_ADMIN',
+      actor: buildActorFromReq(req),
+      entityType: 'User',
+      entityId: String(target._id),
+      entityRef: target.email,
+      summary: `2FA réinitialisée pour ${target.email}`,
+      before: { twoFactorEnabled: true },
+      after: { twoFactorEnabled: false },
+    })
+    createNotification({
+      recipient: target._id,
+      type: 'TWO_FACTOR_DISABLED',
+      title: '⚠️ 2FA réinitialisée',
+      message: "Un super-administrateur a réinitialisé l'authentification à deux facteurs de votre compte",
+      link: securityPagePath(target.role),
+    }).catch(() => {})
+    return res.json({ reset: true })
   } catch (err) {
     return next(err)
   }

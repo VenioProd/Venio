@@ -62,7 +62,7 @@ const fr = {
   'intern.form.emailPlaceholder': 'Email',
   'intern.form.phone': 'Telephone',
   'intern.form.password': 'Mot de passe',
-  'intern.form.passwordPlaceholder': 'Defaut: Stage2026!',
+  'intern.form.passwordPlaceholder': '12 caractères min. — vide : à transmettre via « Renvoyer les identifiants »',
   'intern.form.startDate': 'Date de debut *',
   'intern.form.endDate': 'Date de fin *',
   'intern.form.internalNotes': 'Notes internes',

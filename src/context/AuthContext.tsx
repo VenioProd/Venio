@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '../lib/api'
 import { resolveUserPermissions } from '../lib/permissions'
-import type { AuthContextValue, LoginResult, User } from '../types/auth.types'
+import type { AuthContextValue, LoginResult, SecondFactorInput, User } from '../types/auth.types'
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
@@ -41,14 +41,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: 'POST',
       body: JSON.stringify({ email, password, ...(totpCode ? { totpCode } : {}) }),
     })
-    if (data.requires2FA) {
-      return { requires2FA: true }
+    if (data.mfaRequired || data.requires2FA) {
+      return { requires2FA: true, mfaRequired: true, mfaToken: data.mfaToken }
     }
     const currentUser = await loadUser()
     return {
       user: currentUser,
       mfaEnrollmentRequired: data.mfaEnrollmentRequired,
       mfaGraceUntil: data.mfaGraceUntil,
+      passwordNeedsUpgrade: data.passwordNeedsUpgrade,
+    }
+  }
+
+  // Second temps de la connexion 2FA : le jeton du premier temps et un code.
+  const verifyMfa = async (mfaToken: string, factor: SecondFactorInput) => {
+    const data = await apiFetch<LoginResult>('/api/auth/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ mfaToken, ...factor }),
+    })
+    const currentUser = await loadUser()
+    return {
+      user: currentUser,
+      mfaEnrollmentRequired: data.mfaEnrollmentRequired,
+      mfaGraceUntil: data.mfaGraceUntil,
+      passwordNeedsUpgrade: data.passwordNeedsUpgrade,
     }
   }
 
@@ -66,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       loading,
       login,
+      verifyMfa,
       logout,
       refreshUser: loadUser,
     }),

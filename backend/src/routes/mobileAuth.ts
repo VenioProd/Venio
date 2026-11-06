@@ -54,8 +54,10 @@ router.post(
 
       const check = await checkLoginCredentials(req, { channel: 'mobile' })
       if (check.kind === 'rejected') return res.status(check.status).json(check.body)
+      // L'app native renvoie identifiants + code dans une seconde requête
+      // (totpCode / recoveryCode) : pas de jeton intermédiaire sur ce canal.
       if (check.kind === 'mfa_required') return res.json({ requires2FA: true })
-      const { user, mfaVerifiedAt, mfaEnrollmentOnly } = check
+      const { user, mfaVerifiedAt, mfaEnrollmentOnly, passwordNeedsUpgrade } = check
 
       if (!canUseMobileApp(user.role)) {
         audit(req, 'LOGIN_FAILED', user._id, user.email, { reason: 'mobile_role_not_allowed' })
@@ -105,6 +107,7 @@ router.post(
 
       return res.json({
         ...tokens,
+        ...(passwordNeedsUpgrade ? { passwordNeedsUpgrade: true } : {}),
         device: serializeDevice(device.toObject(), String(device._id)),
         user: {
           id: String(user._id),

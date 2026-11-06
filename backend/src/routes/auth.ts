@@ -1,5 +1,4 @@
 import express, { Request, Response, NextFunction } from 'express'
-import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import multer from 'multer'
 import fs from 'fs'
@@ -20,9 +19,25 @@ import {
   revokeUserSessions,
   setSessionCookie,
 } from '../lib/session.js'
-
-// In-memory store for reset tokens (simple approach, clears on restart)
-export const resetTokens = new Map<string, { userId: string; expiresAt: number }>()
+import logger from '../lib/logger.js'
+import { checkPasswordPolicy } from '../lib/auth/passwordPolicy.js'
+import {
+  FORGOT_PASSWORD_MESSAGE,
+  INVALID_RESET_LINK_MESSAGE,
+  consumePasswordResetToken,
+  findUsablePasswordResetToken,
+  invalidatePasswordResetTokens,
+  issuePasswordResetToken,
+} from '../lib/auth/passwordReset.js'
+import {
+  MFA_CHALLENGE_TTL_MS,
+  completeMfaChallenge,
+  createMfaChallenge,
+  reserveMfaChallengeAttempt,
+  revokeMfaChallenges,
+} from '../lib/auth/mfaChallenge.js'
+import { loadTwoFactorUser, verifySecondFactor } from '../lib/auth/twoFactor.js'
+import accountSecurityRoutes from './accountSecurity.js'
 
 const avatarStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, avatarsDir),
@@ -52,7 +67,30 @@ const avatarUpload = multer({
 
 const router = express.Router()
 
-const MIN_PASSWORD_LENGTH = 6
+/** Réponse d'erreur homogène de la politique de mot de passe (VENIO-117). */
+function rejectWeakPassword(
+  res: Response,
+  password: unknown,
+  identity: { email?: string | null; name?: string | null },
+): boolean {
+  const verdict = checkPasswordPolicy(password, identity)
+  if (verdict.ok) return false
+  res.status(400).json({ error: verdict.message, code: verdict.code })
+  return true
+}
+
+/** Corps de réponse d'une connexion réussie (session déjà posée en cookie). */
+function loginSuccessBody(
+  user: { role: string; twoFactorEnabled?: boolean; mfaGraceUntil?: Date | null },
+  needsUpgrade: boolean,
+) {
+  return {
+    ...(requiresMfa(user.role) && !user.twoFactorEnabled
+      ? { mfaEnrollmentRequired: true, mfaGraceUntil: user.mfaGraceUntil }
+      : {}),
+    ...(needsUpgrade ? { passwordNeedsUpgrade: true } : {}),
+  }
+}
 
 // POST /api/auth/login
 router.post(
@@ -72,8 +110,19 @@ router.post(
 
       const check = await checkLoginCredentials(req)
       if (check.kind === 'rejected') return res.status(check.status).json(check.body)
-      if (check.kind === 'mfa_required') return res.json({ requires2FA: true })
-      const { user, mfaVerifiedAt, mfaEnrollmentOnly } = check
+      if (check.kind === 'mfa_required') {
+        // Connexion en deux temps : le mot de passe est validé, le code 2FA est
+        // attendu sur /api/auth/mfa/verify avec ce jeton de courte durée.
+        const challenge = await createMfaChallenge(check.user, { passwordNeedsUpgrade: check.passwordNeedsUpgrade })
+        return res.json({
+          mfaRequired: true,
+          // Compatibilité avec les clients antérieurs (app native, ancien front).
+          requires2FA: true,
+          mfaToken: challenge.token,
+          mfaTokenExpiresIn: Math.round(MFA_CHALLENGE_TTL_MS / 1000),
+        })
+      }
+      const { user, mfaVerifiedAt, mfaEnrollmentOnly, passwordNeedsUpgrade } = check
 
       AuditLog.create({
         userId: user._id,
@@ -93,16 +142,86 @@ router.post(
         ...(mfaVerifiedAt ? { mfaVerifiedAt } : {}),
         ...(mfaEnrollmentOnly ? { mfaEnrollmentOnly: true } : {}),
       })
-      return res.json({
-        ...(requiresMfa(user.role) && !user.twoFactorEnabled
-          ? { mfaEnrollmentRequired: true, mfaGraceUntil: user.mfaGraceUntil }
-          : {}),
-      })
+      return res.json(loginSuccessBody(user, passwordNeedsUpgrade))
     } catch (err) {
       return next(err)
     }
   },
 )
+
+// POST /api/auth/mfa/verify — second temps de la connexion : jeton du premier temps + code TOTP ou de secours.
+router.post(
+  '/mfa/verify',
+  body('mfaToken').isString().notEmpty().withMessage('Jeton de connexion requis'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() })
+      }
+      const { mfaToken, code, recoveryCode } = req.body || {}
+      const ip = requestIp(req)
+      const userAgent = req.headers['user-agent'] || ''
+      const expired = () =>
+        res.status(401).json({
+          error: 'Session de connexion expirée, veuillez ressaisir votre mot de passe.',
+          code: 'MFA_TOKEN_INVALID',
+        })
+
+      const challenge = await reserveMfaChallengeAttempt(mfaToken)
+      if (!challenge) return expired()
+      const user = await loadTwoFactorUser(challenge.userId)
+      // Mot de passe changé, compte désactivé ou 2FA retirée depuis le premier temps.
+      if (
+        !user ||
+        !user.isActive ||
+        user.status === 'ARCHIVE' ||
+        (user.sessionVersion ?? 0) !== challenge.sessionVersion ||
+        !user.twoFactorEnabled
+      ) {
+        await completeMfaChallenge(challenge._id)
+        return expired()
+      }
+
+      const outcome = await verifySecondFactor(user, { code, recoveryCode })
+      if (!outcome.ok) {
+        AuditLog.create({
+          userId: user._id,
+          email: user.email,
+          action: 'LOGIN_FAILED',
+          ip,
+          userAgent,
+          metadata: { reason: '2fa_invalid', step: 'mfa_verify' },
+        }).catch(() => {})
+        return res.status(401).json({ error: 'Code 2FA invalide', code: 'MFA_CODE_INVALID' })
+      }
+      if (!(await completeMfaChallenge(challenge._id))) return expired()
+
+      if (outcome.method === 'recovery') {
+        AuditLog.create({ userId: user._id, email: user.email, action: 'MFA_RECOVERY_CODE_USED', ip, userAgent }).catch(
+          () => {},
+        )
+      }
+      AuditLog.create({
+        userId: user._id,
+        email: user.email,
+        action: 'LOGIN_SUCCESS',
+        ip,
+        userAgent,
+        metadata: { role: user.role, mfa: outcome.method },
+      }).catch(() => {})
+
+      await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date(), lastLoginIp: ip } })
+      await setSessionCookie(res, user._id.toString(), { mfaVerifiedAt: new Date() })
+      return res.json(loginSuccessBody(user, challenge.passwordNeedsUpgrade))
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+// 2FA volontaire du compte connecté (tous rôles) : /api/auth/2fa/*
+router.use('/2fa', accountSecurityRoutes)
 
 // POST /api/auth/logout — revoke the server-side session before clearing its cookie.
 router.post('/logout', auth, async (req: Request, res: Response, next: NextFunction) => {
@@ -205,9 +324,7 @@ router.post(
   '/change-password',
   auth,
   body('currentPassword').notEmpty().withMessage('Mot de passe actuel requis'),
-  body('newPassword')
-    .isLength({ min: MIN_PASSWORD_LENGTH })
-    .withMessage(`Le nouveau mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`),
+  body('newPassword').isString().withMessage('Nouveau mot de passe requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -226,12 +343,20 @@ router.post(
       if (!isValid) {
         return res.status(400).json({ error: 'Mot de passe actuel incorrect' })
       }
+      if (rejectWeakPassword(res, newPassword, user)) return
+      if (await bcrypt.compare(newPassword, user.passwordHash)) {
+        return res
+          .status(400)
+          .json({ error: "Le nouveau mot de passe doit être différent de l'actuel.", code: 'PASSWORD_UNCHANGED' })
+      }
 
       user.passwordHash = await bcrypt.hash(newPassword, 10)
       user.passwordChangedAt = new Date()
       user.sessionVersion = (user.sessionVersion ?? 0) + 1
       await user.save()
       await revokeUserSessions(user._id.toString())
+      await invalidatePasswordResetTokens(user._id)
+      await revokeMfaChallenges(user._id)
       clearSessionCookie(res)
 
       AuditLog.create({
@@ -253,9 +378,7 @@ router.post(
 router.post(
   '/bootstrap-admin',
   body('email').isEmail().withMessage('Email invalide'),
-  body('password')
-    .isLength({ min: MIN_PASSWORD_LENGTH })
-    .withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`),
+  body('password').isString().withMessage('Mot de passe requis'),
   body('name').trim().notEmpty().withMessage('Le nom est requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -270,6 +393,7 @@ router.post(
       }
 
       const { email, password, name } = req.body
+      if (rejectWeakPassword(res, password, { email, name })) return
 
       const passwordHash = await bcrypt.hash(password, 10)
       const admin = await User.create({
@@ -288,6 +412,8 @@ router.post(
 )
 
 // POST /api/auth/forgot-password
+// Même statut et même corps que le compte existe ou non (pas d'énumération) ;
+// un échec d'envoi est journalisé sans être révélé.
 router.post(
   '/forgot-password',
   body('email').isEmail().withMessage('Email invalide'),
@@ -299,49 +425,33 @@ router.post(
       }
 
       const { email } = req.body
-      const user = await User.findOne({ email: email.toLowerCase().trim() })
-
-      // Always return success to prevent email enumeration
-      if (!user) {
-        return res.json({ message: 'Si un compte existe avec cet email, un lien de reinitialisation a ete envoye.' })
+      const user = await User.findOne({ email: String(email).toLowerCase().trim() })
+      if (user && user.isActive !== false && user.status !== 'ARCHIVE') {
+        // Invalide les liens précédents : seul le dernier envoyé fonctionne.
+        const { token } = await issuePasswordResetToken(user._id)
+        const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
+        const loginPath = STAFF_ROLES.includes(user.role) ? '/admin/login' : '/espace-client/login'
+        const resetUrl = `${baseUrl}${loginPath}?reset=${token}`
+        try {
+          const sent = await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl })
+          if (!sent.sent) logger.warn({ userId: String(user._id) }, 'password reset email not sent')
+        } catch (err) {
+          logger.error({ err, userId: String(user._id) }, 'password reset email failed')
+        }
       }
 
-      // Generate reset token
-      const token = crypto.randomBytes(32).toString('hex')
-      resetTokens.set(token, {
-        userId: user._id.toString(),
-        expiresAt: Date.now() + 3600000, // 1 hour
-      })
-
-      // Clean expired tokens
-      for (const [key, val] of resetTokens) {
-        if (val.expiresAt < Date.now()) resetTokens.delete(key)
-      }
-
-      const baseUrl = process.env.CORS_ORIGIN || 'http://localhost:5501'
-      const loginPath = STAFF_ROLES.includes(user.role) ? '/admin/login' : '/espace-client/login'
-      const resetUrl = `${baseUrl}${loginPath}?reset=${token}`
-
-      await sendPasswordResetEmail({
-        to: user.email,
-        name: user.name,
-        resetUrl,
-      })
-
-      return res.json({ message: 'Si un compte existe avec cet email, un lien de reinitialisation a ete envoye.' })
+      return res.json({ message: FORGOT_PASSWORD_MESSAGE })
     } catch (err) {
       return next(err)
     }
   },
 )
 
-// POST /api/auth/reset-password
+// POST /api/auth/reset-password — jeton à usage unique, valable 1 h.
 router.post(
   '/reset-password',
-  body('token').notEmpty().withMessage('Token requis'),
-  body('password')
-    .isLength({ min: MIN_PASSWORD_LENGTH })
-    .withMessage(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caracteres`),
+  body('token').isString().notEmpty().withMessage('Token requis'),
+  body('password').isString().withMessage('Mot de passe requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -350,26 +460,28 @@ router.post(
       }
 
       const { token, password } = req.body
-      const entry = resetTokens.get(token)
+      // Le nouveau mot de passe est validé avant de consommer le jeton : une
+      // saisie refusée par la politique ne brûle pas le lien reçu.
+      const pending = await findUsablePasswordResetToken(token)
+      if (!pending) return res.status(400).json({ error: INVALID_RESET_LINK_MESSAGE, code: 'RESET_TOKEN_INVALID' })
+      const target = await User.findById(pending.userId).select('email name')
+      if (!target) return res.status(400).json({ error: INVALID_RESET_LINK_MESSAGE, code: 'RESET_TOKEN_INVALID' })
+      if (rejectWeakPassword(res, password, target)) return
 
-      if (!entry || entry.expiresAt < Date.now()) {
-        resetTokens.delete(token)
-        return res.status(400).json({ error: 'Lien de reinitialisation expire ou invalide.' })
+      const userId = await consumePasswordResetToken(token)
+      if (!userId || String(userId) !== String(target._id)) {
+        return res.status(400).json({ error: INVALID_RESET_LINK_MESSAGE, code: 'RESET_TOKEN_INVALID' })
       }
-
-      const user = await User.findById(entry.userId)
-      if (!user) {
-        resetTokens.delete(token)
-        return res.status(400).json({ error: 'Utilisateur introuvable.' })
-      }
+      const user = await User.findById(userId)
+      if (!user) return res.status(400).json({ error: INVALID_RESET_LINK_MESSAGE, code: 'RESET_TOKEN_INVALID' })
 
       user.passwordHash = await bcrypt.hash(password, 10)
       user.passwordChangedAt = new Date()
       user.sessionVersion = (user.sessionVersion ?? 0) + 1
       await user.save()
       await revokeUserSessions(user._id.toString())
-
-      resetTokens.delete(token)
+      await invalidatePasswordResetTokens(user._id)
+      await revokeMfaChallenges(user._id)
 
       AuditLog.create({
         userId: user._id,

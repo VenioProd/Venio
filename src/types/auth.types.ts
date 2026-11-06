@@ -80,6 +80,8 @@ export interface User {
     | 'lime'
     | 'slate'
   avatarUrl?: string
+  /** 2FA TOTP active sur le compte (VENIO-117). */
+  twoFactorEnabled?: boolean
   createdAt?: string
   updatedAt?: string
 }
@@ -87,14 +89,25 @@ export interface User {
 export interface LoginResult {
   user?: User | null
   requires2FA?: boolean
+  /** Second temps attendu : envoyer le code avec ce jeton à /api/auth/mfa/verify. */
+  mfaRequired?: boolean
+  mfaToken?: string
   mfaEnrollmentRequired?: boolean
   mfaGraceUntil?: string
+  /** Mot de passe accepté mais hors politique : à renforcer (VENIO-117). */
+  passwordNeedsUpgrade?: boolean
+}
+
+export interface SecondFactorInput {
+  code?: string
+  recoveryCode?: string
 }
 
 export interface AuthContextValue {
   user: User | null
   loading: boolean
   login: (email: string, password: string, totpCode?: string) => Promise<LoginResult>
+  verifyMfa: (mfaToken: string, factor: SecondFactorInput) => Promise<LoginResult>
   logout: () => Promise<void>
   refreshUser: () => Promise<User | null>
 }

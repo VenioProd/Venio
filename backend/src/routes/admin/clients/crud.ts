@@ -7,6 +7,8 @@ import { PERMISSIONS, ADMIN_ROLES } from '../../../lib/permissions.js'
 import { sendAdminCredentials } from '../../../lib/email.js'
 import { triggerAutomations } from '../../../automation/trigger.js'
 import User from '../../../models/User.js'
+import { passwordPolicyError } from '../../../lib/auth/passwordPolicy.js'
+import { invalidatePasswordResetTokens } from '../../../lib/auth/passwordReset.js'
 import { createClientFolders, getClientCloudInfo } from '../../../lib/nextcloud.js'
 import { ok, error, parsePagination, normalizeClientPayload, ensureClient, logActivity } from './helpers.js'
 import { createNotification } from '../../../lib/notifications.js'
@@ -99,7 +101,7 @@ router.post(
   body('companyName').trim().notEmpty().withMessage("Le nom de l'entreprise est requis"),
   body('name').trim().notEmpty().withMessage('Le nom est requis'),
   body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
-  body('password').isLength({ min: 6 }).withMessage('Mot de passe: minimum 6 caractères'),
+  body('password').isString().withMessage('Mot de passe requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -110,6 +112,8 @@ router.post(
       if (req.user!.deviceId) return refuseFromDevice(res)
 
       const { email, password, name } = req.body || {}
+      const weakPassword = passwordPolicyError(password, { email, name })
+      if (weakPassword) return error(res, 400, weakPassword.error, weakPassword.code)
 
       const normalizedEmail = String(email).toLowerCase().trim()
       const existing = await User.findOne({ email: normalizedEmail })
@@ -293,6 +297,11 @@ router.patch(
       // comme le font /api/auth/change-password et /api/auth/reset-password.
       const passwordChanged = Boolean(req.body?.password)
       if (passwordChanged) {
+        const weakPassword = passwordPolicyError(String(req.body.password), {
+          email: req.body?.email ?? client.email,
+          name: req.body?.name ?? client.name,
+        })
+        if (weakPassword) return error(res, 400, weakPassword.error, weakPassword.code)
         payload.passwordHash = await bcrypt.hash(String(req.body.password), 10)
         payload.passwordChangedAt = new Date()
         payload.sessionVersion = (client.sessionVersion ?? 0) + 1
@@ -305,6 +314,7 @@ router.patch(
 
       if (passwordChanged) {
         await revokeUserSessions(client._id.toString())
+        await invalidatePasswordResetTokens(client._id)
       }
 
       await logActivity({

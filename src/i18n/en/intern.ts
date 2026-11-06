@@ -64,7 +64,7 @@ const en: Record<keyof typeof fr, string> = {
   'intern.form.emailPlaceholder': 'Email',
   'intern.form.phone': 'Phone',
   'intern.form.password': 'Password',
-  'intern.form.passwordPlaceholder': 'Default: Stage2026!',
+  'intern.form.passwordPlaceholder': 'At least 12 characters — empty: send it with “Resend credentials”',
   'intern.form.startDate': 'Start date *',
   'intern.form.endDate': 'End date *',
   'intern.form.internalNotes': 'Internal notes',
