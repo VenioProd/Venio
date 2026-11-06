@@ -9,7 +9,7 @@ import Interaction, {
   INTERACTION_SUBJECT_MAX_LENGTH,
 } from '../../models/Interaction.js'
 import { resolveSubject } from '../../lib/interactionAccess.js'
-import { buildTimeline, logInteraction, TIMELINE_MAX_ENTRIES } from '../../lib/interactions.js'
+import { buildTimeline, logInteraction, syncLeadLastInteraction, TIMELINE_MAX_ENTRIES } from '../../lib/interactions.js'
 import { sendBulkEmail, deliveryStatusFrom, EmailTransportUnavailableError } from '../../lib/email/send.js'
 import type { InteractionKind } from '../../types/models/index.js'
 
@@ -181,6 +181,10 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
     const interaction = await resolveInteraction(req, res)
     if (!interaction) return undefined
     await interaction.deleteOne()
+    // Le lead ne doit pas garder la date ni le compte d'un échange supprimé.
+    if (interaction.subjectType === 'LEAD') {
+      await syncLeadLastInteraction(interaction.subjectId, { recount: true }).catch(() => {})
+    }
     return res.json({ success: true })
   } catch (err) {
     return next(err)
