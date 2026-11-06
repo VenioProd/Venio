@@ -95,7 +95,8 @@ describe('groupEntities / fonctions pures', () => {
 describe('crmScope / périmètre par entité', () => {
   it('liste vide ou absente : comportement inchangé', () => {
     expect(leadScopeFilter(fakeReq(ME, 'COMMERCIAL', []))).toEqual({})
-    expect(leadScopeFilter(fakeReq(ME, 'ADMIN'))).toEqual({ $or: [{ assignedTo: ME }, { createdBy: ME }] })
+    expect(leadScopeFilter(fakeReq(ME, 'MANAGER'))).toEqual({ $or: [{ assignedTo: ME }, { createdBy: ME }] })
+    expect(leadScopeFilter(fakeReq(ME, 'ADMIN'))).toEqual({})
     expect(crmEntityRestriction(fakeReq(ME, 'COMMERCIAL', []))).toBeNull()
     expect(readsUnrestrictedCrm(fakeReq(ME, 'COMMERCIAL'))).toBe(true)
   })
