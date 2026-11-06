@@ -13,7 +13,7 @@ afterAll(teardownMongo)
 
 describe('migration 009-crm-revenue', () => {
   it('--dry-run ne crée rien', async () => {
-    const { migrateCrmRevenue } = await import('../../scripts/migrations/009-crm-revenue.js')
+    const { migrateCrmRevenue } = await import('../lib/crmGoalsMigration.js')
     const result = await migrateCrmRevenue(true)
     expect(result).toMatchObject({ dryRun: true, collectionExisted: false, indexesBefore: [] })
     const collections = await mongoose.connection.db!.listCollections({ name: 'crmgoals' }).toArray()
@@ -21,7 +21,7 @@ describe('migration 009-crm-revenue', () => {
   })
 
   it('crée la collection et l’index unique, puis se rejoue sans rien changer', async () => {
-    const { migrateCrmRevenue } = await import('../../scripts/migrations/009-crm-revenue.js')
+    const { migrateCrmRevenue } = await import('../lib/crmGoalsMigration.js')
     const first = await migrateCrmRevenue(false)
     expect(first.collectionExisted).toBe(false)
     expect(first.indexesAfter).toContain('period_1_entity_1_userId_1')

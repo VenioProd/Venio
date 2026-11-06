@@ -21,6 +21,11 @@ export interface SendBulkEmailInput {
   senderName?: string
   ctaUrl?: string
   ctaLabel?: string
+  /**
+   * Lien de désinscription (e-mails de prospection automatisés, RGPD) : ajouté
+   * en pied de message et dans les en-têtes List-Unsubscribe (RFC 8058).
+   */
+  unsubscribeUrl?: string
 }
 
 export interface SendBulkEmailResult {
@@ -78,13 +83,19 @@ export async function sendBulkEmail(input: SendBulkEmailInput): Promise<SendBulk
     if (email && !unique.has(email)) unique.set(email, { email, name: recipient.name || '' })
   }
 
+  const unsubscribeHtml = input.unsubscribeUrl
+    ? `<p style="font-size:12px;color:#64748b;margin-top:24px;">Vous ne souhaitez plus recevoir nos messages ? <a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#64748b;">Se désinscrire</a></p>`
+    : ''
   const html = emailLayout({
     title: escapeHtml(input.subject),
-    body: renderEmailBody(input.body),
+    body: renderEmailBody(input.body) + unsubscribeHtml,
     ctaUrl: input.ctaUrl || undefined,
     ctaLabel: input.ctaLabel || undefined,
   })
-  const plainText = `${input.body}\n\n— ${senderName}, ${appName}`
+  const plainText = `${input.body}\n\n— ${senderName}, ${appName}${input.unsubscribeUrl ? `\n\nSe désinscrire : ${input.unsubscribeUrl}` : ''}`
+  const headers = input.unsubscribeUrl
+    ? { 'List-Unsubscribe': `<${input.unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+    : undefined
 
   const results: BulkEmailDelivery[] = []
   for (const recipient of unique.values()) {
@@ -95,6 +106,7 @@ export async function sendBulkEmail(input: SendBulkEmailInput): Promise<SendBulk
         subject: `[${appName}] ${input.subject}`,
         text: plainText,
         html,
+        ...(headers ? { headers } : {}),
       })
       results.push({ email: recipient.email, name: recipient.name || '', success: true })
     } catch (err) {

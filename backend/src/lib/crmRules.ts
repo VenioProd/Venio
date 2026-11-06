@@ -6,11 +6,13 @@ import PersonalTask from '../models/PersonalTask.js'
 import CrmRule, { type ICrmRule, type IRuleAction, type IRuleCondition, type RuleTrigger } from '../models/CrmRule.js'
 import CrmRuleRun, { type IRunStep } from '../models/CrmRuleRun.js'
 import { ADMIN_ROLES } from './permissions.js'
-import { getRoundRobinAssignee, logLeadActivity } from './crmAutomations.js'
+import { getRoundRobinAssignee } from './crmAutomations.js'
 import { ensureClientForWonLead, ensureProjectForWonLead } from './crmClientConversion.js'
 import { createNotification } from './notifications.js'
 import { sendBulkEmail } from './email/send.js'
 import { logInteraction } from './interactions.js'
+import { isAssignableCrmUser } from './crmScope.js'
+import { buildUnsubscribeUrl, checkProspectContact, DO_NOT_CONTACT } from './crmPrivacy.js'
 import logger from './logger.js'
 
 /** Profondeur maximale d'une chaîne règle → action → règle. */
@@ -141,6 +143,30 @@ export function renderTemplate(template: string, lead: PlainLead): string {
 type StepResult = Omit<IRunStep, 'action' | 'at'>
 const ok = (message: string, payload?: Record<string, unknown>): StepResult => ({ status: 'OK', message, payload })
 const skip = (message: string): StepResult => ({ status: 'SKIP', message })
+/** Envoi refusé : la personne s'est opposée à la prospection (fiche ou liste de suppression). */
+const blocked = (via: string | undefined): StepResult => ({
+  status: 'SKIP',
+  message: `Bloqué : ne pas contacter (${DO_NOT_CONTACT}${via === 'SUPPRESSION_LIST' ? ', liste de suppression' : ', fiche du lead'})`,
+  payload: { reason: DO_NOT_CONTACT, via },
+})
+
+/**
+ * Écriture du lead par une règle : même chemin que la fiche (service unique),
+ * source « rule », sans émission d'événements — la règle les émet elle-même
+ * avec la profondeur de sa chaîne (anti-boucle). Import différé : le service
+ * importe ce module.
+ */
+async function writeByRule(lead: LeadDoc, rule: ICrmRule, patch: Record<string, unknown>, validateAssignee = false) {
+  const { applyLeadChange } = await import('./crmLeadService.js')
+  return applyLeadChange(lead, patch, {
+    actor: null,
+    source: 'rule',
+    emit: false,
+    validateAssignee,
+    labelSuffix: '(règle)',
+    activityMeta: { ruleId: rule._id },
+  })
+}
 
 async function ownerOf(lead: PlainLead, spec: unknown): Promise<string | null> {
   if (spec && spec !== 'owner') return String(spec)
@@ -202,10 +228,10 @@ async function runAction(
         p.strategy === 'round_robin' ? await getRoundRobinAssignee() : p.userId ? (String(p.userId) as unknown as Types.ObjectId) : null
       if (!target) return skip('Aucun commercial disponible')
       if (String(lead.assignedTo ?? '') === String(target)) return skip('Déjà assigné à ce commercial')
+      // Même contrôle que la fiche : un membre actif, habilité à suivre un lead.
+      if (!(await isAssignableCrmUser(String(target)))) return skip('Commercial introuvable, inactif ou non habilité à suivre un lead')
       if (sim) return ok('Assignerait le lead')
-      lead.assignedTo = target
-      await lead.save()
-      await logLeadActivity(lead._id, 'ASSIGNED', 'Lead assigné par une règle', { ruleId: rule._id, to: String(target) }, null)
+      await writeByRule(lead, rule, { assignedTo: target })
       await fireLeadEvent(lead.id, { type: 'LEAD_ASSIGNED', key: `assigned:${target}:${Date.now()}`, to: String(target) }, next(ctx, rule))
       return ok('Lead assigné', { assignedTo: String(target) })
     }
@@ -229,21 +255,27 @@ async function runAction(
       if (!tag) return skip('Tag vide')
       if (lead.tags?.includes(tag)) return skip('Tag déjà présent')
       if (sim) return ok(`Ajouterait le tag « ${tag} »`)
-      await Lead.updateOne({ _id: lead._id }, { $addToSet: { tags: tag } })
-      lead.tags = [...(lead.tags ?? []), tag]
+      await writeByRule(lead, rule, { tags: [...(lead.tags ?? []), tag] })
       return ok(`Tag « ${tag} » ajouté`)
     }
     case 'SET_FIELD': {
       const field = String(p.field)
       if (!(SETTABLE_FIELDS as readonly string[]).includes(field)) return skip(`Champ non modifiable : ${field}`)
+      // Même normalisation que la fiche : une valeur hors liste (priorité, température) est refusée.
+      const { normalizeLeadPatch } = await import('./crmLeadService.js')
+      const patch = normalizeLeadPatch({ [field]: p.value })
+      if (!(field in patch)) return skip(`Valeur refusée pour ${field}`)
+      if (String((lead as unknown as Record<string, unknown>)[field] ?? '') === String(patch[field] ?? '')) return skip(`${field} déjà à cette valeur`)
       if (sim) return ok(`Définirait ${field}`)
-      ;(lead as any)[field] = p.value
-      await lead.save()
+      await writeByRule(lead, rule, { [field]: patch[field] })
       return ok(`${field} mis à jour`)
     }
     case 'SEND_EMAIL': {
       const to = (lead.contactEmail || '').trim()
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return skip('Le lead n’a pas d’adresse e-mail valide')
+      // Opposition (fiche) ou liste de suppression : rien ne part, pas même en attente de validation.
+      const contact = await checkProspectContact(lead, to)
+      if (!contact.allowed) return blocked(contact.via)
       const subject = renderTemplate(String(p.subject || 'Suite à notre échange'), lead)
       const body = renderTemplate(String(p.body || 'Bonjour {contact},'), lead)
       if (sim) return ok(`Enverrait « ${subject} » à ${to}`)
@@ -271,9 +303,7 @@ async function runAction(
     case 'ARCHIVE': {
       if (lead.archivedAt) return skip('Déjà archivé')
       if (sim) return ok('Archiverait le lead')
-      lead.archivedAt = new Date()
-      await lead.save()
-      await logLeadActivity(lead._id, 'ARCHIVED', 'Lead archivé par une règle', { ruleId: rule._id }, null)
+      await writeByRule(lead, rule, { archivedAt: new Date() })
       return ok('Lead archivé')
     }
     default:
@@ -287,17 +317,26 @@ const next = (ctx: EngineCtx, rule: ICrmRule): EngineCtx => ({
   chain: [...ctx.chain, String(rule._id)],
 })
 
-/** Envoie l'e-mail, le consigne dans la timeline du lead et rend le résultat de l'étape. */
+/**
+ * Envoie l'e-mail, le consigne dans la timeline du lead et rend le résultat de l'étape.
+ *
+ * L'opposition est revérifiée au moment d'envoyer : un e-mail validé des jours
+ * après sa mise en attente ne part pas vers une personne qui s'est désinscrite
+ * entre-temps. Chaque message porte un lien de désinscription signé.
+ */
 export async function deliverEmail(
   lead: LeadDoc,
   mail: { to: string; subject: string; body: string },
   authorId: string | null,
 ): Promise<StepResult> {
+  const contact = await checkProspectContact(lead, mail.to)
+  if (!contact.allowed) return blocked(contact.via)
   try {
     const outcome = await sendBulkEmail({
       subject: mail.subject,
       body: mail.body,
       recipients: [{ email: mail.to, name: lead.contactName }],
+      unsubscribeUrl: buildUnsubscribeUrl(lead._id as Types.ObjectId, mail.to),
     })
     await logInteraction({
       subjectType: 'LEAD',
@@ -516,11 +555,16 @@ export async function approveRun(runId: string, actorId: string) {
   for (const step of run.steps) {
     if (step.status !== 'PENDING' || !step.payload) continue
     const result = await deliverEmail(lead, step.payload as { to: string; subject: string; body: string }, actorId)
-    step.status = result.status === 'ERR' ? 'ERR' : 'OK'
+    // Un envoi bloqué (opposition survenue entre-temps) reste une étape ignorée, avec sa raison.
+    step.status = result.status === 'ERR' ? 'ERR' : result.status === 'SKIP' ? 'SKIP' : 'OK'
     step.message = result.message
-    step.payload = undefined
+    step.payload = result.status === 'SKIP' ? result.payload : undefined
   }
-  run.status = run.steps.some((s) => s.status === 'ERR') ? 'ERR' : 'OK'
+  run.status = run.steps.some((s) => s.status === 'ERR')
+    ? 'ERR'
+    : run.steps.length > 0 && run.steps.every((s) => s.status === 'SKIP')
+      ? 'SKIP'
+      : 'OK'
   run.markModified('steps')
   await run.save()
   return run

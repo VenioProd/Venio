@@ -14,34 +14,13 @@
  */
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
-import CrmGoal from '../../src/models/CrmGoal.js'
+import { migrateCrmRevenue } from '../../src/lib/crmGoalsMigration.js'
+export { migrateCrmRevenue } from '../../src/lib/crmGoalsMigration.js'
+export type { CrmRevenueMigrationResult } from '../../src/lib/crmGoalsMigration.js'
 import logger from '../../src/lib/logger.js'
 
 dotenv.config()
 
-export interface CrmRevenueMigrationResult {
-  dryRun: boolean
-  collectionExisted: boolean
-  indexesBefore: string[]
-  indexesAfter: string[]
-}
-
-export async function migrateCrmRevenue(dryRun: boolean): Promise<CrmRevenueMigrationResult> {
-  const name = CrmGoal.collection.collectionName
-  const existing = await mongoose.connection.db!.listCollections({ name }).toArray()
-  const collectionExisted = existing.length > 0
-  const indexNames = async () => (collectionExisted ? (await CrmGoal.collection.indexes()).map((index) => String(index.name)) : [])
-  const indexesBefore = await indexNames()
-
-  if (dryRun) {
-    return { dryRun, collectionExisted, indexesBefore, indexesAfter: indexesBefore }
-  }
-
-  if (!collectionExisted) await CrmGoal.createCollection()
-  await CrmGoal.syncIndexes()
-  const indexesAfter = (await CrmGoal.collection.indexes()).map((index) => String(index.name))
-  return { dryRun, collectionExisted, indexesBefore, indexesAfter }
-}
 
 async function main() {
   const uri = process.env.MONGODB_URI

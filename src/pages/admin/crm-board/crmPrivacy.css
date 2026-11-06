@@ -1,0 +1,16 @@
+/* Bloc « Données personnelles » de la fiche lead (RGPD). */
+.crm-privacy-panel .crm-privacy-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+.crm-privacy-panel .crm-privacy-note {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.crm-privacy-panel .crm-privacy-error {
+  color: var(--critical, #f472b6);
+  font-size: 13px;
+}

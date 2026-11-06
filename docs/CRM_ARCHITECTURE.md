@@ -12,7 +12,7 @@ Vue technique du CRM tel qu'il est codé sur `main` (commit `2c764cb1`). Les aut
  API agent ───┼─> applyLeadChange ───────────┼─> Lead (écriture)
  Formulaire public ─┤  (lib/crmLeadService)  ├─> User CLIENT + Project (si WON)
  Espace commercial ─┤                        └─> notifications / e-mails
- Règles (SET_STATUS) ─┘                             ▲
+ Règles (actions) ───┘                              ▲
                                                     │ événements (emitLeadChanges)
  Planificateur (lib/crmScheduler, chaque minute) ───┤
  Jobs moteur (automation/jobs/crm*) ────────────────┘
@@ -38,6 +38,8 @@ Le **point d'entrée unique** des écritures de lead est `applyLeadChange` (`lib
 | `crmScope.ts` | Périmètre de lecture et d'écriture, `administersCrm`, `isAssignableCrmUser` |
 | `crmPilotage.ts` | Calculs purs du pilotage (entonnoir, vitesses, groupes) : aucune écriture |
 | `crmRevenue.ts` | Chiffre d'affaires rattaché aux leads (calculs purs, comme `crmPilotage.ts`) |
+| `crmPrivacy.ts` | RGPD : opposition et liste de suppression (`checkProspectContact`), lien de désinscription signé, anonymisation (`anonymizeLead`), export des données (`buildPersonalDataExport`), migration 010 |
+| `crmRetention.ts` | Durée de conservation : sélection des leads à anonymiser (`runRetentionPurge`), simulation tant que la purge n'est pas activée |
 | `permissions.ts` | Permissions par rôle (`view_crm`, `manage_crm`) et `ADMIN_ROLES` |
 | `agent/scopes.ts` | Scopes agent (`read:crm`, `write:crm`, `admin:*`) |
 
@@ -48,14 +50,15 @@ Le **point d'entrée unique** des écritures de lead est `applyLeadChange` (`lib
 | `crmParisTime.ts` | Heure de Paris : `parisParts`, `parisDateKey`, `parisWeekKey`, `parseHHMM`, `serverScheduleForParis` |
 | `crmJobGuards.ts` | `crmJobAbstention` : abstention d'un job au profit de la règle active ou du planificateur |
 | `crmLeadScope.ts` | Filtre `withActiveLeads` (hors archivés et automatisation suspendue) |
-| `crmInactiveLeadFollowup.ts`, `crmPostDemoFollowup.ts`, `crmProposalFollowup.ts`, `crmHotLeadAlert.ts`, `crmAutoArchiveLost.ts`, `crmConversionDropAlert.ts` | Jobs CRM enregistrés par `automation/index.ts` |
+| `crmInactiveLeadFollowup.ts`, `crmPostDemoFollowup.ts`, `crmProposalFollowup.ts`, `crmHotLeadAlert.ts`, `crmAutoArchiveLost.ts`, `crmConversionDropAlert.ts`, `crmRetentionPurge.ts` | Jobs CRM enregistrés par `automation/index.ts` |
 
 ### 2.3 Modèles (`models/`)
 
 | Modèle | Rôle | Points clés |
 |---|---|---|
-| `Lead` | Prospect et pipeline | statuts `LEAD`, `QUALIFIED`, `CONTACTED`, `DEMO`, `PROPOSAL`, `WON`, `LOST` ; `score`, `probability`, `leadTemperature`, `lastContactAt`, `lastInteractionAt`, `statusChangedAt`, `nextActionAt`, `archivedAt`, `automationPausedAt`, `clientAccountId`, `tags`, `externalRep` |
-| `LeadActivity` | Historique d'un lead | `type` est une chaîne libre ; valeurs écrites par le code : `CREATED`, `STATUS_CHANGE`, `ASSIGNED`, `ARCHIVED`, `RESTORED`, `CONVERTED`, `ESCALATION_REASSIGN` (`models/LeadActivity.ts`, `lib/crmLeadService.ts`, `lib/crmClientConversion.ts`, `lib/crmScheduler.ts`) |
+| `Lead` | Prospect et pipeline | statuts `LEAD`, `QUALIFIED`, `CONTACTED`, `DEMO`, `PROPOSAL`, `WON`, `LOST` ; `score`, `probability`, `leadTemperature`, `lastContactAt`, `lastInteractionAt`, `statusChangedAt`, `nextActionAt`, `archivedAt`, `automationPausedAt`, `clientAccountId`, `tags`, `externalRep` ; RGPD : `consent` (`status`, `basis`, `source`, `at`), `doNotContact`, `doNotContactAt`, `doNotContactReason`, `anonymizedAt` |
+| `SuppressionEntry` | Liste « ne pas contacter » globale | `emailNormalized` (unique), `reason` (`UNSUBSCRIBE`, `MANUAL`, `OPPOSITION`, `ANONYMIZED`), `createdBy`, `leadId` ; survit à l'anonymisation du lead |
+| `LeadActivity` | Historique d'un lead | `type` est une chaîne libre ; valeurs écrites par le code : `CREATED`, `STATUS_CHANGE`, `ASSIGNED`, `ARCHIVED`, `RESTORED`, `CONVERTED`, `ESCALATION_REASSIGN`, et pour le RGPD `CONSENT_CHANGED`, `DO_NOT_CONTACT`, `DO_NOT_CONTACT_LIFTED`, `EMAIL_BLOCKED`, `ANONYMIZED` (`models/LeadActivity.ts`, `lib/crmLeadService.ts`, `lib/crmClientConversion.ts`, `lib/crmScheduler.ts`) |
 | `CrmSettings` | Réglages (singleton) | `getSettings()`, `updateSettings()` ; liste complète dans CRM_AUTOMATISATIONS.md §2 |
 | `CrmRule` | Règle d'automatisation | `status` `DRAFT`/`ACTIVE`/`PAUSED`, `systemKey`, `system`, `trigger`, `conditions`, `actions`, `limits`, `requireApproval`, `stats` |
 | `CrmRuleRun` | Exécution d'une règle | `eventKey` **unique**, `steps`, `status` `OK`/`ERR`/`SKIP`/`SIM`/`PENDING`/`RUNNING` (`RUN_STATUSES`), TTL 90 jours sur `createdAt` |
@@ -99,6 +102,8 @@ Les routeurs sont montés dans `backend/src/index.ts` :
 
 `routes/crmExtras.ts` est une fabrique `createCrmExtrasRouter(adapters)` partagée par l'admin et l'agent : seules les gardes changent.
 
+Route publique : `GET`/`POST /api/public/unsubscribe?token=…` (`routes/public/unsubscribe.ts`) — lien de désinscription signé des e-mails envoyés par les règles ; pose `doNotContact`, inscrit l'adresse dans la liste de suppression, page HTML de confirmation (audit `CRM_LEAD_UNSUBSCRIBE`).
+
 ### 4.1 Admin — `routes/admin/crm.ts` (`/api/admin/crm`)
 
 Toutes les routes exigent `auth` + `requireAdmin` et la permission indiquée.
@@ -112,6 +117,9 @@ Toutes les routes exigent `auth` + `requireAdmin` et la permission indiquée.
 | GET | `/leads/:id` | `view_crm` | fiche |
 | DELETE | `/leads/:id` | `manage_crm` | suppression en cascade (`deleteLeadCascade`) |
 | GET | `/leads/:id/activities` | `view_crm` | historique |
+| GET | `/leads/:id/privacy` | `view_crm` (périmètre de lecture) | consentement, opposition, présence dans la liste de suppression |
+| GET | `/leads/:id/personal-data` | `view_crm` + `administersCrm` | export JSON des données personnelles (audit `CRM_LEAD_PERSONAL_DATA_EXPORT`) |
+| POST | `/leads/:id/anonymize` | `manage_crm` + `administersCrm` | anonymisation à la demande (audit `CRM_LEAD_ANONYMIZE`) |
 | GET | `/leads/:id/revenue` | `view_crm` | chiffre d'affaires du lead |
 | GET | `/leads/:id/project-candidates` | `view_crm` | projets rattachables |
 | POST | `/leads/:id/projects/:projectId` | `manage_crm` | rattachement à un projet |
@@ -138,7 +146,7 @@ Lecture : `auth` + `requireAdmin` + `view_crm`. Écriture : `auth` + `requireAdm
 | PATCH | `/views/:id` | écriture | modifier une vue |
 | DELETE | `/views/:id` | écriture | supprimer une vue |
 | POST | `/leads/bulk` | écriture | action groupée (`source: bulk`) |
-| GET | `/leads/export` | lecture | export |
+| GET | `/leads/export` | lecture | export CSV (5000 lignes au plus, en-tête `X-Export-Truncated` si atteint ; audit `CRM_LEADS_EXPORT`) |
 | GET | `/leads/:id/timeline` | lecture | fil de la fiche |
 | GET | `/leads/:id/tasks` | lecture | tâches du lead |
 | GET | `/leads/:id/documents` | lecture | documents du lead |
@@ -241,7 +249,6 @@ Constats issus du code à la date de rédaction. Ils ne sont pas corrigés ici.
 
 | Sujet | Constat | Fichier |
 |---|---|---|
-| Écritures hors service | `ASSIGN` (avec `userId` non vérifié), `SET_FIELD`, `ADD_TAG`, `ARCHIVE` écrivent le lead directement, sans `applyLeadChange`. | `lib/crmRules.ts` (`runAction`) |
 | Validation des e-mails par agent | Le contrôle `administersRules` vaut `true` quand l'adaptateur n'en fournit pas : l'agent avec `write:crm` peut approuver, rejeter et rejouer les exécutions. Seule l'activation exige `admin:*`. | `routes/crmExtras.ts` (`administersRules`), `routes/agent/crmExtras.ts` (pas de `canAdministerRules`) |
 | Périmètre `ADMIN` | `readsWholeCrm` ne retient que `SUPER_ADMIN` et `COMMERCIAL` : un `ADMIN` (avec `manage_crm`) ne voit et ne modifie que ses leads. À confirmer par Raphael. | `lib/crmScope.ts` |
 | Seuils de relance proposition | Job à 5 j, planificateur à `proposalReminderDays` (7 j par défaut). | `automation/jobs/crmProposalFollowup.ts`, `lib/crmScheduler.ts` |
@@ -255,3 +262,5 @@ Constats issus du code à la date de rédaction. Ils ne sont pas corrigés ici.
 - Lancer la suite : `docs/TESTS.md`.
 - Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `008-crm-dedup-normalized.ts` (détail dans CRM_AUTOMATISATIONS.md §10).
 - Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `009-crm-revenue.ts` (objectifs ; détail dans CRM_AUTOMATISATIONS.md §10).
+- Tests RGPD : `crm-rgpd-privacy`, `crm-rgpd-rules`, `crm-rgpd-routes`, `crm-rgpd-retention`.
+- Migrations : `backend/scripts/migrations/004-crm-enrich.ts`, `005-crm-form-rule-source.ts`, `006-crm-post-demo-rule.ts`, `010-crm-rgpd.ts` (détail dans CRM_AUTOMATISATIONS.md §10).

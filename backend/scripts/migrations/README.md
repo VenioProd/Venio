@@ -18,6 +18,7 @@ Elles ont été sorties d'ici pour ne plus pénaliser le boot et faciliter le re
 | [`007-crm-lead-entity.ts`](./007-crm-lead-entity.ts) | 2026-11-06 | Pose `entity` (entité du groupe) sur les leads qui n'en ont pas, d'après `project` : `ARROW` → `ARROW`, le reste (dont `ARTOSERA`) → `VENIO`. N'écrase jamais une entité déjà posée ; `--dry-run` pour compter. |
 | [`008-crm-dedup-normalized.ts`](./008-crm-dedup-normalized.ts) | 2026-11-06 | Remplit `contactEmailNormalized`, `contactPhoneNormalized` et `companyNormalized` des leads (détection de doublons, chantier 3B) et crée leurs index. À lancer avant ou avec le déploiement. Idempotente (ne réécrit que les valeurs absentes ou périmées) ; `--dry-run` pour compter. |
 | [`009-crm-revenue.ts`](./009-crm-revenue.ts) | 2026-11-06 | Crée la collection des objectifs commerciaux (`CrmGoal`) et son index unique `{period, entity, userId}`. Ne lit ni ne modifie aucune donnée existante ; `--dry-run` pour lister l'état des index. |
+| [`010-crm-rgpd.ts`](./010-crm-rgpd.ts) | 2026-11-06 | RGPD du CRM : base légale par défaut `LEGITIMATE_INTEREST` et `consent.status: UNKNOWN` sur les leads qui n'en ont pas, `doNotContact: false` ; index unique de la liste de suppression. N'écrase rien, ne touche pas `updatedAt`, n'anonymise rien ; `--dry-run` pour compter. |
 
 ## Exécuter une migration
 

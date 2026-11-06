@@ -35,7 +35,10 @@ import {
   readsWholeCrm,
   resolveWriteEntity,
 } from '../../lib/crmScope.js'
-import { GROUP_ENTITIES, isGroupEntity } from '../../lib/groupEntities.js'
+import { GROUP_ENTITIES, isGroupEntity, leadEntityOf } from '../../lib/groupEntities.js'
+import { anonymizeLead, buildPersonalDataExport, isEmailSuppressed } from '../../lib/crmPrivacy.js'
+import { clampRetentionMonths } from '../../lib/crmRetention.js'
+import { buildActorFromReq, recordAudit } from '../../lib/audit/auditHelpers.js'
 import {
   DEFAULT_CURRENCY,
   DEFAULT_FORECAST_MONTHS,
@@ -49,6 +52,7 @@ import {
   summariseRevenue,
   summariseRevenueByCurrency,
   weightedPipeline,
+  type RevenueDocument,
 } from '../../lib/crmRevenue.js'
 import CrmGoal from '../../models/CrmGoal.js'
 import Project from '../../models/Project.js'
@@ -361,6 +365,104 @@ router.get(
         .populate('actorId', 'name email')
       return res.json({ activities })
     } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+// ─── Données personnelles (RGPD, chantier 3D) ────────────────────────────────
+
+/**
+ * Lead visé par une demande de droits (accès, effacement) : réservé à
+ * l'administration du CRM (`administersCrm`), qui traite ces demandes pour tout
+ * le groupe, dans la limite des entités de l'utilisateur.
+ */
+async function loadLeadForDataRights(req: Request, res: Response) {
+  if (!administersCrm(req)) {
+    res.status(403).json({ error: 'Les demandes sur les données personnelles sont réservées aux administrateurs du CRM', code: 'CRM_ADMIN_REQUIRED' })
+    return null
+  }
+  const lead = await Lead.findById(req.params.id)
+  const allowed = crmEntityRestriction(req)
+  if (!lead || (allowed !== null && !allowed.includes(leadEntityOf(lead)))) {
+    res.status(404).json({ error: 'Lead not found' })
+    return null
+  }
+  return lead
+}
+
+/** Statut RGPD affiché dans la fiche : consentement, opposition, présence dans la liste de suppression. */
+router.get(
+  '/leads/:id/privacy',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await Lead.findById(req.params.id).select(`consent doNotContact doNotContactAt doNotContactReason anonymizedAt contactEmail ${LEAD_SCOPE_FIELDS}`)
+      if (!lead || !canReadLead(req, lead)) return res.status(404).json({ error: 'Lead not found' })
+      return res.json({
+        consent: lead.consent,
+        doNotContact: Boolean(lead.doNotContact),
+        doNotContactAt: lead.doNotContactAt ?? null,
+        doNotContactReason: lead.doNotContactReason ?? '',
+        anonymizedAt: lead.anonymizedAt ?? null,
+        suppressed: await isEmailSuppressed(lead.contactEmail),
+        canAdminister: administersCrm(req),
+      })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+/** Droit d'accès : export JSON complet du lead, de son historique et de ses échanges. */
+router.get(
+  '/leads/:id/personal-data',
+  requirePermission(PERMISSIONS.VIEW_CRM),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await loadLeadForDataRights(req, res)
+      if (!lead) return undefined
+      const data = await buildPersonalDataExport(lead._id)
+      if (!data) return res.status(404).json({ error: 'Lead not found' })
+      await recordAudit({
+        action: 'CRM_LEAD_PERSONAL_DATA_EXPORT',
+        actor: buildActorFromReq(req),
+        entityType: 'Lead',
+        entityId: String(lead._id),
+        entityRef: lead.company,
+        summary: 'Export des données personnelles d’un lead',
+        extra: { activities: data.activities.length, interactions: data.interactions.length },
+      })
+      res.setHeader('Content-Disposition', `attachment; filename="lead-${String(lead._id)}-donnees-personnelles.json"`)
+      return res.json(data)
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+/** Droit à l'effacement : anonymisation (le lead reste pour les statistiques, sans donnée personnelle). */
+router.post(
+  '/leads/:id/anonymize',
+  requirePermission(PERMISSIONS.MANAGE_CRM),
+  idempotentRequest,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const lead = await loadLeadForDataRights(req, res)
+      if (!lead) return undefined
+      if (lead.anonymizedAt) return res.status(409).json({ error: 'Lead déjà anonymisé', code: 'ALREADY_ANONYMIZED' })
+      await anonymizeLead(lead, { actor: req.user!.id, source: 'admin', reason: 'REQUEST' })
+      await recordAudit({
+        action: 'CRM_LEAD_ANONYMIZE',
+        actor: buildActorFromReq(req),
+        entityType: 'Lead',
+        entityId: String(lead._id),
+        entityRef: lead.company,
+        summary: 'Anonymisation d’un lead (demande de la personne)',
+      })
+      return res.json({ lead })
+    } catch (err) {
+      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, ...err.details })
       return next(err)
     }
   },
@@ -899,6 +1001,18 @@ router.patch(
           return res.status(400).json({ error: 'Le closer doit être un membre actif de l’équipe' })
         }
         updates.defaultCloserId = closerId
+      }
+
+      // Conservation (RGPD) : durée bornée ; l'activation de la purge est un booléen explicite.
+      if (updates.retentionMonths !== undefined) {
+        const months = Number(updates.retentionMonths)
+        if (!Number.isInteger(months) || months !== clampRetentionMonths(months)) {
+          return res.status(400).json({ error: 'retentionMonths : nombre entier de mois entre 6 et 120' })
+        }
+        updates.retentionMonths = months
+      }
+      if (updates.retentionPurgeEnabled !== undefined && typeof updates.retentionPurgeEnabled !== 'boolean') {
+        return res.status(400).json({ error: 'retentionPurgeEnabled : booléen attendu' })
       }
 
       const settings = await CrmSettings.updateSettings(updates)

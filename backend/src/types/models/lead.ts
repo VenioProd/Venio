@@ -53,6 +53,17 @@ export interface ILead extends Document {
   contactPhoneNormalized: string
   /** Nom d'entreprise normalisé (minuscules, sans accents ni ponctuation). */
   companyNormalized: string
+  // ── RGPD (chantier 3D) ──
+  consent: {
+    status: 'UNKNOWN' | 'GRANTED' | 'WITHDRAWN'
+    basis: 'CONSENT' | 'LEGITIMATE_INTEREST' | 'CONTRACT'
+    source: string
+    at: Date | null
+  }
+  doNotContact: boolean
+  doNotContactAt: Date | null
+  doNotContactReason: string
+  anonymizedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }

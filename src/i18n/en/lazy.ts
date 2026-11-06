@@ -27,6 +27,7 @@ import projB from './projB'
 import projects from './projects'
 import crmAuto from './crmAuto'
 import crmRich from './crmRich'
+import crmPrivacy from './crmPrivacy'
 import portfolio from './portfolio'
 
 const messages = {
@@ -58,6 +59,7 @@ const messages = {
   ...projects,
   ...crmAuto,
   ...crmRich,
+  ...crmPrivacy,
   ...portfolio,
 }
 

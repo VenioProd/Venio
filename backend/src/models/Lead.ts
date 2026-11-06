@@ -9,6 +9,10 @@ import { normalizeCompanyName, normalizeEmail, normalizePhone } from '../lib/crm
 // Projet / produit concerné par le lead. Vide pour les leads historiques.
 export const LEAD_PROJECTS = ['ARTOSERA', 'VIGNO', 'ARROW', 'VENIO', 'AUTRE'] as const
 
+// ── RGPD (chantier 3D) ──
+export const CONSENT_STATUSES = ['UNKNOWN', 'GRANTED', 'WITHDRAWN'] as const
+export const LEGAL_BASES = ['CONSENT', 'LEGITIMATE_INTEREST', 'CONTRACT'] as const
+
 const leadSchema = new mongoose.Schema<ILead>(
   {
     company: { type: String, required: true, trim: true },
@@ -92,6 +96,26 @@ const leadSchema = new mongoose.Schema<ILead>(
     contactEmailNormalized: { type: String, default: '' },
     contactPhoneNormalized: { type: String, default: '' },
     companyNormalized: { type: String, default: '' },
+    // ── RGPD (chantier 3D) ──
+    // Base légale et consentement du traitement des données du contact (voir lib/crmPrivacy).
+    consent: {
+      type: new mongoose.Schema(
+        {
+          status: { type: String, enum: [...CONSENT_STATUSES], default: 'UNKNOWN' },
+          basis: { type: String, enum: [...LEGAL_BASES], default: 'LEGITIMATE_INTEREST' },
+          source: { type: String, default: '', maxlength: 80 },
+          at: { type: Date, default: null },
+        },
+        { _id: false },
+      ),
+      default: () => ({}),
+    },
+    // Opposition du contact : aucun e-mail de prospection ne part vers ce lead.
+    doNotContact: { type: Boolean, default: false },
+    doNotContactAt: { type: Date, default: null },
+    doNotContactReason: { type: String, default: '', maxlength: 200 },
+    // Données personnelles effacées (conservation échue ou demande de la personne).
+    anonymizedAt: { type: Date, default: null },
   },
   { timestamps: true },
 )
@@ -158,6 +182,8 @@ leadSchema.index({ status: 1, createdAt: -1 }) // Cohortes du pilotage
 leadSchema.index({ contactEmailNormalized: 1 })
 leadSchema.index({ contactPhoneNormalized: 1 })
 leadSchema.index({ companyNormalized: 1 })
+// ── RGPD (chantier 3D) ── : candidats de la purge de conservation
+leadSchema.index({ anonymizedAt: 1, updatedAt: 1 })
 
 syncTombstones(leadSchema, 'leads')
 

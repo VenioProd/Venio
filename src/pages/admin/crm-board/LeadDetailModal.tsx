@@ -6,6 +6,7 @@ import InteractionTimeline from '../../../components/admin/InteractionTimeline'
 import RevenueChain from '../../../components/admin/RevenueChain'
 import LeadEnrichedPanel from './rich/LeadEnrichedPanel'
 import MergeLeadDialog from './MergeLeadDialog'
+import LeadPrivacyPanel from './LeadPrivacyPanel'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
 import {
@@ -339,6 +340,13 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               échanges. Son contenu déjà saisi reste affiché en tête de
               timeline pour ne pas disparaître de l'écran. */}
           <LeadEnrichedPanel
+            lead={lead}
+            canManageCrm={canManageCrm}
+            onUpdateLead={onUpdateLead}
+            onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
+          />
+
+          <LeadPrivacyPanel
             lead={lead}
             canManageCrm={canManageCrm}
             onUpdateLead={onUpdateLead}

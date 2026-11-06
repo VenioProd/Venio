@@ -44,8 +44,24 @@ export interface Lead {
   interactionsCount?: number
   archivedAt?: string | null
   automationPausedAt?: string | null
+  // ── RGPD (chantier 3D) ──
+  consent?: LeadConsent
+  doNotContact?: boolean
+  doNotContactAt?: string | null
+  doNotContactReason?: string
+  anonymizedAt?: string | null
   createdAt?: string
   updatedAt?: string
+}
+
+// ── RGPD (chantier 3D) ──
+export type ConsentStatus = 'UNKNOWN' | 'GRANTED' | 'WITHDRAWN'
+export type LegalBasis = 'CONSENT' | 'LEGITIMATE_INTEREST' | 'CONTRACT'
+export interface LeadConsent {
+  status: ConsentStatus
+  basis: LegalBasis
+  source?: string
+  at?: string | null
 }
 
 export interface LeadAlert {
