@@ -7,6 +7,12 @@ export interface ILead extends Document {
   contactName: string
   contactEmail: string
   contactPhone: string
+  callList: string
+  lastCallOutcome: string | null
+  lastCallAt: Date | null
+  phoneInvalid: boolean
+  extraInfo: Record<string, string>
+  doNotCall: boolean
   source: string
   /** Projet concerné : ARTOSERA, VIGNO, ARROW, VENIO, AUTRE ou '' (non renseigné). */
   project: '' | 'ARTOSERA' | 'VIGNO' | 'ARROW' | 'VENIO' | 'AUTRE'

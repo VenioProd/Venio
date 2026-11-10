@@ -187,3 +187,107 @@
     flex: 1 1 100%;
   }
 }
+
+.commercial-call-filters,
+.commercial-call-editor fieldset {
+  border: 0;
+  margin: 16px 0;
+  padding: 0;
+  min-width: 0;
+}
+.commercial-call-filters label {
+  flex: 1 1 200px;
+}
+.commercial-call-grid {
+  display: grid;
+  gap: 6px;
+}
+.commercial-call-columns,
+.commercial-call-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.3fr 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.commercial-call-columns {
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: default;
+}
+.commercial-call-row,
+.commercial-call-editor {
+  overflow-wrap: anywhere;
+}
+.commercial-call-row small {
+  display: block;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.commercial-call-row.voicemail {
+  border-left: 4px solid #e5484d;
+  background: rgba(229, 72, 77, 0.1);
+}
+.commercial-call-row.selected {
+  outline: 2px solid var(--primary-light);
+}
+.commercial-call-row:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+}
+.commercial-call-editor fieldset {
+  display: grid;
+  gap: 14px;
+}
+.commercial-call-editor label {
+  display: grid;
+  gap: 6px;
+}
+.commercial-call-editor textarea {
+  margin: 0;
+}
+.commercial-call-outcomes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.commercial-call-outcomes kbd {
+  margin-left: 8px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+.commercial-call-notes {
+  white-space: pre-wrap;
+}
+.commercial-call-extra {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+.commercial-import-form {
+  margin-top: 16px;
+}
+@media (max-width: 760px) {
+  .commercial-call-columns {
+    display: none;
+  }
+  .commercial-call-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.commercial-import-form fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}

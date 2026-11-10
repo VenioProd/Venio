@@ -8,6 +8,7 @@ import './CommercialSpace.css'
 
 const TABS: { to: string; labelKey: MessageKey; end: boolean }[] = [
   { to: '/commercial', labelKey: 'commercial.tab.leads', end: true },
+  { to: '/commercial/calls', labelKey: 'commercial.calls.title', end: false },
   { to: '/commercial/clients', labelKey: 'commercial.tab.clients', end: false },
   { to: '/commercial/commissions', labelKey: 'commercial.tab.commissions', end: false },
 ]
@@ -15,7 +16,7 @@ const TABS: { to: string; labelKey: MessageKey; end: boolean }[] = [
 // Une fiche lead reste sous l'onglet « Mes leads ».
 const isLeadPath = (pathname: string) => pathname.startsWith('/commercial/leads/')
 
-/** Coque de l'espace commercial externe : trois onglets, rien d'autre de Venio. */
+/** Coque de l’espace commercial externe. */
 const CommercialSpace = () => {
   const { user, logout } = useAuth()
   const { t } = useI18n()

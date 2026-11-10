@@ -4,6 +4,8 @@ import mongoose from 'mongoose'
 import { body, param, validationResult } from 'express-validator'
 import User from '../../models/User.js'
 import Lead, { LEAD_PROJECTS } from '../../models/Lead.js'
+import { computeRequestHash } from '../../lib/agent/idempotency.js'
+import { importCallLeads } from '../../lib/callImports.js'
 import LeadActivity from '../../models/LeadActivity.js'
 import ClientContact from '../../models/ClientContact.js'
 import { findClientNote, listClientNotes, logInteraction, toClientNoteShape } from '../../lib/interactions.js'
@@ -48,7 +50,6 @@ import { entityCondition, GROUP_ENTITIES, isGroupEntity } from '../../lib/groupE
  */
 
 const router = express.Router()
-
 
 // ───────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -262,6 +263,34 @@ router.patch(
 // LEADS
 // ═══════════════════════════════════════════════════════════════════════════
 
+router.post(
+  '/leads/import',
+  requireScope('write:crm'),
+  body('externalRep').isMongoId(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (emitValidationError(req, res)) return
+    try {
+      const report = await importCallLeads({
+        externalRep: req.body.externalRep,
+        leads: req.body.leads,
+        callList: req.body.callList,
+        project: req.body.project,
+        region: req.body.region,
+        agentRequest: {
+          tokenId: req.agentToken!.id,
+          key: req.get('Idempotency-Key')!,
+          path: req.originalUrl.split('?')[0]!,
+          requestHash: computeRequestHash(req.body),
+        },
+      })
+      res.locals.audit = { entityType: 'Lead', summary: `Import de ${report.created} leads`, after: report }
+      res.status(201).json(report)
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+
 router.get('/leads', requireScope('read:crm'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pag = parsePagination(req)
@@ -373,9 +402,15 @@ router.post(
       const settings = await CrmSettings.getSettings()
       const duplicates = settings.duplicateDetectionEnabled ? await checkDuplicateLead(payload as any, settings) : []
       if (duplicates.length > 0 && settings.duplicateBlockOnCreate) {
-        return respondError(res, 409, 'DUPLICATE_LEAD', 'Des leads existants correspondent à ce prospect (doublon probable)', {
-          duplicates,
-        })
+        return respondError(
+          res,
+          409,
+          'DUPLICATE_LEAD',
+          'Des leads existants correspondent à ce prospect (doublon probable)',
+          {
+            duplicates,
+          },
+        )
       }
       const { lead } = await createLead(
         { ...payload, createdBy: fallbackAdmin._id, assignedTo: payload.assignedTo || null },

@@ -29,6 +29,9 @@ const interactionSchema = new mongoose.Schema<IInteraction>(
     subjectType: { type: String, enum: INTERACTION_SUBJECT_TYPES, required: true },
     subjectId: { type: mongoose.Schema.Types.ObjectId, required: true },
     kind: { type: String, enum: INTERACTION_KINDS, required: true },
+    outcome: { type: String, trim: true, maxlength: 60 },
+    scriptTag: { type: String, trim: true, maxlength: 60 },
+    durationSec: { type: Number, min: 0 },
     direction: { type: String, enum: INTERACTION_DIRECTIONS, default: 'NONE' },
     // Distinct de createdAt : un appel se consigne souvent après coup, et la
     // timeline doit le classer à sa date réelle.
@@ -51,6 +54,16 @@ const interactionSchema = new mongoose.Schema<IInteraction>(
     // ne traduit jamais : la traduction se fait sur l'appareil qui l'affiche.
     lang: { type: String, enum: ['fr', 'en', null], default: null },
     clientRequestId: { type: String, select: false },
+    callUndo: {
+      type: new mongoose.Schema(
+        {
+          leadBefore: { type: mongoose.Schema.Types.Mixed, required: true },
+          activityId: { type: mongoose.Schema.Types.ObjectId, default: null },
+        },
+        { _id: false },
+      ),
+      select: false,
+    },
     clientRequestHash: { type: String, select: false },
     audio: {
       type: new mongoose.Schema(

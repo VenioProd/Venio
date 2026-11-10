@@ -110,6 +110,9 @@ export interface LogInteractionInput {
   recipients?: { email: string; name?: string; status: 'SENT' | 'FAILED'; error?: string }[]
   deliveryStatus?: 'NONE' | 'SENT' | 'PARTIAL' | 'FAILED'
   lang?: 'fr' | 'en' | null
+  outcome?: string
+  scriptTag?: string
+  durationSec?: number
   clientRequestId?: string
   clientRequestHash?: string
   audio?: { filename: string; originalName: string; mimeType: string; size: number }
@@ -121,15 +124,25 @@ export interface LogInteractionInput {
  * `recount`, `interactionsCount` = nombre d'échanges restants. Sans `recount`,
  * seul le compteur est laissé intact (il est incrémenté ailleurs à l'enregistrement).
  */
-export async function syncLeadLastInteraction(leadId: Types.ObjectId | string, options: { recount?: boolean } = {}): Promise<void> {
-  const latest = await Interaction.findOne({ subjectType: 'LEAD', subjectId: leadId }).sort({ occurredAt: -1 }).select('occurredAt').lean()
+export async function syncLeadLastInteraction(
+  leadId: Types.ObjectId | string,
+  options: { recount?: boolean } = {},
+): Promise<void> {
+  const latest = await Interaction.findOne({ subjectType: 'LEAD', subjectId: leadId })
+    .sort({ occurredAt: -1 })
+    .select('occurredAt')
+    .lean()
   const set: Record<string, unknown> = { lastInteractionAt: latest ? latest.occurredAt : null }
-  if (options.recount) set.interactionsCount = await Interaction.countDocuments({ subjectType: 'LEAD', subjectId: leadId })
+  if (options.recount)
+    set.interactionsCount = await Interaction.countDocuments({ subjectType: 'LEAD', subjectId: leadId })
   await Lead.updateOne({ _id: leadId }, { $set: set })
 }
 
 export async function logInteraction(input: LogInteractionInput) {
   const interaction = await Interaction.create({
+    outcome: input.outcome,
+    scriptTag: input.scriptTag,
+    durationSec: input.durationSec,
     lang: input.lang ?? null,
     clientRequestId: input.clientRequestId,
     clientRequestHash: input.clientRequestHash,
@@ -166,6 +179,12 @@ export async function logInteraction(input: LogInteractionInput) {
       import('./crmSequences.js')
         .then((m) => m.stopSequencesOnInboundInteraction(input.subjectId, interaction.occurredAt))
         .catch(() => {})
+    }
+    if (input.kind === 'CALL') {
+      await Lead.updateOne(
+        { _id: input.subjectId, $or: [{ lastCallAt: null }, { lastCallAt: { $lte: interaction.occurredAt } }] },
+        { $set: { lastCallAt: interaction.occurredAt, lastCallOutcome: input.outcome ?? null } },
+      )
     }
   }
   return interaction
