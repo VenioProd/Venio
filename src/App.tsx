@@ -66,6 +66,7 @@ const ClientBilling = lazy(() => import('./pages/espace-client/Billing'))
 
 // Espace commercial externe
 const CommercialSpace = lazy(() => import('./pages/commercial/CommercialSpace'))
+const CommercialCalls = lazy(() => import('./pages/commercial/CommercialCalls'))
 const CommercialLeads = lazy(() => import('./pages/commercial/CommercialLeads'))
 const CommercialLeadDetail = lazy(() => import('./pages/commercial/CommercialLeadDetail'))
 const CommercialClients = lazy(() =>
@@ -290,6 +291,7 @@ function AppShell() {
                     }
                   >
                     <Route index element={<CommercialLeads />} />
+                    <Route path="calls" element={<CommercialCalls />} />
                     <Route path="leads/:id" element={<CommercialLeadDetail />} />
                     <Route path="clients" element={<CommercialClients />} />
                     <Route path="commissions" element={<CommercialCommissions />} />
@@ -504,7 +506,16 @@ function AppShell() {
                       path="projets/fiches/:slug"
                       element={
                         <ProtectedRoute
-                          role={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE']}
+                          role={[
+                            'SUPER_ADMIN',
+                            'ADMIN',
+                            'MANAGER',
+                            'RH',
+                            'COMMERCIAL',
+                            'COMPTABLE',
+                            'VIEWER',
+                            'STAGIAIRE',
+                          ]}
                           redirectTo="/admin"
                         >
                           <ProjectSheetDetail />

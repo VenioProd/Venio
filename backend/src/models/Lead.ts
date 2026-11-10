@@ -19,6 +19,12 @@ const leadSchema = new mongoose.Schema<ILead>(
     contactName: { type: String, default: '' },
     contactEmail: { type: String, default: '' },
     contactPhone: { type: String, default: '' },
+    callList: { type: String, default: '', trim: true, maxlength: 120 },
+    lastCallOutcome: { type: String, default: null },
+    lastCallAt: { type: Date, default: null },
+    phoneInvalid: { type: Boolean, default: false },
+    extraInfo: { type: mongoose.Schema.Types.Mixed, default: {} },
+    doNotCall: { type: Boolean, default: false },
     source: { type: String, default: '' },
     project: { type: String, enum: ['', ...LEAD_PROJECTS], default: '' },
     // Entité du groupe qui porte l'affaire (voir lib/groupEntities). Distincte du projet.
@@ -144,6 +150,26 @@ leadSchema.pre('validate', function () {
   if (this.isNew || this.isModified('company')) this.companyNormalized = normalizeCompanyName(this.company)
 })
 
+leadSchema.pre('save', function () {
+  if (!this.isNew && this.isModified('contactPhone')) this.phoneInvalid = false
+})
+for (const operation of ['updateOne', 'findOneAndUpdate'] as const) {
+  leadSchema.pre(operation, async function () {
+    const update = this.getUpdate()
+    if (!update || Array.isArray(update)) return
+    const phone = update.$set?.contactPhone ?? update.contactPhone
+    if (phone === undefined) return
+    const previous = await this.model
+      .findOne(this.getFilter())
+      .select('contactPhone')
+      .session(this.getOptions().session ?? null)
+      .lean<{ contactPhone: string }>()
+    if (previous && previous.contactPhone !== String(phone)) {
+      update.$set = { ...update.$set, phoneInvalid: false }
+    }
+  })
+}
+
 // Le modèle couvre aussi les sauvegardes de l'API agent et du planificateur.
 leadSchema.pre('save', async function () {
   this.$locals.assignmentChanged = false
@@ -176,6 +202,8 @@ leadSchema.index({ clientAccountId: 1 })
 leadSchema.index({ externalRep: 1, updatedAt: -1 })
 leadSchema.index({ archivedAt: 1, status: 1 })
 leadSchema.index({ tags: 1 })
+leadSchema.index({ externalRep: 1, callList: 1, nextActionAt: 1, _id: 1 })
+leadSchema.index({ externalRep: 1, contactPhone: 1 })
 leadSchema.index({ score: -1 }) // Index for sorting by score
 leadSchema.index({ status: 1, createdAt: -1 }) // Cohortes du pilotage
 // Détection de doublons : égalités exactes sur les valeurs normalisées.

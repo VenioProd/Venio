@@ -3097,6 +3097,32 @@ a.portal-button {
   padding: 20px;
 }
 
+.crm-call-settings-form {
+  display: grid;
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.crm-call-settings-form label {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.crm-call-settings-form .crm-settings-item-controls {
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.crm-call-settings-form .crm-settings-item-controls input {
+  flex: 1;
+  min-width: 0;
+}
+
 .crm-settings-section-header {
   display: flex;
   align-items: center;

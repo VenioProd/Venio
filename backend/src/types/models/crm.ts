@@ -29,6 +29,9 @@ export interface IInteraction extends Document {
   subjectType: InteractionSubjectType
   subjectId: Types.ObjectId
   kind: InteractionKind
+  outcome?: string
+  scriptTag?: string
+  durationSec?: number
   direction: InteractionDirection
   occurredAt: Date
   endsAt?: Date
@@ -44,6 +47,7 @@ export interface IInteraction extends Document {
   lang?: 'fr' | 'en' | null
   clientRequestId?: string
   clientRequestHash?: string
+  callUndo?: { leadBefore: Record<string, unknown>; activityId: Types.ObjectId | null }
   audio?: { filename: string; originalName: string; mimeType: string; size: number } | null
   createdAt: Date
   updatedAt: Date
@@ -90,6 +94,16 @@ export interface IScoringWeights {
 }
 
 export interface ICrmSettings extends Document {
+  callOutcomes: {
+    value: string
+    fr: string
+    en: string
+    effect: 'NONE' | 'VOICEMAIL' | 'CALLBACK' | 'MEETING' | 'LOST' | 'WRONG_NUMBER' | 'DO_NOT_CALL'
+    reached: boolean
+    retryAfterMinutes: number | null
+  }[]
+  callScriptTags: string[]
+  callDefaultRegion: string
   roundRobinEnabled: boolean
   autoQualifyEnabled: boolean
   autoLastContactOnContacted: boolean

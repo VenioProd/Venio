@@ -8,6 +8,7 @@ import { translate } from '../../../i18n'
 import { canAdministerCrm } from '../../../lib/crmAccess'
 import type { AdminUser } from '../../../types/crm.types'
 import type { CrmSettingsData, CrmSettingsMessage } from './types'
+import CallsSection from './CallsSection'
 import AssignmentSection from './AssignmentSection'
 import QualificationSection from './QualificationSection'
 import StatusSection from './StatusSection'
@@ -55,27 +56,26 @@ export default function CrmSettings() {
     fetchData()
   }, [fetchData])
 
-  const updateSetting = async (key: string, value: unknown) => {
+  const updateSettings = async (updates: Record<string, unknown>) => {
     if (!canManage) return
-
-    const prev = settings?.[key]
-    setSettings((s) => (s ? { ...s, [key]: value } : s))
-
+    const previous = Object.fromEntries(Object.keys(updates).map((key) => [key, settings?.[key]]))
+    setSettings((current) => (current ? { ...current, ...updates } : current))
     try {
       setSaving(true)
       await apiFetch('/api/admin/crm/settings', {
         method: 'PATCH',
-        body: JSON.stringify({ [key]: value }),
+        body: JSON.stringify(updates),
       })
       setMessage({ type: 'success', text: t('crm.settings.updated') })
       setTimeout(() => setMessage(null), 2000)
-    } catch (err: unknown) {
-      setSettings((s) => (s ? { ...s, [key]: prev } : s))
+    } catch {
+      setSettings((current) => (current ? { ...current, ...previous } : current))
       setMessage({ type: 'error', text: t('crm.settings.updateError') })
     } finally {
       setSaving(false)
     }
   }
+  const updateSetting = (key: string, value: unknown) => updateSettings({ [key]: value })
 
   const updateNestedSetting = async (parent: string, key: string, value: unknown) => {
     if (!canManage) return
@@ -94,7 +94,7 @@ export default function CrmSettings() {
       })
       setMessage({ type: 'success', text: t('crm.settings.updated') })
       setTimeout(() => setMessage(null), 2000)
-    } catch (err: unknown) {
+    } catch {
       setSettings((s) => {
         if (!s) return s
         return { ...s, [parent]: { ...s[parent], [key]: prev } }
@@ -164,6 +164,7 @@ export default function CrmSettings() {
       )}
 
       <div className="crm-settings-grid">
+        <CallsSection {...sectionProps} updateSettings={updateSettings} />
         <AssignmentSection {...sectionProps} admins={admins} />
         <QualificationSection {...sectionProps} />
         <StatusSection {...sectionProps} />

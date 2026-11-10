@@ -23,6 +23,8 @@ import {
   repClients,
   repLeadFilter,
 } from '../../lib/externalSales.js'
+import callDeskRoutes from './callDesk.js'
+import { toRepLead } from '../../lib/repLeadView.js'
 import type { ILead } from '../../types/models/index.js'
 
 /**
@@ -33,6 +35,7 @@ const router = express.Router()
 
 router.use(auth)
 router.use(requireRole(EXTERNAL_SALES_ROLE))
+router.use(callDeskRoutes)
 
 // Le closing (devis, signature) revient à l'équipe : l'externe s'arrête avant.
 const REP_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'LOST']
@@ -41,31 +44,6 @@ const STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', '
 // événements internes (projets, devis, escalade) restent côté équipe.
 const VISIBLE_ACTIVITY_TYPES = ['CREATED', 'STATUS_CHANGE', 'READY_TO_CLOSE', 'CONVERTED']
 const INTERACTION_KINDS = ['EMAIL', 'CALL', 'MEETING', 'NOTE']
-
-function toRepLead(lead: ILead) {
-  return {
-    _id: lead._id,
-    company: lead.company,
-    contactName: lead.contactName,
-    contactEmail: lead.contactEmail,
-    contactPhone: lead.contactPhone,
-    source: lead.source,
-    status: lead.status,
-    priority: lead.priority,
-    budget: lead.budget,
-    nextActionAt: lead.nextActionAt,
-    lastContactAt: lead.lastContactAt,
-    // Après le passage, l'équipe reprend les notes : l'externe ne voit plus que les siennes.
-    notes: lead.closingHandoff ? (lead.closingHandoff.repNotes ?? '') : lead.notes,
-    serviceType: lead.serviceType,
-    leadTemperature: lead.leadTemperature,
-    lostReason: lead.lostReason,
-    lostComment: lead.lostComment,
-    handedOffAt: lead.closingHandoff?.at ?? null,
-    createdAt: lead.createdAt,
-    updatedAt: lead.updatedAt,
-  }
-}
 
 function invalid(req: Request, res: Response): boolean {
   const errors = validationResult(req)
@@ -244,7 +222,7 @@ router.get('/leads/:id', async (req: Request, res: Response, next: NextFunction)
       // Ses propres échanges seulement : ceux de l'équipe peuvent porter le devis.
       Interaction.find({ subjectType: 'LEAD', subjectId: lead._id, author: req.user!.id })
         .sort({ occurredAt: -1 })
-        .select('kind direction occurredAt subject body createdAt')
+        .select('kind direction occurredAt subject body outcome scriptTag durationSec createdAt')
         .lean(),
     ])
     return res.json({

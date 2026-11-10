@@ -15,6 +15,83 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
     // ═══════════════════════════════════════════════════════════════
     // ASSIGNMENT AUTOMATIONS
     // ═══════════════════════════════════════════════════════════════
+    callOutcomes: {
+      type: [
+        {
+          _id: false,
+          value: { type: String, required: true },
+          fr: { type: String, required: true },
+          en: { type: String, required: true },
+          effect: {
+            type: String,
+            enum: ['NONE', 'VOICEMAIL', 'CALLBACK', 'MEETING', 'LOST', 'WRONG_NUMBER', 'DO_NOT_CALL'],
+            required: true,
+          },
+          reached: { type: Boolean, required: true },
+          retryAfterMinutes: { type: Number, default: null },
+        },
+      ],
+      default: [
+        {
+          value: 'NO_ANSWER',
+          fr: 'Sans réponse',
+          en: 'No answer',
+          effect: 'NONE',
+          reached: false,
+          retryAfterMinutes: 240,
+        },
+        {
+          value: 'VOICEMAIL',
+          fr: 'Messagerie',
+          en: 'Voicemail',
+          effect: 'VOICEMAIL',
+          reached: false,
+          retryAfterMinutes: 1440,
+        },
+        {
+          value: 'CALLBACK',
+          fr: 'À rappeler',
+          en: 'Callback',
+          effect: 'CALLBACK',
+          reached: true,
+          retryAfterMinutes: null,
+        },
+        {
+          value: 'MEETING_BOOKED',
+          fr: 'Rendez-vous pris',
+          en: 'Meeting booked',
+          effect: 'MEETING',
+          reached: true,
+          retryAfterMinutes: null,
+        },
+        {
+          value: 'NOT_INTERESTED',
+          fr: 'Pas intéressé',
+          en: 'Not interested',
+          effect: 'LOST',
+          reached: true,
+          retryAfterMinutes: null,
+        },
+        {
+          value: 'WRONG_NUMBER',
+          fr: 'Mauvais numéro',
+          en: 'Wrong number',
+          effect: 'WRONG_NUMBER',
+          reached: false,
+          retryAfterMinutes: null,
+        },
+        {
+          value: 'DO_NOT_CALL',
+          fr: 'Ne plus appeler',
+          en: 'Do not call',
+          effect: 'DO_NOT_CALL',
+          reached: true,
+          retryAfterMinutes: null,
+        },
+      ],
+    },
+    callScriptTags: { type: [String], default: ['DEFAULT'] },
+    callDefaultRegion: { type: String, default: 'FR' },
     roundRobinEnabled: { type: Boolean, default: true },
 
     // ═══════════════════════════════════════════════════════════════

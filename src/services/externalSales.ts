@@ -11,6 +11,13 @@ export interface RepLead {
   contactEmail: string
   contactPhone: string
   source: string
+  project?: string
+  callList?: string
+  lastCallOutcome?: string | null
+  lastCallAt?: string | null
+  phoneInvalid?: boolean
+  extraInfo: Record<string, string>
+  doNotCall?: boolean
   status: RepLeadStatus
   priority: 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
   budget: number | null
@@ -38,6 +45,9 @@ export interface RepActivity {
 export interface RepInteraction {
   _id: string
   kind: 'EMAIL' | 'CALL' | 'MEETING' | 'NOTE'
+  outcome?: string
+  scriptTag?: string
+  durationSec?: number
   direction: 'OUT' | 'IN' | 'NONE'
   occurredAt: string
   subject: string
@@ -119,7 +129,59 @@ export function formatDay(value: string | null | undefined): string {
 
 const json = (body: unknown) => ({ body: JSON.stringify(body) })
 
+export type CallEffect = 'NONE' | 'VOICEMAIL' | 'CALLBACK' | 'MEETING' | 'LOST' | 'WRONG_NUMBER' | 'DO_NOT_CALL'
+export interface CallOutcome {
+  value: string
+  fr: string
+  en: string
+  effect: CallEffect
+  reached: boolean
+  retryAfterMinutes: number | null
+}
+export interface CallSettings {
+  projects: string[]
+  outcomes: CallOutcome[]
+  scriptTags: string[]
+  defaultRegion: string
+}
+export interface CallDraft {
+  durationSec?: number
+  clientRequestId: string
+  note: string
+  outcome: string
+  scriptTag: string
+  nextActionAt: string | null
+}
+export interface CallImportReport {
+  created: number
+  duplicates: number
+  rejected: number
+  errors: { row: number; reason: string }[]
+}
 export const commercialApi = {
+  undoQuickCall: (id: string, interactionId: string) =>
+    apiFetch<{ lead: RepLead }>(`/api/commercial/leads/${id}/quick-call/${interactionId}/undo`, { method: 'POST' }),
+  addScriptTag: (tag: string) =>
+    apiFetch<{ scriptTags: string[] }>('/api/commercial/calls/script-tags', { method: 'POST', ...json({ tag }) }),
+  callSettings: () => apiFetch<CallSettings>('/api/commercial/calls/settings'),
+  callFilters: () => apiFetch<{ lists: string[]; projects: string[] }>('/api/commercial/calls/filters'),
+  callQueue: (params: { cursor?: string; callList?: string; project?: string } = {}) => {
+    const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value) as [string, string][])
+    return apiFetch<{ leads: RepLead[]; nextCursor: string | null }>(`/api/commercial/calls/queue?${query}`)
+  },
+  quickCall: (id: string, input: CallDraft) =>
+    apiFetch<{ interactionId: string }>(`/api/commercial/leads/${id}/quick-call`, { method: 'POST', ...json(input) }),
+  previewCallImport: (csv: string) =>
+    apiFetch<{ columns: string[] }>('/api/commercial/calls/import/preview', { method: 'POST', ...json({ csv }) }),
+  importCalls: (
+    input: { csv: string; mapping: Record<string, string>; callList: string; project: string; region: string },
+    key: string,
+  ) =>
+    apiFetch<CallImportReport>('/api/commercial/calls/import', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': key },
+      ...json(input),
+    }),
   leads: (params: { search?: string; status?: string } = {}) => {
     const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value) as [string, string][])
     return apiFetch<{ leads: RepLead[] }>(`/api/commercial/leads${query.size ? `?${query}` : ''}`)

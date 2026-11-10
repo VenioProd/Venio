@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useI18n } from '../context/I18nContext'
 import './CookieConsent.css'
 
@@ -7,6 +7,7 @@ const COOKIE_KEY = 'venio_cookie_consent'
 
 const CookieConsent = () => {
   const { t } = useI18n()
+  const { pathname } = useLocation()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -28,7 +29,7 @@ const CookieConsent = () => {
     setVisible(false)
   }
 
-  if (!visible) return null
+  if (!visible || pathname === '/commercial' || pathname.startsWith('/commercial/')) return null
 
   return (
     <div className="cookie-banner">

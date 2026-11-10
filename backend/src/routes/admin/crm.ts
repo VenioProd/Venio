@@ -8,6 +8,7 @@ import { requireAdmin, requirePermission } from '../../middleware/role.js'
 import Lead, { LEAD_PROJECTS } from '../../models/Lead.js'
 import LeadActivity from '../../models/LeadActivity.js'
 import User from '../../models/User.js'
+import { validateCallSettings } from '../../lib/callSettings.js'
 import CrmSettings from '../../models/CrmSettings.js'
 import { ADMIN_ROLES, PERMISSIONS } from '../../lib/permissions.js'
 import { getRoundRobinAssignee, logLeadActivity, checkDuplicateLead, buildWorklist } from '../../lib/crmAutomations.js'
@@ -82,7 +83,6 @@ router.param('id', (_req: Request, res: Response, next: NextFunction, id: string
 const CRM_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST']
 const DEFAULT_FOLLOW_UP_DAYS = 3
 
-
 // List leads with filters
 router.get(
   '/leads',
@@ -90,7 +90,10 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const scope = leadScopeFilter(req)
-      const filter: Record<string, unknown> = { ...scope, archivedAt: req.query.archived === 'true' ? { $ne: null } : null }
+      const filter: Record<string, unknown> = {
+        ...scope,
+        archivedAt: req.query.archived === 'true' ? { $ne: null } : null,
+      }
       if (typeof req.query.tag === 'string' && req.query.tag) filter.tags = req.query.tag
       if (req.query.status && CRM_STATUSES.includes(req.query.status as string)) filter.status = req.query.status
       if (req.query.assignedTo && req.user!.role === 'SUPER_ADMIN') filter.assignedTo = req.query.assignedTo
@@ -168,7 +171,9 @@ router.post(
       const payload: Record<string, any> = normalizeLeadPatch(req.body || {})
       // Périmètre par entité : un utilisateur restreint ne crée que dans ses entités.
       if (!resolveWriteEntity(req, payload)) {
-        return res.status(403).json({ error: "Cette entité du groupe est hors de votre périmètre CRM", code: 'LEAD_ENTITY_FORBIDDEN' })
+        return res
+          .status(403)
+          .json({ error: 'Cette entité du groupe est hors de votre périmètre CRM', code: 'LEAD_ENTITY_FORBIDDEN' })
       }
 
       // Un lead ne se confie qu'à un membre actif de l'équipe habilité à le suivre.
@@ -237,12 +242,17 @@ router.post(
       const [target, source] = await Promise.all([Lead.findById(req.params.id), Lead.findById(req.body.sourceId)])
       // Écriture sur les deux leads : hors périmètre, ils n'existent pas pour l'appelant.
       if (!target || isLeadOutOfScope(req, target)) return res.status(404).json({ error: 'Lead not found' })
-      if (!source || isLeadOutOfScope(req, source)) return res.status(404).json({ error: 'Lead à fusionner introuvable' })
+      if (!source || isLeadOutOfScope(req, source))
+        return res.status(404).json({ error: 'Lead à fusionner introuvable' })
 
       const result = await mergeLeads(target, source, req.user!.id)
-      return res.json({ lead: result.lead, merged: { sourceId: String(source._id), moved: result.moved, filledFields: result.filledFields } })
+      return res.json({
+        lead: result.lead,
+        merged: { sourceId: String(source._id), moved: result.moved, filledFields: result.filledFields },
+      })
     } catch (err) {
-      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, code: err.code, ...err.details })
+      if (isLeadChangeError(err))
+        return res.status(err.status).json({ error: err.message, code: err.code, ...err.details })
       return next(err)
     }
   },
@@ -279,7 +289,9 @@ router.patch(
       const payload = normalizeLeadPatch(req.body || {})
       // Un lead ne sort pas du périmètre d'entités de qui le modifie.
       if (!resolveWriteEntity(req, payload, lead)) {
-        return res.status(403).json({ error: "Cette entité du groupe est hors de votre périmètre CRM", code: 'LEAD_ENTITY_FORBIDDEN' })
+        return res
+          .status(403)
+          .json({ error: 'Cette entité du groupe est hors de votre périmètre CRM', code: 'LEAD_ENTITY_FORBIDDEN' })
       }
 
       // Le lead d'un collègue ne se reprend pas : l'assignation ouvre des
@@ -379,7 +391,12 @@ router.get(
  */
 async function loadLeadForDataRights(req: Request, res: Response) {
   if (!administersCrm(req)) {
-    res.status(403).json({ error: 'Les demandes sur les données personnelles sont réservées aux administrateurs du CRM', code: 'CRM_ADMIN_REQUIRED' })
+    res
+      .status(403)
+      .json({
+        error: 'Les demandes sur les données personnelles sont réservées aux administrateurs du CRM',
+        code: 'CRM_ADMIN_REQUIRED',
+      })
     return null
   }
   const lead = await Lead.findById(req.params.id)
@@ -397,7 +414,9 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const lead = await Lead.findById(req.params.id).select(`consent doNotContact doNotContactAt doNotContactReason anonymizedAt contactEmail ${LEAD_SCOPE_FIELDS}`)
+      const lead = await Lead.findById(req.params.id).select(
+        `consent doNotContact doNotContactAt doNotContactReason anonymizedAt contactEmail ${LEAD_SCOPE_FIELDS}`,
+      )
       if (!lead || !canReadLead(req, lead)) return res.status(404).json({ error: 'Lead not found' })
       return res.json({
         consent: lead.consent,
@@ -932,7 +951,9 @@ const SIMPLE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  * Le rapport hebdomadaire part hors de l'application : ses destinataires sont
  * des comptes actifs de l'équipe, ou des adresses du domaine de l'entreprise.
  */
-async function validateReportRecipients(value: unknown): Promise<{ ok: true; emails: string[] } | { ok: false; error: string }> {
+async function validateReportRecipients(
+  value: unknown,
+): Promise<{ ok: true; emails: string[] } | { ok: false; error: string }> {
   if (!Array.isArray(value) || !value.every((v) => typeof v === 'string')) {
     return { ok: false, error: 'weeklyReportRecipients : liste d’adresses e-mail attendue' }
   }
@@ -945,7 +966,9 @@ async function validateReportRecipients(value: unknown): Promise<{ ok: true; ema
   const domains = reportAllowedDomains()
   const outsideDomain = emails.filter((e) => !domains.includes(e.slice(e.lastIndexOf('@') + 1)))
   const staff = outsideDomain.length
-    ? await User.find({ email: { $in: outsideDomain }, role: { $in: ADMIN_ROLES }, isActive: true }).select('email').lean()
+    ? await User.find({ email: { $in: outsideDomain }, role: { $in: ADMIN_ROLES }, isActive: true })
+        .select('email')
+        .lean()
     : []
   const staffEmails = new Set(staff.map((u) => u.email))
   const rejected = outsideDomain.filter((e) => !staffEmails.has(e))
@@ -969,9 +992,12 @@ router.patch(
     try {
       // Les réglages s'appliquent à tout le groupe : réservés aux administrateurs du CRM.
       if (!administersCrm(req)) {
-        return res.status(403).json({ error: 'Les réglages du CRM sont réservés aux administrateurs', code: 'CRM_ADMIN_REQUIRED' })
+        return res
+          .status(403)
+          .json({ error: 'Les réglages du CRM sont réservés aux administrateurs', code: 'CRM_ADMIN_REQUIRED' })
       }
       const updates = req.body || {}
+      validateCallSettings(updates)
       // Remove fields that shouldn't be updated directly
       delete updates._id
       delete updates.createdAt
@@ -1119,7 +1145,8 @@ router.get(
       ])
 
       const restriction = crmEntityRestriction(req)
-      const entityVisible = entity === null ? restriction === null : restriction === null || restriction.includes(entity)
+      const entityVisible =
+        entity === null ? restriction === null : restriction === null || restriction.includes(entity)
       const goals = entityVisible
         ? await CrmGoal.find({ period: { $gte: from, $lt: addMonths(from, months) }, entity, userId }).lean()
         : []
@@ -1223,7 +1250,9 @@ router.post(
       const amountTarget = parseTarget(req.body?.amountTarget ?? 0, false)
       const wonCountTarget = parseTarget(req.body?.wonCountTarget ?? 0, true)
       if (amountTarget === null || wonCountTarget === null) {
-        return res.status(400).json({ error: 'Les objectifs doivent être des nombres positifs (nombre de gains entier)' })
+        return res
+          .status(400)
+          .json({ error: 'Les objectifs doivent être des nombres positifs (nombre de gains entier)' })
       }
       if (userId !== null && !(await isAssignableCrmUser(userId))) {
         return res.status(400).json({ error: 'Commercial inconnu ou inactif' })
@@ -1235,11 +1264,20 @@ router.post(
       }
 
       try {
-        const goal = await CrmGoal.create({ period, entity, userId, amountTarget, wonCountTarget, createdBy: req.user!.id })
+        const goal = await CrmGoal.create({
+          period,
+          entity,
+          userId,
+          amountTarget,
+          wonCountTarget,
+          createdBy: req.user!.id,
+        })
         return res.status(201).json({ goal: serializeGoal(goal) })
       } catch (err) {
         if ((err as { code?: number }).code === 11000) {
-          return res.status(409).json({ error: 'Un objectif existe déjà pour ce mois et ce périmètre', code: 'CRM_GOAL_EXISTS' })
+          return res
+            .status(409)
+            .json({ error: 'Un objectif existe déjà pour ce mois et ce périmètre', code: 'CRM_GOAL_EXISTS' })
         }
         throw err
       }
