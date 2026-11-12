@@ -9,6 +9,9 @@ import {
   type RepInteraction,
 } from '../../services/externalSales'
 import CallLeadImport from './CallLeadImport'
+import CallBar from './softphone/CallBar'
+import { useSoftphone } from './softphone/useSoftphone'
+import type { SettledCall } from './softphone/engine'
 
 const KIND_KEYS = {
   CALL: 'commercial.kind.call',
@@ -17,7 +20,7 @@ const KIND_KEYS = {
   NOTE: 'commercial.kind.note',
 } as const
 
-type Draft = { note: string; outcome: string; scriptTag: string; nextActionAt: string }
+type Draft = { note: string; outcome: string; scriptTag: string; nextActionAt: string; callId?: string }
 function localDate(value: string | null) {
   if (!value) return ''
   const date = new Date(value)
@@ -44,6 +47,7 @@ export default function CommercialCalls() {
   const [newScript, setNewScript] = useState('')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [autoOutcomes, setAutoOutcomes] = useState<Record<string, string>>({})
   const [refresh, setRefresh] = useState(0)
   const noteRef = useRef<HTMLTextAreaElement>(null)
   const saving = useRef(false)
@@ -147,8 +151,22 @@ export default function CommercialCalls() {
     setDrafts((current) => ({ ...current, [lead._id]: draft }))
     storeDraft(lead._id, draft)
   }
+  // Après l'appel : le résultat se présélectionne d'après l'état final, et le callId part avec la fiche.
+  const softphone = useSoftphone({ onSettled: (call) => settleCall(call) })
+  const settleCall = (call: SettledCall) => {
+    const lead = leads.find((item) => item._id === call.leadId)
+    if (!lead) return
+    const suggested = call.record?.suggestedOutcome
+    const draft = draftFor(lead)
+    const preselect =
+      suggested &&
+      settings?.outcomes.some((item) => item.value === suggested) &&
+      (!draft.outcome || draft.outcome === autoOutcomes[lead._id])
+    if (preselect) setAutoOutcomes((current) => ({ ...current, [lead._id]: suggested }))
+    changeDraft(lead, { callId: call.callId, ...(preselect ? { outcome: suggested } : {}) })
+  }
   const open = (id: string | null) => {
-    if (!saving.current) {
+    if (!saving.current && !softphone.active) {
       setSelected(id)
       setError('')
     }
@@ -184,7 +202,7 @@ export default function CommercialCalls() {
   const save = async (lead: RepLead) => {
     const draft = draftFor(lead)
     const outcome = settings?.outcomes.find((item) => item.value === draft.outcome)
-    if (saving.current || !outcome || (outcome.effect === 'CALLBACK' && !draft.nextActionAt)) return
+    if (saving.current || softphone.active || !outcome || (outcome.effect === 'CALLBACK' && !draft.nextActionAt)) return
     saving.current = true
     setBusy(true)
     setError('')
@@ -331,11 +349,11 @@ export default function CommercialCalls() {
         <CallLeadImport
           region={settings.defaultRegion}
           projects={settings.projects}
-          disabled={busy || loading}
+          disabled={busy || loading || softphone.active}
           onDone={refreshQueue}
         />
       )}
-      <fieldset className="commercial-toolbar commercial-call-filters" disabled={busy || loading}>
+      <fieldset className="commercial-toolbar commercial-call-filters" disabled={busy || loading || softphone.active}>
         <label>
           {t('commercial.calls.list')}
           <select
@@ -419,7 +437,7 @@ export default function CommercialCalls() {
                 className={`commercial-call-row${settings?.outcomes.find((item) => item.value === lead.lastCallOutcome)?.effect === 'VOICEMAIL' ? ' voicemail' : ''}${expanded ? ' selected' : ''}`}
                 aria-expanded={expanded}
                 aria-controls={`call-${lead._id}`}
-                disabled={busy || loading}
+                disabled={busy || loading || softphone.active}
                 onClick={() => open(expanded ? null : lead._id)}
               >
                 <span data-label={t('commercial.field.company')}>
@@ -445,6 +463,7 @@ export default function CommercialCalls() {
                       !event.shiftKey &&
                       !event.nativeEvent.isComposing &&
                       (event.target as HTMLElement).tagName !== 'A' &&
+                      !(event.target as HTMLElement).closest('.softphone-bar') &&
                       !(event.target as HTMLElement).closest('[role="listbox"]')
                     ) {
                       event.preventDefault()
@@ -453,17 +472,18 @@ export default function CommercialCalls() {
                   }}
                 >
                   <fieldset disabled={busy || loading}>
+                    <CallBar
+                      controller={softphone}
+                      leadId={lead._id}
+                      phone={lead.contactPhone}
+                      disabled={busy}
+                      suggestion={
+                        draft.callId && draft.outcome && draft.outcome === autoOutcomes[lead._id]
+                          ? outcomeLabel(draft.outcome)
+                          : null
+                      }
+                    />
                     <div className="commercial-toolbar">
-                      <a
-                        className="portal-button secondary"
-                        href={`tel:${lead.contactPhone}`}
-                        aria-disabled={!lead.contactPhone}
-                        onClick={(event) => {
-                          if (!lead.contactPhone || busy) event.preventDefault()
-                        }}
-                      >
-                        {t('commercial.calls.call')}
-                      </a>
                       <span>{lead.contactName}</span>
                       {lead.contactEmail && (
                         <a className="commercial-link" href={`mailto:${lead.contactEmail}`}>
@@ -616,10 +636,11 @@ export default function CommercialCalls() {
                     <button
                       type="submit"
                       className="portal-button"
-                      disabled={!draft.outcome || (callback && !draft.nextActionAt)}
+                      disabled={!draft.outcome || (callback && !draft.nextActionAt) || softphone.active}
                     >
                       {t('commercial.calls.saveNext')}
                     </button>
+                    {softphone.active && <p className="commercial-muted">{t('calls.hangupFirst')}</p>}
                   </fieldset>
                 </form>
               )}

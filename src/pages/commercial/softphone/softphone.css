@@ -1,0 +1,85 @@
+.softphone-bar {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--bg-secondary);
+  min-width: 0;
+}
+.softphone-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.softphone-row .portal-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+.softphone-hangup {
+  border-color: var(--critical);
+  background: var(--critical-surface);
+  color: var(--text-primary);
+}
+.softphone-timer {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 18px;
+}
+.softphone-state,
+.softphone-notice,
+.softphone-error,
+.softphone-suggestion {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.softphone-state,
+.softphone-notice,
+.softphone-suggestion {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.softphone-error {
+  color: var(--critical);
+  font-size: 13px;
+}
+.softphone-retry {
+  justify-self: start;
+}
+.softphone-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 72px));
+  gap: 6px;
+}
+.softphone-keypad .portal-button {
+  padding: 12px 0;
+  font-size: 18px;
+}
+.softphone-microphone {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.softphone-microphone .portal-input {
+  margin: 0;
+  max-width: 100%;
+}
+@media (max-width: 480px) {
+  .softphone-row .portal-button {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+  }
+  .softphone-timer {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+}
+.softphone-detail {
+  margin: 16px 0;
+  max-width: 560px;
+}

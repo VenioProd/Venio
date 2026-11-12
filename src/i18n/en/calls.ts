@@ -1,0 +1,52 @@
+// Dialer softphone (calling from the browser).
+const en = {
+  'calls.group': 'Phone call',
+  'calls.call': 'Call',
+  'calls.callAria': 'Call from the browser',
+  'calls.hangup': 'Hang up',
+  'calls.mute': 'Mute microphone',
+  'calls.unmute': 'Unmute microphone',
+  'calls.keypad': 'Keypad',
+  'calls.keypadHide': 'Hide keypad',
+  'calls.digit': 'Key {digit}',
+  'calls.microphone': 'Microphone',
+  'calls.microphoneDefault': 'Default microphone',
+  'calls.timer': 'Call duration',
+  'calls.busyElsewhere': 'Another call is in progress.',
+  'calls.noPhone': 'This lead has no phone number.',
+  'calls.checking': 'Checking browser calling…',
+  'calls.state.idle': 'Ready to call',
+  'calls.state.preparing': 'Preparing the call…',
+  'calls.state.connecting': 'Connecting…',
+  'calls.state.ringing': 'Ringing…',
+  'calls.state.active': 'On the call',
+  'calls.state.reconnecting': 'Unstable connection, reconnecting…',
+  'calls.state.ending': 'Ending the call…',
+  'calls.ended': 'Call ended · {duration}',
+  'calls.status.COMPLETED': 'Call ended',
+  'calls.status.NO_ANSWER': 'No answer',
+  'calls.status.BUSY': 'Busy',
+  'calls.status.FAILED': 'The call did not go through',
+  'calls.status.CANCELED': 'Call canceled',
+  'calls.status.pending': 'Call ended, result pending from the carrier',
+  'calls.suggested': 'Outcome preselected from the call: {outcome}. You can change it.',
+  'calls.error.LEAD_NOT_CALLABLE': 'This lead cannot be called.',
+  'calls.error.PHONE_SUPPRESSED': 'This number is on the opt-out list and can no longer be called.',
+  'calls.error.OUTSIDE_CALLING_HOURS': 'Outside the allowed calling hours.',
+  'calls.error.ATTEMPT_CAP_REACHED': 'Maximum number of attempts for this number reached today.',
+  'calls.error.NETWORK': 'The calling service is not responding. Try again in a moment.',
+  'calls.error.CALL': 'The call was interrupted.',
+  'calls.fallback.DISABLED':
+    'Calling from the browser is not enabled. The button opens your phone; enter the outcome by hand.',
+  'calls.fallback.MIC_DENIED':
+    'Microphone unavailable. Allow it in the browser to call from here; meanwhile the button opens your phone.',
+  'calls.fallback.UNSUPPORTED':
+    'This browser cannot place calls from the page. The button opens your phone; enter the outcome by hand.',
+  'calls.fallback.UNAVAILABLE':
+    'The calling service cannot be reached. The button opens your phone; enter the outcome by hand.',
+  'calls.fallback.retry': 'Try browser calling again',
+  'calls.leaveConfirm': 'A call is in progress. Leaving this page will hang up. Continue?',
+  'calls.hangupFirst': 'Hang up to save or switch lead.',
+}
+
+export default en
