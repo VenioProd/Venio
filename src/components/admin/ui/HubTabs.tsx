@@ -1,4 +1,4 @@
-import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
+import { useId, useRef, useEffect, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import './AdminHub.css'
 
@@ -23,9 +23,24 @@ export default function HubTabs({ label, tabs, children }: HubTabsProps) {
   const navigate = useNavigate()
   const uid = useId()
   const listRef = useRef<HTMLDivElement>(null)
+  const [hasMore, setHasMore] = useState(false)
   const visible = tabs.filter((tab) => tab.allowed !== false)
   const active = visible.find((tab) => tab.to === location.pathname.replace(/\/$/, ''))
   const suffix = `${location.search}${location.hash}`
+
+  useEffect(() => {
+    const list = listRef.current
+    if (!list) return
+    const update = () => setHasMore(list.scrollWidth - list.clientWidth - list.scrollLeft > 1)
+    update()
+    list.addEventListener('scroll', update)
+    const observer = new ResizeObserver(update)
+    observer.observe(list)
+    return () => {
+      list.removeEventListener('scroll', update)
+      observer.disconnect()
+    }
+  }, [tabs])
 
   if (!active) return <Navigate to={`${visible[0]?.to ?? '/admin/mon-espace'}${suffix}`} replace />
 
@@ -70,24 +85,26 @@ export default function HubTabs({ label, tabs, children }: HubTabsProps) {
   }
 
   const tablist = (
-    <div ref={listRef} className="admin-hub-tabs" role="tablist" aria-label={label} aria-orientation="horizontal">
-      {visible.map((tab, index) => (
-        <Link
-          key={tab.id}
-          id={`${uid}-tab-${tab.id}`}
-          role="tab"
-          aria-label={tab.count === undefined ? undefined : `${tab.label} ${tab.count}`}
-          aria-selected={tab.id === active.id}
-          aria-controls={`${uid}-panel-${tab.id}`}
-          tabIndex={tab.id === active.id ? 0 : -1}
-          to={`${tab.to}${suffix}`}
-          onFocus={(event) => revealTab(event.currentTarget)}
-          onKeyDown={(event) => onKeyDown(event, index)}
-        >
-          {tab.label}
-          {tab.count !== undefined && <span className="admin-hub-tabs__count">{tab.count}</span>}
-        </Link>
-      ))}
+    <div className="admin-hub-tabs-frame" data-more={hasMore}>
+      <div ref={listRef} className="admin-hub-tabs" role="tablist" aria-label={label} aria-orientation="horizontal">
+        {visible.map((tab, index) => (
+          <Link
+            key={tab.id}
+            id={`${uid}-tab-${tab.id}`}
+            role="tab"
+            aria-label={tab.count === undefined ? undefined : `${tab.label} ${tab.count}`}
+            aria-selected={tab.id === active.id}
+            aria-controls={`${uid}-panel-${tab.id}`}
+            tabIndex={tab.id === active.id ? 0 : -1}
+            to={`${tab.to}${suffix}`}
+            onFocus={(event) => revealTab(event.currentTarget)}
+            onKeyDown={(event) => onKeyDown(event, index)}
+          >
+            {tab.label}
+            {tab.count !== undefined && <span className="admin-hub-tabs__count">{tab.count}</span>}
+          </Link>
+        ))}
+      </div>
     </div>
   )
 

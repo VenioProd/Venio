@@ -10,7 +10,11 @@ type RoleScenario = {
 
 const scenarios: RoleScenario[] = [
   { role: 'SUPER_ADMIN', visible: ['clients', 'crm', 'accounting', 'admin-accounts', 'agents'], hidden: [] },
-  { role: 'ADMIN', visible: ['clients', 'crm', 'accounting'], hidden: ['admin-accounts', 'agents', 'qualiopi'] },
+  {
+    role: 'ADMIN',
+    visible: ['clients', 'crm', 'accounting', 'emails'],
+    hidden: ['admin-accounts', 'agents', 'qualiopi'],
+  },
   { role: 'COMMERCIAL', visible: ['clients', 'crm', 'projects', 'tickets'], hidden: ['accounting', 'admin-accounts'] },
   { role: 'RH', visible: ['projects', 'interns', 'emails', 'qualiopi', 'tickets'], hidden: ['crm', 'accounting'] },
   { role: 'COMPTABLE', visible: ['projects', 'accounting', 'messages'], hidden: ['clients', 'crm', 'tickets'] },

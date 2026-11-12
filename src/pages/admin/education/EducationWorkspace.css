@@ -466,7 +466,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
-  z-index: 100;
+  z-index: var(--z-overlay);
 }
 .edu-drawer {
   position: fixed;
@@ -476,7 +476,7 @@
   width: min(720px, 96vw);
   background: var(--bg-card);
   border-left: 1px solid var(--border-color);
-  z-index: 101;
+  z-index: calc(var(--z-overlay) + 1);
   display: flex;
   flex-direction: column;
   box-shadow: none;
@@ -2098,11 +2098,11 @@
 
 /* ─── Enchaînement post-séance (PostSessionFlow) ─────────────────────── */
 .edu-postflow-backdrop {
-  z-index: 1200; /* au-dessus du mode live (1100) */
+  z-index: calc(var(--z-overlay) + 20);
 }
 .edu-postflow {
   width: min(860px, 96vw);
-  z-index: 1201;
+  z-index: calc(var(--z-overlay) + 21);
 }
 .edu-postflow-subtitle {
   font-size: 12px;
@@ -2149,7 +2149,7 @@
 .edu-postflow-form-layer {
   position: fixed;
   inset: 0;
-  z-index: 1300;
+  z-index: calc(var(--z-overlay) + 30);
 }
 /* Mini-bannière « Lancer l'enchaînement post-séance ? » dans le drawer de séance. */
 .edu-postflow-banner {

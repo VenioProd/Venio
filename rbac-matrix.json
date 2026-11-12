@@ -335,7 +335,7 @@
       "screen": "/admin/emails",
       "label": "Emails",
       "permission": null,
-      "roles": ["SUPER_ADMIN", "RH"]
+      "roles": ["SUPER_ADMIN", "ADMIN", "RH"]
     },
     {
       "id": "templates",

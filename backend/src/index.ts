@@ -508,7 +508,32 @@ app.get('{*path}', (req: Request, res: Response) => {
     return
   }
 
-  res.sendFile('index.html', { root: publicDir })
+  // Familles publiques (scripts/public-routes.js), liens publics et espaces privés.
+  // Un sous-chemin d'une famille connue reste volontairement une réponse 200.
+  const routeFamilies = [
+    '/admin',
+    '/espace-client',
+    '/commercial',
+    '/services',
+    '/conseil-communication',
+    '/realisations',
+    '/methode',
+    '/a-propos',
+    '/contact',
+    '/legal',
+    '/cgu',
+    '/cgv',
+    '/confidentialite',
+    '/au-dela-du-site',
+    '/poles',
+    '/questionnaire',
+    '/beta',
+    '/payer',
+  ]
+  const pathname = req.path.toLowerCase()
+  const knownRoute =
+    pathname === '/' || routeFamilies.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  res.status(knownRoute ? 200 : 404).sendFile('index.html', { root: publicDir })
 })
 
 // Sentry error handler — doit être AVANT le notre, capture les erreurs avant qu'on les

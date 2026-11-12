@@ -1,6 +1,6 @@
 .admin-command-palette-layer {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--z-palette);
   inset: 0;
   display: grid;
   place-items: start center;
@@ -86,4 +86,9 @@
 
 .admin-command-palette__footer {
   border-top: 1px solid var(--border-color);
+}
+
+.admin-command-palette__subtitle {
+  display: block;
+  margin-top: 3px;
 }

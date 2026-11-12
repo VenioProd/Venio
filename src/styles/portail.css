@@ -27,6 +27,12 @@
    Même source Google Fonts que AdminShell.css (requête mise en cache). */
 html.theme-portail,
 html.theme-portail[data-theme] {
+  --z-topbar: 200;
+  --z-mobile-nav: 250;
+  --z-sidebar: 300;
+  --z-overlay: 1200;
+  --z-palette: 1300;
+  --z-toast: 1400;
   color-scheme: dark;
   --bg-primary: #04050a;
   --bg-secondary: #0a0c14;
@@ -891,6 +897,7 @@ html.theme-portail .confirm-modal__btn:disabled {
   cursor: not-allowed;
 }
 html.theme-portail .toast-container {
+  z-index: var(--z-toast);
   width: min(400px, calc(100vw - 32px));
 }
 html.theme-portail .toast-item {
@@ -938,4 +945,10 @@ html.theme-portail .skeleton-row {
   html.theme-portail :is(.confirm-modal__btn, .confirm-modal__close) {
     min-height: 44px;
   }
+}
+
+/* Le site public met ses paragraphes en graisse 800 (index.css) : les espaces
+   privés reviennent à la graisse normale, sans primer sur une classe. */
+:where(html.theme-portail) body p {
+  font-weight: 400;
 }

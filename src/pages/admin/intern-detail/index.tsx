@@ -2,7 +2,8 @@ import PageHeader from '../../../components/admin/ui/PageHeader'
 import '../OrganisationSysteme.css'
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { ApiError, apiFetch, apiUpload } from '../../../lib/api'
+import { apiFetch, apiUpload } from '../../../lib/api'
+import { useToast } from '../../../context/ToastContext'
 import { useAuth } from '../../../context/AuthContext'
 import { useI18n } from '../../../context/I18nContext'
 import { translate } from '../../../i18n'
@@ -76,12 +77,15 @@ const InternDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { showToast } = useToast()
   const { t } = useI18n()
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
   const { confirm, ConfirmDialog } = useConfirm()
 
   const [data, setData] = useState<InternDetailData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [dataError, setDataError] = useState(false)
+  const [adminsError, setAdminsError] = useState(false)
   const [editing, setEditing] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [reportView, setReportView] = useState<'cards' | 'liste'>('cards')
@@ -107,6 +111,8 @@ const InternDetail = () => {
   const [admins, setAdmins] = useState<{ _id: string; name: string }[]>([])
 
   const loadData = useCallback(async () => {
+    setLoading(true)
+    setDataError(false)
     try {
       const res = await apiFetch<InternDetailData>(`/api/admin/interns/${id}/detail`)
       setData(res)
@@ -126,20 +132,22 @@ const InternDetail = () => {
         status: res.intern.status,
       })
     } catch {
-      navigate('/admin/equipe/membres')
+      setDataError(true)
     } finally {
       setLoading(false)
     }
   }, [id])
 
   const loadAdmins = useCallback(async () => {
+    if (!isSuperAdmin) return
+    setAdminsError(false)
     try {
       const d = await apiFetch<{ users: { _id: string; name: string }[] }>('/api/admin/admins')
       setAdmins(d.users || [])
     } catch {
-      /* silent */
+      setAdminsError(true)
     }
-  }, [])
+  }, [isSuperAdmin])
 
   useEffect(() => {
     loadData()
@@ -168,7 +176,7 @@ const InternDetail = () => {
       setEditing(false)
       loadData()
     } catch (err: any) {
-      alert(err.message || translate('intern.error.generic'))
+      showToast(err.message || t('shell.error.actionFailed'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -185,7 +193,7 @@ const InternDetail = () => {
       await apiFetch(`/api/admin/interns/${id}`, { method: 'DELETE' })
       navigate('/admin/equipe/membres')
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     }
   }
 
@@ -195,15 +203,17 @@ const InternDetail = () => {
       fd.append('status', status)
       if (commentaire !== undefined) fd.append('commentaireAdmin', commentaire)
       await apiUpload(`/api/admin/interns/reports/${reportId}`, fd, { method: 'PATCH' })
-      loadData()
+      void loadData()
+      return true
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
+      return false
     }
   }
 
   const handleSubmitComment = async () => {
     if (!commentModal) return
-    await handleValidateReport(commentModal.reportId, commentModal.status, commentText)
+    if (!(await handleValidateReport(commentModal.reportId, commentModal.status, commentText))) return
     setCommentModal(null)
     setCommentText('')
   }
@@ -218,7 +228,7 @@ const InternDetail = () => {
       await apiUpload(`/api/admin/interns/${id}/convention`, fd)
       loadData()
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : translate('intern.detail.networkError'))
+      showToast(err instanceof Error ? err.message : t('shell.error.actionFailed'), 'error')
     } finally {
       setConventionUploading(false)
       e.target.value = ''
@@ -236,9 +246,24 @@ const InternDetail = () => {
       await apiFetch(`/api/admin/interns/${id}/convention/${encodeURIComponent(filename)}`, { method: 'DELETE' })
       loadData()
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     }
   }
+
+  const errorNotice = (dataError || adminsError) && (
+    <div role="alert">
+      <p>{t('shell.error.loadFailed')}</p>
+      <button
+        type="button"
+        onClick={() => {
+          if (dataError) void loadData()
+          if (adminsError) void loadAdmins()
+        }}
+      >
+        {t('shell.error.retry')}
+      </button>
+    </div>
+  )
 
   if (loading)
     return (
@@ -249,13 +274,14 @@ const InternDetail = () => {
         {t('intern.list.loading')}
       </div>
     )
-  if (!data) return null
+  if (!data) return <div className="portal-container lot-c-page intern-detail-page">{errorNotice}</div>
 
   const { intern, stats, reports } = data
   const statusCfg = STATUS_CONFIG[intern.status]
 
   return (
     <div className="portal-container lot-c-page intern-detail-page">
+      {errorNotice}
       {ConfirmDialog}
 
       {previewUrl && (

@@ -95,7 +95,7 @@ const fr = {
   'shell.palette.placeholder': 'Rechercher un module ou une action',
   'shell.palette.escKey': 'Échap',
   'shell.palette.results': 'Résultats',
-  'shell.palette.empty': 'Aucun module ou action autorisé ne correspond.',
+  'shell.palette.empty': 'Aucun résultat ne correspond.',
   'shell.palette.actionBadge': 'Action',
   'shell.palette.footerHint': '↑↓ naviguer · Entrée ouvrir · Échap fermer',
 
@@ -290,6 +290,15 @@ const fr = {
   'shell.hub.systeme.sante': 'Santé',
   'shell.hub.systeme.audit': 'Journal d’audit',
   'shell.hub.systeme.integrations': 'Intégrations',
+  'shell.nav.accountMenu': 'Mon compte',
+  'shell.palette.loading': 'Recherche en cours…',
+  'shell.palette.searchError': 'La recherche de données a échoué. Relancez la recherche.',
+  'shell.notFound.title': 'Page introuvable',
+  'shell.notFound.description': 'Cette adresse ne correspond à aucune page.',
+  'shell.notFound.home': 'Accueil du site',
+  'shell.error.loadFailed': 'Impossible de charger les données.',
+  'shell.error.actionFailed': 'L’action a échoué. Vos modifications n’ont pas été enregistrées.',
+  'shell.error.retry': 'Réessayer',
 } as const
 
 export default fr

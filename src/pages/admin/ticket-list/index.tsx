@@ -2,6 +2,7 @@ import PageHeader from '../../../components/admin/ui/PageHeader'
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useConfirm } from '../../../hooks/useConfirm'
 import { apiFetch, apiUpload } from '../../../lib/api'
+import { useToast } from '../../../context/ToastContext'
 import { useAuth } from '../../../context/AuthContext'
 import { useI18n } from '../../../context/I18nContext'
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG } from './types'
@@ -20,6 +21,7 @@ import DocPreviewModal from '../../../components/DocPreviewModal'
 const TicketList = () => {
   const { t } = useI18n()
   const { user } = useAuth()
+  const { showToast } = useToast()
   const isSuperAdmin = ['SUPER_ADMIN', 'PDG', 'ADMIN', 'MANAGER'].includes(user?.role || '')
   const { confirm, ConfirmDialog } = useConfirm()
 
@@ -29,6 +31,7 @@ const TicketList = () => {
   const [kpi, setKpi] = useState<KpiData | null>(null)
   const [kpiPeriod, setKpiPeriod] = useState<string>('month')
   const [loading, setLoading] = useState(true)
+  const [loadErrors, setLoadErrors] = useState({ tickets: false, archives: false, kpi: false })
   const [showForm, setShowForm] = useState(false)
   const [expandedTicket, setExpandedTicket] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
@@ -44,31 +47,35 @@ const TicketList = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async () => {
+    setLoading(true)
+    setLoadErrors((errors) => ({ ...errors, tickets: false }))
     try {
       const data = await apiFetch<Ticket[]>('/api/admin/tickets')
       setTickets(data)
     } catch {
-      /* silent */
+      setLoadErrors((errors) => ({ ...errors, tickets: true }))
     } finally {
       setLoading(false)
     }
   }, [])
 
   const loadArchived = useCallback(async () => {
+    setLoadErrors((errors) => ({ ...errors, archives: false }))
     try {
       const data = await apiFetch<Ticket[]>('/api/admin/tickets/archived')
       setArchivedTickets(data)
     } catch {
-      /* silent */
+      setLoadErrors((errors) => ({ ...errors, archives: true }))
     }
   }, [])
 
   const loadKpi = useCallback(async (period: string) => {
+    setLoadErrors((errors) => ({ ...errors, kpi: false }))
     try {
       const data = await apiFetch<KpiData>(`/api/admin/tickets/kpi?period=${period}`)
       setKpi(data)
     } catch {
-      /* silent */
+      setLoadErrors((errors) => ({ ...errors, kpi: true }))
     }
   }, [])
 
@@ -99,7 +106,7 @@ const TicketList = () => {
       setShowForm(false)
       await load()
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -117,7 +124,7 @@ const TicketList = () => {
       setReplyFiles([])
       await load()
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -128,7 +135,7 @@ const TicketList = () => {
       await apiFetch(`/api/admin/tickets/${ticketId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })
       await load()
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     }
   }
 
@@ -138,7 +145,7 @@ const TicketList = () => {
       await load()
       if (activeTab === 'archives') await loadArchived()
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     }
   }
 
@@ -148,7 +155,7 @@ const TicketList = () => {
       await loadArchived()
       await load()
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     }
   }
 
@@ -165,7 +172,7 @@ const TicketList = () => {
       await load()
       await loadArchived()
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     }
   }
 
@@ -225,10 +232,29 @@ const TicketList = () => {
     )
   }
 
+  const loadError =
+    activeTab === 'archives' ? loadErrors.archives : activeTab === 'kpi' ? loadErrors.kpi : loadErrors.tickets
+  const errorNotice = loadError && (
+    <div role="alert">
+      <p>{t('shell.error.loadFailed')}</p>
+      <button
+        type="button"
+        onClick={() => {
+          if (activeTab === 'archives') void loadArchived()
+          else if (activeTab === 'kpi') void loadKpi(kpiPeriod)
+          else void load()
+        }}
+      >
+        {t('shell.error.retry')}
+      </button>
+    </div>
+  )
+
   // --- Vue NON-SUPER_ADMIN : bouton "+" flottant + formulaire simple ---
   if (!isSuperAdmin) {
     return (
       <div className="portal-container production-page production-list production-tickets">
+        {errorNotice}
         <div className="production-header">
           <PageHeader
             eyebrow={t('shell.navItem.changeRequests')}
@@ -241,7 +267,7 @@ const TicketList = () => {
         <div className="ticket-list" style={{ marginTop: 20 }}>
           {loading ? (
             <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>{t('common.loading')}</p>
-          ) : tickets.length === 0 ? (
+          ) : loadErrors.tickets ? null : tickets.length === 0 ? (
             <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>
               {t('orgs.tickets.list.myRequestsEmpty')}
             </p>
@@ -278,6 +304,7 @@ const TicketList = () => {
   // --- Vue SUPER_ADMIN : dashboard complet ---
   return (
     <div className="portal-container production-page production-list production-tickets">
+      {errorNotice}
       {ConfirmDialog}
       {/* Header */}
       <div className="production-header">
@@ -328,7 +355,7 @@ const TicketList = () => {
       </div>
 
       {/* Tab: Tickets actifs */}
-      {activeTab === 'tickets' && (
+      {activeTab === 'tickets' && !loadError && (
         <>
           <div className="ticket-stats">
             {(['OUVERT', 'EN_COURS'] as const).map((key) => {
@@ -496,7 +523,7 @@ const TicketList = () => {
       )}
 
       {/* Tab: Resolus */}
-      {activeTab === 'resolus' && (
+      {activeTab === 'resolus' && !loadError && (
         <div className="ticket-list" style={{ marginTop: 20 }}>
           {filteredResolved.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
@@ -540,7 +567,7 @@ const TicketList = () => {
       )}
 
       {/* Tab: Archives */}
-      {activeTab === 'archives' && (
+      {activeTab === 'archives' && !loadError && (
         <div className="ticket-list" style={{ marginTop: 20 }}>
           {archivedTickets.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
@@ -585,7 +612,7 @@ const TicketList = () => {
       )}
 
       {/* Tab: KPI */}
-      {activeTab === 'kpi' && <TicketStats kpi={kpi} kpiPeriod={kpiPeriod} setKpiPeriod={setKpiPeriod} />}
+      {activeTab === 'kpi' && !loadError && <TicketStats kpi={kpi} kpiPeriod={kpiPeriod} setKpiPeriod={setKpiPeriod} />}
 
       {preview && <DocPreviewModal url={preview.url} name={preview.name} onClose={() => setPreview(null)} />}
     </div>

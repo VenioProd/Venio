@@ -1,4 +1,5 @@
 import { ADMIN_MODULE_PATHS } from './adminHubRoutes'
+import { ADMIN_HUBS, canAccessHubModule } from './adminHubs'
 import type { User, UserRole } from '../types/auth.types'
 import { hasPermission, PERMISSIONS } from './permissions'
 import { getVisibleNavigation, NAVIGATION } from './rbac'
@@ -294,6 +295,7 @@ const PALETTE_ACTIONS: PaletteActionDefinition[] = [
 
 export type AdminCommandPaletteItem =
   | { kind: 'module'; id: string; label: string; to: string; zone: AdminNavigationZone }
+  | { kind: 'tab'; id: string; label: string; to: string; zone: AdminNavigationZone }
   | { kind: 'action'; id: string; label: string; to: string; zone: AdminNavigationZone }
 
 export function getCommandPaletteItems(user: User | null): AdminCommandPaletteItem[] {
@@ -316,5 +318,17 @@ export function getCommandPaletteItems(user: User | null): AdminCommandPaletteIt
     zone: getNavigationZone(visible.find((item) => item.id === action.destination)!),
   }))
 
-  return [...actions, ...modules]
+  const tabs: AdminCommandPaletteItem[] = Object.entries(ADMIN_HUBS).flatMap(([hubId, hub]) =>
+    hub.tabs
+      .filter((tab) => tab.modules.some((module) => canAccessHubModule(user, module)))
+      .map((tab) => ({
+        kind: 'tab' as const,
+        id: `${hubId}-${tab.id}`,
+        label: `${translate(hub.titleKey)} · ${translate(tab.labelKey)}`,
+        to: tab.to,
+        zone: getNavigationZone({ id: tab.modules[0] }),
+      })),
+  )
+
+  return [...modules, ...tabs, ...actions]
 }
