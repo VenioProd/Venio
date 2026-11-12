@@ -122,13 +122,17 @@ export default function EnrollDialog({ leadIds, leadLabels = {}, onClose, onEnro
         </p>
       )}
       <div className="crm-auto-row">
-        <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={onClose}>
+        <button
+          type="button"
+          className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+          onClick={onClose}
+        >
           {t('common.close')}
         </button>
         {!result && (
           <button
             type="button"
-            className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+            className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
             disabled={!choice || busy}
             onClick={() => void submit()}
           >

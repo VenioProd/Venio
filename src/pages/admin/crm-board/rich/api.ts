@@ -15,6 +15,8 @@ export interface CrmView {
 }
 
 export interface RichFilters {
+  status?: string
+  priority?: string
   q?: string
   project?: string
   owner?: string

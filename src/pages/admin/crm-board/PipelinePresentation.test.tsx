@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import PipelineColumn from './PipelineColumn'
-import LeadDetailModal from './LeadDetailModal'
+import LeadDetailPage from './LeadDetailPage'
 import { formatMoney } from '../../../i18n/format'
 import type { Lead } from '../../../types/crm.types'
 
@@ -56,32 +56,25 @@ describe('présentation du pipeline Système', () => {
     expect(screen.getByText('Aucune opportunité à cette étape.')).toBeInTheDocument()
   })
 
-  it('nomme le drawer, conserve ses contenus et rend le focus à sa fermeture', () => {
-    const trigger = document.createElement('button')
-    document.body.appendChild(trigger)
-    trigger.focus()
-    const onClose = vi.fn()
-    const { unmount } = render(
+  it('nomme la page et conserve le journal ainsi que les panneaux dans les onglets', () => {
+    render(
       <MemoryRouter>
-        <LeadDetailModal
+        <LeadDetailPage
           lead={lead}
           admins={[]}
           canManageCrm={false}
           converting={null}
-          onClose={onClose}
+          onClose={vi.fn()}
           onLeadChange={vi.fn()}
           onUpdateLead={vi.fn()}
           onConvertToClient={vi.fn()}
         />
       </MemoryRouter>,
     )
-    expect(screen.getByRole('dialog', { name: /Atelier Lumière/ })).toHaveFocus()
+    expect(screen.getByRole('heading', { name: 'Atelier Lumière' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByText('Interaction timeline')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: 'Chaîne commerciale' }))
     expect(screen.getByText('Revenue chain')).toBeInTheDocument()
-    fireEvent.keyDown(document, { key: 'Escape' })
-    expect(onClose).toHaveBeenCalledOnce()
-    unmount()
-    expect(trigger).toHaveFocus()
-    trigger.remove()
   })
 })

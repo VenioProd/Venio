@@ -211,7 +211,7 @@ export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (c
           <span>{loadError}</span>
           <button
             type="button"
-            className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
             onClick={() => void reload()}
           >
             {t('crmAuto.retry')}
@@ -228,7 +228,7 @@ export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (c
           <span>{t('crmAuto.pendingNotice', { count: pending })}</span>
           <button
             type="button"
-            className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
             onClick={() => {
               setFilter('PENDING')
               setSection('journal')
@@ -260,7 +260,7 @@ export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (c
         <button
           type="button"
           id="crm-auto-new"
-          className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+          className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
           disabled={!canAdminister}
           title={canAdminister ? undefined : t('crmAuto.adminOnly')}
           onClick={() => setBuilder({ rule: null, draft: emptyDraft() })}
@@ -337,14 +337,14 @@ export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (c
           <div className="crm-auto-row">
             <button
               type="button"
-              className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+              className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
               onClick={() => setToDelete(null)}
             >
               {t('common.cancel')}
             </button>
             <button
               type="button"
-              className="crm-auto-btn crm-auto-btn--danger crm-auto-btn--sm"
+              className="portal-button secondary crm-auto-btn crm-auto-btn--danger crm-auto-btn--sm"
               onClick={() => void confirmDelete()}
             >
               {t('common.delete')}

@@ -257,7 +257,7 @@ export default function RulesPanel({
         {canAdminister && (
           <button
             type="button"
-            className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+            className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
             onClick={onNew}
             style={{ marginTop: 12 }}
           >
@@ -317,7 +317,7 @@ export default function RulesPanel({
           <div className="crm-auto-row">
             <button
               type="button"
-              className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+              className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
               onClick={() => setSim(null)}
             >
               {t('common.close')}
@@ -325,7 +325,7 @@ export default function RulesPanel({
             {sim.result && sim.result.total > 0 && (
               <button
                 type="button"
-                className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+                className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
                 onClick={() => void record()}
                 disabled={sim.recording}
               >

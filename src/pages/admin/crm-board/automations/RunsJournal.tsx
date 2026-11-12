@@ -112,7 +112,7 @@ function RunRow({
               <>
                 <button
                   type="button"
-                  className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+                  className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
                   disabled={busy || !canAdminister}
                   title={lockTitle}
                   onClick={() => onAct('approve', run)}
@@ -121,7 +121,7 @@ function RunRow({
                 </button>
                 <button
                   type="button"
-                  className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+                  className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
                   disabled={busy || !canAdminister}
                   title={lockTitle}
                   onClick={() => onAct('reject', run)}
@@ -133,7 +133,7 @@ function RunRow({
             {run.status === 'ERR' && (
               <button
                 type="button"
-                className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+                className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
                 disabled={busy || !canAdminister}
                 title={lockTitle}
                 onClick={() => onAct('retry', run)}
@@ -243,7 +243,7 @@ export default function RunsJournal({
             <span>{error}</span>
             <button
               type="button"
-              className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+              className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
               onClick={() => void load(1, false)}
             >
               {t('crmAuto.retry')}
@@ -275,7 +275,7 @@ export default function RunsJournal({
           {items.length < total && (
             <button
               type="button"
-              className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+              className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
               disabled={loading}
               onClick={() => void load(page + 1, true)}
             >

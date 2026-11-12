@@ -70,7 +70,7 @@ function EnrollmentRow({
       {canManage && open && (
         <button
           type="button"
-          className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+          className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
           disabled={busy}
           aria-label={t('crmSeq.enr.unenrollAria', { lead: label })}
           onClick={onUnenroll}
@@ -141,7 +141,11 @@ function SequenceDetail({
   return (
     <section aria-labelledby="crm-seq-detail-h" className="crm-seq-detail">
       <div className="crm-seq-detail-h">
-        <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={onBack}>
+        <button
+          type="button"
+          className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+          onClick={onBack}
+        >
           ← {t('crmSeq.detail.back')}
         </button>
         <h2 id="crm-seq-detail-h">{seq.name}</h2>
@@ -197,7 +201,7 @@ function SequenceDetail({
         <div className="crm-auto-row crm-seq-pager">
           <button
             type="button"
-            className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
           >
@@ -206,7 +210,7 @@ function SequenceDetail({
           <span>{t('crmSeq.detail.page', { page, pages })}</span>
           <button
             type="button"
-            className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
             disabled={page >= pages}
             onClick={() => setPage((p) => p + 1)}
           >
@@ -306,7 +310,7 @@ export default function CrmSequences() {
           <span>{loadError}</span>
           <button
             type="button"
-            className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
             onClick={() => void reload()}
           >
             {t('crmSeq.retry')}
@@ -333,7 +337,7 @@ export default function CrmSequences() {
             {canAdminister && (
               <button
                 type="button"
-                className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+                className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
                 onClick={() => setBuilder({ sequence: null })}
               >
                 {t('crmSeq.new')}
@@ -378,14 +382,14 @@ export default function CrmSequences() {
           <div className="crm-auto-row">
             <button
               type="button"
-              className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+              className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
               onClick={() => setToDelete(null)}
             >
               {t('common.cancel')}
             </button>
             <button
               type="button"
-              className="crm-auto-btn crm-auto-btn--danger crm-auto-btn--sm"
+              className="portal-button secondary crm-auto-btn crm-auto-btn--danger crm-auto-btn--sm"
               onClick={() => void confirmDelete()}
             >
               {t('common.delete')}

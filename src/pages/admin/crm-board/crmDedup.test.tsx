@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LeadFormPanel from './LeadFormPanel'
-import LeadDetailModal from './LeadDetailModal'
+import LeadDetailPage from './LeadDetailPage'
 import MergeLeadDialog from './MergeLeadDialog'
 import { DUPLICATE_DEBOUNCE_MS } from './duplicates'
 import { EMPTY_FORM } from './constants'
@@ -134,10 +134,10 @@ describe('formulaire de création : bandeau de doublons', () => {
 })
 
 describe('fiche lead : Fusionner dans…', () => {
-  const renderModal = (props: Partial<React.ComponentProps<typeof LeadDetailModal>> = {}) =>
+  const renderModal = (props: Partial<React.ComponentProps<typeof LeadDetailPage>> = {}) =>
     render(
       <MemoryRouter>
-        <LeadDetailModal
+        <LeadDetailPage
           lead={lead}
           admins={[]}
           canManageCrm

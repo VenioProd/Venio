@@ -81,7 +81,7 @@ describe('CRM principal — filtre Projet et anciennes écoles Arrow', () => {
     expect(screen.getByText('Domaine Vigno')).toBeInTheDocument()
     expect(screen.queryByText('École migrée')).not.toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('project=VIGNO&mode=file')
-    fireEvent.click(screen.getByTitle('Vue tableau'))
+    fireEvent.click(screen.getByTitle('Tableau enrichi'))
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('?project=VIGNO'))
   })
 

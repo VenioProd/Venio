@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { AdminUser, Lead } from '../../../../types/crm.types'
-import { PROJECT_MAP, STATUS_MAP, TEMPERATURE_MAP } from '../constants'
+import { CRM_PRIORITIES, PRIORITY_MAP, PROJECT_MAP, STATUS_MAP, TEMPERATURE_MAP } from '../constants'
 import { translate, type MessageKey, type MessageParams } from '../../../../i18n'
 import { formatDate, formatMoney } from '../../../../i18n/format'
 
@@ -90,6 +90,14 @@ export const RICH_COLUMNS: RichColumn[] = [
       )
     },
     csv: (l, { t }) => (STATUS_MAP[l.status] ? t(STATUS_MAP[l.status].labelKey) : l.status),
+  },
+  {
+    key: 'priority',
+    labelKey: 'crm.col.priority',
+    group: 'pipeline',
+    sortValue: (l) => CRM_PRIORITIES.findIndex((priority) => priority.key === l.priority),
+    render: (l, { t }) => (PRIORITY_MAP[l.priority || ''] ? t(PRIORITY_MAP[l.priority!].labelKey) : dash),
+    csv: (l, { t }) => (PRIORITY_MAP[l.priority || ''] ? t(PRIORITY_MAP[l.priority!].labelKey) : ''),
   },
   {
     key: 'project',
@@ -294,6 +302,7 @@ export const COLUMN_MAP: Record<string, RichColumn> = Object.fromEntries(RICH_CO
 export const DEFAULT_COLUMNS = [
   'company',
   'status',
+  'priority',
   'assignedTo',
   'weighted',
   'nextAction',

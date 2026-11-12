@@ -167,7 +167,7 @@ export default function SequencesPanel({
         {canAdminister && (
           <button
             type="button"
-            className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+            className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
             onClick={onNew}
             style={{ marginTop: 12 }}
           >

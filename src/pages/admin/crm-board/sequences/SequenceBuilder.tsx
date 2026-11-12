@@ -339,7 +339,7 @@ export default function SequenceBuilder({ sequence, onClose, onSaved }: Props) {
         </ol>
         <button
           type="button"
-          className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+          className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
           disabled={draft.steps.length >= MAX_STEPS}
           onClick={() => setDraft((d) => ({ ...d, steps: [...d.steps, emptyStep('EMAIL')] }))}
         >
@@ -388,12 +388,16 @@ export default function SequenceBuilder({ sequence, onClose, onSaved }: Props) {
         </p>
       )}
       <div className="crm-auto-row">
-        <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={onClose}>
+        <button
+          type="button"
+          className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+          onClick={onClose}
+        >
           {t('common.cancel')}
         </button>
         <button
           type="button"
-          className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+          className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
           disabled={saving}
           onClick={() => void save()}
         >

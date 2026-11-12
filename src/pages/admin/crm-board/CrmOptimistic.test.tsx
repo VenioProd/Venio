@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, expect, it, vi } from 'vitest'
 import CrmBoard from './index'
 import { apiFetch } from '../../../lib/api'
@@ -8,7 +8,7 @@ import type { Lead } from '../../../types/crm.types'
 
 vi.mock('../../../lib/api', () => ({ apiFetch: vi.fn() }))
 vi.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'admin', role: 'SUPER_ADMIN' } }) }))
-vi.mock('./LeadDetailModal', () => ({
+vi.mock('./LeadDetailPage', () => ({
   default: ({
     lead,
     onUpdateLead,
@@ -33,7 +33,7 @@ vi.mock('./LeadDetailModal', () => ({
 
 beforeEach(() => vi.clearAllMocks())
 
-it('affiche le PATCH avant sa réponse, revient en arrière sur erreur et garde le pipeline affiché', async () => {
+it('affiche le PATCH avant sa réponse et revient en arrière sur erreur dans la fiche en page', async () => {
   let resolvePatch!: (result: unknown) => void
   let rejectPatch!: (error: Error) => void
   vi.mocked(apiFetch).mockImplementation(async (path, options) => {
@@ -44,25 +44,27 @@ it('affiche le PATCH avant sa réponse, revient en arrière sur erreur et garde 
       })
     if (path === '/api/admin/crm/pipeline')
       return { columns: [{ status: 'LEAD', leads: [{ _id: 'a', company: 'Avant', status: 'LEAD' }] }] }
+    if (path === '/api/admin/crm/leads/a') return { lead: { _id: 'a', company: 'Avant', status: 'LEAD' } }
     if (path === '/api/admin/admins') return { users: [] }
     if (path === '/api/admin/crm/worklist') return { groups: { overdue: [], today: [], upcoming: [], drifting: [] } }
     return { items: [] }
   })
   render(
-    <MemoryRouter>
-      <CrmBoard />
+    <MemoryRouter initialEntries={['/admin/crm/leads/a']}>
+      <Routes>
+        <Route path="/admin/crm/leads/:leadId" element={<CrmBoard />} />
+      </Routes>
     </MemoryRouter>,
   )
-  fireEvent.click(await screen.findByRole('button', { name: /Avant/ }))
-  fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
-  expect(screen.getAllByText('Après')).toHaveLength(2)
+  fireEvent.click(await screen.findByRole('button', { name: 'Modifier' }))
+  expect(screen.getAllByText('Après')).toHaveLength(1)
   expect(screen.queryByText('Chargement du pipeline…')).not.toBeInTheDocument()
   resolvePatch({ lead: { _id: 'a', company: 'Confirmé', status: 'LEAD' } })
-  await waitFor(() => expect(screen.getAllByText('Confirmé')).toHaveLength(2))
+  await waitFor(() => expect(screen.getAllByText('Confirmé')).toHaveLength(1))
   fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
-  expect(screen.getAllByText('Après')).toHaveLength(2)
+  expect(screen.getAllByText('Après')).toHaveLength(1)
   rejectPatch(new Error('Échec du PATCH'))
-  await waitFor(() => expect(screen.getAllByText('Confirmé')).toHaveLength(2))
+  await waitFor(() => expect(screen.getAllByText('Confirmé')).toHaveLength(1))
   expect(screen.getByRole('alert')).toHaveTextContent('Échec du PATCH')
   const sector = screen.getByLabelText('Secteur')
   fireEvent.change(sector, { target: { value: 'Industrie' } })

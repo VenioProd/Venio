@@ -716,7 +716,7 @@ export default function RuleBuilder({ rule, draft: initial, onClose, onSaved }: 
               })}
               <button
                 type="button"
-                className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+                className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
                 style={{ alignSelf: 'flex-start' }}
                 onClick={addCondition}
                 disabled={draft.conditions.items.length >= 10}
@@ -736,7 +736,7 @@ export default function RuleBuilder({ rule, draft: initial, onClose, onSaved }: 
               {rule && (
                 <button
                   type="button"
-                  className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+                  className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
                   style={{ alignSelf: 'flex-start' }}
                   disabled={simBusy}
                   onClick={() => void runSim()}
@@ -920,7 +920,7 @@ export default function RuleBuilder({ rule, draft: initial, onClose, onSaved }: 
         <div className="crm-auto-dr-f">
           <button
             type="button"
-            className="crm-auto-btn crm-auto-btn--ghost"
+            className="portal-button secondary crm-auto-btn crm-auto-btn--ghost"
             disabled={step === 0}
             onClick={() => setStep(step - 1)}
           >
@@ -929,7 +929,7 @@ export default function RuleBuilder({ rule, draft: initial, onClose, onSaved }: 
           {lastStep ? (
             <button
               type="button"
-              className="crm-auto-btn crm-auto-btn--primary"
+              className="portal-button crm-auto-btn crm-auto-btn--primary"
               style={{ flex: 1 }}
               disabled={saving}
               onClick={() => void save()}
@@ -939,7 +939,7 @@ export default function RuleBuilder({ rule, draft: initial, onClose, onSaved }: 
           ) : (
             <button
               type="button"
-              className="crm-auto-btn crm-auto-btn--primary"
+              className="portal-button crm-auto-btn crm-auto-btn--primary"
               style={{ flex: 1 }}
               onClick={() => setStep(step + 1)}
             >

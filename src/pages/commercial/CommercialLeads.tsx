@@ -168,7 +168,9 @@ const CommercialLeads = () => {
                     <LeadStatusBadge lead={lead} />
                   </td>
                   <td data-label={t('commercial.leads.colNextAction')}>{formatDay(lead.nextActionAt)}</td>
-                  <td data-label={t('commercial.leads.colUpdated')}>{formatDay(lead.updatedAt)}</td>
+                  <td className="commercial-lead-updated" data-label={t('commercial.leads.colUpdated')}>
+                    {formatDay(lead.updatedAt)}
+                  </td>
                 </tr>
               ))}
             </tbody>

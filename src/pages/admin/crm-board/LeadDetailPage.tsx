@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import ConfirmModal from '../../../components/ConfirmModal'
+import './crm.css'
 import { Link } from 'react-router-dom'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
@@ -10,6 +12,7 @@ import DuplicatesBanner from './DuplicatesBanner'
 import MergeLeadDialog from './MergeLeadDialog'
 import LeadPrivacyPanel from './LeadPrivacyPanel'
 import LeadSequencesPanel from './sequences/LeadSequencesPanel'
+import { formatDateTime } from '../../../i18n/format'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
 import {
@@ -24,7 +27,7 @@ import {
   labelOfValue,
 } from './constants'
 
-interface LeadDetailModalProps {
+interface LeadDetailPageProps {
   lead: Lead
   admins: AdminUser[]
   canManageCrm: boolean
@@ -33,13 +36,14 @@ interface LeadDetailModalProps {
   onLeadChange: (updater: (prev: Lead | null) => Lead | null) => void
   onUpdateLead: (leadId: string, patch: Record<string, unknown>) => Promise<void>
   onConvertToClient: (lead: Lead) => void
+  onDeleteLead?: (id: string) => Promise<void>
   /** Autres leads connus du tableau, proposés comme cible d'une fusion. */
   mergeCandidates?: Lead[]
   /** Appelé après une fusion réussie : le lead de la fiche n'existe plus. */
   onMerged?: (target: { _id: string; company: string }) => void
 }
 
-const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
+const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
   lead,
   admins,
   canManageCrm,
@@ -48,6 +52,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   onLeadChange,
   onUpdateLead,
   onConvertToClient,
+  onDeleteLead,
   mergeCandidates = [],
   onMerged,
 }) => {
@@ -55,87 +60,140 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   const [merging, setMerging] = useState(false)
   const [notice, setNotice] = useState('')
   const timelineRef = useRef<HTMLDivElement>(null)
-  const drawerRef = useRef<HTMLDivElement>(null)
-  const closeRef = useRef(onClose)
+  const [tab, setTab] = useState('details')
+  const [more, setMore] = useState(false)
+  const [confirm, setConfirm] = useState<'archive' | 'delete' | null>(null)
+  const moreRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [menuPos, setMenuPos] = useState<React.CSSProperties>({})
+  const tabs = [
+    ['details', 'crm.detail.details'],
+    ['revenue', 'crm.detail.revenueChain'],
+    ['sequences', 'crm.detail.sequences'],
+    ['privacy', 'crm.detail.privacy'],
+  ] as const
   useEffect(() => {
-    closeRef.current = onClose
-  }, [onClose])
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null
-    const panel = drawerRef.current
-    panel?.focus()
-    const handleKey = (event: KeyboardEvent) => {
-      const activeDialog = document.activeElement?.closest('[role="dialog"], [role="alertdialog"]')
-      if (activeDialog && !panel?.contains(activeDialog)) return
-      const focusPanel = panel?.querySelector<HTMLElement>('[role="dialog"]') ?? panel
+    if (!more) return
+    const position = () => {
+      const rect = moreRef.current?.getBoundingClientRect()
+      if (rect)
+        setMenuPos({ position: 'fixed', top: rect.bottom + 6, right: Math.max(8, window.innerWidth - rect.right) })
+    }
+    const close = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node) && !moreRef.current?.contains(event.target as Node))
+        setMore(false)
+    }
+    const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (focusPanel === panel) closeRef.current()
-        return
-      }
-      if (event.key !== 'Tab' || !focusPanel) return
-      const controls = Array.from(
-        focusPanel.querySelectorAll<HTMLElement>(
-          'a[href], button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex="0"]',
-        ),
-      ).filter((element) => element.getClientRects().length > 0)
-      const first = controls[0]
-      const last = controls[controls.length - 1]
-      if (!first) {
-        event.preventDefault()
-        return
-      }
-      if (event.shiftKey && (document.activeElement === first || document.activeElement === focusPanel)) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === focusPanel)) {
-        event.preventDefault()
-        first.focus()
+        setMore(false)
+        moreRef.current?.focus()
       }
     }
-    document.addEventListener('keydown', handleKey)
+    position()
+    menuRef.current?.querySelector('button')?.focus()
+    window.addEventListener('resize', position)
+    window.addEventListener('scroll', position, true)
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', key)
     return () => {
-      document.removeEventListener('keydown', handleKey)
-      previous?.focus()
+      window.removeEventListener('resize', position)
+      window.removeEventListener('scroll', position, true)
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', key)
     }
-  }, [])
-  return createPortal(
-    <div className="crm-modal-overlay crm-detail-overlay" onClick={onClose}>
-      <div
-        className="crm-modal crm-detail-drawer"
-        ref={drawerRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="crm-detail-title"
-        tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="crm-modal-header">
-          <h2 id="crm-detail-title">{t('crm.detail.title', { company: lead.company })}</h2>
-          <button aria-label={t('common.close')} className="crm-modal-close" onClick={onClose}>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+  }, [more])
+  const focusComposer = (email: boolean) => {
+    const timeline = timelineRef.current
+    if (email && !timeline?.querySelector('.interaction-email-composer'))
+      timeline?.querySelector<HTMLButtonElement>('.interaction-toolbar button')?.click()
+    requestAnimationFrame(() => {
+      const composer =
+        timeline?.querySelector<HTMLElement>(email ? '.interaction-email-composer' : '.interaction-composer') ??
+        timeline
+      composer?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+      composer?.querySelector<HTMLElement>('textarea, input, button')?.focus({ preventScroll: true })
+    })
+  }
+  return (
+    <section className="crm-detail-page" aria-labelledby="crm-detail-title">
+      <header className="crm-detail-header">
+        <button type="button" className="portal-button secondary" onClick={onClose}>
+          {t('crm.detail.back')}
+        </button>
+        <h1 id="crm-detail-title">{lead.company}</h1>
+        <div className="crm-detail-summary">
+          <span>{t(CRM_STATUSES.find((status) => status.key === lead.status)?.labelKey || 'crm.status.lead')}</span>
+          <span>{admins.find((admin) => admin._id === lead.assignedTo)?.name || t('crm.common.unassigned')}</span>
+          <fieldset className="crm-detail-next-action">
+            <legend>{t('crm.col.nextAction')}</legend>
+            {canManageCrm ? (
+              <>
+                <input
+                  className="portal-input"
+                  aria-label={t('crm.detail.nextActionLabel')}
+                  key={`${lead._id}:${lead.nextActionLabel ?? ''}`}
+                  defaultValue={lead.nextActionLabel ?? ''}
+                  maxLength={200}
+                  onBlur={(event) => {
+                    if (event.target.value !== (lead.nextActionLabel ?? ''))
+                      void onUpdateLead(lead._id, { nextActionLabel: event.target.value })
+                  }}
+                />
+                <input
+                  type="datetime-local"
+                  className="portal-input"
+                  aria-label={t('crm.detail.nextActionDate')}
+                  value={toDateTimeLocal(lead.nextActionAt) || ''}
+                  onChange={(event) =>
+                    onLeadChange((prev) =>
+                      prev
+                        ? { ...prev, nextActionAt: event.target.value ? fromDateTimeLocal(event.target.value) : null }
+                        : prev,
+                    )
+                  }
+                  onBlur={(event) =>
+                    void onUpdateLead(lead._id, {
+                      nextActionAt: event.target.value ? fromDateTimeLocal(event.target.value) : null,
+                    })
+                  }
+                />
+              </>
+            ) : (
+              <span>
+                {lead.nextActionLabel || '—'} · {lead.nextActionAt ? formatDateTime(lead.nextActionAt) : '—'}
+              </span>
+            )}
+          </fieldset>
         </div>
-        <div className="crm-modal-body">
-          <div className="crm-modal-notes" ref={timelineRef} tabIndex={-1}>
-            <label className="crm-modal-label">{t('crm.detail.interactionLog')}</label>
-            <InteractionTimeline
-              subjectType="LEAD"
-              subjectId={lead._id}
-              canWrite={canManageCrm}
-              legacyNote={lead.interactionNotes || undefined}
-            />
+        {canManageCrm && (
+          <div className="crm-detail-actions">
+            <button type="button" className="portal-button" onClick={() => focusComposer(true)}>
+              {t('crm.detail.write')}
+            </button>
+            <button type="button" className="portal-button secondary" onClick={() => focusComposer(false)}>
+              {t('crm.detail.log')}
+            </button>
+            {onMerged && (
+              <button type="button" className="portal-button secondary" onClick={() => setMerging(true)}>
+                {t('crm.merge.open')}
+              </button>
+            )}
+            <button
+              type="button"
+              ref={moreRef}
+              className="portal-button secondary"
+              aria-label={t('crm.detail.more')}
+              aria-expanded={more}
+              aria-controls={more ? 'crm-detail-more' : undefined}
+              onClick={() => setMore(!more)}
+            >
+              …
+            </button>
           </div>
-
+        )}
+      </header>
+      <div className="crm-detail-layout">
+        <div className="crm-detail-fields">
           <div className="crm-modal-info">
             <p>
               <strong>{t('crm.detail.contact')}</strong> {lead.contactName || '—'}
@@ -192,14 +250,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 <button
                   type="button"
                   className="portal-button secondary crm-modal-quick-btn"
-                  onClick={() => {
-                    const composer =
-                      timelineRef.current?.querySelector<HTMLElement>('.interaction-email-composer') ??
-                      timelineRef.current
-                    composer?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-                    const control = composer?.querySelector<HTMLElement>('input, textarea, button') ?? composer
-                    control?.focus({ preventScroll: true })
-                  }}
+                  onClick={() => focusComposer(true)}
                 >
                   {t('crm.detail.sendEmail')}
                 </button>
@@ -307,26 +358,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     ]}
                   />
                 </div>
-                <div className="crm-modal-quick-field">
-                  <label>{t('crm.col.nextAction')}</label>
-                  <input
-                    type="datetime-local"
-                    className="portal-input"
-                    value={toDateTimeLocal(lead.nextActionAt) || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      onLeadChange((prev) =>
-                        prev
-                          ? { ...prev, nextActionAt: e.target.value ? fromDateTimeLocal(e.target.value) : null }
-                          : prev,
-                      )
-                    }
-                    onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                      const raw = e.target.value
-                      const iso = raw ? fromDateTimeLocal(raw) : null
-                      onUpdateLead(lead._id, { nextActionAt: iso })
-                    }}
-                  />
-                </div>
               </div>
               <div className="crm-modal-quick-btns" style={{ marginTop: 8 }}>
                 <button
@@ -376,56 +407,138 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             </div>
           )}
 
-          {/* Le champ libre `interactionNotes` est remplacé par le journal des
-              échanges. Son contenu déjà saisi reste affiché en tête de
-              timeline pour ne pas disparaître de l'écran. */}
-          <LeadEnrichedPanel
-            lead={lead}
-            canManageCrm={canManageCrm}
-            onUpdateLead={onUpdateLead}
-            onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
-          />
-
-          <LeadPrivacyPanel
-            lead={lead}
-            canManageCrm={canManageCrm}
-            onUpdateLead={onUpdateLead}
-            onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
-          />
-
-          <LeadSequencesPanel leadId={lead._id} canManageCrm={canManageCrm} />
-
-          <div className="crm-modal-notes">
-            <label className="crm-modal-label">{t('crm.detail.revenueChain')}</label>
-            <RevenueChain leadId={lead._id} canManage={canManageCrm} />
+          <div className="crm-detail-tabs" role="tablist" aria-label={t('crm.detail.sections')}>
+            {tabs.map(([key, label], index) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                id={`crm-tab-${key}`}
+                aria-controls={`crm-panel-${key}`}
+                aria-selected={tab === key}
+                tabIndex={tab === key ? 0 : -1}
+                onClick={() => setTab(key)}
+                onKeyDown={(event) => {
+                  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+                  event.preventDefault()
+                  const next =
+                    event.key === 'Home'
+                      ? 0
+                      : event.key === 'End'
+                        ? tabs.length - 1
+                        : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
+                  setTab(tabs[next][0])
+                  document.getElementById(`crm-tab-${tabs[next][0]}`)?.focus()
+                }}
+              >
+                {t(label)}
+              </button>
+            ))}
           </div>
-
-          {merging && (
-            <MergeLeadDialog
-              lead={lead}
-              candidates={mergeCandidates}
-              onCancel={() => setMerging(false)}
-              onMerged={(target) => {
-                setMerging(false)
-                onMerged?.(target)
-              }}
-            />
-          )}
+          <div role="tabpanel" id={`crm-panel-${tab}`} aria-labelledby={`crm-tab-${tab}`}>
+            {tab === 'details' && (
+              <LeadEnrichedPanel
+                lead={lead}
+                canManageCrm={canManageCrm}
+                onUpdateLead={onUpdateLead}
+                onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
+              />
+            )}
+            {tab === 'privacy' && (
+              <LeadPrivacyPanel
+                lead={lead}
+                canManageCrm={canManageCrm}
+                onUpdateLead={onUpdateLead}
+                onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
+              />
+            )}
+            {tab === 'sequences' && <LeadSequencesPanel leadId={lead._id} canManageCrm={canManageCrm} />}
+            {tab === 'revenue' && <RevenueChain leadId={lead._id} canManage={canManageCrm} />}
+          </div>
         </div>
-        <div className="crm-modal-actions">
-          {canManageCrm && onMerged && (
-            <button type="button" className="portal-button secondary" onClick={() => setMerging(true)}>
-              {t('crm.merge.open')}
-            </button>
-          )}
-          <button className="portal-button secondary" onClick={onClose}>
-            {t('common.close')}
-          </button>
-        </div>
+        <aside
+          className="crm-detail-journal"
+          ref={timelineRef}
+          tabIndex={-1}
+          aria-label={t('crm.detail.interactionLog')}
+        >
+          <h2>{t('crm.detail.interactionLog')}</h2>
+          <InteractionTimeline
+            subjectType="LEAD"
+            subjectId={lead._id}
+            canWrite={canManageCrm}
+            legacyNote={lead.interactionNotes || undefined}
+          />
+        </aside>
       </div>
-    </div>,
-    document.body,
+      {more &&
+        createPortal(
+          <div ref={menuRef} id="crm-detail-more" className="crm-detail-menu" style={menuPos}>
+            <button
+              type="button"
+              className="portal-button secondary"
+              onClick={() => {
+                setMore(false)
+                setConfirm('archive')
+              }}
+            >
+              {t(lead.archivedAt ? 'crmRich.bulk.restore' : 'crmRich.bulk.archive')}
+            </button>
+            {onDeleteLead && (
+              <button
+                type="button"
+                className="portal-button secondary"
+                onClick={() => {
+                  setMore(false)
+                  setConfirm('delete')
+                }}
+              >
+                {t('crmRich.bulk.delete')}
+              </button>
+            )}
+          </div>,
+          document.body,
+        )}
+      {createPortal(
+        <ConfirmModal
+          isOpen={confirm !== null}
+          title={t(
+            confirm === 'delete'
+              ? 'crmRich.bulk.delete'
+              : lead.archivedAt
+                ? 'crmRich.bulk.restore'
+                : 'crmRich.bulk.archive',
+          )}
+          message={
+            confirm === 'delete'
+              ? t('crmRich.bulk.deleteConfirm', { count: 1 })
+              : t(lead.archivedAt ? 'crmRich.bulk.restoreConfirm' : 'crmRich.bulk.archiveConfirm', { count: 1 })
+          }
+          confirmLabel={t('common.confirm')}
+          cancelLabel={t('common.cancel')}
+          onCancel={() => setConfirm(null)}
+          onConfirm={async () => {
+            const action = confirm
+            setConfirm(null)
+            if (action === 'delete') await onDeleteLead?.(lead._id)
+            else await onUpdateLead(lead._id, { archivedAt: lead.archivedAt ? null : new Date().toISOString() })
+          }}
+        />,
+        document.body,
+      )}
+      {merging && (
+        <MergeLeadDialog
+          lead={lead}
+          candidates={mergeCandidates}
+          onCancel={() => setMerging(false)}
+          onMerged={(target) => {
+            setMerging(false)
+            onMerged?.(target)
+          }}
+        />
+      )}
+    </section>
   )
 }
 
-export default LeadDetailModal
+export default LeadDetailPage

@@ -9,6 +9,7 @@ import { apiFetch } from '../../../lib/api'
 import type { WorklistResponse } from '../../../types/crm.types'
 import PageHeader from '../../../components/admin/ui/PageHeader'
 import HubTabs from '../../../components/admin/ui/HubTabs'
+import '../crm-board/crm.css'
 import { fetchRuns } from '../crm-board/automations/api'
 
 const CrmBoard = lazy(() => import('../CrmBoard'))
@@ -48,6 +49,10 @@ export default function CrmHub() {
   if (location.pathname === '/admin/crm' && query.get('mode') === 'file') {
     query.delete('mode')
     return <Navigate to={`/admin/crm/a-traiter${query.size ? `?${query}` : ''}${location.hash}`} replace />
+  }
+  if (location.pathname === '/admin/crm' && query.get('mode') === 'table') {
+    query.set('mode', 'liste')
+    return <Navigate to={`/admin/crm?${query}${location.hash}`} replace />
   }
   if (loading) return null
   const definition: AdminHubDefinition = ADMIN_HUBS.crm
