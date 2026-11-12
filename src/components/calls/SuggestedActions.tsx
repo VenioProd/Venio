@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { useI18n } from '../../context/I18nContext'
 import { formatDateTime } from '../../i18n/format'
 import type { AnalysisReview, ProposedAction } from '../../services/callInsights'
-import { MAX_ACTIONS, recordedDecision, type ActionState } from './reviewModel'
+import { isActionAcceptable, MAX_ACTIONS, recordedDecision, type ActionState } from './reviewModel'
 import { DecisionBadge, GestureButton, ProposalTag } from './ui'
 import './callInsights.css'
 
@@ -52,6 +52,8 @@ export default function SuggestedActions({
             const current = state[action.id] ?? { decision: null, dueAt: action.dueAt }
             const recorded = recordedDecision(review, action.id)
             const dateId = `${id}-${action.id}-date`
+            const labelId = `${id}-${action.id}-label`
+            const acceptable = isActionAcceptable(action)
             return (
               <li key={action.id} className="ci-proposed ci-action">
                 <div className="ci-action-head">
@@ -59,12 +61,14 @@ export default function SuggestedActions({
                   <span className="ci-tag">{t(`callInsights.actions.type.${action.type}`)}</span>
                   {readOnly && <DecisionBadge action={recorded?.action ?? null} />}
                 </div>
-                <p className="ci-action-label">{action.label}</p>
+                <p className="ci-action-label">{current.label?.trim() || action.label}</p>
                 <p className="ci-muted">
                   {t('callInsights.actions.reason')} {action.reason}
                 </p>
-                {(action.type === 'SEQUENCE' || action.type === 'HANDOFF') && (
-                  <p className="ci-muted">{t('callInsights.actions.notExecuted')}</p>
+                {!acceptable && (
+                  <p className="ci-muted" id={`${id}-${action.id}-unavailable`}>
+                    {t('callInsights.actions.notExecuted')}
+                  </p>
                 )}
                 {readOnly ? (
                   <p className="ci-muted">
@@ -72,18 +76,33 @@ export default function SuggestedActions({
                   </p>
                 ) : (
                   <div className="ci-action-controls">
-                    <label className="ci-inline-field" htmlFor={dateId}>
-                      <span>{t('callInsights.actions.due')}</span>
-                      <input
-                        id={dateId}
-                        className="portal-input"
-                        type="datetime-local"
-                        value={toLocalInput(current.dueAt)}
-                        onChange={(event) =>
-                          onChange(action.id, { ...current, dueAt: fromLocalInput(event.target.value) })
-                        }
-                      />
-                    </label>
+                    {acceptable && (
+                      <label className="ci-inline-field" htmlFor={labelId}>
+                        <span>{t('callInsights.actions.labelField')}</span>
+                        <input
+                          id={labelId}
+                          className="portal-input"
+                          type="text"
+                          maxLength={200}
+                          value={current.label ?? action.label}
+                          onChange={(event) => onChange(action.id, { ...current, label: event.target.value })}
+                        />
+                      </label>
+                    )}
+                    {acceptable && (
+                      <label className="ci-inline-field" htmlFor={dateId}>
+                        <span>{t('callInsights.actions.due')}</span>
+                        <input
+                          id={dateId}
+                          className="portal-input"
+                          type="datetime-local"
+                          value={toLocalInput(current.dueAt)}
+                          onChange={(event) =>
+                            onChange(action.id, { ...current, dueAt: fromLocalInput(event.target.value) })
+                          }
+                        />
+                      </label>
+                    )}
                     <div
                       className="ci-gestures"
                       role="group"
@@ -91,22 +110,29 @@ export default function SuggestedActions({
                     >
                       <GestureButton
                         kind="accept"
-                        pressed={current.decision === 'ACCEPT'}
+                        pressed={acceptable && current.decision === 'ACCEPT'}
+                        disabled={!acceptable}
+                        describedBy={acceptable ? undefined : `${id}-${action.id}-unavailable`}
                         onClick={() =>
                           onChange(action.id, { ...current, decision: current.decision === 'ACCEPT' ? null : 'ACCEPT' })
                         }
                       >
                         {t('callInsights.accept')}
                       </GestureButton>
-                      <GestureButton
-                        kind="ignore"
-                        pressed={current.decision === 'IGNORE'}
-                        onClick={() =>
-                          onChange(action.id, { ...current, decision: current.decision === 'IGNORE' ? null : 'IGNORE' })
-                        }
-                      >
-                        {t('callInsights.ignore')}
-                      </GestureButton>
+                      {acceptable && (
+                        <GestureButton
+                          kind="ignore"
+                          pressed={current.decision === 'IGNORE'}
+                          onClick={() =>
+                            onChange(action.id, {
+                              ...current,
+                              decision: current.decision === 'IGNORE' ? null : 'IGNORE',
+                            })
+                          }
+                        >
+                          {t('callInsights.ignore')}
+                        </GestureButton>
+                      )}
                     </div>
                   </div>
                 )}

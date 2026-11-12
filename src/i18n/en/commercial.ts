@@ -189,6 +189,20 @@ const en: Record<keyof typeof fr, string> = {
   'commercial.admin.paidBy': 'Paid on {date} by {name}',
   'commercial.admin.paidOn': 'Paid on {date}',
   'commercial.admin.due': 'Owed',
+  'commercial.hold.tag': 'On hold',
+  'commercial.hold.title': 'Lead on hold.',
+  'commercial.hold.body':
+    'An opt-out was detected on a call: the lead will not be called again until it is confirmed or lifted. Open the call analysis to confirm the opt-out; lifting the hold is up to the team.',
+  'commercial.recent.title': 'Calls this session',
+  'commercial.recent.waiting': 'Waiting for the carrier…',
+  'commercial.recent.open': 'Transcript and analysis',
+  'commercial.recent.hide': 'Hide',
+  'commercial.recent.notReady': 'The transcript is not ready yet',
+  'commercial.recent.dismiss': 'Remove the {company} call from the list',
+  'commercial.recent.transcriptReady': 'Transcript ready for {company}.',
+  'commercial.recent.analysisReady': 'Transcript and analysis ready for {company}.',
+  'commercial.detail.linkedCall': 'This exchange will be linked to the call that just ended ({duration}).',
+  'commercial.detail.unlinkCall': 'Do not link',
 }
 
 export default en

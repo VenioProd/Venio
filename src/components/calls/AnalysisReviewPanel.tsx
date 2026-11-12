@@ -4,6 +4,7 @@ import { useI18n } from '../../context/I18nContext'
 import { formatDateTime } from '../../i18n/format'
 import {
   apiErrorCode,
+  apiErrorKey,
   type ApplyInput,
   type CallAnalysis,
   type CallAnalysisOutput,
@@ -19,6 +20,7 @@ import {
   editableText,
   initialState,
   isEmptyValue,
+  isKeyAcceptable,
   parseEdited,
   recordedDecision,
   reviewerName,
@@ -32,6 +34,8 @@ interface AnalysisReviewPanelProps {
   analysis: CallAnalysis
   /** Valeurs actuellement enregistrées sur la fiche, par clé de champ. */
   current: Record<string, unknown>
+  /** Champs que l'auteur peut accepter ; les autres reviennent à l'équipe. Absent : tous. */
+  acceptableKeys?: readonly string[]
   /** Envoie la sélection en une fois ; doit rejeter en cas d'échec. */
   onApply: (input: ApplyInput) => Promise<void>
   /** Rejette l'analyse entière ; doit rejeter en cas d'échec. */
@@ -41,6 +45,39 @@ interface AnalysisReviewPanelProps {
   /** Lecture seule : aucun geste (consultation par l'équipe). */
   readOnly?: boolean
 }
+
+/** Codes d'erreur d'`apply`, `reject` et `opt-out` qui ont un message dédié (`callInsights.apiError.<CODE>`). */
+const KNOWN_ERROR_CODES = [
+  'INVALID_BODY',
+  'UNKNOWN_PROPOSAL',
+  'FIELD_NOT_ALLOWED',
+  'QUOTE_NOT_VERIFIED',
+  'INVALID_VALUE',
+  'ACTION_DUE_REQUIRED',
+  'ACTION_NOT_AVAILABLE',
+  'LEAD_HANDED_OFF',
+  'LEAD_CLOSED',
+  'ANALYSIS_NOT_READY',
+  'ANALYSIS_ALREADY_REVIEWED',
+  'IDEMPOTENCY_CONFLICT',
+  'NOT_FOUND',
+]
+const FIELD_LABELS: Record<string, true> = Object.fromEntries(
+  [
+    'budget',
+    'expectedCloseAt',
+    'serviceType',
+    'sector',
+    'companySize',
+    'contactName',
+    'contactEmail',
+    'qualification.need',
+    'qualification.timeline',
+    'qualification.decisionMaker',
+    'qualification.objections',
+    'qualification.competitors',
+  ].map((key) => [key, true as const]),
+)
 
 function newKey(): string {
   return globalThis.crypto?.randomUUID?.() ?? `req-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -57,9 +94,20 @@ interface FieldRowProps {
   /** Consultation d'une analyse déjà traitée. */
   recorded?: { action: 'ACCEPT' | 'EDIT' | 'IGNORE'; after: unknown } | null
   settled?: boolean
+  /** Champ réservé à l'équipe : rien à décider depuis cet espace. */
+  teamOnly?: boolean
 }
 
-function FieldRow({ field, current, decision, onDecide, onQuote, recorded, settled = false }: FieldRowProps) {
+function FieldRow({
+  field,
+  current,
+  decision,
+  onDecide,
+  onQuote,
+  recorded,
+  settled = false,
+  teamOnly = false,
+}: FieldRowProps) {
   const { t } = useI18n()
   const id = useId()
   const [editing, setEditing] = useState(false)
@@ -146,7 +194,13 @@ function FieldRow({ field, current, decision, onDecide, onQuote, recorded, settl
         </p>
       )}
 
-      {!settled && (
+      {teamOnly && !settled && (
+        <p className="ci-muted ci-team-only" id={`${id}-team`}>
+          {t('callInsights.field.teamOnly')}
+        </p>
+      )}
+
+      {!settled && !teamOnly && (
         <div className="ci-gestures" role="group" aria-label={t('callInsights.field.gestures', { field: label })}>
           <GestureButton
             kind="accept"
@@ -237,6 +291,7 @@ function FieldRow({ field, current, decision, onDecide, onQuote, recorded, settl
 export default function AnalysisReviewPanel({
   analysis,
   current,
+  acceptableKeys,
   onApply,
   onReject,
   onQuote,
@@ -254,8 +309,17 @@ export default function AnalysisReviewPanel({
   const attempt = useRef<{ fingerprint: string; key: string } | null>(null)
   const sending = useRef(false)
 
-  const counts = countDecisions(output, state)
+  const counts = countDecisions(output, state, acceptableKeys)
   const decided = counts.accepted + counts.ignored > 0
+
+  /** Message lisible pour un code d'erreur du serveur ; le message générique quand le code est inconnu. */
+  function errorText(failure: unknown, fallback: 'callInsights.error.apply' | 'callInsights.error.reject') {
+    const code = apiErrorCode(failure)
+    if (!code || !KNOWN_ERROR_CODES.includes(code)) return t(fallback)
+    const key = apiErrorKey(failure)
+    const field = key && key in FIELD_LABELS ? t(`callInsights.field.${key}` as 'callInsights.field.budget') : key
+    return t(`callInsights.apiError.${code}` as 'callInsights.apiError.INVALID_BODY', { field })
+  }
 
   async function run(action: () => Promise<void>, fallback: 'callInsights.error.apply' | 'callInsights.error.reject') {
     if (sending.current) return
@@ -265,7 +329,7 @@ export default function AnalysisReviewPanel({
     try {
       await action()
     } catch (failure) {
-      setError(apiErrorCode(failure) === 'LEAD_HANDED_OFF' ? t('callInsights.error.handedOff') : t(fallback))
+      setError(errorText(failure, fallback))
     } finally {
       sending.current = false
       setBusy(false)
@@ -329,6 +393,7 @@ export default function AnalysisReviewPanel({
                   })
                 }
                 onQuote={onQuote}
+                teamOnly={!isKeyAcceptable(acceptableKeys, field.key)}
                 settled={viewOnly}
                 recorded={viewOnly ? (recordedDecision(analysis.review, field.key) ?? null) : null}
               />

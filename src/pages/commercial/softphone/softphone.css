@@ -89,3 +89,49 @@ html.theme-portail .softphone-bar .portal-button.softphone-hangup:hover:not(:dis
   margin: 16px 0;
   max-width: 560px;
 }
+
+/* Enregistrement : indicateur et refus du prospect. */
+.softphone-recording {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md, 8px);
+  background: var(--bg-secondary);
+}
+.softphone-recording[data-state='on'] {
+  border-color: var(--critical);
+}
+.softphone-recording-state {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.softphone-rec-dot {
+  flex: none;
+  color: var(--critical);
+  animation: softphone-rec 1.4s ease-in-out infinite;
+}
+@keyframes softphone-rec {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .softphone-rec-dot {
+    animation: none;
+  }
+}
+.softphone-objection {
+  justify-self: start;
+}
+@media (max-width: 480px) {
+  .softphone-objection {
+    justify-self: stretch;
+  }
+}

@@ -15,6 +15,8 @@ export type HeatDecision = { action: 'ACCEPT' } | { action: 'EDIT'; level: HeatL
 export interface ActionState {
   decision: 'ACCEPT' | 'IGNORE' | null
   dueAt: string | null
+  /** Libellé modifié par la personne ; absent : celui de la proposition. */
+  label?: string
 }
 
 export interface ReviewState {
@@ -24,6 +26,14 @@ export interface ReviewState {
 }
 
 export const MAX_ACTIONS = 3
+
+/** Le serveur refuse d'accepter ces actions (`ACTION_NOT_AVAILABLE`) : elles se lisent, elles ne s'acceptent pas. */
+export const NOT_ACCEPTABLE_ACTIONS: readonly string[] = ['SEQUENCE', 'HANDOFF']
+export const isActionAcceptable = (action: { type: string }) => !NOT_ACCEPTABLE_ACTIONS.includes(action.type)
+
+/** Vrai si la clé peut être acceptée par l'auteur ; sans liste (`acceptableKeys` absent), toutes le peuvent. */
+export const isKeyAcceptable = (acceptableKeys: readonly string[] | undefined, key: string) =>
+  !acceptableKeys || acceptableKeys.includes(key)
 
 export function initialState(output: CallAnalysisOutput): ReviewState {
   return {
@@ -92,14 +102,20 @@ export function buildApplyInput(output: CallAnalysisOutput, state: ReviewState, 
           : { action: 'ACCEPT' },
     actions: output.actions.slice(0, MAX_ACTIONS).map((action) => {
       const current = state.actions[action.id]
-      return current?.decision === 'ACCEPT'
-        ? { id: action.id, action: 'ACCEPT' as const, dueAt: current.dueAt }
-        : { id: action.id, action: 'IGNORE' as const }
+      if (current?.decision !== 'ACCEPT' || !isActionAcceptable(action))
+        return { id: action.id, action: 'IGNORE' as const }
+      const label = current.label?.trim()
+      return {
+        id: action.id,
+        action: 'ACCEPT' as const,
+        dueAt: current.dueAt,
+        ...(label && label !== action.label ? { label } : {}),
+      }
     }),
   }
 }
 
-export function countDecisions(output: CallAnalysisOutput, state: ReviewState) {
+export function countDecisions(output: CallAnalysisOutput, state: ReviewState, acceptableKeys?: readonly string[]) {
   let accepted = 0
   let ignored = 0
   let pending = 0
@@ -108,9 +124,16 @@ export function countDecisions(output: CallAnalysisOutput, state: ReviewState) {
     else if (decision === 'IGNORE') ignored++
     else accepted++
   }
-  output.fields.forEach((field) => tally(state.fields[field.key]?.action))
+  // Un champ réservé à l'équipe n'est pas à décider ici : il part en IGNORE.
+  output.fields
+    .filter((field) => isKeyAcceptable(acceptableKeys, field.key))
+    .forEach((field) => tally(state.fields[field.key]?.action))
   tally(state.heat?.action)
-  output.actions.slice(0, MAX_ACTIONS).forEach((action) => tally(state.actions[action.id]?.decision))
+  // Les actions qu'on ne peut pas accepter ne sont ni à décider ni comptées : elles partent en IGNORE.
+  output.actions
+    .slice(0, MAX_ACTIONS)
+    .filter(isActionAcceptable)
+    .forEach((action) => tally(state.actions[action.id]?.decision))
   return { accepted, ignored, pending }
 }
 

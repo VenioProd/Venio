@@ -383,3 +383,127 @@
     min-width: 0;
   }
 }
+
+/* Fiche retenue après une opposition détectée sur un appel. */
+.commercial-hold-tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border: 1px solid var(--critical);
+  border-radius: 999px;
+  background: var(--critical-surface);
+  color: var(--critical);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+.commercial-hold {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 2px solid var(--critical);
+  border-radius: var(--r-lg);
+  background: var(--critical-surface);
+  color: var(--text-primary);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+/* Appels décrochés pendant la séance : accès au transcript et à l'analyse. Zone en flux, aucun calque flottant. */
+.recent-calls {
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--bg-secondary);
+  min-width: 0;
+}
+.recent-calls h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.recent-calls > ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.recent-call {
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+.recent-call:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.recent-call-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.recent-call-head > .ci-chips {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.recent-call-title {
+  display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.recent-call-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.recent-call-dismiss {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.recent-call-dismiss:hover {
+  color: var(--text-primary);
+}
+.recent-call-dismiss:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+}
+.recent-call-body {
+  margin-top: 10px;
+  max-height: 70vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.commercial-lead-calls {
+  margin-top: 20px;
+  min-width: 0;
+}
+.commercial-linked-call {
+  margin: 0;
+}
+.commercial-link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-light);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .recent-call-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+}

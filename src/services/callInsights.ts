@@ -106,10 +106,18 @@ export interface CallAnalysis {
   review: AnalysisReview | null
 }
 
+/** Retenue d'une fiche après une opposition détectée par l'analyse (`Lead.callHold`). */
+export interface CallHold {
+  at: string
+  reason: string
+}
+
 export interface AnalysisResponse {
   analysis: CallAnalysis
-  /** Valeurs actuellement enregistrées sur la fiche, par clé de champ. */
+  /** Valeurs actuellement enregistrées sur la fiche, par clé de champ (plus `leadTemperature`, `nextActionAt`, `callHold`). */
   current: Record<string, unknown>
+  /** Champs que l'auteur peut accepter ; les autres reviennent à l'équipe. Absent : tous. */
+  acceptableKeys?: FieldKey[]
 }
 
 export interface ApplyInput {
@@ -150,18 +158,36 @@ export function createCallInsightsApi(prefix: string = DEFAULT_API_PREFIX) {
       }),
     reject: (callId: string) => post(`${base(callId)}/analysis/reject`),
     retry: (callId: string) => post(`${base(callId)}/analysis/retry`),
+    /** Opposition détectée : l'externe peut seulement confirmer ; lever la retenue revient à l'équipe. */
+    optOut: (callId: string, action: 'CONFIRM' | 'DISMISS') =>
+      apiFetch<{ lead: unknown }>(`${base(callId)}/analysis/opt-out`, {
+        method: 'POST',
+        body: JSON.stringify({ action }),
+      }),
   }
 }
 
 export type CallInsightsApi = ReturnType<typeof createCallInsightsApi>
 
-/** Code d'erreur métier d'une réponse d'erreur (`{ error: 'LEAD_HANDED_OFF' }`), sinon chaîne vide. */
+/**
+ * Code d'erreur métier d'une réponse d'erreur. Le serveur répond `{ error: <message>, code: 'LEAD_HANDED_OFF', …détails }` ;
+ * des routes plus anciennes mettent le code dans `error`. Chaîne vide si rien d'exploitable.
+ */
 export function apiErrorCode(error: unknown): string {
   if (!(error instanceof ApiError)) return ''
   const payload = error.payload
   if (typeof payload === 'object' && payload !== null) {
-    const code = (payload as Record<string, unknown>).error
-    if (typeof code === 'string') return code
+    const { code, error: legacy } = payload as Record<string, unknown>
+    if (typeof code === 'string' && code) return code
+    if (typeof legacy === 'string' && /^[A-Z][A-Z0-9_]+$/.test(legacy)) return legacy
   }
   return ''
+}
+
+/** Champ visé par une erreur de validation (`key` dans les détails de la réponse), sinon chaîne vide. */
+export function apiErrorKey(error: unknown): string {
+  if (!(error instanceof ApiError)) return ''
+  const payload = error.payload
+  const key = typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>).key : null
+  return typeof key === 'string' ? key : ''
 }

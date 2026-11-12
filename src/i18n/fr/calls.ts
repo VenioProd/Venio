@@ -47,6 +47,14 @@ const fr = {
   'calls.fallback.retry': 'Réessayer l’appel navigateur',
   'calls.leaveConfirm': 'Un appel est en cours. Quitter cette page le raccrochera. Continuer ?',
   'calls.hangupFirst': 'Raccrochez pour enregistrer ou changer de fiche.',
+  'calls.held': 'Fiche retenue : elle ne peut pas être rappelée pour l’instant.',
+  'calls.recording.on': 'Enregistrement en cours.',
+  'calls.recording.notice': 'Le prospect en est prévenu par un message automatique.',
+  'calls.recording.objection': 'Le prospect refuse l’enregistrement',
+  'calls.recording.stopping': 'Arrêt de l’enregistrement…',
+  'calls.recording.stopped': 'Enregistrement arrêté : ce qui avait été capté est effacé et rien ne sera transcrit.',
+  'calls.recording.stopFailed':
+    'L’arrêt n’a pas pu être confirmé. Réessayez tout de suite : l’enregistrement continue peut-être.',
 }
 
 export default fr

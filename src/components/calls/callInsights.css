@@ -632,3 +632,121 @@
     flex: 1 1 0;
   }
 }
+
+/* ── Appels d'une fiche, enregistrement, états ───────────── */
+.ci-lead-calls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.ci-lead-calls h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.ci-lead-call-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.ci-lead-call {
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--bg-card);
+}
+.ci-lead-call-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+}
+button.ci-lead-call-head {
+  cursor: pointer;
+  border-radius: var(--r-lg);
+}
+button.ci-lead-call-head:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+}
+.ci-lead-call-when {
+  display: grid;
+  min-width: 96px;
+}
+.ci-lead-call-body {
+  padding: 0 14px 14px;
+  min-width: 0;
+}
+.ci-call-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.ci-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ci-chip {
+  padding: 2px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ci-chip--ok {
+  border-color: var(--accent-border-strong);
+  color: var(--text-primary);
+}
+.ci-chip--bad {
+  border-color: var(--critical);
+  color: var(--critical);
+}
+.ci-recording {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--bg-secondary);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.ci-recording-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.ci-recording audio {
+  flex: 1 1 220px;
+  min-width: 0;
+  max-width: 100%;
+}
+.ci-recording--note svg {
+  flex: none;
+}
+.ci-team-only {
+  margin: 0;
+}
+.ci-optout-state {
+  font-weight: 600;
+}

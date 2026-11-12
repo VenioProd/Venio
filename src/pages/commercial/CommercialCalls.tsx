@@ -9,6 +9,7 @@ import {
   type RepInteraction,
 } from '../../services/externalSales'
 import CallLeadImport from './CallLeadImport'
+import RecentCalls, { type RecentCall } from './RecentCalls'
 import CallBar from './softphone/CallBar'
 import { useSoftphone } from './softphone/useSoftphone'
 import type { SettledCall } from './softphone/engine'
@@ -49,6 +50,7 @@ export default function CommercialCalls() {
   const [busy, setBusy] = useState(false)
   const [autoOutcomes, setAutoOutcomes] = useState<Record<string, string>>({})
   const [refresh, setRefresh] = useState(0)
+  const [recentCalls, setRecentCalls] = useState<RecentCall[]>([])
   const noteRef = useRef<HTMLTextAreaElement>(null)
   const saving = useRef(false)
   const completed = useRef(new Set<string>())
@@ -156,6 +158,19 @@ export default function CommercialCalls() {
   const settleCall = (call: SettledCall) => {
     const lead = leads.find((item) => item._id === call.leadId)
     if (!lead) return
+    // Un appel décroché garde un accès à son transcript et à son analyse, le temps de la séance.
+    if (call.record?.answeredAt || call.elapsedSec > 0)
+      setRecentCalls((current) =>
+        [
+          {
+            callId: call.callId,
+            leadId: lead._id,
+            company: lead.company,
+            durationSec: call.record?.durationSec ?? call.elapsedSec,
+          },
+          ...current.filter((item) => item.callId !== call.callId),
+        ].slice(0, 5),
+      )
     const suggested = call.record?.suggestedOutcome
     const draft = draftFor(lead)
     const preselect =
@@ -306,12 +321,21 @@ export default function CommercialCalls() {
     }
     changeDraft(lead, { nextActionAt: localDate(date.toISOString()) })
   }
+  // Une analyse appliquée change la fiche : la ligne de la file se recharge.
+  const reloadLead = (leadId: string) => {
+    commercialApi
+      .lead(leadId)
+      .then((data) =>
+        setLeads((current) => current.map((item) => (item._id === leadId ? { ...item, ...data.lead } : item))),
+      )
+      .catch(() => undefined)
+  }
   const keyboard = (event: React.KeyboardEvent) => {
     if (
       busy ||
       loading ||
       event.nativeEvent.isComposing ||
-      (event.target as HTMLElement).closest('.commercial-import-form')
+      (event.target as HTMLElement).closest('.commercial-import-form, .recent-calls')
     )
       return
     const lead = leads.find((item) => item._id === selected)
@@ -417,6 +441,11 @@ export default function CommercialCalls() {
           </button>
         </div>
       )}
+      <RecentCalls
+        items={recentCalls}
+        onDismiss={(callId) => setRecentCalls((current) => current.filter((item) => item.callId !== callId))}
+        onApplied={reloadLead}
+      />
       {loading && <p role="status">{t('commercial.loading')}</p>}
       {!loading && !leads.length && <p>{t('commercial.calls.empty')}</p>}
       <div className="commercial-call-columns" aria-hidden="true">
@@ -443,6 +472,7 @@ export default function CommercialCalls() {
                 <span data-label={t('commercial.field.company')}>
                   <strong>{lead.company}</strong>
                   <small>{lead.contactName || '—'}</small>
+                  {lead.callHold && <em className="commercial-hold-tag">{t('commercial.hold.tag')}</em>}
                 </span>
                 <span data-label={t('commercial.field.phone')}>{lead.contactPhone || '—'}</span>
                 <span data-label={t('commercial.calls.outcome')}>{outcomeLabel(lead.lastCallOutcome)}</span>
@@ -477,12 +507,18 @@ export default function CommercialCalls() {
                       leadId={lead._id}
                       phone={lead.contactPhone}
                       disabled={busy}
+                      held={Boolean(lead.callHold)}
                       suggestion={
                         draft.callId && draft.outcome && draft.outcome === autoOutcomes[lead._id]
                           ? outcomeLabel(draft.outcome)
                           : null
                       }
                     />
+                    {lead.callHold && (
+                      <p className="commercial-hold" role="status">
+                        <strong>{t('commercial.hold.title')}</strong> {t('commercial.hold.body')}
+                      </p>
+                    )}
                     <div className="commercial-toolbar">
                       <span>{lead.contactName}</span>
                       {lead.contactEmail && (

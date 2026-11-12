@@ -188,6 +188,20 @@ const fr = {
   'commercial.admin.paidBy': 'Versée le {date} par {name}',
   'commercial.admin.paidOn': 'Versée le {date}',
   'commercial.admin.due': 'Due',
+  'commercial.hold.tag': 'Retenue',
+  'commercial.hold.title': 'Fiche retenue.',
+  'commercial.hold.body':
+    'Une opposition a été détectée sur un appel : la fiche ne sera pas rappelée tant qu’elle n’est pas confirmée ou levée. Ouvrez l’analyse de l’appel pour confirmer l’opposition ; lever la retenue revient à l’équipe.',
+  'commercial.recent.title': 'Appels de la séance',
+  'commercial.recent.waiting': 'En attente de l’opérateur…',
+  'commercial.recent.open': 'Transcript et analyse',
+  'commercial.recent.hide': 'Masquer',
+  'commercial.recent.notReady': 'Le transcript n’est pas encore prêt',
+  'commercial.recent.dismiss': 'Retirer l’appel {company} de la liste',
+  'commercial.recent.transcriptReady': 'Transcript prêt pour {company}.',
+  'commercial.recent.analysisReady': 'Transcript et analyse prêts pour {company}.',
+  'commercial.detail.linkedCall': 'Cet échange sera relié à l’appel qui vient de se terminer ({duration}).',
+  'commercial.detail.unlinkCall': 'Ne pas relier',
 }
 
 export default fr

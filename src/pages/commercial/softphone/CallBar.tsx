@@ -1,19 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Grid3x3, Mic, MicOff, Phone, PhoneOff } from 'lucide-react'
+import { Circle, Grid3x3, Mic, MicOff, Phone, PhoneOff } from 'lucide-react'
 import { useI18n, type MessageKey } from '../../../context/I18nContext'
+import { formatDuration } from '../../../components/calls/leadCalls'
 import { FINAL_CALL_STATUSES } from '../../../services/calls'
 import type { SoftphoneController } from './useSoftphone'
 import './softphone.css'
 
 const KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
-
-export function formatDuration(totalSec: number) {
-  const seconds = Math.max(0, Math.floor(totalSec))
-  const pad = (value: number) => String(value).padStart(2, '0')
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  return `${hours ? `${hours}:${pad(minutes)}` : minutes}:${pad(seconds % 60)}`
-}
 
 function useElapsed(since: number | null) {
   const [now, setNow] = useState(() => Date.now())
@@ -32,10 +25,12 @@ interface Props {
   /** Libellé du résultat présélectionné d'après l'appel, quand il y en a un. */
   suggestion?: string | null
   disabled?: boolean
+  /** La fiche est retenue après une opposition détectée : elle ne peut plus être appelée en attendant la décision. */
+  held?: boolean
 }
 
 /** Barre d'appel : appeler, raccrocher, muet, clavier, chronomètre. Repli sur `tel:` quand le navigateur ne peut pas appeler. */
-export default function CallBar({ controller, leadId, phone, suggestion, disabled }: Props) {
+export default function CallBar({ controller, leadId, phone, suggestion, disabled, held = false }: Props) {
   const { t } = useI18n()
   const [keypad, setKeypad] = useState(false)
   const mine = controller.leadId === leadId
@@ -45,6 +40,8 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
   const elapsed = useElapsed(mine ? controller.answeredAt : null)
   const failure = mine ? controller.failure : null
   const last = controller.lastCall?.leadId === leadId ? controller.lastCall : null
+  const live = phase === 'active' || phase === 'reconnecting'
+  const stop = mine ? controller.recordingStop : 'idle'
 
   if (controller.unavailable) {
     return (
@@ -53,9 +50,9 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
           <a
             className="portal-button secondary"
             href={`tel:${phone}`}
-            aria-disabled={!phone || disabled}
+            aria-disabled={!phone || disabled || held}
             onClick={(event) => {
-              if (!phone || disabled) event.preventDefault()
+              if (!phone || disabled || held) event.preventDefault()
             }}
           >
             <Phone size={16} aria-hidden="true" /> {t('calls.call')}
@@ -101,8 +98,8 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
             type="button"
             className="portal-button"
             aria-label={t('calls.callAria')}
-            title={!phone ? t('calls.noPhone') : undefined}
-            disabled={disabled || !phone || elsewhere || controller.checking}
+            title={held ? t('calls.held') : !phone ? t('calls.noPhone') : undefined}
+            disabled={disabled || held || !phone || elsewhere || controller.checking}
             onClick={() => {
               setKeypad(false)
               controller.start(leadId)
@@ -141,12 +138,44 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
       <p className="softphone-state" role="status" aria-live="polite">
         {controller.checking
           ? t('calls.checking')
-          : elsewhere
-            ? t('calls.busyElsewhere')
-            : inCall
-              ? t(`calls.state.${phase}` as MessageKey)
-              : summary || t('calls.state.idle')}
+          : held && !inCall
+            ? t('calls.held')
+            : elsewhere
+              ? t('calls.busyElsewhere')
+              : inCall
+                ? t(`calls.state.${phase}` as MessageKey)
+                : summary || t('calls.state.idle')}
       </p>
+      {live && controller.recording.enabled && (
+        <div className="softphone-recording" data-state={stop === 'stopped' ? 'stopped' : 'on'}>
+          {stop === 'stopped' ? (
+            <p className="softphone-recording-state" role="status">
+              <MicOff size={14} aria-hidden /> {t('calls.recording.stopped')}
+            </p>
+          ) : (
+            <>
+              <p className="softphone-recording-state" role="status">
+                <Circle size={10} className="softphone-rec-dot" fill="currentColor" aria-hidden />{' '}
+                {t('calls.recording.on')}
+                {controller.recording.notice ? ` ${t('calls.recording.notice')}` : ''}
+              </p>
+              <button
+                type="button"
+                className="portal-button secondary softphone-objection"
+                disabled={stop === 'pending'}
+                onClick={controller.stopRecording}
+              >
+                {stop === 'pending' ? t('calls.recording.stopping') : t('calls.recording.objection')}
+              </button>
+              {stop === 'failed' && (
+                <p className="softphone-error" role="alert">
+                  {t('calls.recording.stopFailed')}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
       {failure && (
         <p className="softphone-error" role="alert">
           {t(
