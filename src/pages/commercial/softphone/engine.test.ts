@@ -22,7 +22,10 @@ class FakeDevice extends EventEmitter {
   updateToken = vi.fn()
   destroy = vi.fn()
   connect = vi.fn(async () => FakeDevice.call)
-  constructor(public token: string) {
+  constructor(
+    public token: string,
+    public options: Record<string, unknown> = {},
+  ) {
     super()
     FakeDevice.last = this
   }
@@ -50,6 +53,7 @@ function setup(overrides: Partial<SoftphoneDeps> = {}) {
     })),
     create: vi.fn(async () => ({ callId: 'call1' })),
     hangup: vi.fn(async () => ({ status: 'CANCELED' as const })),
+    stopRecording: vi.fn(async () => ({ recording: { status: 'STOPPED' as const, objection: true } })),
   }
   const stop = vi.fn()
   const phone = new Softphone({
@@ -186,5 +190,32 @@ describe('Softphone', () => {
     FakeDevice.call.emit('error', { code: 31208 })
     await flush()
     expect(phone.getSnapshot()).toMatchObject({ phase: 'idle', fallback: 'MIC_DENIED' })
+  })
+
+  it('passe l’edge du serveur au Device', async () => {
+    const { phone } = setup()
+    phone.configure({ edge: 'dublin' })
+    await phone.start('lead1')
+    expect(FakeDevice.last?.options).toMatchObject({ edge: 'dublin' })
+  })
+
+  it('n’affiche l’arrêt de l’enregistrement qu’une fois confirmé par le serveur, et peut le rejouer', async () => {
+    const { phone, api } = setup()
+    await phone.start('lead1')
+    FakeDevice.call.emit('accept')
+
+    api.stopRecording.mockRejectedValueOnce(new Error('réseau'))
+    await phone.stopRecording()
+    expect(phone.getSnapshot().recordingStop).toBe('failed')
+
+    const pending = phone.stopRecording()
+    expect(phone.getSnapshot().recordingStop).toBe('pending')
+    await pending
+    expect(api.stopRecording).toHaveBeenCalledTimes(2)
+    expect(api.stopRecording).toHaveBeenCalledWith('call1')
+    expect(phone.getSnapshot().recordingStop).toBe('stopped')
+
+    await phone.stopRecording() // déjà arrêté : aucune requête de plus
+    expect(api.stopRecording).toHaveBeenCalledTimes(2)
   })
 })

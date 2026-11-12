@@ -13,12 +13,20 @@ import {
 
 type ConfigState = 'loading' | 'enabled' | 'disabled' | 'error'
 
+export interface RecordingConfig {
+  /** L'enregistrement est actif : l'indicateur s'affiche pendant l'appel. */
+  enabled: boolean
+  /** Une annonce automatique prévient le prospect. */
+  notice: boolean
+}
+
 export interface SoftphoneController extends SoftphoneSnapshot {
   /** Vrai tant qu'un appel est en préparation, en cours ou en cours de clôture. */
   active: boolean
   /** Raison du repli sur `tel:`, ou null quand la barre peut appeler. */
   unavailable: SoftphoneFallback | null
   checking: boolean
+  recording: RecordingConfig
   microphones: { id: string; label: string }[]
   start: (leadId: string) => void
   hangup: () => void
@@ -26,6 +34,7 @@ export interface SoftphoneController extends SoftphoneSnapshot {
   sendDigit: (digit: string) => void
   setMicrophone: (deviceId: string) => void
   retry: () => void
+  stopRecording: () => void
 }
 
 /**
@@ -40,6 +49,7 @@ export function useSoftphone(
   const { t } = useI18n()
   const snapshot = useSyncExternalStore(engine.subscribe, engine.getSnapshot)
   const [config, setConfig] = useState<ConfigState>('loading')
+  const [recording, setRecording] = useState<RecordingConfig>({ enabled: false, notice: false })
   const [microphones, setMicrophones] = useState<{ id: string; label: string }[]>([])
   const supported = isSoftphoneSupported()
   const active = snapshot.phase !== 'idle'
@@ -48,12 +58,17 @@ export function useSoftphone(
     let current = true
     callsApi
       .config()
-      .then((value) => current && setConfig(value.enabled ? 'enabled' : 'disabled'))
+      .then((value) => {
+        if (!current) return
+        engine.configure({ edge: value.edge })
+        setRecording({ enabled: Boolean(value.recording?.enabled), notice: Boolean(value.recording?.notice) })
+        setConfig(value.enabled ? 'enabled' : 'disabled')
+      })
       .catch(() => current && setConfig('error'))
     return () => {
       current = false
     }
-  }, [])
+  }, [engine])
 
   const onSettled = useRef(options.onSettled)
   useEffect(() => {
@@ -122,6 +137,7 @@ export function useSoftphone(
     active,
     unavailable,
     checking: !unavailable && config === 'loading',
+    recording,
     microphones,
     start: useCallback((leadId: string) => void engine.start(leadId), [engine]),
     hangup: useCallback(() => engine.hangup(), [engine]),
@@ -129,5 +145,6 @@ export function useSoftphone(
     sendDigit: useCallback((digit: string) => engine.sendDigit(digit), [engine]),
     setMicrophone: useCallback((deviceId: string) => void engine.setMicrophone(deviceId), [engine]),
     retry: useCallback(() => engine.retry(), [engine]),
+    stopRecording: useCallback(() => void engine.stopRecording(), [engine]),
   }
 }

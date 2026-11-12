@@ -46,11 +46,13 @@ export interface SoftphoneSnapshot {
   fallback: SoftphoneFallback | null
   lastCall: SettledCall | null
   microphoneId: string
+  /** Le prospect refuse l'enregistrement : `pending` pendant la requête, `stopped` une fois l'arrêt confirmé par le serveur. */
+  recordingStop: 'idle' | 'pending' | 'stopped' | 'failed'
 }
 
 export interface SoftphoneDeps {
   loadSdk: () => Promise<{ Device: typeof Device }>
-  api: Pick<typeof callsApi, 'token' | 'create' | 'hangup'>
+  api: Pick<typeof callsApi, 'token' | 'create' | 'hangup' | 'stopRecording'>
   settle: (callId: string) => Promise<CallRecord | null>
   getUserMedia: (constraints: MediaStreamConstraints) => Promise<MediaStream>
   now: () => number
@@ -105,6 +107,7 @@ const initialSnapshot = (microphoneId: string): SoftphoneSnapshot => ({
   fallback: null,
   lastCall: null,
   microphoneId,
+  recordingStop: 'idle',
 })
 
 export class Softphone {
@@ -113,6 +116,7 @@ export class Softphone {
   private readonly deps: SoftphoneDeps
   private device: Device | null = null
   private tokenExpiresAt = 0
+  private edge: string | null = null
   private call: Call | null = null
   private aborted = false
 
@@ -154,6 +158,11 @@ export class Softphone {
     return this.snapshotValue.phase !== 'idle'
   }
 
+  /** Réglages du serveur utiles au `Device` : l'edge de l'opérateur lu dans `GET /calls/config`. */
+  configure(options: { edge?: string | null }) {
+    this.edge = options.edge || null
+  }
+
   /** Efface le dernier résultat et la dernière erreur (nouvel appel, changement de fiche). */
   dismiss() {
     if (!this.busy) this.update({ failure: null, lastCall: null })
@@ -175,6 +184,7 @@ export class Softphone {
       answeredAt: null,
       failure: null,
       lastCall: null,
+      recordingStop: 'idle',
     })
     try {
       if (!isSoftphoneSupported()) throw Object.assign(new Error('UNSUPPORTED'), { fallback: 'UNSUPPORTED' })
@@ -205,6 +215,22 @@ export class Softphone {
     this.update({ phase: 'ending' })
     if (callId) void this.deps.api.hangup(callId).catch(() => undefined)
     this.call?.disconnect()
+  }
+
+  /**
+   * Le prospect refuse l'enregistrement. Le serveur arrête la capture et efface ce qui a été enregistré ;
+   * l'arrêt n'est affiché qu'une fois confirmé. Rejouable après un échec.
+   */
+  async stopRecording() {
+    const { callId, phase, recordingStop } = this.snapshotValue
+    if (!callId || phase === 'idle' || recordingStop === 'pending' || recordingStop === 'stopped') return
+    this.update({ recordingStop: 'pending' })
+    try {
+      await this.deps.api.stopRecording(callId)
+      if (this.snapshotValue.callId === callId) this.update({ recordingStop: 'stopped' })
+    } catch {
+      if (this.snapshotValue.callId === callId) this.update({ recordingStop: 'failed' })
+    }
   }
 
   toggleMute() {
@@ -253,7 +279,7 @@ export class Softphone {
     }
     if (this.device) return this.device
     const { token } = await this.fetchToken()
-    const device = new SdkDevice(token, { logLevel: 'error' })
+    const device = new SdkDevice(token, { logLevel: 'error', ...(this.edge ? { edge: this.edge } : {}) })
     device.on('tokenWillExpire', () => {
       void this.fetchToken()
         .then((fresh) => device.updateToken(fresh.token))
