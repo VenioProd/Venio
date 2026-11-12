@@ -36,10 +36,12 @@ jobs:
       - name: Typecheck (frontend + backend)
         run: npm run typecheck:all
 
+      # Plafond d'avertissements : il ne doit que baisser. Le réduire à chaque nettoyage.
       - name: Lint
-        run: npm run lint
-      # NB: `npm run format:check` non bloquant pour l'instant — Prettier appliqué progressivement
-      # via le hook pre-commit (lint-staged). À activer en CI bloquante après un format big-bang.
+        run: npm run lint -- --max-warnings 769
+
+      - name: Format
+        run: npm run format:check
 
   tests:
     name: Tests

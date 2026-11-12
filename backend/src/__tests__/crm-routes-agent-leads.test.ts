@@ -83,16 +83,13 @@ describe('agent CRM leads / authentification et scopes', () => {
 describe('agent CRM leads / POST', () => {
   it('201 : objet lead direct, statut LEAD par défaut, rattaché au SUPER_ADMIN, non assigné', async () => {
     const { plainSecret } = await createAgentTokenInDb(['write:crm'])
-    const res = await request(app)
-      .post('/api/v1/agent/leads')
-      .set(writeHeaders(plainSecret))
-      .send({
-        company: '  Agent Corp ',
-        contactName: 'Alice',
-        contactEmail: 'alice@example.com',
-        project: 'VIGNO',
-        budget: '1200',
-      })
+    const res = await request(app).post('/api/v1/agent/leads').set(writeHeaders(plainSecret)).send({
+      company: '  Agent Corp ',
+      contactName: 'Alice',
+      contactEmail: 'alice@example.com',
+      project: 'VIGNO',
+      budget: '1200',
+    })
     expect(res.status).toBe(201)
     expect(res.body.lead).toBeUndefined()
     expect(res.body).toMatchObject({

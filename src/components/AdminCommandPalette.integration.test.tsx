@@ -22,17 +22,15 @@ vi.mock('./admin/NotificationBell', () => ({ default: () => null }))
 vi.mock('./ThemeToggle', () => ({ default: () => null }))
 vi.mock('./LanguageSelect', () => ({ default: () => null }))
 vi.mock('../services/search', () => ({
-  globalSearch: vi
-    .fn()
-    .mockResolvedValue([
-      {
-        type: 'project',
-        id: 'project',
-        title: 'Projet trouvé',
-        subtitle: 'Client',
-        link: '/admin/projets/clients/project',
-      },
-    ]),
+  globalSearch: vi.fn().mockResolvedValue([
+    {
+      type: 'project',
+      id: 'project',
+      title: 'Projet trouvé',
+      subtitle: 'Client',
+      link: '/admin/projets/clients/project',
+    },
+  ]),
 }))
 
 describe('recherche globale', () => {
