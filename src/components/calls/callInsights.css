@@ -1,0 +1,634 @@
+/* Écrans d'analyse d'appel. Pièges : App.css pose `isolation: isolate` sur tout élément (aucun calque flottant ici),
+   --bg-card est quasi transparent (fonds collants : --bg-secondary). */
+.call-insights {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  color: var(--text-primary);
+}
+.call-insights *,
+.ci-transcript,
+.ci-review {
+  min-width: 0;
+}
+.call-insights button,
+.call-insights input,
+.call-insights select,
+.call-insights textarea {
+  font: inherit;
+}
+
+.ci-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.ci-muted {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.ci-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--primary-light);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+}
+.call-insights :is(button, input, select, textarea, [tabindex]):focus-visible,
+.ci-link:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+}
+
+/* ── États ─────────────────────────────────────────────── */
+.ci-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--r-lg);
+  color: var(--text-secondary);
+}
+.ci-state p {
+  margin: 0;
+}
+.ci-state--wait {
+  flex-direction: row;
+  align-items: center;
+}
+.ci-state--error {
+  border-style: solid;
+  border-color: var(--critical);
+  background: var(--critical-surface);
+  color: var(--text-primary);
+}
+.ci-error {
+  margin: 0;
+  color: var(--critical);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ci-spinner {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-light);
+  border-radius: 50%;
+  animation: ci-spin 0.9s linear infinite;
+}
+@keyframes ci-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ci-spinner {
+    animation-duration: 3s;
+  }
+}
+
+/* ── Mise en page : deux colonnes en large, onglets en étroit ─ */
+.ci-tabs {
+  display: none;
+  gap: 4px;
+}
+.ci-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+@container (min-width: 880px) {
+  .ci-layout {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+  .ci-layout > .ci-panel:nth-child(2) {
+    position: sticky;
+    top: 12px;
+  }
+}
+@container (max-width: 879px) {
+  .ci-tabs {
+    display: flex;
+  }
+  .ci-panel[data-active='false'] {
+    display: none;
+  }
+}
+
+/* ── Alerte d'opposition ───────────────────────────────── */
+.ci-optout {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 2px solid var(--critical);
+  border-radius: var(--r-lg);
+  background: var(--critical-surface);
+  color: var(--text-primary);
+}
+.ci-optout > svg {
+  flex: none;
+  color: var(--critical);
+  margin-top: 2px;
+}
+.ci-optout p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+/* ── Cartes ─────────────────────────────────────────────── */
+.ci-review {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ci-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--bg-card);
+}
+.ci-card-head,
+.ci-field-head,
+.ci-action-head,
+.ci-criterion-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ci-card h3,
+.ci-field h4 {
+  margin: 0;
+}
+.ci-card h3 {
+  font-size: 15px;
+}
+.ci-field h4 {
+  font-size: 14px;
+}
+.ci-summary {
+  margin: 0;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.ci-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--good);
+  background: var(--good-surface);
+  font-size: 14px;
+  font-weight: 600;
+}
+.ci-status--rejected {
+  border-color: var(--border-color);
+  background: var(--bg-card);
+}
+
+/* ── Étiquettes ────────────────────────────────────────── */
+.ci-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ci-tag--proposal {
+  border-style: dashed;
+  border-color: var(--accent-border-strong);
+  color: var(--primary-light);
+}
+.ci-tag--accept,
+.ci-tag--edit {
+  border-color: var(--good);
+  background: var(--good-surface);
+}
+.ci-tag--ignore {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+/* ── Champ : valeur actuelle contre valeur proposée ───── */
+.ci-fields,
+.ci-criteria,
+.ci-action-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ci-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+}
+.ci-field:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.ci-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.ci-current,
+.ci-proposed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--r-md, 10px);
+  overflow-wrap: anywhere;
+}
+.ci-current {
+  border: 1px solid var(--border-color);
+}
+.ci-proposed {
+  border: 1px dashed var(--accent-border-strong);
+  background: var(--accent-surface);
+}
+.ci-compare-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ci-value {
+  font-size: 15px;
+  font-weight: 600;
+}
+.ci-edited {
+  font-size: 13px;
+  color: var(--primary-light);
+  font-weight: 600;
+}
+.ci-confidence {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+.ci-confidence-bars {
+  display: inline-flex;
+  gap: 2px;
+}
+.ci-confidence-bars span {
+  width: 5px;
+  height: 10px;
+  border-radius: 1px;
+  border: 1px solid var(--text-secondary);
+}
+.ci-confidence-bars span.on {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+/* ── Citations ─────────────────────────────────────────── */
+.ci-quote {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.ci-quote blockquote {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--border-color);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+.ci-quote blockquote svg {
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.ci-warning {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--warning);
+  border-radius: var(--r-md, 10px);
+  background: var(--warning-surface);
+  font-size: 13px;
+}
+.ci-warning svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warning);
+}
+.ci-notice {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--warning);
+  border-radius: var(--r-md, 10px);
+  background: var(--warning-surface);
+  font-size: 13px;
+}
+
+/* ── Gestes ────────────────────────────────────────────── */
+.ci-gestures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ci-gesture {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+}
+.call-insights .portal-button.secondary.ci-gesture[aria-pressed='true'] {
+  border: 2px solid var(--primary-light);
+  background: var(--accent-surface-strong);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.call-insights .ci-gesture--ignore[aria-pressed='true'] {
+  text-decoration: line-through;
+}
+.ci-icon-button {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 10px;
+}
+.ci-edit,
+.ci-inline-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ci-inline-field {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.ci-inline-field .portal-input {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ci-edit {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md, 10px);
+}
+
+/* ── Chaleur ───────────────────────────────────────────── */
+.ci-heat-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.ci-flames {
+  display: inline-flex;
+  gap: 1px;
+}
+.ci-flames svg {
+  color: var(--text-secondary);
+  opacity: 0.45;
+}
+.ci-flames svg.on {
+  color: var(--serious);
+  fill: var(--serious);
+  opacity: 1;
+}
+.ci-heat-level--froid .ci-flames svg {
+  color: var(--primary-light);
+  opacity: 0.8;
+}
+.ci-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+.ci-score-value {
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.ci-score-max {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.ci-score-bar {
+  display: block;
+  flex: 1 1 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-color);
+  overflow: hidden;
+}
+.ci-criteria .ci-score-bar {
+  flex: none;
+  width: 100%;
+}
+.ci-score-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--primary-light);
+}
+.ci-criteria li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ci-criterion-head {
+  font-size: 14px;
+}
+.ci-points {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Actions proposées ─────────────────────────────────── */
+.ci-action {
+  gap: 8px;
+}
+.ci-action-head {
+  justify-content: flex-start;
+}
+.ci-action-label {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.ci-action p {
+  margin: 0;
+}
+.ci-action-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Barre d'application ───────────────────────────────── */
+.ci-apply {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--accent-border-strong);
+  border-radius: var(--r-lg);
+  background: var(--bg-secondary);
+  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.18);
+}
+.ci-apply p {
+  margin: 0;
+}
+.ci-apply-count {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ── Transcript ────────────────────────────────────────── */
+.ci-transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--bg-card);
+}
+.ci-transcript-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ci-search {
+  flex: 1 1 200px;
+}
+.ci-search .portal-input {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ci-search-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.ci-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.ci-line {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 92%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md, 10px);
+}
+.ci-line--prospect {
+  align-self: flex-start;
+  border-left: 4px solid var(--text-primary);
+}
+.ci-line--rep {
+  align-self: flex-end;
+  border-right: 4px double var(--primary-light);
+  background: var(--accent-soft);
+}
+.ci-line p {
+  margin: 0;
+}
+.ci-line-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.ci-time {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.ci-line-text {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.ci-line mark {
+  color: inherit;
+  border-radius: 2px;
+}
+.ci-mark-quote {
+  background: var(--accent-surface-strong);
+  border-bottom: 2px solid var(--primary-light);
+}
+.ci-mark-hit {
+  background: var(--warning-surface);
+  outline: 1px dotted var(--warning);
+}
+.ci-mark-active {
+  background: var(--warning);
+  color: #111;
+  outline: 0;
+}
+
+/* ── Mobile ────────────────────────────────────────────── */
+@container (max-width: 600px) {
+  .ci-compare {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ci-line {
+    max-width: 100%;
+  }
+  .ci-gesture {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .ci-gestures > .portal-button {
+    flex: 1 1 auto;
+  }
+  .ci-apply .ci-gestures > .portal-button {
+    flex: 1 1 0;
+  }
+}
