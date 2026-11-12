@@ -67,7 +67,7 @@ describe('droits', () => {
     const list = await request(app).get(URL).expect(200)
     expect(list.body).toMatchObject({ total: 1, canAdminister: false })
     await request(app).post(URL).send({ email: 'new@y.test' }).expect(403)
-    await request(app).delete(`${URL}/${entry._id}`).expect(403)
+    await request(app).delete(`${URL}/${entry._id}`).send({ confirm: true }).expect(403)
     expect(await SuppressionEntry.countDocuments()).toBe(1)
     expect(await AuditLog.countDocuments({ action: /CRM_SUPPRESSION/ })).toBe(0)
   })
@@ -126,7 +126,7 @@ describe('retrait', () => {
       reason: 'OPPOSITION',
       leadId: lead._id,
     })
-    await request(app).delete(`${URL}/${entry._id}`).expect(200)
+    await request(app).delete(`${URL}/${entry._id}`).send({ confirm: true }).expect(200)
     expect(await SuppressionEntry.countDocuments()).toBe(0)
     expect((await Lead.findById(lead._id))!.doNotContact).toBe(true)
     const audits = await auditOf('CRM_SUPPRESSION_REMOVE')
@@ -135,9 +135,94 @@ describe('retrait', () => {
   })
 
   it('404 pour un identifiant inconnu ou mal formé, sans audit', async () => {
-    await request(app).delete(`${URL}/64b000000000000000000000`).expect(404)
-    await request(app).delete(`${URL}/pas-un-id`).expect(404)
+    await request(app).delete(`${URL}/64b000000000000000000000`).send({ confirm: true }).expect(404)
+    await request(app).delete(`${URL}/pas-un-id`).send({ confirm: true }).expect(404)
     expect(await auditOf('CRM_SUPPRESSION_REMOVE')).toHaveLength(0)
+  })
+})
+
+describe('numéros opposés', () => {
+  it('ajoute un numéro normalisé en E.164, le liste à part des adresses et trace l’audit', async () => {
+    const res = await request(app).post(URL).send({ phone: ' 06 12 34 56 78 ', reason: 'OPPOSITION' }).expect(201)
+    expect(res.body.entry).toMatchObject({ kind: 'phone', phone: '+33612345678', reason: 'OPPOSITION' })
+    const stored = await SuppressionEntry.findOne({ phoneNormalized: '+33612345678' })
+    expect(stored).toMatchObject({ reason: 'OPPOSITION' })
+    expect(stored!.emailNormalized).toBeUndefined()
+    expect(String(stored!.createdBy)).toBe(team.admin.id)
+    const audits = await auditOf('CRM_SUPPRESSION_ADD')
+    expect(audits).toHaveLength(1)
+    expect(audits[0].metadata).toMatchObject({ entityRef: '+33612345678', kind: 'phone' })
+    await request(app).post(URL).send({ email: 'a@b.test' }).expect(201)
+    const phones = await request(app).get(`${URL}?kind=phone`).expect(200)
+    expect(phones.body).toMatchObject({ total: 1 })
+    expect(phones.body.entries[0]).toMatchObject({ kind: 'phone', phone: '+33612345678' })
+    const emails = await request(app).get(URL).expect(200)
+    expect(emails.body.entries.map((e: { email: string }) => e.email)).toEqual(['a@b.test'])
+  })
+
+  it('refuse un numéro invalide, un doublon (même écrit autrement) et un numéro mêlé à une adresse', async () => {
+    await request(app).post(URL).send({ phone: '12' }).expect(400)
+    await request(app).post(URL).send({ phone: 'abc' }).expect(400)
+    await request(app).post(URL).send({ phone: '0612345678', email: 'a@b.test' }).expect(400)
+    await request(app).post(URL).send({ phone: '0612345678' }).expect(201)
+    const dup = await request(app).post(URL).send({ phone: '+33 6 12 34 56 78' }).expect(409)
+    expect(dup.body.code).toBe('ALREADY_SUPPRESSED')
+    expect(await SuppressionEntry.countDocuments({ phoneNormalized: { $exists: true } })).toBe(1)
+  })
+
+  it('cherche par fragment ou par numéro complet, quelle que soit l’écriture', async () => {
+    await SuppressionEntry.create({ phoneNormalized: '+33612345678', reason: 'MANUAL' })
+    await SuppressionEntry.create({ phoneNormalized: '+33698765432', reason: 'MANUAL' })
+    expect((await request(app).get(`${URL}?kind=phone&q=06 12 34 56 78`).expect(200)).body.total).toBe(1)
+    expect((await request(app).get(`${URL}?kind=phone&q=9876`).expect(200)).body.total).toBe(1)
+    expect((await request(app).get(`${URL}?kind=phone&q=0612`).expect(200)).body.total).toBe(1)
+    expect((await request(app).get(`${URL}?kind=phone&q=.*`).expect(200)).body.total).toBe(2)
+  })
+
+  it('un non-administrateur ne peut ni ajouter ni retirer un numéro', async () => {
+    const entry = await SuppressionEntry.create({ phoneNormalized: '+33612345678', reason: 'OPPOSITION' })
+    as(team.manager)
+    await request(app).post(URL).send({ phone: '0698765432' }).expect(403)
+    await request(app).delete(`${URL}/${entry._id}`).send({ confirm: true }).expect(403)
+    expect(await SuppressionEntry.countDocuments()).toBe(1)
+    expect(await auditOf('CRM_SUPPRESSION_REMOVE')).toHaveLength(0)
+  })
+
+  it('le retrait exige une confirmation explicite, puis supprime, trace et laisse doNotCall du lead intact', async () => {
+    const lead = await Lead.create({
+      company: 'Domaine',
+      contactName: 'Ana',
+      contactPhone: '0612345678',
+      doNotCall: true,
+      createdBy: team.commercialA.id,
+      assignedTo: team.commercialA.id,
+    })
+    const entry = await SuppressionEntry.create({
+      phoneNormalized: '+33612345678',
+      reason: 'OPPOSITION',
+      leadId: lead._id,
+    })
+    for (const body of [undefined, {}, { confirm: false }, { confirm: 'true' }, { confirm: 1 }]) {
+      const refused = await request(app)
+        .delete(`${URL}/${entry._id}`)
+        .send(body as object | undefined)
+        .expect(400)
+      expect(refused.body.code).toBe('CONFIRMATION_REQUIRED')
+    }
+    expect(await SuppressionEntry.countDocuments()).toBe(1)
+    expect(await auditOf('CRM_SUPPRESSION_REMOVE')).toHaveLength(0)
+    await request(app).delete(`${URL}/${entry._id}`).send({ confirm: true }).expect(200)
+    expect(await SuppressionEntry.countDocuments()).toBe(0)
+    expect((await Lead.findById(lead._id))!.doNotCall).toBe(true)
+    const audits = await auditOf('CRM_SUPPRESSION_REMOVE')
+    expect(audits).toHaveLength(1)
+    expect(audits[0].metadata).toMatchObject({
+      entityRef: '+33612345678',
+      reason: 'OPPOSITION',
+      kind: 'phone',
+      confirmed: true,
+    })
+    expect(String(audits[0].userId)).toBe(team.admin.id)
   })
 })
 

@@ -19,6 +19,7 @@ const fr = {
   'crm.settings.group.qualification': 'Qualification et scoring',
   'crm.settings.group.followup': 'Relances et alertes',
   'crm.settings.group.calls': 'Appels',
+  'crm.settings.group.callsAi': 'Téléphonie et IA',
   'crm.settings.group.compliance': 'Conformité',
   'crm.settings.group.reports': 'Rapports',
   'crm.common.saving': 'Enregistrement...',

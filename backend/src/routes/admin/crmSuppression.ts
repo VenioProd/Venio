@@ -7,6 +7,9 @@ import { administersCrm } from '../../lib/crmScope.js'
 import { addSuppression, normalizeEmail } from '../../lib/crmPrivacy.js'
 import { buildActorFromReq, recordAudit } from '../../lib/audit/auditHelpers.js'
 import SuppressionEntry from '../../models/SuppressionEntry.js'
+import CrmSettings from '../../models/CrmSettings.js'
+import { normalizePhone } from '../../lib/callImports.js'
+import { addPhoneSuppression } from '../../lib/callGuards.js'
 
 /**
  * Liste « ne pas contacter » du CRM (chantier 4B) : consultation, ajout manuel
@@ -15,8 +18,12 @@ import SuppressionEntry from '../../models/SuppressionEntry.js'
  * - Lecture : `view_crm` (tout le monde voit la liste, en lecture seule).
  * - Ajout et retrait : `manage_crm` ET `administersCrm` (super-admin, administrateur).
  *   Chaque geste est tracé dans le journal d'audit.
- * - Retirer une adresse ne touche JAMAIS à `doNotContact` des leads : l'opposition
- *   posée sur une fiche reste en vigueur.
+ * - Retirer une adresse ou un numéro ne touche JAMAIS à `doNotContact` / `doNotCall` des leads :
+ *   l'opposition posée sur une fiche reste en vigueur.
+ * - Les numéros (E.164, normalisés avec la région d'appel des réglages) se gèrent comme les
+ *   adresses : `?kind=phone` pour les lister, `{ phone }` pour en ajouter.
+ * - Retirer une entrée expose à rappeler ou écrire à quelqu'un qui l'a refusé : le serveur exige
+ *   `{ confirm: true }` dans le corps, en plus du droit d'administrer le CRM, et trace le geste.
  */
 const router = express.Router()
 
@@ -48,9 +55,20 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const limit = positiveInt(req.query.limit, DEFAULT_LIMIT, MAX_LIMIT)
-      const q = typeof req.query.q === 'string' ? normalizeEmail(req.query.q).slice(0, 320) : ''
-      // Les numéros opposés (lot téléphonie) n'ont pas encore d'écran : la liste reste celle des adresses.
-      const filter: Record<string, unknown> = { emailNormalized: q ? { $regex: escapeRegex(q) } : { $type: 'string' } }
+      const kind = req.query.kind === 'phone' ? 'phone' : 'email'
+      const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 320) : ''
+      let filter: Record<string, unknown>
+      if (kind === 'phone') {
+        const { callDefaultRegion } = await CrmSettings.getSettings()
+        const exact = q ? normalizePhone(q, callDefaultRegion) : null
+        const digits = q.replace(/\D/g, '').replace(/^0+/, '')
+        filter = {
+          phoneNormalized: exact ? exact : digits ? { $regex: escapeRegex(digits) } : { $type: 'string' },
+        }
+      } else {
+        const email = normalizeEmail(q)
+        filter = { emailNormalized: email ? { $regex: escapeRegex(email) } : { $type: 'string' } }
+      }
       const total = await SuppressionEntry.countDocuments(filter)
       const pages = Math.max(1, Math.ceil(total / limit))
       const page = Math.min(positiveInt(req.query.page, 1, Number.MAX_SAFE_INTEGER), pages)
@@ -64,7 +82,9 @@ router.get(
         const author = row.createdBy as unknown as { _id: unknown; name?: string } | null
         return {
           id: String(row._id),
+          kind,
           email: row.emailNormalized,
+          phone: row.phoneNormalized,
           reason: row.reason,
           createdAt: row.createdAt,
           createdBy: author && author.name !== undefined ? { id: String(author._id), name: author.name } : null,
@@ -86,13 +106,49 @@ router.post(
   requireAdministersCrm,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const email = normalizeEmail(req.body?.email)
-      if (!EMAIL_PATTERN.test(email) || email.length > 320) {
-        return res.status(400).json({ error: 'Adresse e-mail invalide', code: 'INVALID_EMAIL' })
-      }
       const reason = req.body?.reason === undefined ? 'MANUAL' : req.body.reason
       if (!(MANUAL_REASONS as readonly unknown[]).includes(reason)) {
         return res.status(400).json({ error: 'Raison invalide', code: 'INVALID_REASON' })
+      }
+      if (req.body?.phone !== undefined) {
+        if (req.body.email !== undefined || typeof req.body.phone !== 'string') {
+          return res.status(400).json({ error: 'Un numéro ou une adresse, pas les deux', code: 'INVALID_PHONE' })
+        }
+        const { callDefaultRegion } = await CrmSettings.getSettings()
+        const phone = normalizePhone(req.body.phone.trim(), callDefaultRegion)
+        if (!phone) return res.status(400).json({ error: 'Numéro invalide', code: 'INVALID_PHONE' })
+        const created = await addPhoneSuppression(phone, {
+          reason,
+          createdBy: req.user!.id,
+          leadId: null,
+          region: callDefaultRegion,
+        })
+        if (!created) return res.status(409).json({ error: 'Numéro déjà dans la liste', code: 'ALREADY_SUPPRESSED' })
+        const entry = await SuppressionEntry.findOne({ phoneNormalized: phone }).lean()
+        await recordAudit({
+          action: 'CRM_SUPPRESSION_ADD',
+          actor: buildActorFromReq(req),
+          entityType: 'SuppressionEntry',
+          entityId: String(entry?._id ?? ''),
+          entityRef: phone,
+          summary: 'Ajout manuel d’un numéro à la liste « ne pas contacter »',
+          extra: { reason, kind: 'phone' },
+        })
+        return res.status(201).json({
+          entry: {
+            id: String(entry?._id),
+            kind: 'phone',
+            phone,
+            reason,
+            createdAt: entry?.createdAt ?? null,
+            createdBy: null,
+            leadId: null,
+          },
+        })
+      }
+      const email = normalizeEmail(req.body?.email)
+      if (!EMAIL_PATTERN.test(email) || email.length > 320) {
+        return res.status(400).json({ error: 'Adresse e-mail invalide', code: 'INVALID_EMAIL' })
       }
       const created = await addSuppression(email, { reason, createdBy: req.user!.id })
       if (!created) return res.status(409).json({ error: 'Adresse déjà dans la liste', code: 'ALREADY_SUPPRESSED' })
@@ -109,6 +165,7 @@ router.post(
       return res.status(201).json({
         entry: {
           id: String(entry?._id),
+          kind: 'email',
           email,
           reason,
           createdAt: entry?.createdAt ?? null,
@@ -133,6 +190,10 @@ router.delete(
       const id = String(req.params.id)
       if (!mongoose.isObjectIdOrHexString(id))
         return res.status(404).json({ error: 'Entrée introuvable', code: 'NOT_FOUND' })
+      // Geste à risque (on pourrait de nouveau joindre quelqu'un qui l'a refusé) : confirmation explicite côté serveur.
+      if (req.body?.confirm !== true) {
+        return res.status(400).json({ error: 'Confirmation explicite requise', code: 'CONFIRMATION_REQUIRED' })
+      }
       const removed = await SuppressionEntry.findByIdAndDelete(id).lean()
       if (!removed) return res.status(404).json({ error: 'Entrée introuvable', code: 'NOT_FOUND' })
       await recordAudit({
@@ -142,7 +203,12 @@ router.delete(
         entityId: String(removed._id),
         entityRef: removed.emailNormalized ?? removed.phoneNormalized,
         summary: 'Retrait de la liste « ne pas contacter »',
-        extra: { reason: removed.reason },
+        extra: {
+          reason: removed.reason,
+          kind: removed.phoneNormalized ? 'phone' : 'email',
+          listedSince: removed.createdAt,
+          confirmed: true,
+        },
       })
       return res.json({ ok: true })
     } catch (err) {

@@ -5,9 +5,14 @@ import { formatDate } from '../../../i18n/format'
 import ConfirmModal from '../../../components/ConfirmModal'
 import type { MessageKey } from '../../../i18n'
 
+type Kind = 'email' | 'phone'
+
 interface SuppressionRow {
   id: string
-  email: string
+  /** Renseigné pour une adresse. */
+  email?: string
+  /** Renseigné pour un numéro (E.164). */
+  phone?: string
   reason: 'UNSUBSCRIBE' | 'MANUAL' | 'OPPOSITION' | 'ANONYMIZED'
   createdAt: string
   createdBy: { id: string; name: string } | null
@@ -22,6 +27,7 @@ interface SuppressionPage {
 
 const PAGE_SIZE = 25
 const MANUAL_REASONS = ['MANUAL', 'OPPOSITION'] as const
+const valueOf = (row: SuppressionRow) => row.phone ?? row.email ?? ''
 const reasonKey = (reason: string) => `crmSuppression.reason.${reason}` as MessageKey
 
 interface Props {
@@ -40,14 +46,16 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
   const [searchInput, setSearchInput] = useState('')
   const [loadError, setLoadError] = useState(false)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [kind, setKind] = useState<Kind>('email')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [reason, setReason] = useState<(typeof MANUAL_REASONS)[number]>('MANUAL')
   const [busy, setBusy] = useState(false)
   const [toRemove, setToRemove] = useState<SuppressionRow | null>(null)
 
   const load = useCallback(async () => {
     try {
-      const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) })
+      const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), kind })
       if (query) params.set('q', query)
       const res = await apiFetch<SuppressionPage>(`/api/admin/crm/suppression?${params.toString()}`)
       if (!res || !Array.isArray(res.entries)) throw new Error('invalid response')
@@ -56,7 +64,7 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
     } catch {
       setLoadError(true)
     }
-  }, [page, query])
+  }, [page, query, kind])
 
   useEffect(() => {
     void load()
@@ -66,6 +74,16 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
     event.preventDefault()
     setPage(1)
     setQuery(searchInput.trim())
+  }
+
+  const switchKind = (next: Kind) => {
+    if (next === kind) return
+    setKind(next)
+    setData(null)
+    setPage(1)
+    setQuery('')
+    setSearchInput('')
+    setFeedback(null)
   }
 
   const clearSearch = () => {
@@ -78,22 +96,30 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
     event.preventDefault()
     if (!canManage || busy) return
     setBusy(true)
+    const isPhone = kind === 'phone'
     try {
-      await apiFetch('/api/admin/crm/suppression', {
+      const res = await apiFetch<{ entry?: { phone?: string } }>('/api/admin/crm/suppression', {
         method: 'POST',
-        body: JSON.stringify({ email: email.trim(), reason }),
+        body: JSON.stringify(isPhone ? { phone: phone.trim(), reason } : { email: email.trim(), reason }),
       })
-      setEmail('')
-      setFeedback({ type: 'success', text: t('crmSuppression.add.done') })
+      if (isPhone) setPhone('')
+      else setEmail('')
+      setFeedback({
+        type: 'success',
+        text: isPhone
+          ? t('crmSuppression.phone.add.done', { phone: res.entry?.phone ?? '' })
+          : t('crmSuppression.add.done'),
+      })
       await load()
     } catch (err) {
       const status = (err as { status?: number }).status
+      const prefix = isPhone ? 'crmSuppression.phone.add' : 'crmSuppression.add'
       const text =
         status === 400
-          ? t('crmSuppression.add.invalid')
+          ? t(`${prefix}.invalid` as MessageKey)
           : status === 409
-            ? t('crmSuppression.add.duplicate')
-            : t('crmSuppression.add.error')
+            ? t(`${prefix}.duplicate` as MessageKey)
+            : t(`${prefix}.error` as MessageKey)
       setFeedback({ type: 'error', text })
     } finally {
       setBusy(false)
@@ -105,11 +131,21 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
     setToRemove(null)
     if (!target || !canManage) return
     try {
-      await apiFetch(`/api/admin/crm/suppression/${target.id}`, { method: 'DELETE' })
-      setFeedback({ type: 'success', text: t('crmSuppression.remove.done') })
+      // Le serveur exige cette confirmation explicite : le retrait rend la personne de nouveau joignable.
+      await apiFetch(`/api/admin/crm/suppression/${target.id}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ confirm: true }),
+      })
+      setFeedback({
+        type: 'success',
+        text: t(target.phone ? 'crmSuppression.phone.remove.done' : 'crmSuppression.remove.done'),
+      })
       await load()
     } catch {
-      setFeedback({ type: 'error', text: t('crmSuppression.remove.error') })
+      setFeedback({
+        type: 'error',
+        text: t(target.phone ? 'crmSuppression.phone.remove.error' : 'crmSuppression.remove.error'),
+      })
     }
   }
 
@@ -131,6 +167,20 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
         {!canManage && <p role="note">{t('crmSuppression.readOnly')}</p>}
       </div>
 
+      <div className="crm-suppression-kinds" role="group" aria-label={t('crmSuppression.kind.label')}>
+        {(['email', 'phone'] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            className={kind === value ? 'portal-button' : 'portal-button secondary'}
+            aria-pressed={kind === value}
+            onClick={() => switchKind(value)}
+          >
+            {t(`crmSuppression.kind.${value}` as MessageKey)}
+          </button>
+        ))}
+      </div>
+
       {feedback && (
         <div className={`crm-settings-message crm-settings-message-${feedback.type}`} role="status">
           {feedback.text}
@@ -141,8 +191,10 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
         <input
           type="search"
           className="crm-settings-text-input"
-          aria-label={t('crmSuppression.search')}
-          placeholder={t('crmSuppression.searchPlaceholder')}
+          aria-label={t(kind === 'phone' ? 'crmSuppression.phone.search' : 'crmSuppression.search')}
+          placeholder={t(
+            kind === 'phone' ? 'crmSuppression.phone.searchPlaceholder' : 'crmSuppression.searchPlaceholder',
+          )}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
@@ -162,15 +214,23 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
 
       {data && (
         <>
-          <p style={{ fontSize: 12 }}>{t('crmSuppression.total', { count: data.total })}</p>
+          <p style={{ fontSize: 12 }}>
+            {t(kind === 'phone' ? 'crmSuppression.phone.total' : 'crmSuppression.total', { count: data.total })}
+          </p>
           {data.entries.length === 0 ? (
-            <p>{query ? t('crmSuppression.emptySearch') : t('crmSuppression.empty')}</p>
+            <p>
+              {kind === 'phone'
+                ? t(query ? 'crmSuppression.phone.emptySearch' : 'crmSuppression.phone.empty')
+                : t(query ? 'crmSuppression.emptySearch' : 'crmSuppression.empty')}
+            </p>
           ) : (
             <div className="crm-suppression-scroll">
               <table className="crm-suppression-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th style={cell}>{t('crmSuppression.col.email')}</th>
+                    <th style={cell}>
+                      {t(kind === 'phone' ? 'crmSuppression.col.phone' : 'crmSuppression.col.email')}
+                    </th>
                     <th style={cell}>{t('crmSuppression.col.reason')}</th>
                     <th style={cell}>{t('crmSuppression.col.date')}</th>
                     <th style={cell}>{t('crmSuppression.col.by')}</th>
@@ -180,7 +240,7 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
                 <tbody>
                   {data.entries.map((row) => (
                     <tr key={row.id}>
-                      <td style={cell}>{row.email}</td>
+                      <td style={cell}>{valueOf(row)}</td>
                       <td style={cell}>{t(reasonKey(row.reason))}</td>
                       <td style={cell}>
                         {formatDate(row.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -191,7 +251,7 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
                           <button
                             type="button"
                             className="portal-button secondary"
-                            aria-label={t('crmSuppression.remove.label', { email: row.email })}
+                            aria-label={t('crmSuppression.remove.label', { email: valueOf(row) })}
                             onClick={() => setToRemove(row)}
                           >
                             {t('crmSuppression.remove.button')}
@@ -233,17 +293,30 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
 
       {canManage && (
         <form onSubmit={add} style={{ marginTop: 16 }}>
-          <h3>{t('crmSuppression.add.title')}</h3>
+          <h3>{t(kind === 'phone' ? 'crmSuppression.phone.add.title' : 'crmSuppression.add.title')}</h3>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input
-              type="email"
-              className="crm-settings-text-input"
-              aria-label={t('crmSuppression.add.email')}
-              placeholder="nom@domaine.fr"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            {kind === 'phone' ? (
+              <input
+                type="tel"
+                className="crm-settings-text-input"
+                aria-label={t('crmSuppression.phone.add.input')}
+                placeholder="06 12 34 56 78"
+                autoComplete="off"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+              />
+            ) : (
+              <input
+                type="email"
+                className="crm-settings-text-input"
+                aria-label={t('crmSuppression.add.email')}
+                placeholder="nom@domaine.fr"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            )}
             <select
               className="crm-settings-select"
               aria-label={t('crmSuppression.add.reason')}
@@ -256,18 +329,27 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
                 </option>
               ))}
             </select>
-            <button type="submit" className="portal-button" disabled={busy || !email.trim()}>
+            <button
+              type="submit"
+              className="portal-button"
+              disabled={busy || !(kind === 'phone' ? phone.trim() : email.trim())}
+            >
               {t('crmSuppression.add.button')}
             </button>
           </div>
+          {kind === 'phone' && <p className="crm-ai-hint">{t('crmSuppression.phone.add.hint')}</p>}
         </form>
       )}
 
       <ConfirmModal
         isOpen={toRemove !== null}
-        title={t('crmSuppression.remove.confirmTitle')}
-        message={t('crmSuppression.remove.confirmMessage', { email: toRemove?.email ?? '' })}
-        confirmLabel={t('crmSuppression.remove.confirm')}
+        title={t(toRemove?.phone ? 'crmSuppression.phone.remove.confirmTitle' : 'crmSuppression.remove.confirmTitle')}
+        message={
+          toRemove?.phone
+            ? t('crmSuppression.phone.remove.confirmMessage', { phone: toRemove.phone })
+            : t('crmSuppression.remove.confirmMessage', { email: toRemove?.email ?? '' })
+        }
+        confirmLabel={t(toRemove?.phone ? 'crmSuppression.phone.remove.confirm' : 'crmSuppression.remove.confirm')}
         variant="danger"
         onConfirm={() => void confirmRemove()}
         onCancel={() => setToRemove(null)}
