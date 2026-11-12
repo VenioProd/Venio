@@ -167,3 +167,17 @@ export async function readableProposalFilter(
     : { project: null, leadId: { $in: await Lead.distinct('_id', leadScopeFilter(req)) } }
   return { $or: [onProject, onLead] }
 }
+
+/** Un lead de liste d'appel détenu par un externe rejoint l'équipe dès que closingHandoff est posé, même sans closer nominatif. */
+export function teamLeadFilter(): Record<string, unknown> {
+  return { $or: [{ callList: { $in: ['', null] } }, { externalRep: null }, { closingHandoff: { $ne: null } }] }
+}
+
+export function canReassignLead(
+  actor: { id: string | null; isSuper: boolean },
+  lead: { assignedTo?: unknown },
+  assignedTo: unknown,
+): boolean {
+  const current = lead.assignedTo?.toString()
+  return actor.isSuper || !current || current === actor.id || String(assignedTo ?? '') === current
+}

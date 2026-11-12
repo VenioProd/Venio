@@ -68,11 +68,25 @@ export function assertMergeable(target: LeadDoc, source: LeadDoc): void {
   }
   const targetWon = target.status === 'WON'
   const sourceWon = source.status === 'WON'
-  if (targetWon && sourceWon && target.clientAccountId && source.clientAccountId && !sameId(target.clientAccountId, source.clientAccountId)) {
-    throw new LeadChangeError(409, 'MERGE_WON_DIFFERENT_CLIENTS', 'Les deux leads sont gagnés avec des clients différents : fusion refusée')
+  if (
+    targetWon &&
+    sourceWon &&
+    target.clientAccountId &&
+    source.clientAccountId &&
+    !sameId(target.clientAccountId, source.clientAccountId)
+  ) {
+    throw new LeadChangeError(
+      409,
+      'MERGE_WON_DIFFERENT_CLIENTS',
+      'Les deux leads sont gagnés avec des clients différents : fusion refusée',
+    )
   }
   if (sourceWon && !targetWon) {
-    throw new LeadChangeError(409, 'MERGE_WON_SOURCE', 'Le lead à absorber est gagné : fusionnez-le plutôt comme cible, ou fusionnez dans un lead gagné')
+    throw new LeadChangeError(
+      409,
+      'MERGE_WON_SOURCE',
+      'Le lead à absorber est gagné : fusionnez-le plutôt comme cible, ou fusionnez dans un lead gagné',
+    )
   }
 }
 
@@ -131,7 +145,8 @@ export async function mergeLeads(target: LeadDoc, source: LeadDoc, actor: string
     patch.interactionsCount = (target.interactionsCount ?? 0) + movedInteractions
   }
   // Une source déjà convertie (cible gagnée) transmet son verrou de conversion seulement si la cible n'a rien.
-  if (target.status === 'WON' && !target.wonProcessedAt && source.wonProcessedAt) patch.wonProcessedAt = source.wonProcessedAt
+  if (target.status === 'WON' && !target.wonProcessedAt && source.wonProcessedAt)
+    patch.wonProcessedAt = source.wonProcessedAt
 
   if (Object.keys(patch).length > 0) {
     // « bulk » : pas d'auto-qualification ni d'e-mail ; événements de règles non émis (une fusion n'est pas une modification métier).
@@ -162,7 +177,7 @@ export async function mergeLeads(target: LeadDoc, source: LeadDoc, actor: string
     { sourceId: String(from), sourceCompany: source.company, sourceStatus: source.status, filledFields, moved },
     actor,
   )
-  await deleteLeadCascade(source)
+  await deleteLeadCascade(source, { afterMerge: true })
 
   const lead = (await Lead.findById(to)) ?? target
   return { lead, moved, filledFields }

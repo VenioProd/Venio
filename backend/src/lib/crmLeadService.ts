@@ -1,5 +1,6 @@
-import mongoose, { type Types } from 'mongoose'
+import mongoose, { type ClientSession, type Types } from 'mongoose'
 import Lead, { LEAD_PROJECTS } from '../models/Lead.js'
+import SalesCommission from '../models/SalesCommission.js'
 import LeadActivity from '../models/LeadActivity.js'
 import Interaction from '../models/Interaction.js'
 import PersonalTask from '../models/PersonalTask.js'
@@ -9,7 +10,7 @@ import User from '../models/User.js'
 import CrmSettings from '../models/CrmSettings.js'
 import type { ICrmSettings } from '../types/models/index.js'
 import { calculateLeadScore, logLeadActivity, notifyAssignment, shouldAutoQualify } from './crmAutomations.js'
-import { processWonLead, type WonLeadOutcome } from './crmClientConversion.js'
+import { assertWonClientEmail, processWonLead, type WonLeadOutcome } from './crmClientConversion.js'
 import { normalizedLeadFields } from './crmDedup.js'
 import { normalizeEnrichedLeadFields } from './crmLeadFields.js'
 import { normalizePrivacyPatch, preparePrivacyChange } from './crmPrivacy.js'
@@ -43,6 +44,8 @@ export interface LeadChangeContext {
   source: LeadChangeSource
   /** Réglages déjà chargés (action groupée) ; relus sinon. */
   settings?: ICrmSettings
+  /** Session de l'écriture et de son historique ; les événements sont émis après validation de la transaction. */
+  session?: ClientSession
   /** Émettre les événements des règles (défaut : oui). Une règle les émet elle-même, avec sa profondeur. */
   emit?: boolean
   /** Contrôler que l'assigné est un membre actif habilité (défaut : oui). */
@@ -107,6 +110,7 @@ export interface LeadChangeResult {
   /** Transitions de statut écrites dans l'historique, dans l'ordre. */
   transitions: Array<{ from: string; to: string; auto: boolean }>
   assigneeChanged: boolean
+  statusActivityIds: Types.ObjectId[]
   /** Résultat de la conversion WON ; `null` si le lead n'est pas gagné. */
   won: WonLeadOutcome | null
 }
@@ -133,11 +137,14 @@ export function normalizeLeadPatch(
   if (body.contactEmail !== undefined) payload.contactEmail = String(body.contactEmail || '')
   if (body.contactPhone !== undefined) payload.contactPhone = String(body.contactPhone || '')
   if (body.source !== undefined) payload.source = String(body.source || '')
-  if (typeof body.project === 'string' && (['', ...LEAD_PROJECTS] as string[]).includes(body.project)) payload.project = body.project
+  if (typeof body.project === 'string' && (['', ...LEAD_PROJECTS] as string[]).includes(body.project))
+    payload.project = body.project
   // Entité du groupe : valeur connue seulement ; une valeur inconnue est ignorée comme les autres énumérations.
   if (isGroupEntity(body.entity)) payload.entity = body.entity
-  if (typeof body.status === 'string' && (CRM_STATUSES as readonly string[]).includes(body.status)) payload.status = body.status
-  if (typeof body.priority === 'string' && (LEAD_PRIORITIES as readonly string[]).includes(body.priority)) payload.priority = body.priority
+  if (typeof body.status === 'string' && (CRM_STATUSES as readonly string[]).includes(body.status))
+    payload.status = body.status
+  if (typeof body.priority === 'string' && (LEAD_PRIORITIES as readonly string[]).includes(body.priority))
+    payload.priority = body.priority
   if (body.budget !== undefined) {
     const value = Number(body.budget)
     payload.budget = Number.isNaN(value) ? null : value
@@ -146,17 +153,29 @@ export function normalizeLeadPatch(
   if (body.lastContactAt !== undefined) payload.lastContactAt = body.lastContactAt ? new Date(body.lastContactAt) : null
   if (body.notes !== undefined) payload.notes = String(body.notes || '')
   if (body.serviceType !== undefined) payload.serviceType = String(body.serviceType || '')
-  if (typeof body.leadTemperature === 'string' && (LEAD_TEMPERATURES as readonly string[]).includes(body.leadTemperature)) {
+  if (
+    typeof body.leadTemperature === 'string' &&
+    (LEAD_TEMPERATURES as readonly string[]).includes(body.leadTemperature)
+  ) {
     payload.leadTemperature = body.leadTemperature
   }
   if (body.interactionNotes !== undefined) payload.interactionNotes = String(body.interactionNotes || '')
   if (body.lostReason !== undefined) payload.lostReason = String(body.lostReason || '').trim()
   if (body.lostComment !== undefined) payload.lostComment = String(body.lostComment || '')
   if (body.assignedTo !== undefined) {
-    payload.assignedTo = opts.lenientAssignee ? (isObjectId(body.assignedTo) ? body.assignedTo : null) : body.assignedTo || null
+    payload.assignedTo = opts.lenientAssignee
+      ? isObjectId(body.assignedTo)
+        ? body.assignedTo
+        : null
+      : body.assignedTo || null
   }
   // Valeurs normalisées pour la détection de doublons (voir lib/crmDedup), déduites des champs saisis présents.
-  return { ...payload, ...normalizeEnrichedLeadFields(body), ...normalizePrivacyPatch(body), ...normalizedLeadFields(payload) }
+  return {
+    ...payload,
+    ...normalizeEnrichedLeadFields(body),
+    ...normalizePrivacyPatch(body),
+    ...normalizedLeadFields(payload),
+  }
 }
 
 // ───────────────────────── Validation ─────────────────────────
@@ -173,7 +192,11 @@ export function assertLostReason(reason: unknown, settings: Pick<ICrmSettings, '
 export async function assertAssignable(userId: unknown): Promise<void> {
   if (userId == null || userId === '') return
   if (!(await isAssignableCrmUser(String(userId)))) {
-    throw new LeadChangeError(400, 'INVALID_ASSIGNEE', 'Commercial introuvable, inactif ou non habilité à suivre un lead')
+    throw new LeadChangeError(
+      400,
+      'INVALID_ASSIGNEE',
+      'Commercial introuvable, inactif ou non habilité à suivre un lead',
+    )
   }
 }
 
@@ -268,6 +291,23 @@ export async function applyLeadChange(
   const assigneeTouched = patch.assignedTo !== undefined && String(patch.assignedTo ?? '') !== String(oldAssignee ?? '')
   if (assigneeTouched && ctx.validateAssignee !== false) await assertAssignable(patch.assignedTo)
 
+  if ((patch.status ?? existing?.status) === 'WON') {
+    try {
+      await assertWonClientEmail(
+        {
+          contactEmail: patch.contactEmail ?? existing?.contactEmail,
+          clientAccountId: patch.clientAccountId ?? existing?.clientAccountId,
+        },
+        ctx.session,
+      )
+    } catch (err) {
+      if ((err as { code?: string }).code === 'CLIENT_EMAIL_CONFLICT') {
+        throw new LeadChangeError(409, 'CLIENT_EMAIL_CONFLICT', (err as Error).message)
+      }
+      throw err
+    }
+  }
+
   // Consentement et opposition : fusion avec l'existant, dates posées ici.
   const privacyEvents = preparePrivacyChange(existing, patch, ctx.source)
 
@@ -304,33 +344,56 @@ export async function applyLeadChange(
     lead.score = calculateLeadScore(lead as any, settings.scoringWeights as any)
   }
 
-  // L'acteur ne reçoit pas la notification d'assignation de son propre geste (hook du modèle).
-  if (ctx.actor) lead.$locals.assignmentActorId = ctx.actor
-  await lead.save()
+  // L'externe n'a pas accès au lien d'assignation de l'administration.
+  lead.$locals.assignmentActorId =
+    lead.externalRep && String(lead.assignedTo) === String(lead.externalRep) ? String(lead.externalRep) : ctx.actor
+  await lead.save({ session: ctx.session })
 
   // ── Historique ──
+  const logActivity: typeof logLeadActivity = (...args) =>
+    logLeadActivity(args[0], args[1], args[2], args[3], args[4], ctx.session)
+  const statusActivityIds: Types.ObjectId[] = []
   if (created && settings.activityLogging) {
-    await logLeadActivity(lead._id, 'CREATED', `Lead créé${suffix}`, { company: lead.company, source: ctx.source }, ctx.actor)
+    await logActivity(
+      lead._id,
+      'CREATED',
+      `Lead créé${suffix}`,
+      { company: lead.company, source: ctx.source },
+      ctx.actor,
+    )
   }
   // Les changements de statut sont toujours consignés : ils fondent l'entonnoir
   // et les vitesses du pilotage, qui ne peut pas reconstituer ceux qui manquent.
   for (const t of transitions) {
-    await logLeadActivity(
+    const activity = await logActivity(
       lead._id,
       'STATUS_CHANGE',
       `Statut: ${t.from} → ${t.to}${t.auto ? ' (auto-qualification)' : ''}${suffix}`,
-      { from: t.from, to: t.to, source: ctx.source, ...(t.auto ? { auto: 'AUTO_QUALIFIED' } : {}), ...(ctx.activityMeta ?? {}) },
+      {
+        from: t.from,
+        to: t.to,
+        source: ctx.source,
+        ...(t.auto ? { auto: 'AUTO_QUALIFIED' } : {}),
+        ...(ctx.activityMeta ?? {}),
+      },
       ctx.actor,
     )
+    statusActivityIds.push(activity._id as Types.ObjectId)
   }
 
   const newAssignee = lead.assignedTo ? String(lead.assignedTo) : null
   const assigneeChanged = created ? Boolean(newAssignee) : newAssignee !== oldAssignee
   if (!created && assigneeChanged && settings.activityLogging) {
-    await logLeadActivity(lead._id, 'ASSIGNED', `Lead réassigné${suffix}`, { from: oldAssignee, to: newAssignee, ...(ctx.activityMeta ?? {}) }, ctx.actor)
+    await logActivity(
+      lead._id,
+      'ASSIGNED',
+      `Lead réassigné${suffix}`,
+      { from: oldAssignee, to: newAssignee, ...(ctx.activityMeta ?? {}) },
+      ctx.actor,
+    )
   }
   if (!created && patch.archivedAt !== undefined && settings.activityLogging) {
-    await logLeadActivity(
+    await logActivity(
       lead._id,
       lead.archivedAt ? 'ARCHIVED' : 'RESTORED',
       `${lead.archivedAt ? 'Lead archivé' : 'Lead restauré'}${suffix}`,
@@ -340,7 +403,7 @@ export async function applyLeadChange(
   }
   // Consentement et opposition : toujours consignés, ils prouvent le respect des droits de la personne.
   for (const event of privacyEvents) {
-    await logLeadActivity(lead._id, event.type, `${event.label}${suffix}`, event.payload, ctx.actor)
+    await logActivity(lead._id, event.type, `${event.label}${suffix}`, event.payload, ctx.actor)
   }
 
   // ── Notifications ──
@@ -365,14 +428,14 @@ export async function applyLeadChange(
   // Séquences : opposition, désinscription, anonymisation, archivage ou statut d'arrêt
   // closent les inscriptions ouvertes du lead, quel que soit le canal (et même sans émission
   // d'événements). Import différé : le module des séquences importe les règles, qui importent ce service.
-  if (!created) {
+  if (!created && !ctx.session) {
     const { stopSequencesOnLeadChange } = await import('./crmSequences.js')
     await stopSequencesOnLeadChange(lead, before, ctx.actor)
   }
 
-  if (ctx.emit !== false) emitLeadChanges(lead, before, ctx.actor)
+  if (ctx.emit !== false && !ctx.session) emitLeadChanges(lead, before, ctx.actor)
 
-  return { lead, created, before, transitions, assigneeChanged, won }
+  return { lead, created, before, transitions, assigneeChanged, statusActivityIds, won }
 }
 
 /** Raccourci de création. */
@@ -385,7 +448,25 @@ export function createLead(patch: Record<string, any>, ctx: LeadChangeContext): 
  * échanges, tâches, exécutions de règles, inscriptions aux séquences. Les projets et devis restent (ils
  * portent du chiffre d'affaires).
  */
-export async function deleteLeadCascade(lead: Pick<LeadDoc, '_id'>): Promise<void> {
+export async function deleteLeadCascade(
+  lead: Pick<LeadDoc, '_id'>,
+  opts: { afterMerge?: boolean } = {},
+): Promise<void> {
+  // Une fusion a déjà déplacé commissions, comptes clients et CA vers la cible : sa source peut partir.
+  if (!opts.afterMerge) {
+    const [won, commission, client] = await Promise.all([
+      Lead.exists({ _id: lead._id, status: 'WON' }),
+      SalesCommission.exists({ lead: lead._id }),
+      User.exists({ originLead: lead._id }),
+    ])
+    if (won || commission || client) {
+      throw new LeadChangeError(
+        409,
+        'LEAD_DELETE_FORBIDDEN',
+        'Ce lead gagné ou lié à un client ou une commission doit être archivé',
+      )
+    }
+  }
   await Promise.all([
     LeadActivity.deleteMany({ leadId: lead._id }),
     Interaction.deleteMany({ subjectType: 'LEAD', subjectId: lead._id }),

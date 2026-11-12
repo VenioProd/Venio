@@ -9,6 +9,7 @@ import { createSession } from '../lib/session.js'
 import User from '../models/User.js'
 import MobileDevice from '../models/MobileDevice.js'
 import Lead from '../models/Lead.js'
+import LeadActivity from '../models/LeadActivity.js'
 import Project from '../models/Project.js'
 import Task from '../models/Task.js'
 import QuoteProposal from '../models/QuoteProposal.js'
@@ -190,13 +191,16 @@ it('crée et modifie un lead une seule fois malgré les rejeux', async () => {
 })
 
 it('ne rejoue pas une création de lead qui a échoué après avoir écrit', async () => {
-  // Conversion en client impossible (l'email est celui d'un compte interne) :
-  // la route enregistre le lead, puis échoue en 500.
+  // L'échec de l'historique survient après la sauvegarde du lead.
   const key = randomUUID()
-  const body = { company: 'Gagné', status: 'WON', contactEmail: 'com@test.invalid' }
+  const body = { company: 'Gagné' }
+  const activityFailure = vi
+    .spyOn(LeadActivity.prototype, 'save')
+    .mockRejectedValueOnce(new Error('Historique indisponible'))
   const post = () =>
     request(app).post('/api/admin/crm/leads').set('Authorization', bearer).set('Idempotency-Key', key).send(body)
   expect((await post()).status).toBe(500)
+  activityFailure.mockRestore()
   // Le rejeu rend le même statut au lieu de recréer le lead.
   expect((await post()).status).toBe(500)
   expect(await Lead.countDocuments({ company: 'Gagné' })).toBe(1)

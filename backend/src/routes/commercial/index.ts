@@ -12,7 +12,7 @@ import SalesCommission from '../../models/SalesCommission.js'
 import CrmSettings from '../../models/CrmSettings.js'
 import { logLeadActivity, checkDuplicateLead } from '../../lib/crmAutomations.js'
 import { logInteraction } from '../../lib/interactions.js'
-import { applyLeadChange, isLeadChangeError } from '../../lib/crmLeadService.js'
+import { createLead, applyLeadChange, isLeadChangeError } from '../../lib/crmLeadService.js'
 import { notifyUsers } from '../../lib/notifyHelpers.js'
 import { ADMIN_ROLES } from '../../lib/permissions.js'
 import {
@@ -176,17 +176,15 @@ router.post(
     try {
       if (invalid(req, res)) return
       const repId = req.user!.id
-      const now = new Date()
-      const lead = new Lead({
-        ...repLeadPayload(req.body),
-        externalRep: repId,
-        assignedTo: repId,
-        createdBy: repId,
-        statusChangedAt: now,
-      })
-      lead.$locals.assignmentActorId = repId
-      await lead.save()
-      await logLeadActivity(lead._id, 'CREATED', 'Lead créé', { company: lead.company }, repId)
+      const { lead } = await createLead(
+        {
+          ...repLeadPayload(req.body),
+          externalRep: repId,
+          assignedTo: repId,
+          createdBy: repId,
+        },
+        { actor: repId, source: 'bulk', validateAssignee: false },
+      )
 
       // Un doublon n'est pas refusé : le refuser révélerait qu'un autre suit ce
       // prospect. L'équipe arbitre ; le détail reste hors de la vue de l'externe.
@@ -344,16 +342,24 @@ router.post(
       }
       const repId = req.user!.id
       const { closer, recipients } = await resolveCloser()
-      // Conditionnel sur closingHandoff : deux clics simultanés ne transmettent qu'une fois.
-      const handedOff = await Lead.findOneAndUpdate(
-        { _id: lead._id, ...repLeadFilter(repId), closingHandoff: null },
-        {
-          $set: { closingHandoff: { at: new Date(), to: closer, by: repId, repNotes: lead.notes }, assignedTo: closer },
-        },
-        { new: true },
-      )
-      if (!handedOff) {
-        return res.status(409).json({ error: 'Dossier déjà transmis', code: 'LEAD_HANDED_OFF' })
+      // La sauvegarde garde la condition pour ne pas transmettre deux fois le même dossier.
+      lead.$where = { ...repLeadFilter(repId), closingHandoff: null }
+      let handedOff: typeof lead
+      try {
+        const result = await applyLeadChange(
+          lead,
+          {
+            closingHandoff: { at: new Date(), to: closer, by: repId, repNotes: lead.notes },
+            assignedTo: closer,
+          },
+          { actor: repId, source: 'bulk' },
+        )
+        handedOff = result.lead
+      } catch (err) {
+        if (err instanceof mongoose.Error.DocumentNotFoundError) {
+          return res.status(409).json({ error: 'Dossier déjà transmis', code: 'LEAD_HANDED_OFF' })
+        }
+        throw err
       }
       const message = typeof req.body.message === 'string' ? req.body.message.trim() : ''
       await logLeadActivity(

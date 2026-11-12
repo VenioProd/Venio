@@ -217,14 +217,23 @@ describe('Agent CRM / leads', () => {
     expect(updated.body.status).toBe('WON')
     expect(updated.body.statusChangedAt).toBeTruthy()
 
-    // Delete
-    const del = await request(app)
+    // Un lead gagné porte un client et du chiffre : il s'archive, il ne se supprime pas.
+    const refused = await request(app)
       .delete(`/api/v1/agent/leads/${leadId}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+    expect(refused.status).toBe(409)
+
+    // Delete
+    const open = await request(app)
+      .post('/api/v1/agent/leads')
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ company: 'Bar Corp' })
+    const del = await request(app)
+      .delete(`/api/v1/agent/leads/${open.body._id}`)
       .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
     expect(del.status).toBe(200)
     expect(del.body.ok).toBe(true)
-    const left = await Lead.countDocuments()
-    expect(left).toBe(0)
+    expect(await Lead.countDocuments()).toBe(1)
   })
 
   it('rejects an invalid status on create', async () => {

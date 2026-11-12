@@ -27,6 +27,8 @@ import {
   administersCrm,
   applyEntityQuery,
   canReadLead,
+  canReassignLead,
+  teamLeadFilter,
   crmEntityRestriction,
   isAssignableCrmUser,
   LEAD_SCOPE_FIELDS,
@@ -92,6 +94,7 @@ router.get(
       const scope = leadScopeFilter(req)
       const filter: Record<string, unknown> = {
         ...scope,
+        $and: [teamLeadFilter()],
         archivedAt: req.query.archived === 'true' ? { $ne: null } : null,
       }
       if (typeof req.query.tag === 'string' && req.query.tag) filter.tags = req.query.tag
@@ -112,7 +115,11 @@ router.get(
         ]
         // Merge search $or with scope $or using $and
         if (filter.$or) {
-          filter.$and = [{ $or: filter.$or as Record<string, unknown>[] }, { $or: searchOr }]
+          filter.$and = [
+            ...((filter.$and as Record<string, unknown>[]) ?? []),
+            { $or: filter.$or as Record<string, unknown>[] },
+            { $or: searchOr },
+          ]
           delete filter.$or
         } else {
           filter.$or = searchOr
@@ -132,9 +139,12 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_CRM),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const filter: Record<string, unknown> = { ...leadScopeFilter(req), archivedAt: null }
+      const filter: Record<string, unknown> = { ...leadScopeFilter(req), $and: [teamLeadFilter()], archivedAt: null }
       applyEntityQuery(req, filter, req.query.entity)
-      const leads = await Lead.find(filter).sort({ updatedAt: -1 })
+      const leads = await Lead.find(filter)
+        .select('-extraInfo -utm -closingHandoff.repNotes')
+        .sort({ updatedAt: -1 })
+        .lean()
       const columns = CRM_STATUSES.map((status) => ({
         status,
         leads: leads.filter((lead) => lead.status === status),
@@ -221,7 +231,8 @@ router.post(
       // Forme historique { lead } conservée ; `duplicates` n'est ajouté que s'il y en a.
       return res.status(201).json(duplicates.length > 0 ? { lead, duplicates } : { lead })
     } catch (err) {
-      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, ...err.details })
+      if (isLeadChangeError(err))
+        return res.status(err.status).json({ error: err.message, code: err.code, ...err.details })
       return next(err)
     }
   },
@@ -285,7 +296,6 @@ router.patch(
         return res.status(404).json({ error: 'Lead not found' })
       }
 
-      const oldAssignee = lead.assignedTo?.toString() || null
       const payload = normalizeLeadPatch(req.body || {})
       // Un lead ne sort pas du périmètre d'entités de qui le modifie.
       if (!resolveWriteEntity(req, payload, lead)) {
@@ -298,10 +308,7 @@ router.patch(
       // droits (devis), et en être le créateur ne suffit pas pour la changer.
       if (
         payload.assignedTo !== undefined &&
-        req.user!.role !== 'SUPER_ADMIN' &&
-        oldAssignee &&
-        oldAssignee !== req.user!.id &&
-        String(payload.assignedTo ?? '') !== oldAssignee
+        !canReassignLead({ id: req.user!.id, isSuper: req.user!.role === 'SUPER_ADMIN' }, lead, payload.assignedTo)
       ) {
         return res.status(403).json({
           error: 'Seul le titulaire du lead ou un super-admin peut le réassigner',
@@ -314,7 +321,8 @@ router.patch(
       const result = await applyLeadChange(lead, payload, { actor: req.user!.id, source: 'admin' })
       return res.json({ lead: result.lead })
     } catch (err) {
-      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, ...err.details })
+      if (isLeadChangeError(err))
+        return res.status(err.status).json({ error: err.message, code: err.code, ...err.details })
       return next(err)
     }
   },
@@ -357,6 +365,7 @@ router.delete(
       await deleteLeadCascade(lead)
       return res.json({ success: true })
     } catch (err) {
+      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, code: err.code })
       return next(err)
     }
   },
@@ -391,12 +400,10 @@ router.get(
  */
 async function loadLeadForDataRights(req: Request, res: Response) {
   if (!administersCrm(req)) {
-    res
-      .status(403)
-      .json({
-        error: 'Les demandes sur les données personnelles sont réservées aux administrateurs du CRM',
-        code: 'CRM_ADMIN_REQUIRED',
-      })
+    res.status(403).json({
+      error: 'Les demandes sur les données personnelles sont réservées aux administrateurs du CRM',
+      code: 'CRM_ADMIN_REQUIRED',
+    })
     return null
   }
   const lead = await Lead.findById(req.params.id)
@@ -481,7 +488,8 @@ router.post(
       })
       return res.json({ lead })
     } catch (err) {
-      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, ...err.details })
+      if (isLeadChangeError(err))
+        return res.status(err.status).json({ error: err.message, code: err.code, ...err.details })
       return next(err)
     }
   },
@@ -706,7 +714,7 @@ router.get(
       const { period, since } = resolvePeriod(req.query.period, now)
       const seesEveryone = readsWholeCrm(req)
       // Périmètre de lecture, restreint au besoin à une entité du groupe (?entity=).
-      const scope: Record<string, unknown> = leadScopeFilter(req)
+      const scope: Record<string, unknown> = { ...leadScopeFilter(req), $and: [teamLeadFilter()] }
       applyEntityQuery(req, scope, req.query.entity)
 
       // Cohorte : les leads CRÉÉS dans la fenêtre. Un taux de conversion mesuré
@@ -725,6 +733,13 @@ router.get(
         assignedTo: lead.assignedTo ? String(lead.assignedTo) : null,
         lostReason: lead.lostReason,
       }))
+
+      const owners = await User.find({
+        _id: { $in: leadDocs.flatMap((lead) => (lead.assignedTo ? [lead.assignedTo] : [])) },
+      })
+        .select('name')
+        .lean()
+      const ownerNames = new Map(owners.map((owner) => [String(owner._id), owner.name]))
 
       const activities = await LeadActivity.find({
         leadId: { $in: leadDocs.map((lead) => lead._id) },
@@ -824,7 +839,12 @@ router.get(
         // Ventiler par personne n'a de sens que pour qui voit tout le monde :
         // sur un périmètre restreint, la table n'aurait qu'une ligne et
         // suggérerait une comparaison qui n'existe pas.
-        byOwner: seesEveryone ? groupPerformance(leads, 'assignedTo', signedByLead) : null,
+        byOwner: seesEveryone
+          ? groupPerformance(leads, 'assignedTo', signedByLead).map((row) => ({
+              ...row,
+              ownerName: ownerNames.get(row.key) ?? null,
+            }))
+          : null,
         coverage: assessCoverage(leads, transitions),
       })
     } catch (err) {
@@ -843,9 +863,14 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const settings = await CrmSettings.getSettings()
-      const filter: Record<string, unknown> = { status: { $nin: ['WON', 'LOST'] }, ...leadScopeFilter(req) }
+      const filter: Record<string, unknown> = {
+        status: { $nin: ['WON', 'LOST'] },
+        archivedAt: null,
+        ...leadScopeFilter(req),
+        $and: [teamLeadFilter()],
+      }
       applyEntityQuery(req, filter, req.query.entity)
-      const leads = await Lead.find(filter).lean()
+      const leads = await Lead.find(filter).select('-extraInfo -utm -closingHandoff.repNotes').lean()
 
       const thresholds = {
         coldEnabled: settings.coldLeadAlertEnabled,
@@ -1124,7 +1149,7 @@ router.get(
       }
 
       const entity = isGroupEntity(req.query.entity) ? req.query.entity : null
-      const scope: Record<string, unknown> = leadScopeFilter(req)
+      const scope: Record<string, unknown> = { ...leadScopeFilter(req), $and: [teamLeadFilter()] }
       applyEntityQuery(req, scope, req.query.entity)
       if (userId) scope.assignedTo = userId
 

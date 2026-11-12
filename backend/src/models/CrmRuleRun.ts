@@ -58,6 +58,7 @@ const crmRuleRunSchema = new mongoose.Schema<ICrmRuleRun>(
 // Les simulations portent une clé propre : elles n'occupent jamais celle d'un vrai événement.
 crmRuleRunSchema.index({ eventKey: 1 }, { unique: true })
 crmRuleRunSchema.index({ rule: 1, lead: 1, createdAt: -1 })
+crmRuleRunSchema.index({ lead: 1 })
 crmRuleRunSchema.index({ createdAt: -1 })
 crmRuleRunSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 3600 })
 

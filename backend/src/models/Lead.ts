@@ -195,6 +195,8 @@ leadSchema.post('save', async function (lead) {
 
 leadSchema.index({ status: 1, priority: 1 })
 leadSchema.index({ assignedTo: 1, nextActionAt: 1 })
+leadSchema.index({ createdBy: 1 })
+leadSchema.index({ archivedAt: 1, updatedAt: -1 })
 leadSchema.index({ company: 1 })
 leadSchema.index({ project: 1 })
 leadSchema.index({ entity: 1, status: 1 })
