@@ -312,6 +312,7 @@ const en: Record<keyof typeof fr, string> = {
     'Refuse to create a lead that has likely duplicates. Otherwise creation succeeds and duplicates are only flagged.',
   'crm.duplicates.title': '{count, plural, one {# likely duplicate} other {# likely duplicates}}',
   'crm.duplicates.archived': 'archived',
+  'crm.duplicates.hintExisting': 'These records seem to describe the same prospect: merge them if so.',
   'crm.duplicates.hint': 'Check before creating: an existing lead may already cover this prospect.',
   'crm.merge.open': 'Merge into…',
   'crm.merge.title': 'Merge “{company}” into…',

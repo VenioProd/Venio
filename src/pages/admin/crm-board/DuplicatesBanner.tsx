@@ -73,7 +73,9 @@ const DuplicatesBanner: React.FC<DuplicateQuery & { onMerge?: () => void }> = ({
           </li>
         ))}
       </ul>
-      <p style={{ margin: '6px 0 0', fontSize: 13, opacity: 0.8 }}>{t('crm.duplicates.hint')}</p>
+      <p style={{ margin: '6px 0 0', fontSize: 13, opacity: 0.8 }}>
+        {t(onMerge ? 'crm.duplicates.hintExisting' : 'crm.duplicates.hint')}
+      </p>
     </div>
   )
 }

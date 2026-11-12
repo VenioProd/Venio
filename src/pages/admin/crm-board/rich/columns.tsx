@@ -302,7 +302,6 @@ export const COLUMN_MAP: Record<string, RichColumn> = Object.fromEntries(RICH_CO
 export const DEFAULT_COLUMNS = [
   'company',
   'status',
-  'priority',
   'assignedTo',
   'weighted',
   'nextAction',

@@ -312,6 +312,7 @@ const fr = {
     'Refuser de créer un lead qui a des doublons probables. Sinon, la création réussit et les doublons sont seulement signalés.',
   'crm.duplicates.title': '{count, plural, one {# doublon probable} other {# doublons probables}}',
   'crm.duplicates.archived': 'archivé',
+  'crm.duplicates.hintExisting': 'Ces fiches semblent décrire le même prospect : fusionnez-les si c’est le cas.',
   'crm.duplicates.hint': 'Vérifiez avant de créer : un lead existant peut déjà couvrir ce prospect.',
   'crm.merge.open': 'Fusionner dans…',
   'crm.merge.title': 'Fusionner « {company} » dans…',
