@@ -9,6 +9,10 @@ import Lead, { LEAD_PROJECTS } from '../../models/Lead.js'
 import LeadActivity from '../../models/LeadActivity.js'
 import User from '../../models/User.js'
 import { validateCallSettings } from '../../lib/callSettings.js'
+import { CALL_AI_BLOCKS, SettingsBlockError, validateCallAiSettings } from '../../lib/callAiSettings.js'
+import { telephonyConfig } from '../../lib/telephony/index.js'
+import { isConfigured as isTranscriptionConfigured } from '../../lib/transcription/assemblyai.js'
+import { isAnalysisConfigured } from '../../lib/callAnalysis/model.js'
 import CrmSettings from '../../models/CrmSettings.js'
 import { ADMIN_ROLES, PERMISSIONS } from '../../lib/permissions.js'
 import { getRoundRobinAssignee, logLeadActivity, checkDuplicateLead, buildWorklist } from '../../lib/crmAutomations.js'
@@ -969,7 +973,13 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const settings = await CrmSettings.getSettings()
-      return res.json({ settings })
+      // Ce que ce serveur sait faire (variables d'environnement présentes), pour que l'écran le dise sans rien révéler des clés.
+      const providers = {
+        telephony: telephonyConfig() !== null,
+        transcription: isTranscriptionConfigured(),
+        analysis: isAnalysisConfigured(),
+      }
+      return res.json({ settings, providers })
     } catch (err) {
       return next(err)
     }
@@ -1022,7 +1032,7 @@ async function validateReportRecipients(
 }
 
 /** Champs dont la valeur est contrôlée : ils ne se modifient qu'entiers, jamais par chemin pointé. */
-const GUARDED_SETTINGS = ['weeklyReportRecipients', 'escalationManagerId', 'defaultCloserId']
+const GUARDED_SETTINGS = ['weeklyReportRecipients', 'escalationManagerId', 'defaultCloserId', ...CALL_AI_BLOCKS]
 
 // Update CRM settings
 router.patch(
@@ -1062,6 +1072,9 @@ router.patch(
 
       const dotted = Object.keys(updates).find((key) => GUARDED_SETTINGS.some((field) => key.startsWith(`${field}.`)))
       if (dotted) return res.status(400).json({ error: `${dotted} : ce réglage se modifie en entier` })
+
+      // Téléphonie, enregistrement, transcription, analyse : blocs entiers, valeurs bornées, grille cohérente.
+      validateCallAiSettings(updates)
 
       if (updates.weeklyReportRecipients !== undefined) {
         const check = await validateReportRecipients(updates.weeklyReportRecipients)
@@ -1110,6 +1123,7 @@ router.patch(
       const settings = await CrmSettings.updateSettings(updates)
       return res.json({ settings })
     } catch (err) {
+      if (err instanceof SettingsBlockError) return res.status(400).json({ error: err.message, field: err.field })
       return next(err)
     }
   },
