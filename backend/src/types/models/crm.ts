@@ -177,6 +177,8 @@ export interface ICrmSettings extends Document {
   callTranscription: { enabled: boolean; language: string; retentionMonths: number }
   // ── Analyse d'appel (lot D) ──
   callAnalysis: ICallAnalysisSettings
+  // ── Enregistrement des appels (lot F1) ──
+  callRecording: { enabled: boolean; notice: { enabled: boolean; text: string }; keepAudioDays: number }
   createdAt: Date
   updatedAt: Date
 }

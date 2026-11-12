@@ -14,10 +14,18 @@ import {
   hangupTwiml,
   hasValidTwilioSignature,
   mapTwilioStatus,
+  noticeTwiml,
   requireTelephony,
   telephonyConfig,
   userIdFromClient,
 } from '../../lib/telephony/index.js'
+import {
+  initialRecording,
+  onRecordingEvent,
+  recordingSettings,
+  transcribeRecording,
+} from '../../lib/telephony/recording.js'
+import logger from '../../lib/logger.js'
 
 /**
  * Routes appelées par Twilio, publiques mais à signature vérifiée. Montées
@@ -94,9 +102,19 @@ router.post('/twilio/voice', async (req: Request, res: Response, next: NextFunct
     }
 
     const now = new Date()
+    // L'enregistrement est décidé ici, une fois pour toutes ; une opposition déjà posée sur l'appel est gardée.
     const attached = await Call.findOneAndUpdate(
       { _id: call._id, status: 'CREATED', providerCallSid: null },
-      { $set: { providerCallSid: callSid, startedAt: now }, $push: { events: { status: 'CONNECTING', at: now } } },
+      [
+        {
+          $set: {
+            providerCallSid: callSid,
+            startedAt: now,
+            recording: { $ifNull: ['$recording', { $literal: initialRecording(settings) }] },
+            events: { $concatArrays: [{ $ifNull: ['$events', []] }, [{ status: 'CONNECTING', at: now }]] },
+          },
+        },
+      ],
       { new: true },
     )
     if (!attached) {
@@ -148,6 +166,40 @@ router.post('/twilio/status', async (req: Request, res: Response, next: NextFunc
       await Interaction.updateOne({ _id: updated.interaction }, { $set: { durationSec: updated.durationSec } })
     }
     res.sendStatus(204)
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * Rappel de l'enregistrement de `<Dial>`. Rattaché à l'appel par `callId` et
+ * par l'appel parent ; rejoué ou arrivé en retard, il ne change rien. La
+ * transcription part après la réponse : Twilio n'attend pas l'envoi de l'audio.
+ */
+router.post('/twilio/recording', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const callId = req.query.callId
+    if (!mongoose.isObjectIdOrHexString(callId)) return res.sendStatus(204)
+    const ready = await onRecordingEvent(String(callId), req.body)
+    res.sendStatus(204)
+    if (ready) {
+      void transcribeRecording(ready).catch((err: Error) =>
+        logger.warn({ callId: String(ready._id), detail: err.message.slice(0, 120) }, 'enregistrement: transcription'),
+      )
+    }
+  } catch (err) {
+    next(err)
+  }
+})
+
+/** Annonce jouée à l'appelé après sa décroche, avant la mise en relation (`<Number url>`). */
+router.post('/twilio/notice', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const callId = req.query.callId
+    const call = mongoose.isObjectIdOrHexString(callId) ? await Call.findById(callId).select('recording').lean() : null
+    const recording = call?.recording
+    if (!recording?.notice || recording.objection) return sendTwiml(res, noticeTwiml(''))
+    sendTwiml(res, noticeTwiml(recordingSettings(await CrmSettings.getSettings()).notice.text))
   } catch (err) {
     next(err)
   }

@@ -95,6 +95,8 @@ router.get('/calls/queue', async (req: Request, res: Response, next: NextFunctio
       doNotContact: { $ne: true },
       doNotCall: { $ne: true },
       phoneInvalid: { $ne: true },
+      // Fiche retenue par une opposition détectée (absent ou null : proposable).
+      callHold: null,
       contactPhone: { $type: 'string', $regex: /\S/ },
       $or: [{ nextActionAt: null }, { nextActionAt: { $lte: new Date(asOf) } }],
     }

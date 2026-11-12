@@ -995,6 +995,46 @@ export async function runScheduledJobs(now: Date = new Date()): Promise<void> {
     lastSchedulerFailureAt = new Date().toISOString()
     logger.error({ data: err }, '[CRM Scheduler] Error running scheduled jobs:')
   }
+  await runCallPipelineJobs(now)
+}
+
+const CALL_SLOT_LOCK_TTL_MS = 15 * 60_000
+
+/**
+ * Chaîne du poste d'appel (enregistrement → transcript → analyse), en dernier
+ * et à part : une panne d'un fournisseur ne retarde pas les tâches du CRM.
+ * Balayages par créneau (une instance à la fois), purges une fois par jour à 03:00.
+ * Chaque étape ne fait rien sans ses variables d'environnement.
+ */
+export async function runCallPipelineJobs(now: Date = new Date()): Promise<void> {
+  const paris = parisParts(now)
+  const slot = (minutes: number) => `${paris.dateKey}:${Math.floor(paris.minutesOfDay / minutes)}`
+  const [{ closeStaleCalls, sweepRecordings }, transcription, analysis] = await Promise.all([
+    import('./telephony/recording.js'),
+    import('./transcription/index.js'),
+    import('./callAnalysis/index.js'),
+  ])
+  // [tâche, occurrence, durée du verrou, travail]
+  const tasks: Array<[string, string, number, () => Promise<unknown>]> = [
+    ['callsStale', slot(1), CALL_SLOT_LOCK_TTL_MS, () => closeStaleCalls(now)],
+    ['callRecordings', slot(1), CALL_SLOT_LOCK_TTL_MS, () => sweepRecordings(now)],
+    ['callTranscripts', slot(1), CALL_SLOT_LOCK_TTL_MS, () => transcription.sweepTranscriptions(now)],
+    ['callAnalyses', slot(5), CALL_SLOT_LOCK_TTL_MS, () => analysis.sweepAnalyses(now)],
+  ]
+  if (isDue(paris.minutesOfDay, 3 * 60)) {
+    tasks.push(
+      ['callTranscriptsPurge', paris.dateKey, DAILY_LOCK_TTL_MS, () => transcription.purgeTranscripts(now)],
+      ['callAnalysesPurge', paris.dateKey, DAILY_LOCK_TTL_MS, () => analysis.purgeAnalyses(now)],
+    )
+  }
+  for (const [task, period, ttlMs, fn] of tasks) {
+    try {
+      await runOnce(task, period, ttlMs, fn, now)
+    } catch (err) {
+      lastSchedulerFailureAt = new Date().toISOString()
+      logger.error({ task, detail: (err as Error).message?.slice(0, 200) }, '[CRM Scheduler] poste d’appel')
+    }
+  }
 }
 
 /**

@@ -90,17 +90,54 @@ export function statusCallbackUrl(config: TelephonyConfig, callId: string): stri
   return `${config.publicBaseUrl}/api/telephony/twilio/status?callId=${callId}`
 }
 
-export function dialTwiml(config: TelephonyConfig, call: Pick<ICall, '_id' | 'to' | 'from'>): string {
+/** Rappel de l'enregistrement de `<Dial>` (`in-progress`, `completed`, `absent`). */
+export function recordingCallbackUrl(config: TelephonyConfig, callId: string): string {
+  return `${config.publicBaseUrl}/api/telephony/twilio/recording?callId=${callId}`
+}
+
+/**
+ * Composition. Si l'appel est enregistré (`call.recording` posé à la mise en
+ * relation, sans opposition), `<Dial>` enregistre en double piste à partir de
+ * la décroche : canal 1 = appel parent (le commercial, dans le navigateur),
+ * canal 2 = l'appelé. L'annonce, jouée à l'appelé seul après sa décroche et
+ * avant la mise en relation, passe par l'attribut `url` de `<Number>`.
+ */
+export function dialTwiml(config: TelephonyConfig, call: Pick<ICall, '_id' | 'to' | 'from' | 'recording'>): string {
+  const callId = String(call._id)
+  const recorded = Boolean(call.recording && !call.recording.objection)
   const response = new twilio.twiml.VoiceResponse()
-  const dial = response.dial({ callerId: call.from, answerOnBridge: true, timeLimit: DIAL_TIME_LIMIT_SEC })
+  const dial = response.dial({
+    callerId: call.from,
+    answerOnBridge: true,
+    timeLimit: DIAL_TIME_LIMIT_SEC,
+    ...(recorded
+      ? {
+          record: 'record-from-answer-dual' as const,
+          recordingTrack: 'both' as const,
+          recordingStatusCallback: recordingCallbackUrl(config, callId),
+          recordingStatusCallbackMethod: 'POST' as const,
+          recordingStatusCallbackEvent: ['in-progress', 'completed', 'absent'],
+        }
+      : {}),
+  })
   dial.number(
     {
-      statusCallback: statusCallbackUrl(config, String(call._id)),
+      statusCallback: statusCallbackUrl(config, callId),
       statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
       statusCallbackMethod: 'POST',
+      ...(recorded && call.recording?.notice
+        ? { url: `${config.publicBaseUrl}/api/telephony/twilio/notice?callId=${callId}`, method: 'POST' as const }
+        : {}),
     },
     call.to,
   )
+  return response.toString()
+}
+
+/** Annonce d'enregistrement jouée à l'appelé (TwiML de `<Number url>`). */
+export function noticeTwiml(text: string): string {
+  const response = new twilio.twiml.VoiceResponse()
+  if (text.trim()) response.say({ language: 'fr-FR' }, text.trim())
   return response.toString()
 }
 

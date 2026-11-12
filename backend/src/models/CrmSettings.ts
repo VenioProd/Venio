@@ -2,6 +2,9 @@ import mongoose, { Model } from 'mongoose'
 import type { ICrmSettings } from '../types/models/index.js'
 import { DEFAULT_CALL_ANALYSIS_SETTINGS } from '../lib/callAnalysis/heat.js'
 
+export const DEFAULT_RECORDING_NOTICE =
+  'Cet appel est enregistré et transcrit pour le suivi de votre demande. Vous pouvez vous y opposer à tout moment.'
+
 interface CrmSettingsModel extends Model<ICrmSettings> {
   getSettings(): Promise<ICrmSettings>
   updateSettings(updates: Partial<ICrmSettings>): Promise<ICrmSettings>
@@ -303,6 +306,19 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
         { _id: false },
       ),
       default: () => ({}),
+    },
+
+    // ═══════════════════════════════════════════════════════════════
+    // ENREGISTREMENT DES APPELS (vague 2, lot F1)
+    // ═══════════════════════════════════════════════════════════════
+    // Audio supprimé chez l'opérateur une fois le transcript obtenu, sauf si keepAudioDays > 0.
+    callRecording: {
+      enabled: { type: Boolean, default: true },
+      notice: {
+        enabled: { type: Boolean, default: true },
+        text: { type: String, default: DEFAULT_RECORDING_NOTICE, trim: true, maxlength: 300 },
+      },
+      keepAudioDays: { type: Number, default: 0, min: 0, max: 180 },
     },
   },
   { timestamps: true },

@@ -56,7 +56,14 @@ export function withinCallingHours(now: Date, hours: ICrmSettings['telephony']['
 export function assertCallable(
   lead: Pick<
     ILead,
-    'status' | 'closingHandoff' | 'archivedAt' | 'doNotContact' | 'doNotCall' | 'phoneInvalid' | 'contactPhone'
+    | 'status'
+    | 'closingHandoff'
+    | 'archivedAt'
+    | 'doNotContact'
+    | 'doNotCall'
+    | 'phoneInvalid'
+    | 'contactPhone'
+    | 'callHold'
   >,
   ctx: { now: Date; settings: ICrmSettings; attemptsToday: number },
 ): void {
@@ -67,6 +74,8 @@ export function assertCallable(
     lead.doNotContact ||
     lead.doNotCall ||
     lead.phoneInvalid ||
+    // Opposition détectée par l'analyse, en attente d'une décision humaine.
+    lead.callHold ||
     !normalizePhone(String(lead.contactPhone ?? ''), ctx.settings.callDefaultRegion)
   )
     throw telephonyError(409, 'LEAD_NOT_CALLABLE')

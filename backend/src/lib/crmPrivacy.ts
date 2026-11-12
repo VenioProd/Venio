@@ -11,6 +11,10 @@ import CrmSequenceEnrollment from '../models/CrmSequenceEnrollment.js'
 // Modèle référencé par le populate de l'export.
 import '../models/CrmSequence.js'
 import SuppressionEntry, { type SuppressionReason } from '../models/SuppressionEntry.js'
+import CrmSettings from '../models/CrmSettings.js'
+import Call from '../models/Call.js'
+import CallTranscript from '../models/CallTranscript.js'
+import CallAnalysis from '../models/CallAnalysis.js'
 import { logLeadActivity } from './crmAutomations.js'
 
 /**
@@ -358,6 +362,18 @@ export async function anonymizeLead(
   if (email && (lead.doNotContact || (await isEmailSuppressed(email)))) {
     await addSuppression(email, { reason: 'OPPOSITION', createdBy: opts.actor, leadId: lead._id })
   }
+  // Même règle pour le numéro (une opposition détectée par l'analyse compte : personne ne pourra plus la lever).
+  const phone = String(lead.contactPhone ?? '').trim()
+  if (phone) {
+    const { addPhoneSuppression, isPhoneSuppressed } = await import('./callGuards.js')
+    const region = (await CrmSettings.getSettings()).callDefaultRegion
+    if (lead.doNotCall || lead.doNotContact || lead.callHold || (await isPhoneSuppressed(phone, region))) {
+      await addPhoneSuppression(phone, { reason: 'OPPOSITION', createdBy: opts.actor, leadId: lead._id, region })
+    }
+  }
+  // Appels : audio effacé chez l'opérateur, transcripts et analyses supprimés, numéros neutralisés.
+  const { eraseLeadCalls } = await import('./telephony/recording.js')
+  await eraseLeadCalls(lead._id)
 
   const patch: Record<string, any> = {
     extraInfo: {},
@@ -368,6 +384,7 @@ export async function anonymizeLead(
     notes: label,
     interactionNotes: '',
     lostComment: '',
+    qualification: { need: '', timeline: '', decisionMaker: '', objections: [], competitors: [] },
     anonymizedAt: now,
   }
   for (const field of NORMALIZED_CONTACT_FIELDS) if (Lead.schema.path(field)) patch[field] = ''
@@ -396,6 +413,12 @@ export async function anonymizeLead(
     { leadId: lead._id },
     { $unset: Object.fromEntries(PERSONAL_PAYLOAD_KEYS.map((k) => [`payload.${k}`, ''])) },
   )
+  // Analyse d'appel : citation de l'opposition, valeurs avant et après des champs appliqués.
+  await LeadActivity.updateMany({ leadId: lead._id, type: 'CALL_OPT_OUT_HOLD' }, { $unset: { 'payload.quote': '' } })
+  await LeadActivity.updateMany(
+    { leadId: lead._id, type: 'CALL_ANALYSIS_APPLIED' },
+    { $unset: { 'payload.fields': '' } },
+  )
   // Les e-mails en attente de validation portent l'adresse et le texte : ils ne partiront plus.
   await CrmRuleRun.updateMany({ lead: lead._id, 'steps.0': { $exists: true } }, { $unset: { 'steps.$[].payload': '' } })
   await CrmRuleRun.updateMany({ lead: lead._id, status: 'PENDING' }, { $set: { status: 'SKIP' } })
@@ -418,7 +441,17 @@ export async function buildPersonalDataExport(leadId: Types.ObjectId | string) {
   const lead = await Lead.findById(leadId).lean()
   if (!lead) return null
   const email = normalizeEmail(lead.contactEmail)
-  const [activities, interactions, tasks, ruleRuns, suppression, sequenceEnrollments] = await Promise.all([
+  const [
+    activities,
+    interactions,
+    tasks,
+    ruleRuns,
+    suppression,
+    sequenceEnrollments,
+    calls,
+    callTranscripts,
+    callAnalyses,
+  ] = await Promise.all([
     LeadActivity.find({ leadId: lead._id }).sort({ createdAt: 1, _id: 1 }).lean(),
     Interaction.find({ subjectType: 'LEAD', subjectId: lead._id }).sort({ occurredAt: 1, _id: 1 }).lean(),
     PersonalTask.find({ leadId: lead._id }).select('title status dueDate createdAt').sort({ createdAt: 1 }).lean(),
@@ -429,6 +462,18 @@ export async function buildPersonalDataExport(leadId: Types.ObjectId | string) {
     CrmSequenceEnrollment.find({ lead: lead._id })
       .populate('sequence', 'name')
       .select('-openKey')
+      .sort({ createdAt: 1 })
+      .lean(),
+    Call.find({ lead: lead._id })
+      .select('status direction to startedAt answeredAt endedAt durationSec recording.status recording.objection')
+      .sort({ createdAt: 1 })
+      .lean(),
+    CallTranscript.find({ lead: lead._id })
+      .select('call status language segments durationSec createdAt')
+      .sort({ createdAt: 1 })
+      .lean(),
+    CallAnalysis.find({ lead: lead._id })
+      .select('call status model output review.at review.decisions createdAt')
       .sort({ createdAt: 1 })
       .lean(),
   ])
@@ -442,6 +487,9 @@ export async function buildPersonalDataExport(leadId: Types.ObjectId | string) {
     ruleRuns,
     suppression: suppression ?? null,
     sequenceEnrollments,
+    calls,
+    callTranscripts,
+    callAnalyses,
   }
 }
 
