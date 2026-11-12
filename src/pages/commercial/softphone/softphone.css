@@ -19,10 +19,13 @@
   gap: 6px;
   text-decoration: none;
 }
-.softphone-hangup {
-  border-color: var(--critical);
+.softphone-bar .portal-button.softphone-hangup,
+html.theme-portail .softphone-bar .portal-button.softphone-hangup,
+html.theme-portail .softphone-bar .portal-button.softphone-hangup:hover:not(:disabled) {
+  border: 1px solid var(--critical);
   background: var(--critical-surface);
-  color: var(--text-primary);
+  color: var(--critical);
+  box-shadow: none;
 }
 .softphone-timer {
   margin-left: auto;
@@ -70,6 +73,9 @@
   max-width: 100%;
 }
 @media (max-width: 480px) {
+  .softphone-keypad {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   .softphone-row .portal-button {
     flex: 1 1 calc(50% - 8px);
     justify-content: center;
