@@ -1,6 +1,18 @@
 import type fr from '../fr/crm'
 
 const en: Record<keyof typeof fr, string> = {
+  'crm.card.actions': 'Actions for {company}',
+  'crm.detail.nextActionLabel': 'Planned action',
+  'crm.detail.nextActionDate': 'Next action date',
+  'crm.detail.back': 'Back to leads',
+  'crm.detail.details': 'Details',
+  'crm.detail.sequences': 'Sequences',
+  'crm.detail.privacy': 'Personal data',
+  'crm.detail.sections': 'Lead sections',
+  'crm.detail.write': 'Write',
+  'crm.detail.log': 'Log an exchange',
+  'crm.detail.more': 'More actions',
+
   'crm.form.group.company': 'Company',
   'crm.form.group.contact': 'Contact',
   'crm.form.group.qualification': 'Qualification',

@@ -108,7 +108,11 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
         {failed && (
           <div role="alert">
             <p className="rich-dim">{t('crmRich.panel.loadFailed')}</p>
-            <button type="button" className="rich-btn" onClick={() => setRetry((value) => value + 1)}>
+            <button
+              type="button"
+              className="portal-button secondary rich-btn"
+              onClick={() => setRetry((value) => value + 1)}
+            >
               {t('crmRich.panel.retry')}
             </button>
           </div>
@@ -160,17 +164,6 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                   />
                 </label>
                 <label>
-                  <span>{t('crmRich.panel.nextAction')}</span>
-                  <input
-                    key={`${lead._id}:${lead.nextActionLabel ?? ''}`}
-                    defaultValue={lead.nextActionLabel ?? ''}
-                    maxLength={200}
-                    onBlur={(e) =>
-                      e.target.value !== (lead.nextActionLabel ?? '') && save({ nextActionLabel: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
                   <span>{t('crmRich.panel.sector')}</span>
                   <input
                     key={`${lead._id}:${lead.sector ?? ''}`}
@@ -217,7 +210,7 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                     maxLength={40}
                     aria-label={t('crmRich.panel.newTagAria')}
                   />
-                  <button type="submit" className="rich-btn" disabled={!tagDraft.trim()}>
+                  <button type="submit" className="portal-button secondary rich-btn" disabled={!tagDraft.trim()}>
                     {t('crmRich.panel.add')}
                   </button>
                 </form>

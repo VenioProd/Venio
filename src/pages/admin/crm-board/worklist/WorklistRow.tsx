@@ -73,7 +73,7 @@ const WorklistRow: React.FC<WorklistRowProps> = ({
             />
             <button
               type="button"
-              className="crm-worklist-action primary"
+              className="portal-button crm-worklist-action primary"
               disabled={busy}
               onClick={() => setPanel((current) => (current === 'contact' ? null : 'contact'))}
             >
@@ -81,7 +81,7 @@ const WorklistRow: React.FC<WorklistRowProps> = ({
             </button>
             <button
               type="button"
-              className="crm-worklist-action"
+              className="portal-button secondary crm-worklist-action"
               disabled={busy}
               onClick={() => setPanel((current) => (current === 'note' ? null : 'note'))}
             >

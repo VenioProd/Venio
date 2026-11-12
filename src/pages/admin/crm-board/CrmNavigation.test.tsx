@@ -29,6 +29,7 @@ function Location() {
 it('redirige les anciennes adresses CRM en conservant les filtres et sélectionne le bon onglet', async () => {
   for (const [from, to, label] of [
     ['/admin/crm?mode=file&project=ARROW#suite', '/admin/crm/a-traiter?project=ARROW#suite', 'À traiter'],
+    ['/admin/crm?mode=table&project=ARROW#suite', '/admin/crm?mode=liste&project=ARROW#suite', 'Leads'],
     ['/admin/crm/leads/l1', '/admin/crm/leads/l1', 'Leads'],
     ['/admin/crm/settings', '/admin/crm/reglages', 'Réglages'],
     ['/admin/crm/sequences', '/admin/crm/automatisations?section=sequences', 'Automatisations'],

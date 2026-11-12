@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import React, { useState } from 'react'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
@@ -23,7 +24,7 @@ const LostReasonDialog: React.FC<LostReasonDialogProps> = ({ company, reasons, s
   const [reason, setReason] = useState(reasons[0] ?? '')
   const [comment, setComment] = useState('')
 
-  return (
+  return createPortal(
     <div className="crm-modal-overlay" onClick={onCancel}>
       <div className="crm-modal" onClick={(event) => event.stopPropagation()}>
         <div className="crm-modal-header">
@@ -71,7 +72,8 @@ const LostReasonDialog: React.FC<LostReasonDialogProps> = ({ company, reasons, s
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

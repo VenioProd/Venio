@@ -39,6 +39,7 @@ export const PORTAL_STYLESHEETS = [
   'src/components/admin/RevenueChain.css',
   'src/components/dashboard/dashboard.css',
   'src/pages/admin/AdminPortal.css',
+  'src/pages/admin/crm-board/crm.css',
   'src/pages/admin/OrganisationSysteme.css',
   'src/pages/admin/subsidiary-detail/Dossier.css',
   'src/pages/admin/Messaging.css',

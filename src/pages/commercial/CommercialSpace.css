@@ -324,10 +324,22 @@
   .commercial-leads-list thead {
     display: none;
   }
+  .commercial-tabs {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-right: 24px;
+    box-sizing: border-box;
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  }
+  .commercial-tabs .admin-tab {
+    flex: 0 0 auto;
+  }
   .commercial-leads-list tr {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px 12px;
     padding: 14px;
     margin-bottom: 12px;
     border: 1px solid var(--border-color);
@@ -337,10 +349,20 @@
   .commercial-space .commercial-leads-list .admin-table td {
     display: block;
     width: 100%;
+    height: auto;
+    min-height: 0;
+    position: static;
     padding: 0;
     border: 0;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+  .commercial-leads-list td:first-child {
+    grid-column: 1 / -1;
+  }
+  .commercial-leads-list td:first-child::before,
+  .commercial-space .commercial-leads-list .admin-table .commercial-lead-updated {
+    display: none;
   }
   .commercial-leads-list td::before,
   .commercial-call-row > span::before {

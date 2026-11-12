@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../../context/I18nContext'
 import { apiFetch } from '../../../lib/api'
@@ -84,7 +85,7 @@ const MergeLeadDialog: React.FC<MergeLeadDialogProps> = ({ lead, candidates, onC
     }
   }
 
-  return (
+  return createPortal(
     <div className="crm-modal-overlay" onClick={onCancel}>
       <div
         className="crm-modal"
@@ -163,7 +164,8 @@ const MergeLeadDialog: React.FC<MergeLeadDialogProps> = ({ lead, candidates, onC
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

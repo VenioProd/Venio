@@ -71,7 +71,12 @@ export default function EnrollDialog({ leadIds, leadLabels = {}, onClose, onEnro
           ) : (
             <div className="crm-auto-fld">
               <label htmlFor="crm-seq-enroll-sel">{t('crmSeq.enroll.choose')}</label>
-              <select id="crm-seq-enroll-sel" className="crm-auto-sel" value={choice} onChange={(e) => setChoice(e.target.value)}>
+              <select
+                id="crm-seq-enroll-sel"
+                className="crm-auto-sel"
+                value={choice}
+                onChange={(e) => setChoice(e.target.value)}
+              >
                 <option value="">{t('crmSeq.enroll.placeholder')}</option>
                 {sequences.map((s) => (
                   <option key={s._id} value={s._id}>
@@ -83,10 +88,16 @@ export default function EnrollDialog({ leadIds, leadLabels = {}, onClose, onEnro
           )}
         </>
       )}
-      {notActive && <p className="crm-auto-notice" role="note">{t('crmSeq.enroll.notActive')}</p>}
+      {notActive && (
+        <p className="crm-auto-notice" role="note">
+          {t('crmSeq.enroll.notActive')}
+        </p>
+      )}
       {result && (
         <div data-testid="enroll-summary">
-          <p role="status"><b>{t('crmSeq.enroll.summary', { enrolled: result.enrolled.length, refused: result.refused.length })}</b></p>
+          <p role="status">
+            <b>{t('crmSeq.enroll.summary', { enrolled: result.enrolled.length, refused: result.refused.length })}</b>
+          </p>
           {result.refused.length > 0 && (
             <>
               <p>{t('crmSeq.enroll.refusedHeading')}</p>
@@ -95,7 +106,8 @@ export default function EnrollDialog({ leadIds, leadLabels = {}, onClose, onEnro
                   const key = refuseReasonKey(r.reason)
                   return (
                     <li key={r.leadId}>
-                      {leadLabels[r.leadId] ?? t('crmSeq.enroll.leadFallback', { id: r.leadId })} — {key ? t(key) : r.reason}
+                      {leadLabels[r.leadId] ?? t('crmSeq.enroll.leadFallback', { id: r.leadId })} —{' '}
+                      {key ? t(key) : r.reason}
                     </li>
                   )
                 })}
@@ -104,11 +116,26 @@ export default function EnrollDialog({ leadIds, leadLabels = {}, onClose, onEnro
           )}
         </div>
       )}
-      {problem && <p className="crm-auto-err" role="alert">{problem}</p>}
+      {problem && (
+        <p className="crm-auto-err" role="alert">
+          {problem}
+        </p>
+      )}
       <div className="crm-auto-row">
-        <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={onClose}>{t('common.close')}</button>
+        <button
+          type="button"
+          className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+          onClick={onClose}
+        >
+          {t('common.close')}
+        </button>
         {!result && (
-          <button type="button" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" disabled={!choice || busy} onClick={() => void submit()}>
+          <button
+            type="button"
+            className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+            disabled={!choice || busy}
+            onClick={() => void submit()}
+          >
             {busy ? t('crmSeq.enroll.submitting') : t('crmSeq.enroll.submit')}
           </button>
         )}

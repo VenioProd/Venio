@@ -15,6 +15,8 @@ export interface CrmView {
 }
 
 export interface RichFilters {
+  status?: string
+  priority?: string
   q?: string
   project?: string
   owner?: string
@@ -67,6 +69,8 @@ export interface LeadRun {
   steps: Array<{ action: string; status: string; message: string }>
 }
 
-export const fetchLeadTasks = (id: string) => apiFetch<{ items: LeadTask[] }>(`${BASE}/leads/${id}/tasks`).then((r) => r.items)
+export const fetchLeadTasks = (id: string) =>
+  apiFetch<{ items: LeadTask[] }>(`${BASE}/leads/${id}/tasks`).then((r) => r.items)
 export const fetchLeadDocuments = (id: string) => apiFetch<LeadDocuments>(`${BASE}/leads/${id}/documents`)
-export const fetchLeadRuns = (id: string) => apiFetch<{ runs: LeadRun[] }>(`${BASE}/leads/${id}/timeline`).then((r) => r.runs)
+export const fetchLeadRuns = (id: string) =>
+  apiFetch<{ runs: LeadRun[] }>(`${BASE}/leads/${id}/timeline`).then((r) => r.runs)

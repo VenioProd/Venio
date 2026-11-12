@@ -23,7 +23,13 @@ import './sequences.css'
 const PAGE_SIZE = 25
 const errorText = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback)
 
-function EnrollmentRow({ enr, total, canManage, busy, onUnenroll }: {
+function EnrollmentRow({
+  enr,
+  total,
+  canManage,
+  busy,
+  onUnenroll,
+}: {
   enr: Enrollment
   total: number
   canManage: boolean
@@ -44,7 +50,9 @@ function EnrollmentRow({ enr, total, canManage, busy, onUnenroll }: {
         <small className="crm-seq-block">
           {t('crmSeq.enr.step', { current, total })}
           {open && enr.nextRunAt ? ` · ${t('crmSeq.enr.next', { when: formatDateTime(enr.nextRunAt) })}` : ''}
-          {enr.status === 'STOPPED' && enr.stoppedReason ? ` · ${t('crmSeq.enr.reason', { reason: reason ? t(reason) : enr.stoppedReason })}` : ''}
+          {enr.status === 'STOPPED' && enr.stoppedReason
+            ? ` · ${t('crmSeq.enr.reason', { reason: reason ? t(reason) : enr.stoppedReason })}`
+            : ''}
         </small>
         {enr.history?.length > 0 && (
           <details>
@@ -62,7 +70,7 @@ function EnrollmentRow({ enr, total, canManage, busy, onUnenroll }: {
       {canManage && open && (
         <button
           type="button"
-          className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+          className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
           disabled={busy}
           aria-label={t('crmSeq.enr.unenrollAria', { lead: label })}
           onClick={onUnenroll}
@@ -74,7 +82,12 @@ function EnrollmentRow({ enr, total, canManage, busy, onUnenroll }: {
   )
 }
 
-function SequenceDetail({ seq, canManage, onBack, onChanged }: {
+function SequenceDetail({
+  seq,
+  canManage,
+  onBack,
+  onChanged,
+}: {
   seq: Sequence
   canManage: boolean
   onBack: () => void
@@ -128,14 +141,20 @@ function SequenceDetail({ seq, canManage, onBack, onChanged }: {
   return (
     <section aria-labelledby="crm-seq-detail-h" className="crm-seq-detail">
       <div className="crm-seq-detail-h">
-        <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={onBack}>
+        <button
+          type="button"
+          className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+          onClick={onBack}
+        >
           ← {t('crmSeq.detail.back')}
         </button>
         <h2 id="crm-seq-detail-h">{seq.name}</h2>
         <StatusBadge status={seq.status} />
       </div>
       {seq.description && <p className="crm-auto-note">{seq.description}</p>}
-      <p className="crm-auto-sr" role="status" aria-live="polite">{message}</p>
+      <p className="crm-auto-sr" role="status" aria-live="polite">
+        {message}
+      </p>
       <h3>{t('crmSeq.detail.enrollments')}</h3>
       <div className="crm-auto-filters" role="group" aria-label={t('crmSeq.detail.filter')}>
         {['all', ...ENROLLMENT_STATUSES].map((s) => (
@@ -153,25 +172,48 @@ function SequenceDetail({ seq, canManage, onBack, onChanged }: {
           </button>
         ))}
       </div>
-      {problem && <p className="crm-auto-err" role="alert">{problem}</p>}
+      {problem && (
+        <p className="crm-auto-err" role="alert">
+          {problem}
+        </p>
+      )}
       {data === null ? (
-        <p className="crm-auto-empty crm-auto-glass" role="status">{t('crmSeq.detail.loading')}</p>
+        <p className="crm-auto-empty crm-auto-glass" role="status">
+          {t('crmSeq.detail.loading')}
+        </p>
       ) : data.items.length === 0 ? (
         <p className="crm-auto-empty crm-auto-glass">{t('crmSeq.detail.none')}</p>
       ) : (
         <ul className="crm-seq-enr-list">
           {data.items.map((enr) => (
-            <EnrollmentRow key={enr._id} enr={enr} total={seq.steps.length} canManage={canManage} busy={busyId === enr._id} onUnenroll={() => void unenroll(enr)} />
+            <EnrollmentRow
+              key={enr._id}
+              enr={enr}
+              total={seq.steps.length}
+              canManage={canManage}
+              busy={busyId === enr._id}
+              onUnenroll={() => void unenroll(enr)}
+            />
           ))}
         </ul>
       )}
       {pages > 1 && (
         <div className="crm-auto-row crm-seq-pager">
-          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+          <button
+            type="button"
+            className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
             {t('crmSeq.detail.prev')}
           </button>
           <span>{t('crmSeq.detail.page', { page, pages })}</span>
-          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
+          <button
+            type="button"
+            className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            disabled={page >= pages}
+            onClick={() => setPage((p) => p + 1)}
+          >
             {t('crmSeq.detail.next')}
           </button>
         </div>
@@ -224,7 +266,9 @@ export default function CrmSequences() {
     try {
       const next = seq.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
       const updated = await setSequenceStatus(seq._id, next)
-      setSequences((list) => list.map((s) => (s._id === seq._id ? { ...s, ...updated, stats: updated.stats ?? s.stats } : s)))
+      setSequences((list) =>
+        list.map((s) => (s._id === seq._id ? { ...s, ...updated, stats: updated.stats ?? s.stats } : s)),
+      )
       notify(next === 'ACTIVE' ? t('crmSeq.msg.activated') : t('crmSeq.msg.paused'))
     } catch (e) {
       setProblem(errorText(e, t('crmSeq.msg.statusError')))
@@ -249,11 +293,13 @@ export default function CrmSequences() {
     }
   }
 
-  const opened = openId ? sequences.find((s) => s._id === openId) ?? null : null
+  const opened = openId ? (sequences.find((s) => s._id === openId) ?? null) : null
 
   return (
     <div className="crm-auto crm-seq">
-      <p className="crm-auto-sr" role="status" aria-live="polite">{message}</p>
+      <p className="crm-auto-sr" role="status" aria-live="polite">
+        {message}
+      </p>
       {!canAdminister && (
         <div className="crm-auto-notice" role="note">
           <span>{t('crmSeq.readOnly')}</span>
@@ -262,7 +308,13 @@ export default function CrmSequences() {
       {loadError && (
         <div className="crm-auto-notice crm-auto-notice--err" role="alert">
           <span>{loadError}</span>
-          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => void reload()}>{t('crmSeq.retry')}</button>
+          <button
+            type="button"
+            className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            onClick={() => void reload()}
+          >
+            {t('crmSeq.retry')}
+          </button>
         </div>
       )}
       {problem && (
@@ -272,20 +324,31 @@ export default function CrmSequences() {
       )}
 
       {opened ? (
-        <SequenceDetail seq={opened} canManage={canManage} onBack={() => setOpenId(null)} onChanged={() => void reload()} />
+        <SequenceDetail
+          seq={opened}
+          canManage={canManage}
+          onBack={() => setOpenId(null)}
+          onChanged={() => void reload()}
+        />
       ) : (
         <>
           <div className="crm-auto-top">
             <h2 className="crm-seq-h">{t('crmSeq.title')}</h2>
             {canAdminister && (
-              <button type="button" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" onClick={() => setBuilder({ sequence: null })}>
+              <button
+                type="button"
+                className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+                onClick={() => setBuilder({ sequence: null })}
+              >
                 {t('crmSeq.new')}
               </button>
             )}
           </div>
           <p className="crm-auto-note">{t('crmSeq.rulesNote')}</p>
           {loading ? (
-            <p className="crm-auto-empty crm-auto-glass" role="status">{t('crmSeq.loading')}</p>
+            <p className="crm-auto-empty crm-auto-glass" role="status">
+              {t('crmSeq.loading')}
+            </p>
           ) : (
             <SequencesPanel
               sequences={sequences}
@@ -317,8 +380,20 @@ export default function CrmSequences() {
           <h3 id="crm-seq-del-t">{t('crmSeq.deleteTitle')}</h3>
           <p>{t('crmSeq.deleteBody', { name: toDelete.name })}</p>
           <div className="crm-auto-row">
-            <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => setToDelete(null)}>{t('common.cancel')}</button>
-            <button type="button" className="crm-auto-btn crm-auto-btn--danger crm-auto-btn--sm" onClick={() => void confirmDelete()}>{t('common.delete')}</button>
+            <button
+              type="button"
+              className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+              onClick={() => setToDelete(null)}
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              className="portal-button secondary crm-auto-btn crm-auto-btn--danger crm-auto-btn--sm"
+              onClick={() => void confirmDelete()}
+            >
+              {t('common.delete')}
+            </button>
           </div>
         </Dialog>
       )}

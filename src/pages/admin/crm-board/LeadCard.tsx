@@ -1,4 +1,6 @@
-import React from 'react'
+import { createPortal } from 'react-dom'
+import React, { useEffect, useRef, useState } from 'react'
+import { CRM_STATUSES } from './constants'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
 import { formatDate, formatMoney } from '../../../i18n/format'
@@ -38,6 +40,48 @@ const LeadCard: React.FC<LeadCardProps> = ({
   onOpenDetail,
 }) => {
   const { t } = useI18n()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [menuPos, setMenuPos] = useState<React.CSSProperties>({})
+  useEffect(() => {
+    if (!menuOpen) return
+    const position = () => {
+      const rect = triggerRef.current?.getBoundingClientRect()
+      if (rect)
+        setMenuPos({
+          position: 'fixed',
+          top: Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - 130)),
+          left: Math.max(8, Math.min(rect.left, window.innerWidth - 250)),
+        })
+    }
+    const close = (event: MouseEvent) => {
+      if (
+        !menuRef.current?.contains(event.target as Node) &&
+        !triggerRef.current?.contains(event.target as Node) &&
+        !(event.target as HTMLElement).closest('.custom-select-menu')
+      )
+        setMenuOpen(false)
+    }
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+    position()
+    menuRef.current?.querySelector<HTMLElement>('[role="combobox"]')?.focus()
+    window.addEventListener('scroll', position, true)
+    window.addEventListener('resize', position)
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', key)
+    return () => {
+      window.removeEventListener('scroll', position, true)
+      window.removeEventListener('resize', position)
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', key)
+    }
+  }, [menuOpen])
   const isOverdue = lead.nextActionAt && new Date(lead.nextActionAt) < new Date()
   const assigned = adminsById[lead.assignedTo || '']
   const projectInfo = PROJECT_MAP[lead.project || '']
@@ -49,12 +93,47 @@ const LeadCard: React.FC<LeadCardProps> = ({
   return (
     <div
       className={`crm-card ${isOverdue ? 'crm-overdue' : ''} ${isCold ? 'crm-card-cold' : ''} ${isStale ? 'crm-card-stale' : ''}`}
+      data-lead-id={lead._id}
+      onClick={(event) => {
+        if (!(event.target as HTMLElement).closest('button, a, input, select, [role="combobox"], .crm-card-menu'))
+          onOpenDetail(lead)
+      }}
       draggable={canManageCrm}
       onDragStart={canManageCrm ? (e) => onDragStart(e, lead._id) : undefined}
     >
       <button type="button" className="crm-card-title" onClick={() => onOpenDetail(lead)}>
         {lead.company}
       </button>
+      {canManageCrm && (
+        <button
+          type="button"
+          ref={triggerRef}
+          className="crm-card-menu-trigger"
+          aria-label={t('crm.card.actions', { company: lead.company })}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          …
+        </button>
+      )}
+      {menuOpen &&
+        createPortal(
+          <div ref={menuRef} className="crm-card-menu" style={menuPos} onClick={(event) => event.stopPropagation()}>
+            <label>
+              {t('crm.detail.status')}
+              <CustomSelect
+                value={lead.status}
+                options={CRM_STATUSES.map((status) => ({ value: status.key, label: t(status.labelKey) }))}
+                onChange={(status) => {
+                  void onUpdateLead(lead._id, { status })
+                  setMenuOpen(false)
+                  triggerRef.current?.focus()
+                }}
+              />
+            </label>
+          </div>,
+          document.body,
+        )}
       <p className="crm-card-meta">{lead.contactName || t('crm.card.contactMissing')}</p>
       {alerts.length > 0 && (
         <div className="crm-card-alerts">

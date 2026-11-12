@@ -1,4 +1,16 @@
 const fr = {
+  'crm.card.actions': 'Actions pour {company}',
+  'crm.detail.nextActionLabel': 'Action prévue',
+  'crm.detail.nextActionDate': 'Date de la prochaine action',
+  'crm.detail.back': 'Retour aux leads',
+  'crm.detail.details': 'Détails',
+  'crm.detail.sequences': 'Séquences',
+  'crm.detail.privacy': 'Données personnelles',
+  'crm.detail.sections': 'Rubriques de la fiche',
+  'crm.detail.write': 'Écrire',
+  'crm.detail.log': 'Consigner un échange',
+  'crm.detail.more': 'Autres actions',
+
   'crm.form.group.company': 'Société',
   'crm.form.group.contact': 'Contact',
   'crm.form.group.qualification': 'Qualification',

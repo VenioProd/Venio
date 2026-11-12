@@ -13,7 +13,11 @@ interface Props {
   onNew: () => void
 }
 
-const STATUS_COLOR: Record<SequenceStatus, string> = { DRAFT: 'var(--dim)', ACTIVE: 'var(--mint)', PAUSED: 'var(--amber)' }
+const STATUS_COLOR: Record<SequenceStatus, string> = {
+  DRAFT: 'var(--dim)',
+  ACTIVE: 'var(--mint)',
+  PAUSED: 'var(--amber)',
+}
 
 export function StatusBadge({ status }: { status: SequenceStatus }) {
   const { t } = useI18n()
@@ -25,7 +29,15 @@ export function StatusBadge({ status }: { status: SequenceStatus }) {
   )
 }
 
-function SequenceCard({ seq, busy, canAdminister, onOpen, onToggle, onEdit, onDelete }: {
+function SequenceCard({
+  seq,
+  busy,
+  canAdminister,
+  onOpen,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
   seq: Sequence
   busy: boolean
   canAdminister: boolean
@@ -51,7 +63,8 @@ function SequenceCard({ seq, busy, canAdminister, onOpen, onToggle, onEdit, onDe
           </h3>
           {seq.description && <small>{seq.description}</small>}
           <small className="crm-seq-meta">
-            {t('crmSeq.stepsCount', { count: seq.steps.length })} · {entity ? t(entity.labelKey) : t('crmSeq.entityAll')}
+            {t('crmSeq.stepsCount', { count: seq.steps.length })} ·{' '}
+            {entity ? t(entity.labelKey) : t('crmSeq.entityAll')}
           </small>
         </div>
       </div>
@@ -87,7 +100,12 @@ function SequenceCard({ seq, busy, canAdminister, onOpen, onToggle, onEdit, onDe
       )}
       <div className="crm-auto-rule-f">
         <span className="crm-auto-sp" />
-        <button type="button" className="crm-auto-link" onClick={onOpen} aria-label={t('crmSeq.act.openAria', { name: seq.name })}>
+        <button
+          type="button"
+          className="crm-auto-link"
+          onClick={onOpen}
+          aria-label={t('crmSeq.act.openAria', { name: seq.name })}
+        >
           {t('crmSeq.act.open')}
         </button>
         {canAdminister && (
@@ -97,15 +115,31 @@ function SequenceCard({ seq, busy, canAdminister, onOpen, onToggle, onEdit, onDe
               className="crm-auto-link"
               disabled={busy}
               onClick={onToggle}
-              aria-label={seq.status === 'ACTIVE' ? t('crmSeq.act.pauseAria', { name: seq.name }) : t('crmSeq.act.activateAria', { name: seq.name })}
+              aria-label={
+                seq.status === 'ACTIVE'
+                  ? t('crmSeq.act.pauseAria', { name: seq.name })
+                  : t('crmSeq.act.activateAria', { name: seq.name })
+              }
               title={lockTitle}
             >
               {seq.status === 'ACTIVE' ? t('crmSeq.act.pause') : t('crmSeq.act.activate')}
             </button>
-            <button type="button" className="crm-auto-link" disabled={busy} onClick={onEdit} aria-label={t('crmSeq.act.editAria', { name: seq.name })}>
+            <button
+              type="button"
+              className="crm-auto-link"
+              disabled={busy}
+              onClick={onEdit}
+              aria-label={t('crmSeq.act.editAria', { name: seq.name })}
+            >
               {t('common.edit')}
             </button>
-            <button type="button" className="crm-auto-link" disabled={busy} onClick={onDelete} aria-label={t('crmSeq.act.deleteAria', { name: seq.name })}>
+            <button
+              type="button"
+              className="crm-auto-link"
+              disabled={busy}
+              onClick={onDelete}
+              aria-label={t('crmSeq.act.deleteAria', { name: seq.name })}
+            >
               {t('common.delete')}
             </button>
           </>
@@ -115,14 +149,28 @@ function SequenceCard({ seq, busy, canAdminister, onOpen, onToggle, onEdit, onDe
   )
 }
 
-export default function SequencesPanel({ sequences, canAdminister, busyId, onOpen, onToggle, onEdit, onDelete, onNew }: Props) {
+export default function SequencesPanel({
+  sequences,
+  canAdminister,
+  busyId,
+  onOpen,
+  onToggle,
+  onEdit,
+  onDelete,
+  onNew,
+}: Props) {
   const { t } = useI18n()
   if (sequences.length === 0) {
     return (
       <div className="crm-auto-empty crm-auto-glass">
         <p>{t('crmSeq.none')}</p>
         {canAdminister && (
-          <button type="button" className="crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm" onClick={onNew} style={{ marginTop: 12 }}>
+          <button
+            type="button"
+            className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
+            onClick={onNew}
+            style={{ marginTop: 12 }}
+          >
             {t('crmSeq.create')}
           </button>
         )}
