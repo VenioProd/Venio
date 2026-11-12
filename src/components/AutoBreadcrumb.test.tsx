@@ -15,11 +15,11 @@ describe('AutoBreadcrumb', () => {
     expect(screen.getByText('Paramètres')).toBeInTheDocument()
 
     rerender(
-      <MemoryRouter key="crm" initialEntries={['/admin/crm/sequences']}>
+      <MemoryRouter key="crm" initialEntries={['/admin/crm/pilotage']}>
         <AutoBreadcrumb />
       </MemoryRouter>,
     )
     expect(screen.getByRole('link', { name: 'CRM' })).toHaveAttribute('href', '/admin/crm')
-    expect(screen.getByText('Séquences')).toBeInTheDocument()
+    expect(screen.getByText('Pilotage')).toBeInTheDocument()
   })
 })
