@@ -38,6 +38,7 @@ import UserAvatar from './UserAvatar'
 import SidebarCollapseToggle from './SidebarCollapseToggle'
 import { apiFetch } from '../lib/api'
 import { hasPermission } from '../lib/permissions'
+import { ADMIN_MODULE_PATHS } from '../lib/adminHubRoutes'
 import { useModalA11y } from '../hooks/useModalA11y'
 import './AdminSidebar.css'
 
@@ -264,10 +265,10 @@ const AdminSidebar = ({
           </button>
           {workspaceOpen && (
             <div id={`admin-workspace-options-${surface}`} className="admin-sb-workspace-options">
-              <Link to="/admin/filiales" onClick={onDrawerClose}>
+              <Link to={ADMIN_MODULE_PATHS.subsidiaries} onClick={onDrawerClose}>
                 {t('shell.navItem.subsidiaries')}
               </Link>
-              <Link to="/admin/dashboard" onClick={onDrawerClose}>
+              <Link to={ADMIN_MODULE_PATHS.dashboard} onClick={onDrawerClose}>
                 {t('shell.nav.portfolio')}
               </Link>
             </div>
@@ -340,7 +341,57 @@ const AdminSidebar = ({
         <nav id="admin-rail-navigation" className="admin-sb-scroll" aria-label={t('shell.nav.mainAria')}>
           {navSections}
         </nav>
-        <div className="admin-sb-bottom">{userCard}</div>
+        <div className="admin-sb-bottom">
+          <details
+            className="admin-sb-profile"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.currentTarget.open = false
+                event.currentTarget.querySelector('summary')?.focus()
+              }
+            }}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false
+            }}
+          >
+            <summary className="admin-sb-user" aria-label={t('shell.nav.accountMenu')}>
+              <UserAvatar
+                name={user?.name || user?.email || '?'}
+                avatarUrl={user?.avatarUrl}
+                size={32}
+                className="admin-sb-avatar"
+              />
+              <span className="admin-sb-user-info">
+                <span className="admin-sb-user-name">{user?.name || user?.email || t('shell.nav.userFallback')}</span>
+                <span className="admin-sb-user-role">{user?.jobTitle || user?.role}</span>
+              </span>
+            </summary>
+            <nav className="admin-sb-profile-options" aria-label={t('shell.nav.accountMenu')}>
+              <Link
+                to="/admin/profil"
+                onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}
+              >
+                {t('shell.nav.profile')}
+              </Link>
+              <Link
+                to="/admin/mon-releve"
+                onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}
+              >
+                {t('shell.nav.statement')}
+              </Link>
+              <button
+                type="button"
+                onClick={async () => {
+                  await logout()
+                  navigate('/admin/login')
+                }}
+              >
+                <LogOut size={16} aria-hidden />
+                {t('shell.nav.logoutTitle')}
+              </button>
+            </nav>
+          </details>
+        </div>
       </aside>
       {drawerOpen &&
         createPortal(

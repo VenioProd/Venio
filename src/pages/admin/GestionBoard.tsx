@@ -1,6 +1,7 @@
 import PageHeader from '../../components/admin/ui/PageHeader'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useToast } from '../../context/ToastContext'
 import { useAuth } from '../../context/AuthContext'
 import { useI18n } from '../../context/I18nContext'
 import type { MessageKey } from '../../i18n'
@@ -45,6 +46,7 @@ const PRIORITY_OPTIONS: { value: TaskPriority; labelKey: MessageKey }[] = [
 
 export default function GestionBoard() {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const { t: tr } = useI18n()
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
   const [searchParams] = useSearchParams()
@@ -57,27 +59,36 @@ export default function GestionBoard() {
   const [filterPriority, setFilterPriority] = useState<string>('')
   const [filterAssignee, setFilterAssignee] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [tasksError, setTasksError] = useState(false)
+  const [projectsError, setProjectsError] = useState(false)
 
   const loadTasks = useCallback(async () => {
+    setTasksError(false)
     try {
       setLoading(true)
       const data = await fetchAllTasks(selectedProject || undefined)
       setTasks(data)
-    } catch (err) {
-      console.error('Erreur chargement taches:', err)
+    } catch {
+      setTasksError(true)
     } finally {
       setLoading(false)
     }
   }, [selectedProject])
 
-  useEffect(() => {
-    apiFetch('/api/admin/projects')
-      .then((res: any) => {
-        const list = res.projects || res
-        setProjects(Array.isArray(list) ? list.map((p: any) => ({ _id: p._id, name: p.name })) : [])
-      })
-      .catch(() => {})
+  const loadProjects = useCallback(async () => {
+    setProjectsError(false)
+    try {
+      const res = await apiFetch<any>('/api/admin/projects')
+      const list = res.projects || res
+      setProjects(Array.isArray(list) ? list.map((p: any) => ({ _id: p._id, name: p.name })) : [])
+    } catch {
+      setProjectsError(true)
+    }
   }, [])
+
+  useEffect(() => {
+    void loadProjects()
+  }, [loadProjects])
 
   useEffect(() => {
     if (viewMode !== 'kpi' && viewMode !== 'briefs') {
@@ -120,8 +131,8 @@ export default function GestionBoard() {
     try {
       await updateTask(projectId, taskId, data as any)
       await loadTasks()
-    } catch (err) {
-      console.error('Erreur mise a jour:', err)
+    } catch {
+      showToast(tr('shell.error.actionFailed'), 'error')
     }
   }
 
@@ -129,8 +140,8 @@ export default function GestionBoard() {
     try {
       await moveTask(projectId, taskId, status, order)
       await loadTasks()
-    } catch (err) {
-      console.error('Erreur deplacement:', err)
+    } catch {
+      showToast(tr('shell.error.actionFailed'), 'error')
     }
   }
 
@@ -152,6 +163,20 @@ export default function GestionBoard() {
 
   return (
     <div className="portal-container production-page production-list production-gestion">
+      {(tasksError || projectsError) && (
+        <div role="alert">
+          <p>{tr('shell.error.loadFailed')}</p>
+          <button
+            type="button"
+            onClick={() => {
+              if (tasksError) void loadTasks()
+              if (projectsError) void loadProjects()
+            }}
+          >
+            {tr('shell.error.retry')}
+          </button>
+        </div>
+      )}
       <div className="gestion-header">
         <div className="production-header">
           <PageHeader
@@ -242,7 +267,7 @@ export default function GestionBoard() {
       </div>
 
       <div className="gestion-content">
-        {viewMode === 'table' && (
+        {viewMode === 'table' && !tasksError && (
           <GestionTable
             tasks={filteredTasks}
             loading={loading}
@@ -252,7 +277,7 @@ export default function GestionBoard() {
             onRefresh={loadTasks}
           />
         )}
-        {viewMode === 'kanban' && (
+        {viewMode === 'kanban' && !tasksError && (
           <GestionKanban
             tasks={filteredTasks}
             loading={loading}
@@ -262,7 +287,7 @@ export default function GestionBoard() {
             readOnly={!isSuperAdmin}
           />
         )}
-        {viewMode === 'gantt' && (
+        {viewMode === 'gantt' && !tasksError && (
           <GestionGantt
             tasks={filteredTasks}
             loading={loading}

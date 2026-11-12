@@ -1,7 +1,7 @@
 .admin-sidebar {
   position: fixed;
   inset: 0 auto 0 0;
-  z-index: 300;
+  z-index: var(--z-sidebar);
   width: 64px;
   display: flex;
   flex-direction: column;
@@ -250,7 +250,7 @@ button.admin-sb-workspace-trigger,
 .admin-sb-drawer {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: var(--z-overlay);
   height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -335,4 +335,49 @@ button.admin-sb-workspace-trigger,
   .admin-sidebar {
     transition: none;
   }
+}
+
+.admin-sb-profile {
+  position: relative;
+}
+.admin-sb-profile summary {
+  list-style: none;
+  cursor: pointer;
+}
+.admin-sb-profile summary::-webkit-details-marker {
+  display: none;
+}
+.admin-sb-profile-options {
+  position: absolute;
+  bottom: 100%;
+  inset-inline: 0;
+  display: grid;
+  padding: 6px;
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.admin-sb-profile-options a,
+.admin-sb-profile-options button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--tx);
+  font: 12px var(--sans);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.admin-sb-profile-options a:hover,
+.admin-sb-profile-options button:hover {
+  background: var(--f2);
+}
+
+.admin-sb-profile :focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
 }

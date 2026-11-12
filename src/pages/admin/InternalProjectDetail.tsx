@@ -1,5 +1,5 @@
 import PageHeader from '../../components/admin/ui/PageHeader'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { apiFetch, apiUpload } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
@@ -65,6 +65,9 @@ export default function InternalProjectDetail() {
   const [activeTab, setActiveTab] = useState<'overview' | 'missions'>('overview')
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
+  const [projectError, setProjectError] = useState(false)
+  const [missionsError, setMissionsError] = useState(false)
+  const [missionFormVersion, setMissionFormVersion] = useState(0)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [editStatus, setEditStatus] = useState('')
   const [savingStatus, setSavingStatus] = useState(false)
@@ -107,22 +110,37 @@ export default function InternalProjectDetail() {
     }
   }
 
-  useEffect(() => {
-    if (!id) return
+  const loadProject = useCallback(async () => {
     setLoading(true)
-    apiFetch<{ project: Project }>(`/api/admin/internal-projects/${id}`)
-      .then((d) => {
-        setProject(d.project)
-        setEditStatus(d.project.status)
-      })
-      .catch(() => showToast(t('projB.page.notFoundToast'), 'error'))
-      .finally(() => setLoading(false))
-
-    apiFetch<{ missions: Mission[] }>(`/api/admin/internal-projects/${id}/missions`)
-      .then((d) => setMissions(d.missions || []))
-      .catch(() => {})
-      .finally(() => setMissionsLoading(false))
+    setProjectError(false)
+    try {
+      const data = await apiFetch<{ project: Project }>(`/api/admin/internal-projects/${id}`)
+      setProject(data.project)
+      setEditStatus(data.project.status)
+    } catch {
+      setProjectError(true)
+    } finally {
+      setLoading(false)
+    }
   }, [id])
+
+  const loadMissions = useCallback(async () => {
+    setMissionsLoading(true)
+    setMissionsError(false)
+    try {
+      const data = await apiFetch<{ missions: Mission[] }>(`/api/admin/internal-projects/${id}/missions`)
+      setMissions(data.missions || [])
+    } catch {
+      setMissionsError(true)
+    } finally {
+      setMissionsLoading(false)
+    }
+  }, [id])
+
+  useEffect(() => {
+    void loadProject()
+    void loadMissions()
+  }, [loadProject, loadMissions])
 
   const handleStatusChange = async (newStatus: string) => {
     if (!project) return
@@ -136,6 +154,7 @@ export default function InternalProjectDetail() {
       setEditStatus(data.project.status)
       showToast(t('projB.page.statusUpdated'), 'success')
     } catch (err: any) {
+      setEditStatus(project.status)
       showToast(err.message || t('projB.page.error'), 'error')
     } finally {
       setSavingStatus(false)
@@ -260,7 +279,8 @@ export default function InternalProjectDetail() {
       })
       setMissions((m) => m.map((x) => (x._id === missionId ? data.mission : x)))
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
+      setMissionFormVersion((version) => version + 1)
     }
   }
 
@@ -311,7 +331,8 @@ export default function InternalProjectDetail() {
       )
       setMissions((ms) => ms.map((x) => (x._id === missionId ? data.mission : x)))
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
+      setMissionFormVersion((version) => version + 1)
     }
   }
 
@@ -329,7 +350,7 @@ export default function InternalProjectDetail() {
       setMissions((ms) => ms.map((x) => (x._id === missionId ? data.mission : x)))
       setDeliverableInputs((s) => ({ ...s, [missionId]: { title: '', description: '', assignedTo: '' } }))
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     }
   }
 
@@ -342,7 +363,7 @@ export default function InternalProjectDetail() {
       })
       setMissions((ms) => ms.map((x) => (x._id === missionId ? data.mission : x)))
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     }
   }
 
@@ -355,7 +376,7 @@ export default function InternalProjectDetail() {
       })
       setMissions((ms) => ms.map((x) => (x._id === missionId ? data.mission : x)))
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
     }
   }
 
@@ -367,7 +388,8 @@ export default function InternalProjectDetail() {
       })
       setMissions((ms) => ms.map((x) => (x._id === missionId ? { ...x, progress } : x)))
     } catch {
-      /* silent */
+      showToast(t('shell.error.actionFailed'), 'error')
+      setMissionFormVersion((version) => version + 1)
     }
   }
 
@@ -377,8 +399,7 @@ export default function InternalProjectDetail() {
     formData.append('file', file)
     try {
       await apiUpload(`/api/admin/internal-projects/${id}/missions/${missionId}/files`, formData)
-      const updated = await apiFetch<{ missions: Mission[] }>(`/api/admin/internal-projects/${id}/missions`)
-      setMissions(updated.missions || [])
+      await loadMissions()
       showToast(t('projB.page.fileAdded'), 'success')
     } catch (err: any) {
       showToast(err.message || t('projB.page.error'), 'error')
@@ -401,7 +422,17 @@ export default function InternalProjectDetail() {
 
   if (loading) return <LoadingState />
 
-  if (!project) return <NotFoundState />
+  if (!project)
+    return projectError ? (
+      <div role="alert" className="portal-container">
+        <p>{t('shell.error.loadFailed')}</p>
+        <button type="button" onClick={loadProject}>
+          {t('shell.error.retry')}
+        </button>
+      </div>
+    ) : (
+      <NotFoundState />
+    )
 
   const sc = STATUS_COLORS[project.status] || STATUS_COLORS.ARCHIVE
 
@@ -443,6 +474,7 @@ export default function InternalProjectDetail() {
 
   const renderMissionDetail = (mission: Mission) => (
     <MissionDetail
+      key={`${mission._id}-${missionFormVersion}`}
       projectId={id}
       mission={mission}
       isSuperAdmin={isSuperAdmin}
@@ -480,6 +512,20 @@ export default function InternalProjectDetail() {
 
   return (
     <div className="portal-container production-page production-internal-detail">
+      {(projectError || missionsError) && (
+        <div role="alert">
+          <p>{t('shell.error.loadFailed')}</p>
+          <button
+            type="button"
+            onClick={() => {
+              if (projectError) void loadProject()
+              if (missionsError) void loadMissions()
+            }}
+          >
+            {t('shell.error.retry')}
+          </button>
+        </div>
+      )}
       <div className="portal-card">
         <PageHeader
           eyebrow={t('shell.navItem.internalProjects')}
@@ -629,7 +675,7 @@ export default function InternalProjectDetail() {
       )}
 
       {/* ─── TAB: MISSIONS ─── */}
-      {activeTab === 'missions' && (
+      {activeTab === 'missions' && !missionsError && (
         <MissionsTab
           project={project}
           missions={missions}

@@ -1,5 +1,6 @@
 import { lazyWithRetry as lazy } from './lib/lazyWithRetry'
 import ErrorBoundary from './components/ErrorBoundary'
+import NotFound from './pages/NotFound'
 import { useEffect, useRef, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import ToastContainer from './components/ToastContainer'
@@ -719,6 +720,7 @@ function AppShell() {
                       }
                     />
                   </Route>
+                  <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
               <CookieConsent />

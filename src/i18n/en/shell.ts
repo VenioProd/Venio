@@ -97,7 +97,7 @@ const en: Record<keyof typeof fr, string> = {
   'shell.palette.placeholder': 'Search for a module or an action',
   'shell.palette.escKey': 'Esc',
   'shell.palette.results': 'Results',
-  'shell.palette.empty': 'No permitted module or action matches.',
+  'shell.palette.empty': 'No matching results.',
   'shell.palette.actionBadge': 'Action',
   'shell.palette.footerHint': '↑↓ navigate · Enter open · Esc close',
 
@@ -290,6 +290,15 @@ const en: Record<keyof typeof fr, string> = {
   'shell.hub.systeme.sante': 'Health',
   'shell.hub.systeme.audit': 'Audit log',
   'shell.hub.systeme.integrations': 'Integrations',
+  'shell.nav.accountMenu': 'My account',
+  'shell.palette.loading': 'Searching…',
+  'shell.palette.searchError': 'Data search failed. Please try searching again.',
+  'shell.notFound.title': 'Page not found',
+  'shell.notFound.description': 'There is no page at this address.',
+  'shell.notFound.home': 'Site home',
+  'shell.error.loadFailed': 'Unable to load data.',
+  'shell.error.actionFailed': 'The action failed. Your changes have not been saved.',
+  'shell.error.retry': 'Try again',
 }
 
 export default en

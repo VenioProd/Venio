@@ -5,7 +5,7 @@
   inset: 0;
   background: var(--overlay-scrim);
   backdrop-filter: blur(2px);
-  z-index: 120;
+  z-index: var(--z-palette);
 }
 
 .dev-cmdk {
@@ -21,7 +21,7 @@
   border: 1px solid color-mix(in srgb, var(--text-secondary) 16%, transparent);
   border-radius: var(--r-lg);
   box-shadow: var(--overlay-shadow);
-  z-index: 121;
+  z-index: calc(var(--z-palette) + 1);
   overflow: hidden;
 }
 

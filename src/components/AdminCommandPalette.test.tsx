@@ -41,7 +41,7 @@ describe('AdminCommandPalette', () => {
           <AdminCommandPalette onClose={() => {}} />
         </MemoryRouter>,
       )
-      expect(screen.getByRole('option', { name: /CRM/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /^CRM\s*Commercial$/i })).toBeInTheDocument()
       expect(screen.getByRole('option', { name: /Tickets/i })).toBeInTheDocument()
       expect(screen.getByRole('option', { name: /Guide/i })).toBeInTheDocument()
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Arrow' } })

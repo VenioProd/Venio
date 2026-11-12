@@ -1,11 +1,12 @@
 import { useLocation, Link } from 'react-router-dom'
 import { useI18n } from '../context/I18nContext'
 import type { MessageKey } from '../i18n'
+import { ADMIN_HUBS } from '../lib/adminHubs'
 import './Breadcrumb.css'
 
 /**
  * Auto-generated breadcrumb based on URL pathname (parses `/admin/...` segments).
- * Mapping centralisé des slugs vers leur libellé français. Les segments inconnus
+ * Mapping centralisé des slugs vers leur libellé traduit. Les segments inconnus
  * sont auto-capitalisés. Les identifiants (Mongo ObjectId ou numériques) sont
  * remplacés par "Détail" sans lien.
  */
@@ -53,6 +54,7 @@ const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   'mon-releve': { labelKey: 'shell.breadcrumb.myStatement', to: '/admin/mon-releve' },
   journaux: { labelKey: 'shell.breadcrumb.journals', to: '/admin/comptabilite/journaux' },
   parametres: { labelKey: 'shell.breadcrumb.settings', to: null },
+  settings: { labelKey: 'shell.breadcrumb.settings', to: null },
   'sources-externes': { labelKey: 'shell.breadcrumb.externalSources', to: '/admin/comptabilite/sources-externes' },
   'file-attente': { labelKey: 'shell.breadcrumb.queue', to: '/admin/comptabilite/file-attente' },
   audit: { labelKey: 'shell.breadcrumb.audit', to: null },
@@ -74,6 +76,13 @@ const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   nouveau: { labelKey: 'shell.breadcrumb.newMasculine', to: null },
   nouvelle: { labelKey: 'shell.breadcrumb.newFeminine', to: null },
 }
+
+const HUB_LABELS: Record<string, MessageKey> = Object.fromEntries(
+  Object.entries(ADMIN_HUBS).flatMap(([id, hub]) => [
+    ...hub.tabs.map((tab) => [tab.to, tab.labelKey]),
+    [`/admin/${id}`, hub.titleKey],
+  ]),
+)
 
 function isObjectIdLike(segment: string): boolean {
   return /^[a-f0-9]{24}$/i.test(segment)
@@ -113,8 +122,11 @@ const AutoBreadcrumb = ({ extra = [] }: AutoBreadcrumbProps) => {
       continue
     }
 
+    const hubLabel = HUB_LABELS[path]
     const mapping = SEGMENT_LABELS[seg]
-    if (mapping) {
+    if (hubLabel) {
+      crumbs.push({ label: t(hubLabel), to: path })
+    } else if (mapping) {
       crumbs.push({ label: t(mapping.labelKey), to: mapping.to || path })
     } else {
       crumbs.push({

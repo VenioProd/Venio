@@ -8,6 +8,8 @@ import { getCommandPaletteItems, getZoneLabel, type AdminCommandPaletteItem } fr
 import { useI18n } from '../context/I18nContext'
 import { intlLocale } from '../i18n'
 import { useModalA11y } from '../hooks/useModalA11y'
+import { globalSearch, type SearchResult } from '../services/search'
+import SearchModal from './admin/SearchModal'
 import './AdminCommandPalette.css'
 
 const normalize = (value: string) =>
@@ -26,6 +28,9 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const [searchError, setSearchError] = useState(false)
   const dialogRef = useRef<HTMLElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -38,6 +43,31 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
       (item) => !normalizedQuery || normalize(item.label).includes(normalizedQuery),
     )
   }, [query, user, locale])
+
+  useEffect(() => {
+    let cancelled = false
+    setResults([])
+    setSearchError(false)
+    setLoading(false)
+    if (query.trim().length < 2) return
+    setLoading(true)
+    const timer = setTimeout(async () => {
+      try {
+        const data = await globalSearch(query.trim())
+        if (!cancelled) setResults(data)
+      } catch {
+        if (!cancelled) setSearchError(true)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [query])
+
+  const count = items.length + results.length
 
   useEffect(() => {
     const activeItem = listRef.current?.querySelector<HTMLElement>('[data-active="true"]')
@@ -56,14 +86,22 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
       onClose()
     } else if (event.key === 'ArrowDown') {
       event.preventDefault()
-      setActiveIndex((index) => (items.length ? (index + 1) % items.length : 0))
+      setActiveIndex((index) => (count ? (index + 1) % count : 0))
     } else if (event.key === 'ArrowUp') {
       event.preventDefault()
-      setActiveIndex((index) => (items.length ? (index - 1 + items.length) % items.length : 0))
+      setActiveIndex((index) => (count ? (index - 1 + count) % count : 0))
     } else if (event.key === 'Enter') {
       event.preventDefault()
-      const item = items[Math.min(activeIndex, Math.max(items.length - 1, 0))]
+      const index = Math.min(activeIndex, Math.max(count - 1, 0))
+      const item = items[index]
       if (item) select(item)
+      else {
+        const result = results[index - items.length]
+        if (result) {
+          onClose()
+          navigate(result.link)
+        }
+      }
     }
   }
 
@@ -99,7 +137,7 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
           role="listbox"
           aria-label={t('shell.palette.results')}
         >
-          {items.length === 0 ? (
+          {count === 0 && !loading && !searchError ? (
             <p className="admin-command-palette__empty">{t('shell.palette.empty')}</p>
           ) : (
             items.map((item, index) => (
@@ -111,6 +149,7 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
                 data-active={index === activeIndex}
                 className={`admin-command-palette__item${index === activeIndex ? ' is-active' : ''}`}
                 onMouseEnter={() => setActiveIndex(index)}
+                onFocus={() => setActiveIndex(index)}
                 onClick={() => select(item)}
               >
                 {item.kind === 'action' ? <Zap size={16} aria-hidden /> : <Command size={16} aria-hidden />}
@@ -119,7 +158,23 @@ export default function AdminCommandPalette({ onClose }: AdminCommandPaletteProp
               </button>
             ))
           )}
+          <SearchModal
+            results={results}
+            activeIndex={activeIndex - items.length}
+            onActiveIndex={(index) => setActiveIndex(items.length + index)}
+            onSelect={onClose}
+          />
         </div>
+        {loading && (
+          <p role="status" className="admin-command-palette__empty">
+            {t('shell.palette.loading')}
+          </p>
+        )}
+        {searchError && (
+          <p role="alert" className="admin-command-palette__empty">
+            {t('shell.palette.searchError')}
+          </p>
+        )}
         <footer className="admin-command-palette__footer">{t('shell.palette.footerHint')}</footer>
       </section>
     </div>,

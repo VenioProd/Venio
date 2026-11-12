@@ -27,7 +27,7 @@ body.admin-system-theme {
   padding: env(safe-area-inset-top, 0px) 32px 0;
   position: sticky;
   top: 0;
-  z-index: 200;
+  z-index: var(--z-topbar);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -129,7 +129,7 @@ body.admin-system-theme {
 }
 .admin-shell-skip {
   position: fixed;
-  z-index: 1300;
+  z-index: var(--z-palette);
   top: -100px;
   left: 12px;
   padding: 8px 14px;
@@ -234,7 +234,7 @@ body.admin-system-theme {
   display: none;
   position: fixed;
   inset: auto 0 0;
-  z-index: 250;
+  z-index: var(--z-mobile-nav);
   height: calc(64px + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--bar-bg);
