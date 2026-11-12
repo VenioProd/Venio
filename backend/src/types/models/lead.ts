@@ -2,6 +2,21 @@ import type { Document, Types } from 'mongoose'
 import type { CrmStatus, ProjectPriority, LeadTemperature } from '../enums.js'
 
 // ─── Lead ───
+export interface ILeadQualification {
+  need: string
+  timeline: string
+  decisionMaker: string
+  objections: string[]
+  competitors: string[]
+}
+
+export interface ILeadCallHold {
+  at: Date
+  reason: 'OPT_OUT_DETECTED'
+  analysis: Types.ObjectId
+  call: Types.ObjectId
+}
+
 export interface ILead extends Document {
   company: string
   contactName: string
@@ -70,6 +85,12 @@ export interface ILead extends Document {
   doNotContactAt: Date | null
   doNotContactReason: string
   anonymizedAt: Date | null
+  // ── Analyse d'appel (lot D) ──
+  qualification: ILeadQualification
+  /** Dernière analyse d'appel appliquée par un humain. */
+  lastCallAnalysisAt: Date | null
+  /** Retrait de la file posé par l'analyse (opposition détectée), en attente d'une décision humaine. */
+  callHold: ILeadCallHold | null
   createdAt: Date
   updatedAt: Date
 }

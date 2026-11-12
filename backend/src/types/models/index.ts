@@ -23,7 +23,7 @@ export type {
 
 export type { ITaskAttachment, ITask, ITaskComment } from './task.js'
 
-export type { ILead, ILeadActivity, ISalesCommission } from './lead.js'
+export type { ILead, ILeadActivity, ISalesCommission, ILeadQualification, ILeadCallHold } from './lead.js'
 
 export type { IBillingLine, IBillingDocument } from './billing.js'
 
@@ -44,6 +44,8 @@ export type {
   IClientNote,
   IScoringWeights,
   ICrmSettings,
+  ICallAnalysisSettings,
+  IHeatCriterion,
   IInteraction,
   IInteractionRecipient,
   InteractionSubjectType,
