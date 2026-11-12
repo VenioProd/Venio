@@ -25,6 +25,7 @@ import {
 } from '../../lib/externalSales.js'
 import callDeskRoutes from './callDesk.js'
 import callsRoutes from './calls.js'
+import callTranscriptRoutes from './callTranscripts.js'
 import { toRepLead } from '../../lib/repLeadView.js'
 import type { ILead } from '../../types/models/index.js'
 
@@ -38,6 +39,7 @@ router.use(auth)
 router.use(requireRole(EXTERNAL_SALES_ROLE))
 router.use(callDeskRoutes)
 router.use(callsRoutes)
+router.use(callTranscriptRoutes)
 
 // Le closing (devis, signature) revient à l'équipe : l'externe s'arrête avant.
 const REP_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'LOST']
