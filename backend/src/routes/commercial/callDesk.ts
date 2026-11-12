@@ -8,7 +8,7 @@ import CrmSettings from '../../models/CrmSettings.js'
 import idempotentRequest from '../../middleware/idempotentRequest.js'
 import { repLeadFilter } from '../../lib/externalSales.js'
 import { toRepLead } from '../../lib/repLeadView.js'
-import { callError, importCallLeads, mappedCsv, parseLeadCsv } from '../../lib/callImports.js'
+import { callError, importCallLeads, mappedCsv, normalizePhone, parseLeadCsv } from '../../lib/callImports.js'
 import { computeRequestHash } from '../../lib/agent/idempotency.js'
 import { validateCallSettings } from '../../lib/callSettings.js'
 import { runInTransaction } from '../../lib/transaction.js'
@@ -16,6 +16,9 @@ import { applyLeadChange } from '../../lib/crmLeadService.js'
 import { stopSequencesOnLeadChange } from '../../lib/crmSequences.js'
 import { emitLeadChanges, fireLeadEvent } from '../../lib/crmRules.js'
 import type { ILead } from '../../types/models/index.js'
+import Call from '../../models/Call.js'
+import SuppressionEntry from '../../models/SuppressionEntry.js'
+import { addPhoneSuppression, suppressedPhoneStages } from '../../lib/callGuards.js'
 
 const router = express.Router()
 const OPEN_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO']
@@ -103,6 +106,8 @@ router.get('/calls/queue', async (req: Request, res: Response, next: NextFunctio
       .map((item) => item.value)
     const items = await Lead.aggregate([
       { $match: filter },
+      // Un numéro opposé sort de la file quel que soit le commercial ou la fiche qui le porte.
+      ...suppressedPhoneStages(settings.callDefaultRegion),
       {
         $set: {
           queueBucket: {
@@ -185,6 +190,7 @@ router.post(
   body('scriptTag').optional().isString().isLength({ max: 60 }),
   body('durationSec').optional().isInt({ min: 0 }),
   body('nextActionAt').optional({ values: 'null' }).isISO8601(),
+  body('callId').optional().isMongoId(),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!validationResult(req).isEmpty() || !mongoose.isObjectIdOrHexString(req.params.id))
@@ -198,6 +204,8 @@ router.post(
         scriptTag: req.body.scriptTag ?? '',
         nextActionAt: req.body.nextActionAt ?? null,
         durationSec: req.body.durationSec ?? null,
+        // Appel passé depuis le navigateur : heure et durée sont prises sur l'appel, pas sur la saisie.
+        ...(req.body.callId ? { callId: String(req.body.callId) } : {}),
       }
       const clientRequestId = String(req.body.clientRequestId).toLowerCase()
       const hash = computeRequestHash(input)
@@ -232,6 +240,13 @@ router.post(
           if (lead.archivedAt || lead.doNotContact || lead.doNotCall || lead.phoneInvalid)
             throw callError(409, 'Lead exclu des appels')
           const now = new Date()
+          const call = input.callId
+            ? await Call.findOne({ _id: input.callId, author: repId, lead: lead._id }).session(session)
+            : null
+          if (input.callId && !call) throw callError(404, 'Appel introuvable')
+          if (call?.interaction) throw callError(409, 'Appel déjà consigné')
+          const occurredAt = call ? (call.answeredAt ?? call.startedAt ?? call.createdAt) : now
+          const durationSec = call ? call.durationSec : input.durationSec
           const nextActionAt = input.nextActionAt ? new Date(input.nextActionAt) : null
           if (nextActionAt && nextActionAt <= now) throw callError(400, 'Relance future requise')
           if (outcome.effect === 'CALLBACK' && !nextActionAt) throw callError(400, 'Date de rappel requise')
@@ -254,7 +269,7 @@ router.post(
           const leadBefore = Object.fromEntries(fields.map((field) => [field, lead.get(field)]))
           const patch: Record<string, any> = {
             lastCallOutcome: input.outcome,
-            lastCallAt: now,
+            lastCallAt: occurredAt,
             interactionsCount: (lead.interactionsCount ?? 0) + 1,
             lastInteractionAt: !lead.lastInteractionAt || lead.lastInteractionAt < now ? now : lead.lastInteractionAt,
             nextActionAt:
@@ -264,7 +279,7 @@ router.post(
           if (outcome.effect === 'MEETING') patch.status = 'DEMO'
           else if (['LOST', 'DO_NOT_CALL'].includes(outcome.effect)) patch.status = 'LOST'
           else if (outcome.effect === 'CALLBACK') patch.status = 'CONTACTED'
-          if (outcome.reached) patch.lastContactAt = now
+          if (outcome.reached) patch.lastContactAt = occurredAt
           if (outcome.effect === 'DO_NOT_CALL') patch.doNotCall = true
           if (outcome.effect === 'WRONG_NUMBER') patch.phoneInvalid = true
           if (['LOST', 'DO_NOT_CALL'].includes(outcome.effect)) {
@@ -293,11 +308,11 @@ router.post(
                 subjectId: lead._id,
                 kind: 'CALL',
                 direction: 'OUT',
-                occurredAt: now,
+                occurredAt,
                 body: input.note,
                 outcome: input.outcome,
                 scriptTag: input.scriptTag,
-                ...(input.durationSec !== null ? { durationSec: input.durationSec } : {}),
+                ...(durationSec !== null ? { durationSec } : {}),
                 author: repId,
                 clientRequestId,
                 clientRequestHash: hash,
@@ -306,7 +321,24 @@ router.post(
             ],
             { session },
           )
-          return { id: interaction!._id, fresh: { lead, statusBefore, occurredAt: now } }
+          if (call) {
+            const linked = await Call.updateOne(
+              { _id: call._id, interaction: null },
+              { $set: { interaction: interaction!._id } },
+              { session },
+            )
+            if (!linked.modifiedCount) throw callError(409, 'Appel déjà consigné')
+          }
+          // L'opposition vaut pour le numéro, pas seulement pour cette fiche.
+          if (outcome.effect === 'DO_NOT_CALL')
+            await addPhoneSuppression(String(lead.contactPhone ?? ''), {
+              reason: 'OPPOSITION',
+              createdBy: repId,
+              leadId: lead._id,
+              region: settings.callDefaultRegion,
+              session,
+            })
+          return { id: interaction!._id, fresh: { lead, statusBefore, occurredAt } }
         })
       } catch (err) {
         if ((err as { code?: number }).code === 11000 && (await replay())) return
@@ -359,6 +391,21 @@ router.post('/leads/:id/quick-call/:interactionId/undo', async (req, res, next) 
         ],
       }).session(session)
       if (newer) throw callError(409, 'Un appel plus récent existe')
+      // L'appel redevient libre d'être consigné, et l'opposition posée par ce seul résultat est retirée.
+      await Call.updateOne({ interaction: interaction._id }, { $set: { interaction: null } }, { session })
+      const phoneNormalized = normalizePhone(
+        String(lead.contactPhone ?? ''),
+        (await CrmSettings.getSettings()).callDefaultRegion,
+      )
+      if ('doNotCall' in interaction.callUndo.leadBefore && phoneNormalized) {
+        await SuppressionEntry.deleteOne({
+          phoneNormalized,
+          leadId: lead._id,
+          createdBy: req.user!.id,
+          reason: 'OPPOSITION',
+          createdAt: { $gte: interaction.createdAt },
+        }).session(session)
+      }
       lead.set(interaction.callUndo.leadBefore)
       await lead.save({ session })
       if (interaction.callUndo.activityId)

@@ -13,6 +13,7 @@ import { backfillLeadPrivacy } from './crmPrivacy.js'
 import { ensureSequenceIndexes } from './crmSequences.js'
 import { ensureProjectSheetIndexes, seedProjectSheets } from './projectSheetSeed.js'
 import { ensureAuthHardeningIndexes } from './auth/passwordReset.js'
+import { ensurePhoneSuppressionIndexes } from './callGuards.js'
 
 interface Outcome {
   created: number
@@ -181,4 +182,5 @@ export const migrations: Record<string, (dryRun: boolean) => Promise<unknown>> =
     return seedProjectSheets({ dryRun })
   },
   '013': ensureAuthHardeningIndexes,
+  '014': ensurePhoneSuppressionIndexes,
 }

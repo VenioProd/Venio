@@ -49,7 +49,8 @@ router.get(
     try {
       const limit = positiveInt(req.query.limit, DEFAULT_LIMIT, MAX_LIMIT)
       const q = typeof req.query.q === 'string' ? normalizeEmail(req.query.q).slice(0, 320) : ''
-      const filter: Record<string, unknown> = q ? { emailNormalized: { $regex: escapeRegex(q) } } : {}
+      // Les numéros opposés (lot téléphonie) n'ont pas encore d'écran : la liste reste celle des adresses.
+      const filter: Record<string, unknown> = { emailNormalized: q ? { $regex: escapeRegex(q) } : { $type: 'string' } }
       const total = await SuppressionEntry.countDocuments(filter)
       const pages = Math.max(1, Math.ceil(total / limit))
       const page = Math.min(positiveInt(req.query.page, 1, Number.MAX_SAFE_INTEGER), pages)
@@ -139,7 +140,7 @@ router.delete(
         actor: buildActorFromReq(req),
         entityType: 'SuppressionEntry',
         entityId: String(removed._id),
-        entityRef: removed.emailNormalized,
+        entityRef: removed.emailNormalized ?? removed.phoneNormalized,
         summary: 'Retrait de la liste « ne pas contacter »',
         extra: { reason: removed.reason },
       })
