@@ -285,6 +285,12 @@ it('liste d’un externe : invisible de l’équipe avant le passage, lisible ap
     (await team(admin).post(`/calls/${call._id}/analysis/apply`, { clientRequestId: crypto.randomUUID() })).status,
   ).toBe(404)
   expect((await launch(admin, listed._id)).status).toBe(404)
+  // Fiche saisie par l'externe hors liste d'appel : l'équipe la voit dans le CRM, pas ses appels.
+  const own = await Lead.create({ company: 'Saisie Rita', contactPhone: '+33655555555', externalRep: rep.id })
+  const { call: ownCall } = await finishedCall(rep, own)
+  expect((await team(admin).get(`/leads/${own._id}/calls`)).body.calls).toEqual([])
+  for (const suffix of ['', '/transcript', '/analysis', '/recording'])
+    expect((await team(admin).get(`/calls/${ownCall._id}${suffix}`)).status).toBe(404)
 
   // Passage au closer (Alice, réglage du CRM).
   expect((await commercial(rep).post(`/leads/${listed._id}/ready-to-close`)).status).toBe(200)
@@ -340,8 +346,10 @@ it('liste d’un externe : invisible de l’équipe avant le passage, lisible ap
     await LeadActivity.exists({ leadId: listed._id, type: 'CALL_ANALYSIS_APPLIED', actorId: admin.id }),
   ).toBeTruthy()
 
-  // L'équipe appelle la fiche transmise.
-  expect((await launch(admin, listed._id)).status).toBe(201)
+  // L'équipe appelle la fiche transmise, jusqu'à la mise en relation.
+  const closing = await launch(admin, listed._id)
+  expect(closing.status).toBe(201)
+  expect((await voice(String(closing.body.callId), admin.id)).text).toContain('+33633333333')
 })
 
 it('espaces étanches : l’externe n’atteint pas /api/admin/call-desk, l’équipe rien de plus sous /api/commercial', async () => {
