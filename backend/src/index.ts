@@ -42,6 +42,7 @@ import adminQuoteProposalRoutes from './routes/admin/quoteProposals.js'
 import adminCrmRoutes from './routes/admin/crm.js'
 import adminCrmExtrasRoutes from './routes/admin/crmExtras.js'
 import adminCrmSuppressionRoutes from './routes/admin/crmSuppression.js'
+import adminCallDeskRoutes from './routes/admin/callDesk.js'
 import adminInteractionRoutes from './routes/admin/interactions.js'
 import adminNotificationRoutes from './routes/admin/notifications.js'
 import pushRoutes from './routes/push.js'
@@ -370,6 +371,8 @@ app.use('/api/admin/sales-targets', adminSalesTargetRoutes)
 app.use('/api/admin/crm/suppression', adminCrmSuppressionRoutes)
 app.use('/api/admin/crm', adminCrmExtrasRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
+// Poste d'appel de l'équipe : les routeurs de l'espace commercial, avec le périmètre de l'équipe.
+app.use('/api/admin/call-desk', adminCallDeskRoutes)
 // Commerciaux externes : leur espace, et son pilotage côté équipe.
 app.use('/api/commercial', commercialRoutes)
 app.use('/api/admin/external-sales', adminExternalSalesRoutes)

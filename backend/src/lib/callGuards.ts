@@ -65,10 +65,16 @@ export function assertCallable(
     | 'contactPhone'
     | 'callHold'
   >,
-  ctx: { now: Date; settings: ICrmSettings; attemptsToday: number },
+  ctx: {
+    now: Date
+    settings: ICrmSettings
+    attemptsToday: number
+    /** L'équipe appelle aussi une fiche transmise au closer ; l'externe s'arrête au passage. */
+    scope?: 'rep' | 'team'
+  },
 ): void {
   if (
-    lead.closingHandoff ||
+    (ctx.scope !== 'team' && lead.closingHandoff) ||
     !CALLABLE_STATUSES.includes(lead.status) ||
     lead.archivedAt ||
     lead.doNotContact ||

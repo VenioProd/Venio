@@ -37,7 +37,10 @@ export function toRepLead(lead: ILead) {
       competitors: lead.qualification?.competitors ?? [],
     },
     lastCallAnalysisAt: lead.lastCallAnalysisAt ?? null,
-    callHold: lead.callHold ? { at: lead.callHold.at, reason: lead.callHold.reason } : null,
+    // `call` : l'appel dont l'analyse a posé la retenue, pour ouvrir directement la bonne analyse.
+    callHold: lead.callHold
+      ? { at: lead.callHold.at, reason: lead.callHold.reason, call: lead.callHold.call ?? null }
+      : null,
     createdAt: lead.createdAt,
     updatedAt: lead.updatedAt,
   }
