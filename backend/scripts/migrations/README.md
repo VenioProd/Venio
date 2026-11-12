@@ -34,3 +34,4 @@ Appliquer les migrations requises une par une, après examen de leur simulation.
 | 011 | Les séquences manquent de leurs index de file et d’inscription unique.                                                          |
 | 012 | Les fiches projets et leurs brouillons de départ manquent.                                                                      |
 | 013 | Les jetons de réinitialisation et défis 2FA manquent de leurs index uniques ou TTL.                                             |
+| 014 | La liste « ne pas contacter » n'accepte que des adresses : son index unique doit devenir partiel pour inscrire des numéros.     |
