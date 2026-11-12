@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../context/I18nContext'
 import {
+  apiErrorCode,
   createCallInsightsApi,
   DEFAULT_API_PREFIX,
   type AnalysisResponse,
@@ -20,6 +21,8 @@ export interface CallInsightsProps {
   pollMs?: number
   /** Aucune validation possible (consultation). */
   readOnly?: boolean
+  /** L'équipe peut lever la retenue d'une opposition ; l'externe seulement la confirmer. */
+  canLiftHold?: boolean
   /** Appelée après une application réussie (pour rafraîchir la fiche autour). */
   onApplied?: () => void
   className?: string
@@ -42,6 +45,7 @@ export default function CallInsights({
   apiPrefix = DEFAULT_API_PREFIX,
   pollMs = 5000,
   readOnly = false,
+  canLiftHold = false,
   onApplied,
   className = '',
 }: CallInsightsProps) {
@@ -129,7 +133,19 @@ export default function CallInsights({
   }
 
   async function apply(input: ApplyInput) {
-    await api.apply(callId, input)
+    try {
+      await api.apply(callId, input)
+    } catch (failure) {
+      // Quelqu'un d'autre a déjà relu l'analyse, ou elle a changé d'état : on affiche l'état réel avant le message.
+      if (['ANALYSIS_ALREADY_REVIEWED', 'ANALYSIS_NOT_READY'].includes(apiErrorCode(failure))) await refresh()
+      throw failure
+    }
+    await refresh()
+    onApplied?.()
+  }
+
+  async function decideHold(action: 'CONFIRM' | 'DISMISS') {
+    await api.optOut(callId, action)
     await refresh()
     onApplied?.()
   }
@@ -234,6 +250,7 @@ export default function CallInsights({
         key={analysis.analysis._id}
         analysis={analysis.analysis}
         current={analysis.current}
+        acceptableKeys={analysis.acceptableKeys}
         onApply={apply}
         onReject={reject}
         onQuote={showQuote}
@@ -247,7 +264,13 @@ export default function CallInsights({
   return (
     <div className={`call-insights ${className}`.trim()}>
       {output?.optOut.detected && (
-        <OptOutAlert quote={output.optOut.quote} onQuote={hasTranscript ? showQuote : undefined} />
+        <OptOutAlert
+          quote={output.optOut.quote}
+          onQuote={hasTranscript ? showQuote : undefined}
+          held={Boolean(analysis?.current.callHold)}
+          onConfirm={readOnly ? undefined : () => decideHold('CONFIRM')}
+          onLift={readOnly || !canLiftHold ? undefined : () => decideHold('DISMISS')}
+        />
       )}
 
       {current.failed && (

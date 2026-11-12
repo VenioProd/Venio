@@ -108,7 +108,8 @@ const fr = {
   'callInsights.actions.reason': 'Pourquoi :',
   'callInsights.actions.due': 'Échéance',
   'callInsights.actions.noDate': 'sans date',
-  'callInsights.actions.notExecuted': 'Proposition seulement : cette action n’est pas encore exécutée automatiquement.',
+  'callInsights.actions.notExecuted':
+    'Proposition à lire : cette action n’est pas encore exécutable, elle ne peut pas être acceptée.',
   'callInsights.actions.gestures': 'Décision pour l’action : {label}',
 
   'callInsights.apply.title': 'Appliquer la sélection',
@@ -132,6 +133,68 @@ const fr = {
   'callInsights.review.rejected': 'Analyse rejetée : rien n’a été écrit sur la fiche.',
   'callInsights.review.rejectedAt': 'Analyse rejetée le {date} : rien n’a été écrit sur la fiche.',
   'callInsights.review.rejectedByAt': 'Analyse rejetée par {name} le {date} : rien n’a été écrit sur la fiche.',
+  'callInsights.recording.listen': 'Écouter l’appel',
+  'callInsights.recording.NONE': 'aucun',
+  'callInsights.recording.RECORDING': 'en cours',
+  'callInsights.recording.STOPPED': 'arrêté à la demande du prospect',
+  'callInsights.recording.READY': 'conservé',
+  'callInsights.recording.DELETED': 'supprimé',
+  'callInsights.recording.note.RECORDING': 'Enregistrement en cours.',
+  'callInsights.recording.note.STOPPED':
+    'Enregistrement arrêté à la demande du prospect : rien n’a été conservé et il n’y a pas de transcript.',
+  'callInsights.recording.note.DELETED':
+    'L’audio a été supprimé après la transcription : seul le transcript est conservé.',
+  'callInsights.chips.recording': 'Audio',
+  'callInsights.chips.transcript': 'Transcript',
+  'callInsights.chips.analysis': 'Analyse',
+  'callInsights.tx.none': 'pas encore',
+  'callInsights.tx.PENDING': 'en attente',
+  'callInsights.tx.PROCESSING': 'en cours',
+  'callInsights.tx.DONE': 'prêt',
+  'callInsights.tx.FAILED': 'échec',
+  'callInsights.tx.SKIPPED': 'non réalisé',
+  'callInsights.an.none': 'pas encore',
+  'callInsights.an.PENDING': 'en cours',
+  'callInsights.an.READY': 'à valider',
+  'callInsights.an.APPLIED': 'validée',
+  'callInsights.an.PARTIAL': 'validée en partie',
+  'callInsights.an.REJECTED': 'rejetée',
+  'callInsights.an.FAILED': 'échec',
+  'callInsights.leadCalls.title': 'Appels',
+  'callInsights.leadCalls.empty': 'Aucun appel passé depuis Venio sur cette fiche.',
+  'callInsights.leadCalls.error': 'La liste des appels n’a pas pu être chargée.',
+  'callInsights.optOut.held':
+    'La fiche est retenue : elle ne sera pas rappelée tant que l’opposition n’est pas confirmée ou levée.',
+  'callInsights.optOut.confirm': 'Confirmer : ne plus appeler',
+  'callInsights.optOut.lift': 'Lever la retenue',
+  'callInsights.optOut.teamLifts': 'Lever la retenue revient à l’équipe : en cas de doute, laissez la fiche retenue.',
+  'callInsights.optOut.settled': 'Plus aucune retenue en attente sur cette fiche (opposition confirmée ou levée).',
+  'callInsights.optOut.confirmed': 'Opposition confirmée : ce numéro ne sera plus appelé.',
+  'callInsights.optOut.lifted': 'Retenue levée : la fiche revient dans la file.',
+  'callInsights.optOut.noHold': 'Cette opposition ne concerne pas cet appel : ouvrez celui qui a retenu la fiche.',
+  'callInsights.optOut.error': 'La décision n’a pas pu être enregistrée. Réessayez.',
+  'callInsights.field.teamOnly':
+    'Ce champ revient à l’équipe : il n’est pas modifiable depuis votre espace, la proposition reste consultable.',
+  'callInsights.actions.labelField': 'Libellé',
+  'callInsights.apiError.INVALID_BODY':
+    'La sélection n’a pas pu être lue par le serveur. Rechargez l’analyse et réessayez.',
+  'callInsights.apiError.UNKNOWN_PROPOSAL':
+    'Une proposition n’existe plus dans cette analyse ({field}). Rechargez l’analyse.',
+  'callInsights.apiError.FIELD_NOT_ALLOWED': 'Le champ « {field} » est réservé à l’équipe : ignorez-le.',
+  'callInsights.apiError.QUOTE_NOT_VERIFIED':
+    'La citation de « {field} » est introuvable dans la conversation : modifiez la valeur à partir de ce que vous avez entendu, ou ignorez-la.',
+  'callInsights.apiError.INVALID_VALUE': 'La valeur de « {field} » n’est pas valide. Corrigez-la ou ignorez-la.',
+  'callInsights.apiError.ACTION_DUE_REQUIRED': 'Une action acceptée demande un libellé et une échéance à venir.',
+  'callInsights.apiError.ACTION_NOT_AVAILABLE': 'Cette action ne peut pas encore être exécutée : ignorez-la.',
+  'callInsights.apiError.LEAD_HANDED_OFF': 'La fiche a été transmise au closer : la validation lui revient.',
+  'callInsights.apiError.LEAD_CLOSED':
+    'Cette fiche est maintenant entre les mains de l’équipe : elle ne peut plus être modifiée depuis cet écran.',
+  'callInsights.apiError.ANALYSIS_NOT_READY': 'L’analyse n’est pas (ou plus) prête à être validée.',
+  'callInsights.apiError.ANALYSIS_ALREADY_REVIEWED':
+    'Cette analyse a déjà été relue : l’écran affiche son état actuel.',
+  'callInsights.apiError.IDEMPOTENCY_CONFLICT':
+    'Cette demande a déjà été envoyée avec d’autres choix. Rechargez l’analyse et recommencez.',
+  'callInsights.apiError.NOT_FOUND': 'Cette analyse ou cette fiche n’est plus disponible.',
 }
 
 export default fr

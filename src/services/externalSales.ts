@@ -29,6 +29,8 @@ export interface RepLead {
   lostReason: string
   lostComment: string
   handedOffAt: string | null
+  /** Retenue après une opposition détectée sur un appel : la fiche n'est plus appelable en attendant la décision. */
+  callHold?: { at: string; reason: string } | null
   createdAt: string
   updatedAt: string
 }
@@ -196,7 +198,10 @@ export const commercialApi = {
     apiFetch<{ lead: RepLead }>('/api/commercial/leads', { method: 'POST', ...json(input) }),
   updateLead: (id: string, input: RepLeadInput) =>
     apiFetch<{ lead: RepLead }>(`/api/commercial/leads/${id}`, { method: 'PATCH', ...json(input) }),
-  logInteraction: (id: string, input: Pick<RepInteraction, 'kind' | 'subject' | 'body'> & { occurredAt?: string }) =>
+  logInteraction: (
+    id: string,
+    input: Pick<RepInteraction, 'kind' | 'subject' | 'body'> & { occurredAt?: string; callId?: string },
+  ) =>
     apiFetch<{ interaction: RepInteraction }>(`/api/commercial/leads/${id}/interactions`, {
       method: 'POST',
       ...json(input),

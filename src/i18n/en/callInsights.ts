@@ -108,7 +108,8 @@ const en = {
   'callInsights.actions.reason': 'Why:',
   'callInsights.actions.due': 'Due',
   'callInsights.actions.noDate': 'no date',
-  'callInsights.actions.notExecuted': 'Suggestion only: this action is not carried out automatically yet.',
+  'callInsights.actions.notExecuted':
+    'Read-only suggestion: this action cannot be carried out yet, so it cannot be accepted.',
   'callInsights.actions.gestures': 'Decision for the action: {label}',
 
   'callInsights.apply.title': 'Apply the selection',
@@ -130,6 +131,66 @@ const en = {
   'callInsights.review.rejected': 'Analysis rejected: nothing was written to the lead.',
   'callInsights.review.rejectedAt': 'Analysis rejected on {date}: nothing was written to the lead.',
   'callInsights.review.rejectedByAt': 'Analysis rejected by {name} on {date}: nothing was written to the lead.',
+  'callInsights.recording.listen': 'Listen to the call',
+  'callInsights.recording.NONE': 'none',
+  'callInsights.recording.RECORDING': 'in progress',
+  'callInsights.recording.STOPPED': 'stopped at the prospect’s request',
+  'callInsights.recording.READY': 'kept',
+  'callInsights.recording.DELETED': 'deleted',
+  'callInsights.recording.note.RECORDING': 'Recording in progress.',
+  'callInsights.recording.note.STOPPED':
+    'Recording stopped at the prospect’s request: nothing was kept and there is no transcript.',
+  'callInsights.recording.note.DELETED': 'The audio was deleted after transcription: only the transcript is kept.',
+  'callInsights.chips.recording': 'Audio',
+  'callInsights.chips.transcript': 'Transcript',
+  'callInsights.chips.analysis': 'Analysis',
+  'callInsights.tx.none': 'not yet',
+  'callInsights.tx.PENDING': 'queued',
+  'callInsights.tx.PROCESSING': 'in progress',
+  'callInsights.tx.DONE': 'ready',
+  'callInsights.tx.FAILED': 'failed',
+  'callInsights.tx.SKIPPED': 'not done',
+  'callInsights.an.none': 'not yet',
+  'callInsights.an.PENDING': 'in progress',
+  'callInsights.an.READY': 'to review',
+  'callInsights.an.APPLIED': 'applied',
+  'callInsights.an.PARTIAL': 'partly applied',
+  'callInsights.an.REJECTED': 'rejected',
+  'callInsights.an.FAILED': 'failed',
+  'callInsights.leadCalls.title': 'Calls',
+  'callInsights.leadCalls.empty': 'No call made from Venio on this lead yet.',
+  'callInsights.leadCalls.error': 'The list of calls could not be loaded.',
+  'callInsights.optOut.held':
+    'The lead is on hold: it will not be called again until the opt-out is confirmed or lifted.',
+  'callInsights.optOut.confirm': 'Confirm: do not call again',
+  'callInsights.optOut.lift': 'Lift the hold',
+  'callInsights.optOut.teamLifts': 'Lifting the hold is up to the team: when in doubt, leave the lead on hold.',
+  'callInsights.optOut.settled': 'No hold pending on this lead any more (opt-out confirmed or lifted).',
+  'callInsights.optOut.confirmed': 'Opt-out confirmed: this number will not be called again.',
+  'callInsights.optOut.lifted': 'Hold lifted: the lead is back in the queue.',
+  'callInsights.optOut.noHold': 'This opt-out is not about this call: open the one that put the lead on hold.',
+  'callInsights.optOut.error': 'The decision could not be saved. Try again.',
+  'callInsights.field.teamOnly':
+    'This field is up to the team: it cannot be changed from your space, the suggestion stays readable.',
+  'callInsights.actions.labelField': 'Label',
+  'callInsights.apiError.INVALID_BODY': 'The server could not read the selection. Reload the analysis and try again.',
+  'callInsights.apiError.UNKNOWN_PROPOSAL':
+    'A suggestion no longer exists in this analysis ({field}). Reload the analysis.',
+  'callInsights.apiError.FIELD_NOT_ALLOWED': 'The “{field}” field is reserved for the team: ignore it.',
+  'callInsights.apiError.QUOTE_NOT_VERIFIED':
+    'The quote for “{field}” is not in the conversation: edit the value from what you heard, or ignore it.',
+  'callInsights.apiError.INVALID_VALUE': 'The value for “{field}” is not valid. Correct it or ignore it.',
+  'callInsights.apiError.ACTION_DUE_REQUIRED': 'An accepted action needs a label and a future due date.',
+  'callInsights.apiError.ACTION_NOT_AVAILABLE': 'This action cannot be carried out yet: ignore it.',
+  'callInsights.apiError.LEAD_HANDED_OFF': 'The lead was handed to the closer: validation is theirs.',
+  'callInsights.apiError.LEAD_CLOSED':
+    'This lead is now in the team’s hands: it can no longer be changed from this screen.',
+  'callInsights.apiError.ANALYSIS_NOT_READY': 'The analysis is not (or no longer) ready for review.',
+  'callInsights.apiError.ANALYSIS_ALREADY_REVIEWED':
+    'This analysis was already reviewed: the screen shows its current state.',
+  'callInsights.apiError.IDEMPOTENCY_CONFLICT':
+    'This request was already sent with other choices. Reload the analysis and start again.',
+  'callInsights.apiError.NOT_FOUND': 'This analysis or lead is no longer available.',
 }
 
 export default en
