@@ -67,6 +67,18 @@ describe('CommercialLeadDetail', () => {
     expect(screen.queryByRole('button', { name: 'Prêt à closer' })).not.toBeInTheDocument()
   })
 
+  it('propose l’appel avec la même barre, et garde tel: quand la téléphonie est désactivée', async () => {
+    vi.mocked(apiFetch).mockImplementation(async (path: string) => {
+      if (path === '/api/commercial/calls/config') return { enabled: false }
+      if (path === '/api/commercial/leads/lead1')
+        return { lead: { ...lead, contactPhone: '+33612345678' }, activities: [], interactions: [] }
+      throw new Error(`Unexpected path: ${path}`)
+    })
+    renderDetail()
+    expect(await screen.findByRole('group', { name: 'Appel téléphonique' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: /Appeler/ })).toHaveAttribute('href', 'tel:+33612345678')
+  })
+
   it('dit simplement que la fiche n’est plus accessible quand elle a été réattribuée', async () => {
     vi.mocked(apiFetch).mockRejectedValue(Object.assign(new Error('Lead not found'), { status: 404 }))
     renderDetail()

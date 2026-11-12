@@ -146,6 +146,8 @@ export interface CallSettings {
 }
 export interface CallDraft {
   durationSec?: number
+  /** Appel passé depuis le navigateur : le serveur en tire l'heure et la durée. */
+  callId?: string
   clientRequestId: string
   note: string
   outcome: string

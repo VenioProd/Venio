@@ -4,6 +4,8 @@ import CustomSelect from '../../components/admin/CustomSelect'
 import { useI18n, type MessageKey } from '../../context/I18nContext'
 import { formatDateTime } from '../../i18n/format'
 import { LeadStatusBadge } from './CommercialLeads'
+import CallBar from './softphone/CallBar'
+import { useSoftphone } from './softphone/useSoftphone'
 import {
   commercialApi,
   formatDay,
@@ -58,6 +60,7 @@ const CommercialLeadDetail = () => {
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
+  const softphone = useSoftphone()
 
   const load = useCallback(async () => {
     try {
@@ -210,6 +213,12 @@ const CommercialLeadDetail = () => {
             )}
           </div>
         )
+      )}
+
+      {!lead.handedOffAt && (
+        <div className="softphone-detail">
+          <CallBar controller={softphone} leadId={lead._id} phone={lead.contactPhone} disabled={busy} />
+        </div>
       )}
 
       <div className="commercial-detail">

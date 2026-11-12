@@ -7,6 +7,7 @@ import adminOps from './adminOps'
 import adminTech from './adminTech'
 import beta from './beta'
 import bulk from './bulk'
+import calls from './calls'
 import changeReq from './changeReq'
 import commercial from './commercial'
 import client from './client'
@@ -43,6 +44,7 @@ const messages = {
   ...adminTech,
   ...beta,
   ...bulk,
+  ...calls,
   ...changeReq,
   ...commercial,
   ...client,

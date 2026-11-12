@@ -1,0 +1,52 @@
+// Softphone du poste d'appel (appel depuis le navigateur).
+const fr = {
+  'calls.group': 'Appel téléphonique',
+  'calls.call': 'Appeler',
+  'calls.callAria': 'Appeler depuis le navigateur',
+  'calls.hangup': 'Raccrocher',
+  'calls.mute': 'Couper le micro',
+  'calls.unmute': 'Réactiver le micro',
+  'calls.keypad': 'Clavier',
+  'calls.keypadHide': 'Masquer le clavier',
+  'calls.digit': 'Touche {digit}',
+  'calls.microphone': 'Micro',
+  'calls.microphoneDefault': 'Micro par défaut',
+  'calls.timer': 'Durée de l’appel',
+  'calls.busyElsewhere': 'Un autre appel est en cours.',
+  'calls.noPhone': 'Aucun numéro sur cette fiche.',
+  'calls.checking': 'Vérification de l’appel navigateur…',
+  'calls.state.idle': 'Prêt à appeler',
+  'calls.state.preparing': 'Préparation de l’appel…',
+  'calls.state.connecting': 'Connexion…',
+  'calls.state.ringing': 'Ça sonne…',
+  'calls.state.active': 'En communication',
+  'calls.state.reconnecting': 'Connexion instable, reconnexion…',
+  'calls.state.ending': 'Fin de l’appel…',
+  'calls.ended': 'Appel terminé · {duration}',
+  'calls.status.COMPLETED': 'Appel terminé',
+  'calls.status.NO_ANSWER': 'Pas de réponse',
+  'calls.status.BUSY': 'Occupé',
+  'calls.status.FAILED': 'L’appel n’a pas abouti',
+  'calls.status.CANCELED': 'Appel annulé',
+  'calls.status.pending': 'Appel terminé, résultat en attente de l’opérateur',
+  'calls.suggested': 'Résultat présélectionné d’après l’appel : {outcome}. Vous pouvez le changer.',
+  'calls.error.LEAD_NOT_CALLABLE': 'Cette fiche ne peut pas être appelée.',
+  'calls.error.PHONE_SUPPRESSED': 'Ce numéro est sur la liste d’opposition : il ne peut plus être appelé.',
+  'calls.error.OUTSIDE_CALLING_HOURS': 'Hors de la plage d’appel autorisée.',
+  'calls.error.ATTEMPT_CAP_REACHED': 'Nombre maximal de tentatives atteint aujourd’hui pour ce numéro.',
+  'calls.error.NETWORK': 'Le service d’appel ne répond pas. Réessayez dans un instant.',
+  'calls.error.CALL': 'L’appel a été interrompu.',
+  'calls.fallback.DISABLED':
+    'Les appels depuis le navigateur ne sont pas activés. Le bouton ouvre votre téléphone ; saisissez le résultat à la main.',
+  'calls.fallback.MIC_DENIED':
+    'Micro inaccessible. Autorisez-le dans le navigateur pour appeler d’ici ; en attendant, le bouton ouvre votre téléphone.',
+  'calls.fallback.UNSUPPORTED':
+    'Ce navigateur ne permet pas d’appeler depuis la page. Le bouton ouvre votre téléphone ; saisissez le résultat à la main.',
+  'calls.fallback.UNAVAILABLE':
+    'Le service d’appel est injoignable. Le bouton ouvre votre téléphone ; saisissez le résultat à la main.',
+  'calls.fallback.retry': 'Réessayer l’appel navigateur',
+  'calls.leaveConfirm': 'Un appel est en cours. Quitter cette page le raccrochera. Continuer ?',
+  'calls.hangupFirst': 'Raccrochez pour enregistrer ou changer de fiche.',
+}
+
+export default fr
