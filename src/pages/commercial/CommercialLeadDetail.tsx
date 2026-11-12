@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import CustomSelect from '../../components/admin/CustomSelect'
+import LeadCallsList from '../../components/calls/LeadCallsList'
+import { formatDuration } from '../../components/calls/leadCalls'
 import { useI18n, type MessageKey } from '../../context/I18nContext'
 import { formatDateTime } from '../../i18n/format'
 import { LeadStatusBadge } from './CommercialLeads'
@@ -49,18 +51,39 @@ const CommercialLeadDetail = () => {
   const [activities, setActivities] = useState<RepActivity[]>([])
   const [interactions, setInteractions] = useState<RepInteraction[]>([])
   const [form, setForm] = useState<RepLeadInput>({})
-  const [exchange, setExchange] = useState<{ kind: RepInteraction['kind']; subject: string; body: string }>({
+  const [exchange, setExchange] = useState<{
+    kind: RepInteraction['kind']
+    subject: string
+    body: string
+    /** Appel passé depuis cette fiche et relié à l'échange consigné. */
+    call?: { id: string; at: string | null; durationSec: number }
+  }>({
     kind: 'CALL',
     subject: '',
     body: '',
   })
+  const [callsKey, setCallsKey] = useState(0)
   const [handoffMessage, setHandoffMessage] = useState('')
   const [confirmHandoff, setConfirmHandoff] = useState(false)
   const [notFound, setNotFound] = useState(false)
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
-  const softphone = useSoftphone()
+  // Un appel qui se termine ici : la liste des appels se relit, et l'échange à consigner est relié à cet appel.
+  const softphone = useSoftphone({
+    onSettled: (call) => {
+      setCallsKey((value) => value + 1)
+      setExchange((current) => ({
+        ...current,
+        kind: 'CALL',
+        call: {
+          id: call.callId,
+          at: call.record?.answeredAt ?? call.record?.startedAt ?? null,
+          durationSec: call.record?.durationSec ?? call.elapsedSec,
+        },
+      }))
+    },
+  })
 
   const load = useCallback(async () => {
     try {
@@ -150,7 +173,11 @@ const CommercialLeadDetail = () => {
   const logExchange = (event: React.FormEvent) => {
     event.preventDefault()
     run(async () => {
-      await commercialApi.logInteraction(id, exchange)
+      const { call, ...entry } = exchange
+      await commercialApi.logInteraction(id, {
+        ...entry,
+        ...(call ? { callId: call.id, ...(call.at ? { occurredAt: call.at } : {}) } : {}),
+      })
       setExchange({ kind: exchange.kind, subject: '', body: '' })
     }, t('commercial.detail.exchangeAdded'))
   }
@@ -215,9 +242,21 @@ const CommercialLeadDetail = () => {
         )
       )}
 
+      {lead.callHold && (
+        <p className="commercial-hold" role="status">
+          <strong>{t('commercial.hold.title')}</strong> {t('commercial.hold.body')}
+        </p>
+      )}
+
       {!lead.handedOffAt && (
         <div className="softphone-detail">
-          <CallBar controller={softphone} leadId={lead._id} phone={lead.contactPhone} disabled={busy} />
+          <CallBar
+            controller={softphone}
+            leadId={lead._id}
+            phone={lead.contactPhone}
+            disabled={busy}
+            held={Boolean(lead.callHold)}
+          />
         </div>
       )}
 
@@ -282,6 +321,18 @@ const CommercialLeadDetail = () => {
           <h2 style={{ marginTop: 0 }}>{t('commercial.detail.exchanges')}</h2>
           {!readOnly && (
             <form onSubmit={logExchange} style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+              {exchange.call && (
+                <p className="commercial-muted commercial-linked-call" role="status">
+                  {t('commercial.detail.linkedCall', { duration: formatDuration(exchange.call.durationSec) })}{' '}
+                  <button
+                    type="button"
+                    className="commercial-link-button"
+                    onClick={() => setExchange({ ...exchange, call: undefined })}
+                  >
+                    {t('commercial.detail.unlinkCall')}
+                  </button>
+                </p>
+              )}
               <CustomSelect
                 value={exchange.kind}
                 onChange={(value) => setExchange({ ...exchange, kind: value as RepInteraction['kind'] })}
@@ -330,6 +381,15 @@ const CommercialLeadDetail = () => {
               ))}
           </ul>
         </div>
+      </div>
+
+      <div className="portal-card commercial-lead-calls">
+        <LeadCallsList
+          leadId={lead._id}
+          refreshKey={callsKey}
+          readOnly={Boolean(lead.handedOffAt)}
+          onApplied={() => void load()}
+        />
       </div>
     </>
   )
