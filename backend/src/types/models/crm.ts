@@ -93,6 +93,24 @@ export interface IScoringWeights {
   hasPhone: number
 }
 
+export interface IHeatCriterion {
+  key: string
+  label: string
+  /** Points maximum ; négatif pour un critère qui retire des points (de `max` à 0). */
+  max: number
+  description: string
+}
+
+export interface ICallAnalysisSettings {
+  enabled: boolean
+  heatGrid: {
+    criteria: IHeatCriterion[]
+    /** Score minimum de chaque niveau ; en dessous de `tiede`, le prospect est froid. */
+    thresholds: { tiede: number; chaud: number; tresChaud: number }
+  }
+  retentionMonths: number
+}
+
 export interface ICrmSettings extends Document {
   callOutcomes: {
     value: string
@@ -157,6 +175,8 @@ export interface ICrmSettings extends Document {
   retentionPurgeEnabled: boolean
   // ── Transcription des appels (lot C) ──
   callTranscription: { enabled: boolean; language: string; retentionMonths: number }
+  // ── Analyse d'appel (lot D) ──
+  callAnalysis: ICallAnalysisSettings
   createdAt: Date
   updatedAt: Date
 }

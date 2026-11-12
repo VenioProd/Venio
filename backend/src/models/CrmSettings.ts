@@ -1,5 +1,6 @@
 import mongoose, { Model } from 'mongoose'
 import type { ICrmSettings } from '../types/models/index.js'
+import { DEFAULT_CALL_ANALYSIS_SETTINGS } from '../lib/callAnalysis/heat.js'
 
 interface CrmSettingsModel extends Model<ICrmSettings> {
   getSettings(): Promise<ICrmSettings>
@@ -252,6 +253,56 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
       enabled: { type: Boolean, default: true },
       language: { type: String, default: 'fr', trim: true, lowercase: true, match: /^[a-z]{2}(_[a-z]{2})?$/ },
       retentionMonths: { type: Number, default: 12, min: 1, max: 36 },
+    },
+
+    // ═══════════════════════════════════════════════════════════════
+    // ANALYSE D'APPEL (lot D) — inopérante sans ANTHROPIC_API_KEY
+    // ═══════════════════════════════════════════════════════════════
+    // Grille contrôlée par heatGridError (lib/callAnalysis/heat) ; une grille invalide retombe sur celle de départ.
+    callAnalysis: {
+      type: new mongoose.Schema(
+        {
+          enabled: { type: Boolean, default: true },
+          heatGrid: {
+            criteria: {
+              type: [
+                {
+                  _id: false,
+                  key: { type: String, required: true, maxlength: 40 },
+                  label: { type: String, required: true, maxlength: 80 },
+                  max: { type: Number, required: true, min: -100, max: 100 },
+                  description: { type: String, default: '', maxlength: 300 },
+                },
+              ],
+              default: () => DEFAULT_CALL_ANALYSIS_SETTINGS.heatGrid.criteria.map((criterion) => ({ ...criterion })),
+            },
+            thresholds: {
+              tiede: {
+                type: Number,
+                default: DEFAULT_CALL_ANALYSIS_SETTINGS.heatGrid.thresholds.tiede,
+                min: 1,
+                max: 100,
+              },
+              chaud: {
+                type: Number,
+                default: DEFAULT_CALL_ANALYSIS_SETTINGS.heatGrid.thresholds.chaud,
+                min: 1,
+                max: 100,
+              },
+              tresChaud: {
+                type: Number,
+                default: DEFAULT_CALL_ANALYSIS_SETTINGS.heatGrid.thresholds.tresChaud,
+                min: 1,
+                max: 100,
+              },
+            },
+          },
+          // Analyses et transcripts : un an au plus (doctrine CNIL sur les documents d'analyse).
+          retentionMonths: { type: Number, default: 12, min: 1, max: 12 },
+        },
+        { _id: false },
+      ),
+      default: () => ({}),
     },
   },
   { timestamps: true },

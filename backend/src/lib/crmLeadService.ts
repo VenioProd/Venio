@@ -36,7 +36,7 @@ export const LEAD_PRIORITIES = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE'] as const
 export const LEAD_TEMPERATURES = ['FROID', 'TIEDE', 'CHAUD', 'TRES_CHAUD'] as const
 const CLOSED_STATUSES = ['WON', 'LOST']
 
-export type LeadChangeSource = 'admin' | 'bulk' | 'agent' | 'form' | 'rule' | 'scheduler'
+export type LeadChangeSource = 'admin' | 'bulk' | 'agent' | 'form' | 'rule' | 'scheduler' | 'analysis'
 
 export interface LeadChangeContext {
   /** Utilisateur à l'origine du changement ; `null` pour le système (formulaire, règle, agent sans identité). */
@@ -80,6 +80,8 @@ export const SOURCE_POLICY: Record<LeadChangeSource, SourcePolicy> = {
   bulk: { autoQualify: false, assignmentEmail: false, statusNotifications: false },
   rule: { autoQualify: false, assignmentEmail: false, statusNotifications: false },
   scheduler: { autoQualify: false, assignmentEmail: false, statusNotifications: false },
+  // Analyse d'appel validée par un humain (lib/callAnalysis) : même politique que l'action groupée.
+  analysis: { autoQualify: false, assignmentEmail: false, statusNotifications: false },
 }
 
 /** Erreur métier : la route la traduit dans son propre format d'erreur. */

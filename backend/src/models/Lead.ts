@@ -122,6 +122,34 @@ const leadSchema = new mongoose.Schema<ILead>(
     doNotContactReason: { type: String, default: '', maxlength: 200 },
     // Données personnelles effacées (conservation échue ou demande de la personne).
     anonymizedAt: { type: Date, default: null },
+    // ── Analyse d'appel (lot D) ── : écrits seulement quand un humain applique une analyse (lib/callAnalysis).
+    qualification: {
+      type: new mongoose.Schema(
+        {
+          need: { type: String, default: '', maxlength: 500 },
+          timeline: { type: String, default: '', maxlength: 300 },
+          decisionMaker: { type: String, default: '', maxlength: 300 },
+          objections: { type: [{ type: String, maxlength: 300 }], default: [] },
+          competitors: { type: [{ type: String, maxlength: 120 }], default: [] },
+        },
+        { _id: false },
+      ),
+      default: () => ({}),
+    },
+    lastCallAnalysisAt: { type: Date, default: null },
+    // Seule écriture automatique de l'analyse : opposition détectée, la fiche sort de la file jusqu'à décision humaine.
+    callHold: {
+      type: new mongoose.Schema(
+        {
+          at: { type: Date, required: true },
+          reason: { type: String, enum: ['OPT_OUT_DETECTED'], required: true },
+          analysis: { type: mongoose.Schema.Types.ObjectId, ref: 'CallAnalysis', required: true },
+          call: { type: mongoose.Schema.Types.ObjectId, ref: 'Call', required: true },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
   },
   { timestamps: true },
 )

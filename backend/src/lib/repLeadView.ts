@@ -28,6 +28,16 @@ export function toRepLead(lead: ILead) {
     lostReason: lead.lostReason,
     lostComment: lead.lostComment,
     handedOffAt: lead.closingHandoff?.at ?? null,
+    // Champs de l'analyse d'appel : absents des leads antérieurs, et la file passe par un aggregate sans défauts.
+    qualification: {
+      need: lead.qualification?.need ?? '',
+      timeline: lead.qualification?.timeline ?? '',
+      decisionMaker: lead.qualification?.decisionMaker ?? '',
+      objections: lead.qualification?.objections ?? [],
+      competitors: lead.qualification?.competitors ?? [],
+    },
+    lastCallAnalysisAt: lead.lastCallAnalysisAt ?? null,
+    callHold: lead.callHold ? { at: lead.callHold.at, reason: lead.callHold.reason } : null,
     createdAt: lead.createdAt,
     updatedAt: lead.updatedAt,
   }
