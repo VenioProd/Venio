@@ -63,6 +63,7 @@ const CommercialLeadDetail = () => {
     body: '',
   })
   const [callsKey, setCallsKey] = useState(0)
+  const [openCall, setOpenCall] = useState<{ callId: string; nonce: number } | null>(null)
   const [handoffMessage, setHandoffMessage] = useState('')
   const [confirmHandoff, setConfirmHandoff] = useState(false)
   const [notFound, setNotFound] = useState(false)
@@ -245,6 +246,18 @@ const CommercialLeadDetail = () => {
       {lead.callHold && (
         <p className="commercial-hold" role="status">
           <strong>{t('commercial.hold.title')}</strong> {t('commercial.hold.body')}
+          {lead.callHold.call && (
+            <>
+              {' '}
+              <button
+                type="button"
+                className="ci-link"
+                onClick={() => setOpenCall({ callId: lead.callHold!.call!, nonce: Date.now() })}
+              >
+                {t('commercial.hold.open')}
+              </button>
+            </>
+          )}
         </p>
       )}
 
@@ -389,6 +402,8 @@ const CommercialLeadDetail = () => {
           refreshKey={callsKey}
           readOnly={Boolean(lead.handedOffAt)}
           onApplied={() => void load()}
+          holdCallId={lead.callHold?.call ?? null}
+          openRequest={openCall}
         />
       </div>
     </>

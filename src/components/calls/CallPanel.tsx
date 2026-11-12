@@ -10,12 +10,14 @@ export default function CallPanel({
   readOnly,
   canLiftHold,
   onApplied,
+  holdCall,
 }: {
   call: LeadCall
   apiPrefix?: string
   readOnly?: boolean
   canLiftHold?: boolean
   onApplied?: () => void
+  holdCall?: boolean
 }) {
   return (
     <div className="ci-call-panel">
@@ -26,6 +28,7 @@ export default function CallPanel({
         readOnly={readOnly}
         canLiftHold={canLiftHold}
         onApplied={onApplied}
+        holdCall={holdCall}
       />
     </div>
   )

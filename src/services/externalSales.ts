@@ -30,7 +30,7 @@ export interface RepLead {
   lostComment: string
   handedOffAt: string | null
   /** Retenue après une opposition détectée sur un appel : la fiche n'est plus appelable en attendant la décision. */
-  callHold?: { at: string; reason: string } | null
+  callHold?: { at: string; reason: string; call?: string | null } | null
   createdAt: string
   updatedAt: string
 }

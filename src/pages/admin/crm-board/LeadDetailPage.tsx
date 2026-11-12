@@ -72,6 +72,7 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
   const [confirm, setConfirm] = useState<'archive' | 'delete' | null>(null)
   // Relit les appels après un appel passé ici ; relit la fiche quand une analyse l'a modifiée.
   const [callsRefresh, setCallsRefresh] = useState(0)
+  const [openCall, setOpenCall] = useState<{ callId: string; nonce: number } | null>(null)
   const moreRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const [menuPos, setMenuPos] = useState<React.CSSProperties>({})
@@ -305,7 +306,14 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
           {lead.callHold && (
             <p className="crm-detail-hold" role="status">
               <strong>{t('commercial.hold.title')}</strong> {t('commercial.hold.bodyTeam')}{' '}
-              <button type="button" className="crm-detail-hold-link" onClick={() => setTab('calls')}>
+              <button
+                type="button"
+                className="crm-detail-hold-link"
+                onClick={() => {
+                  setTab('calls')
+                  if (lead.callHold?.call) setOpenCall({ callId: lead.callHold.call, nonce: Date.now() })
+                }}
+              >
                 {t('crm.detail.holdOpen')}
               </button>
             </p>
@@ -483,6 +491,8 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
                 readOnly={!canManageCrm}
                 canLiftHold={canManageCrm}
                 onApplied={reloadLead}
+                holdCallId={lead.callHold?.call ?? null}
+                openRequest={openCall}
               />
             )}
             {tab === 'sequences' && <LeadSequencesPanel leadId={lead._id} canManageCrm={canManageCrm} />}

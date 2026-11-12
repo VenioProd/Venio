@@ -25,6 +25,11 @@ export interface CallInsightsProps {
   canLiftHold?: boolean
   /** Appelée après une application réussie (pour rafraîchir la fiche autour). */
   onApplied?: () => void
+  /**
+   * Cet appel retient la fiche (`callHold.call`). Sert quand l'analyse a été effacée par une opposition à
+   * l'enregistrement : l'équipe décide alors de la retenue par l'appel.
+   */
+  holdCall?: boolean
   className?: string
 }
 
@@ -47,6 +52,7 @@ export default function CallInsights({
   readOnly = false,
   canLiftHold = false,
   onApplied,
+  holdCall = false,
   className = '',
 }: CallInsightsProps) {
   const { t } = useI18n()
@@ -260,14 +266,18 @@ export default function CallInsights({
   }
 
   const hasTranscript = transcript?.status === 'DONE'
+  // La retenue de la fiche peut venir d'un autre appel : seul celui qui l'a posée la décide (sinon 409 NO_CALL_HOLD).
+  const hold = analysis?.current.callHold as { call?: unknown } | null | undefined
+  const heldHere = Boolean(hold) && (!hold?.call || String(hold.call) === callId)
+  const erasedHold = !analysis && holdCall && canLiftHold && !readOnly
 
   return (
     <div className={`call-insights ${className}`.trim()}>
-      {output?.optOut.detected && (
+      {(output?.optOut.detected || erasedHold) && (
         <OptOutAlert
-          quote={output.optOut.quote}
+          quote={output?.optOut.quote ?? null}
           onQuote={hasTranscript ? showQuote : undefined}
-          held={Boolean(analysis?.current.callHold)}
+          held={heldHere || erasedHold}
           onConfirm={readOnly ? undefined : () => decideHold('CONFIRM')}
           onLift={readOnly || !canLiftHold ? undefined : () => decideHold('DISMISS')}
         />

@@ -78,6 +78,7 @@ function installApi() {
     if (path === `${PREFIX}/calls/call1`)
       return { _id: 'call1', lead: 'lead1', status: 'NO_ANSWER', durationSec: 0, suggestedOutcome: 'NRP' }
     if (path === `${PREFIX}/leads/lead1/quick-call`) return { interactionId: 'interaction1' }
+    if (path === `${PREFIX}/calls/script-tags`) return { scriptTags: [...settings.scriptTags, 'Relance devis'] }
     throw new Error(`Unexpected path: ${path}`)
   }) as typeof apiFetch)
 }
@@ -117,7 +118,7 @@ describe('File d’appels de l’équipe', () => {
     vi.unstubAllGlobals()
   })
 
-  it('lit la file de l’équipe, sans import de listes ni ajout d’étiquette de script', async () => {
+  it('lit la file de l’équipe sans import de listes ; ajoute une étiquette de script par son routeur', async () => {
     renderDesk()
     expect(await screen.findByRole('button', { name: /Atelier Alpha/ })).toBeInTheDocument()
     expect(requests.map((item) => item.path)).toEqual(
@@ -128,7 +129,15 @@ describe('File d’appels de l’équipe', () => {
     expect(screen.queryByText(/Importer/i)).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Atelier Alpha/ }))
     await screen.findByRole('group', { name: 'Appel téléphonique' })
-    expect(screen.queryByLabelText('Ajouter un script')).not.toBeInTheDocument()
+    // Le serveur monte l'ajout pour l'équipe (MANAGE_CRM, que l'onglet exige) : l'écran le propose.
+    fireEvent.change(screen.getByLabelText('Ajouter un script'), { target: { value: 'Relance devis' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un script' }))
+    await waitFor(() =>
+      expect(requests.find((item) => item.path === `${PREFIX}/calls/script-tags`)).toMatchObject({
+        method: 'POST',
+        body: { tag: 'Relance devis' },
+      }),
+    )
   })
 
   it('bascule entre « mes fiches » et « tout mon périmètre » en relisant la file', async () => {

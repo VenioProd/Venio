@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useI18n } from '../../context/I18nContext'
 import { formatDateTime } from '../../i18n/format'
@@ -18,6 +18,10 @@ export interface LeadCallsListProps {
   canLiftHold?: boolean
   /** Appelée après une application d'analyse ou une décision sur une opposition : la fiche autour doit se recharger. */
   onApplied?: () => void
+  /** L'appel qui retient la fiche (`callHold.call`). */
+  holdCallId?: string | null
+  /** Demande d'ouverture d'un appel (bandeau de retenue) ; `nonce` permet de la répéter. */
+  openRequest?: { callId: string; nonce: number } | null
 }
 
 /** Les appels d'une fiche, du plus récent au plus ancien ; ouvrir un appel décroché affiche son audio, son transcript et son analyse. */
@@ -28,10 +32,22 @@ export default function LeadCallsList({
   readOnly,
   canLiftHold,
   onApplied,
+  holdCallId,
+  openRequest,
 }: LeadCallsListProps) {
   const { t } = useI18n()
   const { calls, loading, error, reload } = useLeadCalls(leadId, apiPrefix, refreshKey)
   const [openId, setOpenId] = useState<string | null>(null)
+  const [handled, setHandled] = useState<{ callId: string; nonce: number } | null>(null)
+  const requested = openRequest && openRequest !== handled && calls.some((call) => call._id === openRequest.callId)
+  if (requested) {
+    setHandled(openRequest)
+    setOpenId(openRequest.callId)
+  }
+  // L'appel demandé depuis le bandeau de retenue est ouvert puis amené à l'écran.
+  useEffect(() => {
+    if (handled) document.getElementById(`ci-call-${handled.callId}`)?.scrollIntoView?.({ block: 'start' })
+  }, [handled])
 
   return (
     <section className="ci-lead-calls" aria-labelledby={`ci-lead-calls-${leadId}`}>
@@ -93,6 +109,7 @@ export default function LeadCallsList({
                     apiPrefix={apiPrefix}
                     readOnly={readOnly}
                     canLiftHold={canLiftHold}
+                    holdCall={Boolean(holdCallId) && holdCallId === call._id}
                     onApplied={() => {
                       reload()
                       onApplied?.()

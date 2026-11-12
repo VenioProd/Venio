@@ -27,7 +27,7 @@ function RecentCallItem({
 }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
-  const { calls } = useLeadCalls(item.leadId, apiPrefix, item.callId)
+  const { calls, reload } = useLeadCalls(item.leadId, apiPrefix, item.callId)
   const call = calls.find((candidate) => candidate._id === item.callId)
   const ready = Boolean(call && (call.transcriptStatus === 'DONE' || call.analysisStatus !== null))
   const analysisReady = call?.analysisStatus === 'READY'
@@ -79,7 +79,16 @@ function RecentCallItem({
       </span>
       {open && call && (
         <div id={panelId} className="recent-call-body">
-          <CallPanel call={call} apiPrefix={apiPrefix} canLiftHold={canLiftHold} onApplied={onApplied} />
+          <CallPanel
+            call={call}
+            apiPrefix={apiPrefix}
+            canLiftHold={canLiftHold}
+            onApplied={() => {
+              // Les puces de l'appel suivent la décision (analyse appliquée, retenue décidée).
+              reload()
+              onApplied()
+            }}
+          />
         </div>
       )}
     </li>

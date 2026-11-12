@@ -110,6 +110,8 @@ export interface CallAnalysis {
 export interface CallHold {
   at: string
   reason: string
+  /** L'appel dont l'analyse a posé la retenue. */
+  call?: string | null
 }
 
 export interface AnalysisResponse {

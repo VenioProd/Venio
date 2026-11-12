@@ -29,7 +29,8 @@ export const teamDesk: CallDeskApi = {
   apiPrefix: TEAM_CALL_DESK_PREFIX,
   team: true,
   allowImport: false,
-  allowScriptTags: false,
+  // Même règle que pour l'externe : le serveur monte l'ajout pour l'équipe à `MANAGE_CRM`, l'onglet l'exige déjà.
+  allowScriptTags: true,
   mineToggle: true,
   canLiftHold: true,
   settings: () => apiFetch<CallSettings>(`${TEAM_CALL_DESK_PREFIX}/calls/settings`),
@@ -53,8 +54,11 @@ export const teamDesk: CallDeskApi = {
     apiFetch<{ lead: RepLead }>(`${TEAM_CALL_DESK_PREFIX}/leads/${leadId}/quick-call/${interactionId}/undo`, {
       method: 'POST',
     }),
-  // Le routeur de l'équipe n'a pas d'étiquettes de script propres : celles des réglages suffisent.
-  addScriptTag: () => Promise.reject(new Error('NOT_AVAILABLE')),
+  addScriptTag: (tag) =>
+    apiFetch<{ scriptTags: string[] }>(`${TEAM_CALL_DESK_PREFIX}/calls/script-tags`, {
+      method: 'POST',
+      ...json({ tag }),
+    }),
   history: (leadId) =>
     fetchTimeline('LEAD', leadId, 5).then((data) =>
       data.entries

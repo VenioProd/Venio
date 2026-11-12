@@ -267,4 +267,34 @@ describe('CallInsights — alignements sur le serveur', () => {
     expect(await screen.findByText(/Retenue levée/)).toBeInTheDocument()
     expect(server.requests.find((item) => item.path.endsWith('/analysis/opt-out'))?.body).toEqual({ action: 'DISMISS' })
   })
+
+  it('ne propose de décider la retenue que sur l’appel qui l’a posée', async () => {
+    server.analysis!.analysis.output!.optOut = { detected: true, quote: 'ne me rappelez plus' }
+    server.analysis!.current.callHold = { at: '2026-11-12T10:07:00.000Z', reason: 'OPT_OUT_DETECTED', call: 'autre' }
+    mount({ canLiftHold: true })
+    expect(await screen.findByText('Le prospect semble refuser d’être rappelé')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Confirmer : ne plus appeler' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Lever la retenue' })).not.toBeInTheDocument()
+  })
+})
+
+describe('Retenue ouverte depuis le bandeau (callHold.call)', () => {
+  it('ouvre l’appel qui retient la fiche ; analyse effacée, l’équipe décide quand même par l’appel', async () => {
+    server.calls = [
+      call({ _id: 'call2', durationSec: 61 }),
+      call({ recording: { status: 'DELETED', objection: true }, transcriptStatus: null, analysisStatus: null }),
+    ]
+    server.transcript = null
+    server.analysis = null
+    render(<LeadCallsList leadId="lead1" canLiftHold holdCallId="call1" openRequest={{ callId: 'call1', nonce: 1 }} />)
+    expect(await screen.findByRole('button', { name: /6:42/ })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: /1:01/ })).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(await screen.findByRole('button', { name: 'Lever la retenue' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Oui, lever la retenue' }))
+    await waitFor(() =>
+      expect(server.requests.find((item) => item.path.endsWith('/calls/call1/analysis/opt-out'))?.body).toEqual({
+        action: 'DISMISS',
+      }),
+    )
+  })
 })

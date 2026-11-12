@@ -195,6 +195,7 @@ const fr = {
   'commercial.calls.scopeMine': 'Mes fiches',
   'commercial.calls.scopeAll': 'Tout mon périmètre',
   'commercial.hold.title': 'Fiche retenue.',
+  'commercial.hold.open': 'Ouvrir l’appel concerné',
   'commercial.hold.body':
     'Une opposition a été détectée sur un appel : la fiche ne sera pas rappelée tant qu’elle n’est pas confirmée ou levée. Ouvrez l’analyse de l’appel pour confirmer l’opposition ; lever la retenue revient à l’équipe.',
   'commercial.recent.title': 'Appels de la séance',
