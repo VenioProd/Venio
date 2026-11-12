@@ -3,6 +3,10 @@ import { createPortal } from 'react-dom'
 import ConfirmModal from '../../../components/ConfirmModal'
 import './crm.css'
 import { Link } from 'react-router-dom'
+import { apiFetch } from '../../../lib/api'
+import LeadCallsList from '../../../components/calls/LeadCallsList'
+import LeadCallBar from './LeadCallBar'
+import { TEAM_CALL_DESK_PREFIX } from './teamDeskApi'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
 import InteractionTimeline from '../../../components/admin/InteractionTimeline'
@@ -41,6 +45,8 @@ interface LeadDetailPageProps {
   mergeCandidates?: Lead[]
   /** Appelé après une fusion réussie : le lead de la fiche n'existe plus. */
   onMerged?: (target: { _id: string; company: string }) => void
+  /** Fiche ouverte depuis le bouton d'appel de la file de travail : l'appel est mis à portée de clavier. */
+  focusCall?: boolean
 }
 
 const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
@@ -55,6 +61,7 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
   onDeleteLead,
   mergeCandidates = [],
   onMerged,
+  focusCall = false,
 }) => {
   const { t } = useI18n()
   const [merging, setMerging] = useState(false)
@@ -63,12 +70,15 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
   const [tab, setTab] = useState('details')
   const [more, setMore] = useState(false)
   const [confirm, setConfirm] = useState<'archive' | 'delete' | null>(null)
+  // Relit les appels après un appel passé ici ; relit la fiche quand une analyse l'a modifiée.
+  const [callsRefresh, setCallsRefresh] = useState(0)
   const moreRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const [menuPos, setMenuPos] = useState<React.CSSProperties>({})
   const tabs = [
     ['details', 'crm.detail.details'],
     ['revenue', 'crm.detail.revenueChain'],
+    ['calls', 'crm.detail.calls'],
     ['sequences', 'crm.detail.sequences'],
     ['privacy', 'crm.detail.privacy'],
   ] as const
@@ -102,6 +112,11 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
       document.removeEventListener('keydown', key)
     }
   }, [more])
+  const reloadLead = () => {
+    apiFetch<{ lead: Lead }>(`/api/admin/crm/leads/${lead._id}`)
+      .then((data) => onLeadChange(() => data.lead))
+      .catch(() => undefined)
+  }
   const focusComposer = (email: boolean) => {
     const timeline = timelineRef.current
     if (email && !timeline?.querySelector('.interaction-email-composer'))
@@ -255,14 +270,6 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
                   {t('crm.detail.sendEmail')}
                 </button>
               )}
-              {lead.contactPhone && (
-                <a
-                  href={`tel:${lead.contactPhone.replace(/\s/g, '')}`}
-                  className="portal-button secondary crm-modal-quick-btn"
-                >
-                  {t('crm.detail.call')}
-                </a>
-              )}
               <button
                 type="button"
                 className="portal-button secondary crm-modal-quick-btn"
@@ -286,7 +293,23 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
                 {t('crm.detail.copyInfo')}
               </button>
             </div>
+            {canManageCrm && lead.contactPhone && (
+              <LeadCallBar
+                lead={lead}
+                focusOnReady={focusCall}
+                onSettled={() => setCallsRefresh((value) => value + 1)}
+              />
+            )}
           </div>
+
+          {lead.callHold && (
+            <p className="crm-detail-hold" role="status">
+              <strong>{t('commercial.hold.title')}</strong> {t('commercial.hold.bodyTeam')}{' '}
+              <button type="button" className="crm-detail-hold-link" onClick={() => setTab('calls')}>
+                {t('crm.detail.holdOpen')}
+              </button>
+            </p>
+          )}
 
           {notice && (
             <p className="rich-notice" role="status">
@@ -450,6 +473,16 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
                 canManageCrm={canManageCrm}
                 onUpdateLead={onUpdateLead}
                 onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
+              />
+            )}
+            {tab === 'calls' && (
+              <LeadCallsList
+                leadId={lead._id}
+                apiPrefix={TEAM_CALL_DESK_PREFIX}
+                refreshKey={callsRefresh}
+                readOnly={!canManageCrm}
+                canLiftHold={canManageCrm}
+                onApplied={reloadLead}
               />
             )}
             {tab === 'sequences' && <LeadSequencesPanel leadId={lead._id} canManageCrm={canManageCrm} />}

@@ -16,6 +16,7 @@ interface WorklistViewProps {
   onLogContact: (leadId: string, payload: { nextActionAt: string | null; note: string }) => Promise<boolean>
   onAddNote: (leadId: string, text: string) => Promise<boolean>
   onOpenDetail: (lead: Lead) => void
+  onCall?: (lead: Lead) => void
 }
 
 const WorklistView: React.FC<WorklistViewProps> = ({
@@ -30,6 +31,7 @@ const WorklistView: React.FC<WorklistViewProps> = ({
   onLogContact,
   onAddNote,
   onOpenDetail,
+  onCall,
 }) => {
   const { t } = useI18n()
   if (loading && !groups) {
@@ -74,6 +76,7 @@ const WorklistView: React.FC<WorklistViewProps> = ({
                 onLogContact={onLogContact}
                 onAddNote={onAddNote}
                 onOpenDetail={onOpenDetail}
+                onCall={onCall}
               />
             ))}
           </ul>

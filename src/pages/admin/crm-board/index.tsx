@@ -249,9 +249,12 @@ const CrmBoard = ({ queue = false, onOverdueCount }: { queue?: boolean; onOverdu
   const backParams = new URLSearchParams(location.search)
   const returnTo = backParams.get('from') === 'queue' ? '/admin/crm/a-traiter' : '/admin/crm'
   backParams.delete('from')
+  const callRequested = backParams.get('appel') === '1'
+  backParams.delete('appel')
   const closeDetail = () => navigate(`${returnTo}?${backParams}${location.hash}`)
-  const openDetail = (lead: Lead) => {
+  const openDetail = (lead: Lead, options: { call?: boolean } = {}) => {
     const params = new URLSearchParams(searchParams)
+    params.delete('appel')
     params.set('scroll', String(Math.round(window.scrollY)))
     params.set('tableScroll', String(Math.round(boardRef.current?.querySelector('.rich-table-wrap')?.scrollTop || 0)))
     params.set('boardX', String(Math.round(boardRef.current?.querySelector('.crm-board')?.scrollLeft || 0)))
@@ -262,7 +265,10 @@ const CrmBoard = ({ queue = false, onOverdueCount }: { queue?: boolean; onOverdu
     if (queue || requestedMode === 'file') params.set('from', 'queue')
     setSearchParams(new URLSearchParams(params), { replace: true })
     setExpandedLead(lead)
-    navigate(`/admin/crm/leads/${lead._id}?${params}${location.hash}`)
+    // `appel=1` ne vaut que pour la fiche : il n'entre pas dans l'adresse de la liste.
+    const target = new URLSearchParams(params)
+    if (options.call) target.set('appel', '1')
+    navigate(`/admin/crm/leads/${lead._id}?${target}${location.hash}`)
   }
   useEffect(() => {
     if (!linkedLeadId) {
@@ -647,6 +653,7 @@ const CrmBoard = ({ queue = false, onOverdueCount }: { queue?: boolean; onOverdu
                   onLogContact={handleLogContact}
                   onAddNote={handleAddNote}
                   onOpenDetail={openDetail}
+                  onCall={canManageCrm ? (lead) => openDetail(lead, { call: true }) : undefined}
                 />
               ) : loading && allLeads.length === 0 ? (
                 <div className="admin-loading" style={{ padding: 32 }}>
@@ -710,6 +717,7 @@ const CrmBoard = ({ queue = false, onOverdueCount }: { queue?: boolean; onOverdu
               onUpdateLead={handleUpdateLead}
               onConvertToClient={handleConvertToClient}
               onDeleteLead={handleDeleteLead}
+              focusCall={callRequested}
               mergeCandidates={allLeads}
               onMerged={async () => {
                 closeDetail()

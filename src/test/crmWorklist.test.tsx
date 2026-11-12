@@ -129,6 +129,59 @@ describe('WorklistView — actions', () => {
   })
 })
 
+describe('WorklistView — appel', () => {
+  const onCall = vi.fn()
+  const renderCalls = (leads: Lead[], canManageCrm = true, withCall = true) =>
+    render(
+      <WorklistView
+        groups={{ ...emptyGroups, today: leads }}
+        thresholds={DEFAULT_WORKLIST_THRESHOLDS}
+        followUp={DEFAULT_FOLLOW_UP}
+        adminsById={{}}
+        canManageCrm={canManageCrm}
+        loading={false}
+        busyLeadId={null}
+        {...handlers}
+        onCall={withCall ? onCall : undefined}
+      />,
+    )
+
+  it('ouvre la fiche prête à appeler sans toucher au panneau « consigner un contact »', async () => {
+    renderCalls([makeLead({ _id: 'a', company: 'Acme', contactPhone: '+33612345678' })])
+
+    fireEvent.click(screen.getByRole('button', { name: /Appeler Acme/ }))
+    expect(onCall).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ _id: 'a' }))
+    expect(handlers.onOpenDetail).not.toHaveBeenCalled()
+    expect(screen.queryByRole('form')).not.toBeInTheDocument()
+
+    // Le panneau existant continue de s'ouvrir et de consigner le contact.
+    fireEvent.click(screen.getByRole('button', { name: 'Contacté' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await waitFor(() => expect(handlers.onLogContact).toHaveBeenCalledTimes(1))
+  })
+
+  it("n'offre pas l'appel sans numéro, sur une fiche retenue, sans permission ou sans gestionnaire", () => {
+    const leads = [
+      makeLead({ _id: 'a', company: 'SansNumero' }),
+      makeLead({
+        _id: 'b',
+        company: 'Retenue',
+        contactPhone: '+33611111111',
+        callHold: { at: '2026-11-12T10:00:00.000Z', reason: 'OPT_OUT' },
+      }),
+    ]
+    const { unmount } = renderCalls(leads)
+    expect(screen.queryByRole('button', { name: /Appeler/ })).not.toBeInTheDocument()
+    unmount()
+    const withPhone = [makeLead({ _id: 'c', company: 'Acme', contactPhone: '+33612345678' })]
+    const { unmount: again } = renderCalls(withPhone, false)
+    expect(screen.queryByRole('button', { name: /Appeler/ })).not.toBeInTheDocument()
+    again()
+    renderCalls(withPhone, true, false)
+    expect(screen.queryByRole('button', { name: /Appeler/ })).not.toBeInTheDocument()
+  })
+})
+
 describe('getLeadAlerts — seuils configurés', () => {
   const daysAgo = (days: number) => {
     const date = new Date()

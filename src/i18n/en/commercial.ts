@@ -190,6 +190,11 @@ const en: Record<keyof typeof fr, string> = {
   'commercial.admin.paidOn': 'Paid on {date}',
   'commercial.admin.due': 'Owed',
   'commercial.hold.tag': 'On hold',
+  'commercial.hold.bodyTeam':
+    'An opt-out was detected on a call: the lead will not be called again until it is confirmed or lifted. Open the call analysis to confirm the opt-out or lift the hold.',
+  'commercial.calls.scope': 'Queue scope',
+  'commercial.calls.scopeMine': 'My leads',
+  'commercial.calls.scopeAll': 'Everything I can reach',
   'commercial.hold.title': 'Lead on hold.',
   'commercial.hold.body':
     'An opt-out was detected on a call: the lead will not be called again until it is confirmed or lifted. Open the call analysis to confirm the opt-out; lifting the hold is up to the team.',

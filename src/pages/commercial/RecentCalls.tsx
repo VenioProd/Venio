@@ -14,16 +14,20 @@ export interface RecentCall {
 
 function RecentCallItem({
   item,
+  apiPrefix,
+  canLiftHold,
   onDismiss,
   onApplied,
 }: {
   item: RecentCall
+  apiPrefix?: string
+  canLiftHold?: boolean
   onDismiss: () => void
   onApplied: () => void
 }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
-  const { calls } = useLeadCalls(item.leadId, undefined, item.callId)
+  const { calls } = useLeadCalls(item.leadId, apiPrefix, item.callId)
   const call = calls.find((candidate) => candidate._id === item.callId)
   const ready = Boolean(call && (call.transcriptStatus === 'DONE' || call.analysisStatus !== null))
   const analysisReady = call?.analysisStatus === 'READY'
@@ -75,7 +79,7 @@ function RecentCallItem({
       </span>
       {open && call && (
         <div id={panelId} className="recent-call-body">
-          <CallPanel call={call} onApplied={onApplied} />
+          <CallPanel call={call} apiPrefix={apiPrefix} canLiftHold={canLiftHold} onApplied={onApplied} />
         </div>
       )}
     </li>
@@ -88,10 +92,14 @@ function RecentCallItem({
  */
 export default function RecentCalls({
   items,
+  apiPrefix,
+  canLiftHold,
   onDismiss,
   onApplied,
 }: {
   items: RecentCall[]
+  apiPrefix?: string
+  canLiftHold?: boolean
   onDismiss: (callId: string) => void
   onApplied: (leadId: string) => void
 }) {
@@ -105,6 +113,8 @@ export default function RecentCalls({
           <RecentCallItem
             key={item.callId}
             item={item}
+            apiPrefix={apiPrefix}
+            canLiftHold={canLiftHold}
             onDismiss={() => onDismiss(item.callId)}
             onApplied={() => onApplied(item.leadId)}
           />

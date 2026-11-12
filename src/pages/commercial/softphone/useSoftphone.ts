@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useI18n } from '../../../context/I18nContext'
-import { callsApi } from '../../../services/calls'
+import { createCallsApi, DEFAULT_CALLS_PREFIX } from '../../../services/calls'
 import {
   isSoftphoneSupported,
   listMicrophones,
@@ -43,7 +43,11 @@ export interface SoftphoneController extends SoftphoneSnapshot {
  * démonter l'écran raccroche.
  */
 export function useSoftphone(
-  options: { onSettled?: (call: SettledCall) => void } = {},
+  options: {
+    onSettled?: (call: SettledCall) => void
+    /** Routeur d'appels de l'écran : `/api/commercial` par défaut, `/api/admin/call-desk` pour l'équipe. */
+    apiPrefix?: string
+  } = {},
   engine: Softphone = softphone,
 ): SoftphoneController {
   const { t } = useI18n()
@@ -52,11 +56,12 @@ export function useSoftphone(
   const [recording, setRecording] = useState<RecordingConfig>({ enabled: false, notice: false })
   const [microphones, setMicrophones] = useState<{ id: string; label: string }[]>([])
   const supported = isSoftphoneSupported()
+  const prefix = options.apiPrefix ?? DEFAULT_CALLS_PREFIX
   const active = snapshot.phase !== 'idle'
 
   useEffect(() => {
     let current = true
-    callsApi
+    createCallsApi(prefix)
       .config()
       .then((value) => {
         if (!current) return
@@ -68,7 +73,7 @@ export function useSoftphone(
     return () => {
       current = false
     }
-  }, [engine])
+  }, [engine, prefix])
 
   const onSettled = useRef(options.onSettled)
   useEffect(() => {
@@ -139,7 +144,7 @@ export function useSoftphone(
     checking: !unavailable && config === 'loading',
     recording,
     microphones,
-    start: useCallback((leadId: string) => void engine.start(leadId), [engine]),
+    start: useCallback((leadId: string) => void engine.start(leadId, prefix), [engine, prefix]),
     hangup: useCallback(() => engine.hangup(), [engine]),
     toggleMute: useCallback(() => engine.toggleMute(), [engine]),
     sendDigit: useCallback((digit: string) => engine.sendDigit(digit), [engine]),

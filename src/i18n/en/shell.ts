@@ -2,6 +2,7 @@ import type fr from '../fr/shell'
 
 const en: Record<keyof typeof fr, string> = {
   'shell.hub.crm.queue': 'To do',
+  'shell.hub.crm.calls': 'Calls',
   'shell.hub.crm.pilotage': 'Sales overview',
   'shell.hub.crm.settings': 'Settings',
   'shell.zone.commercial': 'Sales',

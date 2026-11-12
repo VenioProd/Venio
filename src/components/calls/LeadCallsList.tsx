@@ -63,6 +63,9 @@ export default function LeadCallsList({
                     ? formatDuration(call.durationSec)
                     : t(`calls.status.${call.status}` as 'calls.status.COMPLETED')}
                 </span>
+                {call.author && call.own === false && (
+                  <span className="ci-muted">{t('callInsights.leadCalls.by', { name: call.author.name })}</span>
+                )}
               </span>
               {answered && <CallStateChips call={call} />}
             </>

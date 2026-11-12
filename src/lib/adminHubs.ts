@@ -78,6 +78,13 @@ export const ADMIN_HUBS = {
     subtitleKey: 'shell.hub.crm.subtitle',
     tabs: [
       { id: 'queue', labelKey: 'shell.hub.crm.queue', to: '/admin/crm/a-traiter', modules: ['crm'] },
+      {
+        id: 'appels',
+        labelKey: 'shell.hub.crm.calls',
+        to: '/admin/crm/appels',
+        modules: ['crm'],
+        permission: 'manage_crm',
+      },
       { id: 'pipeline', labelKey: 'shell.hub.crm.pipeline', to: '/admin/crm', modules: ['crm'] },
       { id: 'pilotage', labelKey: 'shell.hub.crm.pilotage', to: '/admin/crm/pilotage', modules: ['crm'] },
       {

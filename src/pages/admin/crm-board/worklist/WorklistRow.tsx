@@ -20,6 +20,8 @@ interface WorklistRowProps {
   onLogContact: (leadId: string, payload: { nextActionAt: string | null; note: string }) => Promise<boolean>
   onAddNote: (leadId: string, text: string) => Promise<boolean>
   onOpenDetail: (lead: Lead) => void
+  /** Ouvre la fiche prête à appeler (la barre d'appel a le focus ; rien n'est composé). */
+  onCall?: (lead: Lead) => void
 }
 
 const WorklistRow: React.FC<WorklistRowProps> = ({
@@ -33,6 +35,7 @@ const WorklistRow: React.FC<WorklistRowProps> = ({
   onLogContact,
   onAddNote,
   onOpenDetail,
+  onCall,
 }) => {
   const { t } = useI18n()
   const [panel, setPanel] = useState<'contact' | 'note' | null>(null)
@@ -71,6 +74,17 @@ const WorklistRow: React.FC<WorklistRowProps> = ({
               disabled={busy}
               onPostpone={(date) => onPatch(lead._id, { nextActionAt: date.toISOString() })}
             />
+            {onCall && lead.contactPhone && !lead.callHold && (
+              <button
+                type="button"
+                className="portal-button secondary crm-worklist-action"
+                disabled={busy}
+                aria-label={t('crm.worklist.callAria', { company: lead.company })}
+                onClick={() => onCall(lead)}
+              >
+                {t('crm.worklist.call')}
+              </button>
+            )}
             <button
               type="button"
               className="portal-button crm-worklist-action primary"
