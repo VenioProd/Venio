@@ -363,6 +363,7 @@ describe('action groupée du board', () => {
     expect(screen.queryByRole('button', { name: 'Ajouter à une séquence' })).toBeNull()
     fireEvent.click(screen.getByLabelText('Sélectionner Atelier Pivoine'))
     fireEvent.click(screen.getByLabelText('Sélectionner Brasserie Quai 9'))
+    fireEvent.click(screen.getByRole('button', { name: 'Plus' }))
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter à une séquence' }))
     expect(await screen.findByRole('dialog')).toHaveTextContent('2 lead(s) sélectionné(s).')
   })

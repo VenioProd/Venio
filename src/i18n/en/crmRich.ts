@@ -1,6 +1,12 @@
 import type fr from '../fr/crmRich'
 
 const en: Record<keyof typeof fr, string> = {
+  'crmRich.analytics.moved': 'Sales reporting is in the CRM',
+  'crmRich.view.archived': 'Archived',
+  'crmRich.bulk.restore': 'Restore',
+  'crmRich.bulk.restoreConfirm': 'Restore the {count} selected leads?',
+  'crmRich.bulk.more': 'More',
+  'crmRich.table.showMore': 'Show more',
   'crmRich.analytics.owner': 'Salesperson',
   'crmRich.analytics.externalRep': 'External salesperson',
   'crmRich.col.company': 'Lead',

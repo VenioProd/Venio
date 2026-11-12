@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import CrmSequences from '../sequences'
 import { useAuth } from '../../../../context/AuthContext'
 import { useI18n } from '../../../../context/I18nContext'
 import { canAdministerCrm } from '../../../../lib/crmAccess'
@@ -13,9 +15,10 @@ import { handleTabKeys } from './tabKeys'
 import { draftFromRule, emptyDraft, type CrmRule, type CrmRuleRun, type RuleDraft } from './types'
 import './automations.css'
 
-type Section = 'regles' | 'journal' | 'modeles'
+type Section = 'regles' | 'sequences' | 'journal' | 'modeles'
 const SECTIONS: Array<{ key: Section; labelKey: MessageKey }> = [
   { key: 'regles', labelKey: 'crmAuto.tab.rules' },
+  { key: 'sequences', labelKey: 'crmSeq.section' },
   { key: 'journal', labelKey: 'crmAuto.tab.journal' },
   { key: 'modeles', labelKey: 'crmAuto.tab.templates' },
 ]
@@ -28,7 +31,7 @@ interface BuilderState {
 
 const errorText = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback)
 
-export default function CrmAutomations() {
+export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (count: number) => void }) {
   const { t } = useI18n()
   const { user } = useAuth()
   // Réservé SUPER_ADMIN / ADMIN : miroir de la règle serveur (administersCrm).
@@ -39,7 +42,16 @@ export default function CrmAutomations() {
   const [pending, setPending] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [section, setSection] = useState<Section>('regles')
+  const [params, setParams] = useSearchParams()
+  const section = SECTIONS.find((item) => item.key === params.get('section'))?.key ?? 'regles'
+  const setSection = (value: Section) =>
+    setParams(
+      (current) => {
+        current.set('section', value)
+        return current
+      },
+      { replace: true },
+    )
   const [filter, setFilter] = useState<JournalFilter>('all')
   const [version, setVersion] = useState(0)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -50,18 +62,23 @@ export default function CrmAutomations() {
 
   const reload = useCallback(async () => {
     try {
-      const [list, page, pend] = await Promise.all([fetchRules(), fetchRuns({ pageSize: 50 }), fetchRuns({ status: 'PENDING', pageSize: 1 })])
+      const [list, page, pend] = await Promise.all([
+        fetchRules(),
+        fetchRuns({ pageSize: 50 }),
+        fetchRuns({ status: 'PENDING', pageSize: 1 }),
+      ])
       setRules(list)
       setRecent(page.items ?? [])
       setRecentTotal(page.total ?? 0)
       setPending(pend.total ?? 0)
+      onPendingCount?.(pend.total ?? 0)
       setLoadError(null)
     } catch (e) {
       setLoadError(errorText(e, t('crmAuto.loadError')))
     } finally {
       setLoading(false)
     }
-  }, [t])
+  }, [t, onPendingCount])
 
   useEffect(() => {
     void reload()
@@ -128,25 +145,51 @@ export default function CrmAutomations() {
     const active = rules.filter((r) => r.status === 'ACTIVE').length
     const systemActive = rules.filter((r) => r.status === 'ACTIVE' && r.system).length
     const totals = rules.reduce(
-      (acc, r) => ({ runs: acc.runs + (r.stats?.runs ?? 0), ok: acc.ok + (r.stats?.ok ?? 0), errors: acc.errors + (r.stats?.errors ?? 0) }),
+      (acc, r) => ({
+        runs: acc.runs + (r.stats?.runs ?? 0),
+        ok: acc.ok + (r.stats?.ok ?? 0),
+        errors: acc.errors + (r.stats?.errors ?? 0),
+      }),
       { runs: 0, ok: 0, errors: 0 },
     )
     const judged = totals.ok + totals.errors
-    const tasks = recent.reduce((n, run) => n + run.steps.filter((s) => s.action === 'CREATE_TASK' && s.status === 'OK').length, 0)
+    const tasks = recent.reduce(
+      (n, run) => n + run.steps.filter((s) => s.action === 'CREATE_TASK' && s.status === 'OK').length,
+      0,
+    )
     return [
-      { label: t('crmAuto.kpi.activeRules'), value: `${active}/${rules.length}`, hint: t('crmAuto.kpi.systemHint', { count: systemActive }) },
+      {
+        label: t('crmAuto.kpi.activeRules'),
+        value: `${active}/${rules.length}`,
+        hint: t('crmAuto.kpi.systemHint', { count: systemActive }),
+      },
       { label: t('crmAuto.kpi.runs'), value: String(totals.runs), hint: t('crmAuto.kpi.runsHint') },
-      { label: t('crmAuto.kpi.successRate'), value: judged > 0 ? `${Math.round((totals.ok / judged) * 100)} %` : '—', hint: t('crmAuto.kpi.errorsHint', { count: totals.errors }) },
-      { label: t('crmAuto.kpi.tasks'), value: String(tasks), hint: t('crmAuto.kpi.tasksHint', { count: recent.length }) },
-      { label: t('crmAuto.kpi.toApprove'), value: String(pending), hint: pending > 0 ? t('crmAuto.kpi.pendingHint') : t('crmAuto.kpi.nothingPending') },
+      {
+        label: t('crmAuto.kpi.successRate'),
+        value: judged > 0 ? `${Math.round((totals.ok / judged) * 100)} %` : '—',
+        hint: t('crmAuto.kpi.errorsHint', { count: totals.errors }),
+      },
+      {
+        label: t('crmAuto.kpi.tasks'),
+        value: String(tasks),
+        hint: t('crmAuto.kpi.tasksHint', { count: recent.length }),
+      },
+      {
+        label: t('crmAuto.kpi.toApprove'),
+        value: String(pending),
+        hint: pending > 0 ? t('crmAuto.kpi.pendingHint') : t('crmAuto.kpi.nothingPending'),
+      },
     ]
   }, [rules, recent, pending, t])
 
-  const applyTemplate = (template: { draft: RuleDraft }) => canAdminister && setBuilder({ rule: null, draft: template.draft })
+  const applyTemplate = (template: { draft: RuleDraft }) =>
+    canAdminister && setBuilder({ rule: null, draft: template.draft })
 
   return (
     <div className="crm-auto">
-      <p className="crm-auto-sr" role="status" aria-live="polite">{message}</p>
+      <p className="crm-auto-sr" role="status" aria-live="polite">
+        {message}
+      </p>
 
       <section className="crm-auto-kpis" aria-label={t('crmAuto.kpi.aria')}>
         {kpis.map((k) => (
@@ -166,7 +209,13 @@ export default function CrmAutomations() {
       {loadError && (
         <div className="crm-auto-notice crm-auto-notice--err" role="alert">
           <span>{loadError}</span>
-          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => void reload()}>{t('crmAuto.retry')}</button>
+          <button
+            type="button"
+            className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            onClick={() => void reload()}
+          >
+            {t('crmAuto.retry')}
+          </button>
         </div>
       )}
       {problem && (
@@ -223,7 +272,9 @@ export default function CrmAutomations() {
       <div role="tabpanel" id="crm-auto-panel-regles" aria-labelledby={tabId(0)} hidden={section !== 'regles'}>
         {section === 'regles' &&
           (loading ? (
-            <p className="crm-auto-empty crm-auto-glass" role="status">{t('crmAuto.loadingRules')}</p>
+            <p className="crm-auto-empty crm-auto-glass" role="status">
+              {t('crmAuto.loadingRules')}
+            </p>
           ) : (
             <RulesPanel
               rules={rules}
@@ -241,7 +292,10 @@ export default function CrmAutomations() {
             />
           ))}
       </div>
-      <div role="tabpanel" id="crm-auto-panel-journal" aria-labelledby={tabId(1)} hidden={section !== 'journal'}>
+      <div role="tabpanel" id="crm-auto-panel-sequences" aria-labelledby={tabId(1)} hidden={section !== 'sequences'}>
+        {section === 'sequences' && <CrmSequences />}
+      </div>
+      <div role="tabpanel" id="crm-auto-panel-journal" aria-labelledby={tabId(2)} hidden={section !== 'journal'}>
         {section === 'journal' && (
           <RunsJournal
             canAdminister={canAdminister}
@@ -256,10 +310,12 @@ export default function CrmAutomations() {
           />
         )}
       </div>
-      <div role="tabpanel" id="crm-auto-panel-modeles" aria-labelledby={tabId(2)} hidden={section !== 'modeles'}>
+      <div role="tabpanel" id="crm-auto-panel-modeles" aria-labelledby={tabId(3)} hidden={section !== 'modeles'}>
         {section === 'modeles' && <TemplatesGrid canAdminister={canAdminister} onUse={applyTemplate} />}
       </div>
-      {recentTotal > 0 && section === 'regles' && <p className="crm-auto-note">{t('crmAuto.runsNote', { count: recentTotal })}</p>}
+      {recentTotal > 0 && section === 'regles' && (
+        <p className="crm-auto-note">{t('crmAuto.runsNote', { count: recentTotal })}</p>
+      )}
 
       {builder && canAdminister && (
         <RuleBuilder
@@ -279,8 +335,20 @@ export default function CrmAutomations() {
           <h3 id="crm-auto-del-t">{t('crmAuto.deleteTitle')}</h3>
           <p>{t('crmAuto.deleteBody', { name: toDelete.name })}</p>
           <div className="crm-auto-row">
-            <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" onClick={() => setToDelete(null)}>{t('common.cancel')}</button>
-            <button type="button" className="crm-auto-btn crm-auto-btn--danger crm-auto-btn--sm" onClick={() => void confirmDelete()}>{t('common.delete')}</button>
+            <button
+              type="button"
+              className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+              onClick={() => setToDelete(null)}
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              className="crm-auto-btn crm-auto-btn--danger crm-auto-btn--sm"
+              onClick={() => void confirmDelete()}
+            >
+              {t('common.delete')}
+            </button>
           </div>
         </Dialog>
       )}

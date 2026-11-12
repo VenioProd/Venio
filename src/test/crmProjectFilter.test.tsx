@@ -69,7 +69,8 @@ describe('CRM principal — filtre Projet et anciennes écoles Arrow', () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Projet' }), { target: { value: '' } })
     expect(screen.getByText('Domaine Vigno')).toBeInTheDocument()
     expect(screen.getByText('Lead historique')).toBeInTheDocument()
-    expect(screen.getByTestId('location')).toHaveTextContent('')
+    // Le filtre Projet a quitté l'URL ; la vue active y reste.
+    expect(screen.getByTestId('location')).toHaveTextContent('?mode=kanban')
   })
 
   it('filtre aussi la file, suit les changements d’URL et garde les autres paramètres', async () => {

@@ -193,13 +193,18 @@ describe.each(cases)('Routage du hub $hub', ({ hub, legacy, to, visible, grant, 
     const definition = ADMIN_HUBS[hub]
     mount(definition.tabs[0].to)
     await screen.findByRole('tablist')
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(definition.tabs.map((tab) => translate(tab.labelKey)))
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(
+      definition.tabs.map((tab) => translate(tab.labelKey)),
+    )
     const second = definition.tabs[1]
     fireEvent.click(screen.getByRole('tab', { name: translate(second.labelKey) }))
     expect(screen.getByLabelText('URL')).toHaveTextContent(second.to)
     expect(screen.getByRole('tab', { name: translate(second.labelKey) })).toHaveAttribute('aria-selected', 'true')
     fireEvent.click(screen.getByRole('button', { name: 'Précédent' }))
-    expect(screen.getByRole('tab', { name: translate(definition.tabs[0].labelKey) })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: translate(definition.tabs[0].labelKey) })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Suivant' }))
     expect(screen.getByRole('tab', { name: translate(second.labelKey) })).toHaveAttribute('aria-selected', 'true')
   })
@@ -250,7 +255,6 @@ describe('Compatibilité des URL admin', () => {
     ['/admin/stagiaires/u1', 'InternDetail'],
     ['/admin/filiales/s1', 'SubsidiaryDetail'],
     ['/admin/demandes-clients/r1', 'ChangeRequestDetail'],
-    ['/admin/crm/leads/l1', 'CrmBoard'],
     ['/admin/dev/issues/i1', 'DevWorkspace'],
     ['/admin/dev/projects/p1', 'DevProjectCockpit'],
     ['/admin/beta/campaigns/c1', 'CampaignCockpit'],
@@ -262,12 +266,22 @@ describe('Compatibilité des URL admin', () => {
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 
-  it.each(['/admin', '/admin/mon-espace'])('rend le nouvel accueil sur %s, sans digest ni grille personnalisable', async (path) => {
-    mount(path)
-    expect(await screen.findByText('Page Accueil')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: /À arbitrer/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Personnaliser/ })).not.toBeInTheDocument()
+  it('garde les onglets du CRM sur la fiche d’un lead', async () => {
+    mount('/admin/crm/leads/l1')
+    expect(await screen.findByText('Page CrmBoard')).toBeInTheDocument()
+    expect(screen.getByLabelText('URL')).toHaveTextContent('/admin/crm/leads/l1')
+    expect(screen.getByRole('tablist')).toBeInTheDocument()
   })
+
+  it.each(['/admin', '/admin/mon-espace'])(
+    'rend le nouvel accueil sur %s, sans digest ni grille personnalisable',
+    async (path) => {
+      mount(path)
+      expect(await screen.findByText('Page Accueil')).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: /À arbitrer/ })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Personnaliser/ })).not.toBeInTheDocument()
+    },
+  )
 
   it('refuse un hub entièrement inaccessible sans monter ses enfants', async () => {
     currentUser = viewer([], ['view_crm', 'manage_clients', 'manage_external_sales'])

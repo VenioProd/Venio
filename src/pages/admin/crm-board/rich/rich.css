@@ -5,6 +5,8 @@
   gap: 8px;
   padding: 12px;
   min-width: 0;
+  min-height: 0;
+  flex: 1;
   font-size: 13px;
   color: var(--text-primary);
 }
@@ -329,8 +331,8 @@
   background: var(--surface-glass);
   overflow: auto;
   max-width: 100%;
-  max-height: max(240px, calc(100dvh - 360px));
-  overscroll-behavior: contain;
+  flex: 1;
+  min-height: 0;
 }
 .rich-table {
   width: max-content;
@@ -611,17 +613,7 @@
     flex: 1 1 calc(50% - 4px);
     min-width: 0;
   }
-  .rich-colpn {
-    position: fixed;
-    left: 0 !important;
-    right: 0;
-    top: 52px !important;
-    bottom: 64px;
-    width: 100%;
-    max-width: none;
-    max-height: none !important;
-    border-radius: 20px 20px 0 0;
-  }
+
   .rich-table-wrap {
     overflow: visible;
     max-height: none;
@@ -676,6 +668,7 @@
     position: absolute !important;
     top: 8px;
     right: 6px;
+    left: auto;
     width: auto;
     padding: 6px 10px;
     z-index: 2;
@@ -951,4 +944,72 @@
   position: fixed;
   inset: 0;
   z-index: 1230;
+}
+
+.rich-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.rich-controls .rich-filters {
+  display: contents;
+}
+.rich-controls select {
+  max-width: 120px;
+  min-width: 0;
+}
+.rich-controls .rich-search {
+  flex: 1 1 160px;
+}
+.rich-controls .rich-views {
+  flex-wrap: nowrap;
+}
+.rich-ellipsis {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.rich-co.rich-ellipsis {
+  display: flex;
+}
+.rich-bulk-more {
+  position: fixed;
+  z-index: 1200;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: calc(100vw - 24px);
+  max-height: 50dvh;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-secondary);
+}
+@media (max-width: 767px) {
+  .rich-controls .rich-views {
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  .rich-controls select {
+    max-width: 100%;
+  }
+  .rich-table-wrap {
+    flex: none;
+  }
+  .rich-bulk {
+    width: auto;
+  }
+  .rich-bulk-more {
+    width: calc(100vw - 24px);
+  }
 }

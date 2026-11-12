@@ -1,4 +1,5 @@
 export const LEGACY_ADMIN_LIST_ROUTES: Readonly<Record<string, string>> = {
+  '/admin/crm/settings': '/admin/crm/reglages',
   '/admin/dashboard': '/admin/analytics/business',
   '/admin/centre-activite': '/admin/inbox/activite',
   '/admin/messages': '/admin/inbox/conversations',

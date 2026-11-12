@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CrmAutomations from './index'
 
@@ -30,13 +31,25 @@ const run = (id: string, status: string, over: Record<string, unknown> = {}) => 
   leadLabel: `Lead ${id}`,
   trigger: 'LEAD_INACTIVE',
   status,
-  steps: [{ action: 'CREATE_TASK', status: status === 'ERR' ? 'ERR' : 'OK', message: status === 'ERR' ? 'SMTP refusé' : 'Tâche créée', at: new Date().toISOString() }],
+  steps: [
+    {
+      action: 'CREATE_TASK',
+      status: status === 'ERR' ? 'ERR' : 'OK',
+      message: status === 'ERR' ? 'SMTP refusé' : 'Tâche créée',
+      at: new Date().toISOString(),
+    },
+  ],
   durationMs: 400,
   createdAt: new Date().toISOString(),
   ...over,
 })
 
-const calls = () => apiFetch.mock.calls.map(([url, opts]) => ({ url: String(url), method: (opts as RequestInit | undefined)?.method ?? 'GET', body: (opts as RequestInit | undefined)?.body }))
+const calls = () =>
+  apiFetch.mock.calls.map(([url, opts]) => ({
+    url: String(url),
+    method: (opts as RequestInit | undefined)?.method ?? 'GET',
+    body: (opts as RequestInit | undefined)?.body,
+  }))
 
 beforeEach(() => {
   auth.role = 'ADMIN'
@@ -56,7 +69,11 @@ beforeEach(() => {
 
 describe('onglet Automatisations', () => {
   it('affiche les règles, leur flux Quand / Si / Alors et les KPI issus des stats', async () => {
-    render(<CrmAutomations />)
+    render(
+      <MemoryRouter>
+        <CrmAutomations />
+      </MemoryRouter>,
+    )
     expect(await screen.findByText('Relance après 7 jours')).toBeInTheDocument()
     const card = screen.getByTestId('rule-r1')
     expect(within(card).getByText('Quand')).toBeInTheDocument()
@@ -74,7 +91,11 @@ describe('onglet Automatisations', () => {
   })
 
   it('active une règle en pause avec un PATCH status', async () => {
-    render(<CrmAutomations />)
+    render(
+      <MemoryRouter>
+        <CrmAutomations />
+      </MemoryRouter>,
+    )
     const toggle = await screen.findByRole('button', { name: 'Activer la règle « Relance après 7 jours »' })
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
     fireEvent.click(toggle)
@@ -85,7 +106,11 @@ describe('onglet Automatisations', () => {
   })
 
   it('filtre le journal par statut côté API', async () => {
-    render(<CrmAutomations />)
+    render(
+      <MemoryRouter>
+        <CrmAutomations />
+      </MemoryRouter>,
+    )
     await screen.findByText('Relance après 7 jours')
     fireEvent.click(screen.getByRole('tab', { name: 'Journal d’exécution' }))
     expect(await screen.findByText('Lead a')).toBeInTheDocument()
@@ -101,39 +126,55 @@ describe('onglet Automatisations', () => {
     await waitFor(() => expect(calls().some((c) => c.method === 'POST' && c.url.endsWith('/runs/b/retry'))).toBe(true))
   })
 
-  it.each(['MANAGER', 'COMMERCIAL'])('est en lecture seule pour %s : bandeau, création, bascule et suppression désactivées', async (role) => {
-    auth.role = role
-    apiFetch.mockImplementation(async (url: string) => {
-      if (url === '/api/admin/crm/rules') return { items: [rule(), systemRule] }
-      if (url.startsWith('/api/admin/crm/rules/runs?')) return { items: [run('p', 'PENDING'), run('b', 'ERR')], page: 1, pageSize: 50, total: 2 }
-      return {}
-    })
-    render(<CrmAutomations />)
-    await screen.findByText('Relance après 7 jours')
-    expect(screen.getByText(/Lecture seule/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '+ Nouvelle règle' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: '+ Nouvelle règle' })).toHaveAttribute('title', 'Réservé aux administrateurs')
-    const toggle = screen.getByRole('button', { name: 'Activer la règle « Relance après 7 jours »' })
-    expect(toggle).toBeDisabled()
-    fireEvent.click(toggle)
-    const card = screen.getByTestId('rule-r1')
-    expect(within(card).getByRole('button', { name: /Modifier/ })).toBeDisabled()
-    expect(within(card).getByRole('button', { name: /Dupliquer/ })).toBeDisabled()
-    expect(within(card).getByRole('button', { name: /Supprimer/ })).toBeDisabled()
-    expect(within(screen.getByTestId('rule-r2')).getByRole('button', { name: /Dupliquer/ })).toBeDisabled()
-    // la simulation (lecture) reste disponible
-    expect(within(card).getByRole('button', { name: /Simuler/ })).toBeEnabled()
-    expect(calls().filter((c) => c.method !== 'GET')).toEqual([])
-  })
+  it.each(['MANAGER', 'COMMERCIAL'])(
+    'est en lecture seule pour %s : bandeau, création, bascule et suppression désactivées',
+    async (role) => {
+      auth.role = role
+      apiFetch.mockImplementation(async (url: string) => {
+        if (url === '/api/admin/crm/rules') return { items: [rule(), systemRule] }
+        if (url.startsWith('/api/admin/crm/rules/runs?'))
+          return { items: [run('p', 'PENDING'), run('b', 'ERR')], page: 1, pageSize: 50, total: 2 }
+        return {}
+      })
+      render(
+        <MemoryRouter>
+          <CrmAutomations />
+        </MemoryRouter>,
+      )
+      await screen.findByText('Relance après 7 jours')
+      expect(screen.getByText(/Lecture seule/)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '+ Nouvelle règle' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: '+ Nouvelle règle' })).toHaveAttribute(
+        'title',
+        'Réservé aux administrateurs',
+      )
+      const toggle = screen.getByRole('button', { name: 'Activer la règle « Relance après 7 jours »' })
+      expect(toggle).toBeDisabled()
+      fireEvent.click(toggle)
+      const card = screen.getByTestId('rule-r1')
+      expect(within(card).getByRole('button', { name: /Modifier/ })).toBeDisabled()
+      expect(within(card).getByRole('button', { name: /Dupliquer/ })).toBeDisabled()
+      expect(within(card).getByRole('button', { name: /Supprimer/ })).toBeDisabled()
+      expect(within(screen.getByTestId('rule-r2')).getByRole('button', { name: /Dupliquer/ })).toBeDisabled()
+      // la simulation (lecture) reste disponible
+      expect(within(card).getByRole('button', { name: /Simuler/ })).toBeEnabled()
+      expect(calls().filter((c) => c.method !== 'GET')).toEqual([])
+    },
+  )
 
   it('désactive la validation et la relance des exécutions pour un MANAGER', async () => {
     auth.role = 'MANAGER'
     apiFetch.mockImplementation(async (url: string) => {
       if (url === '/api/admin/crm/rules') return { items: [rule()] }
-      if (url.startsWith('/api/admin/crm/rules/runs?')) return { items: [run('p', 'PENDING'), run('b', 'ERR')], page: 1, pageSize: 50, total: 2 }
+      if (url.startsWith('/api/admin/crm/rules/runs?'))
+        return { items: [run('p', 'PENDING'), run('b', 'ERR')], page: 1, pageSize: 50, total: 2 }
       return {}
     })
-    render(<CrmAutomations />)
+    render(
+      <MemoryRouter>
+        <CrmAutomations />
+      </MemoryRouter>,
+    )
     await screen.findByText('Relance après 7 jours')
     fireEvent.click(screen.getByRole('tab', { name: 'Journal d’exécution' }))
     fireEvent.click(await screen.findByText('Lead p'))
@@ -146,13 +187,21 @@ describe('onglet Automatisations', () => {
 
   it('désactive les modèles de règle pour un non-administrateur et les laisse actifs pour un ADMIN', async () => {
     auth.role = 'COMMERCIAL'
-    const { unmount } = render(<CrmAutomations />)
+    const { unmount } = render(
+      <MemoryRouter>
+        <CrmAutomations />
+      </MemoryRouter>,
+    )
     await screen.findByText('Relance après 7 jours')
     fireEvent.click(screen.getByRole('tab', { name: 'Modèles' }))
     for (const b of screen.getAllByRole('button', { name: /^Utiliser le modèle/ })) expect(b).toBeDisabled()
     unmount()
     auth.role = 'SUPER_ADMIN'
-    render(<CrmAutomations />)
+    render(
+      <MemoryRouter>
+        <CrmAutomations />
+      </MemoryRouter>,
+    )
     await screen.findByText('Relance après 7 jours')
     expect(screen.queryByText(/Lecture seule/)).toBeNull()
     expect(screen.getByRole('button', { name: '+ Nouvelle règle' })).toBeEnabled()

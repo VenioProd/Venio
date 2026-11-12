@@ -71,8 +71,8 @@ export default function LeadPrivacyPanel({ lead, canManageCrm, onUpdateLead, onL
     setBusy('save')
     setMessage(null)
     try {
-      await onUpdateLead(lead._id, patch)
       onLocalChange(local)
+      await onUpdateLead(lead._id, patch)
       load()
     } catch {
       setMessage({ kind: 'error', text: t('crmPrivacy.saveError') })

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../../../context/AuthContext'
 import { useI18n } from '../../../../context/I18nContext'
 import { apiFetch } from '../../../../lib/api'
-import { fetchForecast } from '../../../../services/pilotage'
+import { fetchForecast, fetchPilotage } from '../../../../services/pilotage'
 import type { ForecastResponse } from '../../../../types/pilotage.types'
 import type { AdminUser } from '../../../../types/crm.types'
 import { CRM_ENTITIES } from '../../crm-board/constants'
@@ -24,6 +24,23 @@ const ForecastSection: React.FC = () => {
   const administers = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN'
   const [months, setMonths] = useState(6)
   const [entity, setEntity] = useState('')
+  const [reliability, setReliability] = useState<{ reliable: boolean; cohortSize: number } | null>(null)
+  useEffect(() => {
+    let active = true
+    setReliability(null)
+    const loadReliability = async () => {
+      try {
+        const result = await fetchPilotage('90d', entity || undefined)
+        if (active) setReliability(result.pipeline)
+      } catch {
+        if (active) setReliability(null)
+      }
+    }
+    void loadReliability()
+    return () => {
+      active = false
+    }
+  }, [entity, t])
   const [data, setData] = useState<ForecastResponse | null>(null)
   const [admins, setAdmins] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,78 +86,95 @@ const ForecastSection: React.FC = () => {
             onChange={(event) => setEntity(event.target.value)}
           >
             <option value="">{t('crm.filters.allEntities')}</option>
-            {CRM_ENTITIES.map((option) => (
-              <option key={option.key} value={option.key}>
-                {t(option.labelKey)}
-              </option>
-            ))}
+            {CRM_ENTITIES.filter((option) => !user?.crmEntities?.length || user.crmEntities.includes(option.key)).map(
+              (option) => (
+                <option key={option.key} value={option.key}>
+                  {t(option.labelKey)}
+                </option>
+              ),
+            )}
           </select>
         </label>
         <div className="pilotage-periods" role="group" aria-label={t('adminTech.forecast.horizonLabel')}>
           {HORIZONS.map((count) => (
-            <button key={count} type="button" className={months === count ? 'active' : ''} onClick={() => setMonths(count)}>
+            <button
+              key={count}
+              type="button"
+              className={months === count ? 'active' : ''}
+              onClick={() => setMonths(count)}
+            >
               {t('adminTech.forecast.horizonOption', { count })}
             </button>
           ))}
         </div>
       </div>
 
+      {reliability?.reliable === false && (
+        <p role="note" className="pilotage-coverage">
+          {t('adminTech.pilotage.unreliable', { count: reliability.cohortSize })}
+        </p>
+      )}
       {error && <div className="admin-error">{error}</div>}
 
       {loading && !data ? (
         <div className="admin-loading">{t('adminTech.forecast.loading')}</div>
       ) : data ? (
         <>
-          <table className="pilotage-table forecast-table">
-            <thead>
-              <tr>
-                <th>{t('adminTech.forecast.colMonth')}</th>
-                <th>{t('adminTech.forecast.colOpen')}</th>
-                <th>{t('adminTech.forecast.colGross')}</th>
-                <th>{t('adminTech.forecast.colWeighted')}</th>
-                <th>{t('adminTech.forecast.colCommitted')}</th>
-                <th>{t('adminTech.forecast.colProbable')}</th>
-                <th>{t('adminTech.forecast.colPipeline')}</th>
-                <th>{t('adminTech.forecast.colRealised')}</th>
-                <th>{t('adminTech.forecast.colGoal')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.months.map((row) => (
-                <tr key={row.month}>
-                  <td>{formatMonth(row.month)}</td>
-                  <td className="is-muted">{row.openCount}</td>
-                  <td className="is-muted">{formatAmount(row.gross, currency)}</td>
-                  <td className="is-strong">{formatAmount(row.weighted, currency)}</td>
-                  <td className="is-muted">{formatAmount(row.categories.committed.weighted, currency)}</td>
-                  <td className="is-muted">{formatAmount(row.categories.probable.weighted, currency)}</td>
-                  <td className="is-muted">{formatAmount(row.categories.pipeline.weighted, currency)}</td>
-                  <td className="is-strong">
-                    {formatAmount(row.wonAmount, currency)}
-                    <span className="pilotage-money-sub"> ({row.wonCount})</span>
-                  </td>
-                  <td className="is-muted">
-                    {row.goal ? (
-                      <>
-                        {t('adminTech.forecast.goalProgress', {
-                          percent: formatPercent(row.goal.amountProgress),
-                          target: formatAmount(row.goal.amountTarget, currency),
-                        })}
-                        {row.goal.wonCountTarget > 0 && (
-                          <span className="pilotage-money-sub">
-                            {' '}
-                            {t('adminTech.forecast.goalCount', { won: row.wonCount, target: row.goal.wonCountTarget })}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      t('adminTech.forecast.noGoal')
-                    )}
-                  </td>
+          <div className="pilotage-table-scroll">
+            <table className="pilotage-table forecast-table">
+              <thead>
+                <tr>
+                  <th>{t('adminTech.forecast.colMonth')}</th>
+                  <th>{t('adminTech.forecast.colOpen')}</th>
+                  <th>{t('adminTech.forecast.colGross')}</th>
+                  <th>{t('adminTech.forecast.colWeighted')}</th>
+                  <th>{t('adminTech.forecast.colCommitted')}</th>
+                  <th>{t('adminTech.forecast.colProbable')}</th>
+                  <th>{t('adminTech.forecast.colPipeline')}</th>
+                  <th>{t('adminTech.forecast.colRealised')}</th>
+                  <th>{t('adminTech.forecast.colGoal')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.months.map((row) => (
+                  <tr key={row.month}>
+                    <td>{formatMonth(row.month)}</td>
+                    <td className="is-muted">{row.openCount}</td>
+                    <td className="is-muted">{formatAmount(row.gross, currency)}</td>
+                    <td className="is-strong">{formatAmount(row.weighted, currency)}</td>
+                    <td className="is-muted">{formatAmount(row.categories.committed.weighted, currency)}</td>
+                    <td className="is-muted">{formatAmount(row.categories.probable.weighted, currency)}</td>
+                    <td className="is-muted">{formatAmount(row.categories.pipeline.weighted, currency)}</td>
+                    <td className="is-strong">
+                      {formatAmount(row.wonAmount, currency)}
+                      <span className="pilotage-money-sub"> ({row.wonCount})</span>
+                    </td>
+                    <td className="is-muted">
+                      {row.goal ? (
+                        <>
+                          {t('adminTech.forecast.goalProgress', {
+                            percent: formatPercent(row.goal.amountProgress),
+                            target: formatAmount(row.goal.amountTarget, currency),
+                          })}
+                          {row.goal.wonCountTarget > 0 && (
+                            <span className="pilotage-money-sub">
+                              {' '}
+                              {t('adminTech.forecast.goalCount', {
+                                won: row.wonCount,
+                                target: row.goal.wonCountTarget,
+                              })}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        t('adminTech.forecast.noGoal')
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <p className="pilotage-note">{t('adminTech.forecast.categoriesHint')}</p>
           {data.totals.openCount === 0 && data.totals.wonCount === 0 && (
             <p className="pilotage-empty">{t('adminTech.forecast.empty')}</p>
@@ -150,7 +184,10 @@ const ForecastSection: React.FC = () => {
 
           {data.overdue.count > 0 && (
             <p className="pilotage-coverage">
-              {t('adminTech.forecast.overdue', { count: data.overdue.count, amount: formatAmount(data.overdue.weighted, currency) })}
+              {t('adminTech.forecast.overdue', {
+                count: data.overdue.count,
+                amount: formatAmount(data.overdue.weighted, currency),
+              })}
             </p>
           )}
           {data.unscheduled.count > 0 && (
@@ -162,7 +199,9 @@ const ForecastSection: React.FC = () => {
             </p>
           )}
 
-          {administers && <GoalsManager from={data.from} months={months} admins={admins} onChanged={() => void load()} />}
+          {administers && (
+            <GoalsManager from={data.from} months={months} admins={admins} onChanged={() => void load()} />
+          )}
         </>
       ) : null}
     </section>

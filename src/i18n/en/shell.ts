@@ -1,6 +1,9 @@
 import type fr from '../fr/shell'
 
 const en: Record<keyof typeof fr, string> = {
+  'shell.hub.crm.queue': 'To do',
+  'shell.hub.crm.pilotage': 'Sales overview',
+  'shell.hub.crm.settings': 'Settings',
   'shell.zone.commercial': 'Sales',
   'shell.zone.production': 'Production',
   'shell.zone.organisation': 'Organisation',
@@ -247,7 +250,7 @@ const en: Record<keyof typeof fr, string> = {
   'shell.hub.crm.title': 'CRM',
   'shell.hub.crm.eyebrow': 'Sales',
   'shell.hub.crm.subtitle': 'Pipeline, client accounts, partners and automations.',
-  'shell.hub.crm.pipeline': 'Pipeline',
+  'shell.hub.crm.pipeline': 'Leads',
   'shell.hub.crm.comptes': 'Client accounts',
   'shell.hub.crm.partenaires': 'Partners',
   'shell.hub.crm.automatisations': 'Automations',

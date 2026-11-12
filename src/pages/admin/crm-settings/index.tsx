@@ -170,19 +170,41 @@ export default function CrmSettings() {
         </div>
       )}
 
+      <nav className="crm-settings-summary" aria-label={t('crm.settings.summary')}>
+        {(['qualification', 'followup', 'calls', 'compliance', 'reports'] as const).map((group) => (
+          <a key={group} href={`#crm-settings-${group}`}>
+            {t(`crm.settings.group.${group}`)}
+          </a>
+        ))}
+      </nav>
       <div className="crm-settings-grid">
-        <CallsSection {...sectionProps} updateSettings={updateSettings} />
-        <AssignmentSection {...sectionProps} admins={admins} />
-        <QualificationSection {...sectionProps} />
-        <StatusSection {...sectionProps} />
-        <NotificationsSection {...sectionProps} />
-        <AlertsSection {...sectionProps} />
-        <EscalationSection {...sectionProps} admins={admins} />
-        <ScoringSection {...sectionProps} updateNestedSetting={updateNestedSetting} />
-        <DuplicatesSection {...sectionProps} />
-        <ReportsSection {...sectionProps} handleRecipientsChange={handleRecipientsChange} />
-        <RetentionSection {...sectionProps} />
-        <SuppressionSection canManage={canManage} />
+        <section id="crm-settings-qualification" className="crm-settings-group">
+          <h2>{t('crm.settings.group.qualification')}</h2>
+          <AssignmentSection {...sectionProps} admins={admins} />
+          <QualificationSection {...sectionProps} />
+          <StatusSection {...sectionProps} />
+          <ScoringSection {...sectionProps} updateNestedSetting={updateNestedSetting} />
+          <DuplicatesSection {...sectionProps} />
+        </section>
+        <section id="crm-settings-followup" className="crm-settings-group">
+          <h2>{t('crm.settings.group.followup')}</h2>
+          <NotificationsSection {...sectionProps} />
+          <AlertsSection {...sectionProps} />
+          <EscalationSection {...sectionProps} admins={admins} />
+        </section>
+        <section id="crm-settings-calls" className="crm-settings-group">
+          <h2>{t('crm.settings.group.calls')}</h2>
+          <CallsSection {...sectionProps} updateSettings={updateSettings} />
+        </section>
+        <section id="crm-settings-compliance" className="crm-settings-group">
+          <h2>{t('crm.settings.group.compliance')}</h2>
+          <RetentionSection {...sectionProps} />
+          <SuppressionSection canManage={canManage} />
+        </section>
+        <section id="crm-settings-reports" className="crm-settings-group">
+          <h2>{t('crm.settings.group.reports')}</h2>
+          <ReportsSection {...sectionProps} handleRecipientsChange={handleRecipientsChange} />
+        </section>
       </div>
 
       {saving &&

@@ -1,4 +1,10 @@
 const fr = {
+  'crmRich.analytics.moved': 'Le pilotage commercial est dans le CRM',
+  'crmRich.view.archived': 'Archivés',
+  'crmRich.bulk.restore': 'Restaurer',
+  'crmRich.bulk.restoreConfirm': 'Restaurer les {count} leads sélectionnés ?',
+  'crmRich.bulk.more': 'Plus',
+  'crmRich.table.showMore': 'Afficher plus',
   'crmRich.analytics.owner': 'Commercial',
   'crmRich.analytics.externalRep': 'Commercial externe',
   'crmRich.col.company': 'Lead',

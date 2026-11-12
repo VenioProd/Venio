@@ -1,6 +1,16 @@
 import type fr from '../fr/crm'
 
 const en: Record<keyof typeof fr, string> = {
+  'crm.form.group.company': 'Company',
+  'crm.form.group.contact': 'Contact',
+  'crm.form.group.qualification': 'Qualification',
+  'crm.form.group.followup': 'Follow-up',
+  'crm.settings.summary': 'Settings contents',
+  'crm.settings.group.qualification': 'Qualification and scoring',
+  'crm.settings.group.followup': 'Follow-ups and alerts',
+  'crm.settings.group.calls': 'Calls',
+  'crm.settings.group.compliance': 'Compliance',
+  'crm.settings.group.reports': 'Reports',
   'crm.common.saving': 'Saving...',
   'crm.common.unassigned': 'Unassigned',
   'crm.common.converting': 'Converting...',

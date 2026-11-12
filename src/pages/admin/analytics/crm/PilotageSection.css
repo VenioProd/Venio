@@ -480,3 +480,12 @@
 .forecast-goal-actions {
   flex-wrap: wrap;
 }
+
+.forecast-goals .pilotage-table,
+.forecast-table,
+.pilotage-table-scroll .pilotage-table td:first-child {
+  white-space: nowrap;
+}
+[data-theme='light'] .pilotage-periods button.active {
+  color: var(--text-primary);
+}

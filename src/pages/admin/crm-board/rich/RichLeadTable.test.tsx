@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RichLeadTable from './RichLeadTable'
+import { exportToCsv } from '../../../../lib/exportCsv'
 import { weightedOf, probabilityOf } from './columns'
 import type { Lead } from '../../../../types/crm.types'
 
@@ -61,13 +62,13 @@ describe('valeurs dérivées', () => {
   })
 })
 
-describe('<RichLeadTable />', () => {
-  beforeEach(() => {
-    apiFetch.mockReset()
-    apiFetch.mockResolvedValue({ items: [] })
-    localStorage.clear()
-  })
+beforeEach(() => {
+  apiFetch.mockReset()
+  apiFetch.mockResolvedValue({ items: [] })
+  localStorage.clear()
+})
 
+describe('<RichLeadTable />', () => {
   it('trie l’activité récente d’abord, conserve les absents en dernier et ouvre la fiche', () => {
     const props = setup({
       leads: [
@@ -124,7 +125,7 @@ describe('<RichLeadTable />', () => {
     expect(params.get('dir')).toBe('asc')
     expect(params.get('mode')).toBe('liste')
     expect(params.get('project')).toBe('ARROW')
-    fireEvent.click(screen.getByRole('button', { name: /Leads chauds/ }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Vues enregistrées' }), { target: { value: 'hot' } })
     const hot = new URLSearchParams(screen.getByTestId('url').textContent!)
     expect(hot.get('q')).toBeNull()
     expect(hot.get('project')).toBeNull()
@@ -138,6 +139,7 @@ describe('<RichLeadTable />', () => {
     )
     setup()
     fireEvent.click(screen.getByLabelText('Tout sélectionner'))
+    fireEvent.click(screen.getByRole('button', { name: 'Plus' }))
     fireEvent.click(screen.getByRole('button', { name: 'Tag' }))
     const dialog = screen.getByRole('dialog')
     fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'Prioritaire' } })
@@ -188,4 +190,37 @@ describe('<RichLeadTable />', () => {
       columns: expect.arrayContaining(['company', 'status']),
     })
   })
+})
+
+it('charge les archivés et restaure une ligne sans exposer les leads actifs', async () => {
+  apiFetch.mockImplementation(async (path: string) => {
+    if (path.includes('archived=true'))
+      return { leads: [{ _id: 'old', company: 'Ancien lead', status: 'LEAD', archivedAt: '2026-01-01' }] }
+    if (path.includes('/bulk')) return { ok: 1, failed: 0, results: [{ id: 'old', ok: true }] }
+    return { items: [] }
+  })
+  setup()
+  fireEvent.change(screen.getByRole('combobox', { name: 'Vues enregistrées' }), { target: { value: 'archived' } })
+  expect(await screen.findByText('Ancien lead')).toBeInTheDocument()
+  expect(screen.queryByText('Atelier Pivoine')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Restaurer' }))
+  await waitFor(() => expect(screen.queryByText('Ancien lead')).not.toBeInTheDocument())
+  expect(
+    apiFetch.mock.calls.some(([path, opts]) => path.includes('/bulk') && JSON.parse(opts.body).action === 'restore'),
+  ).toBe(true)
+})
+
+it('exporte les lignes filtrées et les colonnes affichées depuis le bouton de l’en-tête', async () => {
+  const exportRef = { current: null as (() => void) | null }
+  setup({ project: 'ARROW', exportRef })
+  fireEvent.click(screen.getByRole('button', { name: /Colonnes/ }))
+  fireEvent.click(screen.getByLabelText(/Secteur/))
+  exportRef.current?.()
+  expect(exportToCsv).toHaveBeenLastCalledWith('crm-leads.csv', expect.arrayContaining(['Lead', 'Secteur']), [
+    expect.arrayContaining(['Atelier Pivoine']),
+  ])
+  const calls = vi.mocked(exportToCsv).mock.calls
+  const [, headers, rows] = calls[calls.length - 1]
+  expect(headers).toHaveLength(8)
+  expect(rows[0]).toHaveLength(8)
 })

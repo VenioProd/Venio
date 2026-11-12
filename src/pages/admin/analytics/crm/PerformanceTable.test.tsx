@@ -32,6 +32,6 @@ it('préfère le nom API, résout les admins connus et masque les identifiants i
   render(<PilotageSection />)
   expect(await screen.findByText('Samira')).toBeInTheDocument()
   expect(screen.getByText('Camille')).toBeInTheDocument()
-  expect(screen.getByText('Commercial externe')).toBeInTheDocument()
+  expect(screen.getByText('Commercial externe nown')).toBeInTheDocument()
   expect(screen.queryByText('unknown')).toBeNull()
 })

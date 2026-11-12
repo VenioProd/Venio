@@ -355,6 +355,10 @@ function AppShell() {
                       <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<SystemeHub />} />
                     ))}
                     <Route path="systeme" element={<SystemeHub />} />
+                    <Route
+                      path="crm/sequences"
+                      element={<LegacyAdminRedirect to="/admin/crm/automatisations?section=sequences" />}
+                    />
                     <Route path="crm/pipeline" element={<LegacyAdminRedirect to="/admin/crm" />} />
                     <Route path="profil" element={<AdminProfile />} />
                     <Route path="securite" element={<AccountSecurity />} />
@@ -426,15 +430,7 @@ function AppShell() {
                       path="crm/leads/:leadId"
                       element={
                         <RequirePermission permission={PERMISSIONS.VIEW_CRM} redirectTo="/admin">
-                          <CrmBoard />
-                        </RequirePermission>
-                      }
-                    />
-                    <Route
-                      path="crm/settings"
-                      element={
-                        <RequirePermission permission={PERMISSIONS.MANAGE_CRM} redirectTo="/admin/crm">
-                          <CrmSettings />
+                          <CrmHub />
                         </RequirePermission>
                       }
                     />

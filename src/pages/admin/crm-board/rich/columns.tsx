@@ -127,7 +127,9 @@ export const RICH_COLUMNS: RichColumn[] = [
     sortValue: (l, { adminsById }) => adminsById[l.assignedTo || '']?.name || 'zzz',
     render: (l, { adminsById }) =>
       l.assignedTo && adminsById[l.assignedTo] ? (
-        adminsById[l.assignedTo].name
+        <span className="rich-ellipsis" title={adminsById[l.assignedTo].name}>
+          {adminsById[l.assignedTo].name}
+        </span>
       ) : (
         <span className="rich-pill rich-pill--warn">
           <i />
@@ -203,7 +205,10 @@ export const RICH_COLUMNS: RichColumn[] = [
     sortValue: (l) => l.nextActionAt || '9',
     render: (l, { now }) =>
       l.nextActionAt || l.nextActionLabel ? (
-        <span className="rich-co">
+        <span
+          className="rich-co rich-ellipsis"
+          title={[l.nextActionLabel, shortDate(l.nextActionAt)].filter(Boolean).join(' — ')}
+        >
           <b>{l.nextActionLabel || translate('crmRich.todo')}</b>
           <span className={isLate(l, now) ? 'rich-late' : ''}>{shortDate(l.nextActionAt)}</span>
         </span>

@@ -6,6 +6,7 @@ import { useI18n } from '../../../context/I18nContext'
 import InteractionTimeline from '../../../components/admin/InteractionTimeline'
 import RevenueChain from '../../../components/admin/RevenueChain'
 import LeadEnrichedPanel from './rich/LeadEnrichedPanel'
+import DuplicatesBanner from './DuplicatesBanner'
 import MergeLeadDialog from './MergeLeadDialog'
 import LeadPrivacyPanel from './LeadPrivacyPanel'
 import LeadSequencesPanel from './sequences/LeadSequencesPanel'
@@ -53,6 +54,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   const { t } = useI18n()
   const [merging, setMerging] = useState(false)
   const [notice, setNotice] = useState('')
+  const timelineRef = useRef<HTMLDivElement>(null)
   const drawerRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef(onClose)
   useEffect(() => {
@@ -124,6 +126,16 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
           </button>
         </div>
         <div className="crm-modal-body">
+          <div className="crm-modal-notes" ref={timelineRef} tabIndex={-1}>
+            <label className="crm-modal-label">{t('crm.detail.interactionLog')}</label>
+            <InteractionTimeline
+              subjectType="LEAD"
+              subjectId={lead._id}
+              canWrite={canManageCrm}
+              legacyNote={lead.interactionNotes || undefined}
+            />
+          </div>
+
           <div className="crm-modal-info">
             <p>
               <strong>{t('crm.detail.contact')}</strong> {lead.contactName || '—'}
@@ -177,14 +189,20 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             <span className="crm-modal-quick-label">{t('crm.detail.quickContact')}</span>
             <div className="crm-modal-quick-btns">
               {lead.contactEmail && (
-                <a
-                  href={`mailto:${lead.contactEmail}`}
+                <button
+                  type="button"
                   className="portal-button secondary crm-modal-quick-btn"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => {
+                    const composer =
+                      timelineRef.current?.querySelector<HTMLElement>('.interaction-email-composer') ??
+                      timelineRef.current
+                    composer?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                    const control = composer?.querySelector<HTMLElement>('input, textarea, button') ?? composer
+                    control?.focus({ preventScroll: true })
+                  }}
                 >
                   {t('crm.detail.sendEmail')}
-                </a>
+                </button>
               )}
               {lead.contactPhone && (
                 <a
@@ -228,6 +246,16 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             </p>
           )}
 
+          <div className="crm-detail-duplicates">
+            <DuplicatesBanner
+              company={lead.company}
+              contactEmail={lead.contactEmail}
+              contactPhone={lead.contactPhone}
+              excludeId={lead._id}
+              onMerge={canManageCrm && onMerged ? () => setMerging(true) : undefined}
+            />
+          </div>
+
           {/* Actions rapides : statut, chaleur, assignation, prochaine action */}
           {canManageCrm && (
             <div className="crm-modal-quick-actions crm-modal-quick-fields">
@@ -238,7 +266,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   <CustomSelect
                     value={lead.status || 'LEAD'}
                     onChange={(v) => {
-                      onLeadChange((prev) => (prev ? { ...prev, status: v } : prev))
                       onUpdateLead(lead._id, { status: v })
                     }}
                     options={CRM_STATUSES.map((s) => ({ value: s.key, label: t(s.labelKey) }))}
@@ -249,7 +276,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   <CustomSelect
                     value={leadEntity(lead)}
                     onChange={(v) => {
-                      onLeadChange((prev) => (prev ? { ...prev, entity: v } : prev))
                       onUpdateLead(lead._id, { entity: v })
                     }}
                     options={CRM_ENTITIES.map((e) => ({ value: e.key, label: t(e.labelKey) }))}
@@ -260,7 +286,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   <CustomSelect
                     value={lead.leadTemperature || 'TIEDE'}
                     onChange={(v) => {
-                      onLeadChange((prev) => (prev ? { ...prev, leadTemperature: v } : prev))
                       onUpdateLead(lead._id, { leadTemperature: v })
                     }}
                     options={CRM_TEMPERATURES.map((tp) => ({ value: tp.key, label: t(tp.labelKey) }))}
@@ -272,7 +297,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     value={lead.assignedTo || ''}
                     onChange={(v) => {
                       const val = v || null
-                      onLeadChange((prev) => (prev ? { ...prev, assignedTo: val } : prev))
                       onUpdateLead(lead._id, { assignedTo: val })
                     }}
                     options={[
@@ -311,9 +335,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   onClick={async () => {
                     const now = new Date().toISOString()
                     const isEarlyStage = lead.status === 'LEAD' || lead.status === 'QUALIFIED'
-                    onLeadChange((prev) =>
-                      prev ? { ...prev, lastContactAt: now, ...(isEarlyStage ? { status: 'CONTACTED' } : {}) } : prev,
-                    )
                     await onUpdateLead(lead._id, {
                       lastContactAt: now,
                       ...(isEarlyStage ? { status: 'CONTACTED' } : {}),
@@ -379,25 +400,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             <RevenueChain leadId={lead._id} canManage={canManageCrm} />
           </div>
 
-          <div className="crm-modal-notes">
-            <label className="crm-modal-label">{t('crm.detail.interactionLog')}</label>
-            <InteractionTimeline
-              subjectType="LEAD"
-              subjectId={lead._id}
-              canWrite={canManageCrm}
-              legacyNote={lead.interactionNotes || undefined}
-            />
-          </div>
-          <div className="crm-modal-actions">
-            {canManageCrm && onMerged && (
-              <button type="button" className="portal-button secondary" onClick={() => setMerging(true)}>
-                {t('crm.merge.open')}
-              </button>
-            )}
-            <button className="portal-button secondary" onClick={onClose}>
-              {t('common.close')}
-            </button>
-          </div>
           {merging && (
             <MergeLeadDialog
               lead={lead}
@@ -409,6 +411,16 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               }}
             />
           )}
+        </div>
+        <div className="crm-modal-actions">
+          {canManageCrm && onMerged && (
+            <button type="button" className="portal-button secondary" onClick={() => setMerging(true)}>
+              {t('crm.merge.open')}
+            </button>
+          )}
+          <button className="portal-button secondary" onClick={onClose}>
+            {t('common.close')}
+          </button>
         </div>
       </div>
     </div>,

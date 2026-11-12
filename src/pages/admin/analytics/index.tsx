@@ -6,8 +6,7 @@ import { useI18n } from '../../../context/I18nContext'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import ProjectSection from './ProjectSection'
 import PublicSiteSection from './PublicSiteSection'
-import PilotageSection from './crm'
-import ForecastSection from './crm/ForecastSection'
+import { Link } from 'react-router-dom'
 import type { AnalyticsData, PublicSiteAnalyticsData } from './types'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
@@ -65,8 +64,11 @@ export default function Analytics() {
 
       {/* Le pilotage commercial lit des données CRM : il ne s'affiche que pour
           qui a le droit de les consulter. */}
-      {canViewCrm && <PilotageSection />}
-      {canViewCrm && <ForecastSection />}
+      {canViewCrm && (
+        <p>
+          <Link to="/admin/crm/pilotage">{t('crmRich.analytics.moved')}</Link>
+        </p>
+      )}
 
       <PublicSiteSection publicSiteData={publicSiteData} />
     </div>

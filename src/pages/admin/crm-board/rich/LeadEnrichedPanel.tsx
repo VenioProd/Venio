@@ -80,10 +80,10 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
   }, [tab, lead._id, retry])
 
   const save = async (patch: Record<string, unknown>) => {
-    await onUpdateLead(lead._id, patch)
     const local: Partial<Lead> = { ...(patch as Partial<Lead>) }
     if ('automationPaused' in patch) local.automationPausedAt = patch.automationPaused ? new Date().toISOString() : null
     onLocalChange(local)
+    await onUpdateLead(lead._id, patch)
   }
   const tags = lead.tags ?? []
 
@@ -138,6 +138,7 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                     type="number"
                     min={0}
                     max={100}
+                    key={`${lead._id}:${lead.probability ?? ''}`}
                     defaultValue={lead.probability ?? ''}
                     placeholder={t('crmRich.panel.byStage', { value: probabilityOf(lead) })}
                     onBlur={(e) =>
@@ -150,6 +151,7 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                   <span>{t('crmRich.panel.expectedClose')}</span>
                   <input
                     type="date"
+                    key={`${lead._id}:${lead.expectedCloseAt ?? ''}`}
                     defaultValue={lead.expectedCloseAt?.slice(0, 10) ?? ''}
                     onBlur={(e) =>
                       e.target.value !== (lead.expectedCloseAt?.slice(0, 10) ?? '') &&
@@ -160,6 +162,7 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                 <label>
                   <span>{t('crmRich.panel.nextAction')}</span>
                   <input
+                    key={`${lead._id}:${lead.nextActionLabel ?? ''}`}
                     defaultValue={lead.nextActionLabel ?? ''}
                     maxLength={200}
                     onBlur={(e) =>
@@ -170,6 +173,7 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                 <label>
                   <span>{t('crmRich.panel.sector')}</span>
                   <input
+                    key={`${lead._id}:${lead.sector ?? ''}`}
                     defaultValue={lead.sector ?? ''}
                     maxLength={80}
                     onBlur={(e) => e.target.value !== (lead.sector ?? '') && save({ sector: e.target.value })}
