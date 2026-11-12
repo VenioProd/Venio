@@ -16,8 +16,8 @@ import settingsRouter from './settings.js'
 
 const router = express.Router()
 
-router.use(coreRouter)
 router.use(reportsRouter)
+router.use(coreRouter)
 router.use(settingsRouter)
 
 export default router

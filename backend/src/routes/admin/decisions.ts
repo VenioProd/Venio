@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express'
 import path from 'path'
 import fs from 'fs'
 import multer from 'multer'
+import { attachmentFileFilter, serveUploadedFile } from '../../lib/attachmentResponse.js'
 import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
 import { requireAdmin, requireSuperAdmin } from '../../middleware/role.js'
@@ -20,15 +21,11 @@ fs.mkdirSync(uploadDir, { recursive: true })
 
 const upload = multer({
   dest: uploadDir,
+  fileFilter: attachmentFileFilter,
   limits: { fileSize: 20 * 1024 * 1024, files: 5 },
 })
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function contentDispositionFilename(name: string): string {
-  const fallback = name.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_')
-  return `filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(name)}`
-}
 
 function inferMimeType(attachment: { originalName: string; mimeType?: string }): string {
   if (attachment.mimeType && attachment.mimeType !== 'application/octet-stream') return attachment.mimeType
@@ -224,14 +221,7 @@ router.get('/:id/attachments/:index/download', async (req: Request, res: Respons
     const stat = await fs.promises.stat(filePath).catch(() => null)
     if (!stat?.isFile()) return res.status(404).json({ error: 'Fichier non trouvé' })
 
-    const dispositionType = req.query.download === '1' ? 'attachment' : 'inline'
-    res.setHeader('Content-Type', inferMimeType(attachment))
-    res.setHeader('Content-Length', String(stat.size))
-    res.setHeader('Content-Disposition', `${dispositionType}; ${contentDispositionFilename(attachment.originalName)}`)
-    res.setHeader('X-Content-Type-Options', 'nosniff')
-
-    // dotfiles: 'allow' — le chemin absolu peut contenir un segment commençant par « . »
-    return res.sendFile(filePath, { dotfiles: 'allow' })
+    return serveUploadedFile(res, filePath, attachment.originalName, { download: req.query.download === '1' })
   } catch (err) {
     return next(err)
   }

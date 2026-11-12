@@ -205,6 +205,7 @@ app.use(
 
 // Global rate limit: 200 requests per minute per IP
 app.use(
+  '/api',
   rateLimit({
     windowMs: 60 * 1000,
     max: 200,
@@ -391,7 +392,7 @@ app.use('/api/admin/tasks', adminTaskBulkRoutes)
 app.use('/api/admin/briefs', adminBriefRoutes)
 app.use('/api/admin/tool-access', auth, requireMfa, adminToolAccessRoutes)
 app.use('/api/admin/automations', adminAutomationRoutes)
-app.use('/api/admin/interns', adminInternRoutes)
+app.use('/api/admin/interns', auth, requireAdmin, adminInternRoutes)
 app.use('/api/admin/email-composer', adminEmailComposerRoutes)
 app.use('/api/admin/internal-projects', adminInternalProjectRoutes)
 app.use('/api/admin/arrow-pilotage', adminArrowPilotageRoutes)

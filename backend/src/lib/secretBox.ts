@@ -11,7 +11,11 @@ import crypto from 'crypto'
 const PREFIX = 'v1:'
 
 function getKey(): Buffer {
-  const material = process.env.CREDENTIALS_KEY || process.env.JWT_SECRET || 'venio-dev-fallback-key'
+  const configured = process.env.CREDENTIALS_KEY || process.env.JWT_SECRET
+  if (!configured && process.env.NODE_ENV === 'production') {
+    throw new Error('CREDENTIALS_KEY ou JWT_SECRET est requis en production')
+  }
+  const material = configured || 'venio-dev-fallback-key'
   return crypto.createHash('sha256').update(material).digest() // 32 octets
 }
 
@@ -27,12 +31,13 @@ export function encryptSecret(plaintext: string): string {
 export function decryptSecret(stored: string): string {
   if (!stored) return ''
   if (!stored.startsWith(PREFIX)) return stored // compat : valeur non chiffrée
+  const key = getKey()
   try {
     const raw = Buffer.from(stored.slice(PREFIX.length), 'base64')
     const iv = raw.subarray(0, 12)
     const tag = raw.subarray(12, 28)
     const data = raw.subarray(28)
-    const decipher = crypto.createDecipheriv('aes-256-gcm', getKey(), iv)
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
     decipher.setAuthTag(tag)
     return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8')
   } catch {

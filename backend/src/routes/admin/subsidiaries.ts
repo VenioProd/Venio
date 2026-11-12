@@ -1,5 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import multer from 'multer'
+import { attachmentFileFilter, serveUploadedFile } from '../../lib/attachmentResponse.js'
 import path from 'path'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
@@ -32,7 +33,11 @@ const docStorage = multer.diskStorage({
     cb(null, `${unique}${path.extname(file.originalname)}`)
   },
 })
-const docUpload = multer({ storage: docStorage, limits: { fileSize: 50 * 1024 * 1024 } }) // 50 Mo
+const docUpload = multer({
+  storage: docStorage,
+  fileFilter: attachmentFileFilter,
+  limits: { fileSize: 50 * 1024 * 1024 },
+}) // 50 Mo
 
 function slugify(input: string): string {
   return input
@@ -329,10 +334,7 @@ router.get('/:id/documents/:docId', async (req: Request, res: Response, next: Ne
     if (!doc) return res.status(404).json({ error: 'Document introuvable' })
     const filePath = path.resolve(doc.storagePath)
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier manquant sur le serveur' })
-    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(doc.originalName)}`)
-    res.setHeader('Content-Type', doc.mimeType)
-    // dotfiles: 'allow' — le chemin peut contenir un segment commençant par « . »
-    return res.sendFile(filePath, { dotfiles: 'allow' })
+    return serveUploadedFile(res, filePath, doc.originalName)
   } catch (err) {
     if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError')
       return res.status(400).json({ error: (err as Error).message })

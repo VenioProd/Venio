@@ -1,6 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express'
 import auth from '../../middleware/auth.js'
-import { requireAdmin } from '../../middleware/role.js'
+import { leadScopeFilter } from '../../lib/crmScope.js'
+import { PERMISSIONS } from '../../lib/permissions.js'
+import { requireAdmin, userHasPermission } from '../../middleware/role.js'
 import Project from '../../models/Project.js'
 import User from '../../models/User.js'
 import Task from '../../models/Task.js'
@@ -23,25 +25,33 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
 
     const ids = await readableProjectIds(req.user!)
+    const [canViewCrm, canManageClients] = await Promise.all([
+      userHasPermission(req, PERMISSIONS.VIEW_CRM),
+      userHasPermission(req, PERMISSIONS.MANAGE_CLIENTS),
+    ])
     const [projects, clients, tasks, leads] = await Promise.all([
       Project.find({ name: regex, ...(ids === null ? {} : { _id: { $in: ids } }) })
         .limit(5)
         .select('name status priority')
         .lean(),
-      User.find({ $or: [{ name: regex }, { email: regex }], role: 'CLIENT' })
-        .limit(5)
-        .select('name email status')
-        .lean(),
+      canManageClients
+        ? User.find({ $or: [{ name: regex }, { email: regex }], role: 'CLIENT' })
+            .limit(5)
+            .select('name email status')
+            .lean()
+        : [],
       Task.find({ title: regex, ...(ids === null ? {} : { project: { $in: ids } }) })
         .limit(5)
         .populate('project', 'name')
         .select('title status priority project')
         .lean(),
-      Lead.find({ $or: [{ company: regex }, { contactName: regex }] })
-        .limit(5)
-        .select('company contactName status leadTemperature')
-        .lean()
-        .catch(() => [] as any[]),
+      canViewCrm
+        ? Lead.find({ $and: [leadScopeFilter(req), { $or: [{ company: regex }, { contactName: regex }] }] })
+            .limit(5)
+            .select('company contactName status leadTemperature')
+            .lean()
+            .catch(() => [] as any[])
+        : [],
     ])
 
     const results = [
@@ -57,7 +67,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         id: c._id,
         title: (c as any).name,
         subtitle: `Client — ${(c as any).email}`,
-        link: `/admin/clients/${c._id}`,
+        link: `/admin/comptes-clients/${c._id}`,
       })),
       ...tasks.map((t) => ({
         type: 'task',
@@ -71,7 +81,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         id: l._id,
         title: (l as any).company,
         subtitle: `Lead — ${(l as any).contactName || ''}`,
-        link: '/admin/crm',
+        link: `/admin/crm/leads/${l._id}`,
       })),
     ]
 

@@ -25,7 +25,8 @@ import {
 } from '../../lib/crmLeadService.js'
 import CrmSettings from '../../models/CrmSettings.js'
 import { checkDuplicateLead } from '../../lib/crmAutomations.js'
-import { entityCondition, GROUP_ENTITIES, isGroupEntity } from '../../lib/groupEntities.js'
+import { agentCrmEntities, agentLeadScope, loadAgentCrmScope } from './crmExtras.js'
+import { entityCondition, entityFromProject, GROUP_ENTITIES, isGroupEntity } from '../../lib/groupEntities.js'
 
 /**
  * Routes agent pour le CRM : clients, leads, contacts, notes, activities.
@@ -50,6 +51,7 @@ import { entityCondition, GROUP_ENTITIES, isGroupEntity } from '../../lib/groupE
  */
 
 const router = express.Router()
+router.use('/leads', loadAgentCrmScope)
 
 // ───────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -270,6 +272,9 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {
+      if (agentCrmEntities(req)) {
+        return respondError(res, 403, 'FORBIDDEN', 'Import indisponible pour un jeton restreint par entité')
+      }
       const report = await importCallLeads({
         externalRep: req.body.externalRep,
         leads: req.body.leads,
@@ -312,8 +317,12 @@ router.get('/leads', requireScope('read:crm'), async (req: Request, res: Respons
     if (typeof req.query.project === 'string' && (LEAD_PROJECTS as readonly string[]).includes(req.query.project)) {
       filter.project = req.query.project
     }
-    // Entité du groupe (un lead sans entité compte comme VENIO).
-    if (isGroupEntity(req.query.entity)) filter.entity = entityCondition([req.query.entity])
+    const entities = agentCrmEntities(req)
+    Object.assign(filter, agentLeadScope(req))
+    if (isGroupEntity(req.query.entity)) {
+      filter.entity =
+        entities === null || entities.includes(req.query.entity) ? entityCondition([req.query.entity]) : { $in: [] }
+    }
 
     const sort = parseSort(req.query.sort, { updatedAt: -1 }, [
       'createdAt',
@@ -352,7 +361,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {
-      const lead = await Lead.findById(req.params.id)
+      const lead = await Lead.findOne({ _id: req.params.id, ...agentLeadScope(req) })
         .populate('assignedTo', 'name email')
         .populate('createdBy', 'name email')
         .lean()
@@ -397,10 +406,20 @@ router.post(
         return respondError(res, 500, 'NO_ADMIN', 'Aucun SUPER_ADMIN trouvé pour assigner le lead')
       }
       const payload = normalizeLeadPatch(req.body || {}, { lenientAssignee: true })
-      // Doublons probables (tout le CRM : le jeton agent n'a pas de périmètre de lecture restreint).
+      const entities = agentCrmEntities(req)
+      if (entities) {
+        if (payload.entity === undefined) {
+          const inferred = entityFromProject(payload.project)
+          payload.entity = entities.includes(inferred) ? inferred : entities[0]
+        }
+        if (!entities.includes(payload.entity)) return respondError(res, 403, 'FORBIDDEN', 'Entité hors périmètre')
+      }
+      // Ne révéler que les doublons du périmètre du propriétaire.
       // Signalés dans la réponse, ou refus 409 si le réglage `duplicateBlockOnCreate` est actif.
       const settings = await CrmSettings.getSettings()
-      const duplicates = settings.duplicateDetectionEnabled ? await checkDuplicateLead(payload as any, settings) : []
+      const duplicates = settings.duplicateDetectionEnabled
+        ? await checkDuplicateLead(payload as any, settings, null, { scope: agentLeadScope(req) })
+        : []
       if (duplicates.length > 0 && settings.duplicateBlockOnCreate) {
         return respondError(
           res,
@@ -447,10 +466,14 @@ router.patch(
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {
-      const lead = await Lead.findById(req.params.id)
+      const lead = await Lead.findOne({ _id: req.params.id, ...agentLeadScope(req) })
       if (!lead) return respondError(res, 404, 'NOT_FOUND', 'Lead introuvable')
       const before = lead.toObject()
       const payload = normalizeLeadPatch(req.body || {}, { lenientAssignee: true })
+      const entities = agentCrmEntities(req)
+      if (entities && payload.entity !== undefined && !entities.includes(payload.entity)) {
+        return respondError(res, 403, 'FORBIDDEN', 'Entité hors périmètre')
+      }
       await applyLeadChange(lead, payload, { actor: null, source: 'agent' })
       res.locals.audit = {
         entityType: 'Lead',
@@ -475,7 +498,7 @@ router.delete(
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {
-      const lead = await Lead.findById(req.params.id)
+      const lead = await Lead.findOne({ _id: req.params.id, ...agentLeadScope(req) })
       if (!lead) return respondError(res, 404, 'NOT_FOUND', 'Lead introuvable')
       const before = lead.toObject()
       // Historique, échanges, tâches et exécutions de règles partent avec le lead.
@@ -745,6 +768,9 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     if (emitValidationError(req, res)) return
     try {
+      if (!(await Lead.exists({ _id: req.params.id, ...agentLeadScope(req) }))) {
+        return respondError(res, 404, 'NOT_FOUND', 'Lead introuvable')
+      }
       const pag = parsePagination(req)
       const [items, total] = await Promise.all([
         LeadActivity.find({ leadId: req.params.id }).sort({ createdAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
