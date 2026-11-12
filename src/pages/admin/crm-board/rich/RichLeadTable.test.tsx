@@ -221,6 +221,6 @@ it('exporte les lignes filtrées et les colonnes affichées depuis le bouton de 
   ])
   const calls = vi.mocked(exportToCsv).mock.calls
   const [, headers, rows] = calls[calls.length - 1]
-  expect(headers).toHaveLength(9)
-  expect(rows[0]).toHaveLength(9)
+  expect(headers).toHaveLength(8)
+  expect(rows[0]).toHaveLength(8)
 })

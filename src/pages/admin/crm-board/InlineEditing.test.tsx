@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { expect, it, vi } from 'vitest'
 import RichLeadTable from './rich/RichLeadTable'
@@ -26,6 +26,9 @@ it('édite le statut, la priorité et le responsable en ligne sans ouvrir la fic
       />
     </MemoryRouter>,
   )
+  // La priorité n'est pas une colonne par défaut : on l'affiche avant de l'éditer.
+  fireEvent.click(screen.getByRole('button', { name: /Colonnes/ }))
+  fireEvent.click(within(document.querySelector<HTMLElement>('.rich-colpn')!).getByLabelText(/Priorité/))
   fireEvent.change(screen.getByRole('combobox', { name: 'Statut — Atelier' }), { target: { value: 'CONTACTED' } })
   fireEvent.change(screen.getByRole('combobox', { name: 'Priorité — Atelier' }), { target: { value: 'HAUTE' } })
   fireEvent.change(screen.getByRole('combobox', { name: 'Commercial — Atelier' }), { target: { value: 'admin' } })

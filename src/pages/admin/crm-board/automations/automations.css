@@ -111,7 +111,7 @@
 .crm-auto-kpi small {
   font: 10px var(--mono);
   letter-spacing: normal;
-  color: var(--dim);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

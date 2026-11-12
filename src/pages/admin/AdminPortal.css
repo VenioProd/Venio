@@ -8503,8 +8503,9 @@ html.theme-portail .admin-decisions-digest {
 /* CRM : la table et la file de travail conservent leurs variantes mobiles. */
 /* Le détail commercial occupe le bord droit ; les dialogues courts restent centrés. */
 html.theme-portail .crm-settings-page .crm-settings-grid {
-  columns: 2 420px;
-  column-gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
 }
 .crm-settings-page .crm-settings-section {
   min-width: 0;
@@ -8809,7 +8810,7 @@ html.theme-portail .crm-settings-page .crm-settings-grid {
 }
 
 .crm-settings-suppression {
-  column-span: all;
+  grid-column: 1 / -1;
   display: block;
 }
 .crm-suppression-scroll {
@@ -8856,9 +8857,6 @@ html.theme-portail .crm-settings-page .crm-settings-grid {
     bottom: 76px;
     right: 12px;
   }
-  html.theme-portail .crm-settings-page .crm-settings-grid {
-    columns: 1;
-  }
 }
 
 .crm-settings-page .custom-select.crm-settings-select {
@@ -8870,13 +8868,57 @@ html.theme-portail .crm-settings-page .crm-settings-grid {
   max-width: 100%;
 }
 .crm-settings-summary {
+  position: sticky;
+  top: 56px;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 20px;
+  padding: 8px 0;
+  background: var(--bg-primary);
 }
+.crm-settings-summary a {
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-pill);
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-decoration: none;
+}
+.crm-settings-summary a:hover,
+.crm-settings-summary a:focus-visible {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+/* Chaque groupe range ses sections sur deux colonnes quand la place le permet. */
 .crm-settings-group {
-  break-inside: avoid;
-  scroll-margin-top: 68px;
-  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+  scroll-margin-top: 112px;
+}
+.crm-settings-group > h2 {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+/* Un groupe d'une seule section lui donne toute la largeur. */
+.crm-settings-group > :nth-child(2):last-child {
+  grid-column: 1 / -1;
+}
+
+/* Réglages des appels : les résultats d'appel se rangent en cartes côte à côte. */
+.crm-settings-page .crm-call-settings-form {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  align-items: start;
+}
+.crm-settings-page .crm-call-settings-form > .crm-settings-item-full {
+  grid-column: auto;
+}
+.crm-settings-page .crm-call-settings-form > button,
+.crm-settings-page .crm-call-settings-form > label {
+  grid-column: 1 / -1;
+  justify-self: start;
 }

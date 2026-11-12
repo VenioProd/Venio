@@ -1238,33 +1238,32 @@ html.theme-portail .pipeline-page .crm-card:hover {
 }
 @media (width > 767px) {
   .crm-table-page {
-    height: calc(100dvh - var(--crm-board-top, 56px) - var(--crm-board-bottom, 0px));
+    min-height: calc(100dvh - var(--crm-board-top, 56px) - var(--crm-board-bottom, 0px));
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    min-height: 0;
   }
   .crm-table-page > .admin-page-header {
     flex: none;
     margin-bottom: 0;
   }
+  /* Filtres compris, le plateau garde au moins 640 px : sur un écran bas la page défile, et il ne dépasse jamais l'écran. */
   .crm-table-page .crm-board-content {
-    flex: 1;
+    flex: 1 1 640px;
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    min-height: 640px;
+    max-height: calc(100dvh - 72px);
   }
 }
 [data-theme='light'] .crm-project-pill,
 [data-theme='light'] .crm-column-count,
-[data-theme='light'] .crm-worklist-action.primary,
 [data-theme='light'] .crm-alert-badge,
 [data-theme='light'] .crm-worklist-status .custom-select-trigger {
   color: var(--text-primary);
 }
 
-.crm-create-dialog {
+.crm-auto-dlg.crm-create-dialog {
   width: min(1000px, calc(100vw - 32px));
   max-height: calc(100dvh - 112px);
   padding: 0;
@@ -1287,7 +1286,7 @@ html.theme-portail .pipeline-page .crm-card:hover {
   cursor: pointer;
 }
 @media (max-width: 767px) {
-  .crm-create-dialog {
+  .crm-auto-dlg.crm-create-dialog {
     inset: 56px 0 64px;
     width: auto;
     max-height: none;
@@ -1519,4 +1518,29 @@ html.theme-portail .pipeline-page .crm-column-over {
   border: 0;
   border-radius: var(--r-hair);
   background: none;
+}
+
+/* Fiche lead : sous 1024 px l'en-tête collant occuperait plus de la moitié de l'écran. */
+@media (max-width: 1023px) {
+  .crm-detail-header {
+    position: static;
+  }
+}
+.crm-column.crm-column-collapsed {
+  min-width: 0;
+  width: 72px;
+}
+.crm-column.crm-column-collapsed .crm-column-header {
+  writing-mode: vertical-rl;
+}
+/* Carte mobile : l'édition en ligne se fait sur la fiche, la carte reste courte. */
+@media (max-width: 767px) {
+  .rich-table td:has(.rich-inline-select) .rich-inline-select {
+    pointer-events: none;
+    border: 0;
+    padding: 0;
+    background: none;
+    appearance: none;
+    text-align: right;
+  }
 }
