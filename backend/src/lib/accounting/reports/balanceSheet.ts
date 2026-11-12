@@ -129,7 +129,7 @@ export async function getBalanceSheet(params: BalanceSheetParams = {}): Promise<
       actif.push({ code, label, accountClass, amount: balance })
       if (balance < 0 && code.startsWith('411')) {
         notes.push(
-          `Compte client ${code} avec solde créditeur (${balance.toFixed(2)} €) — devrait être reclassé en 419 (acompte client).`
+          `Compte client ${code} avec solde créditeur (${balance.toFixed(2)} €) — devrait être reclassé en 419 (acompte client).`,
         )
       }
     } else if (type === 'PASSIF' || type === 'CAPITAUX') {
@@ -183,7 +183,7 @@ export async function getBalanceSheet(params: BalanceSheetParams = {}): Promise<
 
   if (Math.abs(imbalance) > 0.01) {
     notes.push(
-      `Bilan déséquilibré : actif ${totalActif.toFixed(2)} ≠ passif ${totalPassif.toFixed(2)} (écart ${imbalance.toFixed(2)}).`
+      `Bilan déséquilibré : actif ${totalActif.toFixed(2)} ≠ passif ${totalPassif.toFixed(2)} (écart ${imbalance.toFixed(2)}).`,
     )
   }
 

@@ -10,7 +10,7 @@ const projectSectionSchema = new mongoose.Schema<IProjectSection>(
     isVisible: { type: Boolean, default: true }, // Contrôle de visibilité par l'admin
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 // Index pour trier les sections par ordre

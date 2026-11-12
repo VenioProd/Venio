@@ -138,21 +138,29 @@ export default function EmailComposer() {
     setSending(true)
     setResults(null)
     try {
-      const data = await apiFetch<{ sent: number; failed: number; results: SendResult[]; blocked?: { email: string }[] }>(
-        '/api/admin/email-composer/send',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            subject,
-            body,
-            recipients,
-            ...(showCta && ctaUrl && ctaLabel ? { ctaUrl, ctaLabel } : {}),
-          }),
-        },
-      )
+      const data = await apiFetch<{
+        sent: number
+        failed: number
+        results: SendResult[]
+        blocked?: { email: string }[]
+      }>('/api/admin/email-composer/send', {
+        method: 'POST',
+        body: JSON.stringify({
+          subject,
+          body,
+          recipients,
+          ...(showCta && ctaUrl && ctaLabel ? { ctaUrl, ctaLabel } : {}),
+        }),
+      })
       const blocked = data.blocked ?? []
-      setResults([...(data.results ?? []), ...blocked.map((b) => ({ email: b.email, success: false, error: t('adminOps.email.blockedDnc') }) as SendResult)])
-      if (blocked.length > 0) showToast(t('adminOps.email.blockedSummary', { count: blocked.length, sent: data.sent }), 'warning')
+      setResults([
+        ...(data.results ?? []),
+        ...blocked.map(
+          (b) => ({ email: b.email, success: false, error: t('adminOps.email.blockedDnc') }) as SendResult,
+        ),
+      ])
+      if (blocked.length > 0)
+        showToast(t('adminOps.email.blockedSummary', { count: blocked.length, sent: data.sent }), 'warning')
       else if (data.failed === 0) showToast(t('adminOps.email.sentOk', { count: data.sent }), 'success')
       else showToast(t('adminOps.email.sentPartial', { sent: data.sent, failed: data.failed }), 'warning')
     } catch (err: unknown) {

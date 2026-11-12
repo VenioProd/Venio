@@ -23,7 +23,16 @@ export const ruleTemplates = (): RuleTemplate[] => [
       name: tr('crmAuto.tpl.bigAmount.title'),
       trigger: { type: 'LEAD_CREATED', params: {} },
       conditions: { op: 'AND', items: [{ field: 'budget', operator: 'gte', value: 50000 }] },
-      actions: [{ type: 'NOTIFY', params: { recipients: 'admins', title: tr('crmAuto.tpl.bigAmount.notifyTitle'), message: tr('crmAuto.tpl.bigAmount.notifyMessage') } }],
+      actions: [
+        {
+          type: 'NOTIFY',
+          params: {
+            recipients: 'admins',
+            title: tr('crmAuto.tpl.bigAmount.notifyTitle'),
+            message: tr('crmAuto.tpl.bigAmount.notifyMessage'),
+          },
+        },
+      ],
       limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
     },
   },
@@ -51,7 +60,10 @@ export const ruleTemplates = (): RuleTemplate[] => [
       conditions: { op: 'AND', items: [] },
       actions: [
         { type: 'CREATE_TASK', params: { title: tr('crmAuto.default.taskTitle'), dueInDays: 1, assignTo: 'owner' } },
-        { type: 'NOTIFY', params: { recipients: 'owner', title: tr('crmAuto.tpl.inactiveWeek.notifyTitle'), message: '' } },
+        {
+          type: 'NOTIFY',
+          params: { recipients: 'owner', title: tr('crmAuto.tpl.inactiveWeek.notifyTitle'), message: '' },
+        },
       ],
     },
   },
@@ -67,7 +79,10 @@ export const ruleTemplates = (): RuleTemplate[] => [
       actions: [
         { type: 'CREATE_CLIENT', params: {} },
         { type: 'CREATE_PROJECT', params: {} },
-        { type: 'NOTIFY', params: { recipients: 'admins', title: tr('crmAuto.tpl.wonClient.notifyTitle'), message: '' } },
+        {
+          type: 'NOTIFY',
+          params: { recipients: 'admins', title: tr('crmAuto.tpl.wonClient.notifyTitle'), message: '' },
+        },
       ],
       limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
     },
@@ -83,7 +98,10 @@ export const ruleTemplates = (): RuleTemplate[] => [
       conditions: { op: 'AND', items: [] },
       actions: [
         { type: 'ADD_TAG', params: { tag: tr('crmAuto.tpl.lostTag.tag') } },
-        { type: 'CREATE_TASK', params: { title: tr('crmAuto.tpl.lostTag.taskTitle'), dueInDays: 180, assignTo: 'owner' } },
+        {
+          type: 'CREATE_TASK',
+          params: { title: tr('crmAuto.tpl.lostTag.taskTitle'), dueInDays: 180, assignTo: 'owner' },
+        },
       ],
       limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
     },
@@ -98,15 +116,27 @@ export const ruleTemplates = (): RuleTemplate[] => [
       trigger: { type: 'LEAD_INACTIVE', params: { days: 5, statuses: ['PROPOSAL'] } },
       conditions: { op: 'AND', items: [] },
       actions: [
-        { type: 'SEND_EMAIL', params: { subject: tr('crmAuto.tpl.proposalSilence.subject'), body: tr('crmAuto.tpl.proposalSilence.body') } },
-        { type: 'CREATE_TASK', params: { title: tr('crmAuto.tpl.proposalSilence.taskTitle'), dueInDays: 1, assignTo: 'owner' } },
+        {
+          type: 'SEND_EMAIL',
+          params: { subject: tr('crmAuto.tpl.proposalSilence.subject'), body: tr('crmAuto.tpl.proposalSilence.body') },
+        },
+        {
+          type: 'CREATE_TASK',
+          params: { title: tr('crmAuto.tpl.proposalSilence.taskTitle'), dueInDays: 1, assignTo: 'owner' },
+        },
       ],
       limits: { perLead: 'DAYS', days: 5, maxPerRun: 50 },
     },
   },
 ]
 
-export default function TemplatesGrid({ onUse, canAdminister }: { onUse: (template: RuleTemplate) => void; canAdminister: boolean }) {
+export default function TemplatesGrid({
+  onUse,
+  canAdminister,
+}: {
+  onUse: (template: RuleTemplate) => void
+  canAdminister: boolean
+}) {
   const { t: tt } = useI18n()
   return (
     <div className="crm-auto-tpls">
@@ -114,7 +144,14 @@ export default function TemplatesGrid({ onUse, canAdminister }: { onUse: (templa
         <article className="crm-auto-tpl crm-auto-glass" key={t.id}>
           <h3>{t.title}</h3>
           <p>{t.summary}</p>
-          <button type="button" className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm" disabled={!canAdminister} title={canAdminister ? undefined : tt('crmAuto.adminOnly')} onClick={() => onUse(t)} aria-label={tt('crmAuto.tpl.useAria', { title: t.title })}>
+          <button
+            type="button"
+            className="crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            disabled={!canAdminister}
+            title={canAdminister ? undefined : tt('crmAuto.adminOnly')}
+            onClick={() => onUse(t)}
+            aria-label={tt('crmAuto.tpl.useAria', { title: t.title })}
+          >
             {tt('crmAuto.tpl.use')}
           </button>
         </article>

@@ -72,7 +72,9 @@ const definition: AutomationDefinition = {
         }
       } else {
         // No assignee — notify all admins
-        const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: { $ne: false } }).select('_id')
+        const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: { $ne: false } }).select(
+          '_id',
+        )
         for (const admin of admins) {
           const adminId = (admin._id as object).toString()
           await createNotification({

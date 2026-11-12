@@ -89,9 +89,11 @@ const en: Record<keyof typeof fr, string> = {
   'portfolio.upcoming.empty': 'No due dates in the next 14 days.',
   'portfolio.workload.title': 'Workload by person',
   'portfolio.workload.empty': 'No open tasks assigned.',
-  'portfolio.workload.counts': '{projects, plural, one {# project} other {# projects}} · {tasks, plural, one {# task} other {# tasks}}',
+  'portfolio.workload.counts':
+    '{projects, plural, one {# project} other {# projects}} · {tasks, plural, one {# task} other {# tasks}}',
   'portfolio.delete.title': 'Delete permanently?',
-  'portfolio.delete.message': '{count, plural, one {# project} other {# projects}} and their sections, tasks and files will be deleted. Projects that carry an invoice, an accounting entry or a sent quote will be rejected: archive them instead.',
+  'portfolio.delete.message':
+    '{count, plural, one {# project} other {# projects}} and their sections, tasks and files will be deleted. Projects that carry an invoice, an accounting entry or a sent quote will be rejected: archive them instead.',
   'portfolio.postpone.newDate': 'New due date',
   'portfolio.risk.late': '{value} d overdue',
   'portfolio.risk.budget': 'Budget {value} %',

@@ -10,7 +10,8 @@ const crmSeq = {
   'crmSeq.loadError': 'Unable to load sequences',
   'crmSeq.retry': 'Retry',
   'crmSeq.none': 'No sequences yet.',
-  'crmSeq.rulesNote': 'An unsubscribe link is added automatically to every email. Emails go out on business days only, Paris time.',
+  'crmSeq.rulesNote':
+    'An unsubscribe link is added automatically to every email. Emails go out on business days only, Paris time.',
   'crmSeq.status.DRAFT': 'Draft',
   'crmSeq.status.ACTIVE': 'Active',
   'crmSeq.status.PAUSED': 'Paused',
@@ -37,7 +38,8 @@ const crmSeq = {
   'crmSeq.msg.statusError': 'Unable to change the state',
   'crmSeq.msg.deleteError': 'Unable to delete the sequence',
   'crmSeq.deleteTitle': 'Delete this sequence?',
-  'crmSeq.deleteBody': 'The sequence “{name}” will be permanently deleted. Not possible while leads are enrolled in it.',
+  'crmSeq.deleteBody':
+    'The sequence “{name}” will be permanently deleted. Not possible while leads are enrolled in it.',
   'crmSeq.detail.back': 'Back to sequences',
   'crmSeq.detail.enrollments': 'Enrollments',
   'crmSeq.detail.filter': 'Filter by state',
@@ -93,7 +95,8 @@ const crmSeq = {
   'crmSeq.builder.down': 'Move step {n} down',
   'crmSeq.builder.type': 'Type of step {n}',
   'crmSeq.builder.delay': 'Delay in days (step {n})',
-  'crmSeq.builder.delayHint': 'Calendar days since the previous step or the enrollment; moved to the next business day.',
+  'crmSeq.builder.delayHint':
+    'Calendar days since the previous step or the enrollment; moved to the next business day.',
   'crmSeq.builder.hour': 'Send hour, Paris (step {n})',
   'crmSeq.builder.subject': 'Subject (step {n})',
   'crmSeq.builder.body': 'Email text (step {n})',
@@ -108,7 +111,8 @@ const crmSeq = {
   'crmSeq.builder.preview': 'Preview',
   'crmSeq.builder.previewNote': 'Rendered with sample values.',
   'crmSeq.builder.previewEmpty': '(empty)',
-  'crmSeq.builder.unsubscribe': 'An unsubscribe link is added automatically to every email. Sent on business days only, Paris time.',
+  'crmSeq.builder.unsubscribe':
+    'An unsubscribe link is added automatically to every email. Sent on business days only, Paris time.',
   'crmSeq.builder.save': 'Save',
   'crmSeq.builder.saving': 'Saving…',
   'crmSeq.builder.saveError': 'Unable to save',

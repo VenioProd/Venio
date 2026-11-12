@@ -43,7 +43,9 @@ export interface LeadConsent {
 export const DEFAULT_CONSENT: LeadConsent = { status: 'UNKNOWN', basis: 'LEGITIMATE_INTEREST', source: '', at: null }
 
 export function normalizeEmail(value: unknown): string {
-  return String(value ?? '').trim().toLowerCase()
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
 }
 
 // ───────────────────────── Liste de suppression ─────────────────────────
@@ -52,7 +54,9 @@ export function normalizeEmail(value: unknown): string {
 export async function suppressedAmong(emails: string[]): Promise<Set<string>> {
   const wanted = [...new Set(emails.map(normalizeEmail).filter(Boolean))]
   if (wanted.length === 0) return new Set()
-  const rows = await SuppressionEntry.find({ emailNormalized: { $in: wanted } }).select('emailNormalized').lean()
+  const rows = await SuppressionEntry.find({ emailNormalized: { $in: wanted } })
+    .select('emailNormalized')
+    .lean()
   return new Set(rows.map((r) => r.emailNormalized))
 }
 
@@ -71,7 +75,14 @@ export async function addSuppression(
   if (!emailNormalized) return false
   const res = await SuppressionEntry.updateOne(
     { emailNormalized },
-    { $setOnInsert: { emailNormalized, reason: opts.reason, createdBy: opts.createdBy ?? null, leadId: opts.leadId ?? null } },
+    {
+      $setOnInsert: {
+        emailNormalized,
+        reason: opts.reason,
+        createdBy: opts.createdBy ?? null,
+        leadId: opts.leadId ?? null,
+      },
+    },
     { upsert: true },
   )
   return res.upsertedCount > 0
@@ -120,14 +131,17 @@ export function signUnsubscribeToken(
   now: Date = new Date(),
   ttlDays: number = UNSUBSCRIBE_TOKEN_TTL_DAYS,
 ): string {
-  const payload = { l: String(input.leadId), e: normalizeEmail(input.email), x: Math.floor(now.getTime() / 1000) + ttlDays * 86400 }
+  const payload = {
+    l: String(input.leadId),
+    e: normalizeEmail(input.email),
+    x: Math.floor(now.getTime() / 1000) + ttlDays * 86400,
+  }
   const body = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url')
   return `${body}.${sign(body)}`
 }
 
 export type UnsubscribeTokenCheck =
-  | { ok: true; leadId: string; email: string }
-  | { ok: false; reason: 'INVALID' | 'EXPIRED' }
+  { ok: true; leadId: string; email: string } | { ok: false; reason: 'INVALID' | 'EXPIRED' }
 
 export function verifyUnsubscribeToken(token: unknown, now: Date = new Date()): UnsubscribeTokenCheck {
   if (typeof token !== 'string' || token.length > 2000) return { ok: false, reason: 'INVALID' }
@@ -140,14 +154,16 @@ export function verifyUnsubscribeToken(token: unknown, now: Date = new Date()): 
     return { ok: false, reason: 'INVALID' }
   }
   const provided = Buffer.from(signature, 'utf8')
-  if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) return { ok: false, reason: 'INVALID' }
+  if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected))
+    return { ok: false, reason: 'INVALID' }
   let payload: { l?: unknown; e?: unknown; x?: unknown }
   try {
     payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'))
   } catch {
     return { ok: false, reason: 'INVALID' }
   }
-  if (typeof payload.l !== 'string' || typeof payload.e !== 'string' || typeof payload.x !== 'number') return { ok: false, reason: 'INVALID' }
+  if (typeof payload.l !== 'string' || typeof payload.e !== 'string' || typeof payload.x !== 'number')
+    return { ok: false, reason: 'INVALID' }
   if (payload.x * 1000 < now.getTime()) return { ok: false, reason: 'EXPIRED' }
   return { ok: true, leadId: payload.l, email: payload.e }
 }
@@ -162,8 +178,15 @@ export function buildUnsubscribeUrl(leadId: Types.ObjectId | string, email: stri
  * Désinscription par la personne : opposition sur le lead (via le service
  * unique) et inscription de l'adresse dans la liste globale. Idempotente.
  */
-export async function applyUnsubscribe(leadId: string, email: string): Promise<{ leadFound: boolean; alreadySuppressed: boolean }> {
-  const alreadySuppressed = !(await addSuppression(email, { reason: 'UNSUBSCRIBE', createdBy: null, leadId: isObjectIdLike(leadId) ? leadId : null }))
+export async function applyUnsubscribe(
+  leadId: string,
+  email: string,
+): Promise<{ leadFound: boolean; alreadySuppressed: boolean }> {
+  const alreadySuppressed = !(await addSuppression(email, {
+    reason: 'UNSUBSCRIBE',
+    createdBy: null,
+    leadId: isObjectIdLike(leadId) ? leadId : null,
+  }))
   const lead = isObjectIdLike(leadId) ? await Lead.findById(leadId) : null
   if (lead && !lead.doNotContact) {
     const { applyLeadChange } = await import('./crmLeadService.js')
@@ -201,9 +224,11 @@ export interface PrivacyEvent {
 }
 
 function plainConsent(value: unknown): LeadConsent {
-  const raw = (value && typeof (value as { toObject?: () => unknown }).toObject === 'function'
-    ? (value as { toObject: () => unknown }).toObject()
-    : value) as Partial<LeadConsent> | null | undefined
+  const raw = (
+    value && typeof (value as { toObject?: () => unknown }).toObject === 'function'
+      ? (value as { toObject: () => unknown }).toObject()
+      : value
+  ) as Partial<LeadConsent> | null | undefined
   return { ...DEFAULT_CONSENT, ...(raw ?? {}) }
 }
 
@@ -234,7 +259,11 @@ export function preparePrivacyChange(
         events.push({
           type: 'CONSENT_CHANGED',
           label: `Consentement : ${prev.status} → ${next.status} (base légale ${next.basis})`,
-          payload: { from: { status: prev.status, basis: prev.basis }, to: { status: next.status, basis: next.basis }, source },
+          payload: {
+            from: { status: prev.status, basis: prev.basis },
+            to: { status: next.status, basis: next.basis },
+            source,
+          },
         })
       }
     }
@@ -247,7 +276,11 @@ export function preparePrivacyChange(
     } else if (wanted) {
       patch.doNotContactAt = now
       patch.doNotContactReason = patch.doNotContactReason || 'MANUAL'
-      events.push({ type: 'DO_NOT_CONTACT', label: 'Opposition : ne plus contacter', payload: { reason: patch.doNotContactReason, source } })
+      events.push({
+        type: 'DO_NOT_CONTACT',
+        label: 'Opposition : ne plus contacter',
+        payload: { reason: patch.doNotContactReason, source },
+      })
     } else {
       patch.doNotContactAt = null
       events.push({ type: 'DO_NOT_CONTACT_LIFTED', label: 'Opposition levée sur la fiche', payload: { source } })
@@ -277,7 +310,12 @@ export const PERSONAL_PAYLOAD_KEYS = [
 ] as const
 
 /** Champs normalisés que d'autres chantiers peuvent ajouter au lead (doublons) : vidés s'ils existent. */
-const NORMALIZED_CONTACT_FIELDS = ['contactEmailNormalized', 'contactPhoneNormalized', 'emailNormalized', 'phoneNormalized']
+const NORMALIZED_CONTACT_FIELDS = [
+  'contactEmailNormalized',
+  'contactPhoneNormalized',
+  'emailNormalized',
+  'phoneNormalized',
+]
 
 type LeadDoc = InstanceType<typeof Lead>
 
@@ -310,7 +348,9 @@ export async function anonymizeLead(
   }
   for (const field of NORMALIZED_CONTACT_FIELDS) if (Lead.schema.path(field)) patch[field] = ''
   if (lead.closingHandoff?.repNotes) {
-    const handoff = (lead.closingHandoff as unknown as { toObject?: () => Record<string, unknown> }).toObject?.() ?? { ...lead.closingHandoff }
+    const handoff = (lead.closingHandoff as unknown as { toObject?: () => Record<string, unknown> }).toObject?.() ?? {
+      ...lead.closingHandoff,
+    }
     patch.closingHandoff = { ...handoff, repNotes: '' }
   }
 
@@ -328,13 +368,13 @@ export async function anonymizeLead(
     { $unset: Object.fromEntries(PERSONAL_PAYLOAD_KEYS.map((k) => [`payload.${k}`, ''])) },
   )
   // Les e-mails en attente de validation portent l'adresse et le texte : ils ne partiront plus.
-  await CrmRuleRun.updateMany(
-    { lead: lead._id, 'steps.0': { $exists: true } },
-    { $unset: { 'steps.$[].payload': '' } },
-  )
+  await CrmRuleRun.updateMany({ lead: lead._id, 'steps.0': { $exists: true } }, { $unset: { 'steps.$[].payload': '' } })
   await CrmRuleRun.updateMany({ lead: lead._id, status: 'PENDING' }, { $set: { status: 'SKIP' } })
   // Journal des séquences : les objets d'e-mails rendus peuvent porter le nom du contact.
-  await CrmSequenceEnrollment.updateMany({ lead: lead._id, 'history.0': { $exists: true } }, { $set: { 'history.$[].message': '' } })
+  await CrmSequenceEnrollment.updateMany(
+    { lead: lead._id, 'history.0': { $exists: true } },
+    { $set: { 'history.$[].message': '' } },
+  )
   await logLeadActivity(lead._id, 'ANONYMIZED', label, { reason: opts.reason, source: opts.source }, opts.actor)
   return { anonymized: true }
 }
@@ -351,8 +391,14 @@ export async function buildPersonalDataExport(leadId: Types.ObjectId | string) {
     Interaction.find({ subjectType: 'LEAD', subjectId: lead._id }).sort({ occurredAt: 1, _id: 1 }).lean(),
     PersonalTask.find({ leadId: lead._id }).select('title status dueDate createdAt').sort({ createdAt: 1 }).lean(),
     CrmRuleRun.find({ lead: lead._id }).select('ruleName trigger status steps createdAt').sort({ createdAt: 1 }).lean(),
-    email ? SuppressionEntry.findOne({ emailNormalized: email }).select('emailNormalized reason createdAt').lean() : null,
-    CrmSequenceEnrollment.find({ lead: lead._id }).populate('sequence', 'name').select('-openKey').sort({ createdAt: 1 }).lean(),
+    email
+      ? SuppressionEntry.findOne({ emailNormalized: email }).select('emailNormalized reason createdAt').lean()
+      : null,
+    CrmSequenceEnrollment.find({ lead: lead._id })
+      .populate('sequence', 'name')
+      .select('-openKey')
+      .sort({ createdAt: 1 })
+      .lean(),
   ])
   return {
     format: 'venio-crm-personal-data/v1',
@@ -377,8 +423,14 @@ export async function buildPersonalDataExport(leadId: Types.ObjectId | string) {
 export async function backfillLeadPrivacy(dryRun = false) {
   const coll = Lead.collection
   const noConsent = { $or: [{ consent: { $exists: false } }, { consent: null }] }
-  const noBasis = { consent: { $type: 'object' }, $or: [{ 'consent.basis': { $exists: false } }, { 'consent.basis': null }, { 'consent.basis': '' }] }
-  const noStatus = { consent: { $type: 'object' }, $or: [{ 'consent.status': { $exists: false } }, { 'consent.status': null }, { 'consent.status': '' }] }
+  const noBasis = {
+    consent: { $type: 'object' },
+    $or: [{ 'consent.basis': { $exists: false } }, { 'consent.basis': null }, { 'consent.basis': '' }],
+  }
+  const noStatus = {
+    consent: { $type: 'object' },
+    $or: [{ 'consent.status': { $exists: false } }, { 'consent.status': null }, { 'consent.status': '' }],
+  }
   const noDoNotContact = { doNotContact: { $exists: false } }
   const counts = {
     missingConsent: await coll.countDocuments(noConsent),
@@ -388,10 +440,18 @@ export async function backfillLeadPrivacy(dryRun = false) {
   }
   if (dryRun) return { dryRun: true, ...counts, modified: 0 }
   let modified = 0
-  modified += (await coll.updateMany(noConsent, { $set: { consent: { status: 'UNKNOWN', basis: 'LEGITIMATE_INTEREST', source: 'MIGRATION_010', at: null } } })).modifiedCount
+  modified += (
+    await coll.updateMany(noConsent, {
+      $set: { consent: { status: 'UNKNOWN', basis: 'LEGITIMATE_INTEREST', source: 'MIGRATION_010', at: null } },
+    })
+  ).modifiedCount
   modified += (await coll.updateMany(noBasis, { $set: { 'consent.basis': 'LEGITIMATE_INTEREST' } })).modifiedCount
   modified += (await coll.updateMany(noStatus, { $set: { 'consent.status': 'UNKNOWN' } })).modifiedCount
-  modified += (await coll.updateMany(noDoNotContact, { $set: { doNotContact: false, doNotContactAt: null, doNotContactReason: '' } })).modifiedCount
+  modified += (
+    await coll.updateMany(noDoNotContact, {
+      $set: { doNotContact: false, doNotContactAt: null, doNotContactReason: '' },
+    })
+  ).modifiedCount
   await SuppressionEntry.createIndexes()
   return { dryRun: false, ...counts, modified }
 }

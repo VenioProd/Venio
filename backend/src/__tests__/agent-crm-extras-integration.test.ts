@@ -18,14 +18,29 @@ beforeAll(async () => {
 afterAll(teardownMongo)
 beforeEach(async () => {
   await clearDb()
-  adminId = String((await User.create({ email: 'a@venio.test', passwordHash: await bcrypt.hash('x', 10), name: 'Admin', role: 'SUPER_ADMIN' }))._id)
+  adminId = String(
+    (
+      await User.create({
+        email: 'a@venio.test',
+        passwordHash: await bcrypt.hash('x', 10),
+        name: 'Admin',
+        role: 'SUPER_ADMIN',
+      })
+    )._id,
+  )
 })
 
 const BASE = '/api/v1/agent/crm'
 const post = (path: string, secret: string, body: unknown) =>
-  request(app).post(`${BASE}${path}`).set(authHeaders(secret, { idempotencyKey: uniqueIdempotencyKey() })).send(body as object)
+  request(app)
+    .post(`${BASE}${path}`)
+    .set(authHeaders(secret, { idempotencyKey: uniqueIdempotencyKey() }))
+    .send(body as object)
 const patch = (path: string, secret: string, body: unknown) =>
-  request(app).patch(`${BASE}${path}`).set(authHeaders(secret, { idempotencyKey: uniqueIdempotencyKey() })).send(body as object)
+  request(app)
+    .patch(`${BASE}${path}`)
+    .set(authHeaders(secret, { idempotencyKey: uniqueIdempotencyKey() }))
+    .send(body as object)
 
 describe('Agent CRM / scopes', () => {
   it('lecture avec read:crm, écriture refusée sans write:crm', async () => {
@@ -46,7 +61,13 @@ describe('Agent CRM / scopes', () => {
 describe('Agent CRM / vues', () => {
   it('crée, liste, modifie et supprime une vue', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:crm', 'write:crm'])
-    const created = await post('/views', plainSecret, { name: 'Arrow', scope: 'TEAM', filters: { project: 'ARROW' }, columns: ['company', 'budget'], mode: 'table' })
+    const created = await post('/views', plainSecret, {
+      name: 'Arrow',
+      scope: 'TEAM',
+      filters: { project: 'ARROW' },
+      columns: ['company', 'budget'],
+      mode: 'table',
+    })
     expect(created.status).toBe(201)
     const dup = await post('/views', plainSecret, { name: 'Arrow' })
     expect(dup.status).toBe(409)
@@ -54,7 +75,10 @@ describe('Agent CRM / vues', () => {
     expect(list.body.items).toHaveLength(1)
     const updated = await patch(`/views/${created.body._id}`, plainSecret, { name: 'Arrow actifs', pinned: true })
     expect(updated.body).toMatchObject({ name: 'Arrow actifs', pinned: true })
-    await request(app).delete(`${BASE}/views/${created.body._id}`).set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() })).expect(200)
+    await request(app)
+      .delete(`${BASE}/views/${created.body._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .expect(200)
   })
 })
 
@@ -72,13 +96,17 @@ describe('Agent CRM / actions groupées et export', () => {
     await post('/leads/bulk', plainSecret, { ids, action: 'tag', payload: { tag: 'vip' } })
     expect((await Lead.findById(ids[0]))!.tags).toContain('vip')
 
-    const csv = await request(app).get(`${BASE}/leads/export?columns=company,budget,tags`).set('Authorization', `Bearer ${plainSecret}`)
+    const csv = await request(app)
+      .get(`${BASE}/leads/export?columns=company,budget,tags`)
+      .set('Authorization', `Bearer ${plainSecret}`)
     expect(csv.status).toBe(200)
     expect(csv.headers['content-type']).toContain('text/csv')
     expect(csv.text).toContain("'=cmd")
 
     await post('/leads/bulk', plainSecret, { ids: [ids[0]], action: 'archive' })
-    const csv2 = await request(app).get(`${BASE}/leads/export?columns=company`).set('Authorization', `Bearer ${plainSecret}`)
+    const csv2 = await request(app)
+      .get(`${BASE}/leads/export?columns=company`)
+      .set('Authorization', `Bearer ${plainSecret}`)
     expect(csv2.text).not.toContain('cmd')
     const list = await request(app).get('/api/v1/agent/leads').set('Authorization', `Bearer ${plainSecret}`)
     expect(list.body.total).toBe(1)
@@ -107,12 +135,19 @@ describe('Agent CRM / actions groupées et export', () => {
       const res = await request(app).get(`${BASE}/leads/${lead._id}/${p}`).set('Authorization', `Bearer ${plainSecret}`)
       expect(res.status).toBe(200)
     }
-    await request(app).get(`${BASE}/leads/64b000000000000000000000/timeline`).set('Authorization', `Bearer ${plainSecret}`).expect(404)
+    await request(app)
+      .get(`${BASE}/leads/64b000000000000000000000/timeline`)
+      .set('Authorization', `Bearer ${plainSecret}`)
+      .expect(404)
   })
 })
 
 describe('Agent CRM / règles', () => {
-  const rule = { name: 'Relance', trigger: { type: 'LEAD_INACTIVE', params: { days: 7 } }, actions: [{ type: 'CREATE_TASK', params: { title: 'Relancer {contact}' } }] }
+  const rule = {
+    name: 'Relance',
+    trigger: { type: 'LEAD_INACTIVE', params: { days: 7 } },
+    actions: [{ type: 'CREATE_TASK', params: { title: 'Relancer {contact}' } }],
+  }
 
   it('crée en brouillon et refuse l’activation sans admin:*', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:crm', 'write:crm'])
@@ -148,7 +183,13 @@ describe('Agent CRM / règles', () => {
     const { plainSecret } = await createAgentTokenInDb(['read:crm', 'write:crm'])
     const created = await post('/rules', plainSecret, rule)
     const lead = await Lead.create({ company: 'Galerie' })
-    const run = await CrmRuleRun.create({ rule: created.body._id, lead: lead._id, eventKey: 'k1', trigger: 'LEAD_INACTIVE', status: 'PENDING' })
+    const run = await CrmRuleRun.create({
+      rule: created.body._id,
+      lead: lead._id,
+      eventKey: 'k1',
+      trigger: 'LEAD_INACTIVE',
+      status: 'PENDING',
+    })
     for (const action of ['approve', 'reject', 'retry']) {
       const res = await post(`/rules/runs/${run._id}/${action}`, plainSecret, {})
       expect(res.status).toBe(403)
@@ -165,7 +206,9 @@ describe('Agent CRM / règles', () => {
     await seedCrmRules()
     const CrmRule = (await import('../models/CrmRule.js')).default
     const sys = await CrmRule.findOne({ system: true })
-    const res = await request(app).delete(`${BASE}/rules/${sys!._id}`).set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+    const res = await request(app)
+      .delete(`${BASE}/rules/${sys!._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
     expect(res.status).toBe(409)
   })
 })

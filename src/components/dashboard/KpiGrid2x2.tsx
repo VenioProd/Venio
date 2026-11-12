@@ -13,7 +13,9 @@ export interface KpiSpec {
   icon?: ReactNode
 }
 
-interface Props { kpis: KpiSpec[] }
+interface Props {
+  kpis: KpiSpec[]
+}
 
 const KpiGrid2x2 = ({ kpis }: Props) => (
   <div className="dash-kpi-grid-2x2">

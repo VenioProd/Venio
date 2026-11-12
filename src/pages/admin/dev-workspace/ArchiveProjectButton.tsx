@@ -14,7 +14,13 @@ interface Props {
 }
 
 /** Bouton Archiver / Restaurer d'un projet du Dev Tracker (les tickets ne sont pas touchés). */
-const ArchiveProjectButton = ({ projectId, projectName, archived, onChanged, className = 'cockpit-btn subtle' }: Props) => {
+const ArchiveProjectButton = ({
+  projectId,
+  projectName,
+  archived,
+  onChanged,
+  className = 'cockpit-btn subtle',
+}: Props) => {
   const { t } = useI18n()
   const { confirm, ConfirmDialog } = useConfirm()
   const [busy, setBusy] = useState(false)

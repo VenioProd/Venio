@@ -61,8 +61,7 @@ describe('VENIO-99 — navigation et cockpit RBAC', () => {
         ...comptable,
         grantedPermissions: ['view_beta'],
         deniedPermissions: ['submit_dev_suggestion'],
-      }).find((item) => item.id === 'dev')
-        ?.screen,
+      }).find((item) => item.id === 'dev')?.screen,
     ).toBe('/admin/dev/recette')
     expect(
       getVisibleAdminNavigation({ ...comptable, grantedPermissions: ['view_education'] }).find(
@@ -90,7 +89,16 @@ describe('VENIO-99 — navigation et cockpit RBAC', () => {
   })
 
   it('expose les fiches projets à tous les rôles admin, dans le groupe Projets', () => {
-    for (const role of ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE'] as UserRole[]) {
+    for (const role of [
+      'SUPER_ADMIN',
+      'ADMIN',
+      'MANAGER',
+      'RH',
+      'COMMERCIAL',
+      'COMPTABLE',
+      'VIEWER',
+      'STAGIAIRE',
+    ] as UserRole[]) {
       const entries = getVisibleAdminNavigation(user(role))
       expect(entries.find((item) => item.id === 'projects')?.paths, role).toContain('/admin/projets/fiches')
     }

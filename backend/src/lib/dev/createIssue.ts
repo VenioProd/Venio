@@ -60,11 +60,9 @@ function isDuplicateNumberError(err: unknown): boolean {
  * counter aligns with already-allocated numbers.
  */
 async function allocateNextNumber(projectId: mongoose.Types.ObjectId): Promise<number> {
-  const updated = await DevProject.findOneAndUpdate(
-    { _id: projectId },
-    { $inc: { issueCounter: 1 } },
-    { new: true }
-  ).select('issueCounter').lean()
+  const updated = await DevProject.findOneAndUpdate({ _id: projectId }, { $inc: { issueCounter: 1 } }, { new: true })
+    .select('issueCounter')
+    .lean()
   if (!updated) throw new Error('Projet introuvable')
 
   // If issueCounter <= max existing number, we collided with legacy data.
@@ -72,9 +70,7 @@ async function allocateNextNumber(projectId: mongoose.Types.ObjectId): Promise<n
   if (updated.issueCounter <= 0) {
     return await backfillAndAllocate(projectId)
   }
-  const existing = await DevIssue.findOne({ project: projectId, number: updated.issueCounter })
-    .select('_id')
-    .lean()
+  const existing = await DevIssue.findOne({ project: projectId, number: updated.issueCounter }).select('_id').lean()
   if (existing) {
     return await backfillAndAllocate(projectId)
   }
@@ -89,8 +85,10 @@ async function backfillAndAllocate(projectId: mongoose.Types.ObjectId): Promise<
   const reAllocated = await DevProject.findOneAndUpdate(
     { _id: projectId },
     { $inc: { issueCounter: 1 } },
-    { new: true }
-  ).select('issueCounter').lean()
+    { new: true },
+  )
+    .select('issueCounter')
+    .lean()
   return reAllocated?.issueCounter ?? base + 1
 }
 

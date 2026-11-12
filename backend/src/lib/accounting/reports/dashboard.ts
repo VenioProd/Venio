@@ -44,11 +44,7 @@ function monthLabel(date: Date): string {
  * - sign='credit' => crédit - débit (utile pour comptes 7, 401, 44571…)
  * - sign='debit'  => débit - crédit (utile pour comptes 6, 411, 512…)
  */
-function sumByPrefix(
-  balances: AccountBalance[],
-  prefixes: string[],
-  sign: 'debit' | 'credit' = 'debit'
-): number {
+function sumByPrefix(balances: AccountBalance[], prefixes: string[], sign: 'debit' | 'credit' = 'debit'): number {
   let total = 0
   for (const b of balances) {
     if (!prefixes.some((p) => b.accountCode.startsWith(p))) continue
@@ -90,15 +86,13 @@ export interface DashboardKpis {
 export interface DashboardResult {
   currency: string
   asOf: Date
-  fiscalYear:
-    | {
-        _id: Types.ObjectId
-        code: string
-        label: string
-        startDate: Date
-        endDate: Date
-      }
-    | null
+  fiscalYear: {
+    _id: Types.ObjectId
+    code: string
+    label: string
+    startDate: Date
+    endDate: Date
+  } | null
   kpi: DashboardKpis
   monthlyRevenue: DashboardMonthlyRevenue[]
   topRevenueAccounts: DashboardTopRevenueAccount[]
@@ -111,9 +105,7 @@ type FiscalYearLean = Pick<IFiscalYear, 'code' | 'label' | 'startDate' | 'endDat
 /**
  * Tableau de bord comptable : KPI clés + courbe mensuelle CA/charges + top comptes CA.
  */
-export async function getAccountingDashboard(
-  params: DashboardParams = {}
-): Promise<DashboardResult> {
+export async function getAccountingDashboard(params: DashboardParams = {}): Promise<DashboardResult> {
   const { now = new Date() } = params
 
   // Exercice courant — `findContaining` peut renvoyer un doc Mongoose qu'on

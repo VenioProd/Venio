@@ -65,14 +65,19 @@ interface ProjectTwoTemplate {
 const projectOneTemplate = (clientId: mongoose.Types.ObjectId, baseNum: number) => ({
   client: clientId,
   name: 'Refonte site vitrine et identité digitale',
-  summary: 'Modernisation complète du site web et alignement avec la nouvelle stratégie de marque. Objectif : améliorer la crédibilité et le taux de conversion.',
+  summary:
+    'Modernisation complète du site web et alignement avec la nouvelle stratégie de marque. Objectif : améliorer la crédibilité et le taux de conversion.',
   description: `Refonte complète incluant : audit de l'existant, nouvelle charte graphique, maquettes UX/UI desktop et mobile, développement sur mesure (pas de CMS générique), intégration formulaire de contact et prise de rendez-vous, optimisation SEO technique et contenu. Livrables : maquettes validées, code source documenté, guide de style, formation à la mise à jour des contenus.`,
   status: 'EN_COURS',
   priority: 'HAUTE',
   serviceTypes: ['Design', 'Développement', 'UX/UI', 'SEO'],
   deliverableTypes: ['Maquettes', 'Code source', 'Documentation technique', 'Guide de style'],
   tags: ['refonte', 'site vitrine', 'identité', 'responsive', 'SEO'],
-  budget: { amount: 18500, currency: 'EUR', note: 'Budget validé en 2 facturations : 40% à la validation maquettes, 60% à la mise en production.' },
+  budget: {
+    amount: 18500,
+    currency: 'EUR',
+    note: 'Budget validé en 2 facturations : 40% à la validation maquettes, 60% à la mise en production.',
+  },
   billing: { amountInvoiced: 7400, billingStatus: 'PARTIEL', quoteReference: `DEV-2025-${baseNum + 1}` },
   startDate: nowMinusDays(12),
   endDate: nowPlusDays(38),
@@ -94,7 +99,8 @@ const projectOneTemplate = (clientId: mongoose.Types.ObjectId, baseNum: number) 
 const projectTwoTemplates: ProjectTwoTemplate[] = [
   {
     name: 'Stratégie éditoriale et contenu Q2–Q3',
-    summary: 'Définition d\'une ligne éditoriale et d\'un calendrier de contenu pour renforcer le positionnement et générer des leads qualifiés.',
+    summary:
+      "Définition d'une ligne éditoriale et d'un calendrier de contenu pour renforcer le positionnement et générer des leads qualifiés.",
     description: `Mission de conseil et production : audit de l'existant éditorial et des canaux, définition de la ligne éditoriale et du ton de marque, création d'un calendrier de contenu sur 6 mois, rédaction des premiers contenus (pages site, articles de blog, posts réseaux). Livrables : document de stratégie éditoriale, calendrier détaillé, 12 contenus rédigés, recommandations pour la suite.`,
     status: 'EN_ATTENTE',
     serviceTypes: ['Conseil', 'Communication', 'Stratégie'],
@@ -105,7 +111,7 @@ const projectTwoTemplates: ProjectTwoTemplate[] = [
   },
   {
     name: 'Campagne acquisition et landing pages',
-    summary: 'Lancement d\'une campagne d\'acquisition avec création de landing pages dédiées et suivi des performances.',
+    summary: "Lancement d'une campagne d'acquisition avec création de landing pages dédiées et suivi des performances.",
     description: `Stratégie d'acquisition : définition des personas et messages, création de 3 landing pages optimisées conversion, mise en place du tracking (Google Analytics, événements), campagnes Google Ads et Meta Ads sur 3 mois. Livrables : brief créatif, maquettes landing pages, code des pages, rapport de suivi mensuel et recommandations d'optimisation.`,
     status: 'EN_ATTENTE',
     serviceTypes: ['Marketing', 'Développement', 'Conseil'],
@@ -116,7 +122,7 @@ const projectTwoTemplates: ProjectTwoTemplate[] = [
   },
   {
     name: 'Identité de marque et charte graphique',
-    summary: 'Création d\'une identité visuelle cohérente et d\'une charte graphique applicable à tous les supports.',
+    summary: "Création d'une identité visuelle cohérente et d'une charte graphique applicable à tous les supports.",
     description: `Prestation branding complète : atelier de positionnement, création du logo et déclinaisons, définition de la charte (couleurs, typographies, principes graphiques), création des templates principaux (en-tête email, présentation, réseaux sociaux). Livrables : guide de la marque (PDF), pack d'assets (logo vectoriel, PNG, favicon), templates éditables.`,
     status: 'TERMINE',
     serviceTypes: ['Design', 'Stratégie', 'Communication'],
@@ -144,7 +150,12 @@ const buildProjectsForClient = (clientId: mongoose.Types.ObjectId, clientIndex: 
     serviceTypes: t2.serviceTypes,
     deliverableTypes: t2.deliverableTypes,
     tags: t2.tags,
-    budget: { amount: t2.budgetAmount, currency: 'EUR', note: t2.budgetAmount >= 10000 ? 'Facturation en 2 fois : 50% à la commande, 50% à la livraison.' : 'Forfait TTC.' },
+    budget: {
+      amount: t2.budgetAmount,
+      currency: 'EUR',
+      note:
+        t2.budgetAmount >= 10000 ? 'Facturation en 2 fois : 50% à la commande, 50% à la livraison.' : 'Forfait TTC.',
+    },
     billing: {
       amountInvoiced: t2.amountInvoiced ?? null,
       billingStatus: t2.billingStatus ?? 'NON_FACTURE',
@@ -197,7 +208,7 @@ async function seed(): Promise<void> {
       email: c.email,
       passwordHash,
       role: 'CLIENT',
-    }))
+    })),
   )
 
   const allProjects: Record<string, unknown>[] = []

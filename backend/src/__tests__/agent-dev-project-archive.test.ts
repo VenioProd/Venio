@@ -32,12 +32,24 @@ async function seed() {
   const live = await DevProject.create({ key: 'LIVE', name: 'Vivant', createdBy: systemUserId })
   const old = await DevProject.create({ key: 'OLD', name: 'Ancien', createdBy: systemUserId })
   await DevIssue.create({
-    project: live._id, identifier: 'LIVE-1', title: 'A', number: 1,
-    status: 'TODO', priority: 'URGENT', type: 'TASK', reporter: systemUserId,
+    project: live._id,
+    identifier: 'LIVE-1',
+    title: 'A',
+    number: 1,
+    status: 'TODO',
+    priority: 'URGENT',
+    type: 'TASK',
+    reporter: systemUserId,
   })
   await DevIssue.create({
-    project: old._id, identifier: 'OLD-1', title: 'B', number: 1,
-    status: 'TODO', priority: 'URGENT', type: 'TASK', reporter: systemUserId,
+    project: old._id,
+    identifier: 'OLD-1',
+    title: 'B',
+    number: 1,
+    status: 'TODO',
+    priority: 'URGENT',
+    type: 'TASK',
+    reporter: systemUserId,
   })
   return { live, old }
 }
@@ -98,8 +110,16 @@ describe('PATCH /api/v1/agent/dev/projects/:id', () => {
     const { old } = await seed()
     const { plainSecret } = await createAgentTokenInDb(['write:dev'])
     const h = () => mut(plainSecret)
-    const a = await request(app).patch(`/api/v1/agent/dev/projects/${old._id}`).set(h()).send({ status: 'ARCHIVED' }).expect(200)
-    const b = await request(app).patch(`/api/v1/agent/dev/projects/${old._id}`).set(h()).send({ status: 'ARCHIVED' }).expect(200)
+    const a = await request(app)
+      .patch(`/api/v1/agent/dev/projects/${old._id}`)
+      .set(h())
+      .send({ status: 'ARCHIVED' })
+      .expect(200)
+    const b = await request(app)
+      .patch(`/api/v1/agent/dev/projects/${old._id}`)
+      .set(h())
+      .send({ status: 'ARCHIVED' })
+      .expect(200)
     expect(b.body.archivedAt).toBe(a.body.archivedAt)
   })
 
@@ -141,7 +161,10 @@ describe('projets archivés : listes et compteurs (agent)', () => {
   it('un projet archivé reste consultable par id', async () => {
     const { old } = await archiveOld()
     const { plainSecret } = await createAgentTokenInDb(['read:dev'])
-    const res = await request(app).get(`/api/v1/agent/dev/projects/${old._id}`).set(authHeaders(plainSecret)).expect(200)
+    const res = await request(app)
+      .get(`/api/v1/agent/dev/projects/${old._id}`)
+      .set(authHeaders(plainSecret))
+      .expect(200)
     expect(res.body.key).toBe('OLD')
     expect(res.body.status).toBe('ARCHIVED')
   })

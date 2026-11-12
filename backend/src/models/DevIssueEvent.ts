@@ -39,7 +39,7 @@ const devIssueEventSchema = new Schema<IDevIssueEvent>(
     summary: { type: String, default: '', maxlength: 500 },
     metadata: { type: Schema.Types.Mixed, default: {} },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 devIssueEventSchema.index({ issue: 1, createdAt: 1 })

@@ -5,7 +5,7 @@ import type { MissionBrief } from '../types/brief.types'
 
 export async function fetchAllTasks(projectId?: string): Promise<Task[]> {
   const qs = projectId ? `?projectId=${projectId}` : ''
-  const res = await apiFetch(`/api/admin/gestion/tasks-all${qs}`) as { tasks: Task[] }
+  const res = (await apiFetch(`/api/admin/gestion/tasks-all${qs}`)) as { tasks: Task[] }
   return res.tasks
 }
 

@@ -22,7 +22,16 @@ const arrowSchoolSchema = new mongoose.Schema(
     // Pipeline
     status: {
       type: String,
-      enum: ['A_PROSPECTER', 'CONTACTE', 'REPONSE', 'DEMO_PLANIFIEE', 'DEMO_FAITE', 'PROPOSITION', 'SIGNE', 'NON_INTERESSE'],
+      enum: [
+        'A_PROSPECTER',
+        'CONTACTE',
+        'REPONSE',
+        'DEMO_PLANIFIEE',
+        'DEMO_FAITE',
+        'PROPOSITION',
+        'SIGNE',
+        'NON_INTERESSE',
+      ],
       default: 'A_PROSPECTER',
     },
     temperature: {
@@ -49,7 +58,7 @@ const arrowSchoolSchema = new mongoose.Schema(
     },
     isArchived: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 arrowSchoolSchema.index({ status: 1 })

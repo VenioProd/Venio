@@ -26,11 +26,7 @@ const MUTATION_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE'])
  *
  * À monter APRÈS agentAuth (req.agentToken requis).
  */
-export default async function agentIdempotency(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export default async function agentIdempotency(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!MUTATION_METHODS.has(req.method.toUpperCase())) {
     next()
     return
@@ -46,12 +42,7 @@ export default async function agentIdempotency(
   const rawKey = req.headers['idempotency-key']
   const key = Array.isArray(rawKey) ? rawKey[0] : rawKey
   if (!key) {
-    respondError(
-      res,
-      400,
-      'MISSING_IDEMPOTENCY_KEY',
-      'Header Idempotency-Key requis sur POST/PATCH/PUT/DELETE'
-    )
+    respondError(res, 400, 'MISSING_IDEMPOTENCY_KEY', 'Header Idempotency-Key requis sur POST/PATCH/PUT/DELETE')
     return
   }
   if (!isValidIdempotencyKey(key)) {
@@ -59,7 +50,7 @@ export default async function agentIdempotency(
       res,
       400,
       'INVALID_IDEMPOTENCY_KEY',
-      'Idempotency-Key invalide (lettres, chiffres, tirets, 8-255 chars)'
+      'Idempotency-Key invalide (lettres, chiffres, tirets, 8-255 chars)',
     )
     return
   }
@@ -90,7 +81,7 @@ export default async function agentIdempotency(
         {
           previousMethod: existing.method,
           previousPath: existing.path,
-        }
+        },
       )
       return
     }

@@ -29,7 +29,13 @@ import User from '../models/User.js'
 import CrmSettings from '../models/CrmSettings.js'
 import CrmRule from '../models/CrmRule.js'
 import SchedulerLock, { acquireSchedulerLock } from '../models/SchedulerLock.js'
-import { processEscalations, processProposalReminders, processColdLeads, runScheduledJobs, runOnce } from '../lib/crmScheduler.js'
+import {
+  processEscalations,
+  processProposalReminders,
+  processColdLeads,
+  runScheduledJobs,
+  runOnce,
+} from '../lib/crmScheduler.js'
 import { getRoundRobinAssignee, ROUND_ROBIN_CURSOR } from '../lib/crmAutomations.js'
 import { resetSystemRuleCache, isSystemRuleActive, SEED_RULES, SYSTEM_RULE_FOR } from '../lib/crmRules.js'
 import { SOURCE_POLICY } from '../lib/crmLeadService.js'
@@ -64,7 +70,13 @@ async function seedRule(systemKey: string, status: 'ACTIVE' | 'DRAFT') {
 
 async function resetSettings(overrides: Record<string, unknown> = {}) {
   await CrmSettings.deleteMany({})
-  await CrmSettings.create({ roundRobinEnabled: false, emailOnAssignment: false, scoringEnabled: false, activityLogging: true, ...overrides })
+  await CrmSettings.create({
+    roundRobinEnabled: false,
+    emailOnAssignment: false,
+    scoringEnabled: false,
+    activityLogging: true,
+    ...overrides,
+  })
 }
 
 // ─────────────────────────── Heure de Paris (pur) ───────────────────────────
@@ -143,14 +155,20 @@ describe('automatisations CRM unifiées', () => {
 
   describe('verrou en base', () => {
     it('dix prises simultanées du même verrou : une seule réussit', async () => {
-      const results = await Promise.all(Array.from({ length: 10 }, () => acquireSchedulerLock('crm-scheduler:test:2026-11-06', DAY)))
+      const results = await Promise.all(
+        Array.from({ length: 10 }, () => acquireSchedulerLock('crm-scheduler:test:2026-11-06', DAY)),
+      )
       expect(results.filter(Boolean)).toHaveLength(1)
       expect(await acquireSchedulerLock('crm-scheduler:test:2026-11-06', DAY)).toBe(false)
       expect(await acquireSchedulerLock('crm-scheduler:test:2026-11-07', DAY)).toBe(true)
     })
 
     it('une tâche qui lève libère le verrou pour être retentée', async () => {
-      await expect(runOnce('boom', '2026-11-06', DAY, async () => { throw new Error('x') })).rejects.toThrow('x')
+      await expect(
+        runOnce('boom', '2026-11-06', DAY, async () => {
+          throw new Error('x')
+        }),
+      ).rejects.toThrow('x')
       expect(await runOnce('boom', '2026-11-06', DAY, async () => null)).toBe(true)
       expect(await runOnce('boom', '2026-11-06', DAY, async () => null)).toBe(false)
     })
@@ -254,9 +272,15 @@ describe('automatisations CRM unifiées', () => {
 
     it('les jobs utilisent le jour et la semaine de Paris', () => {
       const now = new Date('2026-07-01T22:30:00Z') // 2 juillet à Paris
-      expect(registered['crm.proposal_followup'].buildIdempotencyKey({ now, dateKey: '2026-07-01' } as never)).toBe('crm.proposal:2026-07-02')
-      expect(registered['crm.auto_archive_lost'].buildIdempotencyKey({ now, dateKey: '2026-07-01' } as never)).toBe('crm.archive_lost:2026-07-02')
-      expect(registered['crm.conversion_drop_alert'].buildIdempotencyKey({ now: new Date('2026-11-08T23:30:00Z') } as never)).toBe('crm.conversion_drop:2026-W46')
+      expect(registered['crm.proposal_followup'].buildIdempotencyKey({ now, dateKey: '2026-07-01' } as never)).toBe(
+        'crm.proposal:2026-07-02',
+      )
+      expect(registered['crm.auto_archive_lost'].buildIdempotencyKey({ now, dateKey: '2026-07-01' } as never)).toBe(
+        'crm.archive_lost:2026-07-02',
+      )
+      expect(
+        registered['crm.conversion_drop_alert'].buildIdempotencyKey({ now: new Date('2026-11-08T23:30:00Z') } as never),
+      ).toBe('crm.conversion_drop:2026-W46')
     })
   })
 
@@ -269,7 +293,12 @@ describe('automatisations CRM unifiées', () => {
     }
 
     it('un seul e-mail par lead et par fenêtre, pas un par jour', async () => {
-      await resetSettings({ escalationEnabled: true, escalationThresholdDays: 10, escalationAction: 'NOTIFY_MANAGER', escalationManagerId: manager._id })
+      await resetSettings({
+        escalationEnabled: true,
+        escalationThresholdDays: 10,
+        escalationAction: 'NOTIFY_MANAGER',
+        escalationManagerId: manager._id,
+      })
       const lead = await staleLead()
       await processEscalations(new Date())
       await processEscalations(new Date(Date.now() + DAY))
@@ -283,7 +312,12 @@ describe('automatisations CRM unifiées', () => {
     })
 
     it("mesure l'inactivité sur les échanges, contacts et statuts, pas sur updatedAt", async () => {
-      await resetSettings({ escalationEnabled: true, escalationThresholdDays: 10, escalationAction: 'NOTIFY_MANAGER', escalationManagerId: manager._id })
+      await resetSettings({
+        escalationEnabled: true,
+        escalationThresholdDays: 10,
+        escalationAction: 'NOTIFY_MANAGER',
+        escalationManagerId: manager._id,
+      })
       const stale = await staleLead()
       await backdate(stale._id, { updatedAt: new Date() }) // écriture technique récente
       const active = await staleLead({ company: 'Actif' })
@@ -294,7 +328,12 @@ describe('automatisations CRM unifiées', () => {
     })
 
     it('au plus une réattribution automatique par lead, puis seulement l’alerte au manager', async () => {
-      await resetSettings({ escalationEnabled: true, escalationThresholdDays: 10, escalationAction: 'REASSIGN', escalationManagerId: manager._id })
+      await resetSettings({
+        escalationEnabled: true,
+        escalationThresholdDays: 10,
+        escalationAction: 'REASSIGN',
+        escalationManagerId: manager._id,
+      })
       const lead = await staleLead()
       const first = await processEscalations(new Date())
       expect(first.reassigned).toBe(1)
@@ -319,7 +358,12 @@ describe('automatisations CRM unifiées', () => {
     })
 
     it('un échec d’envoi laisse la fenêtre ouverte (nouvel essai au passage suivant)', async () => {
-      await resetSettings({ escalationEnabled: true, escalationThresholdDays: 10, escalationAction: 'NOTIFY_MANAGER', escalationManagerId: manager._id })
+      await resetSettings({
+        escalationEnabled: true,
+        escalationThresholdDays: 10,
+        escalationAction: 'NOTIFY_MANAGER',
+        escalationManagerId: manager._id,
+      })
       await staleLead()
       mail.sendEscalationEmail.mockResolvedValueOnce({ sent: false })
       await processEscalations(new Date())
@@ -333,7 +377,13 @@ describe('automatisations CRM unifiées', () => {
   describe('round-robin', () => {
     it('ne tire que les membres actifs des rôles habilités, à tour de rôle', async () => {
       await User.create({ email: 'compta@test.local', name: 'Compta', role: 'COMPTABLE', passwordHash: 'x' })
-      await User.create({ email: 'off@test.local', name: 'Off', role: 'COMMERCIAL', passwordHash: 'x', isActive: false })
+      await User.create({
+        email: 'off@test.local',
+        name: 'Off',
+        role: 'COMMERCIAL',
+        passwordHash: 'x',
+        isActive: false,
+      })
       await User.create({ email: 'client@test.local', name: 'Client', role: 'CLIENT', passwordHash: 'x' })
       const picks = []
       for (let i = 0; i < 4; i++) picks.push(String(await getRoundRobinAssignee()))
@@ -363,7 +413,11 @@ describe('automatisations CRM unifiées', () => {
       await backdate(lost._id, { statusChangedAt: new Date(Date.now() - 40 * DAY) })
       const recent = await Lead.create({ company: 'Perdu récent', status: 'LOST', assignedTo: owner._id })
       const now = new Date()
-      const res = await registered['crm.auto_archive_lost'].execute({ now, dateKey: parisDateKey(now), settings: { config: {} } } as never)
+      const res = await registered['crm.auto_archive_lost'].execute({
+        now,
+        dateKey: parisDateKey(now),
+        settings: { config: {} },
+      } as never)
       expect(res.details).toEqual({ archivedCount: 1 })
       expect((await Lead.findById(lost._id).lean())!.archivedAt).toBeTruthy()
       expect((await Lead.findById(recent._id).lean())!.archivedAt ?? null).toBeNull()
@@ -371,7 +425,11 @@ describe('automatisations CRM unifiées', () => {
     })
 
     it('la source « scheduler » n’envoie ni e-mail ni notification par lead', () => {
-      expect(SOURCE_POLICY.scheduler).toEqual({ autoQualify: false, assignmentEmail: false, statusNotifications: false })
+      expect(SOURCE_POLICY.scheduler).toEqual({
+        autoQualify: false,
+        assignmentEmail: false,
+        statusNotifications: false,
+      })
     })
   })
 })

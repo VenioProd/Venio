@@ -25,7 +25,7 @@ export interface DevTokensSnapshot {
  *   - or pulled from an upstream provider (Anthropic usage API, OpenRouter, …)
  */
 export function computeProjectTokensSnapshot(
-  _project: { _id: unknown; key: string; github?: DevProjectGithubConfig | null } | null
+  _project: { _id: unknown; key: string; github?: DevProjectGithubConfig | null } | null,
 ): DevTokensSnapshot {
   return {
     available: false,
@@ -38,7 +38,7 @@ export function computeProjectTokensSnapshot(
     outputTokens: null,
     estimatedCostUsd: null,
     missing: [
-      'collection LlmRun avec tokens d\'entrée/sortie par projet',
+      "collection LlmRun avec tokens d'entrée/sortie par projet",
       'lien projet → tokens consommés (champ project sur AgentToken ou run)',
       'tarif modèle pour estimer le coût (USD/Mtok)',
     ],

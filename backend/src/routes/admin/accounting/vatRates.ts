@@ -20,7 +20,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // PATCH /:id : met à jour un taux (label/rate/comptes liés/legend)
@@ -34,7 +34,15 @@ router.patch(
         res.status(404).json({ error: 'Taux TVA introuvable' })
         return
       }
-      const fields = ['label', 'rate', 'collectedAccount', 'deductibleAccount', 'declarationLine', 'isActive', 'legend'] as const
+      const fields = [
+        'label',
+        'rate',
+        'collectedAccount',
+        'deductibleAccount',
+        'declarationLine',
+        'isActive',
+        'legend',
+      ] as const
       const body = (req.body || {}) as Record<string, unknown>
       for (const f of fields) {
         if (body[f] !== undefined) {
@@ -46,7 +54,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

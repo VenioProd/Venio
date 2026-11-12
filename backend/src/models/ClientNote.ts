@@ -13,7 +13,7 @@ const clientNoteSchema = new mongoose.Schema<IClientNote>(
     },
     pinned: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 clientNoteSchema.index({ clientId: 1, pinned: -1, createdAt: -1 })

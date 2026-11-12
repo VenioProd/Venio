@@ -2,7 +2,8 @@ import type fr from '../fr/projectSheets'
 
 const en: Record<keyof typeof fr, string> = {
   'projectSheets.list.title': 'What each group project does',
-  'projectSheets.list.subtitle': 'One sheet per project: the offer, targets, positioning, team and demo accesses. A shared knowledge base for the whole team.',
+  'projectSheets.list.subtitle':
+    'One sheet per project: the offer, targets, positioning, team and demo accesses. A shared knowledge base for the whole team.',
   'projectSheets.list.searchLabel': 'Search the sheets',
   'projectSheets.list.searchPlaceholder': 'A project, an offer, a keyword…',
   'projectSheets.list.showArchived': 'Show archived sheets',
@@ -95,7 +96,8 @@ const en: Record<keyof typeof fr, string> = {
   'projectSheets.edit.preview': 'Preview',
   'projectSheets.edit.previewEmpty': 'Nothing to show yet.',
   'projectSheets.edit.secretWarning': 'Never enter a secret (password, key, token) in a sheet.',
-  'projectSheets.edit.markdownHelp': 'Simple Markdown: headings, lists, bold, italic, tables, http(s) links. Typed HTML is shown as plain text.',
+  'projectSheets.edit.markdownHelp':
+    'Simple Markdown: headings, lists, bold, italic, tables, http(s) links. Typed HTML is shown as plain text.',
   'projectSheets.edit.conflict': 'The sheet was changed in the meantime, please reload.',
   'projectSheets.edit.reload': 'Reload the sheet',
   'projectSheets.edit.saveError': 'Could not save.',
@@ -134,7 +136,8 @@ const en: Record<keyof typeof fr, string> = {
   'projectSheets.team.referent': 'Lead',
   'projectSheets.team.members': 'Members',
   'projectSheets.team.empty': 'No members listed.',
-  'projectSheets.demo.warning': 'Demonstration accounts with fictitious data only. Never real production, customer or internal-tool credentials.',
+  'projectSheets.demo.warning':
+    'Demonstration accounts with fictitious data only. Never real production, customer or internal-tool credentials.',
   'projectSheets.demo.url': 'URL',
   'projectSheets.demo.role': 'Account role',
   'projectSheets.demo.username': 'Username',

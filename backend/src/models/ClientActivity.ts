@@ -9,7 +9,7 @@ const clientActivitySchema = new mongoose.Schema<IClientActivity>(
     payload: { type: mongoose.Schema.Types.Mixed, default: {} },
     actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 clientActivitySchema.index({ clientId: 1, createdAt: -1 })

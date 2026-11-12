@@ -43,7 +43,7 @@ const definition: AutomationDefinition = {
           isArchived: true,
           archivedAt: ctx.now,
         },
-      }
+      },
     )
 
     const archivedCount = result.modifiedCount || 0

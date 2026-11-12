@@ -5,9 +5,17 @@ import type { EmailResult } from '../transport.js'
  * Envoie un email quand un super admin répond à un ticket interne.
  */
 export async function sendTicketReplyEmail({
-  to, authorName, replierName, ticketTitle, replyMessage,
+  to,
+  authorName,
+  replierName,
+  ticketTitle,
+  replyMessage,
 }: {
-  to: string; authorName: string; replierName: string; ticketTitle: string; replyMessage: string
+  to: string
+  authorName: string
+  replierName: string
+  ticketTitle: string
+  replyMessage: string
 }): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) return { sent: false, error: 'SMTP non configure' }

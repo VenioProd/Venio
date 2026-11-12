@@ -120,10 +120,7 @@ function renderLabel(template: string | undefined | null, payload: NormalizedPay
   if (!template) {
     return payload.description || `${payload.type} ${payload.externalId || ''}`.trim()
   }
-  const dateStr =
-    payload.date instanceof Date
-      ? payload.date.toISOString().slice(0, 10)
-      : String(payload.date || '')
+  const dateStr = payload.date instanceof Date ? payload.date.toISOString().slice(0, 10) : String(payload.date || '')
   return String(template)
     .replace(/\{description\}/g, payload.description || '')
     .replace(/\{externalId\}/g, payload.externalId || '')
@@ -159,7 +156,7 @@ function buildLinesMode2(
   source: SourceLike,
   mapping: MappingLike,
   label: string,
-  warnings: string[]
+  warnings: string[],
 ): ClassifiedLine[] {
   const amountTTC = round2(payload.amount)
   const rate =
@@ -185,7 +182,7 @@ function buildLinesMode2(
       externalId: payload.customerExternalId,
     }
     warnings.push(
-      'assignToAuxiliary=true : la création automatique de compte auxiliaire 411XXX est un TODO ; la référence est conservée dans auxiliaryRef.'
+      'assignToAuxiliary=true : la création automatique de compte auxiliaire 411XXX est un TODO ; la référence est conservée dans auxiliaryRef.',
     )
   }
 
@@ -331,14 +328,10 @@ function buildLinesMode2(
     case 'TRANSFER': {
       // Virement interne : nécessite metadata.sourceAccount + metadata.destinationAccount
       const meta = (payload.metadata || {}) as Record<string, unknown>
-      const dest =
-        meta.destinationAccount || mapping.debitAccount || source.defaultBankAccount || '512000'
-      const src =
-        meta.sourceAccount || mapping.creditAccount || source.defaultBankAccount || '512000'
+      const dest = meta.destinationAccount || mapping.debitAccount || source.defaultBankAccount || '512000'
+      const src = meta.sourceAccount || mapping.creditAccount || source.defaultBankAccount || '512000'
       if (dest === src) {
-        warnings.push(
-          'TRANSFER : sourceAccount et destinationAccount identiques — écriture probablement invalide.'
-        )
+        warnings.push('TRANSFER : sourceAccount et destinationAccount identiques — écriture probablement invalide.')
       }
       return [
         {
@@ -378,7 +371,7 @@ function buildLinesMode2(
  */
 export async function resolveAuxiliaryAccount(
   externalId: string,
-  kind: 'CLIENT' | 'SUPPLIER' | 'OTHER' = 'CLIENT'
+  kind: 'CLIENT' | 'SUPPLIER' | 'OTHER' = 'CLIENT',
 ): Promise<IChartOfAccount | null> {
   if (!externalId) return null
   const acc = await ChartOfAccount.findOne({
@@ -397,7 +390,7 @@ export async function resolveAuxiliaryAccount(
  */
 export async function classifyTransaction(
   source: SourceLike,
-  normalizedPayload: NormalizedPayload
+  normalizedPayload: NormalizedPayload,
 ): Promise<ClassificationResult> {
   const warnings: string[] = []
 
@@ -417,11 +410,7 @@ export async function classifyTransaction(
 
   // 3. Mapping : rule.mapping ou defaults source
   const mapping: MappingLike = matched?.mapping || {}
-  const journalCode =
-    mapping.journalCode ||
-    normalizedPayload.journalCode ||
-    source.defaultJournalCode ||
-    'VE'
+  const journalCode = mapping.journalCode || normalizedPayload.journalCode || source.defaultJournalCode || 'VE'
 
   const autoValidate = matched ? Boolean(mapping.autoValidate) : Boolean(source.autoValidateAll)
 
@@ -455,7 +444,7 @@ export async function classifyTransaction(
   if (matched) {
     ClassificationRule.updateOne(
       { _id: matched._id },
-      { $inc: { matchCount: 1 }, $set: { lastMatchedAt: new Date() } }
+      { $inc: { matchCount: 1 }, $set: { lastMatchedAt: new Date() } },
     ).catch(() => {
       /* noop */
     })

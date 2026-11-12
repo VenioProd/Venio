@@ -13,7 +13,10 @@
 }
 
 @keyframes grain-drift {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(-10%, -10%); }
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(-10%, -10%);
+  }
 }
-

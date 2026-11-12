@@ -142,11 +142,7 @@ export function changedFields(before: Record<string, unknown>, updates: Record<s
   return Object.keys(updates).filter((key) => norm(before[key]) !== norm(updates[key]))
 }
 
-export function historyEntry(
-  by: unknown,
-  fields: string[],
-  summary: string,
-): IProjectSheetHistory {
+export function historyEntry(by: unknown, fields: string[], summary: string): IProjectSheetHistory {
   return {
     at: new Date(),
     by: by && mongoose.isValidObjectId(by) ? new mongoose.Types.ObjectId(String(by)) : null,
@@ -214,7 +210,10 @@ export function serializeSheet(sheet: Lean, viewer: SheetViewer, extra: Lean = {
       .map((m: Lean) => ({ user: person(m.user, ['name', 'email', 'role']), role: m.role ?? '' }))
       .filter((m: Lean) => m.user),
     devProject: devProject ? { ...devProject, href: `/admin/dev?project=${devProject._id}` } : null,
-    subsidiaryHref: viewer.role === 'SUPER_ADMIN' && sheet.subsidiary ? `/admin/filiales/${String(sheet.subsidiary._id ?? sheet.subsidiary)}` : null,
+    subsidiaryHref:
+      viewer.role === 'SUPER_ADMIN' && sheet.subsidiary
+        ? `/admin/filiales/${String(sheet.subsidiary._id ?? sheet.subsidiary)}`
+        : null,
     ...sections,
     demoAccesses: publicDemoAccesses(sheet.demoAccesses),
     history: [...(sheet.history ?? [])]
@@ -256,7 +255,10 @@ export const SEARCHABLE_FIELDS = ['name', 'oneLiner', ...PROJECT_SHEET_SECTIONS,
 function fold(input: string): string {
   let out = ''
   for (const ch of input) {
-    const base = ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    const base = ch
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
     out += base.length === ch.length ? base : ch.toLowerCase().length === ch.length ? ch.toLowerCase() : ch
   }
   return out
@@ -273,7 +275,10 @@ function excerpt(source: string, at: number, length: number): string {
   const plain = source
   const start = Math.max(0, at - 60)
   const end = Math.min(plain.length, at + length + 80)
-  const cut = plain.slice(start, end).replace(/[#*_`>|]/g, '').trim()
+  const cut = plain
+    .slice(start, end)
+    .replace(/[#*_`>|]/g, '')
+    .trim()
   return (start > 0 ? '… ' : '') + cut + (end < plain.length ? ' …' : '')
 }
 
@@ -287,8 +292,14 @@ export interface SheetSearchMatch {
  * dans au moins un champ de la fiche (insensible à la casse et aux accents).
  * Renvoie, par fiche retenue, jusqu'à trois extraits.
  */
-export function searchSheets<T extends Lean>(sheets: T[], query: string): Array<{ sheet: T; matches: SheetSearchMatch[] }> {
-  const terms = fold(query).split(/\s+/).filter((t) => t.length > 0).slice(0, 8)
+export function searchSheets<T extends Lean>(
+  sheets: T[],
+  query: string,
+): Array<{ sheet: T; matches: SheetSearchMatch[] }> {
+  const terms = fold(query)
+    .split(/\s+/)
+    .filter((t) => t.length > 0)
+    .slice(0, 8)
   if (!terms.length) return sheets.map((sheet) => ({ sheet, matches: [] }))
   const results: Array<{ sheet: T; matches: SheetSearchMatch[]; score: number }> = []
   for (const sheet of sheets) {

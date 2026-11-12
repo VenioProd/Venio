@@ -67,7 +67,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
             keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
           },
           body,
-          { TTL: 60 * 60 * 24 }
+          { TTL: 60 * 60 * 24 },
         )
         // Tag dernière utilisation
         PushSubscription.updateOne({ _id: sub._id }, { $set: { lastUsedAt: new Date() } }).catch(() => {})
@@ -77,9 +77,12 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
         if (status === 404 || status === 410) {
           PushSubscription.deleteOne({ _id: sub._id }).catch(() => {})
         } else {
-          logger.warn({ data: { endpoint: sub.endpoint.slice(0, 60), status, message: err?.message } }, '[webPush] échec envoi')
+          logger.warn(
+            { data: { endpoint: sub.endpoint.slice(0, 60), status, message: err?.message } },
+            '[webPush] échec envoi',
+          )
         }
       }
-    })
+    }),
   )
 }

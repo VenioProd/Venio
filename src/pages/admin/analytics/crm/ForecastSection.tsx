@@ -78,7 +78,12 @@ const ForecastSection: React.FC = () => {
         </label>
         <div className="pilotage-periods" role="group" aria-label={t('adminTech.forecast.horizonLabel')}>
           {HORIZONS.map((count) => (
-            <button key={count} type="button" className={months === count ? 'active' : ''} onClick={() => setMonths(count)}>
+            <button
+              key={count}
+              type="button"
+              className={months === count ? 'active' : ''}
+              onClick={() => setMonths(count)}
+            >
               {t('adminTech.forecast.horizonOption', { count })}
             </button>
           ))}
@@ -150,7 +155,10 @@ const ForecastSection: React.FC = () => {
 
           {data.overdue.count > 0 && (
             <p className="pilotage-coverage">
-              {t('adminTech.forecast.overdue', { count: data.overdue.count, amount: formatAmount(data.overdue.weighted, currency) })}
+              {t('adminTech.forecast.overdue', {
+                count: data.overdue.count,
+                amount: formatAmount(data.overdue.weighted, currency),
+              })}
             </p>
           )}
           {data.unscheduled.count > 0 && (
@@ -162,7 +170,9 @@ const ForecastSection: React.FC = () => {
             </p>
           )}
 
-          {administers && <GoalsManager from={data.from} months={months} admins={admins} onChanged={() => void load()} />}
+          {administers && (
+            <GoalsManager from={data.from} months={months} admins={admins} onChanged={() => void load()} />
+          )}
         </>
       ) : null}
     </section>

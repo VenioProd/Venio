@@ -32,32 +32,40 @@ function sanitizeTool(tool: any): any {
 }
 
 // GET all tool accesses — filtrés par visibilité selon le rôle
-router.get('/', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const role = req.user!.role
-    const filter = role === 'SUPER_ADMIN' ? {} : { $or: [{ visibleTo: { $size: 0 } }, { visibleTo: role }] }
-    const tools = await ToolAccess.find(filter).sort({ category: 1, name: 1 })
-    res.json(tools.map(sanitizeTool))
-  } catch (err) {
-    next(err)
-  }
-})
+router.get(
+  '/',
+  requirePermission(PERMISSIONS.MANAGE_ADMINS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const role = req.user!.role
+      const filter = role === 'SUPER_ADMIN' ? {} : { $or: [{ visibleTo: { $size: 0 } }, { visibleTo: role }] }
+      const tools = await ToolAccess.find(filter).sort({ category: 1, name: 1 })
+      res.json(tools.map(sanitizeTool))
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 // GET single tool access — metadata only. Secrets use the explicit reveal route.
-router.get('/:id', requirePermission(PERMISSIONS.MANAGE_ADMINS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const role = req.user!.role
-    const tool = await ToolAccess.findById(req.params.id)
-    if (!tool) return res.status(404).json({ error: 'Outil introuvable' })
-    if (role !== 'SUPER_ADMIN' && tool.visibleTo.length > 0 && !tool.visibleTo.includes(role)) {
-      return res.status(403).json({ error: 'Accès refusé' })
-    }
+router.get(
+  '/:id',
+  requirePermission(PERMISSIONS.MANAGE_ADMINS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const role = req.user!.role
+      const tool = await ToolAccess.findById(req.params.id)
+      if (!tool) return res.status(404).json({ error: 'Outil introuvable' })
+      if (role !== 'SUPER_ADMIN' && tool.visibleTo.length > 0 && !tool.visibleTo.includes(role)) {
+        return res.status(403).json({ error: 'Accès refusé' })
+      }
 
-    res.json(sanitizeTool(tool))
-  } catch (err) {
-    next(err)
-  }
-})
+      res.json(sanitizeTool(tool))
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 // POST reveal — an explicit, short-lived action protected by a fresh TOTP code.
 router.post(
@@ -88,91 +96,101 @@ router.post(
 )
 
 // POST create (SUPER_ADMIN + ADMIN only)
-router.post('/', requirePermission(PERMISSIONS.MANAGE_ADMINS), sensitiveAction('TOOL_ACCESS_CREATE'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user!
-    if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
-      return res.status(403).json({ error: 'Acces reserve aux administrateurs' })
+router.post(
+  '/',
+  requirePermission(PERMISSIONS.MANAGE_ADMINS),
+  sensitiveAction('TOOL_ACCESS_CREATE'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!
+      if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Acces reserve aux administrateurs' })
+      }
+      const { name, url, login, password, category, notes, visibleTo } = req.body
+      if (!name || !login || !password) {
+        return res.status(400).json({ error: 'Nom, login et mot de passe requis' })
+      }
+      const tool = await ToolAccess.create({
+        name,
+        url: url || '',
+        login,
+        password: encryptPassword(password),
+        category: category || 'AUTRE',
+        notes: notes || '',
+        visibleTo: Array.isArray(visibleTo) ? visibleTo : [],
+        addedBy: user.id,
+        addedByName: user.name || user.email,
+        lastRotatedAt: new Date(),
+      })
+
+      AuditLog.create({
+        userId: user.id,
+        email: user.email,
+        action: 'TOOL_ACCESS_CREATED',
+        ip: req.headers['x-forwarded-for'] || req.ip || '',
+        userAgent: req.headers['user-agent'] || '',
+        metadata: { toolId: tool._id.toString(), toolName: name },
+      }).catch(() => {})
+
+      // Notif tous les admins internes (les accès outils sont partagés)
+      notifyInternalAdmins({
+        type: 'TOOL_ACCESS_GRANTED',
+        title: `Nouvel accès outil`,
+        message: `${name} (${category || 'AUTRE'}) ajouté par ${user.name || user.email}`,
+        link: '/admin/tools',
+        metadata: { toolId: String(tool._id) },
+        excludeUserId: user.id,
+      }).catch(() => {})
+
+      res.status(201).json(sanitizeTool(tool))
+    } catch (err) {
+      next(err)
     }
-    const { name, url, login, password, category, notes, visibleTo } = req.body
-    if (!name || !login || !password) {
-      return res.status(400).json({ error: 'Nom, login et mot de passe requis' })
-    }
-    const tool = await ToolAccess.create({
-      name,
-      url: url || '',
-      login,
-      password: encryptPassword(password),
-      category: category || 'AUTRE',
-      notes: notes || '',
-      visibleTo: Array.isArray(visibleTo) ? visibleTo : [],
-      addedBy: user.id,
-      addedByName: user.name || user.email,
-      lastRotatedAt: new Date(),
-    })
-
-    AuditLog.create({
-      userId: user.id,
-      email: user.email,
-      action: 'TOOL_ACCESS_CREATED',
-      ip: req.headers['x-forwarded-for'] || req.ip || '',
-      userAgent: req.headers['user-agent'] || '',
-      metadata: { toolId: tool._id.toString(), toolName: name },
-    }).catch(() => {})
-
-    // Notif tous les admins internes (les accès outils sont partagés)
-    notifyInternalAdmins({
-      type: 'TOOL_ACCESS_GRANTED',
-      title: `Nouvel accès outil`,
-      message: `${name} (${category || 'AUTRE'}) ajouté par ${user.name || user.email}`,
-      link: '/admin/tools',
-      metadata: { toolId: String(tool._id) },
-      excludeUserId: user.id,
-    }).catch(() => {})
-
-    res.status(201).json(sanitizeTool(tool))
-  } catch (err) {
-    next(err)
-  }
-})
+  },
+)
 
 // PATCH update (SUPER_ADMIN + ADMIN only)
-router.patch('/:id', requirePermission(PERMISSIONS.MANAGE_ADMINS), sensitiveAction('TOOL_ACCESS_UPDATE'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user!
-    if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
-      return res.status(403).json({ error: 'Acces reserve aux administrateurs' })
+router.patch(
+  '/:id',
+  requirePermission(PERMISSIONS.MANAGE_ADMINS),
+  sensitiveAction('TOOL_ACCESS_UPDATE'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!
+      if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Acces reserve aux administrateurs' })
+      }
+      const { name, url, login, password, category, notes, visibleTo } = req.body
+      const update: Record<string, unknown> = {}
+      if (name !== undefined) update.name = name
+      if (url !== undefined) update.url = url
+      if (login !== undefined) update.login = login
+      if (password !== undefined) {
+        update.password = encryptPassword(password)
+        update.lastRotatedAt = new Date()
+      }
+      if (category !== undefined) update.category = category
+      if (notes !== undefined) update.notes = notes
+      if (visibleTo !== undefined) update.visibleTo = Array.isArray(visibleTo) ? visibleTo : []
+
+      const tool = await ToolAccess.findByIdAndUpdate(req.params.id, { $set: update }, { new: true })
+      if (!tool) return res.status(404).json({ error: 'Outil introuvable' })
+
+      AuditLog.create({
+        userId: user.id,
+        email: user.email,
+        action: 'TOOL_ACCESS_UPDATED',
+        ip: req.headers['x-forwarded-for'] || req.ip || '',
+        userAgent: req.headers['user-agent'] || '',
+        metadata: { toolId: tool._id.toString(), toolName: tool.name, fieldsUpdated: Object.keys(update) },
+      }).catch(() => {})
+
+      res.json(sanitizeTool(tool))
+    } catch (err) {
+      next(err)
     }
-    const { name, url, login, password, category, notes, visibleTo } = req.body
-    const update: Record<string, unknown> = {}
-    if (name !== undefined) update.name = name
-    if (url !== undefined) update.url = url
-    if (login !== undefined) update.login = login
-    if (password !== undefined) {
-      update.password = encryptPassword(password)
-      update.lastRotatedAt = new Date()
-    }
-    if (category !== undefined) update.category = category
-    if (notes !== undefined) update.notes = notes
-    if (visibleTo !== undefined) update.visibleTo = Array.isArray(visibleTo) ? visibleTo : []
-
-    const tool = await ToolAccess.findByIdAndUpdate(req.params.id, { $set: update }, { new: true })
-    if (!tool) return res.status(404).json({ error: 'Outil introuvable' })
-
-    AuditLog.create({
-      userId: user.id,
-      email: user.email,
-      action: 'TOOL_ACCESS_UPDATED',
-      ip: req.headers['x-forwarded-for'] || req.ip || '',
-      userAgent: req.headers['user-agent'] || '',
-      metadata: { toolId: tool._id.toString(), toolName: tool.name, fieldsUpdated: Object.keys(update) },
-    }).catch(() => {})
-
-    res.json(sanitizeTool(tool))
-  } catch (err) {
-    next(err)
-  }
-})
+  },
+)
 
 // DELETE (SUPER_ADMIN only)
 router.delete(

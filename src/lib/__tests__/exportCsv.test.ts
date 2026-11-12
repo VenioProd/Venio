@@ -31,7 +31,7 @@ describe('exportCsv', () => {
             el.click = clickSpy as unknown as () => void
           }
           return el
-        }) as any
+        }) as any,
       )
 
       vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => node)
@@ -43,9 +43,7 @@ describe('exportCsv', () => {
     })
 
     it('does not throw with valid inputs', () => {
-      expect(() =>
-        exportToCsv('test.csv', ['Name', 'Value'], [['Alice', '100']])
-      ).not.toThrow()
+      expect(() => exportToCsv('test.csv', ['Name', 'Value'], [['Alice', '100']])).not.toThrow()
     })
 
     it('triggers a click on the anchor element', () => {
@@ -64,13 +62,7 @@ describe('exportCsv', () => {
     })
 
     it('handles fields with commas and quotes without throwing', () => {
-      expect(() =>
-        exportToCsv(
-          'test.csv',
-          ['Name', 'Description'],
-          [['Alice, Bob', 'She said "hello"']]
-        )
-      ).not.toThrow()
+      expect(() => exportToCsv('test.csv', ['Name', 'Description'], [['Alice, Bob', 'She said "hello"']])).not.toThrow()
     })
 
     it('handles empty rows without throwing', () => {

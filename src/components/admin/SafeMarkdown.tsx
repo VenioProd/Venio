@@ -193,7 +193,9 @@ function renderBlocks(source: string, keyPrefix: string, depth: number): ReactNo
         items.push(matcher.exec(lines[i])![1])
         i += 1
       }
-      const rendered = items.map((item, index) => <li key={index}>{renderInline(item, keyPrefix + '-li' + n + '-' + index)}</li>)
+      const rendered = items.map((item, index) => (
+        <li key={index}>{renderInline(item, keyPrefix + '-li' + n + '-' + index)}</li>
+      ))
       out.push(ordered ? <ol key={key()}>{rendered}</ol> : <ul key={key()}>{rendered}</ul>)
       continue
     }

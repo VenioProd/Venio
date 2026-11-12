@@ -90,8 +90,9 @@ const definition: AutomationDefinition = {
     }).select('_id')
 
     const summary = attacks
-      .map((a: { _id: string; count: number; ips: string[] }) =>
-        `• ${a._id} : ${a.count} échecs depuis ${a.ips.length} IP(s)`
+      .map(
+        (a: { _id: string; count: number; ips: string[] }) =>
+          `• ${a._id} : ${a.count} échecs depuis ${a.ips.length} IP(s)`,
       )
       .join('\n')
 

@@ -8,7 +8,9 @@
 
 /** E-mail : espaces retirés, minuscules. */
 export function normalizeEmail(value: unknown): string {
-  return String(value ?? '').trim().toLowerCase()
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
 }
 
 /**
@@ -47,11 +49,11 @@ export function normalizeCompanyName(value: unknown): string {
 export const MIN_PHONE_DIGITS = 8
 
 /** Champs normalisés déduits des champs saisis présents dans `source`. */
-export function normalizedLeadFields(source: {
-  contactEmail?: unknown
-  contactPhone?: unknown
-  company?: unknown
-}): { contactEmailNormalized?: string; contactPhoneNormalized?: string; companyNormalized?: string } {
+export function normalizedLeadFields(source: { contactEmail?: unknown; contactPhone?: unknown; company?: unknown }): {
+  contactEmailNormalized?: string
+  contactPhoneNormalized?: string
+  companyNormalized?: string
+} {
   const out: { contactEmailNormalized?: string; contactPhoneNormalized?: string; companyNormalized?: string } = {}
   if (source.contactEmail !== undefined) out.contactEmailNormalized = normalizeEmail(source.contactEmail)
   if (source.contactPhone !== undefined) out.contactPhoneNormalized = normalizePhone(source.contactPhone)

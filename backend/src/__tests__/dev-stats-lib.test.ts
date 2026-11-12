@@ -3,7 +3,14 @@ import { computeProgress, STATUS_WEIGHT, computeHealth } from '../lib/dev/stats.
 import type { DevIssueStatus } from '../models/DevIssue.js'
 
 const empty: Record<DevIssueStatus, number> = {
-  BACKLOG: 0, TODO: 0, IN_PROGRESS: 0, IN_REVIEW: 0, BLOCKED: 0, DONE: 0, DUPLICATE: 0, CANCELLED: 0,
+  BACKLOG: 0,
+  TODO: 0,
+  IN_PROGRESS: 0,
+  IN_REVIEW: 0,
+  BLOCKED: 0,
+  DONE: 0,
+  DUPLICATE: 0,
+  CANCELLED: 0,
 }
 
 describe('computeProgress', () => {
@@ -27,9 +34,9 @@ describe('computeProgress', () => {
   it('weights mixed statuses correctly', () => {
     // 1 BACKLOG (0) + 1 TODO (10) + 1 IN_PROGRESS (50) + 1 IN_REVIEW (80) + 1 BLOCKED (20) + 1 DONE (100)
     // = 260 / 600 = 43
-    expect(
-      computeProgress({ ...empty, BACKLOG: 1, TODO: 1, IN_PROGRESS: 1, IN_REVIEW: 1, BLOCKED: 1, DONE: 1 })
-    ).toBe(43)
+    expect(computeProgress({ ...empty, BACKLOG: 1, TODO: 1, IN_PROGRESS: 1, IN_REVIEW: 1, BLOCKED: 1, DONE: 1 })).toBe(
+      43,
+    )
   })
 
   it('rounds to nearest integer', () => {

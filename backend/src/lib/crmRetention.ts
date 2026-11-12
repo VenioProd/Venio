@@ -55,12 +55,17 @@ export interface RetentionPurgeResult {
   failed: number
 }
 
-export async function runRetentionPurge(now: Date = new Date(), opts: { batch?: number } = {}): Promise<RetentionPurgeResult> {
+export async function runRetentionPurge(
+  now: Date = new Date(),
+  opts: { batch?: number } = {},
+): Promise<RetentionPurgeResult> {
   const settings = await CrmSettings.getSettings()
   const months = clampRetentionMonths(settings.retentionMonths)
   const dryRun = settings.retentionPurgeEnabled !== true
   const cutoff = retentionCutoff(now, months)
-  const candidates = await Lead.find(retentionFilter(cutoff)).sort({ updatedAt: 1 }).limit(opts.batch ?? RETENTION_BATCH)
+  const candidates = await Lead.find(retentionFilter(cutoff))
+    .sort({ updatedAt: 1 })
+    .limit(opts.batch ?? RETENTION_BATCH)
 
   // Le compteur dénormalisé peut manquer un échange : le journal fait foi.
   const recent = new Set(
@@ -87,7 +92,14 @@ export async function runRetentionPurge(now: Date = new Date(), opts: { batch?: 
       }
     }
   }
-  const result = { dryRun, retentionMonths: months, cutoff: cutoff.toISOString(), eligible: eligible.length, anonymized, failed }
+  const result = {
+    dryRun,
+    retentionMonths: months,
+    cutoff: cutoff.toISOString(),
+    eligible: eligible.length,
+    anonymized,
+    failed,
+  }
   logger.info(result, dryRun ? '[crm-retention] simulation (purge non activée)' : '[crm-retention] purge')
   return result
 }

@@ -5,11 +5,7 @@ import Lead from '../models/Lead.js'
 import LeadActivity from '../models/LeadActivity.js'
 import Project from '../models/Project.js'
 import User from '../models/User.js'
-import {
-  assertDemoCleanupAllowed,
-  cleanupDemoData,
-  hasDryRunFlag,
-} from './cleanupDemoData.js'
+import { assertDemoCleanupAllowed, cleanupDemoData, hasDryRunFlag } from './cleanupDemoData.js'
 
 beforeAll(setupMongo)
 afterAll(teardownMongo)
@@ -21,10 +17,7 @@ async function seedCleanupFixtures(): Promise<void> {
     { email: 'client@example.com', passwordHash: 'hash', role: 'CLIENT', name: 'Client' },
   ])
 
-  const [demoLead, retainedLead] = await Lead.create([
-    { company: 'TechVision SAS' },
-    { company: 'Client réel' },
-  ])
+  const [demoLead, retainedLead] = await Lead.create([{ company: 'TechVision SAS' }, { company: 'Client réel' }])
 
   await Project.create([
     { name: 'Projet démo', client: demoUser._id },
@@ -60,7 +53,7 @@ describe('cleanupDemoData', () => {
     expect(await Lead.countDocuments()).toBe(2)
     expect(await ClientActivity.countDocuments()).toBe(2)
     expect(await LeadActivity.countDocuments()).toBe(2)
-    expect(log).toHaveBeenCalledWith('✅ DRY RUN terminé — aucune donnée n\'a été modifiée.')
+    expect(log).toHaveBeenCalledWith("✅ DRY RUN terminé — aucune donnée n'a été modifiée.")
     log.mockRestore()
   })
 

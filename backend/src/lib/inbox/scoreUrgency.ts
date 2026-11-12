@@ -2,9 +2,9 @@ import type { InboxItemType } from './types.js'
 
 export interface UrgencyInput {
   type: InboxItemType
-  priority?: string          // 'URGENTE' | 'HAUTE' | 'NORMALE' | 'BASSE' | 'P1' | 'P2' | 'P3'
+  priority?: string // 'URGENTE' | 'HAUTE' | 'NORMALE' | 'BASSE' | 'P1' | 'P2' | 'P3'
   deadline?: Date | null
-  daysSinceContact?: number  // for leads
+  daysSinceContact?: number // for leads
 }
 
 const BASE: Record<InboxItemType, number> = {

@@ -1,6 +1,9 @@
 import { useState, useEffect, ReactNode } from 'react'
 
-interface Props { left: ReactNode; right: ReactNode }
+interface Props {
+  left: ReactNode
+  right: ReactNode
+}
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900)
@@ -32,12 +35,16 @@ const TwoColumnGrid = ({ left, right }: Props) => {
           type="button"
           className={`dash-twocol-mobile__tab${activeTab === 'left' ? ' dash-twocol-mobile__tab--active' : ''}`}
           onClick={() => setActiveTab('left')}
-        >Action</button>
+        >
+          Action
+        </button>
         <button
           type="button"
           className={`dash-twocol-mobile__tab${activeTab === 'right' ? ' dash-twocol-mobile__tab--active' : ''}`}
           onClick={() => setActiveTab('right')}
-        >Analytics</button>
+        >
+          Analytics
+        </button>
       </div>
       <div>{activeTab === 'left' ? left : right}</div>
     </div>

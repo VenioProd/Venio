@@ -14,7 +14,7 @@ const addressSchema = new mongoose.Schema(
     city: { type: String, default: '' },
     country: { type: String, default: 'France' },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const ibanSchema = new mongoose.Schema(
@@ -26,7 +26,7 @@ const ibanSchema = new mongoose.Schema(
     bankAccount: { type: String, default: '' },
     isDefault: { type: Boolean, default: false },
   },
-  { _id: true }
+  { _id: true },
 )
 
 const companySettingsSchema = new mongoose.Schema<ICompanySettings, CompanySettingsModel>(
@@ -68,7 +68,7 @@ const companySettingsSchema = new mongoose.Schema<ICompanySettings, CompanySetti
     },
     isConfigured: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 // Récupère ou crée le singleton (clé MAIN)

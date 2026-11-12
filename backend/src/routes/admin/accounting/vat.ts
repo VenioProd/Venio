@@ -57,7 +57,7 @@ router.get(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -68,27 +68,20 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_VAT),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { status, type, page = '1', limit = '50' } = req.query as Record<
-        string,
-        string | undefined
-      >
+      const { status, type, page = '1', limit = '50' } = req.query as Record<string, string | undefined>
       const filter: Record<string, unknown> = {}
       if (status) filter.status = String(status).toUpperCase()
       if (type) filter.type = String(type).toUpperCase()
       const skip = (Number(page) - 1) * Number(limit)
       const [declarations, total] = await Promise.all([
-        VatDeclaration.find(filter)
-          .sort({ periodStart: -1, createdAt: -1 })
-          .skip(skip)
-          .limit(Number(limit))
-          .lean(),
+        VatDeclaration.find(filter).sort({ periodStart: -1, createdAt: -1 }).skip(skip).limit(Number(limit)).lean(),
         VatDeclaration.countDocuments(filter),
       ])
       res.json({ declarations, total, page: Number(page), limit: Number(limit) })
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -153,7 +146,7 @@ router.post(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -173,7 +166,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -224,7 +217,7 @@ router.patch(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -260,7 +253,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -285,7 +278,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

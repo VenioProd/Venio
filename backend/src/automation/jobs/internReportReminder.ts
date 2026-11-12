@@ -8,7 +8,7 @@ import { countWorkingDaysSince } from '../../lib/workingDays.js'
 
 const definition: AutomationDefinition = {
   key: 'intern.report_reminder',
-  title: 'Rappel rapport d\'activité (3 jours)',
+  title: "Rappel rapport d'activité (3 jours)",
   domain: 'interns',
   triggerType: 'cron',
   schedule: '09:00',
@@ -45,22 +45,18 @@ const definition: AutomationDefinition = {
       }
 
       // Défaut = tous les jours de semaine si le champ est vide
-      const joursPresence: string[] = Array.isArray(intern.joursPresence) && intern.joursPresence.length > 0
-        ? intern.joursPresence as string[]
-        : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
+      const joursPresence: string[] =
+        Array.isArray(intern.joursPresence) && intern.joursPresence.length > 0
+          ? (intern.joursPresence as string[])
+          : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
       if (!joursPresence.includes(todayName)) continue
 
       // Dernier rapport soumis
-      const lastReport = await ActivityReport.findOne({ internId: intern._id })
-        .sort({ date: -1 })
-        .select('date')
-        .lean()
+      const lastReport = await ActivityReport.findOne({ internId: intern._id }).sort({ date: -1 }).select('date').lean()
 
       const lastDate = lastReport ? new Date(lastReport.date) : null
       // Compter les jours travaillés depuis le dernier rapport (pas les jours calendaires)
-      const workingDaysSince = lastDate
-        ? countWorkingDaysSince(lastDate, ctx.now, joursPresence)
-        : null
+      const workingDaysSince = lastDate ? countWorkingDaysSince(lastDate, ctx.now, joursPresence) : null
 
       // Envoyer si pas de rapport du tout, ou >= 3 jours travaillés sans rapport
       if (workingDaysSince === null || workingDaysSince >= 3) {

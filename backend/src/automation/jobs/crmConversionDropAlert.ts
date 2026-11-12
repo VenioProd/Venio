@@ -40,25 +40,33 @@ const definition: AutomationDefinition = {
     const sixtyDaysAgo = new Date(ctx.now.getTime() - 60 * 24 * 3600_000)
 
     // Current period: last 30 days
-    const currentWon = await Lead.countDocuments(withActiveLeads({
-      status: 'WON',
-      updatedAt: { $gte: thirtyDaysAgo },
-    }))
+    const currentWon = await Lead.countDocuments(
+      withActiveLeads({
+        status: 'WON',
+        updatedAt: { $gte: thirtyDaysAgo },
+      }),
+    )
 
     // Previous period: 60-30 days ago
-    const previousWon = await Lead.countDocuments(withActiveLeads({
-      status: 'WON',
-      updatedAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
-    }))
+    const previousWon = await Lead.countDocuments(
+      withActiveLeads({
+        status: 'WON',
+        updatedAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
+      }),
+    )
 
     // Also compare total new leads
-    const currentNewLeads = await Lead.countDocuments(withActiveLeads({
-      createdAt: { $gte: thirtyDaysAgo },
-    }))
+    const currentNewLeads = await Lead.countDocuments(
+      withActiveLeads({
+        createdAt: { $gte: thirtyDaysAgo },
+      }),
+    )
 
-    const previousNewLeads = await Lead.countDocuments(withActiveLeads({
-      createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
-    }))
+    const previousNewLeads = await Lead.countDocuments(
+      withActiveLeads({
+        createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
+      }),
+    )
 
     const actionsExecuted: string[] = ['conversion_analysis']
     const recipientsNotified: string[] = []
@@ -66,9 +74,7 @@ const definition: AutomationDefinition = {
     const shouldAlert = previousWon > 0 && currentWon < previousWon * 0.5
 
     if (shouldAlert) {
-      const dropPercent = previousWon > 0
-        ? Math.round(((previousWon - currentWon) / previousWon) * 100)
-        : 0
+      const dropPercent = previousWon > 0 ? Math.round(((previousWon - currentWon) / previousWon) * 100) : 0
 
       const message = [
         `Leads gagnés (30 derniers jours) : ${currentWon} (vs ${previousWon} période précédente, -${dropPercent}%)`,

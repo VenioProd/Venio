@@ -30,8 +30,10 @@ export function parseBulkRequest(body: unknown): { error: string } | { request: 
   const ids = [...new Set(b.ids.map(String))]
   if (!ids.every((id) => mongoose.isValidObjectId(id))) return { error: 'ids contient un identifiant invalide' }
   const action = b.action as BulkAction
-  if (action === 'set-status' && !STATUSES.includes(String(b.value))) return { error: `value doit valoir ${STATUSES.join(', ')}` }
-  if (action === 'set-assignee' && b.value != null && !mongoose.isValidObjectId(b.value)) return { error: 'value doit être un identifiant ou null' }
+  if (action === 'set-status' && !STATUSES.includes(String(b.value)))
+    return { error: `value doit valoir ${STATUSES.join(', ')}` }
+  if (action === 'set-assignee' && b.value != null && !mongoose.isValidObjectId(b.value))
+    return { error: 'value doit être un identifiant ou null' }
   return { request: { action, ids, value: b.value == null ? null : String(b.value) } }
 }
 

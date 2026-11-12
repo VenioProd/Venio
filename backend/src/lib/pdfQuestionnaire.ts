@@ -22,7 +22,12 @@ interface GenerateParams {
   response: ResponseData
 }
 
-export async function generateQuestionnairePdf({ title, description, questions, response }: GenerateParams): Promise<Buffer> {
+export async function generateQuestionnairePdf({
+  title,
+  description,
+  questions,
+  response,
+}: GenerateParams): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const pdf = new PDFDocument({ margin: 50, size: 'A4' })
     const chunks: Buffer[] = []
@@ -51,7 +56,13 @@ export async function generateQuestionnairePdf({ title, description, questions, 
     pdf.text(`Nom : ${response.respondentName}`)
     pdf.text(`Email : ${response.respondentEmail}`)
     if (response.formation) pdf.text(`Formation : ${response.formation}`)
-    const date = new Date(response.submittedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    const date = new Date(response.submittedAt).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
     pdf.text(`Date de soumission : ${date}`)
     pdf.moveDown(1)
 
@@ -69,7 +80,10 @@ export async function generateQuestionnairePdf({ title, description, questions, 
       const val = answer?.value || '—'
 
       // Question number + label
-      pdf.fontSize(10).fillColor('#0ea5e9').text(`${i + 1}. ${q.label}`, { continued: false })
+      pdf
+        .fontSize(10)
+        .fillColor('#0ea5e9')
+        .text(`${i + 1}. ${q.label}`, { continued: false })
       pdf.moveDown(0.2)
 
       if (q.type === 'rating') {
@@ -80,7 +94,10 @@ export async function generateQuestionnairePdf({ title, description, questions, 
       } else if (q.type === 'multiple_choice') {
         pdf.fontSize(10).fillColor('#334155').text(`→ ${val}`)
       } else {
-        pdf.fontSize(10).fillColor('#334155').text(val || 'Aucune reponse', { width: 460 })
+        pdf
+          .fontSize(10)
+          .fillColor('#334155')
+          .text(val || 'Aucune reponse', { width: 460 })
       }
 
       pdf.moveDown(0.6)
@@ -93,7 +110,10 @@ export async function generateQuestionnairePdf({ title, description, questions, 
     pdf.moveDown(1)
     pdf.moveTo(50, pdf.y).lineTo(545, pdf.y).strokeColor('#e2e8f0').lineWidth(1).stroke()
     pdf.moveDown(0.5)
-    pdf.fontSize(8).fillColor('#94a3b8').text('Document genere automatiquement — Venio Formatio / Qualiopi', { align: 'center' })
+    pdf
+      .fontSize(8)
+      .fillColor('#94a3b8')
+      .text('Document genere automatiquement — Venio Formatio / Qualiopi', { align: 'center' })
 
     pdf.end()
   })

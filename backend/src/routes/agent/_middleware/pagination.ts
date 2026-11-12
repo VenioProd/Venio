@@ -49,11 +49,7 @@ export function parsePagination(req: Request): ParsedPagination {
 /**
  * Construit la réponse paginée standardisée à partir des items + total.
  */
-export function paginatedResponse<T>(
-  items: T[],
-  pagination: ParsedPagination,
-  total: number
-): PaginatedResponse<T> {
+export function paginatedResponse<T>(items: T[], pagination: ParsedPagination, total: number): PaginatedResponse<T> {
   return {
     items,
     page: pagination.page,

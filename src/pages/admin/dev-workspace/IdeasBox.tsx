@@ -142,7 +142,9 @@ export default function IdeasBox() {
   const vote = async (id: string) => {
     try {
       const updated = await toggleDevSuggestionVote(id)
-      setItems((prev) => prev.map((s) => (s._id === id ? { ...s, voteCount: updated.voteCount, hasVoted: updated.hasVoted } : s)))
+      setItems((prev) =>
+        prev.map((s) => (s._id === id ? { ...s, voteCount: updated.voteCount, hasVoted: updated.hasVoted } : s)),
+      )
     } catch (err) {
       setError(t('devA.ideas.error', { message: errorMessage(err) }))
     }
@@ -196,7 +198,8 @@ export default function IdeasBox() {
   }
 
   const bulkDelete = async () => {
-    if (!(await confirm({ message: t('devA.ideas.bulk.confirmDelete', { count: ids.length }), variant: 'danger' }))) return
+    if (!(await confirm({ message: t('devA.ideas.bulk.confirmDelete', { count: ids.length }), variant: 'danger' })))
+      return
     void run(() => bulkDevSuggestions(ids, 'delete'))
   }
 
@@ -359,7 +362,9 @@ export default function IdeasBox() {
                       <ArrowRight size={11} /> {t('devA.ideas.convertedTo', { id: s.issue.identifier })}
                     </span>
                   )}
-                  {s.rejectionReason && <span className="ideas-reject">{t('devA.ideas.motif', { reason: s.rejectionReason })}</span>}
+                  {s.rejectionReason && (
+                    <span className="ideas-reject">{t('devA.ideas.motif', { reason: s.rejectionReason })}</span>
+                  )}
                 </div>
               </div>
               <button
@@ -399,7 +404,9 @@ export default function IdeasBox() {
                 className="ideas-btn danger"
                 type="button"
                 disabled={busy || !reason.trim()}
-                onClick={() => void run(() => bulkDevSuggestions(ids, 'status', { status: 'REJECTED', reason: reason.trim() }))}
+                onClick={() =>
+                  void run(() => bulkDevSuggestions(ids, 'status', { status: 'REJECTED', reason: reason.trim() }))
+                }
               >
                 {t('devA.ideas.reject.confirm')}
               </button>
@@ -411,7 +418,11 @@ export default function IdeasBox() {
             <>
               <span className="ideas-bulk-n">{t('devA.ideas.bulk.selected', { count: selected.size })}</span>
               {needsProject && (
-                <select value={convertProject} onChange={(e) => setConvertProject(e.target.value)} aria-label={t('devA.ideas.convertProject')}>
+                <select
+                  value={convertProject}
+                  onChange={(e) => setConvertProject(e.target.value)}
+                  aria-label={t('devA.ideas.convertProject')}
+                >
                   <option value="">{t('devA.ideas.convertProject')}</option>
                   {projects.map((p) => (
                     <option key={p._id} value={p._id}>
@@ -423,7 +434,12 @@ export default function IdeasBox() {
               <button className="ideas-btn primary" type="button" disabled={busy} onClick={bulkConvert}>
                 <ArrowRight size={13} /> {t('devA.ideas.bulk.convert')}
               </button>
-              <select value="" disabled={busy} onChange={(e) => bulkStatus(e.target.value)} aria-label={t('devA.ideas.bulk.status')}>
+              <select
+                value=""
+                disabled={busy}
+                onChange={(e) => bulkStatus(e.target.value)}
+                aria-label={t('devA.ideas.bulk.status')}
+              >
                 <option value="">{t('devA.ideas.bulk.status')}</option>
                 {(['NEW', 'STUDIED', 'REJECTED'] as const).map((st) => (
                   <option key={st} value={st}>
@@ -431,13 +447,23 @@ export default function IdeasBox() {
                   </option>
                 ))}
               </select>
-              <button className="ideas-btn" type="button" disabled={busy} onClick={() => void run(() => bulkDevSuggestions(ids, 'archive'))}>
+              <button
+                className="ideas-btn"
+                type="button"
+                disabled={busy}
+                onClick={() => void run(() => bulkDevSuggestions(ids, 'archive'))}
+              >
                 <Archive size={13} /> {t('devA.ideas.bulk.archive')}
               </button>
               <button className="ideas-btn danger" type="button" disabled={busy} onClick={() => void bulkDelete()}>
                 <Trash2 size={13} /> {t('devA.ideas.bulk.delete')}
               </button>
-              <button className="ideas-btn" type="button" aria-label={t('devA.ideas.bulk.clear')} onClick={() => setSelected(new Set())}>
+              <button
+                className="ideas-btn"
+                type="button"
+                aria-label={t('devA.ideas.bulk.clear')}
+                onClick={() => setSelected(new Set())}
+              >
                 <X size={13} />
               </button>
             </>

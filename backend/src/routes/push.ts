@@ -38,7 +38,7 @@ router.post('/subscriptions', requireAuth, async (req, res) => {
         userAgent: ua,
         lastUsedAt: new Date(),
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true },
     )
 
     return res.json({ subscription: { id: subscription._id } })

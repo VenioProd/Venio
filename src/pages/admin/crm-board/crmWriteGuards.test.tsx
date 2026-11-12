@@ -51,7 +51,13 @@ describe('CRM principal — gardes d’écriture', () => {
     expect(screen.queryByText('+ Nouveau lead')).toBeNull()
     expect(screen.queryByRole('link', { name: /utomatisation/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Contacté/ })).toBeNull()
-    expect(vi.mocked(apiFetch).mock.calls.every(([, opts]) => !opts || (opts as RequestInit).method === undefined || (opts as RequestInit).method === 'GET')).toBe(true)
+    expect(
+      vi
+        .mocked(apiFetch)
+        .mock.calls.every(
+          ([, opts]) => !opts || (opts as RequestInit).method === undefined || (opts as RequestInit).method === 'GET',
+        ),
+    ).toBe(true)
   })
 
   it('un profil avec manage_crm voit « Nouveau lead »', async () => {
@@ -66,13 +72,26 @@ describe('CRM principal — gardes d’écriture', () => {
   })
 
   it('Kanban en lecture seule : carte non déplaçable et sans sélecteur d’attribution', () => {
-    const props = { admins: [], adminsById: {}, converting: null, onUpdateLead: vi.fn(), onConvertToClient: vi.fn(), onDrop: vi.fn(), onDragStart: vi.fn(), onOpenDetail: vi.fn() }
-    const { container, rerender } = render(<PipelineColumn column={{ status: 'LEAD', leads: [lead] }} canManageCrm={false} {...props} />)
+    const props = {
+      admins: [],
+      adminsById: {},
+      converting: null,
+      onUpdateLead: vi.fn(),
+      onConvertToClient: vi.fn(),
+      onDrop: vi.fn(),
+      onDragStart: vi.fn(),
+      onOpenDetail: vi.fn(),
+    }
+    const { container, rerender } = render(
+      <PipelineColumn column={{ status: 'LEAD', leads: [lead] }} canManageCrm={false} {...props} />,
+    )
     const card = container.querySelector('.crm-card') as HTMLElement
     expect(card.getAttribute('draggable')).toBe('false')
     expect(container.querySelector('.crm-card-assignee .portal-input')).toBeNull()
     rerender(<PipelineColumn column={{ status: 'LEAD', leads: [lead] }} canManageCrm {...props} />)
     expect((container.querySelector('.crm-card') as HTMLElement).getAttribute('draggable')).toBe('true')
-    expect(container.querySelector('.crm-card-assignee .portal-input, .crm-card-assignee [class*="select"]')).not.toBeNull()
+    expect(
+      container.querySelector('.crm-card-assignee .portal-input, .crm-card-assignee [class*="select"]'),
+    ).not.toBeNull()
   })
 })

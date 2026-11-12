@@ -126,7 +126,7 @@ const AnimatedBackground = () => {
       drawConnections()
 
       // Mettre à jour et dessiner les particules
-      particles.forEach(particle => {
+      particles.forEach((particle) => {
         particle.update()
         particle.draw()
       })

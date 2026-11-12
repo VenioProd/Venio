@@ -126,16 +126,28 @@ export function sameFilters(a: Filters, b: Filters): boolean {
   return (Object.keys(EMPTY_FILTERS) as (keyof Filters)[]).every((k) => a[k] === b[k])
 }
 
-export function riskLabel(r: { code: RiskCode; value: number | null }, item: PortfolioItem): { text: string; tone: 'rose' | 'amber' | 'sky' } {
+export function riskLabel(
+  r: { code: RiskCode; value: number | null },
+  item: PortfolioItem,
+): { text: string; tone: 'rose' | 'amber' | 'sky' } {
   switch (r.code) {
     case 'LATE':
       return { text: translate('portfolio.risk.late', { value: r.value ?? 0 }), tone: 'rose' }
     case 'BUDGET_OVER':
       return { text: translate('portfolio.risk.budget', { value: r.value ?? 0 }), tone: 'rose' }
     case 'PROJECTED_LATE':
-      return { text: translate('portfolio.risk.projectedLate', { progress: item.progress, value: r.value ?? 0 }), tone: 'amber' }
+      return {
+        text: translate('portfolio.risk.projectedLate', { progress: item.progress, value: r.value ?? 0 }),
+        tone: 'amber',
+      }
     case 'DUE_SOON':
-      return { text: r.value === 0 ? translate('portfolio.risk.dueToday') : translate('portfolio.risk.dueSoon', { value: r.value ?? 0 }), tone: 'amber' }
+      return {
+        text:
+          r.value === 0
+            ? translate('portfolio.risk.dueToday')
+            : translate('portfolio.risk.dueSoon', { value: r.value ?? 0 }),
+        tone: 'amber',
+      }
     case 'STALE':
       return { text: translate('portfolio.risk.stale', { value: r.value ?? 0 }), tone: 'amber' }
     case 'WAITING_CLIENT':

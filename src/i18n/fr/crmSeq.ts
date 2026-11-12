@@ -10,7 +10,8 @@ const crmSeq = {
   'crmSeq.loadError': 'Impossible de charger les séquences',
   'crmSeq.retry': 'Réessayer',
   'crmSeq.none': 'Aucune séquence pour le moment.',
-  'crmSeq.rulesNote': 'Un lien de désinscription est ajouté automatiquement à chaque e-mail. Les envois ont lieu les jours ouvrés, à l’heure de Paris.',
+  'crmSeq.rulesNote':
+    'Un lien de désinscription est ajouté automatiquement à chaque e-mail. Les envois ont lieu les jours ouvrés, à l’heure de Paris.',
   'crmSeq.status.DRAFT': 'Brouillon',
   'crmSeq.status.ACTIVE': 'Active',
   'crmSeq.status.PAUSED': 'En pause',
@@ -37,7 +38,8 @@ const crmSeq = {
   'crmSeq.msg.statusError': 'Changement d’état impossible',
   'crmSeq.msg.deleteError': 'Suppression impossible',
   'crmSeq.deleteTitle': 'Supprimer la séquence ?',
-  'crmSeq.deleteBody': 'La séquence « {name} » sera supprimée définitivement. Impossible tant que des leads y sont inscrits.',
+  'crmSeq.deleteBody':
+    'La séquence « {name} » sera supprimée définitivement. Impossible tant que des leads y sont inscrits.',
   'crmSeq.detail.back': 'Retour aux séquences',
   'crmSeq.detail.enrollments': 'Inscriptions',
   'crmSeq.detail.filter': 'Filtrer par état',
@@ -93,7 +95,8 @@ const crmSeq = {
   'crmSeq.builder.down': 'Descendre l’étape {n}',
   'crmSeq.builder.type': 'Type de l’étape {n}',
   'crmSeq.builder.delay': 'Délai en jours (étape {n})',
-  'crmSeq.builder.delayHint': 'Jours calendaires depuis l’étape précédente ou l’inscription ; reporté au jour ouvré suivant.',
+  'crmSeq.builder.delayHint':
+    'Jours calendaires depuis l’étape précédente ou l’inscription ; reporté au jour ouvré suivant.',
   'crmSeq.builder.hour': 'Heure d’envoi, Paris (étape {n})',
   'crmSeq.builder.subject': 'Objet (étape {n})',
   'crmSeq.builder.body': 'Texte de l’e-mail (étape {n})',
@@ -108,7 +111,8 @@ const crmSeq = {
   'crmSeq.builder.preview': 'Aperçu',
   'crmSeq.builder.previewNote': 'Rendu avec des valeurs d’exemple.',
   'crmSeq.builder.previewEmpty': '(vide)',
-  'crmSeq.builder.unsubscribe': 'Un lien de désinscription est ajouté automatiquement à chaque e-mail. Envois les jours ouvrés uniquement, à l’heure de Paris.',
+  'crmSeq.builder.unsubscribe':
+    'Un lien de désinscription est ajouté automatiquement à chaque e-mail. Envois les jours ouvrés uniquement, à l’heure de Paris.',
   'crmSeq.builder.save': 'Enregistrer',
   'crmSeq.builder.saving': 'Enregistrement…',
   'crmSeq.builder.saveError': 'Enregistrement impossible',

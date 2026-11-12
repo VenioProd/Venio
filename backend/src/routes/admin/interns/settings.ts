@@ -12,7 +12,7 @@ router.get('/settings/report-notifs', requireAdmin, async (_req: Request, res: R
   try {
     const settings = await getInternSettings()
     const populated = await settings.populate('reportNotifRecipients', 'name email role')
-    res.json({ recipients: (populated.reportNotifRecipients as any[]) })
+    res.json({ recipients: populated.reportNotifRecipients as any[] })
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
   }
@@ -29,7 +29,7 @@ router.patch('/settings/report-notifs', requireAdmin, async (req: Request, res: 
     settings.reportNotifRecipients = recipientIds
     await settings.save()
     const populated = await settings.populate('reportNotifRecipients', 'name email role')
-    res.json({ recipients: (populated.reportNotifRecipients as any[]) })
+    res.json({ recipients: populated.reportNotifRecipients as any[] })
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
   }

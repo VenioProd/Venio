@@ -66,12 +66,12 @@ const devProjectSchema = new Schema<IDevProject>(
           htmlUrl: { type: String, default: null, maxlength: 300 },
           repoPath: { type: String, default: null, maxlength: 200 },
         },
-        { _id: false }
+        { _id: false },
       ),
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 devProjectSchema.index({ status: 1, updatedAt: -1 })

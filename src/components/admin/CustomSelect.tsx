@@ -25,7 +25,8 @@ const CustomSelect = ({ options, value, onChange, className }: CustomSelectProps
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as Node
-      if (ref.current && !ref.current.contains(target) && (!menuRef.current || !menuRef.current.contains(target))) setOpen(false)
+      if (ref.current && !ref.current.contains(target) && (!menuRef.current || !menuRef.current.contains(target)))
+        setOpen(false)
     }
     document.addEventListener('mousedown', handleClick)
     return () => {
@@ -43,36 +44,36 @@ const CustomSelect = ({ options, value, onChange, className }: CustomSelectProps
 
   return (
     <div className={`custom-select ${className || ''}`} ref={ref}>
-      <button
-        type="button"
-        ref={triggerRef}
-        className="custom-select-trigger"
-        onClick={handleToggle}
-      >
+      <button type="button" ref={triggerRef} className="custom-select-trigger" onClick={handleToggle}>
         <span>{selected?.label || '—'}</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
-      {open && menuPos && ReactDOM.createPortal(
-        <div
-          ref={menuRef}
-          className="custom-select-menu"
-          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, minWidth: menuPos.minWidth }}
-        >
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`custom-select-option ${opt.value === value ? 'active' : ''}`}
-              onClick={() => { onChange(opt.value); setOpen(false) }}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
+      {open &&
+        menuPos &&
+        ReactDOM.createPortal(
+          <div
+            ref={menuRef}
+            className="custom-select-menu"
+            style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, minWidth: menuPos.minWidth }}
+          >
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={`custom-select-option ${opt.value === value ? 'active' : ''}`}
+                onClick={() => {
+                  onChange(opt.value)
+                  setOpen(false)
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

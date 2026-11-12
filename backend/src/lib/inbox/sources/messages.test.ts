@@ -5,9 +5,15 @@ import InternalConversation from '../../../models/InternalConversation.js'
 import InternalConversationMember from '../../../models/InternalConversationMember.js'
 import { getMessageItems } from './messages.js'
 
-beforeAll(async () => { await setupMongo() })
-afterAll(async () => { await teardownMongo() })
-beforeEach(async () => { await clearDb() })
+beforeAll(async () => {
+  await setupMongo()
+})
+afterAll(async () => {
+  await teardownMongo()
+})
+beforeEach(async () => {
+  await clearDb()
+})
 
 describe('getMessageItems', () => {
   it('retourne 0 items pour un user sans conversation', async () => {
@@ -38,9 +44,9 @@ describe('getMessageItems', () => {
       lastMessageAt: past,
       createdBy,
     } as any)
-    await InternalConversationMember.create({ user: userId, conversation: c1._id, lastReadAt: past } as any)   // unread
+    await InternalConversationMember.create({ user: userId, conversation: c1._id, lastReadAt: past } as any) // unread
     await InternalConversationMember.create({ user: userId, conversation: c2._id, lastReadAt: recent } as any) // already read
-    await InternalConversationMember.create({ user: otherId, conversation: c1._id, lastReadAt: past } as any)  // other user, not counted
+    await InternalConversationMember.create({ user: otherId, conversation: c1._id, lastReadAt: past } as any) // other user, not counted
 
     const items = await getMessageItems(userId.toString())
     expect(items).toHaveLength(1)

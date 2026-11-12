@@ -18,7 +18,7 @@ router.get('/layout', async (req: Request, res: Response, next: NextFunction) =>
   try {
     const userId = req.user!.id
     const found = await WorkspaceLayout.findOne({ userId }).lean()
-    const layout = found ?? await WorkspaceLayout.create({ userId })
+    const layout = found ?? (await WorkspaceLayout.create({ userId }))
     res.json(layout)
   } catch (e) {
     next(e)
@@ -36,7 +36,7 @@ router.put('/layout', async (req: Request, res: Response, next: NextFunction) =>
     const layout = await WorkspaceLayout.findOneAndUpdate(
       { userId },
       { $set: update },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { new: true, upsert: true, setDefaultsOnInsert: true },
     )
     res.json(layout)
   } catch (e) {

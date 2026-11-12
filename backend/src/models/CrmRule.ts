@@ -40,7 +40,19 @@ export const CONDITION_FIELDS = [
   'daysInStage',
   'archived',
 ] as const
-export const CONDITION_OPERATORS = ['eq', 'neq', 'in', 'nin', 'gt', 'gte', 'lt', 'lte', 'contains', 'empty', 'notEmpty'] as const
+export const CONDITION_OPERATORS = [
+  'eq',
+  'neq',
+  'in',
+  'nin',
+  'gt',
+  'gte',
+  'lt',
+  'lte',
+  'contains',
+  'empty',
+  'notEmpty',
+] as const
 
 export interface IRuleCondition {
   field: (typeof CONDITION_FIELDS)[number]
@@ -77,7 +89,10 @@ const crmRuleSchema = new mongoose.Schema<ICrmRule>(
     systemKey: { type: String },
     trigger: {
       type: new mongoose.Schema(
-        { type: { type: String, enum: RULE_TRIGGERS, required: true }, params: { type: mongoose.Schema.Types.Mixed, default: {} } },
+        {
+          type: { type: String, enum: RULE_TRIGGERS, required: true },
+          params: { type: mongoose.Schema.Types.Mixed, default: {} },
+        },
         { _id: false },
       ),
       required: true,
@@ -107,7 +122,10 @@ const crmRuleSchema = new mongoose.Schema<ICrmRule>(
     actions: {
       type: [
         new mongoose.Schema(
-          { type: { type: String, enum: RULE_ACTIONS, required: true }, params: { type: mongoose.Schema.Types.Mixed, default: {} } },
+          {
+            type: { type: String, enum: RULE_ACTIONS, required: true },
+            params: { type: mongoose.Schema.Types.Mixed, default: {} },
+          },
           { _id: false },
         ),
       ],

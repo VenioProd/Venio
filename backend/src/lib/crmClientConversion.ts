@@ -130,8 +130,7 @@ export async function processWonLead(
   ).lean()
   if (!claimed) return none
 
-  const release = () =>
-    Lead.updateOne({ _id: lead._id }, { $set: { wonProcessedAt: null } }).catch(() => undefined)
+  const release = () => Lead.updateOne({ _id: lead._id }, { $set: { wonProcessedAt: null } }).catch(() => undefined)
 
   let client: any
   try {
@@ -165,4 +164,3 @@ function mapLeadSourceToClientSource(leadSource: string): string {
   }
   return sourceMap[leadSource] || 'AUTRE'
 }
-

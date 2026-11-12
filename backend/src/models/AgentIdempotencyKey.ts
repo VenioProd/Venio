@@ -29,13 +29,10 @@ const agentIdempotencyKeySchema = new mongoose.Schema<IAgentIdempotencyKey>(
     responseBody: { type: mongoose.Schema.Types.Mixed, default: null },
     createdAt: { type: Date, default: Date.now, expires: 86400 },
   },
-  { timestamps: false }
+  { timestamps: false },
 )
 
 // Unicité de la clé par token
 agentIdempotencyKeySchema.index({ tokenId: 1, key: 1 }, { unique: true })
 
-export default mongoose.model<IAgentIdempotencyKey>(
-  'AgentIdempotencyKey',
-  agentIdempotencyKeySchema
-)
+export default mongoose.model<IAgentIdempotencyKey>('AgentIdempotencyKey', agentIdempotencyKeySchema)

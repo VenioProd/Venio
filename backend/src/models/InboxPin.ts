@@ -21,7 +21,7 @@ const schema = new Schema<IInboxPin>(
     color: { type: String },
     expiresAt: { type: Date, index: { expires: 0 } },
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
+  { timestamps: { createdAt: true, updatedAt: false } },
 )
 
 const InboxPin = mongoose.model<IInboxPin>('InboxPin', schema)

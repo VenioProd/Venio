@@ -21,7 +21,7 @@ const vatRateSchema = new mongoose.Schema<IVatRate, VatRateModel>(
     isActive: { type: Boolean, default: true },
     legend: { type: String, default: '' },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 vatRateSchema.statics.findByCode = function findByCode(code: string) {

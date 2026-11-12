@@ -73,15 +73,19 @@ function safeFilename(originalName: string): string {
 
 // ── Routes ────────────────────────────────────────────────────────────────
 
-router.get('/conversations', requireScope('read:internal-messaging'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = await loadAgentUserPayload(req)
-    const conversations = await listConversations(user)
-    res.json({ conversations })
-  } catch (err) {
-    next(err)
-  }
-})
+router.get(
+  '/conversations',
+  requireScope('read:internal-messaging'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = await loadAgentUserPayload(req)
+      const conversations = await listConversations(user)
+      res.json({ conversations })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 router.post(
   '/conversations',
@@ -110,13 +114,15 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
   '/direct',
   requireScope('write:internal-messaging'),
-  body('participantId').custom((v) => isValidObjectId(v)).withMessage('participantId (ObjectId) requis'),
+  body('participantId')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('participantId (ObjectId) requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
@@ -135,7 +141,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -156,7 +162,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -164,7 +170,9 @@ router.post(
   requireScope('write:internal-messaging'),
   param('conversationId').isMongoId(),
   body('content').isString().trim().isLength({ min: 1, max: 4000 }),
-  body('parentMessage').optional({ nullable: true }).custom((v) => v === null || isValidObjectId(v)),
+  body('parentMessage')
+    .optional({ nullable: true })
+    .custom((v) => v === null || isValidObjectId(v)),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
@@ -183,7 +191,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -204,7 +212,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -220,7 +228,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -243,7 +251,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -264,7 +272,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -286,23 +294,29 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.get('/users', requireScope('read:internal-messaging'), async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const users = await User.find({
-      role: { $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE', 'AGENT'] },
-      isActive: true,
-    })
-      .select('name email role')
-      .sort({ name: 1 })
-      .lean()
-    res.json({ users })
-  } catch (err) {
-    next(err)
-  }
-})
+router.get(
+  '/users',
+  requireScope('read:internal-messaging'),
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const users = await User.find({
+        role: {
+          $in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RH', 'COMMERCIAL', 'COMPTABLE', 'VIEWER', 'STAGIAIRE', 'AGENT'],
+        },
+        isActive: true,
+      })
+        .select('name email role')
+        .sort({ name: 1 })
+        .lean()
+      res.json({ users })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 // ── Task 23: POST /conversations/:conversationId/attachments ──────────────────
 
@@ -331,8 +345,10 @@ router.post(
       const cleanup = async () => {
         await Promise.all(
           writtenPaths.map((p) =>
-            fs.unlink(p).catch((e) => logger.warn({ data: [p, (e as Error).message] }, '[attachments] cleanup failed:'))
-          )
+            fs
+              .unlink(p)
+              .catch((e) => logger.warn({ data: [p, (e as Error).message] }, '[attachments] cleanup failed:')),
+          ),
         )
       }
 
@@ -349,7 +365,7 @@ router.post(
               res,
               413,
               'FILE_TOO_LARGE',
-              `${file.filename} dépasse ${RAW_LIMIT_MB} Mo (reçu ${(buffer.length / 1024 / 1024).toFixed(2)} Mo)`
+              `${file.filename} dépasse ${RAW_LIMIT_MB} Mo (reçu ${(buffer.length / 1024 / 1024).toFixed(2)} Mo)`,
             )
           }
           const stored = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}-${safeFilename(file.filename)}`
@@ -388,7 +404,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ── Task 24: GET /messages/:messageId/attachments/:index/download ─────────────
@@ -431,7 +447,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

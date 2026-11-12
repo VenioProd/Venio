@@ -7,7 +7,7 @@ interface Props {
 const PulseStatus = ({ checks }: Props) => {
   const counts = checks.reduce(
     (acc, c) => ({ ...acc, [c.status]: (acc[c.status] ?? 0) + 1 }),
-    {} as Record<string, number>
+    {} as Record<string, number>,
   )
 
   return (
@@ -15,7 +15,9 @@ const PulseStatus = ({ checks }: Props) => {
       <div className="dash-pulse__header">
         <span className="dash-pulse__title">● PULSE VENIO</span>
         <span className="dash-pulse__count">
-          {checks.length} checks · <span className="dash-pulse__count-ok">{counts.ok ?? 0} ok</span> · <span className="dash-pulse__count-warn">{counts.warn ?? 0} warn</span> · <span className="dash-pulse__count-bad">{counts.bad ?? 0} bad</span>
+          {checks.length} checks · <span className="dash-pulse__count-ok">{counts.ok ?? 0} ok</span> ·{' '}
+          <span className="dash-pulse__count-warn">{counts.warn ?? 0} warn</span> ·{' '}
+          <span className="dash-pulse__count-bad">{counts.bad ?? 0} bad</span>
         </span>
       </div>
       <div className="dash-pulse__list">

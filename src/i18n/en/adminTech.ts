@@ -320,7 +320,8 @@ const en: Record<keyof typeof fr, string> = {
   'adminTech.forecast.colPipeline': 'Pipeline',
   'adminTech.forecast.colRealised': 'Realised',
   'adminTech.forecast.colGoal': 'Goal',
-  'adminTech.forecast.categoriesHint': 'Committed: probability ≥ 70% · probable: 40–69% · pipeline: < 40% (weighted amounts).',
+  'adminTech.forecast.categoriesHint':
+    'Committed: probability ≥ 70% · probable: 40–69% · pipeline: < 40% (weighted amounts).',
   'adminTech.forecast.barsTitle': 'Realised, weighted and goal',
   'adminTech.forecast.legendRealised': 'Realised',
   'adminTech.forecast.legendWeighted': 'Weighted',

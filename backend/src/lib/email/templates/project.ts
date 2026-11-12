@@ -4,7 +4,21 @@ import type { EmailResult } from '../transport.js'
 /**
  * Envoie un email au client pour une mise à jour de projet.
  */
-export async function sendClientProjectUpdateEmail({ to, clientName, projectName, updateTitle, updateDescription, projectUrl }: { to: string; clientName: string; projectName: string; updateTitle: string; updateDescription: string; projectUrl: string }): Promise<EmailResult> {
+export async function sendClientProjectUpdateEmail({
+  to,
+  clientName,
+  projectName,
+  updateTitle,
+  updateDescription,
+  projectUrl,
+}: {
+  to: string
+  clientName: string
+  projectName: string
+  updateTitle: string
+  updateDescription: string
+  projectUrl: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -49,7 +63,21 @@ export async function sendClientProjectUpdateEmail({ to, clientName, projectName
 /**
  * Envoie un email de changement de statut projet.
  */
-export async function sendProjectStatusEmail({ to, recipientName, projectName, oldStatus, newStatus, projectId }: { to: string; recipientName: string; projectName: string; oldStatus: string; newStatus: string; projectId: string }): Promise<EmailResult> {
+export async function sendProjectStatusEmail({
+  to,
+  recipientName,
+  projectName,
+  oldStatus,
+  newStatus,
+  projectId,
+}: {
+  to: string
+  recipientName: string
+  projectName: string
+  oldStatus: string
+  newStatus: string
+  projectId: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -95,7 +123,17 @@ export async function sendProjectStatusEmail({ to, recipientName, projectName, o
 /**
  * Envoie un email de notification de démarrage de projet.
  */
-export async function sendProjectStartEmail({ to, name, projectName, portalUrl }: { to: string; name: string; projectName: string; portalUrl: string }): Promise<EmailResult> {
+export async function sendProjectStartEmail({
+  to,
+  name,
+  projectName,
+  portalUrl,
+}: {
+  to: string
+  name: string
+  projectName: string
+  portalUrl: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -134,7 +172,17 @@ export async function sendProjectStartEmail({ to, name, projectName, portalUrl }
 /**
  * Envoie un email de notification de projet terminé.
  */
-export async function sendProjectCompleteEmail({ to, name, projectName, portalUrl }: { to: string; name: string; projectName: string; portalUrl: string }): Promise<EmailResult> {
+export async function sendProjectCompleteEmail({
+  to,
+  name,
+  projectName,
+  portalUrl,
+}: {
+  to: string
+  name: string
+  projectName: string
+  portalUrl: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -176,7 +224,17 @@ export async function sendProjectCompleteEmail({ to, name, projectName, portalUr
 /**
  * Envoie un email de notification de nouveau livrable.
  */
-export async function sendDeliverableNotificationEmail({ to, name, projectName, deliverableName }: { to: string; name: string; projectName: string; deliverableName: string }): Promise<EmailResult> {
+export async function sendDeliverableNotificationEmail({
+  to,
+  name,
+  projectName,
+  deliverableName,
+}: {
+  to: string
+  name: string
+  projectName: string
+  deliverableName: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -388,7 +446,9 @@ export async function sendInternalMissionAssignedEmail({
         '',
         `Voir le projet : ${projectUrl}`,
         `— L'équipe ${appName}`,
-      ].filter(Boolean).join('\n'),
+      ]
+        .filter(Boolean)
+        .join('\n'),
       html: `
         <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;background:#0a0a0f;color:#e2e8f0;padding:32px;border-radius:12px;border:1px solid rgba(255,255,255,0.08)">
           <div style="margin-bottom:20px">

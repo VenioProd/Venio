@@ -243,13 +243,16 @@ const fr = {
   'intern.member.error.datesRequired': 'Les deux dates sont requises.',
   'intern.member.error.datesOrder': 'La fin doit suivre le début.',
   'intern.member.access.sendInvitation': 'Envoyer les identifiants par email maintenant',
-  'intern.member.access.explain': 'Un mot de passe temporaire est généré et envoyé : aucun mot de passe n’est saisi ici.',
-  'intern.member.access.sensitive': 'Ce statut donne des droits étendus. Vérifie bien l’email avant de créer le compte.',
+  'intern.member.access.explain':
+    'Un mot de passe temporaire est généré et envoyé : aucun mot de passe n’est saisi ici.',
+  'intern.member.access.sensitive':
+    'Ce statut donne des droits étendus. Vérifie bien l’email avant de créer le compte.',
   'intern.member.recap.status': 'Statut',
   'intern.member.recap.period': 'Période',
   'intern.member.done.title': '{name} a été ajouté.',
   'intern.member.done.invited': 'Les identifiants ont été envoyés à {email}.',
-  'intern.member.done.inviteFailed': 'Le compte est créé, mais l’email n’a pas pu partir. Renvoie les identifiants depuis la fiche.',
+  'intern.member.done.inviteFailed':
+    'Le compte est créé, mais l’email n’a pas pu partir. Renvoie les identifiants depuis la fiche.',
   'intern.member.done.noInvite': 'Le compte est créé sans envoi d’identifiants.',
 } as const
 

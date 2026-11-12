@@ -37,19 +37,11 @@ function toBuffer(rawBody: RawBodyLike): Buffer {
  * @param secret     webhookSecret de la source
  * @returns          "sha256=<hex>"
  */
-export function computeSignature(
-  timestamp: string | number,
-  rawBody: RawBodyLike,
-  secret: string
-): string {
+export function computeSignature(timestamp: string | number, rawBody: RawBodyLike, secret: string): string {
   if (!secret || typeof secret !== 'string') {
     throw new Error('Secret HMAC manquant')
   }
-  const payload = Buffer.concat([
-    Buffer.from(String(timestamp), 'utf8'),
-    Buffer.from('.', 'utf8'),
-    toBuffer(rawBody),
-  ])
+  const payload = Buffer.concat([Buffer.from(String(timestamp), 'utf8'), Buffer.from('.', 'utf8'), toBuffer(rawBody)])
   const digest = crypto.createHmac('sha256', secret).update(payload).digest('hex')
   return `${SIG_PREFIX}${digest}`
 }
@@ -67,7 +59,7 @@ export function verifySignature(
   timestamp: string | number,
   rawBody: RawBodyLike,
   secret: string,
-  providedSignature: unknown
+  providedSignature: unknown,
 ): boolean {
   if (!providedSignature || typeof providedSignature !== 'string') return false
   if (!secret || typeof secret !== 'string') return false

@@ -99,7 +99,8 @@ const fr = {
   'crmRich.bulk.assignConfirm': 'Assigner {count} lead(s) à {name}',
   'crmRich.bulk.statusConfirm': 'Passer {count} lead(s) en « {status} »',
   'crmRich.bulk.archiveConfirm': 'Archiver {count} lead(s) ? Ils quittent le pipeline mais restent restaurables.',
-  'crmRich.bulk.deleteConfirm': 'Supprimer définitivement {count} lead(s), leurs tâches et leurs échanges ? Préférez l’archivage.',
+  'crmRich.bulk.deleteConfirm':
+    'Supprimer définitivement {count} lead(s), leurs tâches et leurs échanges ? Préférez l’archivage.',
   'crmRich.bulk.confirmTitle': 'Confirmer l’action groupée',
   'crmRich.bulk.confirm': 'Confirmer',
   'crmRich.bulk.cancel': 'Annuler',

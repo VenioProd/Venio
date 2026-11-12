@@ -36,7 +36,9 @@ docs(ops): runbook enrichi avec healthcheck
 Scope optionnel mais recommandé (`crm`, `tickets`, `accounting`, `dev-workspace`, `ci`, `deps`...).
 
 ### Hook pre-commit (Husky + lint-staged)
+
 Au moment d'un `git commit`, sur les fichiers staged :
+
 - ESLint --fix
 - Prettier --write
 
@@ -87,6 +89,7 @@ Routes admin sensibles : protéger côté frontend (`<RequirePermission>`) ET c�
 ## Réviser une PR
 
 Checklist :
+
 - [ ] CI verte
 - [ ] Description claire (le **pourquoi** plus que le **quoi**)
 - [ ] Changements ciblés (une PR = un chantier)

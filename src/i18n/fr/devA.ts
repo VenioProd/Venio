@@ -71,7 +71,8 @@ const fr = {
   'devA.projects.showAll': 'Voir les {count} projets',
   'devA.projects.archive': 'Archiver',
   'devA.projects.restore': 'Restaurer',
-  'devA.projects.archiveConfirm': 'Archiver le projet « {name} » ? Il disparaîtra des listes et des compteurs ; ses tickets ne sont pas modifiés et vous pourrez le restaurer.',
+  'devA.projects.archiveConfirm':
+    'Archiver le projet « {name} » ? Il disparaîtra des listes et des compteurs ; ses tickets ne sont pas modifiés et vous pourrez le restaurer.',
   'devA.projects.restoreConfirm': 'Restaurer le projet « {name} » ? Il réapparaîtra dans les listes et les compteurs.',
   'devA.projects.archiveError': 'Impossible de modifier l’archivage du projet.',
   'devA.projects.showArchived': 'Afficher les archivés',
@@ -263,11 +264,11 @@ const fr = {
   'devA.projectModal.create': 'Créer le projet',
 
   'devA.ideas.title': 'Boîte à idées',
-  'devA.ideas.subtitle': 'Suggestions de features remontées par l\'équipe et les commerciaux.',
+  'devA.ideas.subtitle': "Suggestions de features remontées par l'équipe et les commerciaux.",
   'devA.ideas.form.title': 'Titre de la suggestion',
   'devA.ideas.form.titlePlaceholder': 'Ex. Signature électronique sur les devis',
   'devA.ideas.form.problem': 'Problème client',
-  'devA.ideas.form.problemPlaceholder': 'Qu\'est-ce qui coince pour le client, concrètement ?',
+  'devA.ideas.form.problemPlaceholder': "Qu'est-ce qui coince pour le client, concrètement ?",
   'devA.ideas.form.project': 'Plateforme / projet',
   'devA.ideas.form.noProject': 'Non précisé',
   'devA.ideas.form.lead': 'Lead lié',
@@ -275,7 +276,7 @@ const fr = {
   'devA.ideas.form.requester': 'Demandeur',
   'devA.ideas.form.requesterPlaceholder': 'Moi (ou nom du commercial)',
   'devA.ideas.form.amount': 'Impact commercial estimé (€)',
-  'devA.ideas.form.level': 'Niveau d\'impact',
+  'devA.ideas.form.level': "Niveau d'impact",
   'devA.ideas.form.notice': 'Le demandeur est notifié à chaque changement de statut.',
   'devA.ideas.form.submit': 'Envoyer la suggestion',
   'devA.ideas.form.sending': 'Envoi…',
@@ -318,7 +319,8 @@ const fr = {
   'devA.bulk.archive': 'Archiver',
   'devA.bulk.delete': 'Supprimer',
   'devA.bulk.confirmArchive': 'Archiver {count} issue(s) ?',
-  'devA.bulk.confirmDelete': 'Supprimer définitivement {count} issue(s), avec leurs commentaires ? Cette action est irréversible.',
+  'devA.bulk.confirmDelete':
+    'Supprimer définitivement {count} issue(s), avec leurs commentaires ? Cette action est irréversible.',
 } as const
 
 export default fr

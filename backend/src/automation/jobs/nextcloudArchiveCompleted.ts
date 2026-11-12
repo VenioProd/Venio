@@ -66,10 +66,7 @@ const definition: AutomationDefinition = {
     // Find projects that are completed and either archived or delivered > 30 days ago
     const projects = await Project.find({
       status: 'TERMINE',
-      $or: [
-        { isArchived: true },
-        { deliveredAt: { $lt: cutoffDate } },
-      ],
+      $or: [{ isArchived: true }, { deliveredAt: { $lt: cutoffDate } }],
     }).populate('client', 'name companyName')
 
     const basePath = process.env.NEXTCLOUD_BASE_PATH || '/Venio/Clients'

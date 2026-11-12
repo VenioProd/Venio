@@ -32,10 +32,7 @@ const definition: AutomationDefinition = {
     // Tasks not completed, with either no assignee or no due date
     const problemTasks = await Task.find({
       status: { $nin: ['TERMINE', 'VALIDE'] },
-      $or: [
-        { assignedTo: null },
-        { dueDate: null },
-      ],
+      $or: [{ assignedTo: null }, { dueDate: null }],
     }).populate('project', 'name')
 
     if (problemTasks.length === 0) {
@@ -43,7 +40,10 @@ const definition: AutomationDefinition = {
     }
 
     // Group by project
-    const byProject = new Map<string, { projectName: string; tasks: Array<{ title: string; missingAssignee: boolean; missingDeadline: boolean }> }>()
+    const byProject = new Map<
+      string,
+      { projectName: string; tasks: Array<{ title: string; missingAssignee: boolean; missingDeadline: boolean }> }
+    >()
 
     for (const task of problemTasks) {
       const projectRef = task.project as { _id: unknown; name?: string } | null
@@ -66,7 +66,7 @@ const definition: AutomationDefinition = {
       summaryLines.push(`${projectName} (${tasks.length} tâche(s)) :`)
       for (const t of tasks.slice(0, 5)) {
         const issues = []
-        if (t.missingAssignee) issues.push('pas d\'assigné')
+        if (t.missingAssignee) issues.push("pas d'assigné")
         if (t.missingDeadline) issues.push('pas de deadline')
         summaryLines.push(`  • "${t.title}" — ${issues.join(', ')}`)
       }

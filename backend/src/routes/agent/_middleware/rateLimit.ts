@@ -14,11 +14,7 @@ import { respondError } from './errors.js'
  *
  * Réponse 429 RATE_LIMITED + header `Retry-After: <secondes>`.
  */
-export default function agentRateLimit(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export default function agentRateLimit(req: Request, res: Response, next: NextFunction): void {
   const token = req.agentToken
   if (!token) {
     // Sans token attaché, on ne peut pas limiter par token — c'est un bug

@@ -9,10 +9,13 @@ const internalConversationMemberSchema = new mongoose.Schema<IInternalConversati
     muted: { type: Boolean, default: false },
     lastReadAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 internalConversationMemberSchema.index({ conversation: 1, user: 1 }, { unique: true })
 internalConversationMemberSchema.index({ user: 1, updatedAt: -1 })
 
-export default mongoose.model<IInternalConversationMember>('InternalConversationMember', internalConversationMemberSchema)
+export default mongoose.model<IInternalConversationMember>(
+  'InternalConversationMember',
+  internalConversationMemberSchema,
+)

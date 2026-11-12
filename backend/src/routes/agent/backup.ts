@@ -23,30 +23,26 @@ router.get('/backup', requireScope('read:backup'), (_req: Request, res: Response
   res.json({ items, total: items.length })
 })
 
-router.post(
-  '/backup/trigger',
-  requireScope('manage:backup'),
-  (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const result = createBackup()
-      if (!result.success) {
-        return respondError(
-          res,
-          500,
-          'BACKUP_FAILED',
-          result.error || 'Backup mongodump a échoué (vérifier que mongodump est installé)'
-        )
-      }
-      res.locals.audit = {
-        entityType: 'Backup',
-        summary: `Backup MongoDB déclenché → ${result.path}`,
-        after: { path: result.path },
-      }
-      res.status(201).json({ ok: true, path: result.path, createdAt: new Date().toISOString() })
-    } catch (err) {
-      next(err)
+router.post('/backup/trigger', requireScope('manage:backup'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = createBackup()
+    if (!result.success) {
+      return respondError(
+        res,
+        500,
+        'BACKUP_FAILED',
+        result.error || 'Backup mongodump a échoué (vérifier que mongodump est installé)',
+      )
     }
+    res.locals.audit = {
+      entityType: 'Backup',
+      summary: `Backup MongoDB déclenché → ${result.path}`,
+      after: { path: result.path },
+    }
+    res.status(201).json({ ok: true, path: result.path, createdAt: new Date().toISOString() })
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 export default router

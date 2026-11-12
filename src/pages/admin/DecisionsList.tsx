@@ -427,7 +427,11 @@ export default function DecisionsList() {
   const quickFilters = useMemo(() => {
     const limit = Date.now() - 30 * 24 * 60 * 60 * 1000
     return [
-      { id: 'decided', label: t('bulk.quick.decided'), ids: selectable.filter((d) => d.status !== 'PENDING').map((d) => d._id) },
+      {
+        id: 'decided',
+        label: t('bulk.quick.decided'),
+        ids: selectable.filter((d) => d.status !== 'PENDING').map((d) => d._id),
+      },
       {
         id: 'older30',
         label: t('bulk.quick.older30'),

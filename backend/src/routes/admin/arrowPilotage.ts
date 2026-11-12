@@ -34,20 +34,20 @@ const DEFAULT_ARROW_PILOTAGE = {
 }
 
 const SECTIONS = ['goals', 'scorecard', 'decisions', 'cadence'] as const
-type ArrowPilotageSection = typeof SECTIONS[number]
+type ArrowPilotageSection = (typeof SECTIONS)[number]
 
 async function getOrCreatePilotage() {
   return ArrowPilotage.findOneAndUpdate(
     { key: 'arrow' },
     { $setOnInsert: { key: 'arrow', ...DEFAULT_ARROW_PILOTAGE } },
-    { new: true, upsert: true }
+    { new: true, upsert: true },
   ).lean()
 }
 
 function sanitizeLines(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value
-    .map(line => typeof line === 'string' ? line.trim() : '')
+    .map((line) => (typeof line === 'string' ? line.trim() : ''))
     .filter(Boolean)
     .slice(0, 50)
 }
@@ -80,7 +80,7 @@ router.patch('/', async (req: Request, res: Response) => {
           updatedBy: (req.user as { id?: string } | undefined)?.id,
         },
       },
-      { new: true }
+      { new: true },
     ).lean()
 
     res.json(pilotage)

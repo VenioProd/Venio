@@ -85,18 +85,18 @@ Common scopes:
 Campaigns live under a dev project and hold the scenarios (`démarches`) that
 testers walk through. Everything the admin UI can do is reachable here:
 
-| Purpose                      | Endpoint                                                                                 |
+| Purpose | Endpoint |
 | ---------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------- |
-| List / open a campaign       | `GET                                                                                     | POST /beta/campaigns`, `PATCH /beta/campaigns/:id` |
-| Scenarios                    | `GET                                                                                     | POST /beta/campaigns/:id/scenarios`, `PATCH        | DELETE /beta/scenarios/:id` |
-| Invite a tester              | `POST /beta/campaigns/:id/testers`                                                       |
-| Revoke / renew a tester link | `POST /beta/testers/:id/revoke`, `POST /beta/testers/:id/rotate`                         |
-| Read feedback                | `GET /beta/campaigns/:id/runs`                                                           |
-| Cast your own verdict        | `POST /beta/scenarios/:id/runs`                                                          |
-| Triage / open an issue       | `PATCH /beta/runs/:id`, `POST /beta/runs/:id/promote`                                    |
-| Discussion thread            | `GET                                                                                     | POST /beta/runs/:id/comments`                      |
-| Screenshots                  | `POST /beta/runs/:id/attachments` (base64), `GET .../attachments/:attachmentId` (binary) |
-| Campaign report              | `GET /beta/campaigns/:id/report` (PDF)                                                   |
+| List / open a campaign | `GET                                                                                     | POST /beta/campaigns`, `PATCH /beta/campaigns/:id` |
+| Scenarios | `GET                                                                                     | POST /beta/campaigns/:id/scenarios`, `PATCH        | DELETE /beta/scenarios/:id` |
+| Invite a tester | `POST /beta/campaigns/:id/testers` |
+| Revoke / renew a tester link | `POST /beta/testers/:id/revoke`, `POST /beta/testers/:id/rotate` |
+| Read feedback | `GET /beta/campaigns/:id/runs` |
+| Cast your own verdict | `POST /beta/scenarios/:id/runs` |
+| Triage / open an issue | `PATCH /beta/runs/:id`, `POST /beta/runs/:id/promote` |
+| Discussion thread | `GET                                                                                     | POST /beta/runs/:id/comments` |
+| Screenshots | `POST /beta/runs/:id/attachments` (base64), `GET .../attachments/:attachmentId` (binary) |
+| Campaign report | `GET /beta/campaigns/:id/report` (PDF) |
 
 Notes that will save you a round trip:
 

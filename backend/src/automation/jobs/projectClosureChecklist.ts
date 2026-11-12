@@ -86,7 +86,7 @@ const definition: AutomationDefinition = {
     const recipientsNotified: string[] = []
 
     if (missing.length > 0) {
-      const message = `Éléments manquants pour clôturer "${project.name}" :\n${missing.map(m => `• ${m}`).join('\n')}\n\nÉléments OK : ${present.length > 0 ? present.join(', ') : 'aucun'}`
+      const message = `Éléments manquants pour clôturer "${project.name}" :\n${missing.map((m) => `• ${m}`).join('\n')}\n\nÉléments OK : ${present.length > 0 ? present.join(', ') : 'aucun'}`
 
       // Notify project manager
       const manager = project.assignedTo as { _id: unknown; name?: string } | null
@@ -102,7 +102,9 @@ const definition: AutomationDefinition = {
       }
 
       // Notify admins
-      const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: { $ne: false } }).select('_id')
+      const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: { $ne: false } }).select(
+        '_id',
+      )
       for (const admin of admins) {
         const adminId = (admin._id as object).toString()
         if (!recipientsNotified.includes(adminId)) {

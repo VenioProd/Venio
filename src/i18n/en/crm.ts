@@ -251,8 +251,7 @@ const en: Record<keyof typeof fr, string> = {
   'crm.settings.updateError': 'Error while updating',
   'crm.settings.cannotLoad': 'Unable to load settings',
   'crm.settings.backToCrm': 'Back to CRM',
-  'crm.settings.readOnly':
-    'Read-only: only administrators can change these settings, which apply to the whole team.',
+  'crm.settings.readOnly': 'Read-only: only administrators can change these settings, which apply to the whole team.',
   'crm.settings.title': 'CRM automation settings',
   'crm.settings.cat.scoring': 'Scoring',
   'crm.settings.cat.duplicates': 'Duplicate detection',

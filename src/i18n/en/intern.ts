@@ -246,12 +246,14 @@ const en: Record<keyof typeof fr, string> = {
   'intern.member.error.datesOrder': 'The end must follow the start.',
   'intern.member.access.sendInvitation': 'Email the credentials now',
   'intern.member.access.explain': 'A temporary password is generated and sent: none is typed here.',
-  'intern.member.access.sensitive': 'This status grants broad rights. Double-check the email before creating the account.',
+  'intern.member.access.sensitive':
+    'This status grants broad rights. Double-check the email before creating the account.',
   'intern.member.recap.status': 'Status',
   'intern.member.recap.period': 'Period',
   'intern.member.done.title': '{name} was added.',
   'intern.member.done.invited': 'Credentials were sent to {email}.',
-  'intern.member.done.inviteFailed': 'The account exists, but the email could not be sent. Resend the credentials from the profile.',
+  'intern.member.done.inviteFailed':
+    'The account exists, but the email could not be sent. Resend the credentials from the profile.',
   'intern.member.done.noInvite': 'The account was created without sending credentials.',
 }
 

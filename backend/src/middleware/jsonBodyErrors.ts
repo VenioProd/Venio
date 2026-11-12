@@ -10,12 +10,7 @@ type JsonBodyParserError = Error & {
  * used by human and admin clients. Other errors keep flowing to the global
  * handler so its production-safe 5xx policy remains unchanged.
  */
-export function jsonBodyErrorHandler(
-  err: JsonBodyParserError,
-  _req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
+export function jsonBodyErrorHandler(err: JsonBodyParserError, _req: Request, res: Response, next: NextFunction): void {
   if (err.type === 'entity.parse.failed') {
     res.status(400).json({ error: 'JSON malformé', code: 'MALFORMED_JSON' })
     return

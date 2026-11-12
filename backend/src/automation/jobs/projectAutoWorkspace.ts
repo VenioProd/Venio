@@ -18,7 +18,7 @@ const DEFAULT_SECTIONS = [
 
 const definition: AutomationDefinition = {
   key: 'project.auto_create_full_workspace',
-  title: 'Création automatique de l\'espace projet',
+  title: "Création automatique de l'espace projet",
   domain: 'projects',
   triggerType: 'event',
   channels: ['in_app', 'system_log'],
@@ -67,7 +67,7 @@ const definition: AutomationDefinition = {
         order: s.order,
         isVisible: true,
         createdBy: ctx.meta?.actorId || null,
-      }))
+      })),
     )
 
     const actionsExecuted = [`workspace_created:project:${projectId}:${createdSections.length}_sections`]

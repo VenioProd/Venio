@@ -25,27 +25,34 @@ const requireDeleteConfirmation = (req: Request, res: Response, next: NextFuncti
 
 router.get('/overview', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req, res, next) => {
   try {
-    const ids = await (req.user!.role === 'COMMERCIAL' ? readableProjectIds(req.user!) : accessibleProjectIds(req.user!))
+    const ids = await (req.user!.role === 'COMMERCIAL'
+      ? readableProjectIds(req.user!)
+      : accessibleProjectIds(req.user!))
     res.json(await buildPortfolioOverview(ids))
   } catch (err) {
     next(err)
   }
 })
 
-router.post('/bulk', requirePermission(PERMISSIONS.EDIT_PROJECTS), requireDeleteConfirmation, async (req, res, next) => {
-  try {
-    const parsed = parseBulkRequest(req.body)
-    if ('error' in parsed) return res.status(400).json({ error: parsed.error })
-    const results = await applyBulk(parsed.request, await accessibleProjectIds(req.user!))
-    return res.json({
-      results,
-      succeeded: results.filter((r) => r.ok).length,
-      failed: results.filter((r) => !r.ok).length,
-    })
-  } catch (err) {
-    return next(err)
-  }
-})
+router.post(
+  '/bulk',
+  requirePermission(PERMISSIONS.EDIT_PROJECTS),
+  requireDeleteConfirmation,
+  async (req, res, next) => {
+    try {
+      const parsed = parseBulkRequest(req.body)
+      if ('error' in parsed) return res.status(400).json({ error: parsed.error })
+      const results = await applyBulk(parsed.request, await accessibleProjectIds(req.user!))
+      return res.json({
+        results,
+        succeeded: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+      })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 router.get('/views', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req, res, next) => {
   try {

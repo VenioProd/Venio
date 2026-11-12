@@ -23,10 +23,7 @@ async function main() {
   await mongoose.connect(uri)
   logger.info('Connected to Mongo, running migration')
 
-  const res = await User.updateMany(
-    { plainPassword: { $exists: true } },
-    { $unset: { plainPassword: '' } },
-  )
+  const res = await User.updateMany({ plainPassword: { $exists: true } }, { $unset: { plainPassword: '' } })
   logger.info({ modified: res.modifiedCount }, 'Removed plainPassword field')
 
   await mongoose.disconnect()

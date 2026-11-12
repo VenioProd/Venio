@@ -142,57 +142,78 @@ router.get('/projects', requireScope('read:projects'), async (req: Request, res:
 // ── Vue d'ensemble, actions groupées, vues partagées ───────────────────────
 // Déclarées avant `/projects/:id` pour ne pas être prises pour un identifiant.
 
-router.get('/projects/overview', requireScope('read:projects'), async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json(await buildPortfolioOverview(null))
-  } catch (err) {
-    next(err)
-  }
-})
-
-router.post('/projects/bulk', requireScope('write:projects'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const parsed = parseBulkRequest(req.body)
-    if ('error' in parsed) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
-    const results = await applyBulk(parsed.request, null)
-    res.locals.audit = {
-      entityType: 'Project',
-      entityId: parsed.request.ids.join(','),
-      entityRef: `${parsed.request.ids.length} projet(s)`,
-      summary: `Action groupée « ${parsed.request.action} » sur ${parsed.request.ids.length} projet(s)`,
-      after: { action: parsed.request.action, value: parsed.request.value ?? null, results },
+router.get(
+  '/projects/overview',
+  requireScope('read:projects'),
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      res.json(await buildPortfolioOverview(null))
+    } catch (err) {
+      next(err)
     }
-    res.json({
-      results,
-      succeeded: results.filter((r) => r.ok).length,
-      failed: results.filter((r) => !r.ok).length,
-    })
-  } catch (err) {
-    next(err)
-  }
-})
+  },
+)
+
+router.post(
+  '/projects/bulk',
+  requireScope('write:projects'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsed = parseBulkRequest(req.body)
+      if ('error' in parsed) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
+      const results = await applyBulk(parsed.request, null)
+      res.locals.audit = {
+        entityType: 'Project',
+        entityId: parsed.request.ids.join(','),
+        entityRef: `${parsed.request.ids.length} projet(s)`,
+        summary: `Action groupée « ${parsed.request.action} » sur ${parsed.request.ids.length} projet(s)`,
+        after: { action: parsed.request.action, value: parsed.request.value ?? null, results },
+      }
+      res.json({
+        results,
+        succeeded: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+      })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 // Les vues personnelles des admins restent privées : l'API agent ne voit et ne gère que les vues partagées.
-router.get('/projects/views', requireScope('read:projects'), async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json({ items: await ProjectView.find({ shared: true }).sort({ createdAt: 1 }).lean() })
-  } catch (err) {
-    next(err)
-  }
-})
+router.get(
+  '/projects/views',
+  requireScope('read:projects'),
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      res.json({ items: await ProjectView.find({ shared: true }).sort({ createdAt: 1 }).lean() })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
-router.post('/projects/views', requireScope('write:projects'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const name = sanitizeViewName(req.body?.name)
-    if (!name) return respondError(res, 400, 'VALIDATION_ERROR', 'name requis (60 caractères max)')
-    const owner = await getDefaultAdminId(res)
-    if (!owner) return
-    const view = await ProjectView.create({ owner, name, shared: true, filters: sanitizeViewFilters(req.body?.filters) })
-    res.status(201).json(view.toObject())
-  } catch (err) {
-    next(err)
-  }
-})
+router.post(
+  '/projects/views',
+  requireScope('write:projects'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const name = sanitizeViewName(req.body?.name)
+      if (!name) return respondError(res, 400, 'VALIDATION_ERROR', 'name requis (60 caractères max)')
+      const owner = await getDefaultAdminId(res)
+      if (!owner) return
+      const view = await ProjectView.create({
+        owner,
+        name,
+        shared: true,
+        filters: sanitizeViewFilters(req.body?.filters),
+      })
+      res.status(201).json(view.toObject())
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 router.patch(
   '/projects/views/:id',

@@ -38,9 +38,7 @@ const definition: AutomationDefinition = {
     for (const criterion of criteria) {
       const indicators = criterion.indicators || []
       const total = indicators.length
-      const completed = indicators.filter(
-        (ind: { status: string }) => ind.status === 'FAIT'
-      ).length
+      const completed = indicators.filter((ind: { status: string }) => ind.status === 'FAIT').length
 
       totalIndicators += total
       totalCompleted += completed
@@ -50,13 +48,10 @@ const definition: AutomationDefinition = {
       const filled = Math.round((pct / 100) * barLength)
       const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled)
 
-      progressLines.push(
-        `Critère ${criterion.number} : ${bar} ${completed}/${total} (${pct}%)`
-      )
+      progressLines.push(`Critère ${criterion.number} : ${bar} ${completed}/${total} (${pct}%)`)
     }
 
-    const globalPct =
-      totalIndicators > 0 ? Math.round((totalCompleted / totalIndicators) * 100) : 0
+    const globalPct = totalIndicators > 0 ? Math.round((totalCompleted / totalIndicators) * 100) : 0
 
     const message = [
       `Progression globale : ${totalCompleted}/${totalIndicators} (${globalPct}%)`,

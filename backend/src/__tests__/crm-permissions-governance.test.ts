@@ -108,20 +108,41 @@ describe('réglages globaux', () => {
     as('super')
     const ok = await request(app)
       .patch('/api/admin/crm/settings')
-      .send({ weeklyReportRecipients: ['Direction@Venio.paris', 'partenaire@exemple.org', 'c1@test.local', 'c1@test.local'] })
+      .send({
+        weeklyReportRecipients: ['Direction@Venio.paris', 'partenaire@exemple.org', 'c1@test.local', 'c1@test.local'],
+      })
       .expect(200)
-    expect(ok.body.settings.weeklyReportRecipients).toEqual(['direction@venio.paris', 'partenaire@exemple.org', 'c1@test.local'])
+    expect(ok.body.settings.weeklyReportRecipients).toEqual([
+      'direction@venio.paris',
+      'partenaire@exemple.org',
+      'c1@test.local',
+    ])
 
-    const refused: unknown[] = [['inconnu@ailleurs.com'], ['gone@test.local'], ['client@test.local'], ['pas-une-adresse'], 'x@venio.paris']
+    const refused: unknown[] = [
+      ['inconnu@ailleurs.com'],
+      ['gone@test.local'],
+      ['client@test.local'],
+      ['pas-une-adresse'],
+      'x@venio.paris',
+    ]
     for (const bad of refused) {
       await request(app).patch('/api/admin/crm/settings').send({ weeklyReportRecipients: bad }).expect(400)
     }
     // Contournement par chemin pointé refusé.
-    await request(app).patch('/api/admin/crm/settings').send({ 'weeklyReportRecipients.0': 'inconnu@ailleurs.com' }).expect(400)
+    await request(app)
+      .patch('/api/admin/crm/settings')
+      .send({ 'weeklyReportRecipients.0': 'inconnu@ailleurs.com' })
+      .expect(400)
 
     process.env.CRM_REPORT_ALLOWED_DOMAINS = 'artosera.fr'
-    await request(app).patch('/api/admin/crm/settings').send({ weeklyReportRecipients: ['x@venio.paris'] }).expect(400)
-    await request(app).patch('/api/admin/crm/settings').send({ weeklyReportRecipients: ['x@artosera.fr'] }).expect(200)
+    await request(app)
+      .patch('/api/admin/crm/settings')
+      .send({ weeklyReportRecipients: ['x@venio.paris'] })
+      .expect(400)
+    await request(app)
+      .patch('/api/admin/crm/settings')
+      .send({ weeklyReportRecipients: ['x@artosera.fr'] })
+      .expect(200)
 
     const { default: CrmSettings } = await import('../models/CrmSettings.js')
     expect((await CrmSettings.getSettings()).weeklyReportRecipients).toEqual(['x@artosera.fr'])
@@ -132,7 +153,10 @@ describe('réglages globaux', () => {
     for (const bad of [ids.client, ids.gone, randomId(), 'pas-un-id']) {
       await request(app).patch('/api/admin/crm/settings').send({ escalationManagerId: bad }).expect(400)
     }
-    const ok = await request(app).patch('/api/admin/crm/settings').send({ escalationManagerId: ids.manager }).expect(200)
+    const ok = await request(app)
+      .patch('/api/admin/crm/settings')
+      .send({ escalationManagerId: ids.manager })
+      .expect(200)
     expect(String(ok.body.settings.escalationManagerId)).toBe(ids.manager)
     const cleared = await request(app).patch('/api/admin/crm/settings').send({ escalationManagerId: '' }).expect(200)
     expect(cleared.body.settings.escalationManagerId).toBeNull()
@@ -162,11 +186,15 @@ describe('règles et exécutions', () => {
     const base = '/api/admin/crm/rules/runs/' + randomId() + '/'
     as('c1')
     for (const verb of ['approve', 'reject', 'retry']) {
-      await request(app).post(base + verb).expect(403)
+      await request(app)
+        .post(base + verb)
+        .expect(403)
     }
     as('super')
     // Autorisé : l'exécution n'existe pas, d'où 409 et non 403.
-    await request(app).post(base + 'approve').expect(409)
+    await request(app)
+      .post(base + 'approve')
+      .expect(409)
   })
 
   it('le journal des exécutions suit le périmètre de lecture', async () => {
@@ -185,7 +213,9 @@ describe('règles et exécutions', () => {
     const scoped = await request(app).get('/api/admin/crm/rules/runs').expect(200)
     expect(scoped.body.total).toBe(1)
     expect(String(scoped.body.items[0].lead)).toBe(String(mine._id))
-    const forced = await request(app).get('/api/admin/crm/rules/runs?lead=' + String(other._id)).expect(200)
+    const forced = await request(app)
+      .get('/api/admin/crm/rules/runs?lead=' + String(other._id))
+      .expect(200)
     expect(forced.body.total).toBe(0)
 
     as('c1') // le commercial lit tout le CRM
@@ -225,7 +255,9 @@ describe('attribution d’un lead', () => {
     const { default: Lead } = await import('../models/Lead.js')
     const lead = await Lead.create({ company: 'L', assignedTo: ids.c1, createdBy: ids.c1 })
     const bulk = (userId: string) =>
-      request(app).post('/api/admin/crm/leads/bulk').send({ ids: [String(lead._id)], action: 'assign', payload: { userId } })
+      request(app)
+        .post('/api/admin/crm/leads/bulk')
+        .send({ ids: [String(lead._id)], action: 'assign', payload: { userId } })
     as('super')
     for (const bad of [ids.client, ids.viewer, ids.cpt, ids.gone, randomId()]) {
       await bulk(bad).expect(400)

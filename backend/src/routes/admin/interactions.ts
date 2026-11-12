@@ -239,7 +239,9 @@ router.post('/:subjectType/:subjectId/email', async (req: Request, res: Response
     if (subject.type === 'LEAD') {
       const lead = await Lead.findById(subject.id).select('doNotContact')
       const suppressed = await suppressedAmong(valid.map((recipient) => recipient.email))
-      const blockedEmails = valid.map((recipient) => normalizeEmail(recipient.email)).filter((email) => suppressed.has(email))
+      const blockedEmails = valid
+        .map((recipient) => normalizeEmail(recipient.email))
+        .filter((email) => suppressed.has(email))
       if (lead?.doNotContact || blockedEmails.length > 0) {
         const via = lead?.doNotContact ? 'LEAD' : 'SUPPRESSION_LIST'
         await logLeadActivity(

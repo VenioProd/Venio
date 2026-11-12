@@ -128,7 +128,9 @@ export async function authenticateSession(
   }).lean()
   if (!session) return null
 
-  const user = await User.findById(session.userId).select('role status isActive email name sessionVersion crmEntities').lean()
+  const user = await User.findById(session.userId)
+    .select('role status isActive email name sessionVersion crmEntities')
+    .lean()
   if (
     !user ||
     !user.isActive ||

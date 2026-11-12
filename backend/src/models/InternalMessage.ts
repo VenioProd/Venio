@@ -8,7 +8,7 @@ const attachmentSchema = new mongoose.Schema(
     mimeType: { type: String, required: true },
     size: { type: Number, required: true, min: 0 },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const reactionSchema = new mongoose.Schema(
@@ -16,7 +16,7 @@ const reactionSchema = new mongoose.Schema(
     emoji: { type: String, required: true, trim: true },
     users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
-  { _id: false }
+  { _id: false },
 )
 
 const internalMessageSchema = new mongoose.Schema<IInternalMessage>(
@@ -32,7 +32,7 @@ const internalMessageSchema = new mongoose.Schema<IInternalMessage>(
     deletedAt: { type: Date, default: null },
     deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 internalMessageSchema.index({ conversation: 1, createdAt: -1 })

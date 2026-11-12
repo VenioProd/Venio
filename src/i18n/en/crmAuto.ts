@@ -113,10 +113,10 @@ const en: Record<keyof typeof fr, string> = {
   'crmAuto.kpi.pendingHint': 'emails waiting',
   'crmAuto.kpi.nothingPending': 'nothing waiting',
   'crmAuto.retry': 'Try again',
-  'crmAuto.pendingNotice': '{count, plural, one {# email is} other {# emails are}} waiting for approval before sending.',
+  'crmAuto.pendingNotice':
+    '{count, plural, one {# email is} other {# emails are}} waiting for approval before sending.',
   'crmAuto.review': 'Review',
-  'crmAuto.readOnly':
-    'Read-only: only administrators can create, edit, enable or delete rules and approve their runs.',
+  'crmAuto.readOnly': 'Read-only: only administrators can create, edit, enable or delete rules and approve their runs.',
   'crmAuto.adminOnly': 'Administrators only',
   'crmAuto.newRule': '+ New rule',
   'crmAuto.loadingRules': 'Loading rules…',
@@ -258,7 +258,8 @@ const en: Record<keyof typeof fr, string> = {
   'crmAuto.builder.humanApproval': 'Human approval',
   'crmAuto.builder.autoSend': 'Automatic sending',
   'crmAuto.builder.builtinTitle': 'Built-in protections',
-  'crmAuto.builder.builtinBody': 'Loop protection: a rule action does not trigger the same rule on the same lead. Chain depth limited to 3. Idempotent per event. Log kept for 90 days.',
+  'crmAuto.builder.builtinBody':
+    'Loop protection: a rule action does not trigger the same rule on the same lead. Chain depth limited to 3. Idempotent per event. Log kept for 90 days.',
   'crmAuto.builder.activation': 'Activation',
   'crmAuto.builder.keepStatus': 'Keep current status',
   'crmAuto.builder.draft': 'Draft',

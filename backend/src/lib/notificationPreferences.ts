@@ -36,7 +36,11 @@ export async function getPreferences(userId: string): Promise<Record<Notificatio
   return merged
 }
 
-export async function shouldNotify(userId: string, type: NotificationType, channel: NotificationChannel): Promise<boolean> {
+export async function shouldNotify(
+  userId: string,
+  type: NotificationType,
+  channel: NotificationChannel,
+): Promise<boolean> {
   try {
     const prefs = await getPreferences(userId)
     return prefs[type]?.[channel] !== false
@@ -48,7 +52,7 @@ export async function shouldNotify(userId: string, type: NotificationType, chann
 
 export async function setPreferences(
   userId: string,
-  next: Partial<Record<NotificationType, Partial<ChannelPreferences>>>
+  next: Partial<Record<NotificationType, Partial<ChannelPreferences>>>,
 ): Promise<Record<NotificationType, ChannelPreferences>> {
   // Charge l'existant et merge
   const current = await getPreferences(userId)
@@ -60,7 +64,7 @@ export async function setPreferences(
   await NotificationPreferences.findOneAndUpdate(
     { user: userId },
     { user: userId, prefs: merged },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, new: true, setDefaultsOnInsert: true },
   )
 
   invalidatePreferencesCache(userId)

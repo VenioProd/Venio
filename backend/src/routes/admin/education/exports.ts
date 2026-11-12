@@ -1,5 +1,10 @@
 import express, { type NextFunction, type Request, type Response } from 'express'
-import { EducationAssignment, EducationClass, EducationSession, EducationStudent } from '../../../models/education/index.js'
+import {
+  EducationAssignment,
+  EducationClass,
+  EducationSession,
+  EducationStudent,
+} from '../../../models/education/index.js'
 import { buildCsv } from '../../../lib/accounting/csvExport.js'
 import { sensitiveAction } from '../../../lib/security/sensitiveActions.js'
 import { ownerFilter, validId } from './helpers.js'
@@ -93,7 +98,9 @@ router.get(
         lateCount: student.lateCount,
         averageGrade: student.averageGrade ?? null,
       }))
-      const studentReferences = new Map(students.map((student, index) => [student._id.toString(), `student-${index + 1}`]))
+      const studentReferences = new Map(
+        students.map((student, index) => [student._id.toString(), `student-${index + 1}`]),
+      )
       const sessionLabels = new Map(
         sessions.map((session) => [session._id.toString(), { title: session.title, date: asIso(session.date) }]),
       )
@@ -122,7 +129,10 @@ router.get(
         recap: session.recap,
         tags: stringList(session.tags),
         attendance: session.attendance
-          .map((entry) => ({ studentReference: studentReferences.get(entry.studentId.toString()) || null, state: entry.state }))
+          .map((entry) => ({
+            studentReference: studentReferences.get(entry.studentId.toString()) || null,
+            state: entry.state,
+          }))
           .filter((entry) => entry.studentReference !== null),
       }))
       const safeAssignments = assignments.map((assignment) => ({

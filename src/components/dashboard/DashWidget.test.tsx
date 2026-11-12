@@ -11,26 +11,40 @@ describe('DashWidget', () => {
   })
 
   it('affiche le subtitle quand fourni', () => {
-    render(<DashWidget title="A" subtitle="sub">x</DashWidget>)
+    render(
+      <DashWidget title="A" subtitle="sub">
+        x
+      </DashWidget>,
+    )
     expect(screen.getByText('sub')).toBeTruthy()
   })
 
   it('affiche un état empty quand prop empty=true', () => {
-    render(<DashWidget title="A" empty emptyLabel="rien">x</DashWidget>)
+    render(
+      <DashWidget title="A" empty emptyLabel="rien">
+        x
+      </DashWidget>,
+    )
     expect(screen.getByText('rien')).toBeTruthy()
     expect(screen.queryByText('x')).toBeNull()
   })
 
   it('affiche un état erreur quand error fourni', () => {
-    render(<DashWidget title="A" error="boom">x</DashWidget>)
+    render(
+      <DashWidget title="A" error="boom">
+        x
+      </DashWidget>,
+    )
     expect(screen.getByText('boom')).toBeTruthy()
   })
 
   it('affiche un lien action quand fourni', () => {
     render(
       <MemoryRouter>
-        <DashWidget title="A" action={{ label: 'Voir', to: '/path' }}>x</DashWidget>
-      </MemoryRouter>
+        <DashWidget title="A" action={{ label: 'Voir', to: '/path' }}>
+          x
+        </DashWidget>
+      </MemoryRouter>,
     )
     const link = screen.getByText('Voir')
     expect(link.getAttribute('href')).toBe('/path')

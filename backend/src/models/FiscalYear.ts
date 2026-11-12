@@ -21,7 +21,7 @@ const fiscalYearSchema = new mongoose.Schema<IFiscalYear, FiscalYearModel>(
     closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     openingEntryId: { type: mongoose.Schema.Types.ObjectId, ref: 'AccountingEntry', default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 fiscalYearSchema.index({ startDate: 1, endDate: 1 })

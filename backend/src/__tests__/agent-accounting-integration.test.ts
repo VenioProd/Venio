@@ -3,12 +3,7 @@ import request from 'supertest'
 import type { Express } from 'express'
 import bcrypt from 'bcryptjs'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
 import AccountingEntry from '../models/AccountingEntry.js'
 import AccountingLine from '../models/AccountingLine.js'
@@ -199,9 +194,7 @@ describe('Agent Accounting / entries', () => {
     const { plainSecret } = await createAgentTokenInDb(['read:accounting'])
 
     // List
-    const all = await request(app)
-      .get('/api/v1/agent/accounting/entries')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const all = await request(app).get('/api/v1/agent/accounting/entries').set('Authorization', `Bearer ${plainSecret}`)
     expect(all.body.total).toBe(2)
 
     // Filter status

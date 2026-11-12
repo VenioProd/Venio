@@ -65,7 +65,12 @@ describe('Fiches projets — droits', () => {
       await request(app).get(`${base}/arrow`).expect(200)
     }
     for (const role of ['CLIENT', 'COMMERCIAL_EXTERNE', 'AGENT']) {
-      state.user = { id: new mongoose.Types.ObjectId().toString(), role, email: 'x@test.local', name: 'X' } as Request['user']
+      state.user = {
+        id: new mongoose.Types.ObjectId().toString(),
+        role,
+        email: 'x@test.local',
+        name: 'X',
+      } as Request['user']
       await request(app).get(base).expect(403)
       await request(app).get(`${base}/arrow`).expect(403)
     }
@@ -86,7 +91,10 @@ describe('Fiches projets — droits', () => {
     }
     for (const role of ['SUPER_ADMIN', 'ADMIN']) {
       await as(role)
-      await request(app).patch(`${base}/${sheet._id}`).send({ whatWeDo: `par ${role}` }).expect(200)
+      await request(app)
+        .patch(`${base}/${sheet._id}`)
+        .send({ whatWeDo: `par ${role}` })
+        .expect(200)
     }
     const meta = await request(app).get(`${base}/meta`).expect(200)
     expect(meta.body.canEdit).toBe(true)
@@ -98,7 +106,11 @@ describe('Fiches projets — droits', () => {
   })
 
   it('ne montre le lien vers le dossier filiale qu’au SUPER_ADMIN', async () => {
-    const subsidiary = await Subsidiary.create({ name: 'Arrow', slug: 'arrow', createdBy: new mongoose.Types.ObjectId() })
+    const subsidiary = await Subsidiary.create({
+      name: 'Arrow',
+      slug: 'arrow',
+      createdBy: new mongoose.Types.ObjectId(),
+    })
     await seedSheet({ subsidiary: subsidiary._id })
     const sa = await request(app).get(`${base}/arrow`).expect(200)
     expect(sa.body.sheet.subsidiaryHref).toBe(`/admin/filiales/${subsidiary._id}`)
@@ -115,7 +127,10 @@ describe('Fiches projets — écriture, historique, audit', () => {
     const res = await request(app).post(base).send({ name: 'Arrow', oneLiner: 'Doublon de nom' }).expect(201)
     expect(res.body.sheet.slug).toBe('arrow-2')
     expect(res.body.sheet.reviewStatus).toBe('TO_COMPLETE')
-    expect(res.body.sheet.history[0]).toMatchObject({ summary: 'Création de la fiche', by: { name: 'User SUPER_ADMIN' } })
+    expect(res.body.sheet.history[0]).toMatchObject({
+      summary: 'Création de la fiche',
+      by: { name: 'User SUPER_ADMIN' },
+    })
     const audit = await AuditLog.findOne({ action: 'PROJECT_SHEET_CREATE' }).lean()
     expect(audit?.metadata).toMatchObject({ entityType: 'ProjectSheet', entityRef: 'arrow-2' })
     await request(app).post(base).send({}).expect(400)
@@ -224,7 +239,12 @@ describe('Fiches projets — recherche plein texte', () => {
     const sheet = await seedSheet()
     await request(app)
       .post(`${base}/${sheet._id}/demo-accesses`)
-      .send({ url: 'https://demo.arrow.test', role: 'Formateur', username: 'demo-formateur@arrow.test', password: 'Secret-Demo-42' })
+      .send({
+        url: 'https://demo.arrow.test',
+        role: 'Formateur',
+        username: 'demo-formateur@arrow.test',
+        password: 'Secret-Demo-42',
+      })
       .expect(201)
     for (const q of ['demo-formateur', 'Secret-Demo-42', 'demo.arrow.test', 'Formateur']) {
       const res = await request(app).get(base).query({ q }).expect(200)
@@ -243,7 +263,13 @@ describe('Fiches projets — accès démo', () => {
   async function addAccess(sheetId: unknown, password = 'Demo-Pass-123') {
     const res = await request(app)
       .post(`${base}/${sheetId}/demo-accesses`)
-      .send({ url: 'https://demo.arrow.test', role: 'Directeur', username: 'directeur@demo.test', password, notes: 'Jeu fictif' })
+      .send({
+        url: 'https://demo.arrow.test',
+        role: 'Directeur',
+        username: 'directeur@demo.test',
+        password,
+        notes: 'Jeu fictif',
+      })
       .expect(201)
     return res.body.demoAccesses.at(-1)._id as string
   }
@@ -294,7 +320,10 @@ describe('Fiches projets — accès démo', () => {
     const sheet = await seedSheet()
     const first = await addAccess(sheet._id, 'Premier-1')
     const second = await addAccess(sheet._id, 'Second-2')
-    await request(app).patch(`${base}/${sheet._id}/demo-accesses/${second}`).send({ password: '', notes: 'x' }).expect(200)
+    await request(app)
+      .patch(`${base}/${sheet._id}/demo-accesses/${second}`)
+      .send({ password: '', notes: 'x' })
+      .expect(200)
     await request(app).delete(`${base}/${sheet._id}/demo-accesses/${second}`).expect(200)
     await request(app).patch(`${base}/${sheet._id}`).send({ whatWeDo: 'Texte' }).expect(200)
     const reveal = await request(app).post(`${base}/${sheet._id}/demo-accesses/${first}/reveal`).expect(200)
@@ -311,7 +340,12 @@ describe('Fiches projets — accès démo', () => {
       expect(res.headers['cache-control']).toBe('no-store')
     }
     for (const role of ['CLIENT', 'COMMERCIAL_EXTERNE', 'AGENT']) {
-      state.user = { id: new mongoose.Types.ObjectId().toString(), role, email: 'x@test.local', name: 'X' } as Request['user']
+      state.user = {
+        id: new mongoose.Types.ObjectId().toString(),
+        role,
+        email: 'x@test.local',
+        name: 'X',
+      } as Request['user']
       await request(app).post(`${base}/${sheet._id}/demo-accesses/${accessId}/reveal`).expect(403)
     }
     const reveals = await AuditLog.find({ action: 'PROJECT_SHEET_DEMO_ACCESS_REVEAL' }).lean()
@@ -327,9 +361,16 @@ describe('Fiches projets — accès démo', () => {
     const sheet = await seedSheet()
     await as('ADMIN')
     const accessId = await addAccess(sheet._id)
-    await request(app).patch(`${base}/${sheet._id}/demo-accesses/${accessId}`).send({ password: 'Nouveau-9' }).expect(200)
+    await request(app)
+      .patch(`${base}/${sheet._id}/demo-accesses/${accessId}`)
+      .send({ password: 'Nouveau-9' })
+      .expect(200)
     await request(app).delete(`${base}/${sheet._id}/demo-accesses/${accessId}`).expect(200)
-    const actions = (await AuditLog.find({ action: /DEMO_ACCESS/ }).sort({ createdAt: 1 }).lean()).map((a) => a.action)
+    const actions = (
+      await AuditLog.find({ action: /DEMO_ACCESS/ })
+        .sort({ createdAt: 1 })
+        .lean()
+    ).map((a) => a.action)
     expect(actions).toEqual([
       'PROJECT_SHEET_DEMO_ACCESS_CREATE',
       'PROJECT_SHEET_DEMO_ACCESS_UPDATE',
@@ -351,6 +392,9 @@ describe('Fiches projets — accès démo', () => {
     const sheet = await seedSheet()
     await request(app).post(`${base}/${sheet._id}/demo-accesses`).send({ notes: 'rien' }).expect(400)
     await request(app).post(`${base}/${sheet._id}/demo-accesses`).send({ role: 'x', password: 123 }).expect(400)
-    await request(app).post(`${base}/${sheet._id}/demo-accesses`).send({ role: 'x', url: 'javascript:alert(1)' }).expect(400)
+    await request(app)
+      .post(`${base}/${sheet._id}/demo-accesses`)
+      .send({ role: 'x', url: 'javascript:alert(1)' })
+      .expect(400)
   })
 })

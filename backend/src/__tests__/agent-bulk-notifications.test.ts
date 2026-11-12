@@ -20,7 +20,9 @@ afterAll(async () => {
 })
 beforeEach(async () => {
   await clearDb()
-  adminId = String((await User.create({ email: 'a@v.test', passwordHash: 'x', name: 'Admin', role: 'SUPER_ADMIN' }))._id)
+  adminId = String(
+    (await User.create({ email: 'a@v.test', passwordHash: 'x', name: 'Admin', role: 'SUPER_ADMIN' }))._id,
+  )
 })
 
 const post = (secret: string, url: string, body: unknown, key = uniqueIdempotencyKey()) =>

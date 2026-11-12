@@ -1,6 +1,7 @@
 const fr = {
   'projectSheets.list.title': 'Ce que fait chaque projet du groupe',
-  'projectSheets.list.subtitle': 'Une fiche par projet : l’offre, les cibles, le positionnement, l’équipe et les accès de démonstration. Un réceptacle de connaissance commun à toute l’équipe.',
+  'projectSheets.list.subtitle':
+    'Une fiche par projet : l’offre, les cibles, le positionnement, l’équipe et les accès de démonstration. Un réceptacle de connaissance commun à toute l’équipe.',
   'projectSheets.list.searchLabel': 'Rechercher dans les fiches',
   'projectSheets.list.searchPlaceholder': 'Un projet, une offre, un mot-clé…',
   'projectSheets.list.showArchived': 'Afficher les archivées',
@@ -93,7 +94,8 @@ const fr = {
   'projectSheets.edit.preview': 'Aperçu',
   'projectSheets.edit.previewEmpty': 'Rien à afficher pour le moment.',
   'projectSheets.edit.secretWarning': 'Ne saisissez jamais de secret (mot de passe, clé, jeton) dans une fiche.',
-  'projectSheets.edit.markdownHelp': 'Markdown simple : titres, listes, gras, italique, tableaux, liens http(s). Le HTML saisi est affiché comme du texte.',
+  'projectSheets.edit.markdownHelp':
+    'Markdown simple : titres, listes, gras, italique, tableaux, liens http(s). Le HTML saisi est affiché comme du texte.',
   'projectSheets.edit.conflict': 'La fiche a été modifiée entre-temps, rechargez.',
   'projectSheets.edit.reload': 'Recharger la fiche',
   'projectSheets.edit.saveError': 'Enregistrement impossible.',
@@ -132,7 +134,8 @@ const fr = {
   'projectSheets.team.referent': 'Référent',
   'projectSheets.team.members': 'Membres',
   'projectSheets.team.empty': 'Aucun membre renseigné.',
-  'projectSheets.demo.warning': 'Uniquement des comptes de démonstration à données fictives. Jamais d’identifiants réels de production, de clients ou d’outils internes.',
+  'projectSheets.demo.warning':
+    'Uniquement des comptes de démonstration à données fictives. Jamais d’identifiants réels de production, de clients ou d’outils internes.',
   'projectSheets.demo.url': 'URL',
   'projectSheets.demo.role': 'Rôle du compte',
   'projectSheets.demo.username': 'Identifiant',

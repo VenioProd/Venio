@@ -16,7 +16,7 @@ describe('scoreUrgency', () => {
 
   it('deadline dépassée ajoute +20', () => {
     const past = new Date(Date.now() - 86400 * 1000)
-    expect(scoreUrgency({ type: 'task', deadline: past })).toBe(50)  // 30 + 20
+    expect(scoreUrgency({ type: 'task', deadline: past })).toBe(50) // 30 + 20
     expect(scoreUrgency({ type: 'task' })).toBe(30)
   })
 

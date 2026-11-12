@@ -39,14 +39,12 @@ async function main(): Promise<void> {
     const seedResult = await seedAccountingDefaults({ ChartOfAccount, Journal, VatRate })
     if (seedResult.accounts || seedResult.journals || seedResult.vatRates) {
       console.log(
-        `Plan comptable initialisé : ${seedResult.accounts} comptes, ${seedResult.journals} journaux, ${seedResult.vatRates} taux TVA`
+        `Plan comptable initialisé : ${seedResult.accounts} comptes, ${seedResult.journals} journaux, ${seedResult.vatRates} taux TVA`,
       )
     }
   }
 
-  const invoices = await BillingDocument.find({ type: 'INVOICE' })
-    .sort({ issuedAt: 1, createdAt: 1 })
-    .lean()
+  const invoices = await BillingDocument.find({ type: 'INVOICE' }).sort({ issuedAt: 1, createdAt: 1 }).lean()
   console.log(`${invoices.length} facture(s) trouvée(s)`)
 
   let saleCreated = 0
@@ -61,11 +59,7 @@ async function main(): Promise<void> {
       continue
     }
     if (DRY_RUN) {
-      console.log(
-        `  → ${invoice.number} : générerait une écriture VE${
-          invoice.status === 'PAID' ? ' + BQ' : ''
-        }`
-      )
+      console.log(`  → ${invoice.number} : générerait une écriture VE${invoice.status === 'PAID' ? ' + BQ' : ''}`)
       continue
     }
 

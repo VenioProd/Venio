@@ -22,7 +22,7 @@ const pushSubscriptionSchema = new mongoose.Schema<IPushSubscription>(
     userAgent: { type: String, default: '' },
     lastUsedAt: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 pushSubscriptionSchema.index({ user: 1, endpoint: 1 })

@@ -414,7 +414,10 @@ export async function bulkIssues(
 ): Promise<BulkReport | { error: string }> {
   const allowed = opts.allowDelete ? ['archive', 'delete', 'status', 'assign'] : ['archive', 'status', 'assign']
   if (!allowed.includes(action)) return { error: `action invalide (${allowed.join('|')})` }
-  if (action === 'status' && !(typeof params.status === 'string' && (DEV_ISSUE_STATUSES as readonly string[]).includes(params.status))) {
+  if (
+    action === 'status' &&
+    !(typeof params.status === 'string' && (DEV_ISSUE_STATUSES as readonly string[]).includes(params.status))
+  ) {
     return { error: 'status invalide' }
   }
   if (action === 'assign' && !(params.assignee === null || isObjectId(params.assignee))) {
@@ -432,7 +435,12 @@ export async function bulkIssues(
       if (action === 'archive') {
         issue.archivedAt = new Date()
         await issue.save()
-        await recordIssueEvent({ ...base, type: 'archived', summary: `${issue.identifier} archivée`, metadata: { bulk: true } })
+        await recordIssueEvent({
+          ...base,
+          type: 'archived',
+          summary: `${issue.identifier} archivée`,
+          metadata: { bulk: true },
+        })
       } else if (action === 'delete') {
         await DevIssueComment.deleteMany({ issue: issue._id })
         await DevIssueEvent.deleteMany({ issue: issue._id })

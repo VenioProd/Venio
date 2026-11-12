@@ -53,15 +53,23 @@ export default function LeadSequencesPanel({ leadId, canManageCrm }: Props) {
   return (
     <section className="crm-modal-notes crm-seq-lead" aria-labelledby={`crm-seq-lead-h-${leadId}`}>
       <div className="crm-seq-lead-h">
-        <h4 id={`crm-seq-lead-h-${leadId}`} className="crm-modal-label">{t('crmSeq.lead.heading')}</h4>
+        <h4 id={`crm-seq-lead-h-${leadId}`} className="crm-modal-label">
+          {t('crmSeq.lead.heading')}
+        </h4>
         {canManageCrm && (
           <button type="button" className="portal-button secondary" onClick={() => setEnrolling(true)}>
             {t('crmSeq.lead.enroll')}
           </button>
         )}
       </div>
-      <p className="crm-seq-sr" role="status" aria-live="polite">{message}</p>
-      {problem && <p className="crm-seq-err" role="alert">{problem}</p>}
+      <p className="crm-seq-sr" role="status" aria-live="polite">
+        {message}
+      </p>
+      {problem && (
+        <p className="crm-seq-err" role="alert">
+          {problem}
+        </p>
+      )}
       {items === null ? (
         <p className="crm-seq-dim">{t('crmSeq.lead.loading')}</p>
       ) : items.length === 0 ? (
@@ -79,12 +87,16 @@ export default function LeadSequencesPanel({ leadId, canManageCrm }: Props) {
               <li key={enr._id} className="crm-seq-lead-item" data-testid={`lead-enr-${enr._id}`}>
                 <div>
                   <b>{seq?.name ?? sequenceId}</b>{' '}
-                  <span className={`crm-seq-pill crm-seq-pill--${enr.status}`}>{t(enrollmentStatusKey(enr.status))}</span>
+                  <span className={`crm-seq-pill crm-seq-pill--${enr.status}`}>
+                    {t(enrollmentStatusKey(enr.status))}
+                  </span>
                 </div>
                 <small>
                   {t('crmSeq.enr.step', { current, total })}
                   {open && enr.nextRunAt ? ` · ${t('crmSeq.enr.next', { when: formatDateTime(enr.nextRunAt) })}` : ''}
-                  {enr.status === 'STOPPED' && enr.stoppedReason ? ` · ${t('crmSeq.enr.reason', { reason: reason ? t(reason) : enr.stoppedReason })}` : ''}
+                  {enr.status === 'STOPPED' && enr.stoppedReason
+                    ? ` · ${t('crmSeq.enr.reason', { reason: reason ? t(reason) : enr.stoppedReason })}`
+                    : ''}
                 </small>
                 {canManageCrm && open && (
                   <button

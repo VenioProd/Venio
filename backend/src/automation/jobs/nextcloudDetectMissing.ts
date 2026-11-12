@@ -58,7 +58,10 @@ const definition: AutomationDefinition = {
     // Helper: check if a folder exists via PROPFIND
     async function folderExists(path: string): Promise<boolean> {
       const cleanPath = path.startsWith('/') ? path.slice(1) : path
-      const encodedPath = cleanPath.split('/').map((s) => encodeURIComponent(s)).join('/')
+      const encodedPath = cleanPath
+        .split('/')
+        .map((s) => encodeURIComponent(s))
+        .join('/')
       const url = `${nextcloudUrl}/remote.php/dav/files/${nextcloudUser}/${encodedPath}`
 
       try {
@@ -99,7 +102,9 @@ const definition: AutomationDefinition = {
     const projects = await Project.find({
       status: 'EN_COURS',
       isArchived: { $ne: true },
-    }).populate('client', 'name companyName').select('name client')
+    })
+      .populate('client', 'name companyName')
+      .select('name client')
 
     for (const project of projects) {
       const client = project.client as { name?: string; companyName?: string } | null
@@ -126,10 +131,14 @@ const definition: AutomationDefinition = {
 
       const lines: string[] = []
       if (missingClients.length > 0) {
-        lines.push(`Clients sans dossier: ${missingClients.slice(0, 5).join(', ')}${missingClients.length > 5 ? ` (+${missingClients.length - 5})` : ''}`)
+        lines.push(
+          `Clients sans dossier: ${missingClients.slice(0, 5).join(', ')}${missingClients.length > 5 ? ` (+${missingClients.length - 5})` : ''}`,
+        )
       }
       if (missingProjects.length > 0) {
-        lines.push(`Projets sans dossier: ${missingProjects.slice(0, 5).join(', ')}${missingProjects.length > 5 ? ` (+${missingProjects.length - 5})` : ''}`)
+        lines.push(
+          `Projets sans dossier: ${missingProjects.slice(0, 5).join(', ')}${missingProjects.length > 5 ? ` (+${missingProjects.length - 5})` : ''}`,
+        )
       }
 
       for (const admin of admins) {

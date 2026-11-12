@@ -177,7 +177,8 @@ function attachEvidence(
           : {
               source: 'Base des issues Dev (requête bornée à 400 issues)',
               observedAt: issueObservedAt,
-              limitation: 'Les issues au-delà de la fenêtre et les changements non enregistrés ne sont pas pris en compte.',
+              limitation:
+                'Les issues au-delà de la fenêtre et les changements non enregistrés ne sont pas pris en compte.',
             },
     }
   })
@@ -365,7 +366,11 @@ function buildAddSection(issues: IssueLite[]): DraftRecommendationItem[] {
   return sortItems(items).slice(0, 10)
 }
 
-function buildOptimizeSection(issues: IssueLite[], code: CodeMetricsSummary, github: DevGithubSummary): DraftRecommendationItem[] {
+function buildOptimizeSection(
+  issues: IssueLite[],
+  code: CodeMetricsSummary,
+  github: DevGithubSummary,
+): DraftRecommendationItem[] {
   const items: DraftRecommendationItem[] = []
 
   // 1. Issues type=CHORE / labels d'optimisation, ouvertes.
@@ -391,8 +396,7 @@ function buildOptimizeSection(issues: IssueLite[], code: CodeMetricsSummary, git
   }
 
   // 2. Backlog très ancien (signe de dette ou de roadmap pas tenue à jour).
-  const oldBacklog = issues
-    .filter((i) => i.status === 'BACKLOG' && daysSince(i.createdAt) > OLD_BACKLOG_DAYS)
+  const oldBacklog = issues.filter((i) => i.status === 'BACKLOG' && daysSince(i.createdAt) > OLD_BACKLOG_DAYS)
   if (oldBacklog.length >= 5 && github.links.issuesUrl) {
     items.push({
       id: 'optim-old-backlog',
@@ -510,11 +514,13 @@ function buildLargeFilesSection(code: CodeMetricsSummary, github: DevGithubSumma
       source: 'code_metrics',
       badges: [f.language, `${f.lines} l.`, `seuil ${f.threshold}`],
       metric: { label: 'criticité', value: f.score },
-      actions: [{
-        kind: 'open_file' as const,
-        label: 'Ouvrir sur GitHub',
-        href: fileHref(repoUrl, branch, f.path),
-      }],
+      actions: [
+        {
+          kind: 'open_file' as const,
+          label: 'Ouvrir sur GitHub',
+          href: fileHref(repoUrl, branch, f.path),
+        },
+      ],
     })
   }
   return items

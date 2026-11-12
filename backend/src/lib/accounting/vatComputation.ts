@@ -63,9 +63,7 @@ interface AggregateVatRow {
  * (déductible). On regroupe par vatRateValue lorsqu'il est défini sur la
  * ligne ; sinon on bascule sur un mapping par préfixe de compte.
  */
-async function aggregateVatByRate(
-  params: VatAggregateParams
-): Promise<Map<number, VatRateBucket>> {
+async function aggregateVatByRate(params: VatAggregateParams): Promise<Map<number, VatRateBucket>> {
   const { kind, periodStart, periodEnd, fiscalYear } = params
   const prefix = kind === 'collected' ? '4457' : '4456'
   const sumField = kind === 'collected' ? '$credit' : '$debit'
@@ -88,10 +86,7 @@ async function aggregateVatByRate(
           {
             $match: {
               $expr: {
-                $and: [
-                  { $eq: ['$_id', '$$entryId'] },
-                  { $in: ['$status', VALID_STATUSES] },
-                ],
+                $and: [{ $eq: ['$_id', '$$entryId'] }, { $in: ['$status', VALID_STATUSES] }],
               },
             },
           },
@@ -160,10 +155,7 @@ async function aggregateBaseByRate(params: VatAggregateParams): Promise<Map<numb
           {
             $match: {
               $expr: {
-                $and: [
-                  { $eq: ['$_id', '$$entryId'] },
-                  { $in: ['$status', VALID_STATUSES] },
-                ],
+                $and: [{ $eq: ['$_id', '$$entryId'] }, { $in: ['$status', VALID_STATUSES] }],
               },
             },
           },
@@ -209,14 +201,12 @@ async function aggregateBaseByRate(params: VatAggregateParams): Promise<Map<numb
     let rate: number | null = row.vatRateValue
     if (rate == null) {
       const sibling = (row.siblings || []).find(
-        (s) => String(s.accountCode || '').startsWith(vatPrefix) && s.vatRateValue != null
+        (s) => String(s.accountCode || '').startsWith(vatPrefix) && s.vatRateValue != null,
       )
       if (sibling) rate = sibling.vatRateValue
     }
     if (rate == null) {
-      const sibling = (row.siblings || []).find((s) =>
-        String(s.accountCode || '').startsWith(vatPrefix)
-      )
+      const sibling = (row.siblings || []).find((s) => String(s.accountCode || '').startsWith(vatPrefix))
       if (sibling) rate = inferRateFromAccountCode(sibling.accountCode)
     }
     if (rate == null) continue
@@ -256,13 +246,7 @@ interface BuildDeclarationLinesInput {
  * Construit les lignes CA3 simplifiées à partir des breakdowns par taux.
  */
 function buildDeclarationLines(input: BuildDeclarationLinesInput): VatDeclarationLine[] {
-  const {
-    collectedByRate,
-    totalCollected,
-    deductibleImmo,
-    deductibleAutres,
-    previousCredit,
-  } = input
+  const { collectedByRate, totalCollected, deductibleImmo, deductibleAutres, previousCredit } = input
   const lines: VatDeclarationLine[] = []
 
   const totalCollectedBase = collectedByRate.reduce((s, r) => s + r.base, 0)
@@ -409,10 +393,7 @@ export async function computeVatForPeriod(params: ComputeVatParams): Promise<Com
   })
 
   // 3. Fusion par taux pour le breakdown final, trié rate desc.
-  const collectedRates = new Set<number>([
-    ...collectedTvaByRate.keys(),
-    ...collectedBaseByRate.keys(),
-  ])
+  const collectedRates = new Set<number>([...collectedTvaByRate.keys(), ...collectedBaseByRate.keys()])
   const collectedByRate: VatRateBreakdown[] = Array.from(collectedRates)
     .sort((a, b) => b - a)
     .map((rate) => ({
@@ -421,10 +402,7 @@ export async function computeVatForPeriod(params: ComputeVatParams): Promise<Com
       amount: round2((collectedTvaByRate.get(rate) || { amount: 0 }).amount || 0),
     }))
 
-  const deductibleRates = new Set<number>([
-    ...deductibleTvaByRate.keys(),
-    ...deductibleBaseByRate.keys(),
-  ])
+  const deductibleRates = new Set<number>([...deductibleTvaByRate.keys(), ...deductibleBaseByRate.keys()])
   const deductibleByRate: VatRateBreakdown[] = Array.from(deductibleRates)
     .sort((a, b) => b - a)
     .map((rate) => ({
@@ -484,9 +462,7 @@ interface SplitDeductibleRow {
  * Répartit la TVA déductible entre immobilisations (préfixe 44562) et
  * autres biens et services (autres 4456x).
  */
-async function splitDeductibleByImmoOrAutres(
-  params: SplitDeductibleParams
-): Promise<{ immo: number; autres: number }> {
+async function splitDeductibleByImmoOrAutres(params: SplitDeductibleParams): Promise<{ immo: number; autres: number }> {
   const { periodStart, periodEnd, fiscalYear } = params
   const match: Record<string, unknown> = {
     accountCode: { $regex: '^4456' },
@@ -505,10 +481,7 @@ async function splitDeductibleByImmoOrAutres(
           {
             $match: {
               $expr: {
-                $and: [
-                  { $eq: ['$_id', '$$entryId'] },
-                  { $in: ['$status', VALID_STATUSES] },
-                ],
+                $and: [{ $eq: ['$_id', '$$entryId'] }, { $in: ['$status', VALID_STATUSES] }],
               },
             },
           },

@@ -16,7 +16,8 @@ export async function migrateCrmRevenue(dryRun: boolean): Promise<CrmRevenueMigr
   const name = CrmGoal.collection.collectionName
   const existing = await mongoose.connection.db!.listCollections({ name }).toArray()
   const collectionExisted = existing.length > 0
-  const indexNames = async () => (collectionExisted ? (await CrmGoal.collection.indexes()).map((index) => String(index.name)) : [])
+  const indexNames = async () =>
+    collectionExisted ? (await CrmGoal.collection.indexes()).map((index) => String(index.name)) : []
   const indexesBefore = await indexNames()
 
   if (dryRun) {

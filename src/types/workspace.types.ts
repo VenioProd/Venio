@@ -10,7 +10,11 @@ export interface WidgetConfig {
   h: number
 }
 
-export interface Shortcut { label: string; link: string; icon?: string }
+export interface Shortcut {
+  label: string
+  link: string
+  icon?: string
+}
 
 export interface WorkspaceLayout {
   widgets: WidgetConfig[]
@@ -44,7 +48,12 @@ export interface WorkspaceNote {
 }
 
 /** `key` : identifiant stable traduit côté client (absent des réponses antérieures). */
-export interface RoleKpi { key?: string; label: string; value: number; link: string }
+export interface RoleKpi {
+  key?: string
+  label: string
+  value: number
+  link: string
+}
 
 export interface WorkspaceOverview {
   kpis: RoleKpi[]

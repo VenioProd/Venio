@@ -4,7 +4,17 @@ import type { EmailResult } from '../transport.js'
 /**
  * Envoie un email avec les identifiants de connexion admin.
  */
-export async function sendAdminCredentials({ to, name, email, password }: { to: string; name: string; email: string; password: string }): Promise<EmailResult> {
+export async function sendAdminCredentials({
+  to,
+  name,
+  email,
+  password,
+}: {
+  to: string
+  name: string
+  email: string
+  password: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -79,7 +89,15 @@ export async function sendTestEmail(to: string): Promise<EmailResult> {
 /**
  * Envoie un email de reinitialisation de mot de passe.
  */
-export async function sendPasswordResetEmail({ to, name, resetUrl }: { to: string; name: string; resetUrl: string }): Promise<EmailResult> {
+export async function sendPasswordResetEmail({
+  to,
+  name,
+  resetUrl,
+}: {
+  to: string
+  name: string
+  resetUrl: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configure (SMTP_USER / SMTP_PASS)' }
@@ -124,7 +142,17 @@ export async function sendPasswordResetEmail({ to, name, resetUrl }: { to: strin
 /**
  * Envoie un email de bienvenue au nouveau client.
  */
-export async function sendWelcomeEmail({ to, name, email, loginUrl }: { to: string; name: string; email: string; loginUrl: string }): Promise<EmailResult> {
+export async function sendWelcomeEmail({
+  to,
+  name,
+  email,
+  loginUrl,
+}: {
+  to: string
+  name: string
+  email: string
+  loginUrl: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }

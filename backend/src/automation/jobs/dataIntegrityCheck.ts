@@ -67,7 +67,7 @@ const definition: AutomationDefinition = {
 
     const existingProjectSet = new Set(existingProjectIds.map((id: unknown) => (id as object).toString()))
     const orphanTaskProjects = taskProjectIds.filter(
-      (id: unknown) => !existingProjectSet.has((id as object).toString())
+      (id: unknown) => !existingProjectSet.has((id as object).toString()),
     )
 
     if (orphanTaskProjects.length > 0) {

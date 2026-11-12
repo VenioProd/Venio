@@ -54,7 +54,9 @@ const definition: AutomationDefinition = {
           objects: stats.objects,
           indexes: stats.indexes,
         }
-        logger.info(`[MONGO HEALTH] Connected — ${stats.collections} collection(s), dataSize: ${Math.round((stats.dataSize || 0) / 1024 / 1024)}MB`)
+        logger.info(
+          `[MONGO HEALTH] Connected — ${stats.collections} collection(s), dataSize: ${Math.round((stats.dataSize || 0) / 1024 / 1024)}MB`,
+        )
       } catch (err) {
         logger.warn(`[MONGO HEALTH] Connected but stats failed: ${(err as Error).message}`)
         dbStats = { error: (err as Error).message }

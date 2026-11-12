@@ -21,10 +21,7 @@ router.get(
       const { search, accountClass, type, active } = req.query as Record<string, string | undefined>
       const filter: Record<string, unknown> = {}
       if (search) {
-        filter.$or = [
-          { code: { $regex: search, $options: 'i' } },
-          { label: { $regex: search, $options: 'i' } },
-        ]
+        filter.$or = [{ code: { $regex: search, $options: 'i' } }, { label: { $regex: search, $options: 'i' } }]
       }
       if (accountClass) filter.accountClass = Number(accountClass)
       if (type) filter.type = type
@@ -34,7 +31,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // POST / : crée un nouveau compte
@@ -67,7 +64,7 @@ router.post(
       }
       next(err)
     }
-  }
+  },
 )
 
 // PATCH /:id : met à jour un compte
@@ -81,7 +78,16 @@ router.patch(
         res.status(404).json({ error: 'Compte introuvable' })
         return
       }
-      const fields = ['code', 'label', 'accountClass', 'type', 'isLettrable', 'isActive', 'description', 'parent'] as const
+      const fields = [
+        'code',
+        'label',
+        'accountClass',
+        'type',
+        'isLettrable',
+        'isActive',
+        'description',
+        'parent',
+      ] as const
       const body = (req.body || {}) as Record<string, unknown>
       for (const f of fields) {
         if (body[f] !== undefined) {
@@ -97,7 +103,7 @@ router.patch(
       }
       next(err)
     }
-  }
+  },
 )
 
 // DELETE /:id : soft delete (désactivation)
@@ -118,7 +124,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // POST /seed : initialise le PCG (idempotent)
@@ -132,7 +138,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

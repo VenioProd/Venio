@@ -26,7 +26,14 @@ const mk = (o: Partial<PortfolioItem>): PortfolioItem => ({
 
 const items = [
   mk({ _id: '1', name: 'Lumen', overdueDays: 12, urgency: 112, risks: [{ code: 'LATE', value: 12 }] }),
-  mk({ _id: '2', name: 'Orsay', assignedTo: { _id: 'u2', name: 'Thomas' }, urgency: 50, daysToDue: 3, risks: [{ code: 'DUE_SOON', value: 3 }] }),
+  mk({
+    _id: '2',
+    name: 'Orsay',
+    assignedTo: { _id: 'u2', name: 'Thomas' },
+    urgency: 50,
+    daysToDue: 3,
+    risks: [{ code: 'DUE_SOON', value: 3 }],
+  }),
   mk({ _id: '3', name: 'Cèdre', status: 'TERMINE', urgency: 30, risks: [{ code: 'TO_BILL', value: null }] }),
   mk({ _id: '4', name: 'Boréal', urgency: 0 }),
 ]

@@ -196,7 +196,9 @@ export const payloadFromDraft = (draft: SequenceDraft): SequencePayload => ({
 })
 
 /** Premier problème de saisie (clé i18n + paramètres) ou null. */
-export function validateDraft(draft: SequenceDraft): { key: MessageKey; params?: Record<string, string | number> } | null {
+export function validateDraft(
+  draft: SequenceDraft,
+): { key: MessageKey; params?: Record<string, string | number> } | null {
   if (!draft.name.trim()) return { key: 'crmSeq.builder.needName' }
   if (draft.steps.length > MAX_STEPS) return { key: 'crmSeq.builder.tooMany', params: { max: MAX_STEPS } }
   for (let i = 0; i < draft.steps.length; i++) {

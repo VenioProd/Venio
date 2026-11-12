@@ -1,10 +1,19 @@
 import mongoose from 'mongoose'
 
 export const ENTITIES = ['Venio', 'Creatio', 'Decisio', 'Formatio', 'Arrow'] as const
-export const POLES = ['Dev', 'Design', 'Marketing', 'Communication', 'Commercial', 'Direction', 'RH', 'Formation'] as const
+export const POLES = [
+  'Dev',
+  'Design',
+  'Marketing',
+  'Communication',
+  'Commercial',
+  'Direction',
+  'RH',
+  'Formation',
+] as const
 
-export type Entity = typeof ENTITIES[number]
-export type Pole = typeof POLES[number]
+export type Entity = (typeof ENTITIES)[number]
+export type Pole = (typeof POLES)[number]
 
 export interface IInternalProject {
   name: string
@@ -44,7 +53,7 @@ const schema = new mongoose.Schema<IInternalProject>(
     tags: { type: [String], default: [] },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 export default mongoose.model<IInternalProject>('InternalProject', schema)

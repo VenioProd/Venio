@@ -17,8 +17,18 @@ vi.mock('../lib/email/send.js', async (importOriginal) => ({
   sendBulkEmail: vi.fn(async (input: { recipients: Array<{ email: string; name?: string }> }) => {
     if (mail.delayMs) await new Promise((r) => setTimeout(r, mail.delayMs))
     mail.calls.push(input)
-    const results = input.recipients.map((r) => ({ email: r.email, name: r.name ?? '', success: !mail.fail, ...(mail.fail ? { error: 'SMTP down' } : {}) }))
-    return { results, sent: mail.fail ? 0 : results.length, failed: mail.fail ? results.length : 0, total: results.length }
+    const results = input.recipients.map((r) => ({
+      email: r.email,
+      name: r.name ?? '',
+      success: !mail.fail,
+      ...(mail.fail ? { error: 'SMTP down' } : {}),
+    }))
+    return {
+      results,
+      sent: mail.fail ? 0 : results.length,
+      failed: mail.fail ? results.length : 0,
+      total: results.length,
+    }
   }),
 }))
 vi.mock('../lib/notifications.js', async (importOriginal) => ({
@@ -70,21 +80,51 @@ beforeEach(async () => {
   mail.calls.length = 0
   mail.fail = false
   mail.delayMs = 0
-  await CrmSettings.create({ roundRobinEnabled: false, emailOnAssignment: false, activityLogging: true, scoringEnabled: false, autoQualifyEnabled: false })
-  const owner = await User.create({ email: 'owner@seq.test', name: 'Olivia Owner', role: 'COMMERCIAL', passwordHash: 'x' })
+  await CrmSettings.create({
+    roundRobinEnabled: false,
+    emailOnAssignment: false,
+    activityLogging: true,
+    scoringEnabled: false,
+    autoQualifyEnabled: false,
+  })
+  const owner = await User.create({
+    email: 'owner@seq.test',
+    name: 'Olivia Owner',
+    role: 'COMMERCIAL',
+    passwordHash: 'x',
+  })
   ownerId = String(owner._id)
 })
 
 const newLead = (extra: Record<string, unknown> = {}) =>
-  Lead.create({ company: 'Atelier', contactName: 'Camille', contactEmail: 'camille@atelier.test', status: 'CONTACTED', assignedTo: ownerId, createdBy: ownerId, ...extra })
+  Lead.create({
+    company: 'Atelier',
+    contactName: 'Camille',
+    contactEmail: 'camille@atelier.test',
+    status: 'CONTACTED',
+    assignedTo: ownerId,
+    createdBy: ownerId,
+    ...extra,
+  })
 
-const emailStep = (extra: Record<string, unknown> = {}) => ({ type: 'EMAIL', delayDays: 0, sendHourParis: 9, subject: 'Bonjour {contact}', body: 'Bonjour {contact}, ici {owner} pour {company}.', ...extra })
+const emailStep = (extra: Record<string, unknown> = {}) => ({
+  type: 'EMAIL',
+  delayDays: 0,
+  sendHourParis: 9,
+  subject: 'Bonjour {contact}',
+  body: 'Bonjour {contact}, ici {owner} pour {company}.',
+  ...extra,
+})
 
 const newSequence = (extra: Record<string, unknown> = {}) =>
   CrmSequence.create({
     name: 'Prospection',
     status: 'ACTIVE',
-    steps: [emailStep(), { type: 'TASK', delayDays: 2, sendHourParis: 9, taskTitle: 'Appeler {contact}' }, emailStep({ delayDays: 1, subject: 'Relance' })],
+    steps: [
+      emailStep(),
+      { type: 'TASK', delayDays: 2, sendHourParis: 9, taskTitle: 'Appeler {contact}' },
+      emailStep({ delayDays: 1, subject: 'Relance' }),
+    ],
     ...extra,
   })
 
@@ -133,16 +173,38 @@ describe('calendrier : jours ouvrés et heure de Paris', () => {
 
 describe('modèles de texte', () => {
   it('remplace {contact}, {company}, {owner}, {amount} en un seul passage', () => {
-    const out = seq.renderSequenceTemplate('{contact} / {company} / {owner} / {amount} / {inconnu}', { contactName: '{company}', company: 'ACME', budget: 1200 }, 'Olivia')
+    const out = seq.renderSequenceTemplate(
+      '{contact} / {company} / {owner} / {amount} / {inconnu}',
+      { contactName: '{company}', company: 'ACME', budget: 1200 },
+      'Olivia',
+    )
     expect(out).toBe('{company} / ACME / Olivia / 1200 € / {inconnu}')
   })
 
   it('valide les étapes', () => {
-    const bad = seq.normalizeSequencePayload({ name: 'X', steps: [{ type: 'EMAIL', subject: '', body: '' }, { type: 'TASK' }, { type: 'WAIT', sendHourParis: 22 }, { type: 'SMS' }] }, { creating: true })
+    const bad = seq.normalizeSequencePayload(
+      {
+        name: 'X',
+        steps: [
+          { type: 'EMAIL', subject: '', body: '' },
+          { type: 'TASK' },
+          { type: 'WAIT', sendHourParis: 22 },
+          { type: 'SMS' },
+        ],
+      },
+      { creating: true },
+    )
     expect(bad.errors).toHaveLength(4)
-    const good = seq.normalizeSequencePayload({ name: ' Y ', steps: [{ type: 'WAIT', delayDays: 3 }], stopOn: { reply: false, statuses: ['LOST', 'XX'] } }, { creating: true })
+    const good = seq.normalizeSequencePayload(
+      { name: ' Y ', steps: [{ type: 'WAIT', delayDays: 3 }], stopOn: { reply: false, statuses: ['LOST', 'XX'] } },
+      { creating: true },
+    )
     expect(good.errors).toEqual([])
-    expect(good.data).toMatchObject({ name: 'Y', steps: [{ type: 'WAIT', delayDays: 3, sendHourParis: 9 }], stopOn: { reply: false, statusChange: true, statuses: ['LOST'] } })
+    expect(good.data).toMatchObject({
+      name: 'Y',
+      steps: [{ type: 'WAIT', delayDays: 3, sendHourParis: 9 }],
+      stopOn: { reply: false, statusChange: true, statuses: ['LOST'] },
+    })
   })
 })
 
@@ -178,7 +240,9 @@ describe('inscription', () => {
   })
 
   it('une séquence sans e-mail accepte un lead sans adresse', async () => {
-    const sequence = await newSequence({ steps: [{ type: 'TASK', delayDays: 0, sendHourParis: 9, taskTitle: 'Appeler' }] })
+    const sequence = await newSequence({
+      steps: [{ type: 'TASK', delayDays: 0, sendHourParis: 9, taskTitle: 'Appeler' }],
+    })
     const lead = await newLead({ contactEmail: '' })
     const res = await seq.enrollLeads(sequence, [String(lead._id)], { actorId: ownerId, now: MON_10H })
     expect(res.enrolled).toHaveLength(1)
@@ -204,7 +268,10 @@ describe('inscription', () => {
   it('le périmètre d’écriture rend NOT_FOUND', async () => {
     const sequence = await newSequence()
     const lead = await newLead()
-    const res = await seq.enrollLeads(sequence, [String(lead._id)], { actorId: ownerId, scope: { assignedTo: '0123456789abcdef01234567' } })
+    const res = await seq.enrollLeads(sequence, [String(lead._id)], {
+      actorId: ownerId,
+      scope: { assignedTo: '0123456789abcdef01234567' },
+    })
     expect(res.refused).toEqual([{ leadId: String(lead._id), reason: 'NOT_FOUND' }])
   })
 })
@@ -225,7 +292,9 @@ describe('moteur', () => {
     expect(sent.body).toBe('Bonjour Camille, ici Olivia Owner pour Atelier.')
     expect(sent.unsubscribeUrl).toMatch(/\/api\/public\/unsubscribe\?token=/)
     await waitFor(async () => (await Interaction.countDocuments({ subjectId: lead._id, direction: 'OUT' })) === 1)
-    expect(await Interaction.countDocuments({ subjectType: 'LEAD', subjectId: lead._id, kind: 'EMAIL', direction: 'OUT' })).toBe(1)
+    expect(
+      await Interaction.countDocuments({ subjectType: 'LEAD', subjectId: lead._id, kind: 'EMAIL', direction: 'OUT' }),
+    ).toBe(1)
 
     let after = await Enrollment.findById(enrollment!._id).lean()
     expect(after).toMatchObject({ currentStep: 1, status: 'ACTIVE' })
@@ -255,9 +324,15 @@ describe('moteur', () => {
     const sequence = await newSequence()
     const lead = await newLead()
     const enrollment = await enroll(sequence, lead)
-    const [copyA, copyB] = await Promise.all([Enrollment.findById(enrollment!._id), Enrollment.findById(enrollment!._id)])
+    const [copyA, copyB] = await Promise.all([
+      Enrollment.findById(enrollment!._id),
+      Enrollment.findById(enrollment!._id),
+    ])
     mail.delayMs = 30
-    const outcomes = await Promise.all([seq.processEnrollment(copyA!, sequence, MON_10H), seq.processEnrollment(copyB!, sequence, MON_10H)])
+    const outcomes = await Promise.all([
+      seq.processEnrollment(copyA!, sequence, MON_10H),
+      seq.processEnrollment(copyB!, sequence, MON_10H),
+    ])
     expect(outcomes.sort()).toEqual(['LOCKED', 'SENT'])
     expect(mail.calls).toHaveLength(1)
     // Redémarrage : l'inscription relue telle qu'avant l'envoi ne rejoue pas l'étape.
@@ -313,7 +388,11 @@ describe('moteur', () => {
     const sequence = await newSequence()
     const lead = await newLead()
     const enrollment = await enroll(sequence, lead)
-    await locks.acquireSchedulerLock(seq.stepLockKey(enrollment!._id, 0), seq.STEP_LOCK_TTL_MS, new Date(MON_10H.getTime() - 60 * 60 * 1000))
+    await locks.acquireSchedulerLock(
+      seq.stepLockKey(enrollment!._id, 0),
+      seq.STEP_LOCK_TTL_MS,
+      new Date(MON_10H.getTime() - 60 * 60 * 1000),
+    )
     const summary = await seq.runSequenceTick(MON_10H)
     expect(summary.outcomes.SKIPPED_STEP).toBe(1)
     expect(mail.calls).toHaveLength(0)
@@ -347,7 +426,10 @@ describe('ne pas contacter au moment de l’envoi', () => {
     await SuppressionEntry.create({ emailNormalized: 'camille@atelier.test', reason: 'MANUAL' })
     await seq.runSequenceTick(MON_10H)
     expect(mail.calls).toHaveLength(0)
-    expect(await Enrollment.findById(enrollment!._id).lean()).toMatchObject({ status: 'STOPPED', stoppedReason: 'DO_NOT_CONTACT' })
+    expect(await Enrollment.findById(enrollment!._id).lean()).toMatchObject({
+      status: 'STOPPED',
+      stoppedReason: 'DO_NOT_CONTACT',
+    })
     expect(await LeadActivity.countDocuments({ leadId: lead._id, type: 'SEQUENCE_STOPPED' })).toBe(1)
   })
 
@@ -367,7 +449,14 @@ describe('arrêts automatiques', () => {
     const sequence = await newSequence()
     const lead = await newLead()
     const enrollment = await enroll(sequence, lead, new Date(Date.now() - 60_000))
-    await interactions.logInteraction({ subjectType: 'LEAD', subjectId: lead._id, kind: 'EMAIL', direction: 'IN', subject: 'Re', body: 'Intéressé' })
+    await interactions.logInteraction({
+      subjectType: 'LEAD',
+      subjectId: lead._id,
+      kind: 'EMAIL',
+      direction: 'IN',
+      subject: 'Re',
+      body: 'Intéressé',
+    })
     expect(await waitFor(async () => (await Enrollment.findById(enrollment!._id))!.status === 'STOPPED')).toBe(true)
     expect((await Enrollment.findById(enrollment!._id))!.stoppedReason).toBe('REPLY')
   })
@@ -378,9 +467,27 @@ describe('arrêts automatiques', () => {
     const other = await newLead({ contactEmail: 'other@atelier.test' })
     const enrollment = await enroll(sequence, lead)
     const otherEnrollment = await enroll(sequence, other)
-    await Interaction.create({ subjectType: 'LEAD', subjectId: lead._id, kind: 'CALL', direction: 'IN', occurredAt: new Date(MON_10H.getTime() + 1000) })
-    await Interaction.create({ subjectType: 'LEAD', subjectId: other._id, kind: 'EMAIL', direction: 'OUT', occurredAt: new Date(MON_10H.getTime() + 1000) })
-    await Interaction.create({ subjectType: 'LEAD', subjectId: other._id, kind: 'EMAIL', direction: 'IN', occurredAt: new Date(MON_10H.getTime() - 86_400_000) })
+    await Interaction.create({
+      subjectType: 'LEAD',
+      subjectId: lead._id,
+      kind: 'CALL',
+      direction: 'IN',
+      occurredAt: new Date(MON_10H.getTime() + 1000),
+    })
+    await Interaction.create({
+      subjectType: 'LEAD',
+      subjectId: other._id,
+      kind: 'EMAIL',
+      direction: 'OUT',
+      occurredAt: new Date(MON_10H.getTime() + 1000),
+    })
+    await Interaction.create({
+      subjectType: 'LEAD',
+      subjectId: other._id,
+      kind: 'EMAIL',
+      direction: 'IN',
+      occurredAt: new Date(MON_10H.getTime() - 86_400_000),
+    })
     await seq.runSequenceTick(new Date(MON_10H.getTime() + 2000))
     expect((await Enrollment.findById(enrollment!._id))!.stoppedReason).toBe('REPLY')
     expect((await Enrollment.findById(otherEnrollment!._id))!.currentStep).toBe(1)
@@ -391,7 +498,13 @@ describe('arrêts automatiques', () => {
     const sequence = await newSequence({ stopOn: { reply: false, statusChange: true, statuses: ['WON', 'LOST'] } })
     const lead = await newLead()
     await enroll(sequence, lead)
-    await Interaction.create({ subjectType: 'LEAD', subjectId: lead._id, kind: 'EMAIL', direction: 'IN', occurredAt: new Date(MON_10H.getTime() + 1000) })
+    await Interaction.create({
+      subjectType: 'LEAD',
+      subjectId: lead._id,
+      kind: 'EMAIL',
+      direction: 'IN',
+      occurredAt: new Date(MON_10H.getTime() + 1000),
+    })
     await seq.runSequenceTick(new Date(MON_10H.getTime() + 2000))
     expect(mail.calls).toHaveLength(1)
   })
@@ -403,7 +516,10 @@ describe('arrêts automatiques', () => {
     await service.applyLeadChange(lead._id, { status: 'DEMO' }, { actor: ownerId, source: 'admin' })
     expect((await Enrollment.findById(enrollment!._id))!.status).toBe('ACTIVE')
     await service.applyLeadChange(lead._id, { status: 'LOST' }, { actor: ownerId, source: 'bulk', emit: false })
-    expect(await Enrollment.findById(enrollment!._id).lean()).toMatchObject({ status: 'STOPPED', stoppedReason: 'STATUS_CHANGE' })
+    expect(await Enrollment.findById(enrollment!._id).lean()).toMatchObject({
+      status: 'STOPPED',
+      stoppedReason: 'STATUS_CHANGE',
+    })
   })
 
   it('désinscription par le lien : arrêt UNSUBSCRIBE', async () => {
@@ -411,7 +527,10 @@ describe('arrêts automatiques', () => {
     const lead = await newLead()
     const enrollment = await enroll(sequence, lead)
     await privacy.applyUnsubscribe(String(lead._id), 'camille@atelier.test')
-    expect(await Enrollment.findById(enrollment!._id).lean()).toMatchObject({ status: 'STOPPED', stoppedReason: 'UNSUBSCRIBE' })
+    expect(await Enrollment.findById(enrollment!._id).lean()).toMatchObject({
+      status: 'STOPPED',
+      stoppedReason: 'UNSUBSCRIBE',
+    })
     await seq.runSequenceTick(MON_10H)
     expect(mail.calls).toHaveLength(0)
   })
@@ -457,7 +576,14 @@ describe('statistiques, job, garde-fous', () => {
     await Lead.updateOne({ _id: c._id }, { doNotContact: true })
     await seq.runSequenceTick(MON_10H)
     const stats = (await seq.sequenceStats([sequence._id])).get(String(sequence._id))
-    expect(stats).toEqual({ total: 3, active: 0, paused: 0, completed: 1, stopped: 2, stoppedByReason: { MANUAL: 1, DO_NOT_CONTACT: 1 } })
+    expect(stats).toEqual({
+      total: 3,
+      active: 0,
+      paused: 0,
+      completed: 1,
+      stopped: 2,
+      stoppedByReason: { MANUAL: 1, DO_NOT_CONTACT: 1 },
+    })
   })
 
   it('le job crm.sequences tourne toutes les 5 minutes avec une clé par tranche', async () => {

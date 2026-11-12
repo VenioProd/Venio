@@ -7,17 +7,20 @@ export function useTabState(defaultTab: string, paramName = 'tab'): [string, (ta
 
   const setActiveTab = useCallback(
     (tab: string) => {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev)
-        if (tab === defaultTab) {
-          next.delete(paramName)
-        } else {
-          next.set(paramName, tab)
-        }
-        return next
-      }, { replace: true })
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          if (tab === defaultTab) {
+            next.delete(paramName)
+          } else {
+            next.set(paramName, tab)
+          }
+          return next
+        },
+        { replace: true },
+      )
     },
-    [defaultTab, paramName, setSearchParams]
+    [defaultTab, paramName, setSearchParams],
   )
 
   return [activeTab, setActiveTab]

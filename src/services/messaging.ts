@@ -1,5 +1,10 @@
 import { apiDownload, apiFetch, apiUpload, type ApiDownloadResult } from '../lib/api'
-import type { InternalConversation, InternalMessage, MessagingSearchResult, MessagingUser } from '../types/messaging.types'
+import type {
+  InternalConversation,
+  InternalMessage,
+  MessagingSearchResult,
+  MessagingUser,
+} from '../types/messaging.types'
 
 export async function fetchMessagingUsers(): Promise<MessagingUser[]> {
   const res = await apiFetch<{ users: MessagingUser[] }>('/api/admin/messaging/users')
@@ -11,7 +16,11 @@ export async function fetchConversations(): Promise<InternalConversation[]> {
   return res.conversations
 }
 
-export async function createChannel(payload: { name: string; visibility: 'PUBLIC' | 'PRIVATE'; participantIds?: string[] }) {
+export async function createChannel(payload: {
+  name: string
+  visibility: 'PUBLIC' | 'PRIVATE'
+  participantIds?: string[]
+}) {
   const res = await apiFetch<{ conversation: InternalConversation }>('/api/admin/messaging/conversations', {
     method: 'POST',
     body: JSON.stringify({ type: 'CHANNEL', ...payload }),
@@ -29,15 +38,20 @@ export async function openDirectConversation(participantId: string) {
 
 export async function fetchMessages(conversationId: string, before?: string): Promise<InternalMessage[]> {
   const query = before ? `?before=${encodeURIComponent(before)}` : ''
-  const res = await apiFetch<{ messages: InternalMessage[] }>(`/api/admin/messaging/conversations/${conversationId}/messages${query}`)
+  const res = await apiFetch<{ messages: InternalMessage[] }>(
+    `/api/admin/messaging/conversations/${conversationId}/messages${query}`,
+  )
   return res.messages
 }
 
 export async function sendMessage(conversationId: string, content: string, parentMessage?: string | null) {
-  const res = await apiFetch<{ message: InternalMessage }>(`/api/admin/messaging/conversations/${conversationId}/messages`, {
-    method: 'POST',
-    body: JSON.stringify({ content, parentMessage: parentMessage || null }),
-  })
+  const res = await apiFetch<{ message: InternalMessage }>(
+    `/api/admin/messaging/conversations/${conversationId}/messages`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ content, parentMessage: parentMessage || null }),
+    },
+  )
   return res.message
 }
 
@@ -47,7 +61,7 @@ export async function uploadMessageAttachments(conversationId: string, content: 
   files.forEach((file) => form.append('files', file))
   const data = await apiUpload<{ message: InternalMessage }>(
     `/api/admin/messaging/conversations/${conversationId}/attachments`,
-    form
+    form,
   )
   return data.message
 }
@@ -57,7 +71,9 @@ export async function markConversationRead(conversationId: string) {
 }
 
 export async function searchMessages(query: string): Promise<MessagingSearchResult[]> {
-  const res = await apiFetch<{ results: MessagingSearchResult[] }>(`/api/admin/messaging/search?q=${encodeURIComponent(query)}`)
+  const res = await apiFetch<{ results: MessagingSearchResult[] }>(
+    `/api/admin/messaging/search?q=${encodeURIComponent(query)}`,
+  )
   return res.results
 }
 

@@ -471,10 +471,7 @@ const AdminEdit = () => {
             </div>
           )}
           {isSuperAdmin && form.role !== 'SUPER_ADMIN' && (
-            <fieldset
-              style={{ border: 'none', padding: 0, margin: 0 }}
-              aria-describedby="admin-crm-entities-help"
-            >
+            <fieldset style={{ border: 'none', padding: 0, margin: 0 }} aria-describedby="admin-crm-entities-help">
               <legend style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8 }}>
                 {t('crmSuppression.entities.title')}
               </legend>

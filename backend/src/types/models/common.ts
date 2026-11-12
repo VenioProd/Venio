@@ -1,7 +1,5 @@
 import type { Document, Types } from 'mongoose'
-import type {
-  ActivityAction, AuditAction, NotificationType, DocumentType,
-} from '../enums.js'
+import type { ActivityAction, AuditAction, NotificationType, DocumentType } from '../enums.js'
 
 // ─── Sequence ───
 export interface ISequence extends Document {

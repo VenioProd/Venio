@@ -39,7 +39,9 @@ const definition: AutomationDefinition = {
       dueDate: { $gte: now, $lte: in3days },
       status: { $nin: ['TERMINE', 'VALIDE'] },
       assignedTo: { $ne: null },
-    }).populate('assignedTo', 'email name').populate('project', 'name')
+    })
+      .populate('assignedTo', 'email name')
+      .populate('project', 'name')
 
     const actionsExecuted: string[] = []
     const recipientsNotified: string[] = []

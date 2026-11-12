@@ -25,7 +25,8 @@ afterAll(teardownMongo)
 beforeEach(async () => {
   await clearDb()
   sysId = (await User.create({ email: 'sys@test.local', name: 'Sys', role: 'SUPER_ADMIN', passwordHash: 'x' }))._id
-  requesterId = (await User.create({ email: 'c@test.local', name: 'Camille', role: 'COMMERCIAL', passwordHash: 'x' }))._id
+  requesterId = (await User.create({ email: 'c@test.local', name: 'Camille', role: 'COMMERCIAL', passwordHash: 'x' }))
+    ._id
   projectId = (await DevProject.create({ key: 'ARR', name: 'Arrow', createdBy: sysId }))._id
 })
 
@@ -160,12 +161,18 @@ describe('agent dev suggestions', () => {
     expect(arch.body.processed).toEqual([a.body._id])
     expect((await DevSuggestion.findById(a.body._id))!.archivedAt).not.toBeNull()
     const hidden = await request(app).get(URL).set(authHeaders(t.plainSecret))
-    expect((hidden.body.data ?? hidden.body.items)).toHaveLength(1)
+    expect(hidden.body.data ?? hidden.body.items).toHaveLength(1)
   })
 
   it('bulk issues: status and assign; invalid ids rejected', async () => {
     const t = await createAgentTokenInDb(['read:dev', 'write:dev'])
-    const i1 = await DevIssue.create({ project: projectId, identifier: 'ARR-1', number: 1, title: 'x', reporter: sysId })
+    const i1 = await DevIssue.create({
+      project: projectId,
+      identifier: 'ARR-1',
+      number: 1,
+      title: 'x',
+      reporter: sysId,
+    })
     const bulk = (body: Record<string, unknown>) =>
       request(app)
         .post('/api/v1/agent/dev/issues/bulk')

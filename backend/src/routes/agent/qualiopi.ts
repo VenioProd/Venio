@@ -60,7 +60,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -76,7 +76,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -105,7 +105,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -134,7 +134,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -153,7 +153,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -169,7 +169,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═════════════════════════════════════════════════════════════════════════
@@ -183,35 +183,26 @@ router.get(
     try {
       const pag = parsePagination(req)
       const [items, total] = await Promise.all([
-        QualiopiCriterion.find()
-          .sort({ number: 1 })
-          .skip(pag.skip)
-          .limit(pag.limit)
-          .lean(),
+        QualiopiCriterion.find().sort({ number: 1 }).skip(pag.skip).limit(pag.limit).lean(),
         QualiopiCriterion.countDocuments(),
       ])
       res.json(paginatedResponse(items, pag, total))
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.get(
-  '/qualiopi/criteria/:id',
-  requireScope('read:qualiopi'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const c = await QualiopiCriterion.findById(req.params.id).lean()
-      if (!c) return respondError(res, 404, 'NOT_FOUND', 'Critère introuvable')
-      res.json(c)
-    } catch (err) {
-      next(err)
-    }
+router.get('/qualiopi/criteria/:id', requireScope('read:qualiopi'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const c = await QualiopiCriterion.findById(req.params.id).lean()
+    if (!c) return respondError(res, 404, 'NOT_FOUND', 'Critère introuvable')
+    res.json(c)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.patch(
   '/qualiopi/criteria/:id',
@@ -240,7 +231,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

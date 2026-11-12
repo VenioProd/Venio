@@ -10,27 +10,45 @@ import { computeProjectCockpit } from '../lib/dev/stats.js'
 let systemUserId: mongoose.Types.ObjectId
 let projectId: mongoose.Types.ObjectId
 
-beforeAll(async () => { await setupMongo() })
-afterAll(async () => { await teardownMongo() })
+beforeAll(async () => {
+  await setupMongo()
+})
+afterAll(async () => {
+  await teardownMongo()
+})
 
 beforeEach(async () => {
   await clearDb()
   const u = await User.create({
-    email: 'sys@test.local', name: 'Sys', role: 'SUPER_ADMIN', passwordHash: 'x',
+    email: 'sys@test.local',
+    name: 'Sys',
+    role: 'SUPER_ADMIN',
+    passwordHash: 'x',
   })
   systemUserId = u._id as mongoose.Types.ObjectId
   const p = await DevProject.create({
-    key: 'VEN', name: 'Venio', description: 'Test project', createdBy: systemUserId,
+    key: 'VEN',
+    name: 'Venio',
+    description: 'Test project',
+    createdBy: systemUserId,
   })
   projectId = p._id as mongoose.Types.ObjectId
 })
 
 let counter = 0
-async function createIssue(over: Partial<{
-  status: string; priority: string; type: string; labels: string[];
-  completedAt: Date | null; startedAt: Date | null; createdAt: Date;
-  dueDate: Date | null; assignee: mongoose.Types.ObjectId | null
-}> = {}) {
+async function createIssue(
+  over: Partial<{
+    status: string
+    priority: string
+    type: string
+    labels: string[]
+    completedAt: Date | null
+    startedAt: Date | null
+    createdAt: Date
+    dueDate: Date | null
+    assignee: mongoose.Types.ObjectId | null
+  }> = {},
+) {
   counter += 1
   const doc = await DevIssue.create({
     project: projectId,
@@ -48,11 +66,7 @@ async function createIssue(over: Partial<{
     dueDate: over.dueDate ?? null,
   })
   if (over.createdAt) {
-    await DevIssue.updateOne(
-      { _id: doc._id },
-      { $set: { createdAt: over.createdAt } },
-      { timestamps: false }
-    )
+    await DevIssue.updateOne({ _id: doc._id }, { $set: { createdAt: over.createdAt } }, { timestamps: false })
   }
   return doc
 }
@@ -80,9 +94,17 @@ describe('computeProjectCockpit', () => {
 
   it('computes counts, progress, health and breakdowns', async () => {
     const assignee = await User.create({
-      email: 'a@t.local', name: 'A', role: 'ADMIN', passwordHash: 'x',
+      email: 'a@t.local',
+      name: 'A',
+      role: 'ADMIN',
+      passwordHash: 'x',
     })
-    await createIssue({ status: 'IN_PROGRESS', priority: 'URGENT', type: 'BUG', assignee: assignee._id as mongoose.Types.ObjectId })
+    await createIssue({
+      status: 'IN_PROGRESS',
+      priority: 'URGENT',
+      type: 'BUG',
+      assignee: assignee._id as mongoose.Types.ObjectId,
+    })
     await createIssue({ status: 'TODO', priority: 'HIGH', type: 'FEATURE', labels: ['blocked'] })
     await createIssue({ status: 'DONE', priority: 'LOW', type: 'TASK', completedAt: new Date() })
     await createIssue({ status: 'CANCELLED', priority: 'NO_PRIORITY', type: 'CHORE' })

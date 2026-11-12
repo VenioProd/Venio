@@ -3,7 +3,14 @@ import request from 'supertest'
 import express, { type Express, type NextFunction, type Request, type Response } from 'express'
 import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
 import { asReqUser, resetCrmSettings, seedTeam, type Team, type TeamMember } from './crm-routes-helpers.js'
-import { canReadLead, isLeadOutOfScope, leadScopeFilter, leadWriteScopeFilter, readsWholeCrm, writesWholeCrm } from '../lib/crmScope.js'
+import {
+  canReadLead,
+  isLeadOutOfScope,
+  leadScopeFilter,
+  leadWriteScopeFilter,
+  readsWholeCrm,
+  writesWholeCrm,
+} from '../lib/crmScope.js'
 
 /**
  * Non-régression du périmètre des leads CRM :
@@ -104,7 +111,7 @@ describe('crmScope / fonctions pures', () => {
   })
 
   describe('isLeadOutOfScope (écriture)', () => {
-    it.each(['SUPER_ADMIN', 'ADMIN'])('%s n\'est jamais hors périmètre (sans restriction d\'entité)', (role) => {
+    it.each(['SUPER_ADMIN', 'ADMIN'])("%s n'est jamais hors périmètre (sans restriction d'entité)", (role) => {
       expect(isLeadOutOfScope(fakeReq(ME, role), { assignedTo: OTHER, createdBy: OTHER })).toBe(false)
       expect(isLeadOutOfScope(fakeReq(ME, role), {})).toBe(false)
     })
@@ -117,7 +124,7 @@ describe('crmScope / fonctions pures', () => {
       expect(isLeadOutOfScope(fakeReq(ME, role), { assignedTo: OTHER, createdBy: ME })).toBe(false)
     })
 
-    it.each(['MANAGER', 'COMMERCIAL', 'STAGIAIRE'])('%s : hors périmètre sur le lead d\'un autre', (role) => {
+    it.each(['MANAGER', 'COMMERCIAL', 'STAGIAIRE'])("%s : hors périmètre sur le lead d'un autre", (role) => {
       expect(isLeadOutOfScope(fakeReq(ME, role), { assignedTo: OTHER, createdBy: OTHER })).toBe(true)
     })
 
@@ -229,7 +236,7 @@ describe('périmètre / GET /leads', () => {
     await request(app).get('/api/admin/crm/leads').expect(403)
   })
 
-  it('le filtre ?assignedTo n\'est honoré que pour SUPER_ADMIN', async () => {
+  it("le filtre ?assignedTo n'est honoré que pour SUPER_ADMIN", async () => {
     as(team.superAdmin)
     const asSuper = await request(app).get(`/api/admin/crm/leads?assignedTo=${team.commercialB.id}`).expect(200)
     expect(companies(asSuper.body)).toEqual(['Créé seulement', 'Étranger'])
@@ -259,7 +266,7 @@ describe('périmètre / GET /leads/:id', () => {
     expect(ko.body.error).toBe('Lead not found')
   })
 
-  it.each(['commercialA', 'superAdmin', 'admin'])('%s lit un lead qui n\'est pas à lui', async (who) => {
+  it.each(['commercialA', 'superAdmin', 'admin'])("%s lit un lead qui n'est pas à lui", async (who) => {
     as(team[who]!)
     const res = await request(app).get(`/api/admin/crm/leads/${ids.foreign}`).expect(200)
     expect(res.body.lead.company).toBe('Étranger')
@@ -280,15 +287,20 @@ describe('périmètre / PATCH et DELETE', () => {
     if (status === 404) expect(res.body.error).toBe('Lead not found')
   })
 
-  it.each(['mine', 'created', 'assigned', 'foreign'] as const)('admin : PATCH lead « %s » => 200 (écrit sur tout le CRM)', async (key) => {
-    as(team.admin)
-    await request(app).patch(`/api/admin/crm/leads/${ids[key]}`).send({ notes: 'modifié' }).expect(200)
-    expect((await Lead.findById(ids[key]).lean())?.notes).toBe('modifié')
-  })
+  it.each(['mine', 'created', 'assigned', 'foreign'] as const)(
+    'admin : PATCH lead « %s » => 200 (écrit sur tout le CRM)',
+    async (key) => {
+      as(team.admin)
+      await request(app).patch(`/api/admin/crm/leads/${ids[key]}`).send({ notes: 'modifié' }).expect(200)
+      expect((await Lead.findById(ids[key]).lean())?.notes).toBe('modifié')
+    },
+  )
 
-  it('COMMERCIAL : lit tout mais n\'écrit que sur ses leads (404 sinon, lead intact)', async () => {
+  it("COMMERCIAL : lit tout mais n'écrit que sur ses leads (404 sinon, lead intact)", async () => {
     as(team.commercialA)
-    const own = String((await Lead.create({ company: 'À A', createdBy: team.commercialA.id, assignedTo: team.commercialA.id }))._id)
+    const own = String(
+      (await Lead.create({ company: 'À A', createdBy: team.commercialA.id, assignedTo: team.commercialA.id }))._id,
+    )
     await request(app).patch(`/api/admin/crm/leads/${own}`).send({ notes: 'ok' }).expect(200)
     await request(app).patch(`/api/admin/crm/leads/${ids.foreign}`).send({ notes: 'intrusion' }).expect(404)
     await request(app).delete(`/api/admin/crm/leads/${ids.foreign}`).expect(404)
@@ -304,7 +316,7 @@ describe('périmètre / PATCH et DELETE', () => {
     expect(await Lead.findById(ids.foreign)).toBeNull()
   })
 
-  it('manager : DELETE d\'un lead hors périmètre => 404, lead conservé ; dans le périmètre => 200', async () => {
+  it("manager : DELETE d'un lead hors périmètre => 404, lead conservé ; dans le périmètre => 200", async () => {
     await request(app).delete(`/api/admin/crm/leads/${ids.foreign}`).expect(404)
     expect(await Lead.findById(ids.foreign)).not.toBeNull()
     await request(app).delete(`/api/admin/crm/leads/${ids.created}`).expect(200)
@@ -312,7 +324,9 @@ describe('périmètre / PATCH et DELETE', () => {
   })
 
   it('le stagiaire ne peut rien écrire, même sur son propre lead (manage_crm retiré)', async () => {
-    const own = String((await Lead.create({ company: 'Du stagiaire', createdBy: team.stagiaire.id, assignedTo: team.stagiaire.id }))._id)
+    const own = String(
+      (await Lead.create({ company: 'Du stagiaire', createdBy: team.stagiaire.id, assignedTo: team.stagiaire.id }))._id,
+    )
     as(team.stagiaire)
     await request(app).patch(`/api/admin/crm/leads/${own}`).send({ notes: 'x' }).expect(403)
     await request(app).delete(`/api/admin/crm/leads/${own}`).expect(403)

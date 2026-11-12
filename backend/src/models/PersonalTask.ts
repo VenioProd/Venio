@@ -18,7 +18,7 @@ const personalTaskSchema = new mongoose.Schema<IPersonalTask>(
     sequenceId: { type: mongoose.Schema.Types.ObjectId, ref: 'CrmSequence', default: null },
     sourceIdeaId: { type: mongoose.Schema.Types.ObjectId, ref: 'WorkspaceNote', default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 personalTaskSchema.index({ userId: 1, status: 1 })

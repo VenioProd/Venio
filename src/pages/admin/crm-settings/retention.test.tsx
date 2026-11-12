@@ -11,7 +11,8 @@ vi.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ user: { _id: 
 beforeEach(() => {
   apiFetch.mockReset()
   apiFetch.mockImplementation(async (url: string) => {
-    if (url === '/api/admin/crm/settings') return { settings: { retentionMonths: 36, retentionPurgeEnabled: false, weeklyReportRecipients: [] } }
+    if (url === '/api/admin/crm/settings')
+      return { settings: { retentionMonths: 36, retentionPurgeEnabled: false, weeklyReportRecipients: [] } }
     if (url === '/api/admin/admins') return { users: [] }
     return {}
   })

@@ -2,12 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import request from 'supertest'
 import type { Express } from 'express'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import AgentToken from '../models/AgentToken.js'
 import AgentIdempotencyKey from '../models/AgentIdempotencyKey.js'
 import AuditLog from '../models/AuditLog.js'
@@ -53,9 +48,7 @@ describe('Agent integration / auth', () => {
   })
 
   it('ping is rejected on malformed token', async () => {
-    const res = await request(app)
-      .get('/api/v1/agent/ping')
-      .set('Authorization', 'Bearer not-a-real-token')
+    const res = await request(app).get('/api/v1/agent/ping').set('Authorization', 'Bearer not-a-real-token')
     expect(res.status).toBe(401)
     expect(res.body.code).toBe('INVALID_TOKEN')
   })
@@ -72,18 +65,14 @@ describe('Agent integration / auth', () => {
     const { plainSecret } = await createAgentTokenInDb(['read:crm'])
     // On vandalise le secret pour garder le prefix mais corrompre la fin
     const tampered = plainSecret.slice(0, -2) + (plainSecret.endsWith('aa') ? 'bb' : 'aa')
-    const res = await request(app)
-      .get('/api/v1/agent/ping')
-      .set('Authorization', `Bearer ${tampered}`)
+    const res = await request(app).get('/api/v1/agent/ping').set('Authorization', `Bearer ${tampered}`)
     expect(res.status).toBe(401)
     expect(res.body.code).toBe('INVALID_TOKEN')
   })
 
   it('ping succeeds with a valid token and returns the token identity', async () => {
     const { id, plainSecret, prefix } = await createAgentTokenInDb(['read:crm'])
-    const res = await request(app)
-      .get('/api/v1/agent/ping')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/ping').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(true)
     expect(res.body.token.id).toBe(id)
@@ -94,18 +83,14 @@ describe('Agent integration / auth', () => {
   it('rejects a revoked token', async () => {
     const { id, plainSecret } = await createAgentTokenInDb(['read:crm'])
     await AgentToken.updateOne({ _id: id }, { status: 'REVOKED' })
-    const res = await request(app)
-      .get('/api/v1/agent/ping')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/ping').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(401)
   })
 
   it('rejects an expired token', async () => {
     const { id, plainSecret } = await createAgentTokenInDb(['read:crm'])
     await AgentToken.updateOne({ _id: id }, { expiresAt: new Date(Date.now() - 60_000) })
-    const res = await request(app)
-      .get('/api/v1/agent/ping')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/ping').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(401)
     expect(res.body.code).toBe('EXPIRED_TOKEN')
   })
@@ -129,9 +114,7 @@ describe('Agent integration / auth', () => {
 describe('Agent integration / scopes', () => {
   it('GET /crm/clients is rejected without read:crm', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:projects'])
-    const res = await request(app)
-      .get('/api/v1/agent/clients')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/clients').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(403)
     expect(res.body.code).toBe('INSUFFICIENT_SCOPE')
     expect(res.body.details.required).toContain('read:crm')
@@ -139,18 +122,14 @@ describe('Agent integration / scopes', () => {
 
   it('GET /crm/clients succeeds with read:crm', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:crm'])
-    const res = await request(app)
-      .get('/api/v1/agent/clients')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/clients').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(200)
     expect(res.body).toMatchObject({ items: [], page: 1, pageSize: 50, total: 0 })
   })
 
   it('admin:* grants access without explicit scope', async () => {
     const { plainSecret } = await createAgentTokenInDb(['admin:*'])
-    const res = await request(app)
-      .get('/api/v1/agent/clients')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    const res = await request(app).get('/api/v1/agent/clients').set('Authorization', `Bearer ${plainSecret}`)
     expect(res.status).toBe(200)
   })
 
@@ -279,9 +258,7 @@ describe('Agent integration / audit', () => {
 
   it('does NOT log GET requests', async () => {
     const { plainSecret } = await createAgentTokenInDb(['read:crm'])
-    await request(app)
-      .get('/api/v1/agent/clients')
-      .set('Authorization', `Bearer ${plainSecret}`)
+    await request(app).get('/api/v1/agent/clients').set('Authorization', `Bearer ${plainSecret}`)
     await new Promise((r) => setTimeout(r, 50))
     const logs = await AuditLog.find({ action: 'AGENT_API_MUTATION' }).lean()
     expect(logs).toHaveLength(0)

@@ -43,8 +43,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 const STORAGE_KEY = 'venio-theme'
 const ACCENT_KEY = 'venio-accent'
 
-const isPortalPath = (pathname: string) =>
-  pathname.startsWith('/admin') || pathname.startsWith('/espace-client')
+const isPortalPath = (pathname: string) => pathname.startsWith('/admin') || pathname.startsWith('/espace-client')
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation()

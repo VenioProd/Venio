@@ -10,7 +10,11 @@ import InternalProject, { ENTITIES, POLES } from '../../models/InternalProject.j
 import Intern from '../../models/Intern.js'
 import User from '../../models/User.js'
 import InternalMission from '../../models/InternalMission.js'
-import { sendInternalProjectAssignedEmail, sendInternalMissionAssignedEmail, sendStepReviewRequestEmail } from '../../lib/email/templates/project.js'
+import {
+  sendInternalProjectAssignedEmail,
+  sendInternalMissionAssignedEmail,
+  sendStepReviewRequestEmail,
+} from '../../lib/email/templates/project.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
 import { createNotification } from '../../lib/notifications.js'
 import { notifySuperAdmins, notifyUsers } from '../../lib/notifyHelpers.js'
@@ -53,44 +57,45 @@ async function canAccess(userId: string, userRole: string, project: any): Promis
 }
 
 // GET / — list all internal projects
-router.get('/', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const isStagiaire = await (async () => {
-      const user = await User.findById(req.user!.id).select('tags')
-      return user?.tags?.includes('STAGIAIRE') ?? false
-    })()
+router.get(
+  '/',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const isStagiaire = await (async () => {
+        const user = await User.findById(req.user!.id).select('tags')
+        return user?.tags?.includes('STAGIAIRE') ?? false
+      })()
 
-    let projects
-    if (isStagiaire) {
-      const intern = await Intern.findOne({ userId: req.user!.id, status: 'ACTIF' })
-      const memberFilter = intern?.departement
-        ? {
-            $or: [
-              { members: req.user!.id },
-              { poles: intern.departement },
-            ],
-          }
-        : { members: req.user!.id }
-      projects = await InternalProject.find({ status: { $ne: 'ARCHIVE' }, ...memberFilter })
-        .populate('members', 'name email role')
-        .populate('createdBy', 'name')
-        .sort({ updatedAt: -1 })
-    } else {
-      const { status, entity } = req.query
-      const filter: Record<string, any> = {}
-      if (status && status !== 'all') filter.status = status
-      if (entity && entity !== 'all') filter.entity = entity
-      projects = await InternalProject.find(filter)
-        .populate('members', 'name email role')
-        .populate('createdBy', 'name')
-        .sort({ updatedAt: -1 })
+      let projects
+      if (isStagiaire) {
+        const intern = await Intern.findOne({ userId: req.user!.id, status: 'ACTIF' })
+        const memberFilter = intern?.departement
+          ? {
+              $or: [{ members: req.user!.id }, { poles: intern.departement }],
+            }
+          : { members: req.user!.id }
+        projects = await InternalProject.find({ status: { $ne: 'ARCHIVE' }, ...memberFilter })
+          .populate('members', 'name email role')
+          .populate('createdBy', 'name')
+          .sort({ updatedAt: -1 })
+      } else {
+        const { status, entity } = req.query
+        const filter: Record<string, any> = {}
+        if (status && status !== 'all') filter.status = status
+        if (entity && entity !== 'all') filter.entity = entity
+        projects = await InternalProject.find(filter)
+          .populate('members', 'name email role')
+          .populate('createdBy', 'name')
+          .sort({ updatedAt: -1 })
+      }
+
+      return res.json({ projects })
+    } catch (err) {
+      return next(err)
     }
-
-    return res.json({ projects })
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 // GET /meta — entities + poles lists
 router.get('/meta', requirePermission(PERMISSIONS.VIEW_PROJECTS), (_req: Request, res: Response) => {
@@ -98,132 +103,82 @@ router.get('/meta', requirePermission(PERMISSIONS.VIEW_PROJECTS), (_req: Request
 })
 
 // GET /missions — toutes les missions (SUPER_ADMIN = tout, autres = seulement les leurs)
-router.get('/missions', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const filter: Record<string, any> = {}
-    if (req.user!.role !== 'SUPER_ADMIN') filter.assignedTo = { $in: [req.user!.id] }
+router.get(
+  '/missions',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const filter: Record<string, any> = {}
+      if (req.user!.role !== 'SUPER_ADMIN') filter.assignedTo = { $in: [req.user!.id] }
 
-    const missions = await InternalMission.find(filter)
-      .populate('assignedTo', 'name email')
-      .populate('participants.user', 'name email')
-      .populate('createdBy', 'name')
-      .populate('internalProject', 'name entity')
-      .sort({ createdAt: -1 })
-    return res.json({ missions })
-  } catch (err) { return next(err) }
-})
+      const missions = await InternalMission.find(filter)
+        .populate('assignedTo', 'name email')
+        .populate('participants.user', 'name email')
+        .populate('createdBy', 'name')
+        .populate('internalProject', 'name entity')
+        .sort({ createdAt: -1 })
+      return res.json({ missions })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // GET /:id
-router.get('/:id', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const project = await InternalProject.findById(req.params.id)
-      .populate('members', 'name email role tags')
-      .populate('createdBy', 'name')
-    if (!project) return res.status(404).json({ error: 'Projet introuvable' })
+router.get(
+  '/:id',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const project = await InternalProject.findById(req.params.id)
+        .populate('members', 'name email role tags')
+        .populate('createdBy', 'name')
+      if (!project) return res.status(404).json({ error: 'Projet introuvable' })
 
-    const ok = await canAccess(req.user!.id, req.user!.role, project)
-    if (!ok) return res.status(403).json({ error: 'Accès refusé' })
+      const ok = await canAccess(req.user!.id, req.user!.role, project)
+      if (!ok) return res.status(403).json({ error: 'Accès refusé' })
 
-    return res.json({ project })
-  } catch (err) {
-    return next(err)
-  }
-})
+      return res.json({ project })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // POST / — create
-router.post('/', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { name, description, entity, poles, members, status, priority, startDate, endDate, tags } = req.body
-    if (!name?.trim()) return res.status(400).json({ error: 'Le nom est requis' })
-    if (!entity) return res.status(400).json({ error: "L'entité est requise" })
+router.post(
+  '/',
+  requirePermission(PERMISSIONS.EDIT_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { name, description, entity, poles, members, status, priority, startDate, endDate, tags } = req.body
+      if (!name?.trim()) return res.status(400).json({ error: 'Le nom est requis' })
+      if (!entity) return res.status(400).json({ error: "L'entité est requise" })
 
-    const project = await InternalProject.create({
-      name: name.trim(),
-      description: description || '',
-      entity,
-      poles: Array.isArray(poles) ? poles : [],
-      members: Array.isArray(members) ? members : [],
-      status: status || 'EN_COURS',
-      priority: priority || 'NORMALE',
-      startDate: startDate ? new Date(startDate) : null,
-      endDate: endDate ? new Date(endDate) : null,
-      tags: Array.isArray(tags) ? tags : [],
-      createdBy: req.user!.id,
-    })
+      const project = await InternalProject.create({
+        name: name.trim(),
+        description: description || '',
+        entity,
+        poles: Array.isArray(poles) ? poles : [],
+        members: Array.isArray(members) ? members : [],
+        status: status || 'EN_COURS',
+        priority: priority || 'NORMALE',
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        tags: Array.isArray(tags) ? tags : [],
+        createdBy: req.user!.id,
+      })
 
-    const populated = await InternalProject.findById(project._id)
-      .populate('members', 'name email role')
-      .populate('createdBy', 'name')
+      const populated = await InternalProject.findById(project._id)
+        .populate('members', 'name email role')
+        .populate('createdBy', 'name')
 
-    // Notifier chaque membre par email
-    const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
-    const projectUrl = `${baseUrl}/admin/projets-internes/${project._id}`
-    const membersList = (populated?.members || []) as any[]
-    for (const member of membersList) {
-      if (member.email) {
-        sendInternalProjectAssignedEmail({
-          to: member.email,
-          memberName: member.name || member.email,
-          projectName: project.name,
-          entity: project.entity,
-          poles: project.poles,
-          description: project.description,
-          projectUrl,
-        }).catch(() => {}) // fire and forget, ne bloque pas la réponse
-      }
-    }
-
-    // Notif in-app à chaque membre
-    notifyUsers(membersList.map((m) => String(m._id)), {
-      type: 'INTERNAL_PROJECT_CREATED',
-      title: `Nouveau projet interne`,
-      message: `Vous avez été ajouté à "${project.name}" (${project.entity})`,
-      link: `/admin/projets-internes/${project._id}`,
-      metadata: { projectId: String(project._id) },
-      excludeUserId: req.user!.id,
-    }).catch(() => {})
-
-    return res.status(201).json({ project: populated })
-  } catch (err) {
-    return next(err)
-  }
-})
-
-// PATCH /:id — update
-router.patch('/:id', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const project = await InternalProject.findById(req.params.id)
-    if (!project) return res.status(404).json({ error: 'Projet introuvable' })
-
-    const { name, description, entity, poles, members, status, priority, startDate, endDate, tags } = req.body
-
-    // Garder trace des membres avant modification pour détecter les nouveaux
-    const previousMemberIds = project.members.map((m) => m.toString())
-
-    if (name !== undefined) project.name = name.trim()
-    if (description !== undefined) project.description = description
-    if (entity !== undefined) project.entity = entity
-    if (Array.isArray(poles)) project.poles = poles
-    if (Array.isArray(members)) project.members = members
-    if (status !== undefined) project.status = status
-    if (priority !== undefined) project.priority = priority
-    if (startDate !== undefined) project.startDate = startDate ? new Date(startDate) : null
-    if (endDate !== undefined) project.endDate = endDate ? new Date(endDate) : null
-    if (Array.isArray(tags)) project.tags = tags
-
-    await project.save()
-
-    const populated = await InternalProject.findById(project._id)
-      .populate('members', 'name email role')
-      .populate('createdBy', 'name')
-
-    // Notifier les nouveaux membres ajoutés
-    if (Array.isArray(members)) {
+      // Notifier chaque membre par email
       const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
       const projectUrl = `${baseUrl}/admin/projets-internes/${project._id}`
-      const newMembersList = (populated?.members || []) as any[]
-      for (const member of newMembersList) {
-        if (!previousMemberIds.includes(member._id.toString()) && member.email) {
+      const membersList = (populated?.members || []) as any[]
+      for (const member of membersList) {
+        if (member.email) {
           sendInternalProjectAssignedEmail({
             to: member.email,
             memberName: member.name || member.email,
@@ -232,424 +187,578 @@ router.patch('/:id', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: R
             poles: project.poles,
             description: project.description,
             projectUrl,
-          }).catch(() => {})
+          }).catch(() => {}) // fire and forget, ne bloque pas la réponse
         }
       }
-    }
 
-    return res.json({ project: populated })
-  } catch (err) {
-    return next(err)
-  }
-})
+      // Notif in-app à chaque membre
+      notifyUsers(
+        membersList.map((m) => String(m._id)),
+        {
+          type: 'INTERNAL_PROJECT_CREATED',
+          title: `Nouveau projet interne`,
+          message: `Vous avez été ajouté à "${project.name}" (${project.entity})`,
+          link: `/admin/projets-internes/${project._id}`,
+          metadata: { projectId: String(project._id) },
+          excludeUserId: req.user!.id,
+        },
+      ).catch(() => {})
+
+      return res.status(201).json({ project: populated })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
+
+// PATCH /:id — update
+router.patch(
+  '/:id',
+  requirePermission(PERMISSIONS.EDIT_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const project = await InternalProject.findById(req.params.id)
+      if (!project) return res.status(404).json({ error: 'Projet introuvable' })
+
+      const { name, description, entity, poles, members, status, priority, startDate, endDate, tags } = req.body
+
+      // Garder trace des membres avant modification pour détecter les nouveaux
+      const previousMemberIds = project.members.map((m) => m.toString())
+
+      if (name !== undefined) project.name = name.trim()
+      if (description !== undefined) project.description = description
+      if (entity !== undefined) project.entity = entity
+      if (Array.isArray(poles)) project.poles = poles
+      if (Array.isArray(members)) project.members = members
+      if (status !== undefined) project.status = status
+      if (priority !== undefined) project.priority = priority
+      if (startDate !== undefined) project.startDate = startDate ? new Date(startDate) : null
+      if (endDate !== undefined) project.endDate = endDate ? new Date(endDate) : null
+      if (Array.isArray(tags)) project.tags = tags
+
+      await project.save()
+
+      const populated = await InternalProject.findById(project._id)
+        .populate('members', 'name email role')
+        .populate('createdBy', 'name')
+
+      // Notifier les nouveaux membres ajoutés
+      if (Array.isArray(members)) {
+        const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
+        const projectUrl = `${baseUrl}/admin/projets-internes/${project._id}`
+        const newMembersList = (populated?.members || []) as any[]
+        for (const member of newMembersList) {
+          if (!previousMemberIds.includes(member._id.toString()) && member.email) {
+            sendInternalProjectAssignedEmail({
+              to: member.email,
+              memberName: member.name || member.email,
+              projectName: project.name,
+              entity: project.entity,
+              poles: project.poles,
+              description: project.description,
+              projectUrl,
+            }).catch(() => {})
+          }
+        }
+      }
+
+      return res.json({ project: populated })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // DELETE /:id
-router.delete('/:id', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (req.user!.role !== 'SUPER_ADMIN') {
-      return res.status(403).json({ error: 'Seul le Super Admin peut supprimer un projet interne' })
+router.delete(
+  '/:id',
+  requirePermission(PERMISSIONS.EDIT_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (req.user!.role !== 'SUPER_ADMIN') {
+        return res.status(403).json({ error: 'Seul le Super Admin peut supprimer un projet interne' })
+      }
+      const project = await InternalProject.findById(req.params.id)
+      if (!project) return res.status(404).json({ error: 'Projet introuvable' })
+      await project.deleteOne()
+      return res.json({ success: true })
+    } catch (err) {
+      return next(err)
     }
-    const project = await InternalProject.findById(req.params.id)
-    if (!project) return res.status(404).json({ error: 'Projet introuvable' })
-    await project.deleteOne()
-    return res.json({ success: true })
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 // ── MISSIONS ──────────────────────────────────────────────────────────────────
 
 // GET /:projectId/missions
-router.get('/:projectId/missions', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const project = await InternalProject.findById(req.params.projectId)
-    if (!project) return res.status(404).json({ error: 'Projet introuvable' })
-    const ok = await canAccess(req.user!.id, req.user!.role, project)
-    if (!ok) return res.status(403).json({ error: 'Accès refusé' })
+router.get(
+  '/:projectId/missions',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const project = await InternalProject.findById(req.params.projectId)
+      if (!project) return res.status(404).json({ error: 'Projet introuvable' })
+      const ok = await canAccess(req.user!.id, req.user!.role, project)
+      if (!ok) return res.status(403).json({ error: 'Accès refusé' })
 
-    // Seul le SUPER_ADMIN voit toutes les missions; les autres voient seulement les leurs
-    const isAdmin = req.user!.role === 'SUPER_ADMIN'
-    const filter: Record<string, any> = { internalProject: req.params.projectId }
-    if (!isAdmin) filter.assignedTo = { $in: [req.user!.id] }
+      // Seul le SUPER_ADMIN voit toutes les missions; les autres voient seulement les leurs
+      const isAdmin = req.user!.role === 'SUPER_ADMIN'
+      const filter: Record<string, any> = { internalProject: req.params.projectId }
+      if (!isAdmin) filter.assignedTo = { $in: [req.user!.id] }
 
-    const missions = await InternalMission.find(filter)
-      .populate('assignedTo', 'name email')
-      .populate('participants.user', 'name email')
-      .populate('createdBy', 'name')
-      .sort({ createdAt: -1 })
-    return res.json({ missions })
-  } catch (err) { return next(err) }
-})
+      const missions = await InternalMission.find(filter)
+        .populate('assignedTo', 'name email')
+        .populate('participants.user', 'name email')
+        .populate('createdBy', 'name')
+        .sort({ createdAt: -1 })
+      return res.json({ missions })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // POST /:projectId/missions (SUPER_ADMIN + ADMIN)
-router.post('/:projectId/missions', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(req.user!.role)) return res.status(403).json({ error: 'Accès refusé' })
+router.post(
+  '/:projectId/missions',
+  requirePermission(PERMISSIONS.EDIT_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!['SUPER_ADMIN', 'ADMIN'].includes(req.user!.role)) return res.status(403).json({ error: 'Accès refusé' })
 
-    const project = await InternalProject.findById(req.params.projectId)
-    if (!project) return res.status(404).json({ error: 'Projet introuvable' })
+      const project = await InternalProject.findById(req.params.projectId)
+      if (!project) return res.status(404).json({ error: 'Projet introuvable' })
 
-    const { title, description, assignedTo, dueDate } = req.body
-    if (!title?.trim()) return res.status(400).json({ error: 'Le titre est requis' })
-    const assignedToArr: string[] = Array.isArray(assignedTo) ? assignedTo : (assignedTo ? [assignedTo] : [])
-    if (assignedToArr.length === 0) return res.status(400).json({ error: 'Assigne la mission à au moins une personne' })
+      const { title, description, assignedTo, dueDate } = req.body
+      if (!title?.trim()) return res.status(400).json({ error: 'Le titre est requis' })
+      const assignedToArr: string[] = Array.isArray(assignedTo) ? assignedTo : assignedTo ? [assignedTo] : []
+      if (assignedToArr.length === 0)
+        return res.status(400).json({ error: 'Assigne la mission à au moins une personne' })
 
-    const mission = await InternalMission.create({
-      title: title.trim(),
-      description: description || '',
-      assignedTo: assignedToArr,
-      participants: assignedToArr.map((id: string) => ({ user: id, progress: 0, status: 'A_FAIRE' })),
-      internalProject: req.params.projectId,
-      dueDate: dueDate ? new Date(dueDate) : null,
-      createdBy: req.user!.id,
-    })
+      const mission = await InternalMission.create({
+        title: title.trim(),
+        description: description || '',
+        assignedTo: assignedToArr,
+        participants: assignedToArr.map((id: string) => ({ user: id, progress: 0, status: 'A_FAIRE' })),
+        internalProject: req.params.projectId,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        createdBy: req.user!.id,
+      })
 
-    const populated = await InternalMission.findById(mission._id)
-      .populate<{ assignedTo: { name: string; email: string }[] }>('assignedTo', 'name email')
-      .populate('createdBy', 'name')
+      const populated = await InternalMission.findById(mission._id)
+        .populate<{ assignedTo: { name: string; email: string }[] }>('assignedTo', 'name email')
+        .populate('createdBy', 'name')
 
-    // Notifier chaque personne assignée
-    const assignees = (populated?.assignedTo as any[]) || []
-    const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
-    for (const assignee of assignees) {
-      if (assignee?.email) {
-        sendInternalMissionAssignedEmail({
-          to: assignee.email,
-          memberName: assignee.name || assignee.email,
-          missionTitle: mission.title,
-          missionDescription: mission.description || '',
-          projectName: project.name,
-          entity: project.entity,
-          dueDate: mission.dueDate ? mission.dueDate.toISOString() : null,
-          projectUrl: `${baseUrl}/admin/projets-internes/${project._id}`,
-        }).catch(() => {})
+      // Notifier chaque personne assignée
+      const assignees = (populated?.assignedTo as any[]) || []
+      const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
+      for (const assignee of assignees) {
+        if (assignee?.email) {
+          sendInternalMissionAssignedEmail({
+            to: assignee.email,
+            memberName: assignee.name || assignee.email,
+            missionTitle: mission.title,
+            missionDescription: mission.description || '',
+            projectName: project.name,
+            entity: project.entity,
+            dueDate: mission.dueDate ? mission.dueDate.toISOString() : null,
+            projectUrl: `${baseUrl}/admin/projets-internes/${project._id}`,
+          }).catch(() => {})
+        }
       }
+
+      // Notif in-app à chaque assigné
+      notifyUsers(assignedToArr, {
+        type: 'INTERNAL_MISSION_ASSIGNED',
+        title: `Nouvelle mission assignée`,
+        message: `"${mission.title}" — projet ${project.name}`,
+        link: `/admin/projets-internes/${project._id}`,
+        metadata: { projectId: String(project._id), missionId: String(mission._id) },
+        excludeUserId: req.user!.id,
+      }).catch(() => {})
+
+      return res.status(201).json({ mission: populated })
+    } catch (err) {
+      return next(err)
     }
-
-    // Notif in-app à chaque assigné
-    notifyUsers(assignedToArr, {
-      type: 'INTERNAL_MISSION_ASSIGNED',
-      title: `Nouvelle mission assignée`,
-      message: `"${mission.title}" — projet ${project.name}`,
-      link: `/admin/projets-internes/${project._id}`,
-      metadata: { projectId: String(project._id), missionId: String(mission._id) },
-      excludeUserId: req.user!.id,
-    }).catch(() => {})
-
-    return res.status(201).json({ mission: populated })
-  } catch (err) { return next(err) }
-})
+  },
+)
 
 // PATCH /:projectId/missions/:missionId
-router.patch('/:projectId/missions/:missionId', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const mission = await InternalMission.findOne({
-      _id: req.params.missionId,
-      internalProject: req.params.projectId,
-    })
-    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+router.patch(
+  '/:projectId/missions/:missionId',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const mission = await InternalMission.findOne({
+        _id: req.params.missionId,
+        internalProject: req.params.projectId,
+      })
+      if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
 
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
-    const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
-    if (!isAdmin && !isAssigned) return res.status(403).json({ error: 'Accès refusé' })
+      const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
+      const isAssigned = mission.assignedTo.some((id) => id.toString() === req.user!.id)
+      if (!isAdmin && !isAssigned) return res.status(403).json({ error: 'Accès refusé' })
 
-    const oldAssignees = mission.assignedTo.map((id) => String(id))
+      const oldAssignees = mission.assignedTo.map((id) => String(id))
 
-    const { title, description, assignedTo, status, dueDate, steps, progress, deliverables } = req.body
-    if (isAdmin) {
-      if (title !== undefined) mission.title = title.trim()
-      if (description !== undefined) mission.description = description
-      if (assignedTo !== undefined) mission.assignedTo = Array.isArray(assignedTo) ? assignedTo : [assignedTo]
-      if (dueDate !== undefined) mission.dueDate = dueDate ? new Date(dueDate) : null
-      if (deliverables !== undefined) mission.deliverables = deliverables
+      const { title, description, assignedTo, status, dueDate, steps, progress, deliverables } = req.body
+      if (isAdmin) {
+        if (title !== undefined) mission.title = title.trim()
+        if (description !== undefined) mission.description = description
+        if (assignedTo !== undefined) mission.assignedTo = Array.isArray(assignedTo) ? assignedTo : [assignedTo]
+        if (dueDate !== undefined) mission.dueDate = dueDate ? new Date(dueDate) : null
+        if (deliverables !== undefined) mission.deliverables = deliverables
+      }
+      if (status !== undefined) mission.status = status
+      if (steps !== undefined) mission.steps = steps
+      if (progress !== undefined) mission.progress = Math.min(100, Math.max(0, Number(progress)))
+
+      await mission.save()
+      const populated = await InternalMission.findById(mission._id)
+        .populate('assignedTo', 'name email')
+        .populate('participants.user', 'name email')
+        .populate('createdBy', 'name')
+
+      // Notif aux nouveaux assignés (différence entre ancienne et nouvelle liste)
+      const newAssignees = mission.assignedTo.map((id) => String(id))
+      const added = newAssignees.filter((id) => !oldAssignees.includes(id))
+      if (added.length > 0) {
+        notifyUsers(added, {
+          type: 'INTERNAL_MISSION_ASSIGNED',
+          title: `Mission assignée`,
+          message: `"${mission.title}"`,
+          link: `/admin/projets-internes/${req.params.projectId}`,
+          metadata: { projectId: String(req.params.projectId), missionId: String(mission._id) },
+          excludeUserId: req.user!.id,
+        }).catch(() => {})
+      }
+
+      return res.json({ mission: populated })
+    } catch (err) {
+      return next(err)
     }
-    if (status !== undefined) mission.status = status
-    if (steps !== undefined) mission.steps = steps
-    if (progress !== undefined) mission.progress = Math.min(100, Math.max(0, Number(progress)))
-
-    await mission.save()
-    const populated = await InternalMission.findById(mission._id)
-      .populate('assignedTo', 'name email')
-      .populate('participants.user', 'name email')
-      .populate('createdBy', 'name')
-
-    // Notif aux nouveaux assignés (différence entre ancienne et nouvelle liste)
-    const newAssignees = mission.assignedTo.map((id) => String(id))
-    const added = newAssignees.filter((id) => !oldAssignees.includes(id))
-    if (added.length > 0) {
-      notifyUsers(added, {
-        type: 'INTERNAL_MISSION_ASSIGNED',
-        title: `Mission assignée`,
-        message: `"${mission.title}"`,
-        link: `/admin/projets-internes/${req.params.projectId}`,
-        metadata: { projectId: String(req.params.projectId), missionId: String(mission._id) },
-        excludeUserId: req.user!.id,
-      }).catch(() => {})
-    }
-
-    return res.json({ mission: populated })
-  } catch (err) { return next(err) }
-})
+  },
+)
 
 // PATCH /:projectId/missions/:missionId/my-progress — mise à jour individuelle de l'assigné
-router.patch('/:projectId/missions/:missionId/my-progress', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const mission = await InternalMission.findOne({ _id: req.params.missionId, internalProject: req.params.projectId })
-    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+router.patch(
+  '/:projectId/missions/:missionId/my-progress',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const mission = await InternalMission.findOne({
+        _id: req.params.missionId,
+        internalProject: req.params.projectId,
+      })
+      if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
 
-    const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(req.user!.role)
-    if (!isAssigned && !isAdmin) return res.status(403).json({ error: 'Accès refusé' })
+      const isAssigned = mission.assignedTo.some((id) => id.toString() === req.user!.id)
+      const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(req.user!.role)
+      if (!isAssigned && !isAdmin) return res.status(403).json({ error: 'Accès refusé' })
 
-    const { userId, progress, status, blocked, blockedReason } = req.body
-    const targetId = (isAdmin && userId) ? userId : req.user!.id
+      const { userId, progress, status, blocked, blockedReason } = req.body
+      const targetId = isAdmin && userId ? userId : req.user!.id
 
-    const idx = mission.participants.findIndex(p => p.user.toString() === targetId)
-    if (idx === -1) {
-      // Créer le participant s'il n'existe pas (missions créées avant la migration)
-      mission.participants.push({ user: new mongoose.Types.ObjectId(targetId), progress: progress ?? 0, status: status ?? 'A_FAIRE', blocked: blocked ?? false, blockedReason: blockedReason ?? '' } as any)
-    } else {
-      if (progress !== undefined) mission.participants[idx].progress = Math.min(100, Math.max(0, Number(progress)))
-      if (status !== undefined) mission.participants[idx].status = status
-      if (blocked !== undefined) mission.participants[idx].blocked = blocked
-      if (blockedReason !== undefined) mission.participants[idx].blockedReason = blockedReason
+      const idx = mission.participants.findIndex((p) => p.user.toString() === targetId)
+      if (idx === -1) {
+        // Créer le participant s'il n'existe pas (missions créées avant la migration)
+        mission.participants.push({
+          user: new mongoose.Types.ObjectId(targetId),
+          progress: progress ?? 0,
+          status: status ?? 'A_FAIRE',
+          blocked: blocked ?? false,
+          blockedReason: blockedReason ?? '',
+        } as any)
+      } else {
+        if (progress !== undefined) mission.participants[idx].progress = Math.min(100, Math.max(0, Number(progress)))
+        if (status !== undefined) mission.participants[idx].status = status
+        if (blocked !== undefined) mission.participants[idx].blocked = blocked
+        if (blockedReason !== undefined) mission.participants[idx].blockedReason = blockedReason
+      }
+
+      // Auto-calculate global progress as average of all participants
+      if (mission.participants.length > 0) {
+        const total = mission.participants.reduce((sum, p) => sum + (p.progress ?? 0), 0)
+        mission.progress = Math.round(total / mission.participants.length)
+      }
+
+      await mission.save()
+      const populated = await InternalMission.findById(mission._id)
+        .populate('assignedTo', 'name email')
+        .populate('participants.user', 'name email')
+        .populate('createdBy', 'name')
+
+      // Si blocage signalé → notif aux super admins
+      if (blocked && blockedReason) {
+        notifySuperAdmins({
+          type: 'INTERNAL_MISSION_REVIEW_REQUESTED',
+          title: `🚫 Mission bloquée : ${mission.title}`,
+          message: blockedReason.slice(0, 200),
+          link: `/admin/projets-internes/${req.params.projectId}`,
+          metadata: { projectId: String(req.params.projectId), missionId: String(mission._id), blocked: true },
+          excludeUserId: req.user!.id,
+        }).catch(() => {})
+      }
+
+      return res.json({ mission: populated })
+    } catch (err) {
+      return next(err)
     }
-
-    // Auto-calculate global progress as average of all participants
-    if (mission.participants.length > 0) {
-      const total = mission.participants.reduce((sum, p) => sum + (p.progress ?? 0), 0)
-      mission.progress = Math.round(total / mission.participants.length)
-    }
-
-    await mission.save()
-    const populated = await InternalMission.findById(mission._id)
-      .populate('assignedTo', 'name email')
-      .populate('participants.user', 'name email')
-      .populate('createdBy', 'name')
-
-    // Si blocage signalé → notif aux super admins
-    if (blocked && blockedReason) {
-      notifySuperAdmins({
-        type: 'INTERNAL_MISSION_REVIEW_REQUESTED',
-        title: `🚫 Mission bloquée : ${mission.title}`,
-        message: blockedReason.slice(0, 200),
-        link: `/admin/projets-internes/${req.params.projectId}`,
-        metadata: { projectId: String(req.params.projectId), missionId: String(mission._id), blocked: true },
-        excludeUserId: req.user!.id,
-      }).catch(() => {})
-    }
-
-    return res.json({ mission: populated })
-  } catch (err) { return next(err) }
-})
+  },
+)
 
 // DELETE /:projectId/missions/:missionId (SUPER_ADMIN uniquement)
-router.delete('/:projectId/missions/:missionId', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seul le Super Admin peut supprimer une mission' })
+router.delete(
+  '/:projectId/missions/:missionId',
+  requirePermission(PERMISSIONS.EDIT_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (req.user!.role !== 'SUPER_ADMIN')
+        return res.status(403).json({ error: 'Seul le Super Admin peut supprimer une mission' })
 
-    const mission = await InternalMission.findOneAndDelete({
-      _id: req.params.missionId,
-      internalProject: req.params.projectId,
-    })
-    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
-    return res.json({ success: true })
-  } catch (err) { return next(err) }
-})
+      const mission = await InternalMission.findOneAndDelete({
+        _id: req.params.missionId,
+        internalProject: req.params.projectId,
+      })
+      if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+      return res.json({ success: true })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // ── MISSION FILES ─────────────────────────────────────────────────────────────
 
 // POST /:projectId/missions/:missionId/files — upload a file
-router.post('/:projectId/missions/:missionId/files', requirePermission(PERMISSIONS.VIEW_PROJECTS), missionUpload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' })
+router.post(
+  '/:projectId/missions/:missionId/files',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  missionUpload.single('file'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' })
 
-    const mission = await InternalMission.findOne({
-      _id: req.params.missionId,
-      internalProject: req.params.projectId,
-    })
-    if (!mission) {
-      fs.unlinkSync(req.file.path)
-      return res.status(404).json({ error: 'Mission introuvable' })
+      const mission = await InternalMission.findOne({
+        _id: req.params.missionId,
+        internalProject: req.params.projectId,
+      })
+      if (!mission) {
+        fs.unlinkSync(req.file.path)
+        return res.status(404).json({ error: 'Mission introuvable' })
+      }
+
+      const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
+      const isAssigned = mission.assignedTo.some((id) => id.toString() === req.user!.id)
+      if (!isAdmin && !isAssigned) {
+        fs.unlinkSync(req.file.path)
+        return res.status(403).json({ error: 'Accès refusé' })
+      }
+
+      mission.files.push({
+        originalName: req.file.originalname,
+        storagePath: req.file.path,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        uploadedBy: req.user!.id as any,
+      })
+      await mission.save()
+      syncUploadToNextcloud(req.file, 'projets-internes', String(req.params.projectId))
+
+      // Notif aux autres membres de la mission
+      notifyUsers(
+        mission.assignedTo.map((id) => String(id)),
+        {
+          type: 'INTERNAL_MISSION_FILE_ADDED',
+          title: `Nouveau fichier sur "${mission.title}"`,
+          message: `${req.file.originalname} ajouté`,
+          link: `/admin/projets-internes/${req.params.projectId}`,
+          metadata: { projectId: String(req.params.projectId), missionId: String(mission._id) },
+          excludeUserId: req.user!.id,
+        },
+      ).catch(() => {})
+
+      return res.status(201).json({ files: mission.files })
+    } catch (err) {
+      return next(err)
     }
-
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
-    const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
-    if (!isAdmin && !isAssigned) {
-      fs.unlinkSync(req.file.path)
-      return res.status(403).json({ error: 'Accès refusé' })
-    }
-
-    mission.files.push({
-      originalName: req.file.originalname,
-      storagePath: req.file.path,
-      mimeType: req.file.mimetype,
-      size: req.file.size,
-      uploadedBy: req.user!.id as any,
-    })
-    await mission.save()
-    syncUploadToNextcloud(req.file, 'projets-internes', String(req.params.projectId))
-
-    // Notif aux autres membres de la mission
-    notifyUsers(mission.assignedTo.map((id) => String(id)), {
-      type: 'INTERNAL_MISSION_FILE_ADDED',
-      title: `Nouveau fichier sur "${mission.title}"`,
-      message: `${req.file.originalname} ajouté`,
-      link: `/admin/projets-internes/${req.params.projectId}`,
-      metadata: { projectId: String(req.params.projectId), missionId: String(mission._id) },
-      excludeUserId: req.user!.id,
-    }).catch(() => {})
-
-    return res.status(201).json({ files: mission.files })
-  } catch (err) { return next(err) }
-})
+  },
+)
 
 // GET /:projectId/missions/:missionId/files/:fileId — download/view a file
-router.get('/:projectId/missions/:missionId/files/:fileId', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const mission = await InternalMission.findOne({
-      _id: req.params.missionId,
-      internalProject: req.params.projectId,
-    })
-    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+router.get(
+  '/:projectId/missions/:missionId/files/:fileId',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const mission = await InternalMission.findOne({
+        _id: req.params.missionId,
+        internalProject: req.params.projectId,
+      })
+      if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
 
-    const file = mission.files.find(f => f._id?.toString() === req.params.fileId)
-    if (!file) return res.status(404).json({ error: 'Fichier introuvable' })
+      const file = mission.files.find((f) => f._id?.toString() === req.params.fileId)
+      if (!file) return res.status(404).json({ error: 'Fichier introuvable' })
 
-    const filePath = path.resolve(file.storagePath)
-    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier manquant sur le serveur' })
+      const filePath = path.resolve(file.storagePath)
+      if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier manquant sur le serveur' })
 
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.originalName)}"`)
-    res.setHeader('Content-Type', file.mimeType)
-    return res.sendFile(filePath)
-  } catch (err) { return next(err) }
-})
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.originalName)}"`)
+      res.setHeader('Content-Type', file.mimeType)
+      return res.sendFile(filePath)
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // DELETE /:projectId/missions/:missionId/files/:fileId
-router.delete('/:projectId/missions/:missionId/files/:fileId', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const mission = await InternalMission.findOne({
-      _id: req.params.missionId,
-      internalProject: req.params.projectId,
-    })
-    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+router.delete(
+  '/:projectId/missions/:missionId/files/:fileId',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const mission = await InternalMission.findOne({
+        _id: req.params.missionId,
+        internalProject: req.params.projectId,
+      })
+      if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
 
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
-    const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
-    if (!isAdmin && !isAssigned) return res.status(403).json({ error: 'Accès refusé' })
+      const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
+      const isAssigned = mission.assignedTo.some((id) => id.toString() === req.user!.id)
+      if (!isAdmin && !isAssigned) return res.status(403).json({ error: 'Accès refusé' })
 
-    const fileIdx = mission.files.findIndex(f => f._id?.toString() === req.params.fileId)
-    if (fileIdx === -1) return res.status(404).json({ error: 'Fichier introuvable' })
+      const fileIdx = mission.files.findIndex((f) => f._id?.toString() === req.params.fileId)
+      if (fileIdx === -1) return res.status(404).json({ error: 'Fichier introuvable' })
 
-    const file = mission.files[fileIdx]
-    if (fs.existsSync(file.storagePath)) fs.unlinkSync(file.storagePath)
-    mission.files.splice(fileIdx, 1)
-    await mission.save()
-    return res.json({ success: true })
-  } catch (err) { return next(err) }
-})
+      const file = mission.files[fileIdx]
+      if (fs.existsSync(file.storagePath)) fs.unlinkSync(file.storagePath)
+      mission.files.splice(fileIdx, 1)
+      await mission.save()
+      return res.json({ success: true })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // ── STEP REVIEW ───────────────────────────────────────────────────────────────
 
 // POST /:projectId/missions/:missionId/request-review — member requests step verification
-router.post('/:projectId/missions/:missionId/request-review', requirePermission(PERMISSIONS.VIEW_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { stepId } = req.body
-    if (!stepId) return res.status(400).json({ error: 'stepId requis' })
+router.post(
+  '/:projectId/missions/:missionId/request-review',
+  requirePermission(PERMISSIONS.VIEW_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { stepId } = req.body
+      if (!stepId) return res.status(400).json({ error: 'stepId requis' })
 
-    const mission = await InternalMission.findOne({
-      _id: req.params.missionId,
-      internalProject: req.params.projectId,
-    })
-    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+      const mission = await InternalMission.findOne({
+        _id: req.params.missionId,
+        internalProject: req.params.projectId,
+      })
+      if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
 
-    const isAssigned = mission.assignedTo.some(id => id.toString() === req.user!.id)
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
-    if (!isAssigned && !isAdmin) return res.status(403).json({ error: 'Accès refusé' })
+      const isAssigned = mission.assignedTo.some((id) => id.toString() === req.user!.id)
+      const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'RH'].includes(req.user!.role)
+      if (!isAssigned && !isAdmin) return res.status(403).json({ error: 'Accès refusé' })
 
-    const step = mission.steps.find(s => s._id?.toString() === stepId)
-    if (!step) return res.status(404).json({ error: 'Étape introuvable' })
+      const step = mission.steps.find((s) => s._id?.toString() === stepId)
+      if (!step) return res.status(404).json({ error: 'Étape introuvable' })
 
-    step.waitingReview = true
-    await mission.save()
+      step.waitingReview = true
+      await mission.save()
 
-    // Notify all SUPER_ADMINs
-    const project = await InternalProject.findById(req.params.projectId)
-    const requester = await User.findById(req.user!.id).select('name')
-    const superAdmins = await User.find({ role: 'SUPER_ADMIN' }).select('name email')
-    const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
-    const projectUrl = `${baseUrl}/admin/projets-internes/${req.params.projectId}`
+      // Notify all SUPER_ADMINs
+      const project = await InternalProject.findById(req.params.projectId)
+      const requester = await User.findById(req.user!.id).select('name')
+      const superAdmins = await User.find({ role: 'SUPER_ADMIN' }).select('name email')
+      const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
+      const projectUrl = `${baseUrl}/admin/projets-internes/${req.params.projectId}`
 
-    for (const admin of superAdmins) {
-      if (admin.email) {
-        sendStepReviewRequestEmail({
-          to: admin.email,
-          adminName: admin.name || admin.email,
-          memberName: requester?.name || req.user!.id,
-          missionTitle: mission.title,
-          stepTitle: step.title,
-          projectName: project?.name || '—',
-          projectUrl,
-        }).catch(() => {})
+      for (const admin of superAdmins) {
+        if (admin.email) {
+          sendStepReviewRequestEmail({
+            to: admin.email,
+            adminName: admin.name || admin.email,
+            memberName: requester?.name || req.user!.id,
+            missionTitle: mission.title,
+            stepTitle: step.title,
+            projectName: project?.name || '—',
+            projectUrl,
+          }).catch(() => {})
+        }
       }
+
+      // Notif in-app aux super admins
+      notifySuperAdmins({
+        type: 'INTERNAL_MISSION_REVIEW_REQUESTED',
+        title: `Validation d'étape demandée`,
+        message: `${requester?.name || 'Un membre'} demande la validation de "${step.title}" (mission ${mission.title})`,
+        link: `/admin/projets-internes/${req.params.projectId}`,
+        metadata: { projectId: String(req.params.projectId), missionId: String(mission._id), stepId },
+        excludeUserId: req.user!.id,
+      }).catch(() => {})
+
+      const populated = await InternalMission.findById(mission._id)
+        .populate('assignedTo', 'name email')
+        .populate('participants.user', 'name email')
+        .populate('createdBy', 'name')
+      return res.json({ mission: populated })
+    } catch (err) {
+      return next(err)
     }
-
-    // Notif in-app aux super admins
-    notifySuperAdmins({
-      type: 'INTERNAL_MISSION_REVIEW_REQUESTED',
-      title: `Validation d'étape demandée`,
-      message: `${requester?.name || 'Un membre'} demande la validation de "${step.title}" (mission ${mission.title})`,
-      link: `/admin/projets-internes/${req.params.projectId}`,
-      metadata: { projectId: String(req.params.projectId), missionId: String(mission._id), stepId },
-      excludeUserId: req.user!.id,
-    }).catch(() => {})
-
-    const populated = await InternalMission.findById(mission._id)
-      .populate('assignedTo', 'name email')
-      .populate('participants.user', 'name email')
-      .populate('createdBy', 'name')
-    return res.json({ mission: populated })
-  } catch (err) { return next(err) }
-})
+  },
+)
 
 // POST /:projectId/missions/:missionId/validate-step — SUPER_ADMIN validates a step
-router.post('/:projectId/missions/:missionId/validate-step', requirePermission(PERMISSIONS.EDIT_PROJECTS), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Seul le Super Admin peut valider une étape' })
+router.post(
+  '/:projectId/missions/:missionId/validate-step',
+  requirePermission(PERMISSIONS.EDIT_PROJECTS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (req.user!.role !== 'SUPER_ADMIN')
+        return res.status(403).json({ error: 'Seul le Super Admin peut valider une étape' })
 
-    const { stepId } = req.body
-    if (!stepId) return res.status(400).json({ error: 'stepId requis' })
+      const { stepId } = req.body
+      if (!stepId) return res.status(400).json({ error: 'stepId requis' })
 
-    const mission = await InternalMission.findOne({
-      _id: req.params.missionId,
-      internalProject: req.params.projectId,
-    })
-    if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
+      const mission = await InternalMission.findOne({
+        _id: req.params.missionId,
+        internalProject: req.params.projectId,
+      })
+      if (!mission) return res.status(404).json({ error: 'Mission introuvable' })
 
-    const step = mission.steps.find(s => s._id?.toString() === stepId)
-    if (!step) return res.status(404).json({ error: 'Étape introuvable' })
+      const step = mission.steps.find((s) => s._id?.toString() === stepId)
+      if (!step) return res.status(404).json({ error: 'Étape introuvable' })
 
-    step.done = true
-    step.waitingReview = false
-    await mission.save()
+      step.done = true
+      step.waitingReview = false
+      await mission.save()
 
-    // Notif aux membres assignés de la mission
-    notifyUsers(mission.assignedTo.map((id) => String(id)), {
-      type: 'INTERNAL_MISSION_VALIDATED',
-      title: `Étape validée ✅`,
-      message: `"${step.title}" (mission ${mission.title}) a été validée`,
-      link: `/admin/projets-internes/${req.params.projectId}`,
-      metadata: { projectId: String(req.params.projectId), missionId: String(mission._id), stepId },
-      excludeUserId: req.user!.id,
-    }).catch(() => {})
+      // Notif aux membres assignés de la mission
+      notifyUsers(
+        mission.assignedTo.map((id) => String(id)),
+        {
+          type: 'INTERNAL_MISSION_VALIDATED',
+          title: `Étape validée ✅`,
+          message: `"${step.title}" (mission ${mission.title}) a été validée`,
+          link: `/admin/projets-internes/${req.params.projectId}`,
+          metadata: { projectId: String(req.params.projectId), missionId: String(mission._id), stepId },
+          excludeUserId: req.user!.id,
+        },
+      ).catch(() => {})
 
-    const populated = await InternalMission.findById(mission._id)
-      .populate('assignedTo', 'name email')
-      .populate('participants.user', 'name email')
-      .populate('createdBy', 'name')
-    return res.json({ mission: populated })
-  } catch (err) { return next(err) }
-})
+      const populated = await InternalMission.findById(mission._id)
+        .populate('assignedTo', 'name email')
+        .populate('participants.user', 'name email')
+        .populate('createdBy', 'name')
+      return res.json({ mission: populated })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 export default router

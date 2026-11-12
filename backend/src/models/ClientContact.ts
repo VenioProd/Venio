@@ -12,7 +12,7 @@ const clientContactSchema = new mongoose.Schema<IClientContact>(
     isMain: { type: Boolean, default: false },
     notes: { type: String, default: '' },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 clientContactSchema.index({ clientId: 1, isMain: -1, updatedAt: -1 })

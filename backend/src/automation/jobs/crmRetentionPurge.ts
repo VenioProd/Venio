@@ -41,7 +41,11 @@ const definition: AutomationDefinition = {
       const { runRetentionPurge } = await import('../../lib/crmRetention.js')
       const result = await runRetentionPurge(ctx.now)
       return {
-        actionsExecuted: [result.dryRun ? `retention_purge:dry_run:${result.eligible}_leads` : `retention_purge:${result.anonymized}_leads`],
+        actionsExecuted: [
+          result.dryRun
+            ? `retention_purge:dry_run:${result.eligible}_leads`
+            : `retention_purge:${result.anonymized}_leads`,
+        ],
         recipientsNotified: [],
         details: { ...result },
       }

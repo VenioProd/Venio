@@ -6,9 +6,15 @@ import InboxSnooze from '../../models/InboxSnooze.js'
 import InboxPin from '../../models/InboxPin.js'
 import { buildInbox } from './aggregator.js'
 
-beforeAll(async () => { await setupMongo() })
-afterAll(async () => { await teardownMongo() })
-beforeEach(async () => { await clearDb() })
+beforeAll(async () => {
+  await setupMongo()
+})
+afterAll(async () => {
+  await teardownMongo()
+})
+beforeEach(async () => {
+  await clearDb()
+})
 
 describe('buildInbox', () => {
   it('retourne un objet avec items/counts/snoozedCount', async () => {
@@ -23,10 +29,31 @@ describe('buildInbox', () => {
   it('combine plusieurs sources et masque les snoozées par défaut', async () => {
     const userId = new mongoose.Types.ObjectId()
     const submitter = new mongoose.Types.ObjectId()
-    const d1 = await Decision.create({ title: 'A', status: 'PENDING', priority: 'URGENTE', category: 'BUDGET', submittedBy: submitter, submittedByName: 'Sarah', description: 'x' })
-    const d2 = await Decision.create({ title: 'B', status: 'PENDING', priority: 'NORMALE', category: 'BUDGET', submittedBy: submitter, submittedByName: 'Sarah', description: 'x' })
+    const d1 = await Decision.create({
+      title: 'A',
+      status: 'PENDING',
+      priority: 'URGENTE',
+      category: 'BUDGET',
+      submittedBy: submitter,
+      submittedByName: 'Sarah',
+      description: 'x',
+    })
+    const d2 = await Decision.create({
+      title: 'B',
+      status: 'PENDING',
+      priority: 'NORMALE',
+      category: 'BUDGET',
+      submittedBy: submitter,
+      submittedByName: 'Sarah',
+      description: 'x',
+    })
     // snooze d1 for 1h
-    await InboxSnooze.create({ userId, itemType: 'decision', sourceId: d1._id, snoozedUntil: new Date(Date.now() + 3600 * 1000) })
+    await InboxSnooze.create({
+      userId,
+      itemType: 'decision',
+      sourceId: d1._id,
+      snoozedUntil: new Date(Date.now() + 3600 * 1000),
+    })
 
     const inbox = await buildInbox(String(userId), { includeSnoozed: false })
     // d1 (URGENTE) is snoozed → hidden. Only d2 visible.
@@ -38,8 +65,21 @@ describe('buildInbox', () => {
   it('inclut les snoozées avec includeSnoozed=true et marque snoozedUntil', async () => {
     const userId = new mongoose.Types.ObjectId()
     const submitter = new mongoose.Types.ObjectId()
-    const d1 = await Decision.create({ title: 'A', status: 'PENDING', priority: 'URGENTE', category: 'BUDGET', submittedBy: submitter, submittedByName: 'Sarah', description: 'x' })
-    await InboxSnooze.create({ userId, itemType: 'decision', sourceId: d1._id, snoozedUntil: new Date(Date.now() + 3600 * 1000) })
+    const d1 = await Decision.create({
+      title: 'A',
+      status: 'PENDING',
+      priority: 'URGENTE',
+      category: 'BUDGET',
+      submittedBy: submitter,
+      submittedByName: 'Sarah',
+      description: 'x',
+    })
+    await InboxSnooze.create({
+      userId,
+      itemType: 'decision',
+      sourceId: d1._id,
+      snoozedUntil: new Date(Date.now() + 3600 * 1000),
+    })
 
     const inbox = await buildInbox(String(userId), { includeSnoozed: true })
     const found = inbox.items.find((i) => i.title === 'A')
@@ -51,9 +91,33 @@ describe('buildInbox', () => {
     const userId = new mongoose.Types.ObjectId().toString()
     const submitter = new mongoose.Types.ObjectId()
     await Decision.create([
-      { title: 'Basse', status: 'PENDING', priority: 'BASSE', category: 'BUDGET', submittedBy: submitter, submittedByName: 'X', description: 'x' },
-      { title: 'Urgente', status: 'PENDING', priority: 'URGENTE', category: 'BUDGET', submittedBy: submitter, submittedByName: 'X', description: 'x' },
-      { title: 'Normale', status: 'PENDING', priority: 'NORMALE', category: 'BUDGET', submittedBy: submitter, submittedByName: 'X', description: 'x' },
+      {
+        title: 'Basse',
+        status: 'PENDING',
+        priority: 'BASSE',
+        category: 'BUDGET',
+        submittedBy: submitter,
+        submittedByName: 'X',
+        description: 'x',
+      },
+      {
+        title: 'Urgente',
+        status: 'PENDING',
+        priority: 'URGENTE',
+        category: 'BUDGET',
+        submittedBy: submitter,
+        submittedByName: 'X',
+        description: 'x',
+      },
+      {
+        title: 'Normale',
+        status: 'PENDING',
+        priority: 'NORMALE',
+        category: 'BUDGET',
+        submittedBy: submitter,
+        submittedByName: 'X',
+        description: 'x',
+      },
     ])
     const inbox = await buildInbox(userId)
     expect(inbox.items[0].title).toBe('Urgente')

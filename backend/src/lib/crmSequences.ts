@@ -159,9 +159,14 @@ function normalizeStep(raw: any, index: number, errors: string[]): ISequenceStep
     return null
   }
   const delay = Number(raw.delayDays ?? 0)
-  const hour = raw.sendHourParis === undefined || raw.sendHourParis === null || raw.sendHourParis === '' ? DEFAULT_SEND_HOUR : Number(raw.sendHourParis)
-  if (!Number.isInteger(delay) || delay < 0 || delay > 365) errors.push(`Étape ${index + 1} : délai entre 0 et 365 jours`)
-  if (!Number.isInteger(hour) || hour < SEND_HOUR_MIN || hour > SEND_HOUR_MAX) errors.push(`Étape ${index + 1} : heure d’envoi entre ${SEND_HOUR_MIN} et ${SEND_HOUR_MAX}`)
+  const hour =
+    raw.sendHourParis === undefined || raw.sendHourParis === null || raw.sendHourParis === ''
+      ? DEFAULT_SEND_HOUR
+      : Number(raw.sendHourParis)
+  if (!Number.isInteger(delay) || delay < 0 || delay > 365)
+    errors.push(`Étape ${index + 1} : délai entre 0 et 365 jours`)
+  if (!Number.isInteger(hour) || hour < SEND_HOUR_MIN || hour > SEND_HOUR_MAX)
+    errors.push(`Étape ${index + 1} : heure d’envoi entre ${SEND_HOUR_MIN} et ${SEND_HOUR_MAX}`)
   const step: ISequenceStep = {
     type: raw.type,
     delayDays: Number.isInteger(delay) ? Math.min(365, Math.max(0, delay)) : 0,
@@ -170,13 +175,17 @@ function normalizeStep(raw: any, index: number, errors: string[]): ISequenceStep
     body: typeof raw.body === 'string' ? raw.body.slice(0, 20000) : '',
     taskTitle: typeof raw.taskTitle === 'string' ? raw.taskTitle.trim().slice(0, 300) : '',
   }
-  if (step.type === 'EMAIL' && (!step.subject || !step.body.trim())) errors.push(`Étape ${index + 1} : objet et texte de l’e-mail requis`)
+  if (step.type === 'EMAIL' && (!step.subject || !step.body.trim()))
+    errors.push(`Étape ${index + 1} : objet et texte de l’e-mail requis`)
   if (step.type === 'TASK' && !step.taskTitle) errors.push(`Étape ${index + 1} : titre de la tâche requis`)
   return step
 }
 
 /** Normalise un corps de création ou de modification ; `errors` non vide : rien ne doit être écrit. Le statut est traité à part. */
-export function normalizeSequencePayload(body: Record<string, any> = {}, opts: { creating?: boolean } = {}): SequencePayloadResult {
+export function normalizeSequencePayload(
+  body: Record<string, any> = {},
+  opts: { creating?: boolean } = {},
+): SequencePayloadResult {
   const data: Record<string, any> = {}
   const errors: string[] = []
   if (body.name !== undefined || opts.creating) {
@@ -197,7 +206,9 @@ export function normalizeSequencePayload(body: Record<string, any> = {}, opts: {
   }
   if (body.stopOn !== undefined) {
     const s = body.stopOn && typeof body.stopOn === 'object' ? body.stopOn : {}
-    const statuses = Array.isArray(s.statuses) ? [...new Set(s.statuses.map(String).filter((x: string) => LEAD_STATUSES.includes(x)))] : [...DEFAULT_STOP_STATUSES]
+    const statuses = Array.isArray(s.statuses)
+      ? [...new Set(s.statuses.map(String).filter((x: string) => LEAD_STATUSES.includes(x)))]
+      : [...DEFAULT_STOP_STATUSES]
     data.stopOn = {
       reply: s.reply !== false,
       statusChange: s.statusChange !== false,
@@ -211,7 +222,8 @@ export function isSequenceStatus(value: unknown): value is SequenceStatus {
   return typeof value === 'string' && (SEQUENCE_STATUSES as readonly string[]).includes(value)
 }
 
-export const hasEmailStep = (sequence: Pick<ICrmSequence, 'steps'>) => (sequence.steps ?? []).some((s) => s.type === 'EMAIL')
+export const hasEmailStep = (sequence: Pick<ICrmSequence, 'steps'>) =>
+  (sequence.steps ?? []).some((s) => s.type === 'EMAIL')
 
 /** Une séquence ne s'active qu'avec au moins une étape. */
 export function activationProblem(sequence: Pick<ICrmSequence, 'steps'>): string | null {
@@ -236,7 +248,13 @@ export interface EnrollResult {
   refused: Array<{ leadId: string; reason: EnrollRefusalReason }>
 }
 
-const history = (step: number, type: string, status: IEnrollmentHistory['status'], message: string, at: Date): IEnrollmentHistory => ({ step, type, status, message, at })
+const history = (
+  step: number,
+  type: string,
+  status: IEnrollmentHistory['status'],
+  message: string,
+  at: Date,
+): IEnrollmentHistory => ({ step, type, status, message, at })
 
 /**
  * Inscrit des leads. `scope` : filtre de périmètre d'écriture de l'appelant
@@ -257,7 +275,11 @@ export async function enrollLeads(
   const leads = await Lead.find({ _id: { $in: valid }, ...(opts.scope ?? {}) })
   const byId = new Map(leads.map((l) => [String(l._id), l]))
   const suppressed = await suppressedAmong(leads.map((l) => l.contactEmail ?? ''))
-  const open = await CrmSequenceEnrollment.find({ sequence: sequence._id, lead: { $in: leads.map((l) => l._id) }, status: { $in: OPEN_ENROLLMENT_STATUSES } })
+  const open = await CrmSequenceEnrollment.find({
+    sequence: sequence._id,
+    lead: { $in: leads.map((l) => l._id) },
+    status: { $in: OPEN_ENROLLMENT_STATUSES },
+  })
     .select('lead')
     .lean()
   const alreadyIn = new Set(open.map((e) => String(e.lead)))
@@ -267,16 +289,43 @@ export async function enrollLeads(
   for (const id of ids) {
     const lead = byId.get(id)
     const refuse = (reason: EnrollRefusalReason) => result.refused.push({ leadId: id, reason })
-    if (!lead) { refuse('NOT_FOUND'); continue }
+    if (!lead) {
+      refuse('NOT_FOUND')
+      continue
+    }
     const email = normalizeEmail(lead.contactEmail)
-    if (lead.anonymizedAt) { refuse('ANONYMIZED'); continue }
-    if (lead.doNotContact) { refuse('DO_NOT_CONTACT'); continue }
-    if (email && suppressed.has(email)) { refuse('SUPPRESSED'); continue }
-    if (needsEmail && !EMAIL_RE.test(email)) { refuse('NO_EMAIL'); continue }
-    if (CLOSED_LEAD_STATUSES.includes(String(lead.status))) { refuse('CLOSED'); continue }
-    if (lead.archivedAt) { refuse('ARCHIVED'); continue }
-    if (sequence.entity && leadEntityOf(lead) !== sequence.entity) { refuse('ENTITY_MISMATCH'); continue }
-    if (alreadyIn.has(id)) { refuse('ALREADY_ENROLLED'); continue }
+    if (lead.anonymizedAt) {
+      refuse('ANONYMIZED')
+      continue
+    }
+    if (lead.doNotContact) {
+      refuse('DO_NOT_CONTACT')
+      continue
+    }
+    if (email && suppressed.has(email)) {
+      refuse('SUPPRESSED')
+      continue
+    }
+    if (needsEmail && !EMAIL_RE.test(email)) {
+      refuse('NO_EMAIL')
+      continue
+    }
+    if (CLOSED_LEAD_STATUSES.includes(String(lead.status))) {
+      refuse('CLOSED')
+      continue
+    }
+    if (lead.archivedAt) {
+      refuse('ARCHIVED')
+      continue
+    }
+    if (sequence.entity && leadEntityOf(lead) !== sequence.entity) {
+      refuse('ENTITY_MISMATCH')
+      continue
+    }
+    if (alreadyIn.has(id)) {
+      refuse('ALREADY_ENROLLED')
+      continue
+    }
     const nextRunAt = first ? computeNextRunAt(now, first.delayDays, first.sendHourParis) : now
     try {
       const enrollment = await CrmSequenceEnrollment.create({
@@ -291,7 +340,13 @@ export async function enrollLeads(
         history: [history(0, 'ENROLL', 'INFO', 'Inscription', now)],
       })
       result.enrolled.push({ leadId: id, enrollmentId: String(enrollment._id), nextRunAt })
-      await logLeadActivity(lead._id, 'SEQUENCE_ENROLLED', `Inscrit à la séquence « ${sequence.name} »`, { sequenceId: String(sequence._id) }, opts.actorId)
+      await logLeadActivity(
+        lead._id,
+        'SEQUENCE_ENROLLED',
+        `Inscrit à la séquence « ${sequence.name} »`,
+        { sequenceId: String(sequence._id) },
+        opts.actorId,
+      )
     } catch (err) {
       // Inscription concurrente : l'index unique des inscriptions ouvertes tranche.
       if ((err as { code?: number }).code === 11000) refuse('ALREADY_ENROLLED')
@@ -305,7 +360,14 @@ export async function enrollLeads(
 export async function stopEnrollment(
   enrollment: Pick<ICrmSequenceEnrollment, '_id' | 'lead' | 'currentStep'>,
   reason: StopReason,
-  opts: { sequenceName?: string; sequenceId?: unknown; actorId?: string | null; now?: Date; message?: string; logActivity?: boolean } = {},
+  opts: {
+    sequenceName?: string
+    sequenceId?: unknown
+    actorId?: string | null
+    now?: Date
+    message?: string
+    logActivity?: boolean
+  } = {},
 ): Promise<boolean> {
   const now = opts.now ?? new Date()
   const res = await CrmSequenceEnrollment.updateOne(
@@ -313,7 +375,9 @@ export async function stopEnrollment(
     {
       $set: { status: 'STOPPED', stoppedReason: reason, stoppedAt: now, nextRunAt: null },
       $unset: { openKey: 1 },
-      $push: { history: history(enrollment.currentStep, 'STOP', 'INFO', opts.message ?? `Arrêt : ${STOP_LABELS[reason]}`, now) },
+      $push: {
+        history: history(enrollment.currentStep, 'STOP', 'INFO', opts.message ?? `Arrêt : ${STOP_LABELS[reason]}`, now),
+      },
     },
   )
   if (res.modifiedCount === 0) return false
@@ -336,12 +400,25 @@ export async function unenrollLeads(
   opts: { actorId: string | null; scope?: Record<string, unknown>; now?: Date },
 ): Promise<{ stopped: string[]; notEnrolled: string[] }> {
   const ids = [...new Set(leadIds.map(String))].filter((id) => mongoose.isValidObjectId(id))
-  const leads = await Lead.find({ _id: { $in: ids }, ...(opts.scope ?? {}) }).select('_id').lean()
+  const leads = await Lead.find({ _id: { $in: ids }, ...(opts.scope ?? {}) })
+    .select('_id')
+    .lean()
   const allowed = new Set(leads.map((l) => String(l._id)))
-  const open = await CrmSequenceEnrollment.find({ sequence: sequence._id, lead: { $in: [...allowed] }, status: { $in: OPEN_ENROLLMENT_STATUSES } })
+  const open = await CrmSequenceEnrollment.find({
+    sequence: sequence._id,
+    lead: { $in: [...allowed] },
+    status: { $in: OPEN_ENROLLMENT_STATUSES },
+  })
   const stopped: string[] = []
   for (const enrollment of open) {
-    if (await stopEnrollment(enrollment, 'MANUAL', { sequenceName: sequence.name, sequenceId: sequence._id, actorId: opts.actorId, now: opts.now })) {
+    if (
+      await stopEnrollment(enrollment, 'MANUAL', {
+        sequenceName: sequence.name,
+        sequenceId: sequence._id,
+        actorId: opts.actorId,
+        now: opts.now,
+      })
+    ) {
       stopped.push(String(enrollment.lead))
     }
   }
@@ -351,9 +428,11 @@ export async function unenrollLeads(
 // ───────────────────────── Arrêts déclenchés par le lead ─────────────────────────
 
 const isStopStatus = (sequence: Pick<ICrmSequence, 'stopOn'>, status: string) =>
-  Boolean(sequence.stopOn?.statusChange) && (sequence.stopOn?.statuses?.length ? sequence.stopOn.statuses : DEFAULT_STOP_STATUSES).includes(status)
+  Boolean(sequence.stopOn?.statusChange) &&
+  (sequence.stopOn?.statuses?.length ? sequence.stopOn.statuses : DEFAULT_STOP_STATUSES).includes(status)
 
-const oppositionReason = (lead: PlainLead): StopReason => (lead.doNotContactReason === 'UNSUBSCRIBE_LINK' ? 'UNSUBSCRIBE' : 'DO_NOT_CONTACT')
+const oppositionReason = (lead: PlainLead): StopReason =>
+  lead.doNotContactReason === 'UNSUBSCRIBE_LINK' ? 'UNSUBSCRIBE' : 'DO_NOT_CONTACT'
 
 /**
  * Appelé par `applyLeadChange` après chaque écriture : opposition,
@@ -370,7 +449,9 @@ export async function stopSequencesOnLeadChange(
     if (!lead.doNotContact && !lead.anonymizedAt && !lead.archivedAt && !statusChanged) return 0
     const open = await CrmSequenceEnrollment.find({ lead: lead._id, status: { $in: OPEN_ENROLLMENT_STATUSES } })
     if (open.length === 0) return 0
-    const sequences = await CrmSequence.find({ _id: { $in: open.map((e) => e.sequence) } }).select('name stopOn').lean()
+    const sequences = await CrmSequence.find({ _id: { $in: open.map((e) => e.sequence) } })
+      .select('name stopOn')
+      .lean()
     const byId = new Map(sequences.map((s) => [String(s._id), s]))
     let count = 0
     for (const enrollment of open) {
@@ -385,7 +466,14 @@ export async function stopSequencesOnLeadChange(
               ? 'STATUS_CHANGE'
               : null
       if (!reason) continue
-      if (await stopEnrollment(enrollment, reason, { sequenceName: sequence?.name, sequenceId: enrollment.sequence, actorId })) count++
+      if (
+        await stopEnrollment(enrollment, reason, {
+          sequenceName: sequence?.name,
+          sequenceId: enrollment.sequence,
+          actorId,
+        })
+      )
+        count++
     }
     return count
   } catch (err) {
@@ -395,17 +483,27 @@ export async function stopSequencesOnLeadChange(
 }
 
 /** Échange entrant consigné sur un lead (réponse du prospect) : arrêt des séquences qui le demandent. Ne lève jamais. */
-export async function stopSequencesOnInboundInteraction(leadId: Types.ObjectId | string, occurredAt: Date): Promise<number> {
+export async function stopSequencesOnInboundInteraction(
+  leadId: Types.ObjectId | string,
+  occurredAt: Date,
+): Promise<number> {
   try {
-    const open = await CrmSequenceEnrollment.find({ lead: leadId, status: { $in: OPEN_ENROLLMENT_STATUSES }, enrolledAt: { $lte: occurredAt } })
+    const open = await CrmSequenceEnrollment.find({
+      lead: leadId,
+      status: { $in: OPEN_ENROLLMENT_STATUSES },
+      enrolledAt: { $lte: occurredAt },
+    })
     if (open.length === 0) return 0
-    const sequences = await CrmSequence.find({ _id: { $in: open.map((e) => e.sequence) } }).select('name stopOn').lean()
+    const sequences = await CrmSequence.find({ _id: { $in: open.map((e) => e.sequence) } })
+      .select('name stopOn')
+      .lean()
     const byId = new Map(sequences.map((s) => [String(s._id), s]))
     let count = 0
     for (const enrollment of open) {
       const sequence = byId.get(String(enrollment.sequence))
       if (sequence && sequence.stopOn?.reply === false) continue
-      if (await stopEnrollment(enrollment, 'REPLY', { sequenceName: sequence?.name, sequenceId: enrollment.sequence })) count++
+      if (await stopEnrollment(enrollment, 'REPLY', { sequenceName: sequence?.name, sequenceId: enrollment.sequence }))
+        count++
     }
     return count
   } catch (err) {
@@ -416,7 +514,8 @@ export async function stopSequencesOnInboundInteraction(leadId: Types.ObjectId |
 
 // ───────────────────────── Moteur ─────────────────────────
 
-export type TickOutcome = 'SENT' | 'TASK' | 'WAITED' | 'SKIPPED_STEP' | 'COMPLETED' | 'STOPPED' | 'RESCHEDULED' | 'LOCKED' | 'RETRY' | 'ERROR'
+export type TickOutcome =
+  'SENT' | 'TASK' | 'WAITED' | 'SKIPPED_STEP' | 'COMPLETED' | 'STOPPED' | 'RESCHEDULED' | 'LOCKED' | 'RETRY' | 'ERROR'
 
 export interface TickSummary {
   due: number
@@ -426,13 +525,23 @@ export interface TickSummary {
 export const stepLockKey = (enrollmentId: unknown, step: number) => `crm-sequence:${String(enrollmentId)}:${step}`
 
 /** Raison d'arrêt constatée avant d'exécuter une étape, ou `null`. */
-async function preflightStop(lead: LeadDoc, sequence: SequenceLike, enrollment: ICrmSequenceEnrollment, step: ISequenceStep): Promise<StopReason | null> {
+async function preflightStop(
+  lead: LeadDoc,
+  sequence: SequenceLike,
+  enrollment: ICrmSequenceEnrollment,
+  step: ISequenceStep,
+): Promise<StopReason | null> {
   if (lead.anonymizedAt) return 'ANONYMIZED'
   if (lead.doNotContact) return oppositionReason(lead)
   if (lead.archivedAt) return 'ARCHIVED'
   if (isStopStatus(sequence, String(lead.status))) return 'STATUS_CHANGE'
   if (sequence.stopOn?.reply !== false) {
-    const replied = await Interaction.exists({ subjectType: 'LEAD', subjectId: lead._id, direction: 'IN', occurredAt: { $gte: enrollment.enrolledAt } })
+    const replied = await Interaction.exists({
+      subjectType: 'LEAD',
+      subjectId: lead._id,
+      direction: 'IN',
+      occurredAt: { $gte: enrollment.enrolledAt },
+    })
     if (replied) return 'REPLY'
   }
   if (step.type === 'EMAIL') {
@@ -452,7 +561,12 @@ interface StepOutcome {
   stop?: StopReason
 }
 
-async function executeStep(lead: LeadDoc, sequence: SequenceLike, step: ISequenceStep, now: Date): Promise<StepOutcome> {
+async function executeStep(
+  lead: LeadDoc,
+  sequence: SequenceLike,
+  step: ISequenceStep,
+  now: Date,
+): Promise<StepOutcome> {
   if (step.type === 'WAIT') return { status: 'OK', message: 'Attente terminée', outcome: 'WAITED' }
   const ownerName = await ownerNameOf(lead)
   if (step.type === 'TASK') {
@@ -484,30 +598,60 @@ async function executeStep(lead: LeadDoc, sequence: SequenceLike, step: ISequenc
 }
 
 /** Passe à l'étape suivante (ou termine) si l'inscription est toujours à l'étape `from`. */
-async function advance(enrollment: ICrmSequenceEnrollment, sequence: SequenceLike, from: number, entry: IEnrollmentHistory, now: Date): Promise<'ADVANCED' | 'COMPLETED' | 'NOOP'> {
+async function advance(
+  enrollment: ICrmSequenceEnrollment,
+  sequence: SequenceLike,
+  from: number,
+  entry: IEnrollmentHistory,
+  now: Date,
+): Promise<'ADVANCED' | 'COMPLETED' | 'NOOP'> {
   const nextIndex = from + 1
   const nextStep = sequence.steps[nextIndex]
   const update = nextStep
-    ? { $set: { currentStep: nextIndex, nextRunAt: computeNextRunAt(now, nextStep.delayDays, nextStep.sendHourParis), attempts: 0 }, $push: { history: entry } }
-    : { $set: { currentStep: nextIndex, status: 'COMPLETED', completedAt: now, nextRunAt: null, attempts: 0 }, $unset: { openKey: 1 }, $push: { history: entry } }
-  const res = await CrmSequenceEnrollment.updateOne({ _id: enrollment._id, status: 'ACTIVE', currentStep: from }, update)
+    ? {
+        $set: {
+          currentStep: nextIndex,
+          nextRunAt: computeNextRunAt(now, nextStep.delayDays, nextStep.sendHourParis),
+          attempts: 0,
+        },
+        $push: { history: entry },
+      }
+    : {
+        $set: { currentStep: nextIndex, status: 'COMPLETED', completedAt: now, nextRunAt: null, attempts: 0 },
+        $unset: { openKey: 1 },
+        $push: { history: entry },
+      }
+  const res = await CrmSequenceEnrollment.updateOne(
+    { _id: enrollment._id, status: 'ACTIVE', currentStep: from },
+    update,
+  )
   if (res.modifiedCount === 0) return 'NOOP'
   if (!nextStep) {
-    await logLeadActivity(enrollment.lead, 'SEQUENCE_COMPLETED', `Séquence « ${sequence.name} » terminée`, { sequenceId: String(sequence._id) }).catch(() => null)
+    await logLeadActivity(enrollment.lead, 'SEQUENCE_COMPLETED', `Séquence « ${sequence.name} » terminée`, {
+      sequenceId: String(sequence._id),
+    }).catch(() => null)
     return 'COMPLETED'
   }
   return 'ADVANCED'
 }
 
 /** Traite une inscription échue. Exporté pour les tests. */
-export async function processEnrollment(enrollment: ICrmSequenceEnrollment, sequence: SequenceLike, now: Date = new Date()): Promise<TickOutcome> {
+export async function processEnrollment(
+  enrollment: ICrmSequenceEnrollment,
+  sequence: SequenceLike,
+  now: Date = new Date(),
+): Promise<TickOutcome> {
   const index = enrollment.currentStep
   const step = sequence.steps[index]
   if (!step) {
     // Étapes retirées depuis l'inscription : la séquence est terminée pour ce lead.
     const res = await CrmSequenceEnrollment.updateOne(
       { _id: enrollment._id, status: 'ACTIVE', currentStep: index },
-      { $set: { status: 'COMPLETED', completedAt: now, nextRunAt: null }, $unset: { openKey: 1 }, $push: { history: history(index, 'END', 'INFO', 'Plus d’étape à exécuter', now) } },
+      {
+        $set: { status: 'COMPLETED', completedAt: now, nextRunAt: null },
+        $unset: { openKey: 1 },
+        $push: { history: history(index, 'END', 'INFO', 'Plus d’étape à exécuter', now) },
+      },
     )
     return res.modifiedCount ? 'COMPLETED' : 'LOCKED'
   }
@@ -524,7 +668,10 @@ export async function processEnrollment(enrollment: ICrmSequenceEnrollment, sequ
   // Automatisation suspendue sur le lead, ou hors plage (week-end, nuit) : on reporte sans rien exécuter.
   if (lead.automationPausedAt || !isInSendWindow(now)) {
     const nextRunAt = computeNextRunAt(now, lead.automationPausedAt ? 1 : 0, step.sendHourParis)
-    await CrmSequenceEnrollment.updateOne({ _id: enrollment._id, status: 'ACTIVE', currentStep: index }, { $set: { nextRunAt } })
+    await CrmSequenceEnrollment.updateOne(
+      { _id: enrollment._id, status: 'ACTIVE', currentStep: index },
+      { $set: { nextRunAt } },
+    )
     return 'RESCHEDULED'
   }
 
@@ -533,7 +680,13 @@ export async function processEnrollment(enrollment: ICrmSequenceEnrollment, sequ
     // Verrou orphelin (instance arrêtée pendant l'étape) : on ne sait pas si l'e-mail est parti ; on ne le rejoue pas.
     const lock = await SchedulerLock.findById(lockKey).select('createdAt').lean()
     if (lock && now.getTime() - new Date(lock.createdAt).getTime() > STALE_LOCK_MS) {
-      await advance(enrollment, sequence, index, history(index, step.type, 'SKIP', 'Étape interrompue lors d’un précédent passage : non rejouée', now), now)
+      await advance(
+        enrollment,
+        sequence,
+        index,
+        history(index, step.type, 'SKIP', 'Étape interrompue lors d’un précédent passage : non rejouée', now),
+        now,
+      )
       return 'SKIPPED_STEP'
     }
     return 'LOCKED'
@@ -551,7 +704,12 @@ export async function processEnrollment(enrollment: ICrmSequenceEnrollment, sequ
   }
 
   if (result.stop) {
-    await stopEnrollment(fresh, result.stop, { sequenceName: sequence.name, sequenceId: sequence._id, now, message: result.message })
+    await stopEnrollment(fresh, result.stop, {
+      sequenceName: sequence.name,
+      sequenceId: sequence._id,
+      now,
+      message: result.message,
+    })
     return 'STOPPED'
   }
   if (result.status === 'ERR') {
@@ -559,17 +717,29 @@ export async function processEnrollment(enrollment: ICrmSequenceEnrollment, sequ
     await releaseSchedulerLock(lockKey).catch(() => {})
     const attempts = (fresh.attempts ?? 0) + 1
     if (attempts >= MAX_STEP_ATTEMPTS) {
-      await CrmSequenceEnrollment.updateOne({ _id: fresh._id }, { $push: { history: history(index, step.type, 'ERR', result.message, now) } })
+      await CrmSequenceEnrollment.updateOne(
+        { _id: fresh._id },
+        { $push: { history: history(index, step.type, 'ERR', result.message, now) } },
+      )
       await stopEnrollment(fresh, 'SEND_FAILED', { sequenceName: sequence.name, sequenceId: sequence._id, now })
       return 'STOPPED'
     }
     await CrmSequenceEnrollment.updateOne(
       { _id: fresh._id, status: 'ACTIVE', currentStep: index },
-      { $set: { attempts, nextRunAt: new Date(now.getTime() + RETRY_DELAY_MS) }, $push: { history: history(index, step.type, 'ERR', result.message, now) } },
+      {
+        $set: { attempts, nextRunAt: new Date(now.getTime() + RETRY_DELAY_MS) },
+        $push: { history: history(index, step.type, 'ERR', result.message, now) },
+      },
     )
     return result.outcome
   }
-  const moved = await advance(fresh, sequence, index, history(index, step.type, result.status, result.message, now), now)
+  const moved = await advance(
+    fresh,
+    sequence,
+    index,
+    history(index, step.type, result.status, result.message, now),
+    now,
+  )
   return moved === 'COMPLETED' ? 'COMPLETED' : result.outcome
 }
 
@@ -583,7 +753,11 @@ export async function runSequenceTick(now: Date = new Date(), opts: { limit?: nu
   const sequences = await CrmSequence.find({ status: 'ACTIVE' }).lean()
   if (sequences.length === 0) return summary
   const byId = new Map(sequences.map((s) => [String(s._id), s]))
-  const due = await CrmSequenceEnrollment.find({ status: 'ACTIVE', nextRunAt: { $lte: now }, sequence: { $in: sequences.map((s) => s._id) } })
+  const due = await CrmSequenceEnrollment.find({
+    status: 'ACTIVE',
+    nextRunAt: { $lte: now },
+    sequence: { $in: sequences.map((s) => s._id) },
+  })
     .sort({ nextRunAt: 1 })
     .limit(opts.limit ?? 200)
   summary.due = due.length
@@ -613,13 +787,28 @@ export interface SequenceStats {
   stoppedByReason: Partial<Record<StopReason, number>>
 }
 
-export const emptyStats = (): SequenceStats => ({ total: 0, active: 0, paused: 0, completed: 0, stopped: 0, stoppedByReason: {} })
+export const emptyStats = (): SequenceStats => ({
+  total: 0,
+  active: 0,
+  paused: 0,
+  completed: 0,
+  stopped: 0,
+  stoppedByReason: {},
+})
 
 /** Statistiques simples par séquence : inscrits, en cours, terminés, arrêtés par raison. */
-export async function sequenceStats(sequenceIds: Array<Types.ObjectId | string>, leadFilter?: Array<Types.ObjectId>): Promise<Map<string, SequenceStats>> {
-  const match: Record<string, unknown> = { sequence: { $in: sequenceIds.map((id) => new mongoose.Types.ObjectId(String(id))) } }
+export async function sequenceStats(
+  sequenceIds: Array<Types.ObjectId | string>,
+  leadFilter?: Array<Types.ObjectId>,
+): Promise<Map<string, SequenceStats>> {
+  const match: Record<string, unknown> = {
+    sequence: { $in: sequenceIds.map((id) => new mongoose.Types.ObjectId(String(id))) },
+  }
   if (leadFilter) match.lead = { $in: leadFilter }
-  const rows = await CrmSequenceEnrollment.aggregate<{ _id: { sequence: Types.ObjectId; status: string; reason: string | null }; n: number }>([
+  const rows = await CrmSequenceEnrollment.aggregate<{
+    _id: { sequence: Types.ObjectId; status: string; reason: string | null }
+    n: number
+  }>([
     { $match: match },
     { $group: { _id: { sequence: '$sequence', status: '$status', reason: '$stoppedReason' }, n: { $sum: 1 } } },
   ])

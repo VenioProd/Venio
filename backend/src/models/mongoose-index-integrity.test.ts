@@ -49,12 +49,14 @@ describe('Mongoose index integrity', () => {
       webhookSecret: 'secret',
     })
 
-    await expectUniqueIndex(ExternalSource.create({
-      slug: 'source-unique',
-      name: 'Autre source',
-      apiKeyHash: 'hash-2',
-      webhookSecret: 'secret-2',
-    }))
+    await expectUniqueIndex(
+      ExternalSource.create({
+        slug: 'source-unique',
+        name: 'Autre source',
+        apiKeyHash: 'hash-2',
+        webhookSecret: 'secret-2',
+      }),
+    )
   })
 
   it('enforces the unique Qualiopi criterion number', async () => {
@@ -73,13 +75,15 @@ describe('Mongoose index integrity', () => {
       createdBy,
     })
 
-    await expectUniqueIndex(InternalConversation.create({
-      type: 'CHANNEL',
-      name: 'Autre canal',
-      slug: 'canal-unique',
-      memberKey: 'channel-owner-b',
-      createdBy: objectId(),
-    }))
+    await expectUniqueIndex(
+      InternalConversation.create({
+        type: 'CHANNEL',
+        name: 'Autre canal',
+        slug: 'canal-unique',
+        memberKey: 'channel-owner-b',
+        createdBy: objectId(),
+      }),
+    )
 
     await InternalConversation.create({
       type: 'DM',
@@ -87,11 +91,13 @@ describe('Mongoose index integrity', () => {
       createdBy,
     })
 
-    await expectUniqueIndex(InternalConversation.create({
-      type: 'DM',
-      memberKey: 'dm-members-a-b',
-      createdBy: objectId(),
-    }))
+    await expectUniqueIndex(
+      InternalConversation.create({
+        type: 'DM',
+        memberKey: 'dm-members-a-b',
+        createdBy: objectId(),
+      }),
+    )
   })
 
   it('enforces the unique BillingDocument number', async () => {
@@ -104,9 +110,11 @@ describe('Mongoose index integrity', () => {
     }
     await BillingDocument.create(document)
 
-    await expectUniqueIndex(BillingDocument.create({
-      ...document,
-      project: objectId(),
-    }))
+    await expectUniqueIndex(
+      BillingDocument.create({
+        ...document,
+        project: objectId(),
+      }),
+    )
   })
 })

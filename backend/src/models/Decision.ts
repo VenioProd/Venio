@@ -79,7 +79,7 @@ const decisionSchema = new Schema<IDecision>(
     recipients: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }],
     archivedAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 decisionSchema.index({ status: 1, priority: -1, createdAt: -1 })

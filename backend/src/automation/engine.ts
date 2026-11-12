@@ -6,12 +6,7 @@
 import { getAutomationSettings } from './models/AutomationSettings.js'
 import { createExecutionLog } from './models/AutomationLog.js'
 import { acquireLock, releaseLock, updateLockStatus } from './idempotency.js'
-import type {
-  AutomationDefinition,
-  AutomationContext,
-  AutomationResult,
-  ExecutionStatus,
-} from './types.js'
+import type { AutomationDefinition, AutomationContext, AutomationResult, ExecutionStatus } from './types.js'
 import logger from '../lib/logger.js'
 
 /**
@@ -26,7 +21,7 @@ import logger from '../lib/logger.js'
 export async function runAutomation(
   definition: AutomationDefinition,
   context: AutomationContext,
-  retryCount = 0
+  retryCount = 0,
 ): Promise<{ status: ExecutionStatus; result?: AutomationResult; error?: string }> {
   const startedAt = new Date()
 
@@ -123,8 +118,7 @@ export async function runAutomation(
     }
 
     // Dead letter
-    const finalStatus: ExecutionStatus =
-      retryCount >= definition.maxRetries ? 'DEAD_LETTER' : 'FAILED'
+    const finalStatus: ExecutionStatus = retryCount >= definition.maxRetries ? 'DEAD_LETTER' : 'FAILED'
 
     await updateLockStatus(idempotencyKey, finalStatus)
     await createExecutionLog({

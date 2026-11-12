@@ -14,10 +14,7 @@ import {
 describe('appleCalendar / ics — primitives', () => {
   it('unfolds RFC 5545 continuation lines', () => {
     const raw = 'SUMMARY:Cours de\r\n  marketing\r\nLOCATION:Paris'
-    expect(unfoldLines(raw)).toEqual([
-      'SUMMARY:Cours de marketing',
-      'LOCATION:Paris',
-    ])
+    expect(unfoldLines(raw)).toEqual(['SUMMARY:Cours de marketing', 'LOCATION:Paris'])
   })
 
   it('parses properties with TZID and quoted params', () => {
@@ -130,11 +127,7 @@ describe('appleCalendar / ics — parseIcs', () => {
 
 describe('appleCalendar / ics — parseAndExpand', () => {
   it('expands a WEEKLY BYDAY=TU rule into 4 occurrences within window', () => {
-    const expanded = parseAndExpand(
-      SAMPLE_VEVENT,
-      new Date('2025-12-01T00:00:00Z'),
-      new Date('2026-01-15T00:00:00Z'),
-    )
+    const expanded = parseAndExpand(SAMPLE_VEVENT, new Date('2025-12-01T00:00:00Z'), new Date('2026-01-15T00:00:00Z'))
     // 1 simple + 4 occurrences
     const weekly = expanded.filter((e) => e.uid === 'weekly-1@example.com')
     expect(weekly).toHaveLength(4)
@@ -148,11 +141,7 @@ describe('appleCalendar / ics — parseAndExpand', () => {
   })
 
   it('returns events sorted by start', () => {
-    const expanded = parseAndExpand(
-      SAMPLE_VEVENT,
-      new Date('2025-11-01T00:00:00Z'),
-      new Date('2026-01-15T00:00:00Z'),
-    )
+    const expanded = parseAndExpand(SAMPLE_VEVENT, new Date('2025-11-01T00:00:00Z'), new Date('2026-01-15T00:00:00Z'))
     for (let i = 1; i < expanded.length; i++) {
       expect(expanded[i - 1].start <= expanded[i].start).toBe(true)
     }
@@ -169,16 +158,9 @@ RRULE:FREQ=WEEKLY;COUNT=3
 EXDATE:20251208T140000Z
 END:VEVENT
 END:VCALENDAR`
-    const expanded = parseAndExpand(
-      raw,
-      new Date('2025-11-01T00:00:00Z'),
-      new Date('2026-01-15T00:00:00Z'),
-    )
+    const expanded = parseAndExpand(raw, new Date('2025-11-01T00:00:00Z'), new Date('2026-01-15T00:00:00Z'))
     expect(expanded).toHaveLength(2)
-    expect(expanded.map((e) => e.start)).toEqual([
-      '2025-12-01T14:00:00.000Z',
-      '2025-12-15T14:00:00.000Z',
-    ])
+    expect(expanded.map((e) => e.start)).toEqual(['2025-12-01T14:00:00.000Z', '2025-12-15T14:00:00.000Z'])
   })
 
   it('falls back to 1h duration when DTEND and DURATION are absent', () => {
@@ -189,11 +171,7 @@ SUMMARY:Pas de fin
 DTSTART:20251201T140000Z
 END:VEVENT
 END:VCALENDAR`
-    const expanded = parseAndExpand(
-      raw,
-      new Date('2025-11-01T00:00:00Z'),
-      new Date('2025-12-31T00:00:00Z'),
-    )
+    const expanded = parseAndExpand(raw, new Date('2025-11-01T00:00:00Z'), new Date('2025-12-31T00:00:00Z'))
     expect(expanded).toHaveLength(1)
     expect(expanded[0].durationMin).toBe(60)
     expect(expanded[0].end).toBe('2025-12-01T15:00:00.000Z')
@@ -208,11 +186,7 @@ DTSTART:20251201T140000Z
 DURATION:PT90M
 END:VEVENT
 END:VCALENDAR`
-    const expanded = parseAndExpand(
-      raw,
-      new Date('2025-11-01T00:00:00Z'),
-      new Date('2025-12-31T00:00:00Z'),
-    )
+    const expanded = parseAndExpand(raw, new Date('2025-11-01T00:00:00Z'), new Date('2025-12-31T00:00:00Z'))
     expect(expanded[0].durationMin).toBe(90)
   })
 
@@ -225,22 +199,14 @@ DTSTART;VALUE=DATE:20251215
 DTEND;VALUE=DATE:20251216
 END:VEVENT
 END:VCALENDAR`
-    const expanded = parseAndExpand(
-      raw,
-      new Date('2025-11-01T00:00:00Z'),
-      new Date('2025-12-31T00:00:00Z'),
-    )
+    const expanded = parseAndExpand(raw, new Date('2025-11-01T00:00:00Z'), new Date('2025-12-31T00:00:00Z'))
     expect(expanded).toHaveLength(1)
     expect(expanded[0].allDay).toBe(true)
     expect(expanded[0].start).toBe('2025-12-15T00:00:00.000Z')
   })
 
   it('drops events fully outside the window', () => {
-    const expanded = parseAndExpand(
-      SAMPLE_VEVENT,
-      new Date('2030-01-01T00:00:00Z'),
-      new Date('2030-02-01T00:00:00Z'),
-    )
+    const expanded = parseAndExpand(SAMPLE_VEVENT, new Date('2030-01-01T00:00:00Z'), new Date('2030-02-01T00:00:00Z'))
     expect(expanded).toEqual([])
   })
 
@@ -254,11 +220,7 @@ DTEND:20251201T160000Z
 RRULE:FREQ=WEEKLY;UNTIL=20251215T140000Z
 END:VEVENT
 END:VCALENDAR`
-    const expanded = parseAndExpand(
-      raw,
-      new Date('2025-11-01T00:00:00Z'),
-      new Date('2026-01-15T00:00:00Z'),
-    )
+    const expanded = parseAndExpand(raw, new Date('2025-11-01T00:00:00Z'), new Date('2026-01-15T00:00:00Z'))
     expect(expanded.map((e) => e.start)).toEqual([
       '2025-12-01T14:00:00.000Z',
       '2025-12-08T14:00:00.000Z',

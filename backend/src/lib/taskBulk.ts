@@ -31,8 +31,7 @@ export interface TaskBulkPatch {
 }
 
 export type TaskBulkParse =
-  | { ok: true; ids: string[]; action: TaskBulkAction; patch: TaskBulkPatch }
-  | { ok: false; error: string }
+  { ok: true; ids: string[]; action: TaskBulkAction; patch: TaskBulkPatch } | { ok: false; error: string }
 
 const PATCH_KEYS = ['status', 'priority', 'assignee', 'dueDate']
 

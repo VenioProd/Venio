@@ -30,10 +30,7 @@ describe('computeSignals', () => {
   })
 
   it('détecte un retard projeté quand l’avancement est loin derrière le temps écoulé', () => {
-    const s = computeSignals(
-      { ...base, tasksDone: 4, tasksTotal: 10, startDate: days(-27), endDate: days(3) },
-      NOW,
-    )
+    const s = computeSignals({ ...base, tasksDone: 4, tasksTotal: 10, startDate: days(-27), endDate: days(3) }, NOW)
     expect(s.expectedProgress).toBe(90)
     expect(s.risks.map((r) => r.code)).toEqual(expect.arrayContaining(['PROJECTED_LATE', 'DUE_SOON']))
   })
@@ -51,7 +48,9 @@ describe('computeSignals', () => {
 
   it('avancement sans tâche : 0 en cours, 100 terminé', () => {
     expect(computeSignals({ status: 'EN_COURS', tasksTotal: 0, tasksDone: 0 }, NOW).progress).toBe(0)
-    expect(computeSignals({ status: 'TERMINE', tasksTotal: 0, tasksDone: 0, billingStatus: 'FACTURE' }, NOW).progress).toBe(100)
+    expect(
+      computeSignals({ status: 'TERMINE', tasksTotal: 0, tasksDone: 0, billingStatus: 'FACTURE' }, NOW).progress,
+    ).toBe(100)
   })
 })
 
@@ -86,7 +85,15 @@ describe('parseBulkRequest', () => {
 
 describe('vues sauvegardées', () => {
   it('ne garde que les filtres connus et valides', () => {
-    const f = sanitizeViewFilters({ status: 'X', priority: 'HAUTE', risk: true, late: 'yes', q: '  lumen ', evil: 1, sort: 'zzz' })
+    const f = sanitizeViewFilters({
+      status: 'X',
+      priority: 'HAUTE',
+      risk: true,
+      late: 'yes',
+      q: '  lumen ',
+      evil: 1,
+      sort: 'zzz',
+    })
     expect(f).toMatchObject({ status: '', priority: 'HAUTE', risk: true, late: false, q: 'lumen', sort: 'urgency' })
     expect(f).not.toHaveProperty('evil')
   })

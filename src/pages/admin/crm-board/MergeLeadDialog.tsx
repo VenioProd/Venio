@@ -52,7 +52,9 @@ const MergeLeadDialog: React.FC<MergeLeadDialogProps> = ({ lead, candidates, onC
     if (!needle) return suggestions
     return candidates
       .filter((c) => c._id !== lead._id)
-      .filter((c) => [c.company, c.contactName, c.contactEmail, c.contactPhone].some((v) => v?.toLowerCase().includes(needle)))
+      .filter((c) =>
+        [c.company, c.contactName, c.contactEmail, c.contactPhone].some((v) => v?.toLowerCase().includes(needle)),
+      )
       .slice(0, MAX_RESULTS)
   }, [query, suggestions, candidates, lead._id])
 
@@ -76,7 +78,13 @@ const MergeLeadDialog: React.FC<MergeLeadDialogProps> = ({ lead, candidates, onC
 
   return (
     <div className="crm-modal-overlay" onClick={onCancel}>
-      <div className="crm-modal" role="dialog" aria-modal="true" aria-labelledby="crm-merge-title" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="crm-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="crm-merge-title"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="crm-modal-header">
           <h2 id="crm-merge-title">{t('crm.merge.title', { company: lead.company })}</h2>
         </div>
@@ -91,7 +99,12 @@ const MergeLeadDialog: React.FC<MergeLeadDialogProps> = ({ lead, candidates, onC
                 </p>
               )}
               <div className="crm-modal-actions">
-                <button type="button" className="portal-button secondary" onClick={() => setTarget(null)} disabled={saving}>
+                <button
+                  type="button"
+                  className="portal-button secondary"
+                  onClick={() => setTarget(null)}
+                  disabled={saving}
+                >
                   {t('crm.merge.back')}
                 </button>
                 <button type="button" className="portal-button" onClick={confirm} disabled={saving}>
@@ -109,7 +122,9 @@ const MergeLeadDialog: React.FC<MergeLeadDialogProps> = ({ lead, candidates, onC
                 onChange={(event) => setQuery(event.target.value)}
                 autoFocus
               />
-              <p style={{ fontSize: 13, opacity: 0.8 }}>{query.trim() ? t('crm.merge.results') : t('crm.merge.suggestions')}</p>
+              <p style={{ fontSize: 13, opacity: 0.8 }}>
+                {query.trim() ? t('crm.merge.results') : t('crm.merge.suggestions')}
+              </p>
               {results.length === 0 ? (
                 <p>{t('crm.merge.none')}</p>
               ) : (

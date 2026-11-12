@@ -251,7 +251,15 @@ describe('Automation Definition Validation', () => {
   it('evaluate should return a Promise<boolean>', async () => {
     const def = createMockDefinition()
     const ctx = buildContext()
-    ctx.settings = { key: def.key, enabled: true, channels: ['in_app'], throttleWindowMinutes: 0, escalationEnabled: false, config: {}, updatedAt: new Date() }
+    ctx.settings = {
+      key: def.key,
+      enabled: true,
+      channels: ['in_app'],
+      throttleWindowMinutes: 0,
+      escalationEnabled: false,
+      config: {},
+      updatedAt: new Date(),
+    }
     const result = await def.evaluate(ctx)
     expect(typeof result).toBe('boolean')
   })
@@ -259,7 +267,15 @@ describe('Automation Definition Validation', () => {
   it('execute should return an AutomationResult', async () => {
     const def = createMockDefinition()
     const ctx = buildContext()
-    ctx.settings = { key: def.key, enabled: true, channels: ['in_app'], throttleWindowMinutes: 0, escalationEnabled: false, config: {}, updatedAt: new Date() }
+    ctx.settings = {
+      key: def.key,
+      enabled: true,
+      channels: ['in_app'],
+      throttleWindowMinutes: 0,
+      escalationEnabled: false,
+      config: {},
+      updatedAt: new Date(),
+    }
     const result = await def.execute(ctx)
     expect(result).toHaveProperty('actionsExecuted')
     expect(result).toHaveProperty('recipientsNotified')

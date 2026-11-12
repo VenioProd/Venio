@@ -66,7 +66,9 @@ describe('purge de conservation', () => {
     expect(retention.clampRetentionMonths(undefined)).toBe(36)
     expect(retention.clampRetentionMonths(2)).toBe(6)
     expect(retention.clampRetentionMonths(500)).toBe(120)
-    expect(retention.retentionCutoff(new Date('2026-11-06T00:00:00Z'), 36).toISOString().slice(0, 10)).toBe('2023-11-06')
+    expect(retention.retentionCutoff(new Date('2026-11-06T00:00:00Z'), 36).toISOString().slice(0, 10)).toBe(
+      '2023-11-06',
+    )
   })
 
   it('par défaut (non activée) : simulation, aucun lead modifié', async () => {
@@ -87,14 +89,25 @@ describe('purge de conservation', () => {
     const interacted = await insertLead({ company: 'Échange récent (compteur)', lastInteractionAt: recent })
     const contacted = await insertLead({ company: 'Contact récent', lastContactAt: recent })
     const journal = await insertLead({ company: 'Échange récent (journal)' })
-    await Interaction.collection.insertOne({ subjectType: 'LEAD', subjectId: journal, kind: 'CALL', occurredAt: recent, body: 'appel' })
+    await Interaction.collection.insertOne({
+      subjectType: 'LEAD',
+      subjectId: journal,
+      kind: 'CALL',
+      occurredAt: recent,
+      body: 'appel',
+    })
 
     const result = await retention.runRetentionPurge(now)
     expect(result).toMatchObject({ dryRun: false, eligible: 2, anonymized: 2, failed: 0 })
 
     for (const id of [eligible, archived]) {
       const lead = await Lead.collection.findOne({ _id: id })
-      expect(lead).toMatchObject({ contactName: 'Anonymisé (conservation)', contactEmail: '', contactPhone: '', notes: 'Anonymisé (conservation)' })
+      expect(lead).toMatchObject({
+        contactName: 'Anonymisé (conservation)',
+        contactEmail: '',
+        contactPhone: '',
+        notes: 'Anonymisé (conservation)',
+      })
       expect(lead?.anonymizedAt).toBeInstanceOf(Date)
     }
     for (const id of [won, touched, interacted, contacted, journal]) {

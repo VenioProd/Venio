@@ -47,9 +47,7 @@ describe('Agent / hasAllScopes', () => {
   })
 
   it('admin:* grants everything', () => {
-    expect(hasAllScopes([ADMIN_WILDCARD_SCOPE], ['read:crm', 'write:projects', 'manage:backup'])).toBe(
-      true
-    )
+    expect(hasAllScopes([ADMIN_WILDCARD_SCOPE], ['read:crm', 'write:projects', 'manage:backup'])).toBe(true)
     expect(hasAllScopes([ADMIN_WILDCARD_SCOPE], [])).toBe(true)
   })
 

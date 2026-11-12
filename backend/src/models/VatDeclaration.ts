@@ -9,7 +9,7 @@ const vatLineSchema = new mongoose.Schema(
     base: { type: Number, default: 0 }, // base HT
     amount: { type: Number, default: 0 }, // montant TVA
   },
-  { _id: false }
+  { _id: false },
 )
 
 // Sous-schéma : ventilation par taux (collecté / déductible).
@@ -19,7 +19,7 @@ const vatRateBreakdownSchema = new mongoose.Schema(
     base: { type: Number, default: 0 }, // base HT cumulée
     amount: { type: Number, default: 0 }, // TVA cumulée
   },
-  { _id: false }
+  { _id: false },
 )
 
 const vatDeclarationSchema = new mongoose.Schema<IVatDeclaration>(
@@ -70,7 +70,7 @@ const vatDeclarationSchema = new mongoose.Schema<IVatDeclaration>(
 
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 vatDeclarationSchema.index({ periodStart: 1, periodEnd: 1 })

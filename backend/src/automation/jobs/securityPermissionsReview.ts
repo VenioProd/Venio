@@ -66,10 +66,7 @@ const definition: AutomationDefinition = {
     const inactiveAdmins = await User.find({
       role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH'] },
       isActive: { $ne: false },
-      $or: [
-        { lastLoginAt: { $lt: sixtyDaysAgo } },
-        { lastLoginAt: null, createdAt: { $lt: sixtyDaysAgo } },
-      ],
+      $or: [{ lastLoginAt: { $lt: sixtyDaysAgo } }, { lastLoginAt: null, createdAt: { $lt: sixtyDaysAgo } }],
     }).select('name email role lastLoginAt createdAt')
 
     for (const u of inactiveAdmins) {

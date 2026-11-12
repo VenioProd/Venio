@@ -59,7 +59,9 @@ async function cleanupClients() {
   if (clients.length === 0) return
 
   // 1. Projets liés à ces clients
-  const projects = await Project.find({ client: { $in: clientIds } }).select('_id').lean()
+  const projects = await Project.find({ client: { $in: clientIds } })
+    .select('_id')
+    .lean()
   const projectIds = projects.map((p) => p._id)
   log('Project (rattachés à un client)', projects.length)
 

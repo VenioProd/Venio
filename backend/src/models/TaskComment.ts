@@ -8,7 +8,7 @@ const taskCommentSchema = new mongoose.Schema<ITaskComment>(
     content: { type: String, required: true, trim: true },
     mentions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 taskCommentSchema.index({ task: 1, createdAt: 1 })

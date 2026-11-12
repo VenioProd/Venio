@@ -144,7 +144,8 @@ export function buildOpenApiSpec(routes: ExtractedRoute[]): Record<string, unkno
                 content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
               },
               '409': {
-                description: 'Conflit (clé d’idempotence réutilisée pour une autre opération, body modifié, ou contrainte)',
+                description:
+                  'Conflit (clé d’idempotence réutilisée pour une autre opération, body modifié, ou contrainte)',
                 content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
               },
             }
@@ -179,8 +180,8 @@ export function buildOpenApiSpec(routes: ExtractedRoute[]): Record<string, unkno
       title: 'Venio Agent API',
       version: '1.0.0',
       description:
-        "API REST de pilotage de Venio par des agents externes (Kuro, intégrations tierces). " +
-        "Auth Bearer + scopes. Cf. docs/api-agent.md pour la doc complète.",
+        'API REST de pilotage de Venio par des agents externes (Kuro, intégrations tierces). ' +
+        'Auth Bearer + scopes. Cf. docs/api-agent.md pour la doc complète.',
     },
     servers: [{ url: '/api/v1/agent' }],
     components: {

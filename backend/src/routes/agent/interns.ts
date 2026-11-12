@@ -68,30 +68,27 @@ router.get('/interns', requireScope('read:interns'), async (req: Request, res: R
   }
 })
 
-router.get(
-  '/interns/:id',
-  requireScope('read:interns'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const i = await Intern.findById(req.params.id)
-        .populate('userId', 'name email')
-        .populate('tuteur', 'name email')
-        .select('-nextcloudPassword')
-        .lean()
-      if (!i) return respondError(res, 404, 'NOT_FOUND', 'Stagiaire introuvable')
-      res.json(i)
-    } catch (err) {
-      next(err)
-    }
+router.get('/interns/:id', requireScope('read:interns'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const i = await Intern.findById(req.params.id)
+      .populate('userId', 'name email')
+      .populate('tuteur', 'name email')
+      .select('-nextcloudPassword')
+      .lean()
+    if (!i) return respondError(res, 404, 'NOT_FOUND', 'Stagiaire introuvable')
+    res.json(i)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.post(
   '/interns',
   requireScope('write:interns'),
-  body('userId').custom((v) => isValidObjectId(v)).withMessage('userId requis'),
+  body('userId')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('userId requis'),
   body('type').isIn(INTERN_TYPES as unknown as string[]),
   body('poste').isString().trim().isLength({ min: 1 }),
   body('dateDebut').custom((v) => !Number.isNaN(Date.parse(v))),
@@ -130,69 +127,59 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.patch(
-  '/interns/:id',
-  requireScope('write:interns'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const intern = await Intern.findById(req.params.id)
-      if (!intern) return respondError(res, 404, 'NOT_FOUND', 'Stagiaire introuvable')
-      const before = intern.toObject()
-      const stringFields = ['poste', 'departement', 'ecole', 'formation', 'notes']
-      for (const f of stringFields) {
-        if (typeof req.body[f] === 'string') {
-          ;(intern as unknown as Record<string, string>)[f] = req.body[f]
-        }
+router.patch('/interns/:id', requireScope('write:interns'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const intern = await Intern.findById(req.params.id)
+    if (!intern) return respondError(res, 404, 'NOT_FOUND', 'Stagiaire introuvable')
+    const before = intern.toObject()
+    const stringFields = ['poste', 'departement', 'ecole', 'formation', 'notes']
+    for (const f of stringFields) {
+      if (typeof req.body[f] === 'string') {
+        ;(intern as unknown as Record<string, string>)[f] = req.body[f]
       }
-      if (typeof req.body.status === 'string' && (STATUSES as readonly string[]).includes(req.body.status)) {
-        intern.status = req.body.status as typeof intern.status
-      }
-      if (req.body.dateDebut !== undefined) intern.dateDebut = new Date(req.body.dateDebut)
-      if (req.body.dateFin !== undefined) intern.dateFin = new Date(req.body.dateFin)
-      if (req.body.tuteur !== undefined) {
-        intern.tuteur = isValidObjectId(req.body.tuteur)
-          ? (req.body.tuteur as unknown as typeof intern.tuteur)
-          : (null as unknown as typeof intern.tuteur)
-      }
-      if (Array.isArray(req.body.joursPresence)) intern.joursPresence = req.body.joursPresence
-      if (typeof req.body.inclureEquipe === 'boolean') intern.inclureEquipe = req.body.inclureEquipe
-      await intern.save()
-      res.locals.audit = {
-        entityType: 'Intern',
-        entityId: String(intern._id),
-        before,
-        after: intern.toObject(),
-      }
-      res.json(intern.toObject())
-    } catch (err) {
-      next(err)
     }
+    if (typeof req.body.status === 'string' && (STATUSES as readonly string[]).includes(req.body.status)) {
+      intern.status = req.body.status as typeof intern.status
+    }
+    if (req.body.dateDebut !== undefined) intern.dateDebut = new Date(req.body.dateDebut)
+    if (req.body.dateFin !== undefined) intern.dateFin = new Date(req.body.dateFin)
+    if (req.body.tuteur !== undefined) {
+      intern.tuteur = isValidObjectId(req.body.tuteur)
+        ? (req.body.tuteur as unknown as typeof intern.tuteur)
+        : (null as unknown as typeof intern.tuteur)
+    }
+    if (Array.isArray(req.body.joursPresence)) intern.joursPresence = req.body.joursPresence
+    if (typeof req.body.inclureEquipe === 'boolean') intern.inclureEquipe = req.body.inclureEquipe
+    await intern.save()
+    res.locals.audit = {
+      entityType: 'Intern',
+      entityId: String(intern._id),
+      before,
+      after: intern.toObject(),
+    }
+    res.json(intern.toObject())
+  } catch (err) {
+    next(err)
   }
-)
+})
 
-router.delete(
-  '/interns/:id',
-  requireScope('write:interns'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const intern = await Intern.findById(req.params.id)
-      if (!intern) return respondError(res, 404, 'NOT_FOUND', 'Stagiaire introuvable')
-      const before = intern.toObject()
-      await Intern.deleteOne({ _id: intern._id })
-      res.locals.audit = { entityType: 'Intern', entityId: String(intern._id), before }
-      res.json({ ok: true, deletedId: String(intern._id) })
-    } catch (err) {
-      next(err)
-    }
+router.delete('/interns/:id', requireScope('write:interns'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const intern = await Intern.findById(req.params.id)
+    if (!intern) return respondError(res, 404, 'NOT_FOUND', 'Stagiaire introuvable')
+    const before = intern.toObject()
+    await Intern.deleteOne({ _id: intern._id })
+    res.locals.audit = { entityType: 'Intern', entityId: String(intern._id), before }
+    res.json({ ok: true, deletedId: String(intern._id) })
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 // ═════════════════════════════════════════════════════════════════════════
 // Internal missions (rattachées à un InternalProject)
@@ -227,7 +214,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
@@ -267,7 +254,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -298,7 +285,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

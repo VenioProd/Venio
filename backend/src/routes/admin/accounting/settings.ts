@@ -48,7 +48,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // PATCH / : met à jour les champs autorisés du singleton
@@ -70,7 +70,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

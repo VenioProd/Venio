@@ -5,9 +5,7 @@ import User from '../models/User.js'
 import PersonalTask from '../models/PersonalTask.js'
 import CrmRule from '../models/CrmRule.js'
 import CrmRuleRun from '../models/CrmRuleRun.js'
-import {
-  csvCell,
-} from '../routes/crmExtras.js'
+import { csvCell } from '../routes/crmExtras.js'
 import {
   evaluateConditions,
   fireLeadEvent,
@@ -20,13 +18,65 @@ import {
 } from '../lib/crmRules.js'
 
 describe('crmRules / fonctions pures', () => {
-  const lead = { status: 'PROPOSAL', budget: 20000, tags: ['Santé'], source: 'Site web', assignedTo: null, statusChangedAt: new Date(Date.now() - 6 * 864e5), createdAt: new Date(Date.now() - 20 * 864e5) }
+  const lead = {
+    status: 'PROPOSAL',
+    budget: 20000,
+    tags: ['Santé'],
+    source: 'Site web',
+    assignedTo: null,
+    statusChangedAt: new Date(Date.now() - 6 * 864e5),
+    createdAt: new Date(Date.now() - 20 * 864e5),
+  }
 
   it('évalue ET / OU et les opérateurs', () => {
-    expect(evaluateConditions({ op: 'AND', items: [{ field: 'status', operator: 'in', value: ['PROPOSAL', 'DEMO'] }, { field: 'budget', operator: 'gte', value: 10000 }] }, lead)).toBe(true)
-    expect(evaluateConditions({ op: 'AND', items: [{ field: 'budget', operator: 'lt', value: 100 }, { field: 'status', operator: 'eq', value: 'PROPOSAL' }] }, lead)).toBe(false)
-    expect(evaluateConditions({ op: 'OR', items: [{ field: 'budget', operator: 'lt', value: 100 }, { field: 'tags', operator: 'contains', value: 'santé' }] }, lead)).toBe(true)
-    expect(evaluateConditions({ op: 'AND', items: [{ field: 'assignedTo', operator: 'empty' }, { field: 'daysInStage', operator: 'gte', value: 5 }] }, lead)).toBe(true)
+    expect(
+      evaluateConditions(
+        {
+          op: 'AND',
+          items: [
+            { field: 'status', operator: 'in', value: ['PROPOSAL', 'DEMO'] },
+            { field: 'budget', operator: 'gte', value: 10000 },
+          ],
+        },
+        lead,
+      ),
+    ).toBe(true)
+    expect(
+      evaluateConditions(
+        {
+          op: 'AND',
+          items: [
+            { field: 'budget', operator: 'lt', value: 100 },
+            { field: 'status', operator: 'eq', value: 'PROPOSAL' },
+          ],
+        },
+        lead,
+      ),
+    ).toBe(false)
+    expect(
+      evaluateConditions(
+        {
+          op: 'OR',
+          items: [
+            { field: 'budget', operator: 'lt', value: 100 },
+            { field: 'tags', operator: 'contains', value: 'santé' },
+          ],
+        },
+        lead,
+      ),
+    ).toBe(true)
+    expect(
+      evaluateConditions(
+        {
+          op: 'AND',
+          items: [
+            { field: 'assignedTo', operator: 'empty' },
+            { field: 'daysInStage', operator: 'gte', value: 5 },
+          ],
+        },
+        lead,
+      ),
+    ).toBe(true)
     expect(evaluateConditions({ op: 'AND', items: [] }, lead)).toBe(true)
   })
 
@@ -38,7 +88,9 @@ describe('crmRules / fonctions pures', () => {
   })
 
   it('rend les gabarits et neutralise les formules CSV', () => {
-    expect(renderTemplate('Relancer {contact} ({company})', { contactName: 'Ada', company: 'Acme' })).toBe('Relancer Ada (Acme)')
+    expect(renderTemplate('Relancer {contact} ({company})', { contactName: 'Ada', company: 'Acme' })).toBe(
+      'Relancer Ada (Acme)',
+    )
     expect(csvCell('=HYPERLINK("x")')).toBe(`"'=HYPERLINK(""x"")"`)
     expect(csvCell('a;b')).toBe('"a;b"')
   })
@@ -122,7 +174,12 @@ describe('crmRules / moteur', () => {
       trigger: { type: 'LEAD_CREATED', params: {} },
       actions: [{ type: 'SEND_EMAIL', params: { subject: 'Bonjour', body: 'Salut {contact}' } }],
     })
-    const lead = await Lead.create({ company: 'Acme', contactName: 'Ada', contactEmail: 'ada@acme.test', assignedTo: ownerId })
+    const lead = await Lead.create({
+      company: 'Acme',
+      contactName: 'Ada',
+      contactEmail: 'ada@acme.test',
+      assignedTo: ownerId,
+    })
     await fireLeadEvent(lead._id, { type: 'LEAD_CREATED', key: 'created' })
     const run = await CrmRuleRun.findOne()
     expect(run!.status).toBe('PENDING')
@@ -141,7 +198,13 @@ describe('crmRules / moteur', () => {
       limits: { perLead: 'DAYS', days: 7, maxPerRun: 50 },
     })
     const old = new Date(Date.now() - 10 * 864e5)
-    const stale = await Lead.create({ company: 'Vieux', status: 'CONTACTED', assignedTo: ownerId, lastContactAt: old, statusChangedAt: old })
+    const stale = await Lead.create({
+      company: 'Vieux',
+      status: 'CONTACTED',
+      assignedTo: ownerId,
+      lastContactAt: old,
+      statusChangedAt: old,
+    })
     await Lead.collection.updateOne({ _id: stale._id }, { $set: { createdAt: old } })
     await Lead.create({ company: 'Frais', status: 'CONTACTED', assignedTo: ownerId, lastContactAt: new Date() })
     expect((await sweepRules()).runs).toBe(1)

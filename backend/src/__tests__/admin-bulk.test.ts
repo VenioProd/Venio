@@ -81,7 +81,10 @@ describe('POST /api/admin/tasks/bulk', () => {
   it('refuses users without MANAGE_TASKS', async () => {
     actAs(viewerId, 'VIEWER')
     const [id] = await makeTasks(ownProjectId, 1)
-    await request(app).post('/api/admin/tasks/bulk').send({ ids: [id], action: 'delete' }).expect(403)
+    await request(app)
+      .post('/api/admin/tasks/bulk')
+      .send({ ids: [id], action: 'delete' })
+      .expect(403)
     const { default: Task } = await import('../models/Task.js')
     expect(await Task.countDocuments()).toBe(1)
   })
@@ -89,7 +92,10 @@ describe('POST /api/admin/tasks/bulk', () => {
   it('rejects malformed requests without touching anything', async () => {
     actAs(superId, 'SUPER_ADMIN')
     const [id] = await makeTasks(ownProjectId, 1)
-    const post = (body: unknown) => request(app).post('/api/admin/tasks/bulk').send(body as object)
+    const post = (body: unknown) =>
+      request(app)
+        .post('/api/admin/tasks/bulk')
+        .send(body as object)
     await post({ ids: [], action: 'delete' }).expect(400)
     await post({ ids: 'x', action: 'delete' }).expect(400)
     await post({ ids: [id, 'not-an-id'], action: 'delete' }).expect(400)
@@ -222,9 +228,18 @@ describe('POST /api/admin/tickets/bulk', () => {
   it('validates input', async () => {
     actAs(superId, 'SUPER_ADMIN')
     const [id] = await makeTickets(1)
-    await request(app).post('/api/admin/tickets/bulk').send({ ids: ['x'], action: 'delete' }).expect(400)
-    await request(app).post('/api/admin/tickets/bulk').send({ ids: [id], action: 'update', patch: { status: 'X' } }).expect(400)
-    await request(app).post('/api/admin/tickets/bulk').send({ ids: [id], action: 'update', patch: { priority: 'HAUTE' } }).expect(400)
+    await request(app)
+      .post('/api/admin/tickets/bulk')
+      .send({ ids: ['x'], action: 'delete' })
+      .expect(400)
+    await request(app)
+      .post('/api/admin/tickets/bulk')
+      .send({ ids: [id], action: 'update', patch: { status: 'X' } })
+      .expect(400)
+    await request(app)
+      .post('/api/admin/tickets/bulk')
+      .send({ ids: [id], action: 'update', patch: { priority: 'HAUTE' } })
+      .expect(400)
   })
 
   it('updates status, archives, unarchives and deletes with partial failure', async () => {

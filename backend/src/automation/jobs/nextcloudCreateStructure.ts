@@ -10,15 +10,7 @@ import { createFolder, isNextcloudEnabled } from '../../lib/nextcloud.js'
 import type { AutomationDefinition, AutomationContext, AutomationResult } from '../types.js'
 import logger from '../../lib/logger.js'
 
-const PROJECT_SUBFOLDERS = [
-  'Livrables',
-  'Contrats',
-  'Factures',
-  'Briefs',
-  'Assets',
-  'Communication',
-  'Exports',
-]
+const PROJECT_SUBFOLDERS = ['Livrables', 'Contrats', 'Factures', 'Briefs', 'Assets', 'Communication', 'Exports']
 
 function sanitizeName(name: string): string {
   return name

@@ -36,17 +36,14 @@ const accountingEntrySchema = new mongoose.Schema<IAccountingEntry>(
     archivedAt: { type: Date, default: null },
     notes: { type: String, default: '' },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 accountingEntrySchema.index({ journal: 1, date: 1 })
-accountingEntrySchema.index(
-  { fiscalYear: 1, journalCode: 1, entryNumber: 1 },
-  { unique: true }
-)
+accountingEntrySchema.index({ fiscalYear: 1, journalCode: 1, entryNumber: 1 }, { unique: true })
 accountingEntrySchema.index(
   { idempotencyKey: 1 },
-  { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } }
+  { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } },
 )
 accountingEntrySchema.index({ status: 1, source: 1 })
 accountingEntrySchema.index({ date: 1 })
@@ -71,12 +68,10 @@ accountingEntrySchema.pre('save', function blockLocked(next) {
   if (!wasLocked) return next()
   const modified = this.modifiedPaths()
   // On autorise uniquement archivedAt et updatedAt comme champs modifiés sur un LOCKED.
-  const blockedPaths = modified.filter(
-    (p) => p !== 'archivedAt' && p !== 'updatedAt'
-  )
+  const blockedPaths = modified.filter((p) => p !== 'archivedAt' && p !== 'updatedAt')
   if (blockedPaths.length === 0) return next()
   const err = new Error(
-    `Écriture verrouillée : modification interdite (champs : ${blockedPaths.join(', ')})`
+    `Écriture verrouillée : modification interdite (champs : ${blockedPaths.join(', ')})`,
   ) as Error & { status?: number }
   err.status = 423
   next(err as CallbackError)

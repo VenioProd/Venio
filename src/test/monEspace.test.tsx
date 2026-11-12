@@ -26,7 +26,11 @@ beforeEach(() => vi.clearAllMocks())
 
 describe('MonEspace', () => {
   it('affiche la salutation et applique un layout par défaut quand vide', async () => {
-    render(<MemoryRouter><MonEspace /></MemoryRouter>)
+    render(
+      <MemoryRouter>
+        <MonEspace />
+      </MemoryRouter>,
+    )
     await waitFor(() => expect(screen.getByText(/Raphaël/)).toBeInTheDocument())
     expect(screen.getByRole('button', { name: /Personnaliser/i })).toBeInTheDocument()
   })

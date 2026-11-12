@@ -1,11 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
 import AgentToken from '../../../models/AgentToken.js'
 import AuditLog from '../../../models/AuditLog.js'
-import {
-  extractPrefix,
-  isValidTokenFormat,
-  verifyAgentToken,
-} from '../../../lib/agent/tokens.js'
+import { extractPrefix, isValidTokenFormat, verifyAgentToken } from '../../../lib/agent/tokens.js'
 import { hasAllScopes, missingScopes } from '../../../lib/agent/scopes.js'
 import { respondError } from './errors.js'
 import logger from '../../../lib/logger.js'
@@ -27,11 +23,7 @@ const AUTH_SUCCESS_LOG_INTERVAL_MS = 15 * 60 * 1000
  * l'énumération. Les tentatives d'auth ratées sont loggées dans AuditLog
  * (AGENT_AUTH_FAIL) — best-effort, n'échoue jamais la requête.
  */
-export default async function agentAuth(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export default async function agentAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const header = String(req.headers.authorization || '')
   const plain = header.startsWith('Bearer ') ? header.slice(7).trim() : ''
 
@@ -57,9 +49,7 @@ export default async function agentAuth(
   }
 
   // 3. Lookup par prefix
-  const token = await AgentToken.findOne({ prefix, status: 'ACTIVE' })
-    .select('+tokenHash')
-    .exec()
+  const token = await AgentToken.findOne({ prefix, status: 'ACTIVE' }).select('+tokenHash').exec()
   if (!token) {
     void logAuthFail(req, 'PREFIX_NOT_FOUND')
     respondError(res, 401, 'INVALID_TOKEN', 'Token invalide')
@@ -82,9 +72,7 @@ export default async function agentAuth(
   }
 
   // 6. Attach + update lastUsed async (fire-and-forget)
-  const ip = String(
-    (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0] || req.ip || ''
-  )
+  const ip = String((req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0] || req.ip || '')
   const userAgent = String(req.headers['user-agent'] || '')
 
   req.agentToken = {
@@ -111,7 +99,7 @@ export default async function agentAuth(
     {
       $set: { lastUsedAt: new Date(), lastUsedIp: ip, lastUsedUserAgent: userAgent },
       $inc: { totalRequests: 1 },
-    }
+    },
   ).catch((err: unknown) => {
     logger.error({ data: (err as Error).message }, '[agent-auth] failed to update lastUsed:')
   })
@@ -124,7 +112,7 @@ function shouldLogAuthSuccess(
   lastUsedIp: string | null | undefined,
   lastUsedUserAgent: string | null | undefined,
   ip: string,
-  userAgent: string
+  userAgent: string,
 ): boolean {
   if (!lastUsedAt) return true
   if ((lastUsedIp || '') !== ip) return true
@@ -141,7 +129,7 @@ async function logAuthSuccess(
     scopes: string[]
     ip: string
     userAgent: string
-  }
+  },
 ): Promise<void> {
   try {
     await AuditLog.create({
@@ -202,9 +190,7 @@ export function requireScope(...required: string[]) {
  */
 async function logAuthFail(req: Request, reason: string, tokenId?: string): Promise<void> {
   try {
-    const ip = String(
-      (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0] || req.ip || ''
-    )
+    const ip = String((req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0] || req.ip || '')
     const userAgent = String(req.headers['user-agent'] || '')
     await AuditLog.create({
       userId: null,

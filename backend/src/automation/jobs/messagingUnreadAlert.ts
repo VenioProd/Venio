@@ -55,7 +55,8 @@ const definition: AutomationDefinition = {
       sender: { $in: clientIds },
       createdAt: { $lt: twentyFourHoursAgo },
       readBy: { $not: { $elemMatch: { $in: adminIds } } },
-    }).populate('project', 'name')
+    })
+      .populate('project', 'name')
       .populate('sender', 'name companyName')
 
     if (unreadMessages.length === 0) {

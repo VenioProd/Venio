@@ -1593,10 +1593,18 @@ const DevWorkspace = () => {
               >
                 {bulkApplying ? '…' : t('devA.bulk.apply')}
               </button>
-              <button className="dev-btn subtle" disabled={bulkApplying} onClick={() => void applyBulkRemoval('archive')}>
+              <button
+                className="dev-btn subtle"
+                disabled={bulkApplying}
+                onClick={() => void applyBulkRemoval('archive')}
+              >
                 <Archive size={12} /> {t('devA.bulk.archive')}
               </button>
-              <button className="dev-btn subtle" disabled={bulkApplying} onClick={() => void applyBulkRemoval('delete')}>
+              <button
+                className="dev-btn subtle"
+                disabled={bulkApplying}
+                onClick={() => void applyBulkRemoval('delete')}
+              >
                 <Trash2 size={12} /> {t('devA.bulk.delete')}
               </button>
               <button className="dev-btn subtle" onClick={() => setSelectedIds(new Set())} title={t('devA.bulk.clear')}>

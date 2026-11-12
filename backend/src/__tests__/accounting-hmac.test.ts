@@ -70,7 +70,7 @@ describe('Accounting / CSV Export', () => {
       [
         ['411000', 'Clients', 1200],
         ['44571', 'TVA "collectée"; 20%', 200],
-      ]
+      ],
     )
     // BOM UTF-8
     expect(csv.charCodeAt(0)).toBe(0xfeff)

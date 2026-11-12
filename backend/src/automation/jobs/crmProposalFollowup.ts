@@ -41,11 +41,13 @@ const definition: AutomationDefinition = {
     const days = await getProposalReminderDays()
     const cutoff = proposalReminderCutoff(ctx.now, days)
 
-    const leads = await Lead.find(withActiveLeads({
-      status: 'PROPOSAL',
-      statusChangedAt: { $lt: cutoff },
-      assignedTo: { $ne: null },
-    })).populate('assignedTo', '_id name')
+    const leads = await Lead.find(
+      withActiveLeads({
+        status: 'PROPOSAL',
+        statusChangedAt: { $lt: cutoff },
+        assignedTo: { $ne: null },
+      }),
+    ).populate('assignedTo', '_id name')
 
     const actionsExecuted: string[] = []
     const recipientsNotified: string[] = []

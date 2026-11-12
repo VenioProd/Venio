@@ -11,11 +11,7 @@ import { useNotifications } from '../../context/NotificationContext'
 import { useToast } from '../../context/ToastContext'
 import { useConfirm } from '../../hooks/useConfirm'
 import { formatDate } from '../../i18n/format'
-import {
-  deleteReadNotifications,
-  fetchAllNotifications,
-  type NotificationView,
-} from '../../services/notifications'
+import { deleteReadNotifications, fetchAllNotifications, type NotificationView } from '../../services/notifications'
 import type { AppNotification } from '../../types/notification.types'
 import './NotificationsCenter.css'
 

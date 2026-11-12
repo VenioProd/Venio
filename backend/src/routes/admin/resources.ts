@@ -30,14 +30,18 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } }) // 100MB
 
 // GET / — list all resources
-router.get('/', requirePermission(PERMISSIONS.VIEW_CONTENT), async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const resources = await CompanyResource.find()
-      .populate('uploadedBy', 'name')
-      .sort({ createdAt: -1 })
-    res.json({ resources })
-  } catch (err) { next(err) }
-})
+router.get(
+  '/',
+  requirePermission(PERMISSIONS.VIEW_CONTENT),
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const resources = await CompanyResource.find().populate('uploadedBy', 'name').sort({ createdAt: -1 })
+      res.json({ resources })
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 // GET /categories
 router.get('/categories', requirePermission(PERMISSIONS.VIEW_CONTENT), (_req: Request, res: Response) => {
@@ -45,114 +49,141 @@ router.get('/categories', requirePermission(PERMISSIONS.VIEW_CONTENT), (_req: Re
 })
 
 // GET /:id/download — serve the file
-router.get('/:id/download', requirePermission(PERMISSIONS.VIEW_CONTENT), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const resource = await CompanyResource.findById(req.params.id)
-    if (!resource) return res.status(404).json({ error: 'Ressource introuvable' })
+router.get(
+  '/:id/download',
+  requirePermission(PERMISSIONS.VIEW_CONTENT),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const resource = await CompanyResource.findById(req.params.id)
+      if (!resource) return res.status(404).json({ error: 'Ressource introuvable' })
 
-    const filePath = path.resolve(resource.storagePath)
-    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable sur le serveur' })
+      const filePath = path.resolve(resource.storagePath)
+      if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable sur le serveur' })
 
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(resource.originalName)}"`)
-    res.setHeader('Content-Type', resource.mimeType)
-    return res.sendFile(filePath)
-  } catch (err) { return next(err) }
-})
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(resource.originalName)}"`)
+      res.setHeader('Content-Type', resource.mimeType)
+      return res.sendFile(filePath)
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // POST / — upload (SUPER_ADMIN only)
-router.post('/', requirePermission(PERMISSIONS.EDIT_CONTENT), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (req.user!.role !== 'SUPER_ADMIN') {
-      if (req.file) fs.unlinkSync(req.file.path)
-      return res.status(403).json({ error: 'Seul le Super Admin peut uploader des ressources' })
-    }
-    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' })
+router.post(
+  '/',
+  requirePermission(PERMISSIONS.EDIT_CONTENT),
+  upload.single('file'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (req.user!.role !== 'SUPER_ADMIN') {
+        if (req.file) fs.unlinkSync(req.file.path)
+        return res.status(403).json({ error: 'Seul le Super Admin peut uploader des ressources' })
+      }
+      if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' })
 
-    const { name, description, category } = req.body
-    if (!name?.trim()) {
-      fs.unlinkSync(req.file.path)
-      return res.status(400).json({ error: 'Le nom est requis' })
-    }
+      const { name, description, category } = req.body
+      if (!name?.trim()) {
+        fs.unlinkSync(req.file.path)
+        return res.status(400).json({ error: 'Le nom est requis' })
+      }
 
-    const resource = await CompanyResource.create({
-      name: name.trim(),
-      description: description || '',
-      category: category || 'Autre',
-      originalName: req.file.originalname,
-      storagePath: req.file.path,
-      mimeType: req.file.mimetype,
-      size: req.file.size,
-      uploadedBy: req.user!.id,
-    })
+      const resource = await CompanyResource.create({
+        name: name.trim(),
+        description: description || '',
+        category: category || 'Autre',
+        originalName: req.file.originalname,
+        storagePath: req.file.path,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        uploadedBy: req.user!.id,
+      })
 
-    syncUploadToNextcloud(req.file, 'ressources')
-    const populated = await CompanyResource.findById(resource._id).populate('uploadedBy', 'name')
+      syncUploadToNextcloud(req.file, 'ressources')
+      const populated = await CompanyResource.findById(resource._id).populate('uploadedBy', 'name')
 
-    // fire-and-forget notifications to all team members
-    ;(async () => {
-      try {
-        const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
-        const resourcesUrl = `${baseUrl}/admin/ressources`
-        const members = await User.find({ role: { $ne: 'CLIENT' } }).select('name email')
-        for (const member of members) {
-          if (member.email) {
-            sendResourcePublishedEmail({
-              to: member.email,
-              memberName: member.name || member.email,
-              resourceName: resource.name,
-              category: resource.category,
-              description: resource.description || '',
-              resourcesUrl,
-            }).catch(() => {})
+      // fire-and-forget notifications to all team members
+      ;(async () => {
+        try {
+          const baseUrl = process.env.CORS_ORIGIN || 'https://venio.paris'
+          const resourcesUrl = `${baseUrl}/admin/ressources`
+          const members = await User.find({ role: { $ne: 'CLIENT' } }).select('name email')
+          for (const member of members) {
+            if (member.email) {
+              sendResourcePublishedEmail({
+                to: member.email,
+                memberName: member.name || member.email,
+                resourceName: resource.name,
+                category: resource.category,
+                description: resource.description || '',
+                resourcesUrl,
+              }).catch(() => {})
+            }
           }
+        } catch {
+          /* silent */
         }
-      } catch { /* silent */ }
-    })()
+      })()
 
-    // Notif in-app à tous les admins internes
-    notifyInternalAdmins({
-      type: 'RESOURCE_REQUESTED',
-      title: `Nouvelle ressource publiée`,
-      message: `"${resource.name}" (${resource.category})`,
-      link: '/admin/ressources',
-      metadata: { resourceId: String(resource._id) },
-      excludeUserId: req.user!.id,
-    }).catch(() => {})
+      // Notif in-app à tous les admins internes
+      notifyInternalAdmins({
+        type: 'RESOURCE_REQUESTED',
+        title: `Nouvelle ressource publiée`,
+        message: `"${resource.name}" (${resource.category})`,
+        link: '/admin/ressources',
+        metadata: { resourceId: String(resource._id) },
+        excludeUserId: req.user!.id,
+      }).catch(() => {})
 
-    return res.status(201).json({ resource: populated })
-  } catch (err) { return next(err) }
-})
+      return res.status(201).json({ resource: populated })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // PATCH /:id — update name/description/category (SUPER_ADMIN only)
-router.patch('/:id', requirePermission(PERMISSIONS.EDIT_CONTENT), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Accès refusé' })
-    const resource = await CompanyResource.findById(req.params.id)
-    if (!resource) return res.status(404).json({ error: 'Ressource introuvable' })
+router.patch(
+  '/:id',
+  requirePermission(PERMISSIONS.EDIT_CONTENT),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Accès refusé' })
+      const resource = await CompanyResource.findById(req.params.id)
+      if (!resource) return res.status(404).json({ error: 'Ressource introuvable' })
 
-    const { name, description, category } = req.body
-    if (name !== undefined) resource.name = name.trim()
-    if (description !== undefined) resource.description = description
-    if (category !== undefined) resource.category = category
+      const { name, description, category } = req.body
+      if (name !== undefined) resource.name = name.trim()
+      if (description !== undefined) resource.description = description
+      if (category !== undefined) resource.category = category
 
-    await resource.save()
-    const populated = await CompanyResource.findById(resource._id).populate('uploadedBy', 'name')
-    return res.json({ resource: populated })
-  } catch (err) { return next(err) }
-})
+      await resource.save()
+      const populated = await CompanyResource.findById(resource._id).populate('uploadedBy', 'name')
+      return res.json({ resource: populated })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 // DELETE /:id (SUPER_ADMIN only)
-router.delete('/:id', requirePermission(PERMISSIONS.EDIT_CONTENT), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Accès refusé' })
-    const resource = await CompanyResource.findById(req.params.id)
-    if (!resource) return res.status(404).json({ error: 'Ressource introuvable' })
+router.delete(
+  '/:id',
+  requirePermission(PERMISSIONS.EDIT_CONTENT),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (req.user!.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Accès refusé' })
+      const resource = await CompanyResource.findById(req.params.id)
+      if (!resource) return res.status(404).json({ error: 'Ressource introuvable' })
 
-    // Delete file from disk
-    if (fs.existsSync(resource.storagePath)) fs.unlinkSync(resource.storagePath)
-    await resource.deleteOne()
-    return res.json({ success: true })
-  } catch (err) { return next(err) }
-})
+      // Delete file from disk
+      if (fs.existsSync(resource.storagePath)) fs.unlinkSync(resource.storagePath)
+      await resource.deleteOne()
+      return res.json({ success: true })
+    } catch (err) {
+      return next(err)
+    }
+  },
+)
 
 export default router

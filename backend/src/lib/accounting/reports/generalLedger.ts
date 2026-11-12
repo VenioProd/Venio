@@ -99,9 +99,7 @@ export async function getGeneralLedger(params: GeneralLedgerParams): Promise<Gen
 
   // Solde d'ouverture : tout ce qui précède `from`.
   const openingBalance =
-    includeOpening && fromDate
-      ? await computeOpeningBalance({ accountCode, fiscalYear, before: fromDate })
-      : 0
+    includeOpening && fromDate ? await computeOpeningBalance({ accountCode, fiscalYear, before: fromDate }) : 0
 
   // Mouvements sur la période demandée.
   const match: Record<string, unknown> = { accountCode: String(accountCode) }
@@ -124,10 +122,7 @@ export async function getGeneralLedger(params: GeneralLedgerParams): Promise<Gen
           {
             $match: {
               $expr: {
-                $and: [
-                  { $eq: ['$_id', '$$entryId'] },
-                  { $in: ['$status', VALID_STATUSES] },
-                ],
+                $and: [{ $eq: ['$_id', '$$entryId'] }, { $in: ['$status', VALID_STATUSES] }],
               },
             },
           },

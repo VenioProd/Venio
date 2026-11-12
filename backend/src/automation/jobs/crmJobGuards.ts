@@ -17,7 +17,10 @@ export type SchedulerToggle = 'proposalReminderEnabled' | 'coldLeadEmailEnabled'
  * Rend la raison de l'abstention (`rule:<systemKey>` ou `scheduler:<réglage>`),
  * ou `null` si le job doit agir.
  */
-export async function crmJobAbstention(behavior: CoveredBehavior, schedulerToggle?: SchedulerToggle): Promise<string | null> {
+export async function crmJobAbstention(
+  behavior: CoveredBehavior,
+  schedulerToggle?: SchedulerToggle,
+): Promise<string | null> {
   if (await isCoveredByActiveRule(behavior)) return `rule:${SYSTEM_RULE_FOR[behavior]}`
   if (schedulerToggle) {
     const settings = (await CrmSettings.getSettings()) as ICrmSettings

@@ -39,7 +39,14 @@ async function expectLeadError(promise: Promise<unknown>, code: string): Promise
 
 describe('crmLeadService / normalisation', () => {
   it('ne garde que les champs connus et valides', () => {
-    const patch = normalizeLeadPatch({ company: '  Acme ', status: 'NOPE', priority: 'HAUTE', budget: 'abc', foo: 1, lostReason: ' Prix ' })
+    const patch = normalizeLeadPatch({
+      company: '  Acme ',
+      status: 'NOPE',
+      priority: 'HAUTE',
+      budget: 'abc',
+      foo: 1,
+      lostReason: ' Prix ',
+    })
     expect(patch).toMatchObject({ company: 'Acme', priority: 'HAUTE', budget: null, lostReason: 'Prix' })
     expect(patch).not.toHaveProperty('status')
     expect(patch).not.toHaveProperty('foo')
@@ -59,8 +66,18 @@ describe('crmLeadService / applyLeadChange', () => {
   afterAll(teardownMongo)
   beforeEach(async () => {
     await clearDb()
-    const actor = await User.create({ email: 'actor@test.local', name: 'Actor', role: 'SUPER_ADMIN', passwordHash: 'x' })
-    const colleague = await User.create({ email: 'colleague@test.local', name: 'Colleague', role: 'COMMERCIAL', passwordHash: 'x' })
+    const actor = await User.create({
+      email: 'actor@test.local',
+      name: 'Actor',
+      role: 'SUPER_ADMIN',
+      passwordHash: 'x',
+    })
+    const colleague = await User.create({
+      email: 'colleague@test.local',
+      name: 'Colleague',
+      role: 'COMMERCIAL',
+      passwordHash: 'x',
+    })
     actorId = String(actor._id)
     colleagueId = String(colleague._id)
   })
@@ -86,7 +103,10 @@ describe('crmLeadService / applyLeadChange', () => {
   })
 
   it('consigne l’auto-qualification comme un changement de statut, à la création comme à la modification', async () => {
-    const created = await createLead({ company: 'Qualifiée', budget: 5000, source: 'Referral' }, { actor: actorId, source: 'admin' })
+    const created = await createLead(
+      { company: 'Qualifiée', budget: 5000, source: 'Referral' },
+      { actor: actorId, source: 'admin' },
+    )
     expect(created.lead.status).toBe('QUALIFIED')
     const first = await statusChanges(created.lead._id)
     expect(first).toHaveLength(1)
@@ -100,7 +120,10 @@ describe('crmLeadService / applyLeadChange', () => {
   })
 
   it('n’auto-qualifie pas depuis une action groupée ni une règle', async () => {
-    const { lead } = await createLead({ company: 'Groupée', source: 'Ads', status: 'CONTACTED', budget: 2000 }, { actor: actorId, source: 'admin' })
+    const { lead } = await createLead(
+      { company: 'Groupée', source: 'Ads', status: 'CONTACTED', budget: 2000 },
+      { actor: actorId, source: 'admin' },
+    )
     const result = await applyLeadChange(lead, { status: 'LEAD' }, { actor: actorId, source: 'bulk' })
     expect(result.lead.status).toBe('LEAD')
   })
@@ -117,17 +140,33 @@ describe('crmLeadService / applyLeadChange', () => {
     expect(fresh!.status).toBe('LEAD')
     expect(await statusChanges(lead._id)).toHaveLength(0)
 
-    const ok = await applyLeadChange(String(lead._id), { status: 'LOST', lostReason: 'Prix' }, { actor: actorId, source: 'admin' })
+    const ok = await applyLeadChange(
+      String(lead._id),
+      { status: 'LOST', lostReason: 'Prix' },
+      { actor: actorId, source: 'admin' },
+    )
     expect(ok.lead.lostReason).toBe('Prix')
   })
 
   it('refuse un assigné inactif ou hors équipe, accepte un commercial actif', async () => {
     const client = await User.create({ email: 'client@test.local', name: 'Client', role: 'CLIENT', passwordHash: 'x' })
-    const inactive = await User.create({ email: 'old@test.local', name: 'Old', role: 'COMMERCIAL', passwordHash: 'x', isActive: false })
+    const inactive = await User.create({
+      email: 'old@test.local',
+      name: 'Old',
+      role: 'COMMERCIAL',
+      passwordHash: 'x',
+      isActive: false,
+    })
     const { lead } = await createLead({ company: 'Assignation' }, { actor: actorId, source: 'admin' })
 
-    await expectLeadError(applyLeadChange(lead, { assignedTo: String(client._id) }, { actor: actorId, source: 'admin' }), 'INVALID_ASSIGNEE')
-    await expectLeadError(applyLeadChange(lead, { assignedTo: String(inactive._id) }, { actor: actorId, source: 'admin' }), 'INVALID_ASSIGNEE')
+    await expectLeadError(
+      applyLeadChange(lead, { assignedTo: String(client._id) }, { actor: actorId, source: 'admin' }),
+      'INVALID_ASSIGNEE',
+    )
+    await expectLeadError(
+      applyLeadChange(lead, { assignedTo: String(inactive._id) }, { actor: actorId, source: 'admin' }),
+      'INVALID_ASSIGNEE',
+    )
     expect((await Lead.findById(lead._id).lean())!.assignedTo).toBeNull()
 
     const result = await applyLeadChange(lead, { assignedTo: colleagueId }, { actor: actorId, source: 'admin' })
@@ -141,7 +180,11 @@ describe('crmLeadService / applyLeadChange', () => {
     await CrmSettings.updateSettings({ scoringEnabled: true } as any)
     const { lead } = await createLead({ company: 'Score', contactEmail: 'a@b.fr' }, { actor: actorId, source: 'admin' })
     const scoreBefore = lead.score
-    const result = await applyLeadChange(lead, { status: 'PROPOSAL', priority: 'URGENTE' }, { actor: actorId, source: 'bulk' })
+    const result = await applyLeadChange(
+      lead,
+      { status: 'PROPOSAL', priority: 'URGENTE' },
+      { actor: actorId, source: 'bulk' },
+    )
     expect(result.lead.nextActionAt).toBeInstanceOf(Date)
     expect(result.lead.score).toBeGreaterThan(scoreBefore ?? 0)
 
@@ -158,7 +201,9 @@ describe('crmLeadService / applyLeadChange', () => {
     // Quatre passages simultanés à WON : fiche, agent, action groupée, règle.
     const sources = ['admin', 'agent', 'bulk', 'rule'] as const
     const results = await Promise.allSettled(
-      sources.map(async (source) => applyLeadChange(await Lead.findById(id), { status: 'WON' }, { actor: actorId, source })),
+      sources.map(async (source) =>
+        applyLeadChange(await Lead.findById(id), { status: 'WON' }, { actor: actorId, source }),
+      ),
     )
     // Plus une conversion directe, comme celle d'une règle CREATE_CLIENT.
     await processWonLead(await Lead.findById(id), actorId)
@@ -175,7 +220,10 @@ describe('crmLeadService / applyLeadChange', () => {
   })
 
   it('ne recrée rien quand un lead repasse à WON', async () => {
-    const { lead } = await createLead({ company: 'Yo-yo', contactEmail: 'yoyo@client.fr', status: 'WON' }, { actor: actorId, source: 'admin' })
+    const { lead } = await createLead(
+      { company: 'Yo-yo', contactEmail: 'yoyo@client.fr', status: 'WON' },
+      { actor: actorId, source: 'admin' },
+    )
     expect(await Project.countDocuments({ sourceLead: lead._id })).toBe(1)
 
     await applyLeadChange(lead, { status: 'LOST' }, { actor: actorId, source: 'admin' })
@@ -187,7 +235,10 @@ describe('crmLeadService / applyLeadChange', () => {
   })
 
   it('reprend sans doublon un lead gagné converti avant l’existence du verrou', async () => {
-    const { lead } = await createLead({ company: 'Historique', contactEmail: 'old@client.fr', status: 'WON' }, { actor: actorId, source: 'admin' })
+    const { lead } = await createLead(
+      { company: 'Historique', contactEmail: 'old@client.fr', status: 'WON' },
+      { actor: actorId, source: 'admin' },
+    )
     // Lead gagné avant ce chantier : pas de verrou en base.
     await Lead.updateOne({ _id: lead._id }, { $unset: { wonProcessedAt: 1 } }, { strict: false })
     const outcome = await processWonLead(await Lead.findById(lead._id), actorId)
@@ -205,7 +256,10 @@ describe('crmLeadService / applyLeadChange', () => {
       status: 'ACTIVE',
       limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
     })
-    const { lead } = await createLead({ company: 'Par règle', contactEmail: 'rule@client.fr' }, { actor: actorId, source: 'admin', emit: false })
+    const { lead } = await createLead(
+      { company: 'Par règle', contactEmail: 'rule@client.fr' },
+      { actor: actorId, source: 'admin', emit: false },
+    )
     await fireLeadEvent(lead._id, { type: 'LEAD_CREATED', key: 'created' })
 
     const fresh = await Lead.findById(lead._id).lean()
@@ -218,7 +272,10 @@ describe('crmLeadService / applyLeadChange', () => {
   })
 
   it('lève NOT_FOUND pour un identifiant inconnu', async () => {
-    await expectLeadError(applyLeadChange('64b000000000000000000000', { notes: 'x' }, { actor: null, source: 'agent' }), 'NOT_FOUND')
+    await expectLeadError(
+      applyLeadChange('64b000000000000000000000', { notes: 'x' }, { actor: null, source: 'agent' }),
+      'NOT_FOUND',
+    )
   })
 
   it('supprime le lead avec son historique, ses échanges et ses tâches', async () => {

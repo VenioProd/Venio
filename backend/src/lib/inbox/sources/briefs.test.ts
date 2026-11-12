@@ -4,9 +4,15 @@ import { setupMongo, teardownMongo, clearDb } from '../../../__tests__/helpers/m
 import MissionBrief from '../../../models/MissionBrief.js'
 import { getBriefP1Items } from './briefs.js'
 
-beforeAll(async () => { await setupMongo() })
-afterAll(async () => { await teardownMongo() })
-beforeEach(async () => { await clearDb() })
+beforeAll(async () => {
+  await setupMongo()
+})
+afterAll(async () => {
+  await teardownMongo()
+})
+beforeEach(async () => {
+  await clearDb()
+})
 
 describe('getBriefP1Items', () => {
   it('retourne uniquement les P1 dépassés et non terminés', async () => {
@@ -23,11 +29,11 @@ describe('getBriefP1Items', () => {
       intitule: 'Brief test',
     }
 
-    await MissionBrief.create({ ...base, briefPriority: 'P1', deadline: past,   statut: 'A_FAIRE' })  // ✓ inclus
-    await MissionBrief.create({ ...base, briefPriority: 'P1', deadline: future, statut: 'A_FAIRE' })  // skip (futur)
-    await MissionBrief.create({ ...base, briefPriority: 'P2', deadline: past,   statut: 'A_FAIRE' })  // skip (P2)
-    await MissionBrief.create({ ...base, briefPriority: 'P1', deadline: past,   statut: 'VALIDE'  })  // skip (terminé)
-    await MissionBrief.create({ ...base, briefPriority: 'P1', deadline: past,   statut: 'LIVRE'   })  // skip (terminé)
+    await MissionBrief.create({ ...base, briefPriority: 'P1', deadline: past, statut: 'A_FAIRE' }) // ✓ inclus
+    await MissionBrief.create({ ...base, briefPriority: 'P1', deadline: future, statut: 'A_FAIRE' }) // skip (futur)
+    await MissionBrief.create({ ...base, briefPriority: 'P2', deadline: past, statut: 'A_FAIRE' }) // skip (P2)
+    await MissionBrief.create({ ...base, briefPriority: 'P1', deadline: past, statut: 'VALIDE' }) // skip (terminé)
+    await MissionBrief.create({ ...base, briefPriority: 'P1', deadline: past, statut: 'LIVRE' }) // skip (terminé)
 
     const items = await getBriefP1Items(userId.toString())
 
@@ -40,7 +46,7 @@ describe('getBriefP1Items', () => {
     expect(items[0].link).toMatch(/^\/admin\/briefs\//)
   })
 
-  it('exclut les briefs d\'un autre utilisateur', async () => {
+  it("exclut les briefs d'un autre utilisateur", async () => {
     const userId = new mongoose.Types.ObjectId()
     const otherUserId = new mongoose.Types.ObjectId()
     const projectId = new mongoose.Types.ObjectId()

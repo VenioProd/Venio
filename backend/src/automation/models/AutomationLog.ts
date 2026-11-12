@@ -25,7 +25,7 @@ const AutomationLogSchema = new Schema<IAutomationLog>(
     retryCount: { type: Number, default: 0 },
     payload: { type: Schema.Types.Mixed },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 // Auto-expire old logs after 90 days
@@ -37,23 +37,18 @@ export default AutomationLog
 
 // ── Helpers ────────────────────────────────────────────────
 export async function createExecutionLog(
-  data: Omit<AutomationLogDoc, 'retryCount'> & { retryCount?: number }
+  data: Omit<AutomationLogDoc, 'retryCount'> & { retryCount?: number },
 ): Promise<IAutomationLog> {
   return AutomationLog.create({ ...data, retryCount: data.retryCount ?? 0 })
 }
 
-export async function getRecentLogs(
-  automationKey: string,
-  limit = 20
-): Promise<IAutomationLog[]> {
-  return AutomationLog.find({ automationKey })
-    .sort({ startedAt: -1 })
-    .limit(limit)
+export async function getRecentLogs(automationKey: string, limit = 20): Promise<IAutomationLog[]> {
+  return AutomationLog.find({ automationKey }).sort({ startedAt: -1 }).limit(limit)
 }
 
 export async function getLogStats(
   automationKey: string,
-  since: Date
+  since: Date,
 ): Promise<{ total: number; success: number; failed: number; skipped: number }> {
   const logs = await AutomationLog.aggregate([
     { $match: { automationKey, startedAt: { $gte: since } } },

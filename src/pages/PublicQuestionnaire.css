@@ -203,7 +203,7 @@
   box-shadow: 0 0 12px rgba(255, 0, 128, 0.15);
 }
 
-.pq-choice input[type="radio"] {
+.pq-choice input[type='radio'] {
   accent-color: #ff0080;
   width: 16px;
   height: 16px;
@@ -289,39 +289,59 @@
 
 /* ── Light mode: keep dark for public questionnaire ── */
 /* The public questionnaire always uses the dark pink/black theme */
-[data-theme="light"] .pq-page {
+[data-theme='light'] .pq-page {
   background: #000000;
   background-image:
     radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255, 0, 128, 0.12) 0%, transparent 60%),
     radial-gradient(ellipse 60% 50% at 80% 100%, rgba(255, 0, 128, 0.06) 0%, transparent 50%);
 }
 
-[data-theme="light"] .pq-form {
+[data-theme='light'] .pq-form {
   background: #050508;
   border-color: rgba(255, 0, 128, 0.35);
 }
 
-[data-theme="light"] .pq-title { color: #ffffff; }
-[data-theme="light"] .pq-desc { color: rgba(255, 255, 255, 0.5); }
-[data-theme="light"] .pq-field input,
-[data-theme="light"] .pq-question textarea {
+[data-theme='light'] .pq-title {
+  color: #ffffff;
+}
+[data-theme='light'] .pq-desc {
+  color: rgba(255, 255, 255, 0.5);
+}
+[data-theme='light'] .pq-field input,
+[data-theme='light'] .pq-question textarea {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 0, 128, 0.25);
   color: #ffffff;
 }
-[data-theme="light"] .pq-question-label { color: #ffffff; }
-[data-theme="light"] .pq-choice {
+[data-theme='light'] .pq-question-label {
+  color: #ffffff;
+}
+[data-theme='light'] .pq-choice {
   background: rgba(255, 255, 255, 0.02);
   border-color: rgba(255, 0, 128, 0.2);
   color: rgba(255, 255, 255, 0.7);
 }
-[data-theme="light"] .pq-star { color: rgba(255, 255, 255, 0.1); }
-[data-theme="light"] .pq-success { color: #ffffff; }
-[data-theme="light"] .pq-success p { color: rgba(255, 255, 255, 0.5); }
-[data-theme="light"] .pq-field label { color: rgba(255, 255, 255, 0.6); }
-[data-theme="light"] .pq-section h3 { color: #ff0080; }
-[data-theme="light"] .pq-section { border-bottom-color: rgba(255, 0, 128, 0.2); }
-[data-theme="light"] .pq-header { border-bottom-color: rgba(255, 0, 128, 0.25); }
+[data-theme='light'] .pq-star {
+  color: rgba(255, 255, 255, 0.1);
+}
+[data-theme='light'] .pq-success {
+  color: #ffffff;
+}
+[data-theme='light'] .pq-success p {
+  color: rgba(255, 255, 255, 0.5);
+}
+[data-theme='light'] .pq-field label {
+  color: rgba(255, 255, 255, 0.6);
+}
+[data-theme='light'] .pq-section h3 {
+  color: #ff0080;
+}
+[data-theme='light'] .pq-section {
+  border-bottom-color: rgba(255, 0, 128, 0.2);
+}
+[data-theme='light'] .pq-header {
+  border-bottom-color: rgba(255, 0, 128, 0.25);
+}
 
 /* ── Public Questionnaire Builder (pqb-*) ── */
 
@@ -415,7 +435,7 @@
   margin-left: auto;
 }
 
-.pqb-required-toggle input[type="checkbox"] {
+.pqb-required-toggle input[type='checkbox'] {
   accent-color: #ff0080;
   width: 14px;
   height: 14px;
@@ -596,22 +616,22 @@
 }
 
 /* Light mode overrides for builder */
-[data-theme="light"] .pqb-textarea {
+[data-theme='light'] .pqb-textarea {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 0, 128, 0.25);
   color: #ffffff;
 }
-[data-theme="light"] .pqb-select {
+[data-theme='light'] .pqb-select {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 0, 128, 0.25);
   color: #ffffff;
 }
-[data-theme="light"] .pqb-question-label-input {
+[data-theme='light'] .pqb-question-label-input {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 0, 128, 0.2);
   color: #ffffff;
 }
-[data-theme="light"] .pqb-option-row input {
+[data-theme='light'] .pqb-option-row input {
   background: rgba(255, 255, 255, 0.02);
   border-color: rgba(255, 0, 128, 0.15);
   color: #ffffff;

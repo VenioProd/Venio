@@ -24,7 +24,8 @@ beforeEach(() => {
   apiFetch.mockImplementation(async (url: string, opts?: RequestInit) => {
     if (url === '/api/admin/admins/m1' && opts?.method === 'PATCH') return { user: member() }
     if (url === '/api/admin/admins/m1') return { user: member({ crmEntities: ['ARROW'] }) }
-    if (url === '/api/admin/admins') return { users: [member({ crmEntities: ['VENIO', 'ARROW'] }), member({ _id: 'm2', name: 'Paul' })] }
+    if (url === '/api/admin/admins')
+      return { users: [member({ crmEntities: ['VENIO', 'ARROW'] }), member({ _id: 'm2', name: 'Paul' })] }
     return {}
   })
 })
@@ -48,7 +49,9 @@ describe('édition d’un membre — périmètre par entité', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Decisio' }))
     fireEvent.click(arrow)
     fireEvent.submit(arrow.closest('form')!)
-    await waitFor(() => expect(apiFetch.mock.calls.some(([, o]) => (o as RequestInit | undefined)?.method === 'PATCH')).toBe(true))
+    await waitFor(() =>
+      expect(apiFetch.mock.calls.some(([, o]) => (o as RequestInit | undefined)?.method === 'PATCH')).toBe(true),
+    )
     const patch = apiFetch.mock.calls.find(([, o]) => (o as RequestInit | undefined)?.method === 'PATCH')!
     expect(JSON.parse(String((patch[1] as RequestInit).body)).crmEntities).toEqual(['DECISIO'])
   })
@@ -59,7 +62,9 @@ describe('édition d’un membre — périmètre par entité', () => {
     await screen.findByDisplayValue('Marie')
     expect(screen.queryByRole('checkbox', { name: 'Arrow' })).toBeNull()
     fireEvent.submit(screen.getByDisplayValue('Marie').closest('form')!)
-    await waitFor(() => expect(apiFetch.mock.calls.some(([, o]) => (o as RequestInit | undefined)?.method === 'PATCH')).toBe(true))
+    await waitFor(() =>
+      expect(apiFetch.mock.calls.some(([, o]) => (o as RequestInit | undefined)?.method === 'PATCH')).toBe(true),
+    )
     const patch = apiFetch.mock.calls.find(([, o]) => (o as RequestInit | undefined)?.method === 'PATCH')!
     expect(JSON.parse(String((patch[1] as RequestInit).body))).not.toHaveProperty('crmEntities')
   })

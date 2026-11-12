@@ -8,15 +8,28 @@ const options: LoggerOptions = {
   level,
   base: { service: 'venio-backend' },
   redact: {
-    paths: ['req.headers.authorization', 'req.headers.cookie', 'password', 'passwordHash', 'plainPassword', 'token', '*.token', '*.password'],
+    paths: [
+      'req.headers.authorization',
+      'req.headers.cookie',
+      'password',
+      'passwordHash',
+      'plainPassword',
+      'token',
+      '*.token',
+      '*.password',
+    ],
     censor: '[REDACTED]',
   },
 }
 
 // En dev local : pretty-print pour la lisibilité (pas en prod, où on émet du JSON structuré).
-const transport = !isProd && !isTest
-  ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'HH:MM:ss.l', ignore: 'pid,hostname,service' } }
-  : undefined
+const transport =
+  !isProd && !isTest
+    ? {
+        target: 'pino-pretty',
+        options: { colorize: true, translateTime: 'HH:MM:ss.l', ignore: 'pid,hostname,service' },
+      }
+    : undefined
 
 export const logger = pino({ ...options, transport })
 

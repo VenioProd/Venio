@@ -4,20 +4,24 @@ import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
 import DevProject from '../models/DevProject.js'
 import DevIssue from '../models/DevIssue.js'
 import User from '../models/User.js'
-import {
-  buildRepoLinks,
-  computeProjectGithubSummary,
-} from '../lib/dev/githubSummary.js'
+import { buildRepoLinks, computeProjectGithubSummary } from '../lib/dev/githubSummary.js'
 
 let systemUserId: mongoose.Types.ObjectId
 
-beforeAll(async () => { await setupMongo() })
-afterAll(async () => { await teardownMongo() })
+beforeAll(async () => {
+  await setupMongo()
+})
+afterAll(async () => {
+  await teardownMongo()
+})
 
 beforeEach(async () => {
   await clearDb()
   const u = await User.create({
-    email: 'sys@test.local', name: 'Sys', role: 'SUPER_ADMIN', passwordHash: 'x',
+    email: 'sys@test.local',
+    name: 'Sys',
+    role: 'SUPER_ADMIN',
+    passwordHash: 'x',
   })
   systemUserId = u._id as mongoose.Types.ObjectId
 })
@@ -31,7 +35,9 @@ describe('buildRepoLinks', () => {
 
   it('derives owner/repo from htmlUrl', () => {
     const links = buildRepoLinks({
-      owner: null, repo: null, defaultBranch: null,
+      owner: null,
+      repo: null,
+      defaultBranch: null,
       htmlUrl: 'https://github.com/raphaelbentv/venio',
       repoPath: null,
     })
@@ -42,16 +48,22 @@ describe('buildRepoLinks', () => {
 
   it('uses defaultBranch in commits URL when set', () => {
     const links = buildRepoLinks({
-      owner: 'venio', repo: 'app', defaultBranch: 'develop',
-      htmlUrl: null, repoPath: null,
+      owner: 'venio',
+      repo: 'app',
+      defaultBranch: 'develop',
+      htmlUrl: null,
+      repoPath: null,
     })
     expect(links.commitsUrl).toContain('/commits/develop')
   })
 
   it('accepts an owner/repo packed in the repo field', () => {
     const links = buildRepoLinks({
-      owner: null, repo: 'venio/app', defaultBranch: null,
-      htmlUrl: null, repoPath: null,
+      owner: null,
+      repo: 'venio/app',
+      defaultBranch: null,
+      htmlUrl: null,
+      repoPath: null,
     })
     expect(links.repoUrl).toBe('https://github.com/venio/app')
   })

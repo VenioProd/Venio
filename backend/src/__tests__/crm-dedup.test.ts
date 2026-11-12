@@ -84,7 +84,12 @@ afterAll(async () => {
 beforeEach(async () => {
   await clearDb()
   team = await seedTeam()
-  await resetCrmSettings({ duplicateDetectionEnabled: true, duplicateCheckEmail: true, duplicateCheckCompany: true, duplicateCheckPhone: true })
+  await resetCrmSettings({
+    duplicateDetectionEnabled: true,
+    duplicateCheckEmail: true,
+    duplicateCheckCompany: true,
+    duplicateCheckPhone: true,
+  })
   as(team.superAdmin)
 })
 
@@ -148,7 +153,10 @@ describe('migration 008', () => {
     const a = await makeLead({ company: 'Société A', contactEmail: ' X@Y.fr ', contactPhone: '+33 6 00 00 00 01' })
     const b = await makeLead({ company: 'B' })
     // Simule des leads antérieurs à la migration : champs absents, écriture sans hook.
-    await Lead.collection.updateMany({}, { $unset: { contactEmailNormalized: '', contactPhoneNormalized: '', companyNormalized: '' } })
+    await Lead.collection.updateMany(
+      {},
+      { $unset: { contactEmailNormalized: '', contactPhoneNormalized: '', companyNormalized: '' } },
+    )
     const before = await Lead.findById(a._id).lean()
     const { backfillLeadDedupFields } = await import('../lib/crmDedupBackfill.js')
 
@@ -168,7 +176,9 @@ describe('migration 008', () => {
     const again = await backfillLeadDedupFields(false)
     expect(again.updated).toBe(0)
     const indexes = (await Lead.collection.indexes()).map((i) => Object.keys(i.key).join(','))
-    expect(indexes).toEqual(expect.arrayContaining(['contactEmailNormalized', 'contactPhoneNormalized', 'companyNormalized']))
+    expect(indexes).toEqual(
+      expect.arrayContaining(['contactEmailNormalized', 'contactPhoneNormalized', 'companyNormalized']),
+    )
   })
 })
 
@@ -203,7 +213,12 @@ describe('POST /check-duplicate', () => {
   })
 
   it('respecte les réglages par critère', async () => {
-    await resetCrmSettings({ duplicateDetectionEnabled: true, duplicateCheckEmail: false, duplicateCheckCompany: false, duplicateCheckPhone: false })
+    await resetCrmSettings({
+      duplicateDetectionEnabled: true,
+      duplicateCheckEmail: false,
+      duplicateCheckCompany: false,
+      duplicateCheckPhone: false,
+    })
     await makeLead({ company: 'Acme', contactEmail: 'a@a.fr', contactPhone: '0612345678' })
     const res = await check({ company: 'Acme', contactEmail: 'a@a.fr', contactPhone: '0612345678' }).expect(200)
     expect(res.body.duplicates).toHaveLength(0)
@@ -221,7 +236,7 @@ describe('POST /check-duplicate', () => {
     expect((await check({ company: 'Acme', excludeId: 'pas-un-id' }).expect(200)).body.duplicates).toHaveLength(1)
   })
 
-  it("applique le périmètre dans la requête : la limite ne se perd pas sur des leads invisibles", async () => {
+  it('applique le périmètre dans la requête : la limite ne se perd pas sur des leads invisibles', async () => {
     // 12 doublons d'un collègue, plus récents, puis 1 doublon du manager.
     await makeLead({ company: 'Acme', assignedTo: team.manager.id, createdBy: team.manager.id })
     await Lead.create(
@@ -253,7 +268,11 @@ describe('création admin', () => {
   })
 
   it('duplicateBlockOnCreate : 409 DUPLICATE_LEAD, rien n’est créé', async () => {
-    await resetCrmSettings({ duplicateDetectionEnabled: true, duplicateCheckCompany: true, duplicateBlockOnCreate: true })
+    await resetCrmSettings({
+      duplicateDetectionEnabled: true,
+      duplicateCheckCompany: true,
+      duplicateBlockOnCreate: true,
+    })
     await makeLead({ company: 'Acme' })
     const res = await create({ company: 'acme' }).expect(409)
     expect(res.body.code).toBe('DUPLICATE_LEAD')
@@ -327,7 +346,9 @@ describe('formulaire public', () => {
 // ───────────────────────────────────────────────────────────────────────────
 describe('fusion POST /leads/:id/merge', () => {
   const merge = (targetId: unknown, sourceId: unknown) =>
-    request(app).post(`/api/admin/crm/leads/${targetId}/merge`).send({ sourceId: String(sourceId) })
+    request(app)
+      .post(`/api/admin/crm/leads/${targetId}/merge`)
+      .send({ sourceId: String(sourceId) })
 
   it('complète la cible, unit les tags, réattache tout, journalise MERGED et supprime la source', async () => {
     const clientId = oid()
@@ -351,15 +372,39 @@ describe('fusion POST /leads/:id/merge', () => {
       lastInteractionAt: new Date('2026-05-01'),
     })
     await LeadActivity.create({ leadId: source._id, type: 'NOTE', label: 'Appel', payload: {} })
-    await Interaction.create({ subjectType: 'LEAD', subjectId: source._id, kind: 'CALL', occurredAt: new Date(), author: team.superAdmin.id })
+    await Interaction.create({
+      subjectType: 'LEAD',
+      subjectId: source._id,
+      kind: 'CALL',
+      occurredAt: new Date(),
+      author: team.superAdmin.id,
+    })
     await PersonalTask.create({ title: 'Rappeler', userId: team.superAdmin.id, leadId: source._id } as never)
-    await CrmRuleRun.create({ rule: oid(), lead: source._id, eventKey: 'k1', trigger: 'LEAD_CREATED', status: 'OK' } as never)
-    const quote = await new QuoteProposal({ leadId: source._id, createdBy: team.superAdmin.id, title: 'Devis', reference: 'D-1' }).save()
+    await CrmRuleRun.create({
+      rule: oid(),
+      lead: source._id,
+      eventKey: 'k1',
+      trigger: 'LEAD_CREATED',
+      status: 'OK',
+    } as never)
+    const quote = await new QuoteProposal({
+      leadId: source._id,
+      createdBy: team.superAdmin.id,
+      title: 'Devis',
+      reference: 'D-1',
+    }).save()
     const project = await new Project({ name: 'Projet', client: clientId, sourceLead: source._id } as never).save()
 
     const res = await merge(target._id, source._id).expect(200)
     expect(String(res.body.lead._id)).toBe(String(target._id))
-    expect(res.body.merged.moved).toMatchObject({ activities: 1, interactions: 1, tasks: 1, ruleRuns: 1, quotes: 1, projects: 1 })
+    expect(res.body.merged.moved).toMatchObject({
+      activities: 1,
+      interactions: 1,
+      tasks: 1,
+      ruleRuns: 1,
+      quotes: 1,
+      projects: 1,
+    })
 
     // Source disparue, cible conservée.
     expect(await Lead.findById(source._id)).toBeNull()
@@ -482,7 +527,12 @@ describe('fusion POST /leads/:id/merge', () => {
     const { mergeLeads } = await import('../lib/crmLeadMerge.js')
     await mergeLeads((await Lead.findById(target._id))!, (await Lead.findById(source._id))!, team.superAdmin.id)
     // Source recréée comme si la suppression avait échoué : la seconde passe ne duplique rien.
-    const ghost = await Lead.create({ _id: source._id, company: 'Domaine Test', tags: ['b'], createdBy: team.superAdmin.id })
+    const ghost = await Lead.create({
+      _id: source._id,
+      company: 'Domaine Test',
+      tags: ['b'],
+      createdBy: team.superAdmin.id,
+    })
     await mergeLeads((await Lead.findById(target._id))!, ghost, team.superAdmin.id)
     expect([...(await Lead.findById(target._id).lean())!.tags].sort()).toEqual(['a', 'b'])
     expect(await LeadActivity.countDocuments({ leadId: target._id, type: 'NOTE' })).toBe(1)

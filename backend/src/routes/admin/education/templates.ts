@@ -14,7 +14,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       EducationTemplate.countDocuments(filter),
     ])
     res.json({ templates: items, total })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -32,7 +34,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     })
     await logActivity(req.user!.id, req.user!.id, 'template', created._id, 'CREATE', { kind })
     res.status(201).json({ template: created })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
@@ -48,7 +52,9 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     await item.save()
     await logActivity(req.user!.id, req.user!.id, 'template', item._id, 'UPDATE', {})
     res.json({ template: item })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
@@ -60,7 +66,9 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
     await item.save()
     await logActivity(req.user!.id, req.user!.id, 'template', item._id, 'DELETE', {})
     res.json({ success: true })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 export default router

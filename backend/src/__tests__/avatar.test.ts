@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     locale: { type: String, enum: ['fr', 'en'], default: null },
     avatarUrl: { type: String, default: '' },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 // Use a unique model name to avoid OverwriteModelError
@@ -74,11 +74,7 @@ describe('avatar route — sécurité path-traversal', () => {
 
 describe('avatar multer — fileFilter', () => {
   function makeFileFilter() {
-    return (
-      _req: unknown,
-      file: { mimetype: string },
-      cb: (err: Error | null, accept?: boolean) => void
-    ) => {
+    return (_req: unknown, file: { mimetype: string }, cb: (err: Error | null, accept?: boolean) => void) => {
       const allowed = ['image/jpeg', 'image/png', 'image/webp']
       if (allowed.includes(file.mimetype)) {
         cb(null, true)
@@ -91,28 +87,36 @@ describe('avatar multer — fileFilter', () => {
   it('accepte image/jpeg', () => {
     const filter = makeFileFilter()
     let result: boolean | undefined
-    filter({}, { mimetype: 'image/jpeg' }, (_err, accept) => { result = accept })
+    filter({}, { mimetype: 'image/jpeg' }, (_err, accept) => {
+      result = accept
+    })
     expect(result).toBe(true)
   })
 
   it('accepte image/png', () => {
     const filter = makeFileFilter()
     let result: boolean | undefined
-    filter({}, { mimetype: 'image/png' }, (_err, accept) => { result = accept })
+    filter({}, { mimetype: 'image/png' }, (_err, accept) => {
+      result = accept
+    })
     expect(result).toBe(true)
   })
 
   it('accepte image/webp', () => {
     const filter = makeFileFilter()
     let result: boolean | undefined
-    filter({}, { mimetype: 'image/webp' }, (_err, accept) => { result = accept })
+    filter({}, { mimetype: 'image/webp' }, (_err, accept) => {
+      result = accept
+    })
     expect(result).toBe(true)
   })
 
   it('rejette image/gif', () => {
     const filter = makeFileFilter()
     let err: unknown = null
-    filter({}, { mimetype: 'image/gif' }, (e) => { err = e })
+    filter({}, { mimetype: 'image/gif' }, (e) => {
+      err = e
+    })
     expect(err).toBeInstanceOf(Error)
     expect((err as Error).message).toContain('non autorisé')
   })
@@ -120,7 +124,9 @@ describe('avatar multer — fileFilter', () => {
   it('rejette application/pdf', () => {
     const filter = makeFileFilter()
     let err: unknown = null
-    filter({}, { mimetype: 'application/pdf' }, (e) => { err = e })
+    filter({}, { mimetype: 'application/pdf' }, (e) => {
+      err = e
+    })
     expect(err).toBeInstanceOf(Error)
   })
 })

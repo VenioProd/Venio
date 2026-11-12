@@ -48,7 +48,10 @@ const FULL_REPO_REGEX = /^[\w.-]+\/[\w.-]+$/
  *   - "owner/repo" string in htmlUrl/repo
  *   - full HTTPS URL "https://github.com/owner/repo[.git]"
  */
-function deriveOwnerRepo(github: DevProjectGithubConfig | null | undefined): { owner: string | null; repo: string | null } {
+function deriveOwnerRepo(github: DevProjectGithubConfig | null | undefined): {
+  owner: string | null
+  repo: string | null
+} {
   if (!github) return { owner: null, repo: null }
   if (github.owner && github.repo) return { owner: github.owner.trim(), repo: github.repo.trim() }
   const htmlUrl = github.htmlUrl?.trim()
@@ -59,7 +62,9 @@ function deriveOwnerRepo(github: DevProjectGithubConfig | null | undefined): { o
         const [, owner, repoRaw] = url.pathname.split('/')
         if (owner && repoRaw) return { owner, repo: repoRaw.replace(/\.git$/i, '') }
       }
-    } catch {/* ignore */}
+    } catch {
+      /* ignore */
+    }
   }
   // Some projects may have packed owner/repo into github.repo (e.g. "venio/app")
   if (github.repo && FULL_REPO_REGEX.test(github.repo)) {
@@ -115,9 +120,10 @@ function shapePr(issue: RawIssue): GithubPullRequestRef | null {
   }
 }
 
-export async function computeProjectGithubSummary(
-  project: { _id: mongoose.Types.ObjectId; github: DevProjectGithubConfig | null }
-): Promise<DevGithubSummary> {
+export async function computeProjectGithubSummary(project: {
+  _id: mongoose.Types.ObjectId
+  github: DevProjectGithubConfig | null
+}): Promise<DevGithubSummary> {
   const links = buildRepoLinks(project.github)
   const { owner, repo } = deriveOwnerRepo(project.github)
   const configured = Boolean(owner && repo) || Boolean(project.github?.htmlUrl)

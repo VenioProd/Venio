@@ -1,15 +1,6 @@
 {
   "roles": {
-    "admin": [
-      "SUPER_ADMIN",
-      "ADMIN",
-      "MANAGER",
-      "RH",
-      "COMMERCIAL",
-      "COMPTABLE",
-      "VIEWER",
-      "STAGIAIRE"
-    ],
+    "admin": ["SUPER_ADMIN", "ADMIN", "MANAGER", "RH", "COMMERCIAL", "COMPTABLE", "VIEWER", "STAGIAIRE"],
     "all": [
       "SUPER_ADMIN",
       "ADMIN",
@@ -328,10 +319,7 @@
       "screen": "/admin/stagiaires",
       "label": "Équipe",
       "permission": null,
-      "roles": [
-        "SUPER_ADMIN",
-        "RH"
-      ]
+      "roles": ["SUPER_ADMIN", "RH"]
     },
     {
       "id": "calendar",
@@ -347,10 +335,7 @@
       "screen": "/admin/emails",
       "label": "Emails",
       "permission": null,
-      "roles": [
-        "SUPER_ADMIN",
-        "RH"
-      ]
+      "roles": ["SUPER_ADMIN", "RH"]
     },
     {
       "id": "templates",
@@ -398,10 +383,7 @@
       "screen": "/admin/qualiopi",
       "label": "Qualiopi",
       "permission": null,
-      "roles": [
-        "SUPER_ADMIN",
-        "RH"
-      ]
+      "roles": ["SUPER_ADMIN", "RH"]
     },
     {
       "id": "tickets",
@@ -473,16 +455,7 @@
       "screen": "/admin/projets/fiches",
       "label": "Fiches projets",
       "permission": null,
-      "roles": [
-        "SUPER_ADMIN",
-        "ADMIN",
-        "MANAGER",
-        "RH",
-        "COMMERCIAL",
-        "COMPTABLE",
-        "VIEWER",
-        "STAGIAIRE"
-      ]
+      "roles": ["SUPER_ADMIN", "ADMIN", "MANAGER", "RH", "COMMERCIAL", "COMPTABLE", "VIEWER", "STAGIAIRE"]
     },
     {
       "id": "subsidiaries",
@@ -490,9 +463,7 @@
       "screen": "/admin/filiales",
       "label": "Filiales",
       "permission": null,
-      "roles": [
-        "SUPER_ADMIN"
-      ]
+      "roles": ["SUPER_ADMIN"]
     },
     {
       "id": "admin-accounts",

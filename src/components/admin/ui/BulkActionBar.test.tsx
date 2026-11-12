@@ -85,7 +85,13 @@ describe('BulkActionBar', () => {
         onClear={onClear}
         actions={[
           { id: 'delete', label: 'Supprimer', danger: true, onSelect: onDelete },
-          { kind: 'select', id: 'status', label: 'Statut', options: [{ value: 'A', label: 'Alpha' }], onSelect: onStatus },
+          {
+            kind: 'select',
+            id: 'status',
+            label: 'Statut',
+            options: [{ value: 'A', label: 'Alpha' }],
+            onSelect: onStatus,
+          },
         ]}
       />,
     )
@@ -101,7 +107,14 @@ describe('BulkActionBar', () => {
   })
 
   it('disables controls while busy', () => {
-    render(<BulkActionBar count={1} busy onClear={() => {}} actions={[{ id: 'a', label: 'Archiver', onSelect: () => {} }]} />)
+    render(
+      <BulkActionBar
+        count={1}
+        busy
+        onClear={() => {}}
+        actions={[{ id: 'a', label: 'Archiver', onSelect: () => {} }]}
+      />,
+    )
     expect(screen.getByRole('button', { name: 'Archiver' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Désélectionner' })).toBeDisabled()
   })

@@ -17,14 +17,13 @@ const Sparkline = ({ values, color, width = 100, height = 22 }: SparklineProps) 
   })
   const d = `M ${points.join(' L ')}`
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ width: '100%', height }} aria-hidden="true">
-      <path
-        d={d}
-        stroke={color}
-        strokeWidth={1.2}
-        fill="none"
-        style={{ filter: `drop-shadow(0 0 2px ${color}88)` }}
-      />
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      style={{ width: '100%', height }}
+      aria-hidden="true"
+    >
+      <path d={d} stroke={color} strokeWidth={1.2} fill="none" style={{ filter: `drop-shadow(0 0 2px ${color}88)` }} />
     </svg>
   )
 }

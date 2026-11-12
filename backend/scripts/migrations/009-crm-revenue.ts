@@ -21,7 +21,6 @@ import logger from '../../src/lib/logger.js'
 
 dotenv.config()
 
-
 async function main() {
   const uri = process.env.MONGODB_URI
   if (!uri) {

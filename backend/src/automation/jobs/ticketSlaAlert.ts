@@ -53,9 +53,7 @@ const definition: AutomationDefinition = {
     })
 
     for (const ticket of highUrgentTickets) {
-      const hoursOpen = Math.floor(
-        (ctx.now.getTime() - new Date(ticket.createdAt).getTime()) / 3600_000
-      )
+      const hoursOpen = Math.floor((ctx.now.getTime() - new Date(ticket.createdAt).getTime()) / 3600_000)
       breachedTickets.push({
         id: (ticket._id as object).toString(),
         title: ticket.title,
@@ -74,9 +72,7 @@ const definition: AutomationDefinition = {
     })
 
     for (const ticket of normalTickets) {
-      const hoursOpen = Math.floor(
-        (ctx.now.getTime() - new Date(ticket.createdAt).getTime()) / 3600_000
-      )
+      const hoursOpen = Math.floor((ctx.now.getTime() - new Date(ticket.createdAt).getTime()) / 3600_000)
       breachedTickets.push({
         id: (ticket._id as object).toString(),
         title: ticket.title,
@@ -99,10 +95,7 @@ const definition: AutomationDefinition = {
 
     const summary = breachedTickets
       .slice(0, 10)
-      .map(
-        (t) =>
-          `• [${t.priority}] "${t.title}" — ouvert depuis ${t.hoursOpen}h (SLA: ${t.slaHours}h)`
-      )
+      .map((t) => `• [${t.priority}] "${t.title}" — ouvert depuis ${t.hoursOpen}h (SLA: ${t.slaHours}h)`)
       .join('\n')
 
     const admins = await User.find({

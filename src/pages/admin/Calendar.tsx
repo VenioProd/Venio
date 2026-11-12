@@ -275,7 +275,11 @@ export default function Calendar() {
                     {selectedEvents.map((ev) => (
                       <Link
                         key={ev.id}
-                        to={ev.type === 'decision' || !ev.projectId ? '/admin/decisions' : `/admin/projets/${ev.projectId}`}
+                        to={
+                          ev.type === 'decision' || !ev.projectId
+                            ? '/admin/decisions'
+                            : `/admin/projets/${ev.projectId}`
+                        }
                         className="calendar-detail-item"
                         style={{ textDecoration: 'none' }}
                       >

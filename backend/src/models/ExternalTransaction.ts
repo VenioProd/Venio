@@ -40,7 +40,7 @@ const externalTransactionSchema = new mongoose.Schema<IExternalTransaction>(
     receivedAt: { type: Date, default: () => new Date() },
     processedAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 externalTransactionSchema.index({ source: 1, idempotencyKey: 1 }, { unique: true })

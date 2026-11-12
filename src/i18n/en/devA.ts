@@ -74,7 +74,8 @@ const en: Record<keyof typeof fr, string> = {
   'devA.projects.showAll': 'Show all {count} projects',
   'devA.projects.archive': 'Archive',
   'devA.projects.restore': 'Restore',
-  'devA.projects.archiveConfirm': 'Archive project “{name}”? It will disappear from lists and counters; its issues are not modified and you can restore it.',
+  'devA.projects.archiveConfirm':
+    'Archive project “{name}”? It will disappear from lists and counters; its issues are not modified and you can restore it.',
   'devA.projects.restoreConfirm': 'Restore project “{name}”? It will show up again in lists and counters.',
   'devA.projects.archiveError': 'Could not change the project’s archive state.',
   'devA.projects.showArchived': 'Show archived',

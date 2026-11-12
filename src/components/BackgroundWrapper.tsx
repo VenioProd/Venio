@@ -11,4 +11,3 @@ const BackgroundWrapper = () => {
 }
 
 export default BackgroundWrapper
-

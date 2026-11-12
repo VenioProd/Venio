@@ -4,9 +4,15 @@ import { setupMongo, teardownMongo, clearDb } from '../../../__tests__/helpers/m
 import InternalTicket from '../../../models/InternalTicket.js'
 import { getTicketItems } from './tickets.js'
 
-beforeAll(async () => { await setupMongo() })
-afterAll(async () => { await teardownMongo() })
-beforeEach(async () => { await clearDb() })
+beforeAll(async () => {
+  await setupMongo()
+})
+afterAll(async () => {
+  await teardownMongo()
+})
+beforeEach(async () => {
+  await clearDb()
+})
 
 // InternalTicket required fields: title, message, authorId, authorName
 // Status values: 'OUVERT' | 'EN_COURS' | 'RESOLU' | 'FERME'
@@ -49,7 +55,7 @@ describe('getTicketItems', () => {
 
     const items = await getTicketItems(userId.toString())
     expect(items).toHaveLength(2)
-    expect(items.every(i => i.type === 'ticket')).toBe(true)
+    expect(items.every((i) => i.type === 'ticket')).toBe(true)
   })
 
   it('retourne un tableau vide si aucun ticket ouvert pour ce user', async () => {
@@ -69,13 +75,20 @@ describe('getTicketItems', () => {
     const userId = new mongoose.Types.ObjectId()
 
     await InternalTicket.create([
-      { title: 'Urgent', message: 'detail', status: 'OUVERT', priority: 'URGENTE', authorId: userId, authorName: 'Alice' },
+      {
+        title: 'Urgent',
+        message: 'detail',
+        status: 'OUVERT',
+        priority: 'URGENTE',
+        authorId: userId,
+        authorName: 'Alice',
+      },
       { title: 'Basse', message: 'detail', status: 'OUVERT', priority: 'BASSE', authorId: userId, authorName: 'Alice' },
     ] as any)
 
     const items = await getTicketItems(userId.toString())
-    const urgent = items.find(i => i.title === 'Urgent')
-    const basse = items.find(i => i.title === 'Basse')
+    const urgent = items.find((i) => i.title === 'Urgent')
+    const basse = items.find((i) => i.title === 'Basse')
     expect(urgent!.urgency).toBeGreaterThan(basse!.urgency)
   })
 })

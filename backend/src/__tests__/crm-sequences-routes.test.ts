@@ -70,18 +70,36 @@ beforeEach(async () => {
 })
 
 const lead = (owner: TeamMember, extra: Record<string, unknown> = {}) =>
-  Lead.create({ company: `Société ${Math.random().toString(36).slice(2, 6)}`, contactName: 'Camille', contactEmail: `c${Math.random().toString(36).slice(2, 8)}@x.test`, status: 'CONTACTED', assignedTo: owner.id, createdBy: owner.id, ...extra })
+  Lead.create({
+    company: `Société ${Math.random().toString(36).slice(2, 6)}`,
+    contactName: 'Camille',
+    contactEmail: `c${Math.random().toString(36).slice(2, 8)}@x.test`,
+    status: 'CONTACTED',
+    assignedTo: owner.id,
+    createdBy: owner.id,
+    ...extra,
+  })
 
 const createSequence = async (extra: Record<string, unknown> = {}) => {
   as(team.admin)
-  const res = await request(app).post(URL).send({ name: 'Relance', steps: STEPS, ...extra }).expect(201)
+  const res = await request(app)
+    .post(URL)
+    .send({ name: 'Relance', steps: STEPS, ...extra })
+    .expect(201)
   return res.body as { _id: string; status: string }
 }
 
 describe('concevoir et activer : administrateurs du CRM', () => {
   it('ADMIN crée (toujours en brouillon), active, met en pause', async () => {
     const res = await request(app).post(URL).send({ name: 'Relance', steps: STEPS, status: 'ACTIVE' }).expect(201)
-    expect(res.body).toMatchObject({ status: 'DRAFT', steps: [{ type: 'EMAIL', sendHourParis: 9 }, { type: 'TASK', delayDays: 2, sendHourParis: 9 }], stopOn: { reply: true, statusChange: true, statuses: ['WON', 'LOST'] } })
+    expect(res.body).toMatchObject({
+      status: 'DRAFT',
+      steps: [
+        { type: 'EMAIL', sendHourParis: 9 },
+        { type: 'TASK', delayDays: 2, sendHourParis: 9 },
+      ],
+      stopOn: { reply: true, statusChange: true, statuses: ['WON', 'LOST'] },
+    })
     const on = await request(app).patch(`${URL}/${res.body._id}`).send({ status: 'ACTIVE' }).expect(200)
     expect(on.body.status).toBe('ACTIVE')
     expect(on.body.activatedAt).toBeTruthy()
@@ -108,7 +126,16 @@ describe('concevoir et activer : administrateurs du CRM', () => {
   })
 
   it('validation des étapes et activation d’une séquence vide', async () => {
-    const bad = await request(app).post(URL).send({ name: 'X', steps: [{ type: 'EMAIL', subject: '' }, { type: 'WAIT', sendHourParis: 22 }] }).expect(400)
+    const bad = await request(app)
+      .post(URL)
+      .send({
+        name: 'X',
+        steps: [
+          { type: 'EMAIL', subject: '' },
+          { type: 'WAIT', sendHourParis: 22 },
+        ],
+      })
+      .expect(400)
     expect(bad.body.code).toBe('VALIDATION_ERROR')
     await request(app).post(URL).send({ steps: STEPS }).expect(400)
     const empty = await request(app).post(URL).send({ name: 'Vide' }).expect(201)
@@ -120,10 +147,16 @@ describe('concevoir et activer : administrateurs du CRM', () => {
   it('suppression refusée tant que des leads sont inscrits', async () => {
     const created = await createSequence()
     const l = await lead(team.admin)
-    await request(app).post(`${URL}/${created._id}/enroll`).send({ leadIds: [String(l._id)] }).expect(200)
+    await request(app)
+      .post(`${URL}/${created._id}/enroll`)
+      .send({ leadIds: [String(l._id)] })
+      .expect(200)
     const res = await request(app).delete(`${URL}/${created._id}`).expect(409)
     expect(res.body.code).toBe('HAS_OPEN_ENROLLMENTS')
-    await request(app).post(`${URL}/${created._id}/unenroll`).send({ leadIds: [String(l._id)] }).expect(200)
+    await request(app)
+      .post(`${URL}/${created._id}/unenroll`)
+      .send({ leadIds: [String(l._id)] })
+      .expect(200)
     await request(app).delete(`${URL}/${created._id}`).expect(200)
     expect(await Enrollment.countDocuments()).toBe(0)
   })
@@ -135,15 +168,24 @@ describe('inscrire : manage_crm et périmètre d’écriture', () => {
     const mine = await lead(team.commercialA)
     const other = await lead(team.commercialB)
     as(team.commercialA)
-    const res = await request(app).post(`${URL}/${created._id}/enroll`).send({ leadIds: [String(mine._id), String(other._id)] }).expect(200)
+    const res = await request(app)
+      .post(`${URL}/${created._id}/enroll`)
+      .send({ leadIds: [String(mine._id), String(other._id)] })
+      .expect(200)
     expect(res.body.sequenceStatus).toBe('DRAFT')
     expect(res.body.enrolled.map((e: { leadId: string }) => e.leadId)).toEqual([String(mine._id)])
     expect(res.body.refused).toEqual([{ leadId: String(other._id), reason: 'NOT_FOUND' }])
     // Désinscrire le lead d'un collègue n'a aucun effet.
     as(team.admin)
-    await request(app).post(`${URL}/${created._id}/enroll`).send({ leadIds: [String(other._id)] }).expect(200)
+    await request(app)
+      .post(`${URL}/${created._id}/enroll`)
+      .send({ leadIds: [String(other._id)] })
+      .expect(200)
     as(team.commercialA)
-    const un = await request(app).post(`${URL}/${created._id}/unenroll`).send({ leadIds: [String(other._id)] }).expect(200)
+    const un = await request(app)
+      .post(`${URL}/${created._id}/unenroll`)
+      .send({ leadIds: [String(other._id)] })
+      .expect(200)
     expect(un.body.stopped).toEqual([])
   })
 
@@ -152,7 +194,10 @@ describe('inscrire : manage_crm et périmètre d’écriture', () => {
     const l = await lead(team.stagiaire)
     as(team.stagiaire)
     await request(app).get(URL).expect(200)
-    await request(app).post(`${URL}/${created._id}/enroll`).send({ leadIds: [String(l._id)] }).expect(403)
+    await request(app)
+      .post(`${URL}/${created._id}/enroll`)
+      .send({ leadIds: [String(l._id)] })
+      .expect(403)
   })
 
   it('rend la liste des refus avec leur raison ; 200 leads au plus', async () => {
@@ -167,21 +212,42 @@ describe('inscrire : manage_crm et périmètre d’écriture', () => {
       .expect(200)
     expect(res.body.enrolled).toHaveLength(1)
     expect(res.body.refused.map((r: { reason: string }) => r.reason)).toEqual(['DO_NOT_CONTACT', 'CLOSED', 'NO_EMAIL'])
-    const again = await request(app).post(`${URL}/${created._id}/enroll`).send({ leadIds: [String(ok._id)] }).expect(200)
+    const again = await request(app)
+      .post(`${URL}/${created._id}/enroll`)
+      .send({ leadIds: [String(ok._id)] })
+      .expect(200)
     expect(again.body.refused).toEqual([{ leadId: String(ok._id), reason: 'ALREADY_ENROLLED' }])
     const many = Array.from({ length: 201 }, () => String(ok._id))
-    expect((await request(app).post(`${URL}/${created._id}/enroll`).send({ leadIds: many }).expect(400)).body.code).toBe('TOO_MANY')
-    await request(app).post(`${URL}/${created._id}/enroll`).send({ leadIds: ['nope'] }).expect(400)
+    expect(
+      (await request(app).post(`${URL}/${created._id}/enroll`).send({ leadIds: many }).expect(400)).body.code,
+    ).toBe('TOO_MANY')
+    await request(app)
+      .post(`${URL}/${created._id}/enroll`)
+      .send({ leadIds: ['nope'] })
+      .expect(400)
   })
 
   it('statistiques, inscriptions d’une séquence, séquences d’un lead', async () => {
     const created = await createSequence()
     const a = await lead(team.commercialA)
     const b = await lead(team.commercialB)
-    await request(app).post(`${URL}/${created._id}/enroll`).send({ leadIds: [String(a._id), String(b._id)] }).expect(200)
-    await request(app).post(`${URL}/${created._id}/unenroll`).send({ leadIds: [String(b._id)] }).expect(200)
+    await request(app)
+      .post(`${URL}/${created._id}/enroll`)
+      .send({ leadIds: [String(a._id), String(b._id)] })
+      .expect(200)
+    await request(app)
+      .post(`${URL}/${created._id}/unenroll`)
+      .send({ leadIds: [String(b._id)] })
+      .expect(200)
     const detail = await request(app).get(`${URL}/${created._id}`).expect(200)
-    expect(detail.body.stats).toEqual({ total: 2, active: 1, paused: 0, completed: 0, stopped: 1, stoppedByReason: { MANUAL: 1 } })
+    expect(detail.body.stats).toEqual({
+      total: 2,
+      active: 1,
+      paused: 0,
+      completed: 0,
+      stopped: 1,
+      stoppedByReason: { MANUAL: 1 },
+    })
     const enrollments = await request(app).get(`${URL}/${created._id}/enrollments?status=ACTIVE`).expect(200)
     expect(enrollments.body.total).toBe(1)
     expect(enrollments.body.items[0].lead).toMatchObject({ _id: String(a._id), company: a.company })
@@ -197,7 +263,10 @@ describe('inscrire : manage_crm et périmètre d’écriture', () => {
 
 describe('API agent', () => {
   const agentPost = (path: string, secret: string, body: unknown) =>
-    request(agentApp).post(`${AGENT}${path}`).set(authHeaders(secret, { idempotencyKey: uniqueIdempotencyKey() })).send(body as object)
+    request(agentApp)
+      .post(`${AGENT}${path}`)
+      .set(authHeaders(secret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send(body as object)
   const code = (res: request.Response) => res.body.error?.code ?? res.body.code
 
   it('read:crm lit les séquences et les inscriptions, mais n’inscrit pas', async () => {
@@ -206,7 +275,10 @@ describe('API agent', () => {
     const list = await request(agentApp).get(AGENT).set('Authorization', `Bearer ${plainSecret}`).expect(200)
     expect(list.body.items).toHaveLength(1)
     expect(list.body.canAdminister).toBe(false)
-    await request(agentApp).get(`${AGENT}/${created._id}/enrollments`).set('Authorization', `Bearer ${plainSecret}`).expect(200)
+    await request(agentApp)
+      .get(`${AGENT}/${created._id}/enrollments`)
+      .set('Authorization', `Bearer ${plainSecret}`)
+      .expect(200)
     const l = await lead(team.admin)
     const res = await agentPost(`/${created._id}/enroll`, plainSecret, { leadIds: [String(l._id)] })
     expect(res.status).toBe(403)
@@ -223,7 +295,10 @@ describe('API agent', () => {
     const create = await agentPost('', plainSecret, { name: 'Agent', steps: STEPS })
     expect(create.status).toBe(403)
     expect(code(create)).toBe('CRM_ADMIN_REQUIRED')
-    const activate = await request(agentApp).patch(`${AGENT}/${created._id}`).set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() })).send({ status: 'ACTIVE' })
+    const activate = await request(agentApp)
+      .patch(`${AGENT}/${created._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ status: 'ACTIVE' })
     expect(activate.status).toBe(403)
     expect((await CrmSequence.findById(created._id))!.status).toBe('DRAFT')
   })
@@ -233,7 +308,10 @@ describe('API agent', () => {
     const create = await agentPost('', plainSecret, { name: 'Agent', steps: STEPS })
     expect(create.status).toBe(201)
     expect(create.body.status).toBe('DRAFT')
-    const activate = await request(agentApp).patch(`${AGENT}/${create.body._id}`).set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() })).send({ status: 'ACTIVE' })
+    const activate = await request(agentApp)
+      .patch(`${AGENT}/${create.body._id}`)
+      .set(authHeaders(plainSecret, { idempotencyKey: uniqueIdempotencyKey() }))
+      .send({ status: 'ACTIVE' })
     expect(activate.status).toBe(200)
     expect(activate.body.status).toBe('ACTIVE')
   })

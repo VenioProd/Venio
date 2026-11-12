@@ -19,9 +19,7 @@ function sanitizeName(name: string): string {
     .trim()
 }
 
-const PROJECT_SUBFOLDERS = [
-  'Livrables', 'Contrats', 'Factures', 'Briefs', 'Assets', 'Communication', 'Exports',
-]
+const PROJECT_SUBFOLDERS = ['Livrables', 'Contrats', 'Factures', 'Briefs', 'Assets', 'Communication', 'Exports']
 
 const definition: AutomationDefinition = {
   key: 'nextcloud.repair_missing_structures',
@@ -60,7 +58,10 @@ const definition: AutomationDefinition = {
 
     async function folderExists(path: string): Promise<boolean> {
       const cleanPath = path.startsWith('/') ? path.slice(1) : path
-      const encodedPath = cleanPath.split('/').map((s) => encodeURIComponent(s)).join('/')
+      const encodedPath = cleanPath
+        .split('/')
+        .map((s) => encodeURIComponent(s))
+        .join('/')
       const url = `${nextcloudUrl}/remote.php/dav/files/${nextcloudUser}/${encodedPath}`
       try {
         const res = await fetch(url, {
@@ -104,7 +105,9 @@ const definition: AutomationDefinition = {
     const projects = await Project.find({
       status: 'EN_COURS',
       isArchived: { $ne: true },
-    }).populate('client', 'name companyName').select('name client')
+    })
+      .populate('client', 'name companyName')
+      .select('name client')
 
     for (const project of projects) {
       const client = project.client as { name?: string; companyName?: string } | null

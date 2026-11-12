@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  isAdminRole,
-  getPermissionsForRole,
-  hasPermission,
-  resolveUserPermissions,
-  PERMISSIONS,
-} from '../permissions'
+import { isAdminRole, getPermissionsForRole, hasPermission, resolveUserPermissions, PERMISSIONS } from '../permissions'
 import type { User, UserRole } from '../../types/auth.types'
 
 const makeUser = (role: string, grantedPermissions?: string[]) =>

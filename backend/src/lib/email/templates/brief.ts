@@ -4,7 +4,23 @@ import type { EmailResult } from '../transport.js'
 /**
  * Envoie un email de notification d'attribution de brief de mission.
  */
-export async function sendBriefAssignedEmail({ to, destinataireName, briefTitle, projectName, priority, deadline, assignedBy }: { to: string; destinataireName: string; briefTitle: string; projectName: string; priority: string; deadline: string; assignedBy: string }): Promise<EmailResult> {
+export async function sendBriefAssignedEmail({
+  to,
+  destinataireName,
+  briefTitle,
+  projectName,
+  priority,
+  deadline,
+  assignedBy,
+}: {
+  to: string
+  destinataireName: string
+  briefTitle: string
+  projectName: string
+  priority: string
+  deadline: string
+  assignedBy: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -59,7 +75,17 @@ export async function sendBriefAssignedEmail({ to, destinataireName, briefTitle,
 /**
  * Envoie un email de rappel d'échéance de brief de mission.
  */
-export async function sendBriefReminderEmail({ to, name, briefTitle, deadline }: { to: string; name: string; briefTitle: string; deadline: string }): Promise<EmailResult> {
+export async function sendBriefReminderEmail({
+  to,
+  name,
+  briefTitle,
+  deadline,
+}: {
+  to: string
+  name: string
+  briefTitle: string
+  deadline: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }

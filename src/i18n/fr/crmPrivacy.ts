@@ -13,7 +13,8 @@ const fr = {
   'crmPrivacy.basis.CONTRACT': 'Contrat',
   'crmPrivacy.consent.since': 'Depuis le {date} ({source})',
   'crmPrivacy.doNotContact.label': 'Ne pas contacter',
-  'crmPrivacy.doNotContact.hint': 'Aucun e-mail de prospection ne part vers ce contact (règles et envoi depuis la fiche).',
+  'crmPrivacy.doNotContact.hint':
+    'Aucun e-mail de prospection ne part vers ce contact (règles et envoi depuis la fiche).',
   'crmPrivacy.doNotContact.since': 'Opposition enregistrée le {date}',
   'crmPrivacy.suppressed': 'Adresse inscrite dans la liste « ne pas contacter » : aucun e-mail ne lui sera envoyé.',
   'crmPrivacy.anonymized': 'Lead anonymisé le {date}.',

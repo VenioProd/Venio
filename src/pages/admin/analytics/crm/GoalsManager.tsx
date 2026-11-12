@@ -66,7 +66,8 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
     })
   }
 
-  const userName = (id: string | null) => (id ? (admins.find((admin) => admin._id === id)?.name ?? id) : t('adminTech.forecast.goalTeam'))
+  const userName = (id: string | null) =>
+    id ? (admins.find((admin) => admin._id === id)?.name ?? id) : t('adminTech.forecast.goalTeam')
   const entityName = (key: string | null) => {
     const option = CRM_ENTITIES.find((candidate) => candidate.key === key)
     return option ? t(option.labelKey) : t('adminTech.forecast.goalAllGroup')
@@ -111,7 +112,13 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
         </label>
         <label>
           <span>{t('adminTech.forecast.goalWonCount')}</span>
-          <input type="number" min="0" step="1" value={wonCount} onChange={(event) => setWonCount(event.target.value)} />
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={wonCount}
+            onChange={(event) => setWonCount(event.target.value)}
+          />
         </label>
         <button type="submit" className="btn-primary">
           {t('adminTech.forecast.goalAdd')}
@@ -134,8 +141,12 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
           </thead>
           <tbody>
             {goals.map((goal) => {
-              const draft = drafts[goal._id] ?? { amount: String(goal.amountTarget), wonCount: String(goal.wonCountTarget) }
-              const setDraft = (patch: Partial<typeof draft>) => setDrafts((prev) => ({ ...prev, [goal._id]: { ...draft, ...patch } }))
+              const draft = drafts[goal._id] ?? {
+                amount: String(goal.amountTarget),
+                wonCount: String(goal.wonCountTarget),
+              }
+              const setDraft = (patch: Partial<typeof draft>) =>
+                setDrafts((prev) => ({ ...prev, [goal._id]: { ...draft, ...patch } }))
               return (
                 <tr key={goal._id}>
                   <td>{formatMonth(goal.period)}</td>
@@ -167,7 +178,10 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
                       type="button"
                       onClick={() =>
                         void run(() =>
-                          updateGoal(goal._id, { amountTarget: Number(draft.amount) || 0, wonCountTarget: Number(draft.wonCount) || 0 }),
+                          updateGoal(goal._id, {
+                            amountTarget: Number(draft.amount) || 0,
+                            wonCountTarget: Number(draft.wonCount) || 0,
+                          }),
                         )
                       }
                     >

@@ -86,7 +86,12 @@ async function seedFullLead() {
   await LeadActivity.create({ leadId, type: 'NOTE', label: 'x' })
   await Interaction.create({ subjectType: 'LEAD', subjectId: leadId, kind: 'NOTE', body: 'n', occurredAt: new Date() })
   await PersonalTask.create({ userId: team.superAdmin.id, leadId, title: 't' })
-  await CrmRuleRun.create({ lead: leadId, rule: new mongoose.Types.ObjectId(), status: 'DONE', trigger: 'LEAD_CREATED' } as never).catch(() => undefined)
+  await CrmRuleRun.create({
+    lead: leadId,
+    rule: new mongoose.Types.ObjectId(),
+    status: 'DONE',
+    trigger: 'LEAD_CREATED',
+  } as never).catch(() => undefined)
   return lead
 }
 
@@ -107,7 +112,9 @@ describe('suppression groupée = suppression unitaire', () => {
     expect(await footprint(unit._id)).toEqual(await footprint(bulk._id))
     expect((await footprint(bulk._id)).activities).toBeGreaterThan(0)
 
-    await request(app).delete('/api/admin/crm/leads/' + unit._id).expect(200)
+    await request(app)
+      .delete('/api/admin/crm/leads/' + unit._id)
+      .expect(200)
     const res = await request(app)
       .post('/api/admin/crm/leads/bulk')
       .send({ ids: [String(bulk._id)], action: 'delete', confirm: true })
@@ -122,11 +129,22 @@ describe('suppression groupée = suppression unitaire', () => {
     const unit = await makeLead()
     const bulk = await makeLead()
     const make = (leadId: unknown) =>
-      QuoteProposal.collection.insertOne({ leadId, status: 'DRAFT', title: 'Brouillon', createdAt: new Date(), updatedAt: new Date() })
+      QuoteProposal.collection.insertOne({
+        leadId,
+        status: 'DRAFT',
+        title: 'Brouillon',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
     await make(unit._id)
     await make(bulk._id)
-    await request(app).delete('/api/admin/crm/leads/' + unit._id).expect(200)
-    await request(app).post('/api/admin/crm/leads/bulk').send({ ids: [String(bulk._id)], action: 'delete', confirm: true }).expect(200)
+    await request(app)
+      .delete('/api/admin/crm/leads/' + unit._id)
+      .expect(200)
+    await request(app)
+      .post('/api/admin/crm/leads/bulk')
+      .send({ ids: [String(bulk._id)], action: 'delete', confirm: true })
+      .expect(200)
     // Aujourd'hui deleteLeadCascade ne touche pas aux devis : les deux chemins sont alignés.
     expect(await QuoteProposal.countDocuments({ leadId: unit._id })).toBe(1)
     expect(await QuoteProposal.countDocuments({ leadId: bulk._id })).toBe(1)
@@ -134,16 +152,22 @@ describe('suppression groupée = suppression unitaire', () => {
 
   it('exige toujours confirm: true', async () => {
     const lead = await makeLead()
-    await request(app).post('/api/admin/crm/leads/bulk').send({ ids: [String(lead._id)], action: 'delete' }).expect(400)
+    await request(app)
+      .post('/api/admin/crm/leads/bulk')
+      .send({ ids: [String(lead._id)], action: 'delete' })
+      .expect(400)
     expect(await Lead.countDocuments()).toBe(1)
   })
 })
 
 describe('commercial externe : changement de statut via le service de lead', () => {
-  it('journalise STATUS_CHANGE avec l\'acteur, sans auto-qualification', async () => {
+  it("journalise STATUS_CHANGE avec l'acteur, sans auto-qualification", async () => {
     const lead = await makeLead({ externalRep: team.externe.id, createdBy: team.externe.id })
     as(team.externe)
-    const res = await request(app).patch('/api/commercial/leads/' + lead._id).send({ status: 'CONTACTED', budget: 4000, source: 'Salon' }).expect(200)
+    const res = await request(app)
+      .patch('/api/commercial/leads/' + lead._id)
+      .send({ status: 'CONTACTED', budget: 4000, source: 'Salon' })
+      .expect(200)
     expect(res.body.lead.status).toBe('CONTACTED')
     const rows = await LeadActivity.find({ leadId: lead._id, type: 'STATUS_CHANGE' }).lean()
     expect(rows).toHaveLength(1)
@@ -155,14 +179,19 @@ describe('commercial externe : changement de statut via le service de lead', () 
   it('ne journalise rien sans changement de statut', async () => {
     const lead = await makeLead({ externalRep: team.externe.id, createdBy: team.externe.id })
     as(team.externe)
-    await request(app).patch('/api/commercial/leads/' + lead._id).send({ notes: 'ok' }).expect(200)
+    await request(app)
+      .patch('/api/commercial/leads/' + lead._id)
+      .send({ notes: 'ok' })
+      .expect(200)
     expect(await LeadActivity.countDocuments({ leadId: lead._id, type: 'STATUS_CHANGE' })).toBe(0)
   })
 
   it('refuse un motif de perte hors liste fermée (400) sans rien écrire', async () => {
     const lead = await makeLead({ externalRep: team.externe.id, createdBy: team.externe.id })
     as(team.externe)
-    const res = await request(app).patch('/api/commercial/leads/' + lead._id).send({ status: 'LOST', lostReason: 'inconnu-xyz' })
+    const res = await request(app)
+      .patch('/api/commercial/leads/' + lead._id)
+      .send({ status: 'LOST', lostReason: 'inconnu-xyz' })
     expect(res.status).toBe(400)
     expect((await Lead.findById(lead._id).lean())?.status).toBe('LEAD')
   })
@@ -182,7 +211,9 @@ describe('admin leads : identifiant mal formé', () => {
   })
 
   it('404 sur un identifiant bien formé mais inconnu', async () => {
-    await request(app).get('/api/admin/crm/leads/' + new mongoose.Types.ObjectId()).expect(404)
+    await request(app)
+      .get('/api/admin/crm/leads/' + new mongoose.Types.ObjectId())
+      .expect(404)
   })
 })
 
@@ -192,7 +223,12 @@ describe('lastInteractionAt', () => {
 
   async function log(leadId: unknown, occurredAt: Date) {
     const before = (await Lead.findById(leadId).lean())!.interactionsCount
-    const interaction = await logInteraction({ subjectType: 'LEAD', subjectId: leadId as never, kind: 'NOTE', occurredAt })
+    const interaction = await logInteraction({
+      subjectType: 'LEAD',
+      subjectId: leadId as never,
+      kind: 'NOTE',
+      occurredAt,
+    })
     // L'écriture sur le lead est asynchrone : on attend le compteur, puis la date recalculée.
     await vi.waitFor(async () => expect((await Lead.findById(leadId).lean())!.interactionsCount).toBe(before + 1))
     return interaction
@@ -205,15 +241,19 @@ describe('lastInteractionAt', () => {
     await vi.waitFor(async () => expect((await last(lead._id))?.toISOString()).toBe(day(10).toISOString()))
   })
 
-  it('la suppression recalcule la date sur l\'échange restant le plus récent', async () => {
+  it("la suppression recalcule la date sur l'échange restant le plus récent", async () => {
     const lead = await makeLead()
     const a = await log(lead._id, day(5))
     const b = await log(lead._id, day(9))
     await vi.waitFor(async () => expect((await last(lead._id))?.toISOString()).toBe(day(9).toISOString()))
-    await request(app).delete('/api/admin/interactions/' + b._id).expect(200)
+    await request(app)
+      .delete('/api/admin/interactions/' + b._id)
+      .expect(200)
     expect((await last(lead._id))?.toISOString()).toBe(day(5).toISOString())
     expect((await Lead.findById(lead._id).lean())!.interactionsCount).toBe(1)
-    await request(app).delete('/api/admin/interactions/' + a._id).expect(200)
+    await request(app)
+      .delete('/api/admin/interactions/' + a._id)
+      .expect(200)
     expect(await last(lead._id)).toBeNull()
     expect((await Lead.findById(lead._id).lean())!.interactionsCount).toBe(0)
   })
@@ -223,13 +263,15 @@ describe('lastInteractionAt', () => {
     const old = await log(lead._id, day(2))
     await log(lead._id, day(8))
     await vi.waitFor(async () => expect((await last(lead._id))?.toISOString()).toBe(day(8).toISOString()))
-    await request(app).delete('/api/admin/interactions/' + old._id).expect(200)
+    await request(app)
+      .delete('/api/admin/interactions/' + old._id)
+      .expect(200)
     expect((await last(lead._id))?.toISOString()).toBe(day(8).toISOString())
   })
 })
 
 describe('wonProcessedAt', () => {
-  it('est déclaré dans le schéma (null par défaut) et absent de l\'export CSV', async () => {
+  it("est déclaré dans le schéma (null par défaut) et absent de l'export CSV", async () => {
     const lead = await makeLead()
     expect(Lead.schema.path('wonProcessedAt')).toBeTruthy()
     expect((await Lead.findById(lead._id).lean())!.wonProcessedAt ?? null).toBeNull()

@@ -57,7 +57,9 @@ const definition: AutomationDefinition = {
         assignedTo: user._id,
         dueDate: { $lt: ctx.now },
         status: { $nin: ['TERMINE', 'VALIDE'] },
-      }).populate('project', 'name').limit(10)
+      })
+        .populate('project', 'name')
+        .limit(10)
 
       for (const t of overdueTasks) {
         items.push({
@@ -78,11 +80,13 @@ const definition: AutomationDefinition = {
         assignedTo: user._id,
         dueDate: { $gte: todayStart, $lte: todayEnd },
         status: { $nin: ['TERMINE', 'VALIDE'] },
-      }).populate('project', 'name').limit(5)
+      })
+        .populate('project', 'name')
+        .limit(5)
 
       for (const t of dueTodayTasks) {
         items.push({
-          category: 'Due aujourd\'hui',
+          category: "Due aujourd'hui",
           title: t.title,
           link: `/admin/projets/${(t.project as { _id?: unknown })?._id}?tab=tasks`,
           urgency: 'haute',
@@ -95,7 +99,9 @@ const definition: AutomationDefinition = {
           type: 'FACTURE',
           status: { $in: ['ENVOYEE', 'EN_ATTENTE'] },
           dueDate: { $lt: ctx.now },
-        }).populate('client', 'name').limit(5)
+        })
+          .populate('client', 'name')
+          .limit(5)
 
         for (const inv of unpaidInvoices) {
           const clientName = (inv.client as { name?: string })?.name || ''

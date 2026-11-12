@@ -1,7 +1,8 @@
 const fr = {
   'bulk.toolbar': 'Actions groupées',
   'bulk.selected': '{count, plural, one {# sélectionné} other {# sélectionnés}}',
-  'bulk.announce': '{count, plural, =0 {Aucun élément sélectionné} one {# élément sélectionné} other {# éléments sélectionnés}}',
+  'bulk.announce':
+    '{count, plural, =0 {Aucun élément sélectionné} one {# élément sélectionné} other {# éléments sélectionnés}}',
   'bulk.clear': 'Désélectionner',
   'bulk.selectAll': 'Tout sélectionner',
   'bulk.selectAllAria': 'Sélectionner tous les éléments de la page',
@@ -38,7 +39,8 @@ const fr = {
   'bulk.notif.markAllRead': 'Tout marquer comme lu',
   'bulk.notif.deleteRead': 'Supprimer les lues',
   'bulk.notif.deleteReadTitle': 'Supprimer les notifications lues',
-  'bulk.notif.deleteReadMessage': 'Supprimer définitivement toutes vos notifications lues de cette vue ? Cette action est irréversible.',
+  'bulk.notif.deleteReadMessage':
+    'Supprimer définitivement toutes vos notifications lues de cette vue ? Cette action est irréversible.',
   'bulk.notif.deleteReadDone': '{count, plural, one {# notification supprimée} other {# notifications supprimées}}',
   'bulk.notif.empty': 'Aucune notification',
   'bulk.notif.emptyArchived': 'Aucune notification archivée',

@@ -188,7 +188,13 @@ const TicketList = () => {
   // Actions groupées : les routes unitaires de statut, d'archivage et de suppression sont réservées au SUPER_ADMIN.
   const canBulk = user?.role === 'SUPER_ADMIN'
   const visibleTickets =
-    activeTab === 'tickets' ? filteredActive : activeTab === 'resolus' ? filteredResolved : activeTab === 'archives' ? archivedTickets : []
+    activeTab === 'tickets'
+      ? filteredActive
+      : activeTab === 'resolus'
+        ? filteredResolved
+        : activeTab === 'archives'
+          ? archivedTickets
+          : []
   const select = useMultiSelect(visibleTickets, (tk) => tk._id)
   const rowSelect = canBulk ? select : undefined
 
@@ -254,17 +260,17 @@ const TicketList = () => {
         </div>
 
         {canBulk && activeTab !== 'kpi' && (
-        <TicketBulkBar
-          select={select}
-          archived={activeTab === 'archives'}
-          onDone={async () => {
-            await load()
-            await loadArchived()
-          }}
-        />
-      )}
+          <TicketBulkBar
+            select={select}
+            archived={activeTab === 'archives'}
+            onDone={async () => {
+              await load()
+              await loadArchived()
+            }}
+          />
+        )}
 
-      {preview && <DocPreviewModal url={preview.url} name={preview.name} onClose={() => setPreview(null)} />}
+        {preview && <DocPreviewModal url={preview.url} name={preview.name} onClose={() => setPreview(null)} />}
       </div>
     )
   }

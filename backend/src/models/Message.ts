@@ -8,7 +8,7 @@ const messageSchema = new mongoose.Schema<IMessage>(
     content: { type: String, required: true, trim: true },
     readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 messageSchema.index({ project: 1, createdAt: -1 })

@@ -4,7 +4,7 @@ const internSettingsSchema = new mongoose.Schema(
   {
     reportNotifRecipients: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 const InternSettings = mongoose.model('InternSettings', internSettingsSchema)

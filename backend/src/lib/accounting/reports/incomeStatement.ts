@@ -85,9 +85,7 @@ type FiscalYearLean = Pick<IFiscalYear, 'code' | 'label' | 'startDate' | 'endDat
 /**
  * Compte de résultat = produits (classe 7) - charges (classe 6).
  */
-export async function getIncomeStatement(
-  params: IncomeStatementParams = {}
-): Promise<IncomeStatementResult> {
+export async function getIncomeStatement(params: IncomeStatementParams = {}): Promise<IncomeStatementResult> {
   const { fiscalYear, from, to } = params
   let fyDoc: FiscalYearLean | null = null
   const fyId = toObjectId(fiscalYear)
@@ -95,20 +93,8 @@ export async function getIncomeStatement(
     fyDoc = (await FiscalYear.findById(fyId).lean()) as FiscalYearLean | null
   }
 
-  const fromDate = from
-    ? from instanceof Date
-      ? from
-      : new Date(from)
-    : fyDoc
-    ? fyDoc.startDate
-    : null
-  const toDate = to
-    ? to instanceof Date
-      ? to
-      : new Date(to)
-    : fyDoc
-    ? fyDoc.endDate
-    : null
+  const fromDate = from ? (from instanceof Date ? from : new Date(from)) : fyDoc ? fyDoc.startDate : null
+  const toDate = to ? (to instanceof Date ? to : new Date(to)) : fyDoc ? fyDoc.endDate : null
 
   const accounts = await computeAccountBalances({
     fiscalYear: fyDoc ? fyDoc._id : null,

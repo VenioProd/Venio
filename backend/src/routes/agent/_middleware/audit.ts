@@ -59,11 +59,7 @@ const MUTATION_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE'])
  *
  * À monter APRÈS agentAuth.
  */
-export default function agentAudit(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export default function agentAudit(req: Request, res: Response, next: NextFunction): void {
   if (!MUTATION_METHODS.has(req.method.toUpperCase())) {
     next()
     return
@@ -89,13 +85,9 @@ async function logIfNeeded(req: Request, res: Response): Promise<void> {
     const meta = res.locals.audit || {}
     const action: AuditAction = meta.action || 'AGENT_API_MUTATION'
 
-    const ip = String(
-      (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0] || req.ip || ''
-    )
+    const ip = String((req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0] || req.ip || '')
     const userAgent = String(req.headers['user-agent'] || '')
-    const idempotencyKey = req.headers['idempotency-key']
-      ? String(req.headers['idempotency-key'])
-      : null
+    const idempotencyKey = req.headers['idempotency-key'] ? String(req.headers['idempotency-key']) : null
 
     await AuditLog.create({
       userId: null,
@@ -125,10 +117,7 @@ async function logIfNeeded(req: Request, res: Response): Promise<void> {
     })
 
     // Incrémente le compteur de mutations sur le token (best-effort)
-    AgentToken.updateOne(
-      { _id: token.id },
-      { $inc: { totalMutations: 1 } }
-    ).catch((err: unknown) => {
+    AgentToken.updateOne({ _id: token.id }, { $inc: { totalMutations: 1 } }).catch((err: unknown) => {
       logger.error({ data: (err as Error).message }, '[agent-audit] inc totalMutations failed:')
     })
   } catch (err) {

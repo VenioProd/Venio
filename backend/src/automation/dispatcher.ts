@@ -33,13 +33,14 @@ export async function dispatch(payload: DispatchPayload): Promise<string[]> {
         // This is a fallback for generic notifications
         notified.push(target.userId)
       } else if (target.channel === 'system_log') {
-        logger.info(
-          `[AUTOMATION] ${payload.automationKey}: ${payload.title} → ${target.name || target.userId}`
-        )
+        logger.info(`[AUTOMATION] ${payload.automationKey}: ${payload.title} → ${target.name || target.userId}`)
         notified.push(target.userId)
       }
     } catch (err) {
-      logger.error({ data: (err as Error).message }, `[AUTOMATION] dispatch failed for ${target.userId} on ${target.channel}:`)
+      logger.error(
+        { data: (err as Error).message },
+        `[AUTOMATION] dispatch failed for ${target.userId} on ${target.channel}:`,
+      )
     }
   }
 
@@ -51,7 +52,7 @@ export async function dispatch(payload: DispatchPayload): Promise<string[]> {
  */
 export async function resolveRecipients(
   strategy: string,
-  context?: Record<string, unknown>
+  context?: Record<string, unknown>,
 ): Promise<DispatchTarget[]> {
   // Lazy import to avoid circular deps
   const mongoose = await import('mongoose')

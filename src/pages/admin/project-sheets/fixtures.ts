@@ -32,10 +32,24 @@ export function makeSheet(overrides: Partial<ProjectSheet> = {}): ProjectSheet {
     prospectFaq: '',
     glossary: '',
     demoAccesses: [
-      { _id: 'd1', url: 'https://demo.example.test', role: 'Directeur', username: 'demo-dir', notes: 'Données fictives', hasPassword: true },
+      {
+        _id: 'd1',
+        url: 'https://demo.example.test',
+        role: 'Directeur',
+        username: 'demo-dir',
+        notes: 'Données fictives',
+        hasPassword: true,
+      },
     ],
     crm: { entity: 'ARROW', leadProject: 'ARROW', openLeads: 4, wonLeads: 2, href: '/admin/crm?project=ARROW' },
-    history: [{ at: '2026-11-01T10:00:00.000Z', by: { _id: 'u1', name: 'Raphael' }, fields: ['positioning', 'status'], summary: 'Mise à jour' }],
+    history: [
+      {
+        at: '2026-11-01T10:00:00.000Z',
+        by: { _id: 'u1', name: 'Raphael' },
+        fields: ['positioning', 'status'],
+        summary: 'Mise à jour',
+      },
+    ],
     canEdit: true,
     canReveal: true,
     createdAt: '2026-10-01T10:00:00.000Z',

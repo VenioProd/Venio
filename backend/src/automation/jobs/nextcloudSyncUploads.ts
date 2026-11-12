@@ -57,7 +57,9 @@ const definition: AutomationDefinition = {
         // l'upload réel nécessite de lire le fichier depuis le stockage local.
         // and uploading via PUT to the WebDAV endpoint
 
-        logger.info(`[NEXTCLOUD SYNC] Would sync: ${doc.originalName} → project ${(doc.project as { name?: string })?.name || doc.project}`)
+        logger.info(
+          `[NEXTCLOUD SYNC] Would sync: ${doc.originalName} → project ${(doc.project as { name?: string })?.name || doc.project}`,
+        )
 
         // Mark as synced (placeholder — actual sync requires WebDAV PUT implementation)
         // doc.nextcloudSynced = true

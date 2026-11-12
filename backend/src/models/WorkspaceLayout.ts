@@ -10,7 +10,7 @@ const widgetSchema = new mongoose.Schema(
     w: { type: Number, default: 4 },
     h: { type: Number, default: 4 },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const shortcutSchema = new mongoose.Schema(
@@ -19,7 +19,7 @@ const shortcutSchema = new mongoose.Schema(
     link: { type: String, required: true },
     icon: { type: String, default: '' },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const workspaceLayoutSchema = new mongoose.Schema<IWorkspaceLayout>(
@@ -30,12 +30,12 @@ const workspaceLayoutSchema = new mongoose.Schema<IWorkspaceLayout>(
     dailyGoal: {
       type: new mongoose.Schema(
         { text: { type: String, default: '' }, date: { type: Date, default: Date.now } },
-        { _id: false }
+        { _id: false },
       ),
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 export default mongoose.model<IWorkspaceLayout>('WorkspaceLayout', workspaceLayoutSchema)

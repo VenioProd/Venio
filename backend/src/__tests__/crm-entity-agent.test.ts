@@ -53,7 +53,11 @@ describe('agent CRM leads / entité du groupe', () => {
       .send({ company: 'École', project: 'ARROW' })
       .expect(201)
     expect(arrow.body.entity).toBe('ARROW')
-    const plain = await request(app).post('/api/v1/agent/leads').set(writeHeaders(plainSecret)).send({ company: 'Simple' }).expect(201)
+    const plain = await request(app)
+      .post('/api/v1/agent/leads')
+      .set(writeHeaders(plainSecret))
+      .send({ company: 'Simple' })
+      .expect(201)
     expect(plain.body.entity).toBe('VENIO')
     const invalid = await request(app)
       .post('/api/v1/agent/leads')
@@ -86,7 +90,13 @@ describe('agent CRM leads / entité du groupe', () => {
     const { plainSecret } = await createAgentTokenInDb(['read:crm'])
     const creatio = await Lead.create({ company: 'Contenus', entity: 'CREATIO', createdBy: adminId })
     await Lead.create({ company: 'Maison', entity: 'VENIO', createdBy: adminId })
-    await Lead.collection.insertOne({ company: 'Ancien', status: 'LEAD', archivedAt: null, createdAt: new Date(), updatedAt: new Date() })
+    await Lead.collection.insertOne({
+      company: 'Ancien',
+      status: 'LEAD',
+      archivedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
 
     const only = await request(app).get('/api/v1/agent/leads?entity=CREATIO').set(authHeaders(plainSecret)).expect(200)
     expect(only.body.items.map((l: { company: string }) => l.company)).toEqual(['Contenus'])
@@ -96,7 +106,10 @@ describe('agent CRM leads / entité du groupe', () => {
     const all = await request(app).get('/api/v1/agent/leads?entity=NOPE').set(authHeaders(plainSecret)).expect(200)
     expect(all.body.total).toBe(3)
 
-    const detail = await request(app).get(`/api/v1/agent/leads/${creatio._id}`).set(authHeaders(plainSecret)).expect(200)
+    const detail = await request(app)
+      .get(`/api/v1/agent/leads/${creatio._id}`)
+      .set(authHeaders(plainSecret))
+      .expect(200)
     expect(detail.body.entity).toBe('CREATIO')
   })
 })

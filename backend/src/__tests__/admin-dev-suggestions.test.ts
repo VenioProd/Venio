@@ -50,7 +50,11 @@ const post = (path: string, cookie: string, body: Record<string, unknown> = {}) 
 
 describe('admin dev suggestions', () => {
   it('lets a commercial submit and vote but not manage', async () => {
-    const created = await post('/suggestions', salesCookie, { title: 'Signature', problem: 'Impression papier', project: projectId })
+    const created = await post('/suggestions', salesCookie, {
+      title: 'Signature',
+      problem: 'Impression papier',
+      project: projectId,
+    })
     expect(created.status).toBe(201)
     expect(created.body.requester.name).toBe('Camille')
     expect(String(created.body.requester.user)).toBe(salesId)
@@ -60,7 +64,14 @@ describe('admin dev suggestions', () => {
     expect(vote.body.hasVoted).toBe(true)
     expect((await post(`/suggestions/${id}/convert`, salesCookie)).status).toBe(403)
     expect((await post('/suggestions/bulk', salesCookie, { ids: [id], action: 'archive' })).status).toBe(403)
-    expect((await request(app).patch(`/api/admin/dev/suggestions/${id}`).set('Cookie', salesCookie).send({ status: 'STUDIED' })).status).toBe(403)
+    expect(
+      (
+        await request(app)
+          .patch(`/api/admin/dev/suggestions/${id}`)
+          .set('Cookie', salesCookie)
+          .send({ status: 'STUDIED' })
+      ).status,
+    ).toBe(403)
     expect((await request(app).get('/api/admin/dev/suggestions').set('Cookie', salesCookie)).status).toBe(200)
   })
 
@@ -76,7 +87,12 @@ describe('admin dev suggestions', () => {
   })
 
   it('accept flow: convert creates an issue and notifies the requester; DONE notifies delivery', async () => {
-    const c = await post('/suggestions', salesCookie, { title: 'Import', problem: 'CSV', project: projectId, level: 'HIGH' })
+    const c = await post('/suggestions', salesCookie, {
+      title: 'Import',
+      problem: 'CSV',
+      project: projectId,
+      level: 'HIGH',
+    })
     const conv = await post(`/suggestions/${c.body._id}/convert`, adminCookie)
     expect(conv.status).toBe(201)
     expect(conv.body.issue.identifier).toBe('ARR-1')
@@ -93,10 +109,18 @@ describe('admin dev suggestions', () => {
     const a = await post('/suggestions', adminCookie, { title: 'a', problem: 'p' })
     const b = await post('/suggestions', adminCookie, { title: 'b', problem: 'p' })
     const missing = String(new mongoose.Types.ObjectId())
-    const r = await post('/suggestions/bulk', adminCookie, { ids: [a.body._id, missing], action: 'status', status: 'STUDIED' })
+    const r = await post('/suggestions/bulk', adminCookie, {
+      ids: [a.body._id, missing],
+      action: 'status',
+      status: 'STUDIED',
+    })
     expect(r.body.processed).toEqual([a.body._id])
     expect(r.body.failed[0].id).toBe(missing)
-    const noReason = await post('/suggestions/bulk', adminCookie, { ids: [b.body._id], action: 'status', status: 'REJECTED' })
+    const noReason = await post('/suggestions/bulk', adminCookie, {
+      ids: [b.body._id],
+      action: 'status',
+      status: 'REJECTED',
+    })
     expect(noReason.body.failed).toHaveLength(1)
     const del = await post('/suggestions/bulk', adminCookie, { ids: [a.body._id, b.body._id], action: 'delete' })
     expect(del.body.processed).toHaveLength(2)
@@ -104,14 +128,23 @@ describe('admin dev suggestions', () => {
   })
 
   it('bulk issues: archive, status, assign, delete', async () => {
-    const mk = (n: number) => DevIssue.create({ project: projectId, identifier: `ARR-${n}`, number: n, title: `i${n}`, reporter: adminId })
+    const mk = (n: number) =>
+      DevIssue.create({ project: projectId, identifier: `ARR-${n}`, number: n, title: `i${n}`, reporter: adminId })
     const [i1, i2] = [await mk(1), await mk(2)]
     const ids = [String(i1._id), String(i2._id)]
-    expect((await post('/issues/bulk', adminCookie, { ids, action: 'status', status: 'IN_REVIEW' })).body.processed).toHaveLength(2)
-    expect((await post('/issues/bulk', adminCookie, { ids, action: 'assign', assignee: salesId })).body.processed).toHaveLength(2)
-    expect((await post('/issues/bulk', adminCookie, { ids: [ids[0]], action: 'archive' })).body.processed).toHaveLength(1)
+    expect(
+      (await post('/issues/bulk', adminCookie, { ids, action: 'status', status: 'IN_REVIEW' })).body.processed,
+    ).toHaveLength(2)
+    expect(
+      (await post('/issues/bulk', adminCookie, { ids, action: 'assign', assignee: salesId })).body.processed,
+    ).toHaveLength(2)
+    expect((await post('/issues/bulk', adminCookie, { ids: [ids[0]], action: 'archive' })).body.processed).toHaveLength(
+      1,
+    )
     expect((await DevIssue.findById(i1._id))!.archivedAt).not.toBeNull()
-    expect((await post('/issues/bulk', adminCookie, { ids: [ids[1]], action: 'delete' })).body.processed).toHaveLength(1)
+    expect((await post('/issues/bulk', adminCookie, { ids: [ids[1]], action: 'delete' })).body.processed).toHaveLength(
+      1,
+    )
     expect(await DevIssue.countDocuments()).toBe(1)
     expect((await post('/issues/bulk', adminCookie, { ids: [], action: 'archive' })).status).toBe(400)
   })

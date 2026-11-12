@@ -13,7 +13,7 @@ const workspaceNoteSchema = new mongoose.Schema<IWorkspaceNote>(
     order: { type: Number, default: 0 },
     tags: { type: [String], default: [] },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 workspaceNoteSchema.index({ userId: 1, type: 1 })

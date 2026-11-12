@@ -137,12 +137,12 @@ describe('computeProjectCodeMetrics', () => {
     expect(huge!.lines).toBeGreaterThanOrEqual(800)
     expect(huge!.score).toBeGreaterThan(0)
     expect(huge!.threshold).toBe(350)
-    expect(m.todoFixmes).toEqual(expect.arrayContaining([
-      expect.objectContaining({ path: 'src/components/Small.ts', line: 1, marker: 'TODO' }),
-    ]))
-    expect(m.backendRoutesWithoutTest).toEqual(expect.arrayContaining([
-      expect.objectContaining({ path: 'src/routes/admin/orders.ts' }),
-    ]))
+    expect(m.todoFixmes).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: 'src/components/Small.ts', line: 1, marker: 'TODO' })]),
+    )
+    expect(m.backendRoutesWithoutTest).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: 'src/routes/admin/orders.ts' })]),
+    )
   })
 
   it('ignores node_modules, dist, and lockfiles', () => {

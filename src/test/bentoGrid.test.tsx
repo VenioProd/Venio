@@ -17,7 +17,7 @@ describe('BentoGrid', () => {
         editing={false}
         onChange={() => {}}
         renderWidget={(key) => <div data-testid={`w-${key}`}>{key}</div>}
-      />
+      />,
     )
     expect(screen.getByTestId('w-a')).toBeInTheDocument()
     expect(screen.getByTestId('w-b')).toBeInTheDocument()
@@ -26,14 +26,7 @@ describe('BentoGrid', () => {
 
   it('en mode édition, le bouton taille fait évoluer w/h et appelle onChange', () => {
     const onChange = vi.fn()
-    render(
-      <BentoGrid
-        widgets={widgets}
-        editing={true}
-        onChange={onChange}
-        renderWidget={(key) => <div>{key}</div>}
-      />
-    )
+    render(<BentoGrid widgets={widgets} editing={true} onChange={onChange} renderWidget={(key) => <div>{key}</div>} />)
     fireEvent.click(screen.getAllByLabelText('Changer la taille')[0])
     expect(onChange).toHaveBeenCalled()
   })

@@ -57,7 +57,7 @@ export function buildActorFromReq(req: Request): AuditActor {
  */
 export function shallowDiff(
   before: Record<string, unknown> | null,
-  after: Record<string, unknown> | null
+  after: Record<string, unknown> | null,
 ): Array<{ field: string; before: unknown; after: unknown }> {
   const diff: Array<{ field: string; before: unknown; after: unknown }> = []
   if (!before || !after) return diff
@@ -91,8 +91,7 @@ export async function recordAudit(params: {
   extra?: Record<string, unknown>
 }): Promise<void> {
   try {
-    const { action, actor, entityType, entityId, entityRef, summary, before, after, diff, extra } =
-      params
+    const { action, actor, entityType, entityId, entityRef, summary, before, after, diff, extra } = params
     await AuditLog.create({
       userId: actor.userId || null,
       email: actor.email || '',

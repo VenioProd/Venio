@@ -143,11 +143,13 @@ export async function processColdLeads(): Promise<SchedulerResult> {
     threshold.setDate(threshold.getDate() - settings.coldLeadThresholdDays)
 
     // Get cold leads grouped by assignee
-    const coldLeads = await Lead.find(withActiveLeads({
-      lastContactAt: { $lt: threshold },
-      status: { $nin: ['WON', 'LOST'] },
-      assignedTo: { $ne: null },
-    })).populate('assignedTo', 'name email')
+    const coldLeads = await Lead.find(
+      withActiveLeads({
+        lastContactAt: { $lt: threshold },
+        status: { $nin: ['WON', 'LOST'] },
+        assignedTo: { $ne: null },
+      }),
+    ).populate('assignedTo', 'name email')
 
     // Group by assignee
     const byAssignee: Record<
@@ -199,13 +201,15 @@ export async function processColdLeads(): Promise<SchedulerResult> {
 
 export async function processLeadFollowUps(): Promise<{ notified: number }> {
   const now = new Date()
-  const leads = await Lead.find(withActiveLeads({
-    nextActionAt: { $lte: now, $ne: null },
-    status: { $nin: ['WON', 'LOST'] },
-    assignedTo: { $ne: null },
-    // Ne relit pas, à chaque minute, les échéances déjà notifiées.
-    $expr: { $ne: ['$followUpNotifiedFor', '$nextActionAt'] },
-  })).select('assignedTo nextActionAt followUpNotifiedFor company')
+  const leads = await Lead.find(
+    withActiveLeads({
+      nextActionAt: { $lte: now, $ne: null },
+      status: { $nin: ['WON', 'LOST'] },
+      assignedTo: { $ne: null },
+      // Ne relit pas, à chaque minute, les échéances déjà notifiées.
+      $expr: { $ne: ['$followUpNotifiedFor', '$nextActionAt'] },
+    }),
+  ).select('assignedTo nextActionAt followUpNotifiedFor company')
   let notified = 0
   for (const lead of leads) {
     const due = lead.nextActionAt!
@@ -246,11 +250,13 @@ export async function processOverdueActions(): Promise<SchedulerResult> {
     const now = new Date()
 
     // Get overdue leads grouped by assignee
-    const overdueLeads = await Lead.find(withActiveLeads({
-      nextActionAt: { $lt: now },
-      status: { $nin: ['WON', 'LOST'] },
-      assignedTo: { $ne: null },
-    })).populate('assignedTo', 'name email')
+    const overdueLeads = await Lead.find(
+      withActiveLeads({
+        nextActionAt: { $lt: now },
+        status: { $nin: ['WON', 'LOST'] },
+        assignedTo: { $ne: null },
+      }),
+    ).populate('assignedTo', 'name email')
 
     // Group by assignee
     const byAssignee: Record<
@@ -346,12 +352,18 @@ export async function processEscalations(now: Date = new Date()): Promise<Escala
 
     const threshold = new Date(now.getTime() - settings.escalationThresholdDays * DAY_MS)
 
-    const staleLeads = await Lead.find(withActiveLeads({
-      status: { $nin: CLOSED_LEAD_STATUSES },
-      assignedTo: { $ne: null },
-      createdAt: { $lt: threshold },
-      $and: [before('lastInteractionAt', threshold), before('lastContactAt', threshold), before('statusChangedAt', threshold)],
-    })).populate('assignedTo', 'name email')
+    const staleLeads = await Lead.find(
+      withActiveLeads({
+        status: { $nin: CLOSED_LEAD_STATUSES },
+        assignedTo: { $ne: null },
+        createdAt: { $lt: threshold },
+        $and: [
+          before('lastInteractionAt', threshold),
+          before('lastContactAt', threshold),
+          before('statusChangedAt', threshold),
+        ],
+      }),
+    ).populate('assignedTo', 'name email')
 
     if (staleLeads.length === 0) return { processed: 0, escalated: 0, reassigned: 0, notified: 0 }
 
@@ -359,7 +371,9 @@ export async function processEscalations(now: Date = new Date()): Promise<Escala
     const reassignments = await LeadActivity.find({
       leadId: { $in: staleLeads.map((l) => l._id) },
       type: 'ESCALATION_REASSIGN',
-    }).select('leadId createdAt').lean()
+    })
+      .select('leadId createdAt')
+      .lean()
     const lastReassign = new Map<string, Date>()
     for (const a of reassignments) {
       const key = String(a.leadId)
@@ -382,7 +396,8 @@ export async function processEscalations(now: Date = new Date()): Promise<Escala
 
       const wantsReassign = (action === 'REASSIGN' || action === 'BOTH') && !alreadyReassigned
       // Après l'unique réattribution, seule l'alerte au manager reste possible.
-      const wantsNotify = action === 'NOTIFY_MANAGER' || action === 'BOTH' || (action === 'REASSIGN' && alreadyReassigned)
+      const wantsNotify =
+        action === 'NOTIFY_MANAGER' || action === 'BOTH' || (action === 'REASSIGN' && alreadyReassigned)
       const canNotify = wantsNotify && Boolean(manager?.email)
       if (!wantsReassign && !canNotify) continue
 
@@ -413,12 +428,16 @@ export async function processEscalations(now: Date = new Date()): Promise<Escala
         if (next && String(next) === previousAssignee) next = await getRoundRobinAssignee()
         if (next && String(next) !== previousAssignee) {
           const { applyLeadChange } = await import('./crmLeadService.js')
-          await applyLeadChange(lead._id.toString(), { assignedTo: String(next) }, {
-            actor: null,
-            source: 'scheduler',
-            settings,
-            labelSuffix: '(escalade automatique)',
-          })
+          await applyLeadChange(
+            lead._id.toString(),
+            { assignedTo: String(next) },
+            {
+              actor: null,
+              source: 'scheduler',
+              settings,
+              labelSuffix: '(escalade automatique)',
+            },
+          )
           await logLeadActivity(
             leadId,
             'ESCALATION_REASSIGN',
@@ -458,11 +477,13 @@ export async function processProposalReminders(): Promise<SchedulerResult> {
     const threshold = proposalReminderCutoff(new Date(), proposalReminderDaysOf(settings))
 
     // Find leads in PROPOSAL status for more than X days
-    const proposalLeads = await Lead.find(withActiveLeads({
-      status: 'PROPOSAL',
-      statusChangedAt: { $lt: threshold },
-      assignedTo: { $ne: null },
-    })).populate('assignedTo', 'name email')
+    const proposalLeads = await Lead.find(
+      withActiveLeads({
+        status: 'PROPOSAL',
+        statusChangedAt: { $lt: threshold },
+        assignedTo: { $ne: null },
+      }),
+    ).populate('assignedTo', 'name email')
 
     let sent = 0
     for (const lead of proposalLeads) {

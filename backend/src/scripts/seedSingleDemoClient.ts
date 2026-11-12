@@ -34,8 +34,9 @@ const nowMinusDays = (days: number): Date => {
 const sampleProjects = [
   {
     name: 'Refonte site vitrine',
-    summary: 'Moderniser l\'image et améliorer la conversion.',
-    description: 'Refonte complète du site web avec une nouvelle charte graphique moderne, amélioration de l\'expérience utilisateur et optimisation du parcours de conversion. Intégration de nouvelles fonctionnalités et optimisation SEO.',
+    summary: "Moderniser l'image et améliorer la conversion.",
+    description:
+      "Refonte complète du site web avec une nouvelle charte graphique moderne, amélioration de l'expérience utilisateur et optimisation du parcours de conversion. Intégration de nouvelles fonctionnalités et optimisation SEO.",
     status: 'EN_COURS',
     priority: 'HAUTE',
     serviceTypes: ['Design', 'Développement', 'UX/UI', 'SEO'],
@@ -58,7 +59,8 @@ const sampleProjects = [
   {
     name: 'Campagne acquisition Q2',
     summary: 'Booster les leads via ads et landing pages.',
-    description: 'Stratégie d\'acquisition complète incluant la création de landing pages optimisées, campagnes Google Ads et Meta Ads, tracking et analyse des performances. Objectif : générer 500 leads qualifiés.',
+    description:
+      "Stratégie d'acquisition complète incluant la création de landing pages optimisées, campagnes Google Ads et Meta Ads, tracking et analyse des performances. Objectif : générer 500 leads qualifiés.",
     status: 'EN_ATTENTE',
     priority: 'NORMALE',
     serviceTypes: ['Conseil', 'Marketing', 'Communication'],
@@ -81,8 +83,9 @@ const sampleProjects = [
   },
   {
     name: 'Plateforme e-commerce complète',
-    summary: 'Création d\'une boutique en ligne moderne et performante.',
-    description: 'Développement d\'une plateforme e-commerce sur mesure avec gestion des produits, panier, paiement sécurisé (Stripe), gestion des commandes, espace client, système de fidélité, et intégration avec le système de gestion des stocks. Interface d\'administration complète pour la gestion quotidienne.',
+    summary: "Création d'une boutique en ligne moderne et performante.",
+    description:
+      "Développement d'une plateforme e-commerce sur mesure avec gestion des produits, panier, paiement sécurisé (Stripe), gestion des commandes, espace client, système de fidélité, et intégration avec le système de gestion des stocks. Interface d'administration complète pour la gestion quotidienne.",
     status: 'EN_COURS',
     priority: 'URGENTE',
     serviceTypes: ['Développement', 'Design', 'UX/UI', 'Intégration', 'Conseil'],
@@ -107,8 +110,9 @@ const sampleProjects = [
   },
   {
     name: 'Identité de marque & Branding',
-    summary: 'Création d\'une identité visuelle forte et cohérente.',
-    description: 'Développement complet de l\'identité de marque : création du logo, définition de la charte graphique, choix des couleurs et typographies, création de templates pour réseaux sociaux, cartes de visite, papeterie, et guide de marque détaillé. Positionnement stratégique et storytelling de la marque.',
+    summary: "Création d'une identité visuelle forte et cohérente.",
+    description:
+      "Développement complet de l'identité de marque : création du logo, définition de la charte graphique, choix des couleurs et typographies, création de templates pour réseaux sociaux, cartes de visite, papeterie, et guide de marque détaillé. Positionnement stratégique et storytelling de la marque.",
     status: 'TERMINE',
     priority: 'BASSE',
     serviceTypes: ['Design', 'Stratégie', 'Communication'],

@@ -59,7 +59,7 @@ const sourceSchema = new mongoose.Schema<IExternalSource>(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     rotatedAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 sourceSchema.index({ status: 1 })

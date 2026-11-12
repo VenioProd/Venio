@@ -46,7 +46,11 @@ describe('evaluatePulseRules', () => {
   it('team-balanced: bad si 2+ admins > 10 tâches', async () => {
     const r = await evaluatePulseRules({
       ...baseCtx,
-      adminLoads: [{ name: 'A', total: 12 }, { name: 'B', total: 14 }, { name: 'C', total: 5 }],
+      adminLoads: [
+        { name: 'A', total: 12 },
+        { name: 'B', total: 14 },
+        { name: 'C', total: 5 },
+      ],
     })
     expect(r.find((x) => x.id === 'team-balanced')?.status).toBe('bad')
   })
@@ -77,8 +81,13 @@ describe('evaluatePulseRules', () => {
     expect(r).toHaveLength(7)
     const ids = r.map((c) => c.id).sort()
     expect(ids).toEqual([
-      'backup-success', 'briefs-p1-on-time', 'ca-on-track',
-      'hot-leads-followup', 'pipeline-growing', 'qualiopi-compliant', 'team-balanced',
+      'backup-success',
+      'briefs-p1-on-time',
+      'ca-on-track',
+      'hot-leads-followup',
+      'pipeline-growing',
+      'qualiopi-compliant',
+      'team-balanced',
     ])
   })
 })

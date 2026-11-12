@@ -37,7 +37,9 @@ const definition: AutomationDefinition = {
     const urgentBriefs = await MissionBrief.find({
       statut: { $nin: ['VALIDE', 'LIVRE', 'NON_VALIDE'] },
       deadline: { $lte: twoDaysFromNow },
-    }).populate('destinataire', '_id name').populate('project', 'name')
+    })
+      .populate('destinataire', '_id name')
+      .populate('project', 'name')
 
     for (const brief of urgentBriefs) {
       const destinataire = brief.destinataire as { _id: unknown; name?: string } | null
@@ -54,7 +56,9 @@ const definition: AutomationDefinition = {
       await createNotification({
         recipient: recipientId,
         type: 'BRIEF_REMINDER' as never,
-        title: isOverdue ? `Brief en retard : ${brief.titre || projectName}` : `Brief deadline proche : ${brief.titre || projectName}`,
+        title: isOverdue
+          ? `Brief en retard : ${brief.titre || projectName}`
+          : `Brief deadline proche : ${brief.titre || projectName}`,
         message: `Le brief "${brief.titre || 'Sans titre'}" (${projectName}) — deadline ${daysLabel}`,
         link: `/admin/briefs/${(brief._id as object).toString()}`,
       })
@@ -71,7 +75,9 @@ const definition: AutomationDefinition = {
     const staleBriefs = await MissionBrief.find({
       statut: 'A_FAIRE',
       createdAt: { $lt: fortyEightHoursAgo },
-    }).populate('createdBy', '_id name').populate('project', 'name')
+    })
+      .populate('createdBy', '_id name')
+      .populate('project', 'name')
 
     for (const brief of staleBriefs) {
       const creator = brief.createdBy as { _id: unknown; name?: string } | null

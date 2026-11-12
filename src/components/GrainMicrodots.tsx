@@ -6,4 +6,3 @@ const GrainMicrodots = () => {
 }
 
 export default GrainMicrodots
-

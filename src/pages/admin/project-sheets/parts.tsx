@@ -5,7 +5,8 @@ import type { ProjectSheetReviewStatus, ProjectSheetStatus } from '../../../type
 
 /** Logo de la fiche, ou pastille de couleur à défaut. */
 export function SheetMark({ name, logoUrl, accentColor }: { name: string; logoUrl?: string; accentColor?: string }) {
-  const src = logoUrl && (safeHttpUrl(logoUrl) || (logoUrl.startsWith('/') && !logoUrl.startsWith('//') ? logoUrl : null))
+  const src =
+    logoUrl && (safeHttpUrl(logoUrl) || (logoUrl.startsWith('/') && !logoUrl.startsWith('//') ? logoUrl : null))
   if (src) return <img className="ps-mark ps-mark--img" src={src} alt="" loading="lazy" />
   const color = safeColor(accentColor)
   return (
@@ -21,7 +22,13 @@ export function StatusBadge({ status }: { status: ProjectSheetStatus }) {
 }
 
 /** Badge de relecture : masqué quand la fiche est validée. */
-export function ReviewBadge({ review, showValidated = false }: { review: ProjectSheetReviewStatus; showValidated?: boolean }) {
+export function ReviewBadge({
+  review,
+  showValidated = false,
+}: {
+  review: ProjectSheetReviewStatus
+  showValidated?: boolean
+}) {
   const { t } = useI18n()
   if (review === 'VALIDATED' && !showValidated) return null
   return <span className={'ps-badge ps-badge--review-' + review}>{t(psKey(REVIEW_LABEL_KEY[review]))}</span>
@@ -42,4 +49,3 @@ export function useFieldLabel() {
     [t],
   )
 }
-

@@ -61,7 +61,10 @@ export function createGoal(input: CrmGoalInput): Promise<{ goal: CrmGoal }> {
   return apiFetch('/api/admin/crm/goals', { method: 'POST', body: JSON.stringify(input) })
 }
 
-export function updateGoal(id: string, targets: Pick<CrmGoalInput, 'amountTarget' | 'wonCountTarget'>): Promise<{ goal: CrmGoal }> {
+export function updateGoal(
+  id: string,
+  targets: Pick<CrmGoalInput, 'amountTarget' | 'wonCountTarget'>,
+): Promise<{ goal: CrmGoal }> {
   return apiFetch('/api/admin/crm/goals/' + id, { method: 'PATCH', body: JSON.stringify(targets) })
 }
 

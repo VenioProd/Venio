@@ -71,20 +71,15 @@ router.get('/audit/log', requireScope('read:audit'), async (req: Request, res: R
   }
 })
 
-router.get(
-  '/audit/log/:id',
-  requireScope('read:audit'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const log = await AuditLog.findById(req.params.id).lean()
-      if (!log) return respondError(res, 404, 'NOT_FOUND', 'Entrée audit introuvable')
-      res.json(log)
-    } catch (err) {
-      next(err)
-    }
+router.get('/audit/log/:id', requireScope('read:audit'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const log = await AuditLog.findById(req.params.id).lean()
+    if (!log) return respondError(res, 404, 'NOT_FOUND', 'Entrée audit introuvable')
+    res.json(log)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 export default router

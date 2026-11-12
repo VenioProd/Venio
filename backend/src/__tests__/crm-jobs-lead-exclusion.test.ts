@@ -41,7 +41,8 @@ const FakeLead = {
 const FakeUser = { find: vi.fn(() => ({ select: async () => [] })), findOne: vi.fn(async () => null) }
 
 const now = new Date('2026-11-06T10:00:00Z')
-const ctx = (meta?: Record<string, unknown>) => ({ now, dateKey: '2026-11-06', meta, settings: { config: {} } }) as never
+const ctx = (meta?: Record<string, unknown>) =>
+  ({ now, dateKey: '2026-11-06', meta, settings: { config: {} } }) as never
 
 beforeEach(() => {
   queries.length = 0
@@ -90,13 +91,17 @@ describe('tâches CRM : exclusion des leads archivés / en pause', () => {
     }
   })
 
-  it("crm.auto_archive_lost archive par le service unique (archivedAt, et non isArchived)", async () => {
+  it('crm.auto_archive_lost archive par le service unique (archivedAt, et non isArchived)', async () => {
     const lost = { _id: 'l-lost', status: 'LOST' }
     FakeLead.find.mockImplementationOnce(((q: Record<string, unknown>) => (queries.push(q), chain([lost]))) as never)
     const res = await registered['crm.auto_archive_lost'].execute(ctx())
     expect(FakeLead.find.mock.calls[0][0]).toMatchObject({ status: 'LOST', archivedAt: null, automationPausedAt: null })
     expect(FakeLead.updateMany).not.toHaveBeenCalled()
-    expect(applyLeadChange).toHaveBeenCalledWith(lost, { archivedAt: now }, expect.objectContaining({ actor: null, source: 'scheduler' }))
+    expect(applyLeadChange).toHaveBeenCalledWith(
+      lost,
+      { archivedAt: now },
+      expect.objectContaining({ actor: null, source: 'scheduler' }),
+    )
     expect(res.details).toEqual({ archivedCount: 1 })
   })
 

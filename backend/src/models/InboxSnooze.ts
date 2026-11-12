@@ -15,11 +15,11 @@ const schema = new Schema<IInboxSnooze>(
     sourceId: { type: Schema.Types.ObjectId, required: true },
     snoozedUntil: { type: Date, required: true },
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
+  { timestamps: { createdAt: true, updatedAt: false } },
 )
 
 schema.index({ userId: 1, itemType: 1, sourceId: 1 }, { unique: true })
-schema.index({ snoozedUntil: 1 }, { expireAfterSeconds: 0 })  // TTL auto-cleanup
+schema.index({ snoozedUntil: 1 }, { expireAfterSeconds: 0 }) // TTL auto-cleanup
 
 const InboxSnooze = mongoose.model<IInboxSnooze>('InboxSnooze', schema)
 export default InboxSnooze

@@ -136,7 +136,10 @@ const definition: AutomationDefinition = {
         isActive: { $ne: false },
       }).select('_id')
 
-      const summary = criticalClients.slice(0, 5).map((c) => `• ${c}`).join('\n')
+      const summary = criticalClients
+        .slice(0, 5)
+        .map((c) => `• ${c}`)
+        .join('\n')
 
       for (const admin of admins) {
         await createNotification({

@@ -87,10 +87,10 @@ async function fetchAccountLines(params: FetchAccountLinesParams): Promise<Enric
   const entryIds = Array.from(new Set(lines.map((l) => String(l.entry))))
   const entries = await AccountingEntry.find(
     { _id: { $in: entryIds }, status: { $in: VALID_STATUSES } },
-    { _id: 1, entryNumber: 1, pieceRef: 1, status: 1 }
+    { _id: 1, entryNumber: 1, pieceRef: 1, status: 1 },
   ).lean()
   const entryById = new Map<string, { entryNumber: string; pieceRef: string }>(
-    entries.map((e) => [String(e._id), { entryNumber: e.entryNumber, pieceRef: e.pieceRef || '' }])
+    entries.map((e) => [String(e._id), { entryNumber: e.entryNumber, pieceRef: e.pieceRef || '' }]),
   )
 
   return lines
@@ -141,7 +141,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -199,10 +199,7 @@ router.get(
         grp.lineCount += 1
         grp.totalDebit += line.debit || 0
         grp.totalCredit += line.credit || 0
-        if (
-          line.lettrageDate &&
-          (!grp.lettrageDate || line.lettrageDate > grp.lettrageDate)
-        ) {
+        if (line.lettrageDate && (!grp.lettrageDate || line.lettrageDate > grp.lettrageDate)) {
           grp.lettrageDate = line.lettrageDate
         }
         grp.lines.push({
@@ -244,7 +241,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -272,7 +269,7 @@ router.post(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 // ----------------------------------------------------------------------------
@@ -290,7 +287,7 @@ router.delete(
     } catch (err) {
       handleBusinessError(res, next, err)
     }
-  }
+  },
 )
 
 export default router

@@ -10,7 +10,13 @@ interface LogActivityParams {
   metadata?: Record<string, unknown>
 }
 
-export async function logActivity({ project, action, actor, summary = '', metadata = {} }: LogActivityParams): Promise<void> {
+export async function logActivity({
+  project,
+  action,
+  actor,
+  summary = '',
+  metadata = {},
+}: LogActivityParams): Promise<void> {
   try {
     await ActivityLog.create({ project, action, actor, summary, metadata })
   } catch (err) {

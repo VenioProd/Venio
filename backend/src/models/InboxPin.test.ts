@@ -3,9 +3,15 @@ import mongoose from 'mongoose'
 import { setupMongo, teardownMongo, clearDb } from '../__tests__/helpers/mongoTestEnv.js'
 import InboxPin from './InboxPin.js'
 
-beforeAll(async () => { await setupMongo() })
-afterAll(async () => { await teardownMongo() })
-beforeEach(async () => { await clearDb() })
+beforeAll(async () => {
+  await setupMongo()
+})
+afterAll(async () => {
+  await teardownMongo()
+})
+beforeEach(async () => {
+  await clearDb()
+})
 
 describe('InboxPin', () => {
   it('crée un pin avec snapshot du titre et du lien', async () => {
@@ -42,7 +48,7 @@ describe('InboxPin', () => {
         userId: new mongoose.Types.ObjectId(),
         refType: 'project',
         refId: new mongoose.Types.ObjectId(),
-      } as any)
+      } as any),
     ).rejects.toThrow()
   })
 })

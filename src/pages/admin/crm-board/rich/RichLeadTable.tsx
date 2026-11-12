@@ -73,20 +73,38 @@ function loadStoredColumns(): string[] {
 function matches(lead: Lead, f: RichFilters, now: Date): boolean {
   if (f.q) {
     const q = f.q.toLowerCase()
-    const hay = [lead.company, lead.contactName, lead.contactEmail, lead.source, ...(lead.tags ?? [])].join(' ').toLowerCase()
+    const hay = [lead.company, lead.contactName, lead.contactEmail, lead.source, ...(lead.tags ?? [])]
+      .join(' ')
+      .toLowerCase()
     if (!hay.includes(q)) return false
   }
   if (f.project && lead.project !== f.project) return false
   if (f.owner === 'none' ? lead.assignedTo : f.owner && lead.assignedTo !== f.owner) return false
   if (f.source && lead.source !== f.source) return false
-  if (f.temperature === 'HOT' ? !['CHAUD', 'TRES_CHAUD'].includes(lead.leadTemperature || '') : f.temperature && lead.leadTemperature !== f.temperature) return false
+  if (
+    f.temperature === 'HOT'
+      ? !['CHAUD', 'TRES_CHAUD'].includes(lead.leadTemperature || '')
+      : f.temperature && lead.leadTemperature !== f.temperature
+  )
+    return false
   if (f.tag && !(lead.tags ?? []).includes(f.tag)) return false
   if (f.late && !isLate(lead, now)) return false
   if (f.big && (lead.budget ?? 0) <= 30000) return false
   return true
 }
 
-export default function RichLeadTable({ leads, admins, adminsById, canManageCrm, currentUserId, onOpenLead, onReload, onError, project, onProjectChange }: Props) {
+export default function RichLeadTable({
+  leads,
+  admins,
+  adminsById,
+  canManageCrm,
+  currentUserId,
+  onOpenLead,
+  onReload,
+  onError,
+  project,
+  onProjectChange,
+}: Props) {
   const { t } = useI18n()
   const now = useMemo(() => new Date(), [leads])
   const ctx: ColumnContext = useMemo(() => ({ t: t as ColumnContext['t'], adminsById, now }), [t, adminsById, now])
@@ -102,14 +120,20 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
   const [saving, setSaving] = useState(false)
   const [viewName, setViewName] = useState('')
   const [viewScope, setViewScope] = useState<'PRIVATE' | 'TEAM'>('PRIVATE')
-  const [pending, setPending] = useState<{ action: BulkAction; payload?: Record<string, unknown>; label: string } | null>(null)
+  const [pending, setPending] = useState<{
+    action: BulkAction
+    payload?: Record<string, unknown>
+    label: string
+  } | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [enrollOpen, setEnrollOpen] = useState(false)
   const colsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    listViews().then(setViews).catch(() => setViews([]))
+    listViews()
+      .then(setViews)
+      .catch(() => setViews([]))
   }, [])
 
   useEffect(() => {
@@ -180,9 +204,14 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
     if (view.columns?.length) setColumns(view.columns.filter((k) => COLUMN_MAP[k]))
     if (view.sort) setSort({ key: view.sort.key, dir: view.sort.dir })
   }
-  const toggleSort = (key: string) => setSort((s) => (s.key === key ? { key, dir: (-s.dir) as 1 | -1 } : { key, dir: key === 'company' ? 1 : -1 }))
+  const toggleSort = (key: string) =>
+    setSort((s) => (s.key === key ? { key, dir: -s.dir as 1 | -1 } : { key, dir: key === 'company' ? 1 : -1 }))
   const toggleColumn = (key: string) =>
-    setColumns((cols) => (cols.includes(key) ? cols.filter((k) => k !== key) : RICH_COLUMNS.map((c) => c.key).filter((k) => cols.includes(k) || k === key)))
+    setColumns((cols) =>
+      cols.includes(key)
+        ? cols.filter((k) => k !== key)
+        : RICH_COLUMNS.map((c) => c.key).filter((k) => cols.includes(k) || k === key),
+    )
 
   const saveView = async () => {
     const name = viewName.trim()
@@ -224,7 +253,11 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
       setBusy(true)
       try {
         const res = await bulkLeads([...selected], action, payload)
-        setNotice(res.failed ? t('crmRich.bulk.resultPartial', { ok: res.ok, failed: res.failed }) : t('crmRich.bulk.result', { ok: res.ok }))
+        setNotice(
+          res.failed
+            ? t('crmRich.bulk.resultPartial', { ok: res.ok, failed: res.failed })
+            : t('crmRich.bulk.result', { ok: res.ok }),
+        )
         setSelected(new Set())
         await onReload()
       } catch (err) {
@@ -239,7 +272,11 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
 
   const exportSelected = () => {
     const chosen = rows.filter((l) => selected.has(l._id))
-    exportToCsv('crm-leads.csv', shown.map((c) => t(c.labelKey)), chosen.map((l) => shown.map((c) => c.csv(l, ctx))))
+    exportToCsv(
+      'crm-leads.csv',
+      shown.map((c) => t(c.labelKey)),
+      chosen.map((l) => shown.map((c) => c.csv(l, ctx))),
+    )
     setNotice(t('crmRich.export.done', { leads: chosen.length, columns: shown.length }))
   }
 
@@ -251,9 +288,19 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
         {[
           [t('crmRich.kpi.open'), formatEuro(totals.open), t('crmRich.kpi.openHint', { count: open.length }), false],
           [t('crmRich.kpi.weighted'), formatEuro(totals.weighted), t('crmRich.kpi.weightedHint'), true],
-          [t('crmRich.kpi.won'), formatEuro(totals.won), t('crmRich.kpi.wonHint', { count: visible.filter((l) => l.status === 'WON').length }), false],
+          [
+            t('crmRich.kpi.won'),
+            formatEuro(totals.won),
+            t('crmRich.kpi.wonHint', { count: visible.filter((l) => l.status === 'WON').length }),
+            false,
+          ],
           [t('crmRich.kpi.idle'), String(totals.idle), t('crmRich.kpi.idleHint'), true],
-          [t('crmRich.kpi.late'), String(totals.late), totals.late ? t('crmRich.kpi.lateHint') : t('crmRich.kpi.upToDate'), false],
+          [
+            t('crmRich.kpi.late'),
+            String(totals.late),
+            totals.late ? t('crmRich.kpi.lateHint') : t('crmRich.kpi.upToDate'),
+            false,
+          ],
         ].map(([label, value, hint, isNew]) => (
           <div key={String(label)} className="rich-kpi">
             <small>
@@ -268,29 +315,59 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
 
       <div className="rich-views" role="group" aria-label={t('crmRich.views.aria')}>
         {BUILTIN_VIEWS.map((v) => (
-          <button key={v.id} type="button" className="rich-chip" aria-pressed={builtin === v.id} onClick={() => applyBuiltin(v.id)}>
+          <button
+            key={v.id}
+            type="button"
+            className="rich-chip"
+            aria-pressed={builtin === v.id}
+            onClick={() => applyBuiltin(v.id)}
+          >
             {t(v.nameKey)}
             <em>{leads.filter((l) => matches(l, v.filters, now)).length}</em>
           </button>
         ))}
         {views.map((v) => (
           <span key={v._id} className="rich-chip-wrap">
-            <button type="button" className="rich-chip" aria-pressed={activeView === v._id} onClick={() => applySaved(v)}>
+            <button
+              type="button"
+              className="rich-chip"
+              aria-pressed={activeView === v._id}
+              onClick={() => applySaved(v)}
+            >
               {v.name}
               <em>{v.scope === 'TEAM' ? t('crmRich.scope.team') : t('crmRich.scope.private')}</em>
             </button>
             {(v.owner === currentUserId || !currentUserId) && canManageCrm && (
-              <button type="button" className="rich-chip-x" aria-label={t('crmRich.views.deleteAria', { name: v.name })} onClick={() => removeView(v)}>×</button>
+              <button
+                type="button"
+                className="rich-chip-x"
+                aria-label={t('crmRich.views.deleteAria', { name: v.name })}
+                onClick={() => removeView(v)}
+              >
+                ×
+              </button>
             )}
           </span>
         ))}
-        <button type="button" className="rich-chip rich-chip--add" onClick={() => setSaving((s) => !s)} aria-expanded={saving}>
-          {t('crmRich.views.saveThis')}<NewBadge />
+        <button
+          type="button"
+          className="rich-chip rich-chip--add"
+          onClick={() => setSaving((s) => !s)}
+          aria-expanded={saving}
+        >
+          {t('crmRich.views.saveThis')}
+          <NewBadge />
         </button>
       </div>
 
       {saving && (
-        <form className="rich-save" onSubmit={(e) => { e.preventDefault(); void saveView() }}>
+        <form
+          className="rich-save"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void saveView()
+          }}
+        >
           <label>
             <span>{t('crmRich.views.name')}</span>
             <input value={viewName} onChange={(e) => setViewName(e.target.value)} maxLength={80} autoFocus />
@@ -302,8 +379,12 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
               <option value="TEAM">{t('crmRich.views.team')}</option>
             </select>
           </label>
-          <button type="submit" className="rich-btn rich-btn--primary" disabled={!viewName.trim()}>{t('crmRich.views.save')}</button>
-          <button type="button" className="rich-btn" onClick={() => setSaving(false)}>{t('common.cancel')}</button>
+          <button type="submit" className="rich-btn rich-btn--primary" disabled={!viewName.trim()}>
+            {t('crmRich.views.save')}
+          </button>
+          <button type="button" className="rich-btn" onClick={() => setSaving(false)}>
+            {t('common.cancel')}
+          </button>
           <small>{t('crmRich.views.hint', { count: columns.length })}</small>
         </form>
       )}
@@ -311,43 +392,101 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
       <div className="rich-filters" role="search">
         <label className="rich-search">
           <span className="rich-sr">{t('crmRich.filter.searchLabel')}</span>
-          <input type="search" placeholder={t('crmRich.filter.searchPlaceholder')} value={filters.q ?? ''} onChange={(e) => patchFilters({ q: e.target.value })} />
+          <input
+            type="search"
+            placeholder={t('crmRich.filter.searchPlaceholder')}
+            value={filters.q ?? ''}
+            onChange={(e) => patchFilters({ q: e.target.value })}
+          />
         </label>
-        <select aria-label={t('crmRich.filter.project')} value={project} onChange={(e) => patchFilters({ project: e.target.value })}>
+        <select
+          aria-label={t('crmRich.filter.project')}
+          value={project}
+          onChange={(e) => patchFilters({ project: e.target.value })}
+        >
           <option value="">{t('crmRich.filter.project')}</option>
-          {CRM_PROJECTS.map((p) => <option key={p.key} value={p.key}>{t(p.labelKey)}</option>)}
+          {CRM_PROJECTS.map((p) => (
+            <option key={p.key} value={p.key}>
+              {t(p.labelKey)}
+            </option>
+          ))}
         </select>
-        <select aria-label={t('crmRich.filter.owner')} value={filters.owner ?? ''} onChange={(e) => patchFilters({ owner: e.target.value })}>
+        <select
+          aria-label={t('crmRich.filter.owner')}
+          value={filters.owner ?? ''}
+          onChange={(e) => patchFilters({ owner: e.target.value })}
+        >
           <option value="">{t('crmRich.filter.owner')}</option>
           <option value="none">{t('crmRich.filter.unassigned')}</option>
-          {admins.map((a) => <option key={a._id} value={a._id}>{a.name}</option>)}
+          {admins.map((a) => (
+            <option key={a._id} value={a._id}>
+              {a.name}
+            </option>
+          ))}
         </select>
-        <select aria-label={t('crmRich.filter.source')} value={filters.source ?? ''} onChange={(e) => patchFilters({ source: e.target.value })}>
+        <select
+          aria-label={t('crmRich.filter.source')}
+          value={filters.source ?? ''}
+          onChange={(e) => patchFilters({ source: e.target.value })}
+        >
           <option value="">{t('crmRich.filter.source')}</option>
-          {sources.map((s) => <option key={s} value={s}>{s}</option>)}
+          {sources.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
         </select>
-        <select aria-label={t('crmRich.filter.temperature')} value={filters.temperature ?? ''} onChange={(e) => patchFilters({ temperature: e.target.value })}>
+        <select
+          aria-label={t('crmRich.filter.temperature')}
+          value={filters.temperature ?? ''}
+          onChange={(e) => patchFilters({ temperature: e.target.value })}
+        >
           <option value="">{t('crmRich.filter.temperature')}</option>
           <option value="HOT">{t('crmRich.filter.hotAndAbove')}</option>
-          {CRM_TEMPERATURES.map((x) => <option key={x.key} value={x.key}>{t(x.labelKey)}</option>)}
+          {CRM_TEMPERATURES.map((x) => (
+            <option key={x.key} value={x.key}>
+              {t(x.labelKey)}
+            </option>
+          ))}
         </select>
         {tags.length > 0 && (
-          <select aria-label={t('crmRich.filter.tag')} value={filters.tag ?? ''} onChange={(e) => patchFilters({ tag: e.target.value })}>
+          <select
+            aria-label={t('crmRich.filter.tag')}
+            value={filters.tag ?? ''}
+            onChange={(e) => patchFilters({ tag: e.target.value })}
+          >
             <option value="">{t('crmRich.filter.tag')}</option>
-            {tags.map((x) => <option key={x} value={x}>{x}</option>)}
+            {tags.map((x) => (
+              <option key={x} value={x}>
+                {x}
+              </option>
+            ))}
           </select>
         )}
-        {filterCount > 0 && <button type="button" className="rich-link-btn" onClick={() => applyBuiltin('all')}>{t('crmRich.filter.reset')}</button>}
+        {filterCount > 0 && (
+          <button type="button" className="rich-link-btn" onClick={() => applyBuiltin('all')}>
+            {t('crmRich.filter.reset')}
+          </button>
+        )}
         <span className="rich-grow" />
         <div className="rich-cols" ref={colsRef}>
-          <button type="button" className="rich-btn" aria-haspopup="dialog" aria-expanded={colsOpen} onClick={() => setColsOpen((o) => !o)}>
-            {t('crmRich.cols.button')}<NewBadge />
+          <button
+            type="button"
+            className="rich-btn"
+            aria-haspopup="dialog"
+            aria-expanded={colsOpen}
+            onClick={() => setColsOpen((o) => !o)}
+          >
+            {t('crmRich.cols.button')}
+            <NewBadge />
           </button>
           {colsOpen && (
             <div className="rich-colpn" role="dialog" aria-label={t('crmRich.cols.dialogAria')}>
               <header>
                 <h3>{t('crmRich.cols.title')}</h3>
-                <button type="button" className="rich-link-btn" onClick={() => setColumns(DEFAULT_COLUMNS)}>{t('crmRich.cols.default')}</button>
+                <button type="button" className="rich-link-btn" onClick={() => setColumns(DEFAULT_COLUMNS)}>
+                  {t('crmRich.cols.default')}
+                </button>
               </header>
               <div className="rich-cl">
                 {COLUMN_GROUPS.map((g) => (
@@ -355,7 +494,12 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
                     <legend>{t(`crmRich.group.${g}`)}</legend>
                     {RICH_COLUMNS.filter((c) => c.group === g).map((c) => (
                       <label key={c.key} className={c.locked ? 'is-locked' : ''}>
-                        <input type="checkbox" checked={columns.includes(c.key)} disabled={c.locked} onChange={() => toggleColumn(c.key)} />
+                        <input
+                          type="checkbox"
+                          checked={columns.includes(c.key)}
+                          disabled={c.locked}
+                          onChange={() => toggleColumn(c.key)}
+                        />
                         {t(c.labelKey)}
                         {c.isNew ? <NewBadge /> : null}
                       </label>
@@ -364,8 +508,14 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
                 ))}
               </div>
               <footer>
-                {activeView && <button type="button" className="rich-btn" onClick={saveColumnsInView}>{t('crmRich.cols.saveInView')}</button>}
-                <button type="button" className="rich-btn rich-btn--primary" onClick={() => setColsOpen(false)}>{t('crmRich.cols.done')}</button>
+                {activeView && (
+                  <button type="button" className="rich-btn" onClick={saveColumnsInView}>
+                    {t('crmRich.cols.saveInView')}
+                  </button>
+                )}
+                <button type="button" className="rich-btn rich-btn--primary" onClick={() => setColsOpen(false)}>
+                  {t('crmRich.cols.done')}
+                </button>
               </footer>
             </div>
           )}
@@ -375,7 +525,9 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
       {notice && (
         <p className="rich-notice" role="status">
           {notice}
-          <button type="button" aria-label={t('crmRich.close')} onClick={() => setNotice('')}>×</button>
+          <button type="button" aria-label={t('crmRich.close')} onClick={() => setNotice('')}>
+            ×
+          </button>
         </p>
       )}
 
@@ -389,13 +541,19 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
                     type="checkbox"
                     aria-label={t('crmRich.table.selectAll')}
                     checked={allOn}
-                    ref={(el) => { if (el) el.indeterminate = !allOn && rows.some((l) => selected.has(l._id)) }}
+                    ref={(el) => {
+                      if (el) el.indeterminate = !allOn && rows.some((l) => selected.has(l._id))
+                    }}
                     onChange={(e) => setSelected(e.target.checked ? new Set(rows.map((l) => l._id)) : new Set())}
                   />
                 </th>
               )}
               {shown.map((c, i) => (
-                <th key={c.key} className={`${c.align === 'right' ? 'is-r' : ''} ${i === 0 ? 'is-sticky' : ''}`} aria-sort={sort.key === c.key ? (sort.dir === 1 ? 'ascending' : 'descending') : undefined}>
+                <th
+                  key={c.key}
+                  className={`${c.align === 'right' ? 'is-r' : ''} ${i === 0 ? 'is-sticky' : ''}`}
+                  aria-sort={sort.key === c.key ? (sort.dir === 1 ? 'ascending' : 'descending') : undefined}
+                >
                   <button type="button" onClick={() => toggleSort(c.key)}>
                     {t(c.labelKey)}
                     {c.isNew ? <NewBadge /> : null}
@@ -426,9 +584,20 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
                   </td>
                 )}
                 {shown.map((c, i) => (
-                  <td key={c.key} data-l={t(c.labelKey)} className={`${c.align === 'right' ? 'is-r' : ''} ${i === 0 ? 'is-sticky' : ''}`}>
+                  <td
+                    key={c.key}
+                    data-l={t(c.labelKey)}
+                    className={`${c.align === 'right' ? 'is-r' : ''} ${i === 0 ? 'is-sticky' : ''}`}
+                  >
                     {i === 0 ? (
-                      <button type="button" className="rich-open" onClick={(e) => { e.stopPropagation(); onOpenLead(lead) }}>
+                      <button
+                        type="button"
+                        className="rich-open"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onOpenLead(lead)
+                        }}
+                      >
                         {c.render(lead, ctx)}
                       </button>
                     ) : (
@@ -443,27 +612,109 @@ export default function RichLeadTable({ leads, admins, adminsById, canManageCrm,
         {rows.length === 0 && <p className="rich-empty">{t('crmRich.table.empty')}</p>}
         <div className="rich-foot">
           <span>{t('crmRich.table.footCount', { leads: rows.length, columns: shown.length })}</span>
-          <span>{t('crmRich.table.footTotals', { open: formatEuro(totals.open), weighted: formatEuro(totals.weighted) })}</span>
+          <span>
+            {t('crmRich.table.footTotals', { open: formatEuro(totals.open), weighted: formatEuro(totals.weighted) })}
+          </span>
         </div>
       </div>
 
       {selected.size > 0 && canManageCrm && (
         <div className="rich-bulk" role="region" aria-label={t('crmRich.bulk.aria')}>
-          <span className="rich-bulk-n"><b>{selected.size}</b> {t('crmRich.bulk.selected')}<NewBadge /></span>
-          <select aria-label={t('crmRich.bulk.assignAria')} value="" disabled={busy} onChange={(e) => e.target.value && setPending({ action: 'assign', payload: { userId: e.target.value }, label: t('crmRich.bulk.assignConfirm', { count: selected.size, name: adminsById[e.target.value]?.name ?? '' }) })}>
+          <span className="rich-bulk-n">
+            <b>{selected.size}</b> {t('crmRich.bulk.selected')}
+            <NewBadge />
+          </span>
+          <select
+            aria-label={t('crmRich.bulk.assignAria')}
+            value=""
+            disabled={busy}
+            onChange={(e) =>
+              e.target.value &&
+              setPending({
+                action: 'assign',
+                payload: { userId: e.target.value },
+                label: t('crmRich.bulk.assignConfirm', {
+                  count: selected.size,
+                  name: adminsById[e.target.value]?.name ?? '',
+                }),
+              })
+            }
+          >
             <option value="">{t('crmRich.bulk.assignPlaceholder')}</option>
-            {admins.map((a) => <option key={a._id} value={a._id}>{a.name}</option>)}
+            {admins.map((a) => (
+              <option key={a._id} value={a._id}>
+                {a.name}
+              </option>
+            ))}
           </select>
-          <select aria-label={t('crmRich.bulk.statusAria')} value="" disabled={busy} onChange={(e) => e.target.value && setPending({ action: 'status', payload: { status: e.target.value }, label: t('crmRich.bulk.statusConfirm', { count: selected.size, status: t(CRM_STATUSES.find((s) => s.key === e.target.value)!.labelKey) }) })}>
+          <select
+            aria-label={t('crmRich.bulk.statusAria')}
+            value=""
+            disabled={busy}
+            onChange={(e) =>
+              e.target.value &&
+              setPending({
+                action: 'status',
+                payload: { status: e.target.value },
+                label: t('crmRich.bulk.statusConfirm', {
+                  count: selected.size,
+                  status: t(CRM_STATUSES.find((s) => s.key === e.target.value)!.labelKey),
+                }),
+              })
+            }
+          >
             <option value="">{t('crmRich.bulk.statusPlaceholder')}</option>
-            {CRM_STATUSES.map((s) => <option key={s.key} value={s.key}>{t(s.labelKey)}</option>)}
+            {CRM_STATUSES.map((s) => (
+              <option key={s.key} value={s.key}>
+                {t(s.labelKey)}
+              </option>
+            ))}
           </select>
-          <button type="button" className="rich-btn" disabled={busy} onClick={() => { const tag = window.prompt(t('crmRich.bulk.tagPrompt'))?.trim(); if (tag) void runBulk('tag', { tag }) }}>{t('crmRich.bulk.tag')}</button>
-          <button type="button" className="rich-btn" disabled={busy} onClick={() => setPending({ action: 'archive', label: t('crmRich.bulk.archiveConfirm', { count: selected.size }) })}>{t('crmRich.bulk.archive')}</button>
-          <button type="button" className="rich-btn" disabled={busy} onClick={() => setEnrollOpen(true)}>{t('crmSeq.bulk.add')}</button>
-          <button type="button" className="rich-btn" onClick={exportSelected}>{t('crmRich.bulk.export')}</button>
-          <button type="button" className="rich-btn rich-btn--danger" disabled={busy} onClick={() => setPending({ action: 'delete', label: t('crmRich.bulk.deleteConfirm', { count: selected.size }) })}>{t('crmRich.bulk.delete')}</button>
-          <button type="button" className="rich-x" aria-label={t('crmRich.bulk.clearAria')} onClick={() => setSelected(new Set())}>×</button>
+          <button
+            type="button"
+            className="rich-btn"
+            disabled={busy}
+            onClick={() => {
+              const tag = window.prompt(t('crmRich.bulk.tagPrompt'))?.trim()
+              if (tag) void runBulk('tag', { tag })
+            }}
+          >
+            {t('crmRich.bulk.tag')}
+          </button>
+          <button
+            type="button"
+            className="rich-btn"
+            disabled={busy}
+            onClick={() =>
+              setPending({ action: 'archive', label: t('crmRich.bulk.archiveConfirm', { count: selected.size }) })
+            }
+          >
+            {t('crmRich.bulk.archive')}
+          </button>
+          <button type="button" className="rich-btn" disabled={busy} onClick={() => setEnrollOpen(true)}>
+            {t('crmSeq.bulk.add')}
+          </button>
+          <button type="button" className="rich-btn" onClick={exportSelected}>
+            {t('crmRich.bulk.export')}
+          </button>
+          <button
+            type="button"
+            className="rich-btn rich-btn--danger"
+            disabled={busy}
+            onClick={() =>
+              setPending({ action: 'delete', label: t('crmRich.bulk.deleteConfirm', { count: selected.size }) })
+            }
+          >
+            {t('crmRich.bulk.delete')}
+          </button>
+          <button
+            type="button"
+            className="rich-x"
+            aria-label={t('crmRich.bulk.clearAria')}
+            onClick={() => setSelected(new Set())}
+          >
+            ×
+          </button>
         </div>
       )}
 

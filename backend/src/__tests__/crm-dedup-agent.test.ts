@@ -22,13 +22,26 @@ afterAll(async () => {
 })
 beforeEach(async () => {
   await clearDb()
-  await User.create({ email: 'admin@venio.test', passwordHash: await bcrypt.hash('test', 10), name: 'Admin', role: 'SUPER_ADMIN' })
-  await CrmSettings.create({ roundRobinEnabled: false, duplicateDetectionEnabled: true, duplicateCheckCompany: true, duplicateCheckEmail: true })
+  await User.create({
+    email: 'admin@venio.test',
+    passwordHash: await bcrypt.hash('test', 10),
+    name: 'Admin',
+    role: 'SUPER_ADMIN',
+  })
+  await CrmSettings.create({
+    roundRobinEnabled: false,
+    duplicateDetectionEnabled: true,
+    duplicateCheckCompany: true,
+    duplicateCheckEmail: true,
+  })
   secret = (await createAgentTokenInDb(['write:crm', 'read:crm'])).plainSecret
 })
 
 const create = (body: Record<string, unknown>) =>
-  request(app).post('/api/v1/agent/leads').set(authHeaders(secret, { idempotencyKey: uniqueIdempotencyKey() })).send(body)
+  request(app)
+    .post('/api/v1/agent/leads')
+    .set(authHeaders(secret, { idempotencyKey: uniqueIdempotencyKey() }))
+    .send(body)
 
 describe('agent POST /leads et doublons', () => {
   it('forme historique sans doublon : pas de champ duplicates', async () => {

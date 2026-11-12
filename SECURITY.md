@@ -2,10 +2,10 @@
 
 ## Versions supportées
 
-| Version | Supportée |
-|---|---|
-| `main` | ✅ Branche active |
-| Autres | ❌ Pas de support |
+| Version | Supportée         |
+| ------- | ----------------- |
+| `main`  | ✅ Branche active |
+| Autres  | ❌ Pas de support |
 
 Venio est une application interne : il n'y a pas de versions taggées publiquement. Tout fix de sécurité est appliqué sur `main` et déployé immédiatement en prod (`venio.paris`).
 
@@ -16,6 +16,7 @@ Venio est une application interne : il n'y a pas de versions taggées publiqueme
 Contactez par e-mail : **contact@venio.paris**
 
 Indiquez dans votre message :
+
 - Description claire de la vulnérabilité
 - Étapes de reproduction (le plus précis possible)
 - Impact estimé (donnée affectée, vecteur d'attaque, gravité)
@@ -26,12 +27,14 @@ Vous recevrez un accusé de réception sous **72 h ouvrées** et un point d'avan
 ## Périmètre
 
 **Dans le scope** :
+
 - Application Web `https://venio.paris` (frontend + backend Express + API agent `/api/v1/agent/*`)
 - Authentification, autorisations, sessions
 - Manipulation de données utilisateur
 - Endpoints publics (`/api/health`, formulaire de contact)
 
 **Hors scope** :
+
 - Attaques de type DoS volumineux (pas de bug bounty)
 - Vulnérabilités sur des dépendances tierces déjà publiquement connues (vérifier `npm audit` d'abord)
 - Social engineering ou phishing

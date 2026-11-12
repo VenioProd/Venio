@@ -6,7 +6,14 @@ const BRAND = '#0ea5e9'
  * Layout HTML partagé pour tous les emails Venio.
  * Design light épuré, compatible Gmail, Outlook, Apple Mail.
  */
-export function emailLayout({ title, preheader, body, ctaUrl, ctaLabel, ctaColor }: {
+export function emailLayout({
+  title,
+  preheader,
+  body,
+  ctaUrl,
+  ctaLabel,
+  ctaColor,
+}: {
   title: string
   preheader?: string
   body: string
@@ -68,7 +75,9 @@ export function emailLayout({ title, preheader, body, ctaUrl, ctaLabel, ctaColor
                     ${body}
                   </td>
                 </tr>
-                ${ctaUrl && ctaLabel ? `
+                ${
+                  ctaUrl && ctaLabel
+                    ? `
                 <!-- Bouton -->
                 <tr>
                   <td style="padding:16px 32px 32px 32px;">
@@ -80,7 +89,9 @@ export function emailLayout({ title, preheader, body, ctaUrl, ctaLabel, ctaColor
                       </tr>
                     </table>
                   </td>
-                </tr>` : ''}
+                </tr>`
+                    : ''
+                }
               </table>
             </td>
           </tr>

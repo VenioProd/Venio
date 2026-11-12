@@ -62,7 +62,9 @@ async function notif(recipient: string, extra: Record<string, unknown> = {}) {
 describe('POST /api/admin/notifications/bulk', () => {
   it('requires authentication', async () => {
     authState.user = null
-    const res = await request(app).post('/api/admin/notifications/bulk').send({ ids: [unknownId()], action: 'read' })
+    const res = await request(app)
+      .post('/api/admin/notifications/bulk')
+      .send({ ids: [unknownId()], action: 'read' })
     expect(res.status).toBe(401)
   })
 
@@ -125,8 +127,14 @@ describe('POST /api/admin/notifications/bulk', () => {
     const a = await notif(aliceId)
     actAs(aliceId, 'MANAGER')
     const headers = key()
-    const first = await request(app).post('/api/admin/notifications/bulk').set(headers).send({ ids: [a], action: 'delete' })
-    const replay = await request(app).post('/api/admin/notifications/bulk').set(headers).send({ ids: [a], action: 'delete' })
+    const first = await request(app)
+      .post('/api/admin/notifications/bulk')
+      .set(headers)
+      .send({ ids: [a], action: 'delete' })
+    const replay = await request(app)
+      .post('/api/admin/notifications/bulk')
+      .set(headers)
+      .send({ ids: [a], action: 'delete' })
     expect(replay.body).toEqual(first.body)
   })
 })
@@ -174,7 +182,10 @@ describe('POST /api/admin/decisions/bulk', () => {
     const archived = await request(app).get('/api/admin/decisions?archived=true')
     expect(archived.body.decisions.map((d: { _id: string }) => d._id)).toEqual([mine])
 
-    const del = await request(app).post('/api/admin/decisions/bulk').set(key()).send({ ids: [theirs], action: 'delete' })
+    const del = await request(app)
+      .post('/api/admin/decisions/bulk')
+      .set(key())
+      .send({ ids: [theirs], action: 'delete' })
     expect(del.body.failed).toHaveLength(1)
     expect(await Decision.countDocuments()).toBe(2)
 

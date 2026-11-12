@@ -170,7 +170,12 @@ export function IdentityEditor({
               placeholder={t(psKey('form.websiteLabel'))}
               value={site.label}
               maxLength={80}
-              onChange={(e) => set('websites', draft.websites.map((w, j) => (j === i ? { ...w, label: e.target.value } : w)))}
+              onChange={(e) =>
+                set(
+                  'websites',
+                  draft.websites.map((w, j) => (j === i ? { ...w, label: e.target.value } : w)),
+                )
+              }
             />
             <input
               type="url"
@@ -178,14 +183,32 @@ export function IdentityEditor({
               placeholder={t(psKey('form.websiteUrl'))}
               value={site.url}
               maxLength={2000}
-              onChange={(e) => set('websites', draft.websites.map((w, j) => (j === i ? { ...w, url: e.target.value } : w)))}
+              onChange={(e) =>
+                set(
+                  'websites',
+                  draft.websites.map((w, j) => (j === i ? { ...w, url: e.target.value } : w)),
+                )
+              }
             />
-            <button type="button" className="ps-btn" onClick={() => set('websites', draft.websites.filter((_, j) => j !== i))}>
+            <button
+              type="button"
+              className="ps-btn"
+              onClick={() =>
+                set(
+                  'websites',
+                  draft.websites.filter((_, j) => j !== i),
+                )
+              }
+            >
               {t(psKey('form.remove'))}
             </button>
           </div>
         ))}
-        <button type="button" className="ps-btn" onClick={() => set('websites', [...draft.websites, { label: '', url: '' }])}>
+        <button
+          type="button"
+          className="ps-btn"
+          onClick={() => set('websites', [...draft.websites, { label: '', url: '' }])}
+        >
           {t(psKey('form.addWebsite'))}
         </button>
       </fieldset>
@@ -234,7 +257,11 @@ export function LinksEditor({
             <select
               aria-label={t(psKey('form.linkType'))}
               value={link.type}
-              onChange={(e) => setLinks(draft.links.map((l, j) => (j === i ? { ...l, type: e.target.value as ProjectSheetLink['type'] } : l)))}
+              onChange={(e) =>
+                setLinks(
+                  draft.links.map((l, j) => (j === i ? { ...l, type: e.target.value as ProjectSheetLink['type'] } : l)),
+                )
+              }
             >
               {types.map((type) => (
                 <option key={type} value={type}>
@@ -262,7 +289,11 @@ export function LinksEditor({
             </button>
           </div>
         ))}
-        <button type="button" className="ps-btn" onClick={() => setLinks([...draft.links, { type: 'other', label: '', url: '' }])}>
+        <button
+          type="button"
+          className="ps-btn"
+          onClick={() => setLinks([...draft.links, { type: 'other', label: '', url: '' }])}
+        >
           {t(psKey('form.addLink'))}
         </button>
       </fieldset>

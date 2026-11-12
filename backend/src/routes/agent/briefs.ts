@@ -20,15 +20,7 @@ const router = express.Router()
 
 const BRIEF_ENTITIES = ['VENIO', 'CREATIO', 'DECISIO', 'FORMATIO'] as const
 const BRIEF_PRIORITIES = ['P1', 'P2', 'P3'] as const
-const BRIEF_STATUSES = [
-  'A_FAIRE',
-  'EN_COURS',
-  'EN_REVIEW',
-  'VALIDE',
-  'LIVRE',
-  'NON_VALIDE',
-  'A_AMELIORER',
-] as const
+const BRIEF_STATUSES = ['A_FAIRE', 'EN_COURS', 'EN_REVIEW', 'VALIDE', 'LIVRE', 'NON_VALIDE', 'A_AMELIORER'] as const
 const FORMATS = ['PDF', 'PPT', 'FIGMA', 'VIDEO', 'WEB', 'AUTRE'] as const
 
 function isValidObjectId(id: unknown): boolean {
@@ -57,10 +49,7 @@ router.get('/briefs', requireScope('read:projects'), async (req: Request, res: R
     if (typeof req.query.entity === 'string' && (BRIEF_ENTITIES as readonly string[]).includes(req.query.entity)) {
       filter.entity = req.query.entity
     }
-    if (
-      typeof req.query.statut === 'string' &&
-      (BRIEF_STATUSES as readonly string[]).includes(req.query.statut)
-    ) {
+    if (typeof req.query.statut === 'string' && (BRIEF_STATUSES as readonly string[]).includes(req.query.statut)) {
       filter.statut = req.query.statut
     }
     const [items, total] = await Promise.all([
@@ -79,35 +68,40 @@ router.get('/briefs', requireScope('read:projects'), async (req: Request, res: R
   }
 })
 
-router.get(
-  '/briefs/:id',
-  requireScope('read:projects'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const brief = await MissionBrief.findById(req.params.id)
-        .populate('project', 'name')
-        .populate('destinataire', 'name email')
-        .populate('validationPar', 'name email')
-        .lean()
-      if (!brief) return respondError(res, 404, 'NOT_FOUND', 'Brief introuvable')
-      res.json(brief)
-    } catch (err) {
-      next(err)
-    }
+router.get('/briefs/:id', requireScope('read:projects'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const brief = await MissionBrief.findById(req.params.id)
+      .populate('project', 'name')
+      .populate('destinataire', 'name email')
+      .populate('validationPar', 'name email')
+      .lean()
+    if (!brief) return respondError(res, 404, 'NOT_FOUND', 'Brief introuvable')
+    res.json(brief)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.post(
   '/briefs',
   requireScope('write:projects'),
-  body('project').custom((v) => isValidObjectId(v)).withMessage('project (ObjectId) requis'),
-  body('destinataire').custom((v) => isValidObjectId(v)).withMessage('destinataire (ObjectId) requis'),
+  body('project')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('project (ObjectId) requis'),
+  body('destinataire')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('destinataire (ObjectId) requis'),
   body('intitule').isString().trim().isLength({ min: 1 }).withMessage('intitule requis'),
-  body('deadline').custom((v) => !Number.isNaN(Date.parse(v))).withMessage('deadline ISO requise'),
-  body('entity').optional().isIn(BRIEF_ENTITIES as unknown as string[]),
-  body('briefPriority').optional().isIn(BRIEF_PRIORITIES as unknown as string[]),
+  body('deadline')
+    .custom((v) => !Number.isNaN(Date.parse(v)))
+    .withMessage('deadline ISO requise'),
+  body('entity')
+    .optional()
+    .isIn(BRIEF_ENTITIES as unknown as string[]),
+  body('briefPriority')
+    .optional()
+    .isIn(BRIEF_PRIORITIES as unknown as string[]),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
@@ -166,104 +160,85 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.patch(
-  '/briefs/:id',
-  requireScope('write:projects'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const brief = await MissionBrief.findById(req.params.id)
-      if (!brief) return respondError(res, 404, 'NOT_FOUND', 'Brief introuvable')
-      const before = brief.toObject()
-      const stringFields = [
-        'intitule',
-        'contexte',
-        'livrablesAttendus',
-        'ressources',
-        'pointsVigilance',
-        'commentaires',
-      ]
-      for (const f of stringFields) {
-        if (typeof req.body[f] === 'string') {
-          ;(brief as unknown as Record<string, string>)[f] = req.body[f]
-        }
+router.patch('/briefs/:id', requireScope('write:projects'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const brief = await MissionBrief.findById(req.params.id)
+    if (!brief) return respondError(res, 404, 'NOT_FOUND', 'Brief introuvable')
+    const before = brief.toObject()
+    const stringFields = ['intitule', 'contexte', 'livrablesAttendus', 'ressources', 'pointsVigilance', 'commentaires']
+    for (const f of stringFields) {
+      if (typeof req.body[f] === 'string') {
+        ;(brief as unknown as Record<string, string>)[f] = req.body[f]
       }
-      if (typeof req.body.entity === 'string' && (BRIEF_ENTITIES as readonly string[]).includes(req.body.entity)) {
-        brief.entity = req.body.entity as typeof brief.entity
-      }
-      if (
-        typeof req.body.briefPriority === 'string' &&
-        (BRIEF_PRIORITIES as readonly string[]).includes(req.body.briefPriority)
-      ) {
-        brief.briefPriority = req.body.briefPriority as typeof brief.briefPriority
-      }
-      if (typeof req.body.statut === 'string' && (BRIEF_STATUSES as readonly string[]).includes(req.body.statut)) {
-        brief.statut = req.body.statut as typeof brief.statut
-      }
-      if (Array.isArray(req.body.formatLivrable)) {
-        brief.formatLivrable = req.body.formatLivrable.filter((f: string) =>
-          (FORMATS as readonly string[]).includes(f)
-        ) as typeof brief.formatLivrable
-      }
-      if (req.body.deadline !== undefined && !Number.isNaN(Date.parse(req.body.deadline))) {
-        brief.deadline = new Date(req.body.deadline)
-      }
-      if (req.body.pointIntermediaire !== undefined) {
-        brief.pointIntermediaire = req.body.pointIntermediaire
-          ? new Date(req.body.pointIntermediaire)
-          : null
-      }
-      if (req.body.destinataire !== undefined && isValidObjectId(req.body.destinataire)) {
-        brief.destinataire = req.body.destinataire
-      }
-      if (req.body.validationPar !== undefined) {
-        brief.validationPar = isValidObjectId(req.body.validationPar)
-          ? (req.body.validationPar as unknown as typeof brief.validationPar)
-          : (null as unknown as typeof brief.validationPar)
-      }
-      if (Array.isArray(req.body.datesCles)) {
-        brief.datesCles = req.body.datesCles as typeof brief.datesCles
-      }
-      await brief.save()
-      res.locals.audit = {
-        entityType: 'MissionBrief',
-        entityId: String(brief._id),
-        before,
-        after: brief.toObject(),
-      }
-      res.json(brief.toObject())
-    } catch (err) {
-      next(err)
     }
+    if (typeof req.body.entity === 'string' && (BRIEF_ENTITIES as readonly string[]).includes(req.body.entity)) {
+      brief.entity = req.body.entity as typeof brief.entity
+    }
+    if (
+      typeof req.body.briefPriority === 'string' &&
+      (BRIEF_PRIORITIES as readonly string[]).includes(req.body.briefPriority)
+    ) {
+      brief.briefPriority = req.body.briefPriority as typeof brief.briefPriority
+    }
+    if (typeof req.body.statut === 'string' && (BRIEF_STATUSES as readonly string[]).includes(req.body.statut)) {
+      brief.statut = req.body.statut as typeof brief.statut
+    }
+    if (Array.isArray(req.body.formatLivrable)) {
+      brief.formatLivrable = req.body.formatLivrable.filter((f: string) =>
+        (FORMATS as readonly string[]).includes(f),
+      ) as typeof brief.formatLivrable
+    }
+    if (req.body.deadline !== undefined && !Number.isNaN(Date.parse(req.body.deadline))) {
+      brief.deadline = new Date(req.body.deadline)
+    }
+    if (req.body.pointIntermediaire !== undefined) {
+      brief.pointIntermediaire = req.body.pointIntermediaire ? new Date(req.body.pointIntermediaire) : null
+    }
+    if (req.body.destinataire !== undefined && isValidObjectId(req.body.destinataire)) {
+      brief.destinataire = req.body.destinataire
+    }
+    if (req.body.validationPar !== undefined) {
+      brief.validationPar = isValidObjectId(req.body.validationPar)
+        ? (req.body.validationPar as unknown as typeof brief.validationPar)
+        : (null as unknown as typeof brief.validationPar)
+    }
+    if (Array.isArray(req.body.datesCles)) {
+      brief.datesCles = req.body.datesCles as typeof brief.datesCles
+    }
+    await brief.save()
+    res.locals.audit = {
+      entityType: 'MissionBrief',
+      entityId: String(brief._id),
+      before,
+      after: brief.toObject(),
+    }
+    res.json(brief.toObject())
+  } catch (err) {
+    next(err)
   }
-)
+})
 
-router.delete(
-  '/briefs/:id',
-  requireScope('write:projects'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const brief = await MissionBrief.findById(req.params.id)
-      if (!brief) return respondError(res, 404, 'NOT_FOUND', 'Brief introuvable')
-      const before = brief.toObject()
-      await MissionBrief.deleteOne({ _id: brief._id })
-      res.locals.audit = {
-        entityType: 'MissionBrief',
-        entityId: String(brief._id),
-        entityRef: brief.intitule,
-        before,
-      }
-      res.json({ ok: true, deletedId: String(brief._id) })
-    } catch (err) {
-      next(err)
+router.delete('/briefs/:id', requireScope('write:projects'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const brief = await MissionBrief.findById(req.params.id)
+    if (!brief) return respondError(res, 404, 'NOT_FOUND', 'Brief introuvable')
+    const before = brief.toObject()
+    await MissionBrief.deleteOne({ _id: brief._id })
+    res.locals.audit = {
+      entityType: 'MissionBrief',
+      entityId: String(brief._id),
+      entityRef: brief.intitule,
+      before,
     }
+    res.json({ ok: true, deletedId: String(brief._id) })
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 export default router

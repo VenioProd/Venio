@@ -11,8 +11,24 @@ function formatDate(d: Date | string | null | undefined): string {
 /**
  * Envoie un email de notification d'assignation de tâche.
  */
-export async function sendTaskAssignedEmail({ to, assigneeName, taskTitle, projectName, projectId, assignedBy, dueDate, priority }: {
-  to: string; assigneeName: string; taskTitle: string; projectName: string; projectId: string; assignedBy: string; dueDate?: string | null; priority?: string | null
+export async function sendTaskAssignedEmail({
+  to,
+  assigneeName,
+  taskTitle,
+  projectName,
+  projectId,
+  assignedBy,
+  dueDate,
+  priority,
+}: {
+  to: string
+  assigneeName: string
+  taskTitle: string
+  projectName: string
+  projectId: string
+  assignedBy: string
+  dueDate?: string | null
+  priority?: string | null
 }): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
@@ -85,7 +101,19 @@ export async function sendTaskAssignedEmail({ to, assigneeName, taskTitle, proje
 /**
  * Envoie un email de rappel d'échéance de tâche.
  */
-export async function sendTaskReminderEmail({ to, name, taskTitle, projectName, dueDate }: { to: string; name: string; taskTitle: string; projectName: string; dueDate: string }): Promise<EmailResult> {
+export async function sendTaskReminderEmail({
+  to,
+  name,
+  taskTitle,
+  projectName,
+  dueDate,
+}: {
+  to: string
+  name: string
+  taskTitle: string
+  projectName: string
+  dueDate: string
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -97,11 +125,14 @@ export async function sendTaskReminderEmail({ to, name, taskTitle, projectName, 
   const body = `
     <p>Bonjour <strong>${escapeHtml(name)}</strong>,</p>
     <p>Une tâche arrive bientôt à échéance :</p>
-    ${highlightBlock(`
+    ${highlightBlock(
+      `
       ${infoLine('Tâche', taskTitle)}
       ${infoLine('Projet', projectName)}
       ${infoLine('Échéance', dueDate)}
-    `, '#f59e0b')}
+    `,
+      '#f59e0b',
+    )}
     <p>Pensez à la finaliser avant la date limite.</p>
   `
 

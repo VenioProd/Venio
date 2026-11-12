@@ -73,7 +73,9 @@ describe('Fiche projet — lecture', () => {
     ])
     // Chaque ancre pointe vers une section réellement présente, dans le même ordre.
     for (const a of links) expect(document.getElementById(a.getAttribute('href')!.slice(1))).not.toBeNull()
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(links.map((a) => a.textContent))
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(
+      links.map((a) => a.textContent),
+    )
     expect(links[2]).toHaveTextContent('Ce qu’on fait (offre, pour qui, problème résolu)')
   })
 
@@ -87,8 +89,14 @@ describe('Fiche projet — lecture', () => {
     expect(within(section('stack')).queryByText('À compléter')).toBeNull()
     const links = section('links')
     expect(within(links).getByRole('link', { name: 'Code' })).toHaveAttribute('href', 'https://git.example.test/arrow')
-    expect(within(links).getByRole('link', { name: 'CRM : 4 leads ouverts, 2 gagnés' })).toHaveAttribute('href', '/admin/crm?project=ARROW')
-    expect(within(links).getByRole('link', { name: 'Dev tracker : Arrow dev' })).toHaveAttribute('href', '/admin/dev/projects/dp1')
+    expect(within(links).getByRole('link', { name: 'CRM : 4 leads ouverts, 2 gagnés' })).toHaveAttribute(
+      'href',
+      '/admin/crm?project=ARROW',
+    )
+    expect(within(links).getByRole('link', { name: 'Dev tracker : Arrow dev' })).toHaveAttribute(
+      'href',
+      '/admin/dev/projects/dp1',
+    )
     expect(within(links).queryByText(/Dossier filiale/)).toBeNull()
     expect(within(section('team')).getByText('Camille')).toBeInTheDocument()
     const history = section('history')
@@ -100,7 +108,10 @@ describe('Fiche projet — lecture', () => {
     current = makeSheet({ subsidiaryHref: '/admin/filiales/s1' })
     mount()
     await screen.findByRole('heading', { level: 1, name: 'Arrow' })
-    expect(within(section('links')).getByRole('link', { name: 'Dossier filiale (confidentiel)' })).toHaveAttribute('href', '/admin/filiales/s1')
+    expect(within(section('links')).getByRole('link', { name: 'Dossier filiale (confidentiel)' })).toHaveAttribute(
+      'href',
+      '/admin/filiales/s1',
+    )
   })
 
   it('n’interprète pas le HTML saisi dans une section', async () => {
@@ -139,7 +150,9 @@ describe('Fiche projet — édition par section', () => {
     await screen.findByRole('heading', { level: 1, name: 'Arrow' })
     const positioning = section('positioning')
     fireEvent.click(within(positioning).getByRole('button', { name: /Modifier/ }))
-    expect(within(positioning).getByText('Ne saisissez jamais de secret (mot de passe, clé, jeton) dans une fiche.')).toBeInTheDocument()
+    expect(
+      within(positioning).getByText('Ne saisissez jamais de secret (mot de passe, clé, jeton) dans une fiche.'),
+    ).toBeInTheDocument()
     const textarea = within(positioning).getByRole('textbox')
     fireEvent.change(textarea, { target: { value: 'Le **plus simple** du marché' } })
     expect(within(positioning).getByLabelText('Aperçu')).toHaveTextContent('Le plus simple du marché')
@@ -158,7 +171,10 @@ describe('Fiche projet — édition par section', () => {
   it('affiche le message de conflit sur 409 SHEET_CONFLICT et ne ferme pas l’éditeur', async () => {
     route({
       'PATCH /api/admin/project-sheets/sheet1': () => {
-        throw Object.assign(new Error('Conflit'), { status: 409, payload: { error: 'Conflit', code: 'SHEET_CONFLICT' } })
+        throw Object.assign(new Error('Conflit'), {
+          status: 409,
+          payload: { error: 'Conflit', code: 'SHEET_CONFLICT' },
+        })
       },
     })
     mount()
@@ -167,7 +183,9 @@ describe('Fiche projet — édition par section', () => {
     fireEvent.click(within(audience).getByRole('button', { name: /Modifier/ }))
     fireEvent.change(within(audience).getByRole('textbox'), { target: { value: 'Les CFA' } })
     fireEvent.click(within(audience).getByRole('button', { name: 'Enregistrer' }))
-    expect(await within(audience).findByRole('alert')).toHaveTextContent('La fiche a été modifiée entre-temps, rechargez.')
+    expect(await within(audience).findByRole('alert')).toHaveTextContent(
+      'La fiche a été modifiée entre-temps, rechargez.',
+    )
     expect(within(audience).getByRole('textbox')).toHaveValue('Les CFA')
     expect(within(audience).getByRole('button', { name: 'Recharger la fiche' })).toBeInTheDocument()
   })

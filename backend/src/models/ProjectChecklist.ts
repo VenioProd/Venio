@@ -25,7 +25,7 @@ const checklistItemSchema = new mongoose.Schema(
     checkedAt: { type: Date, default: null },
     checkedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const projectChecklistSchema = new mongoose.Schema(
@@ -35,7 +35,7 @@ const projectChecklistSchema = new mongoose.Schema(
     items: { type: [checklistItemSchema], default: [] },
     completedAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 projectChecklistSchema.index({ project: 1, type: 1 }, { unique: true })

@@ -6,7 +6,7 @@ const dateCleSchema = new Schema(
     label: { type: String, required: true },
     date: { type: Date, required: true },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const missionBriefSchema = new Schema<IMissionBrief>(
@@ -42,7 +42,7 @@ const missionBriefSchema = new Schema<IMissionBrief>(
     commentaires: { type: String, default: '' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 missionBriefSchema.index({ project: 1 })

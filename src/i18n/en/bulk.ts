@@ -40,7 +40,8 @@ const en: Record<keyof typeof fr, string> = {
   'bulk.notif.markAllRead': 'Mark all as read',
   'bulk.notif.deleteRead': 'Delete read ones',
   'bulk.notif.deleteReadTitle': 'Delete read notifications',
-  'bulk.notif.deleteReadMessage': 'Permanently delete all of your read notifications in this view? This cannot be undone.',
+  'bulk.notif.deleteReadMessage':
+    'Permanently delete all of your read notifications in this view? This cannot be undone.',
   'bulk.notif.deleteReadDone': '{count, plural, one {# notification deleted} other {# notifications deleted}}',
   'bulk.notif.empty': 'No notifications',
   'bulk.notif.emptyArchived': 'No archived notifications',

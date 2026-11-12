@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose'
 
 export const TEMPLATE_KINDS = ['session', 'assignment', 'note', 'class'] as const
-export type EducationTemplateKind = typeof TEMPLATE_KINDS[number]
+export type EducationTemplateKind = (typeof TEMPLATE_KINDS)[number]
 
 export interface IEducationTemplate {
   owner: mongoose.Types.ObjectId
@@ -25,7 +25,7 @@ const schema = new Schema<IEducationTemplate>(
     tags: { type: [String], default: [] },
     deletedAt: { type: Date, default: null, index: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 schema.index({ owner: 1, kind: 1, deletedAt: 1 })

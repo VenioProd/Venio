@@ -12,7 +12,12 @@ vi.mock('../../../lib/api', () => ({
 
 const lead = { _id: 'lead1', company: 'Acme', status: 'LEAD' } as Lead
 const status = (extra: Record<string, unknown> = {}) => ({
-  consent: { status: 'UNKNOWN', basis: 'LEGITIMATE_INTEREST', source: 'FORMULAIRE_SITE', at: '2026-11-01T10:00:00.000Z' },
+  consent: {
+    status: 'UNKNOWN',
+    basis: 'LEGITIMATE_INTEREST',
+    source: 'FORMULAIRE_SITE',
+    at: '2026-11-01T10:00:00.000Z',
+  },
   doNotContact: false,
   doNotContactAt: null,
   doNotContactReason: '',
@@ -30,7 +35,9 @@ beforeEach(() => {
 const renderPanel = (props: Partial<Parameters<typeof LeadPrivacyPanel>[0]> = {}) => {
   const onUpdateLead = vi.fn(async () => {})
   const onLocalChange = vi.fn()
-  render(<LeadPrivacyPanel lead={lead} canManageCrm onUpdateLead={onUpdateLead} onLocalChange={onLocalChange} {...props} />)
+  render(
+    <LeadPrivacyPanel lead={lead} canManageCrm onUpdateLead={onUpdateLead} onLocalChange={onLocalChange} {...props} />,
+  )
   return { onUpdateLead, onLocalChange }
 }
 
@@ -49,7 +56,9 @@ describe('fiche lead — bloc Données personnelles', () => {
   })
 
   it('signale une adresse de la liste de suppression ; lecture seule sans manage_crm', async () => {
-    apiFetch.mockResolvedValue(status({ suppressed: true, doNotContact: true, doNotContactAt: '2026-11-02T10:00:00.000Z' }))
+    apiFetch.mockResolvedValue(
+      status({ suppressed: true, doNotContact: true, doNotContactAt: '2026-11-02T10:00:00.000Z' }),
+    )
     renderPanel({ canManageCrm: false })
     expect(await screen.findByText(/liste « ne pas contacter »/)).toBeInTheDocument()
     expect(screen.getByRole('checkbox')).toBeDisabled()
@@ -58,7 +67,8 @@ describe('fiche lead — bloc Données personnelles', () => {
 
   it('administrateur : exporte et anonymise après confirmation', async () => {
     apiFetch.mockImplementation(async (url: string, opts?: RequestInit) => {
-      if (opts?.method === 'POST') return { lead: { ...lead, contactName: 'Anonymisé (demande)', anonymizedAt: '2026-11-06T10:00:00.000Z' } }
+      if (opts?.method === 'POST')
+        return { lead: { ...lead, contactName: 'Anonymisé (demande)', anonymizedAt: '2026-11-06T10:00:00.000Z' } }
       return status({ canAdminister: true })
     })
     apiDownload.mockResolvedValue({ blob: new Blob(['{}']), filename: 'x.json', contentType: 'application/json' })
@@ -75,6 +85,8 @@ describe('fiche lead — bloc Données personnelles', () => {
     await waitFor(() =>
       expect(apiFetch).toHaveBeenCalledWith('/api/admin/crm/leads/lead1/anonymize', { method: 'POST' }),
     )
-    await waitFor(() => expect(onLocalChange).toHaveBeenCalledWith(expect.objectContaining({ contactName: 'Anonymisé (demande)' })))
+    await waitFor(() =>
+      expect(onLocalChange).toHaveBeenCalledWith(expect.objectContaining({ contactName: 'Anonymisé (demande)' })),
+    )
   })
 })

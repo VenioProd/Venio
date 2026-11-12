@@ -37,11 +37,13 @@ const definition: AutomationDefinition = {
 
     const threeDaysAgo = new Date(ctx.now.getTime() - 3 * 24 * 3600_000)
 
-    const leads = await Lead.find(withActiveLeads({
-      status: 'DEMO',
-      statusChangedAt: { $lt: threeDaysAgo },
-      assignedTo: { $ne: null },
-    })).populate('assignedTo', '_id name')
+    const leads = await Lead.find(
+      withActiveLeads({
+        status: 'DEMO',
+        statusChangedAt: { $lt: threeDaysAgo },
+        assignedTo: { $ne: null },
+      }),
+    ).populate('assignedTo', '_id name')
 
     const actionsExecuted: string[] = []
     const recipientsNotified: string[] = []

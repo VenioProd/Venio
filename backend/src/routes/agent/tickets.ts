@@ -59,11 +59,7 @@ router.get('/tickets', requireScope('read:tickets'), async (req: Request, res: R
       filter.$or = [{ isArchived: false }, { isArchived: { $exists: false } }]
     }
     const [items, total] = await Promise.all([
-      InternalTicket.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(pag.skip)
-        .limit(pag.limit)
-        .lean(),
+      InternalTicket.find(filter).sort({ createdAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
       InternalTicket.countDocuments(filter),
     ])
     res.json(paginatedResponse(items, pag, total))
@@ -92,21 +88,16 @@ router.post('/tickets/bulk', requireScope('write:tickets'), async (req, res, nex
   }
 })
 
-router.get(
-  '/tickets/:id',
-  requireScope('read:tickets'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const t = await InternalTicket.findById(req.params.id).lean()
-      if (!t) return respondError(res, 404, 'NOT_FOUND', 'Ticket introuvable')
-      res.json(t)
-    } catch (err) {
-      next(err)
-    }
+router.get('/tickets/:id', requireScope('read:tickets'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const t = await InternalTicket.findById(req.params.id).lean()
+    if (!t) return respondError(res, 404, 'NOT_FOUND', 'Ticket introuvable')
+    res.json(t)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.post(
   '/tickets',
@@ -144,59 +135,54 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.patch(
-  '/tickets/:id',
-  requireScope('write:tickets'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const ticket = await InternalTicket.findById(req.params.id)
-      if (!ticket) return respondError(res, 404, 'NOT_FOUND', 'Ticket introuvable')
-      const before = ticket.toObject()
-      const stringFields = ['title', 'message']
-      for (const f of stringFields) {
-        if (typeof req.body[f] === 'string') {
-          ;(ticket as unknown as Record<string, string>)[f] = req.body[f]
-        }
+router.patch('/tickets/:id', requireScope('write:tickets'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const ticket = await InternalTicket.findById(req.params.id)
+    if (!ticket) return respondError(res, 404, 'NOT_FOUND', 'Ticket introuvable')
+    const before = ticket.toObject()
+    const stringFields = ['title', 'message']
+    for (const f of stringFields) {
+      if (typeof req.body[f] === 'string') {
+        ;(ticket as unknown as Record<string, string>)[f] = req.body[f]
       }
-      if (typeof req.body.category === 'string' && (CATEGORIES as readonly string[]).includes(req.body.category)) {
-        ticket.category = req.body.category as typeof ticket.category
-      }
-      if (typeof req.body.priority === 'string' && (PRIORITIES as readonly string[]).includes(req.body.priority)) {
-        ticket.priority = req.body.priority as typeof ticket.priority
-      }
-      if (typeof req.body.status === 'string' && (STATUSES as readonly string[]).includes(req.body.status)) {
-        const newStatus = req.body.status as typeof ticket.status
-        ticket.status = newStatus
-        // Archivage automatique sur FERME (mais pas l'inverse — un ticket
-        // archivé peut être réouvert via PATCH { isArchived: false } séparé)
-        if (newStatus === 'FERME' && !ticket.isArchived) {
-          ticket.isArchived = true
-          ticket.archivedAt = new Date()
-        }
-      }
-      if (typeof req.body.isArchived === 'boolean') {
-        ticket.isArchived = req.body.isArchived
-        ticket.archivedAt = req.body.isArchived ? new Date() : null
-      }
-      await ticket.save()
-      res.locals.audit = {
-        entityType: 'InternalTicket',
-        entityId: String(ticket._id),
-        entityRef: ticket.title,
-        before,
-        after: ticket.toObject(),
-      }
-      res.json(ticket.toObject())
-    } catch (err) {
-      next(err)
     }
+    if (typeof req.body.category === 'string' && (CATEGORIES as readonly string[]).includes(req.body.category)) {
+      ticket.category = req.body.category as typeof ticket.category
+    }
+    if (typeof req.body.priority === 'string' && (PRIORITIES as readonly string[]).includes(req.body.priority)) {
+      ticket.priority = req.body.priority as typeof ticket.priority
+    }
+    if (typeof req.body.status === 'string' && (STATUSES as readonly string[]).includes(req.body.status)) {
+      const newStatus = req.body.status as typeof ticket.status
+      ticket.status = newStatus
+      // Archivage automatique sur FERME (mais pas l'inverse — un ticket
+      // archivé peut être réouvert via PATCH { isArchived: false } séparé)
+      if (newStatus === 'FERME' && !ticket.isArchived) {
+        ticket.isArchived = true
+        ticket.archivedAt = new Date()
+      }
+    }
+    if (typeof req.body.isArchived === 'boolean') {
+      ticket.isArchived = req.body.isArchived
+      ticket.archivedAt = req.body.isArchived ? new Date() : null
+    }
+    await ticket.save()
+    res.locals.audit = {
+      entityType: 'InternalTicket',
+      entityId: String(ticket._id),
+      entityRef: ticket.title,
+      before,
+      after: ticket.toObject(),
+    }
+    res.json(ticket.toObject())
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.post(
   '/tickets/:id/replies',
@@ -229,31 +215,26 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.delete(
-  '/tickets/:id',
-  requireScope('write:tickets'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const ticket = await InternalTicket.findById(req.params.id)
-      if (!ticket) return respondError(res, 404, 'NOT_FOUND', 'Ticket introuvable')
-      const before = ticket.toObject()
-      await InternalTicket.deleteOne({ _id: ticket._id })
-      res.locals.audit = {
-        entityType: 'InternalTicket',
-        entityId: String(ticket._id),
-        entityRef: ticket.title,
-        before,
-      }
-      res.json({ ok: true, deletedId: String(ticket._id) })
-    } catch (err) {
-      next(err)
+router.delete('/tickets/:id', requireScope('write:tickets'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const ticket = await InternalTicket.findById(req.params.id)
+    if (!ticket) return respondError(res, 404, 'NOT_FOUND', 'Ticket introuvable')
+    const before = ticket.toObject()
+    await InternalTicket.deleteOne({ _id: ticket._id })
+    res.locals.audit = {
+      entityType: 'InternalTicket',
+      entityId: String(ticket._id),
+      entityRef: ticket.title,
+      before,
     }
+    res.json({ ok: true, deletedId: String(ticket._id) })
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 export default router

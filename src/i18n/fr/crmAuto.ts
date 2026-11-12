@@ -111,14 +111,16 @@ const fr = {
   'crmAuto.kpi.pendingHint': 'e-mails en attente',
   'crmAuto.kpi.nothingPending': 'rien en attente',
   'crmAuto.retry': 'Réessayer',
-  'crmAuto.pendingNotice': '{count, plural, one {# e-mail en attente de validation avant envoi.} other {# e-mails en attente de validation avant envoi.}}',
+  'crmAuto.pendingNotice':
+    '{count, plural, one {# e-mail en attente de validation avant envoi.} other {# e-mails en attente de validation avant envoi.}}',
   'crmAuto.review': 'Examiner',
   'crmAuto.readOnly':
     'Lecture seule : seuls les administrateurs créent, modifient, activent ou suppriment les règles et valident leurs exécutions.',
   'crmAuto.adminOnly': 'Réservé aux administrateurs',
   'crmAuto.newRule': '+ Nouvelle règle',
   'crmAuto.loadingRules': 'Chargement des règles…',
-  'crmAuto.runsNote': '{count, plural, one {# exécution au journal (90 derniers jours).} other {# exécutions au journal (90 derniers jours).}}',
+  'crmAuto.runsNote':
+    '{count, plural, one {# exécution au journal (90 derniers jours).} other {# exécutions au journal (90 derniers jours).}}',
   'crmAuto.deleteTitle': 'Supprimer cette règle ?',
   'crmAuto.deleteBody': '« {name} » sera supprimée. Son historique d’exécution reste au journal.',
   'crmAuto.rule.system': 'Système',
@@ -222,7 +224,8 @@ const fr = {
   'crmAuto.builder.ifAll': 'Si toutes ces conditions sont vraies',
   'crmAuto.builder.opAnd': 'Toutes (ET)',
   'crmAuto.builder.opOr': 'Au moins une (OU)',
-  'crmAuto.builder.noConditions': 'Aucune condition : la règle s’applique à tous les leads concernés par le déclencheur.',
+  'crmAuto.builder.noConditions':
+    'Aucune condition : la règle s’applique à tous les leads concernés par le déclencheur.',
   'crmAuto.builder.conditionField': 'Champ de la condition {n}',
   'crmAuto.builder.conditionOperator': 'Opérateur de la condition {n}',
   'crmAuto.builder.conditionValue': 'Valeur de la condition {n}',
@@ -235,7 +238,8 @@ const fr = {
   'crmAuto.builder.addCondition': '+ Ajouter une condition',
   'crmAuto.builder.simulation': 'Simulation',
   'crmAuto.builder.simSaveFirst': 'Enregistrez la règle pour la simuler sur le pipeline actuel.',
-  'crmAuto.builder.simResult': '{count, plural, one {# lead correspond aujourd’hui (règle telle qu’enregistrée).} other {# leads correspondent aujourd’hui (règle telle qu’enregistrée).}}',
+  'crmAuto.builder.simResult':
+    '{count, plural, one {# lead correspond aujourd’hui (règle telle qu’enregistrée).} other {# leads correspondent aujourd’hui (règle telle qu’enregistrée).}}',
   'crmAuto.builder.simHint': 'Compte les leads concernés, sans rien exécuter.',
   'crmAuto.builder.simBusy': 'Calcul…',
   'crmAuto.builder.simNow': 'Simuler maintenant',
@@ -256,7 +260,8 @@ const fr = {
   'crmAuto.builder.humanApproval': 'Validation humaine',
   'crmAuto.builder.autoSend': 'Envoi automatique',
   'crmAuto.builder.builtinTitle': 'Protections intégrées',
-  'crmAuto.builder.builtinBody': 'Anti-boucle : une action de règle ne déclenche pas la même règle sur le même lead. Profondeur de chaîne limitée à 3. Idempotence par événement. Journal conservé 90 jours.',
+  'crmAuto.builder.builtinBody':
+    'Anti-boucle : une action de règle ne déclenche pas la même règle sur le même lead. Profondeur de chaîne limitée à 3. Idempotence par événement. Journal conservé 90 jours.',
   'crmAuto.builder.activation': 'Activation',
   'crmAuto.builder.keepStatus': 'Conserver le statut actuel',
   'crmAuto.builder.draft': 'Brouillon',

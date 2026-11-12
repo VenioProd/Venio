@@ -63,7 +63,8 @@ describe('Agent POST /tasks/bulk', () => {
     expect((await post(plainSecret, '/tasks/bulk', { ids: ['nope'], action: 'delete' })).status).toBe(400)
     expect((await post(plainSecret, '/tasks/bulk', { ids: [], action: 'delete' })).status).toBe(400)
     expect(
-      (await post(plainSecret, '/tasks/bulk', { ids: Array.from({ length: 201 }, unknownId), action: 'delete' })).status,
+      (await post(plainSecret, '/tasks/bulk', { ids: Array.from({ length: 201 }, unknownId), action: 'delete' }))
+        .status,
     ).toBe(400)
     expect((await post(plainSecret, '/tasks/bulk', { ids: [unknownId()], action: 'nuke' })).status).toBe(400)
     expect(
@@ -148,7 +149,9 @@ describe('Agent POST /documents/bulk', () => {
       uploadedBy: adminId,
     })
     const ro = await createAgentTokenInDb(['read:documents'])
-    expect((await post(ro.plainSecret, '/documents/bulk', { ids: [String(doc._id)], action: 'delete' })).status).toBe(403)
+    expect((await post(ro.plainSecret, '/documents/bulk', { ids: [String(doc._id)], action: 'delete' })).status).toBe(
+      403,
+    )
     const { plainSecret } = await createAgentTokenInDb(['write:documents'])
     expect((await post(plainSecret, '/documents/bulk', { ids: [String(doc._id)], action: 'archive' })).status).toBe(400)
     const res = await post(plainSecret, '/documents/bulk', { ids: [String(doc._id), unknownId()], action: 'delete' })

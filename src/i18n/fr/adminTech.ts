@@ -299,12 +299,12 @@ const fr = {
     "{count, plural, one {# affaire en cours sans budget saisi compte} other {# affaires en cours sans budget saisi comptent}} pour zéro : la projection est sous-estimée d'autant.",
   'adminTech.pilotage.cycleLabel': 'Cycle complet, création → signature',
   'adminTech.pilotage.weightedDefinition':
-    "Valeur pondérée = budget × probabilité de chaque lead, pour les affaires ouvertes uniquement. Montants en euros ; les autres devises ne sont jamais additionnées.",
+    'Valeur pondérée = budget × probabilité de chaque lead, pour les affaires ouvertes uniquement. Montants en euros ; les autres devises ne sont jamais additionnées.',
   'adminTech.pilotage.otherCurrencies': 'Autres devises (non converties) : {list}',
   'adminTech.pilotage.currencyLine': '{currency} — signé {signed}, encaissé {collected}',
   'adminTech.forecast.title': 'Prévisions',
   'adminTech.forecast.subtext':
-    "Clôtures prévues par mois (heure de Paris). Pondéré = budget × probabilité du lead, affaires ouvertes uniquement. Réalisé = leads gagnés dans le mois. Montants en euros.",
+    'Clôtures prévues par mois (heure de Paris). Pondéré = budget × probabilité du lead, affaires ouvertes uniquement. Réalisé = leads gagnés dans le mois. Montants en euros.',
   'adminTech.forecast.loading': 'Chargement des prévisions…',
   'adminTech.forecast.loadError': 'Impossible de charger les prévisions',
   'adminTech.forecast.horizonLabel': 'Horizon',
@@ -318,7 +318,8 @@ const fr = {
   'adminTech.forecast.colPipeline': 'Pipeline',
   'adminTech.forecast.colRealised': 'Réalisé',
   'adminTech.forecast.colGoal': 'Objectif',
-  'adminTech.forecast.categoriesHint': 'Engagé : probabilité ≥ 70 % · probable : 40–69 % · pipeline : < 40 % (montants pondérés).',
+  'adminTech.forecast.categoriesHint':
+    'Engagé : probabilité ≥ 70 % · probable : 40–69 % · pipeline : < 40 % (montants pondérés).',
   'adminTech.forecast.barsTitle': 'Réalisé, pondéré et objectif',
   'adminTech.forecast.legendRealised': 'Réalisé',
   'adminTech.forecast.legendWeighted': 'Pondéré',
@@ -328,11 +329,12 @@ const fr = {
   'adminTech.forecast.goalCount': '{won} / {target} gains',
   'adminTech.forecast.empty': 'Aucune affaire à clôturer sur la période.',
   'adminTech.forecast.overdue':
-    "{count, plural, one {# affaire ouverte a une clôture prévue dépassée} other {# affaires ouvertes ont une clôture prévue dépassée}} ({amount} pondéré) : à replanifier.",
+    '{count, plural, one {# affaire ouverte a une clôture prévue dépassée} other {# affaires ouvertes ont une clôture prévue dépassée}} ({amount} pondéré) : à replanifier.',
   'adminTech.forecast.unscheduled':
     "{count, plural, one {# affaire ouverte n'a pas de date de clôture prévue} other {# affaires ouvertes n'ont pas de date de clôture prévue}} ({amount} pondéré) : absentes du tableau.",
   'adminTech.forecast.goalsTitle': 'Objectifs mensuels',
-  'adminTech.forecast.goalsSubtext': "Un objectif par mois et par périmètre (entité, commercial). Réservé aux administrateurs du CRM.",
+  'adminTech.forecast.goalsSubtext':
+    'Un objectif par mois et par périmètre (entité, commercial). Réservé aux administrateurs du CRM.',
   'adminTech.forecast.goalsError': "Impossible d'enregistrer l'objectif",
   'adminTech.forecast.goalPeriod': 'Mois',
   'adminTech.forecast.goalEntity': 'Entité',

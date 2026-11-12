@@ -5,7 +5,9 @@ import SafeMarkdown, { safeLinkUrl } from './SafeMarkdown'
 describe('SafeMarkdown', () => {
   it('rend titres, paragraphes, gras, italique et code inline', () => {
     const { container } = render(
-      <SafeMarkdown source={'# Titre\n## Sous-titre\n### Petit\n\nUn **gras**, un *italique*, un _autre_ et du \x60code\x60.'} />,
+      <SafeMarkdown
+        source={'# Titre\n## Sous-titre\n### Petit\n\nUn **gras**, un *italique*, un _autre_ et du \x60code\x60.'}
+      />,
     )
     expect(screen.getByRole('heading', { level: 3, name: 'Titre' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 4, name: 'Sous-titre' })).toBeInTheDocument()
@@ -17,7 +19,11 @@ describe('SafeMarkdown', () => {
 
   it('rend listes, citations, séparateur et blocs de code', () => {
     const { container } = render(
-      <SafeMarkdown source={'- un\n- deux\n\n1. premier\n2. second\n\n> citation\n\n---\n\n\x60\x60\x60\nligne <b>1</b>\nligne 2\n\x60\x60\x60'} />,
+      <SafeMarkdown
+        source={
+          '- un\n- deux\n\n1. premier\n2. second\n\n> citation\n\n---\n\n\x60\x60\x60\nligne <b>1</b>\nligne 2\n\x60\x60\x60'
+        }
+      />,
     )
     expect(screen.getAllByRole('listitem').map((n) => n.textContent)).toEqual(['un', 'deux', 'premier', 'second'])
     expect(container.querySelector('ul')).not.toBeNull()
@@ -48,7 +54,9 @@ describe('SafeMarkdown', () => {
   it('ne rend que les liens http(s) et mailto, en nouvel onglet sécurisé', () => {
     const { container } = render(
       <SafeMarkdown
-        source={'[ok](https://exemple.test/a) [mail](mailto:a@exemple.test) [mauvais](javascript:alert(1)) [data](data:text/html;base64,AAA) [rel](/admin)'}
+        source={
+          '[ok](https://exemple.test/a) [mail](mailto:a@exemple.test) [mauvais](javascript:alert(1)) [data](data:text/html;base64,AAA) [rel](/admin)'
+        }
       />,
     )
     const links = Array.from(container.querySelectorAll('a'))

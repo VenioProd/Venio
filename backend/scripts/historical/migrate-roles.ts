@@ -11,8 +11,7 @@
 import mongoose from 'mongoose'
 
 const MONGO_URI =
-  process.env.MONGODB_URI ||
-  'mongodb+srv://venio:K9%21rT%407qL%23e2F%24XwM8@veniocluster.suwlznc.mongodb.net/venio'
+  process.env.MONGODB_URI || 'mongodb+srv://venio:K9%21rT%407qL%23e2F%24XwM8@veniocluster.suwlznc.mongodb.net/venio'
 
 async function run() {
   console.log('Connecting to MongoDB…')
@@ -28,7 +27,7 @@ async function run() {
     {
       $set: { role: 'SUPER_ADMIN', jobTitle: 'PDG' },
       $unset: {},
-    }
+    },
   )
   console.log(`PDG → SUPER_ADMIN: ${pdgResult.modifiedCount} user(s) migrated`)
 
@@ -52,7 +51,7 @@ async function run() {
           deniedPermissions: [],
         },
         $unset: { customPermissions: '' },
-      }
+      },
     )
     migratedPerms++
   }
@@ -66,7 +65,7 @@ async function run() {
     {
       $set: { grantedPermissions: [], deniedPermissions: [] },
       $unset: { customPermissions: '' },
-    }
+    },
   )
   console.log(`Default fields set on ${defaultsResult.modifiedCount} additional user(s)`)
 

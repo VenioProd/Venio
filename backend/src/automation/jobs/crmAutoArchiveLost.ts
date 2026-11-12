@@ -53,7 +53,11 @@ const definition: AutomationDefinition = {
     let archivedCount = 0
     for (const lead of leads) {
       try {
-        await applyLeadChange(lead, { archivedAt: ctx.now }, { actor: null, source: 'scheduler', labelSuffix: '(archivage automatique)' })
+        await applyLeadChange(
+          lead,
+          { archivedAt: ctx.now },
+          { actor: null, source: 'scheduler', labelSuffix: '(archivage automatique)' },
+        )
         archivedCount++
       } catch (err) {
         logger.warn({ data: (err as Error).message }, `[CRM AUTO ARCHIVE] lead ${String(lead._id)}`)

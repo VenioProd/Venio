@@ -37,12 +37,7 @@ router.get(
     try {
       const { start, end } = req.query as Record<string, string | undefined>
       if (!start || !end) {
-        return respondError(
-          res,
-          400,
-          'VALIDATION_ERROR',
-          'Paramètres start et end requis (YYYY-MM-DD ou ISO 8601)'
-        )
+        return respondError(res, 400, 'VALIDATION_ERROR', 'Paramètres start et end requis (YYYY-MM-DD ou ISO 8601)')
       }
       const startDate = new Date(start)
       const endDate = new Date(end)
@@ -70,10 +65,7 @@ router.get(
       }
 
       const [tasks, projects] = await Promise.all([
-        Task.find(taskFilter)
-          .populate('project', 'name')
-          .populate('assignee', 'name email')
-          .lean(),
+        Task.find(taskFilter).populate('project', 'name').populate('assignee', 'name email').lean(),
         Project.find(projectFilter).select('name endDate reminderAt deliveredAt').lean(),
       ])
 
@@ -94,9 +86,11 @@ router.get(
                 name: (t.assignee as unknown as { name?: string }).name || '',
               }
             : null,
-          projectId: String(t.project && (t.project as unknown as { _id?: unknown })._id
-            ? (t.project as unknown as { _id: unknown })._id
-            : t.project),
+          projectId: String(
+            t.project && (t.project as unknown as { _id?: unknown })._id
+              ? (t.project as unknown as { _id: unknown })._id
+              : t.project,
+          ),
           projectName: (t.project as unknown as { name?: string })?.name,
         })
       }
@@ -139,7 +133,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

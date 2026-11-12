@@ -58,9 +58,7 @@ const definition: AutomationDefinition = {
 
       const clientName = client?.companyName || client?.name || 'Client inconnu'
       const amount = invoice.totalTTC?.toLocaleString('fr-FR') || invoice.totalHT?.toLocaleString('fr-FR') || '0'
-      const daysOverdue = Math.floor(
-        (ctx.now.getTime() - new Date(invoice.dueDate).getTime()) / 86400_000
-      )
+      const daysOverdue = Math.floor((ctx.now.getTime() - new Date(invoice.dueDate).getTime()) / 86400_000)
 
       // Update client health status to CRITIQUE if not already
       if (client && client.healthStatus !== 'CRITIQUE' && client.save) {

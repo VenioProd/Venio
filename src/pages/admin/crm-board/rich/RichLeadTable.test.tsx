@@ -11,13 +11,33 @@ vi.mock('../../../../lib/exportCsv', () => ({ exportToCsv: vi.fn() }))
 const admins = [{ _id: 'u1', name: 'Raphaël B.', email: 'r@x.fr', role: 'SUPER_ADMIN' }]
 const adminsById = { u1: admins[0] }
 const leads: Lead[] = [
-  { _id: 'a', company: 'Atelier Pivoine', status: 'PROPOSAL', budget: 10000, project: 'ARROW', assignedTo: 'u1', tags: ['vip'], leadTemperature: 'CHAUD' },
+  {
+    _id: 'a',
+    company: 'Atelier Pivoine',
+    status: 'PROPOSAL',
+    budget: 10000,
+    project: 'ARROW',
+    assignedTo: 'u1',
+    tags: ['vip'],
+    leadTemperature: 'CHAUD',
+  },
   { _id: 'b', company: 'Brasserie Quai 9', status: 'LEAD', budget: 6000, project: 'VENIO', probability: 50 },
   { _id: 'c', company: 'Cèdres', status: 'WON', budget: 13000, project: 'ARTOSERA' },
 ]
 
 const setup = (extra: Partial<Parameters<typeof RichLeadTable>[0]> = {}) => {
-  const props = { project: '', onProjectChange: vi.fn(), leads, admins, adminsById, canManageCrm: true, onOpenLead: vi.fn(), onReload: vi.fn().mockResolvedValue(undefined), onError: vi.fn(), ...extra }
+  const props = {
+    project: '',
+    onProjectChange: vi.fn(),
+    leads,
+    admins,
+    adminsById,
+    canManageCrm: true,
+    onOpenLead: vi.fn(),
+    onReload: vi.fn().mockResolvedValue(undefined),
+    onError: vi.fn(),
+    ...extra,
+  }
   render(<RichLeadTable {...props} />)
   return props
 }
@@ -64,7 +84,9 @@ describe('<RichLeadTable />', () => {
   })
 
   it('sélectionne des leads et envoie l’action groupée après confirmation', async () => {
-    apiFetch.mockImplementation((path: string) => Promise.resolve(path.includes('/bulk') ? { action: 'archive', ok: 2, failed: 0, results: [] } : { items: [] }))
+    apiFetch.mockImplementation((path: string) =>
+      Promise.resolve(path.includes('/bulk') ? { action: 'archive', ok: 2, failed: 0, results: [] } : { items: [] }),
+    )
     const props = setup()
     fireEvent.click(screen.getByLabelText('Tout sélectionner'))
     expect(screen.getByRole('region', { name: 'Actions groupées' })).toBeInTheDocument()
@@ -82,7 +104,21 @@ describe('<RichLeadTable />', () => {
 
   it('enregistre une vue avec les colonnes courantes', async () => {
     apiFetch.mockImplementation((path: string, opts?: { method?: string }) =>
-      Promise.resolve(opts?.method === 'POST' ? { _id: 'v1', name: 'Arrow', scope: 'PRIVATE', owner: 'u1', filters: {}, columns: [], sort: null, mode: 'table', pinned: false } : { items: [] }),
+      Promise.resolve(
+        opts?.method === 'POST'
+          ? {
+              _id: 'v1',
+              name: 'Arrow',
+              scope: 'PRIVATE',
+              owner: 'u1',
+              filters: {},
+              columns: [],
+              sort: null,
+              mode: 'table',
+              pinned: false,
+            }
+          : { items: [] },
+      ),
     )
     const props = setup()
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer cette vue/ }))
@@ -90,6 +126,11 @@ describe('<RichLeadTable />', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     await waitFor(() => expect(apiFetch.mock.calls.some(([, o]) => o?.method === 'POST')).toBe(true))
     const call = apiFetch.mock.calls.find(([, o]) => o?.method === 'POST')!
-    expect(JSON.parse(call[1].body)).toMatchObject({ name: 'Arrow', scope: 'PRIVATE', mode: 'table', columns: expect.arrayContaining(['company', 'status']) })
+    expect(JSON.parse(call[1].body)).toMatchObject({
+      name: 'Arrow',
+      scope: 'PRIVATE',
+      mode: 'table',
+      columns: expect.arrayContaining(['company', 'status']),
+    })
   })
 })

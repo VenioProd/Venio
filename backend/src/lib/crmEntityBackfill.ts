@@ -24,6 +24,10 @@ export async function backfillLeadEntities(dryRun = false): Promise<{ arrow: num
   // L'index est créé explicitement : la production ne dépend pas de l'autoIndex.
   await Lead.collection.createIndex({ entity: 1, status: 1 })
   const arrow = await Lead.updateMany(arrowFilter, { $set: { entity: 'ARROW' } }, { timestamps: false, strict: false })
-  const venio = await Lead.updateMany(venioFilter, { $set: { entity: DEFAULT_GROUP_ENTITY } }, { timestamps: false, strict: false })
+  const venio = await Lead.updateMany(
+    venioFilter,
+    { $set: { entity: DEFAULT_GROUP_ENTITY } },
+    { timestamps: false, strict: false },
+  )
   return { arrow: arrow.modifiedCount, venio: venio.modifiedCount, dryRun }
 }

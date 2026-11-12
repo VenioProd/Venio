@@ -40,9 +40,7 @@ export class IcsCache {
   constructor(opts: IcsCacheOptions = {}) {
     this.ttlMs = opts.ttlMs ?? DEFAULT_TTL_MS
     this.now = opts.now ?? (() => Date.now())
-    this.fetcher =
-      opts.fetcher ??
-      ((url) => globalThis.fetch(url, { redirect: 'follow' }))
+    this.fetcher = opts.fetcher ?? ((url) => globalThis.fetch(url, { redirect: 'follow' }))
   }
 
   isFresh(): boolean {

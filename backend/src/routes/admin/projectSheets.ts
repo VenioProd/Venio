@@ -57,7 +57,8 @@ function fail(err: unknown, res: Response, next: NextFunction) {
   const e = err as Error & { status?: number; code?: number }
   if (err instanceof SheetInputError) return res.status(400).json({ error: e.message })
   if (e.name === 'ValidationError' || e.name === 'CastError') return res.status(400).json({ error: e.message })
-  if (e.code === 11000) return res.status(409).json({ error: 'Cette filiale a déjà une fiche.', code: 'SHEET_DUPLICATE' })
+  if (e.code === 11000)
+    return res.status(409).json({ error: 'Cette filiale a déjà une fiche.', code: 'SHEET_DUPLICATE' })
   return next(err)
 }
 
@@ -111,7 +112,13 @@ async function detailPayload(req: Request, filter: Record<string, unknown>) {
   return serializeSheet(sheet, { role: req.user!.role }, { crm })
 }
 
-function auditSheet(req: Request, action: Parameters<typeof recordAudit>[0]['action'], sheet: { _id: unknown; slug: string }, summary: string, extra: Record<string, unknown> = {}) {
+function auditSheet(
+  req: Request,
+  action: Parameters<typeof recordAudit>[0]['action'],
+  sheet: { _id: unknown; slug: string },
+  summary: string,
+  extra: Record<string, unknown> = {},
+) {
   return recordAudit({
     action,
     actor: buildActorFromReq(req),
@@ -195,7 +202,9 @@ router.post('/', requireEditor, async (req: Request, res: Response, next: NextFu
     const sheet = new ProjectSheet({ ...input, slug: await uniqueSlug(String(input.name)), createdBy: req.user!.id })
     pushHistory(sheet.history, historyEntry(req.user!.id, Object.keys(input), 'Création de la fiche'))
     await sheet.save()
-    await auditSheet(req, 'PROJECT_SHEET_CREATE', sheet, `Fiche « ${sheet.name} » créée`, { fields: Object.keys(input) })
+    await auditSheet(req, 'PROJECT_SHEET_CREATE', sheet, `Fiche « ${sheet.name} » créée`, {
+      fields: Object.keys(input),
+    })
     return res.status(201).json({ sheet: await detailPayload(req, { _id: sheet._id }) })
   } catch (err) {
     return fail(err, res, next)
@@ -303,23 +312,27 @@ router.patch('/:id/demo-accesses/:accessId', requireEditor, async (req: Request,
   }
 })
 
-router.delete('/:id/demo-accesses/:accessId', requireEditor, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const sheet = await ProjectSheet.findOne(sheetLookup(req.params.id)).select(PASSWORD_FIELD)
-    if (!sheet) return res.status(404).json({ error: 'Fiche introuvable' })
-    const index = sheet.demoAccesses.findIndex((a) => String(a._id) === req.params.accessId)
-    if (index === -1) return res.status(404).json({ error: 'Accès démo introuvable' })
-    const [removed] = sheet.demoAccesses.splice(index, 1)
-    const response = await saveDemoChange(req, res, sheet, 200)
-    await auditSheet(req, 'PROJECT_SHEET_DEMO_ACCESS_DELETE', sheet, 'Accès démo supprimé', {
-      accessId: String(removed?._id),
-      accessRole: removed?.role ?? '',
-    })
-    return response
-  } catch (err) {
-    return fail(err, res, next)
-  }
-})
+router.delete(
+  '/:id/demo-accesses/:accessId',
+  requireEditor,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const sheet = await ProjectSheet.findOne(sheetLookup(req.params.id)).select(PASSWORD_FIELD)
+      if (!sheet) return res.status(404).json({ error: 'Fiche introuvable' })
+      const index = sheet.demoAccesses.findIndex((a) => String(a._id) === req.params.accessId)
+      if (index === -1) return res.status(404).json({ error: 'Accès démo introuvable' })
+      const [removed] = sheet.demoAccesses.splice(index, 1)
+      const response = await saveDemoChange(req, res, sheet, 200)
+      await auditSheet(req, 'PROJECT_SHEET_DEMO_ACCESS_DELETE', sheet, 'Accès démo supprimé', {
+        accessId: String(removed?._id),
+        accessRole: removed?.role ?? '',
+      })
+      return response
+    } catch (err) {
+      return fail(err, res, next)
+    }
+  },
+)
 
 // POST /:id/demo-accesses/:accessId/reveal — mot de passe en clair, journalisé
 router.post('/:id/demo-accesses/:accessId/reveal', async (req: Request, res: Response, next: NextFunction) => {

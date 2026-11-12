@@ -20,7 +20,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // POST / : crée un journal
@@ -50,7 +50,7 @@ router.post(
       }
       next(err)
     }
-  }
+  },
 )
 
 // PATCH /:id : met à jour un journal (le code est immuable côté ce port)
@@ -76,7 +76,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

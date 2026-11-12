@@ -3,12 +3,12 @@ import { render, screen } from '@testing-library/react'
 import UserAvatar from './UserAvatar'
 
 describe('UserAvatar', () => {
-  it('affiche l\'initiale quand avatarUrl est absent', () => {
+  it("affiche l'initiale quand avatarUrl est absent", () => {
     render(<UserAvatar name="Alice Dupont" />)
     expect(screen.getByText('A')).toBeTruthy()
   })
 
-  it('affiche l\'initiale quand avatarUrl est chaîne vide', () => {
+  it("affiche l'initiale quand avatarUrl est chaîne vide", () => {
     render(<UserAvatar name="Bob Martin" avatarUrl="" />)
     expect(screen.getByText('B')).toBeTruthy()
   })

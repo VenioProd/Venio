@@ -79,7 +79,9 @@ export function evaluateCondition(lead: PlainLead, cond: IRuleCondition, now: Da
     case 'eq':
       return Array.isArray(actual) ? actual.map(String).includes(String(expected)) : String(actual) === String(expected)
     case 'neq':
-      return Array.isArray(actual) ? !actual.map(String).includes(String(expected)) : String(actual) !== String(expected)
+      return Array.isArray(actual)
+        ? !actual.map(String).includes(String(expected))
+        : String(actual) !== String(expected)
     case 'in':
       return Array.isArray(actual) ? actual.some((a) => list.includes(String(a))) : list.includes(String(actual))
     case 'nin':
@@ -95,7 +97,9 @@ export function evaluateCondition(lead: PlainLead, cond: IRuleCondition, now: Da
     case 'contains':
       return Array.isArray(actual)
         ? actual.map((a) => String(a).toLowerCase()).includes(String(expected).toLowerCase())
-        : String(actual ?? '').toLowerCase().includes(String(expected ?? '').toLowerCase())
+        : String(actual ?? '')
+            .toLowerCase()
+            .includes(String(expected ?? '').toLowerCase())
     case 'empty':
       return isEmpty
     case 'notEmpty':
@@ -175,16 +179,13 @@ async function ownerOf(lead: PlainLead, spec: unknown): Promise<string | null> {
 }
 
 async function adminIds(): Promise<string[]> {
-  const admins = await User.find({ role: { $in: ADMIN_ROLES } }).select('_id').lean()
+  const admins = await User.find({ role: { $in: ADMIN_ROLES } })
+    .select('_id')
+    .lean()
   return admins.map((a) => String(a._id))
 }
 
-async function runAction(
-  action: IRuleAction,
-  rule: ICrmRule,
-  lead: LeadDoc,
-  ctx: EngineCtx,
-): Promise<StepResult> {
+async function runAction(action: IRuleAction, rule: ICrmRule, lead: LeadDoc, ctx: EngineCtx): Promise<StepResult> {
   const p = action.params ?? {}
   const sim = ctx.simulate
   switch (action.type) {
@@ -192,7 +193,12 @@ async function runAction(
       const userId = await ownerOf(lead, p.assignTo)
       if (!userId) return skip('Aucun responsable à qui confier la tâche')
       const title = renderTemplate(String(p.title || 'Relancer {contact}'), lead)
-      const exists = await PersonalTask.exists({ leadId: lead._id, title, status: { $ne: 'TERMINE' }, isArchived: false })
+      const exists = await PersonalTask.exists({
+        leadId: lead._id,
+        title,
+        status: { $ne: 'TERMINE' },
+        isArchived: false,
+      })
       if (exists) return skip(`Tâche « ${title} » déjà ouverte`)
       if (sim) return ok(`Créerait la tâche « ${title} »`)
       const days = Number(p.dueInDays ?? 1)
@@ -207,7 +213,8 @@ async function runAction(
       return ok(`Tâche « ${title} » créée`)
     }
     case 'NOTIFY': {
-      const ids = p.recipients === 'admins' ? await adminIds() : [await ownerOf(lead, p.recipients)].filter(Boolean) as string[]
+      const ids =
+        p.recipients === 'admins' ? await adminIds() : ([await ownerOf(lead, p.recipients)].filter(Boolean) as string[])
       if (ids.length === 0) return skip('Aucun destinataire')
       if (sim) return ok(`Notifierait ${ids.length} personne(s)`)
       const title = renderTemplate(String(p.title || 'Règle CRM : {company}'), lead)
@@ -225,19 +232,29 @@ async function runAction(
     }
     case 'ASSIGN': {
       const target =
-        p.strategy === 'round_robin' ? await getRoundRobinAssignee() : p.userId ? (String(p.userId) as unknown as Types.ObjectId) : null
+        p.strategy === 'round_robin'
+          ? await getRoundRobinAssignee()
+          : p.userId
+            ? (String(p.userId) as unknown as Types.ObjectId)
+            : null
       if (!target) return skip('Aucun commercial disponible')
       if (String(lead.assignedTo ?? '') === String(target)) return skip('Déjà assigné à ce commercial')
       // Même contrôle que la fiche : un membre actif, habilité à suivre un lead.
-      if (!(await isAssignableCrmUser(String(target)))) return skip('Commercial introuvable, inactif ou non habilité à suivre un lead')
+      if (!(await isAssignableCrmUser(String(target))))
+        return skip('Commercial introuvable, inactif ou non habilité à suivre un lead')
       if (sim) return ok('Assignerait le lead')
       await writeByRule(lead, rule, { assignedTo: target })
-      await fireLeadEvent(lead.id, { type: 'LEAD_ASSIGNED', key: `assigned:${target}:${Date.now()}`, to: String(target) }, next(ctx, rule))
+      await fireLeadEvent(
+        lead.id,
+        { type: 'LEAD_ASSIGNED', key: `assigned:${target}:${Date.now()}`, to: String(target) },
+        next(ctx, rule),
+      )
       return ok('Lead assigné', { assignedTo: String(target) })
     }
     case 'SET_STATUS': {
       const to = String(p.status)
-      if (!['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST'].includes(to)) return skip('Statut inconnu')
+      if (!['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL', 'WON', 'LOST'].includes(to))
+        return skip('Statut inconnu')
       if (lead.status === to) return skip('Déjà à ce statut')
       if (sim) return ok(`Passerait le lead à ${to}`)
       const from = lead.status
@@ -245,13 +262,23 @@ async function runAction(
       // conversion WON. Import différé : le service importe ce module.
       // L'événement est émis ici, avec la profondeur de la chaîne de règles.
       const { applyLeadChange } = await import('./crmLeadService.js')
-      await applyLeadChange(lead, { status: to }, { actor: null, source: 'rule', emit: false, activityMeta: { ruleId: rule._id } })
+      await applyLeadChange(
+        lead,
+        { status: to },
+        { actor: null, source: 'rule', emit: false, activityMeta: { ruleId: rule._id } },
+      )
       const changedAt = lead.statusChangedAt ?? new Date()
-      await fireLeadEvent(lead.id, { type: 'STATUS_CHANGED', key: `status:${to}:${changedAt.getTime()}`, from, to }, next(ctx, rule))
+      await fireLeadEvent(
+        lead.id,
+        { type: 'STATUS_CHANGED', key: `status:${to}:${changedAt.getTime()}`, from, to },
+        next(ctx, rule),
+      )
       return ok(`Statut ${from} → ${to}`)
     }
     case 'ADD_TAG': {
-      const tag = String(p.tag ?? '').trim().slice(0, 40)
+      const tag = String(p.tag ?? '')
+        .trim()
+        .slice(0, 40)
       if (!tag) return skip('Tag vide')
       if (lead.tags?.includes(tag)) return skip('Tag déjà présent')
       if (sim) return ok(`Ajouterait le tag « ${tag} »`)
@@ -265,7 +292,8 @@ async function runAction(
       const { normalizeLeadPatch } = await import('./crmLeadService.js')
       const patch = normalizeLeadPatch({ [field]: p.value })
       if (!(field in patch)) return skip(`Valeur refusée pour ${field}`)
-      if (String((lead as unknown as Record<string, unknown>)[field] ?? '') === String(patch[field] ?? '')) return skip(`${field} déjà à cette valeur`)
+      if (String((lead as unknown as Record<string, unknown>)[field] ?? '') === String(patch[field] ?? ''))
+        return skip(`${field} déjà à cette valeur`)
       if (sim) return ok(`Définirait ${field}`)
       await writeByRule(lead, rule, { [field]: patch[field] })
       return ok(`${field} mis à jour`)
@@ -280,7 +308,11 @@ async function runAction(
       const body = renderTemplate(String(p.body || 'Bonjour {contact},'), lead)
       if (sim) return ok(`Enverrait « ${subject} » à ${to}`)
       if (rule.requireApproval) {
-        return { status: 'PENDING', message: `E-mail « ${subject} » en attente de validation`, payload: { to, subject, body } }
+        return {
+          status: 'PENDING',
+          message: `E-mail « ${subject} » en attente de validation`,
+          payload: { to, subject, body },
+        }
       }
       return deliverEmail(lead, { to, subject, body }, null)
     }
@@ -298,7 +330,9 @@ async function runAction(
       if (sim) return ok('Créerait le projet')
       // Contrôle d'existence repris au moment de créer : la conversion WON du service a pu passer entre-temps.
       const project = await ensureProjectForWonLead(lead, null)
-      return project ? ok(`Projet « ${project.name} » créé`, { projectId: String(project._id) }) : skip('Projet non créé')
+      return project
+        ? ok(`Projet « ${project.name} » créé`, { projectId: String(project._id) })
+        : skip('Projet non créé')
     }
     case 'ARCHIVE': {
       if (lead.archivedAt) return skip('Déjà archivé')
@@ -346,10 +380,17 @@ export async function deliverEmail(
       subject: mail.subject,
       body: mail.body,
       author: authorId,
-      recipients: outcome.results.map((r: { email: string; name: string; success: boolean; error?: string }) => ({ email: r.email, name: r.name, status: r.success ? 'SENT' : 'FAILED', error: r.error ?? '' })),
+      recipients: outcome.results.map((r: { email: string; name: string; success: boolean; error?: string }) => ({
+        email: r.email,
+        name: r.name,
+        status: r.success ? 'SENT' : 'FAILED',
+        error: r.error ?? '',
+      })),
       deliveryStatus: outcome.failed === 0 ? 'SENT' : outcome.sent === 0 ? 'FAILED' : 'PARTIAL',
     })
-    return outcome.failed === 0 ? ok(`E-mail « ${mail.subject} » envoyé à ${mail.to}`) : { status: 'ERR', message: `E-mail refusé : ${outcome.results[0]?.error ?? 'échec SMTP'}` }
+    return outcome.failed === 0
+      ? ok(`E-mail « ${mail.subject} » envoyé à ${mail.to}`)
+      : { status: 'ERR', message: `E-mail refusé : ${outcome.results[0]?.error ?? 'échec SMTP'}` }
   } catch (err) {
     return { status: 'ERR', message: `E-mail non envoyé : ${(err as Error).message}` }
   }
@@ -360,7 +401,11 @@ export async function deliverEmail(
 async function throttled(rule: ICrmRule, leadId: Types.ObjectId): Promise<boolean> {
   const { perLead, days } = rule.limits
   if (perLead === 'NONE') return false
-  const filter: Record<string, unknown> = { rule: rule._id, lead: leadId, status: { $in: ['OK', 'PENDING', 'RUNNING', 'ERR'] } }
+  const filter: Record<string, unknown> = {
+    rule: rule._id,
+    lead: leadId,
+    status: { $in: ['OK', 'PENDING', 'RUNNING', 'ERR'] },
+  }
   if (perLead === 'DAYS') filter.createdAt = { $gte: new Date(Date.now() - days * DAY_MS) }
   return Boolean(await CrmRuleRun.exists(filter))
 }
@@ -384,7 +429,11 @@ export async function runRule(rule: ICrmRule, lead: LeadDoc, event: LeadEvent, c
 
   if (!ctx.simulate && (await throttled(rule, lead._id as Types.ObjectId))) {
     if (ctx.quietSkip) return null
-    return CrmRuleRun.create({ ...base, status: 'SKIP', steps: [{ action: 'LIMIT', status: 'SKIP', message: 'Ignorée : limite par lead atteinte', at: new Date() }] }).catch(() => null)
+    return CrmRuleRun.create({
+      ...base,
+      status: 'SKIP',
+      steps: [{ action: 'LIMIT', status: 'SKIP', message: 'Ignorée : limite par lead atteinte', at: new Date() }],
+    }).catch(() => null)
   }
 
   // On réserve la clé d'événement avant d'agir : un rejeu ne duplique aucun effet.
@@ -427,7 +476,10 @@ export async function runRule(rule: ICrmRule, lead: LeadDoc, event: LeadEvent, c
   if (!ctx.simulate && status !== 'SKIP') {
     await CrmRule.updateOne(
       { _id: rule._id },
-      { $inc: { 'stats.runs': 1, [status === 'ERR' ? 'stats.errors' : 'stats.ok']: 1 }, $set: { 'stats.lastRunAt': new Date() } },
+      {
+        $inc: { 'stats.runs': 1, [status === 'ERR' ? 'stats.errors' : 'stats.ok']: 1 },
+        $set: { 'stats.lastRunAt': new Date() },
+      },
     )
   }
   return run
@@ -460,10 +512,19 @@ export function emitLeadChanges(
   const events: LeadEvent[] = []
   if (!before) events.push({ type: 'LEAD_CREATED', key: 'created' })
   if (before?.status && before.status !== lead.status) {
-    events.push({ type: 'STATUS_CHANGED', key: `status:${lead.status}:${(lead.statusChangedAt ?? new Date()).getTime()}`, from: before.status, to: lead.status })
+    events.push({
+      type: 'STATUS_CHANGED',
+      key: `status:${lead.status}:${(lead.statusChangedAt ?? new Date()).getTime()}`,
+      from: before.status,
+      to: lead.status,
+    })
   }
   if (lead.assignedTo && String(before?.assignedTo ?? '') !== String(lead.assignedTo)) {
-    events.push({ type: 'LEAD_ASSIGNED', key: `assigned:${lead.assignedTo}:${Date.now()}`, to: String(lead.assignedTo) })
+    events.push({
+      type: 'LEAD_ASSIGNED',
+      key: `assigned:${lead.assignedTo}:${Date.now()}`,
+      to: String(lead.assignedTo),
+    })
   }
   if (events.length === 0) return
   void (async () => {
@@ -472,7 +533,11 @@ export function emitLeadChanges(
 }
 
 /** Appelé quand un échange est consigné sur un lead : met à jour les compteurs puis déclenche les règles. */
-export async function onLeadInteraction(leadId: Types.ObjectId | string, occurredAt: Date, interactionId: string): Promise<void> {
+export async function onLeadInteraction(
+  leadId: Types.ObjectId | string,
+  occurredAt: Date,
+  interactionId: string,
+): Promise<void> {
   const lead = await Lead.findByIdAndUpdate(
     leadId,
     { $set: { lastInteractionAt: occurredAt }, $inc: { interactionsCount: 1 } },
@@ -506,14 +571,22 @@ export async function candidatesFor(rule: ICrmRule, now: Date = new Date()): Pro
   return leads.filter((l) => (now.getTime() - lastActivityAt(l).getTime()) / DAY_MS >= days)
 }
 
-const sweepEvent = (rule: ICrmRule, now: Date): LeadEvent => ({ type: rule.trigger.type, key: `sweep:${now.toISOString().slice(0, 10)}` })
+const sweepEvent = (rule: ICrmRule, now: Date): LeadEvent => ({
+  type: rule.trigger.type,
+  key: `sweep:${now.toISOString().slice(0, 10)}`,
+})
 
 export async function sweepRules(now: Date = new Date()): Promise<{ rules: number; runs: number }> {
-  const rules = await CrmRule.find({ status: 'ACTIVE', 'trigger.type': { $in: ['LEAD_INACTIVE', 'ACTION_OVERDUE', 'SCORE_AT_LEAST'] } })
+  const rules = await CrmRule.find({
+    status: 'ACTIVE',
+    'trigger.type': { $in: ['LEAD_INACTIVE', 'ACTION_OVERDUE', 'SCORE_AT_LEAST'] },
+  })
   let runs = 0
   for (const rule of rules) {
     try {
-      const leads = (await candidatesFor(rule, now)).filter((l) => evaluateConditions(rule.conditions, l, now)).slice(0, rule.limits.maxPerRun)
+      const leads = (await candidatesFor(rule, now))
+        .filter((l) => evaluateConditions(rule.conditions, l, now))
+        .slice(0, rule.limits.maxPerRun)
       for (const lead of leads) {
         const run = await runRule(rule, lead, sweepEvent(rule, now), { ...ctxRoot(), quietSkip: true })
         if (run) runs++
@@ -529,15 +602,19 @@ export async function sweepRules(now: Date = new Date()): Promise<{ rules: numbe
 export async function simulateRule(rule: ICrmRule, opts: { record?: boolean; limit?: number } = {}) {
   const now = new Date()
   const limit = opts.limit ?? 50
-  const pool: LeadDoc[] =
-    ['LEAD_INACTIVE', 'ACTION_OVERDUE', 'SCORE_AT_LEAST'].includes(rule.trigger.type)
-      ? await candidatesFor(rule, now)
-      : await Lead.find({ archivedAt: null }).limit(2000)
+  const pool: LeadDoc[] = ['LEAD_INACTIVE', 'ACTION_OVERDUE', 'SCORE_AT_LEAST'].includes(rule.trigger.type)
+    ? await candidatesFor(rule, now)
+    : await Lead.find({ archivedAt: null }).limit(2000)
   const matching = pool.filter((l) => evaluateConditions(rule.conditions, l, now))
   const sample = matching.slice(0, limit)
   if (opts.record) {
     for (const lead of sample) {
-      await runRule(rule, lead, { type: rule.trigger.type, key: 'simulation', to: String(rule.trigger.params?.to ?? '') }, { ...ctxRoot(), simulate: true })
+      await runRule(
+        rule,
+        lead,
+        { type: rule.trigger.type, key: 'simulation', to: String(rule.trigger.params?.to ?? '') },
+        { ...ctxRoot(), simulate: true },
+      )
     }
   }
   return {
@@ -594,7 +671,12 @@ export async function retryRun(runId: string) {
   const lead = await Lead.findById(run.lead)
   if (!rule || !lead) return null
   await CrmRuleRun.deleteOne({ _id: run._id })
-  return runRule(rule, lead, { type: rule.trigger.type, key: run.eventKey.split(':').slice(2).join(':') || 'retry', to: undefined }, { ...ctxRoot(), depth: 0 })
+  return runRule(
+    rule,
+    lead,
+    { type: rule.trigger.type, key: run.eventKey.split(':').slice(2).join(':') || 'retry', to: undefined },
+    { ...ctxRoot(), depth: 0 },
+  )
 }
 
 // ───────────────────────── Règles prédéfinies ─────────────────────────
@@ -608,7 +690,10 @@ export const SEED_RULES: Array<Partial<ICrmRule> & { systemKey: string }> = [
     conditions: { op: 'AND', items: [] },
     actions: [
       { type: 'CREATE_TASK', params: { title: 'Relancer {contact}', dueInDays: 1, assignTo: 'owner' } },
-      { type: 'NOTIFY', params: { recipients: 'owner', title: 'Lead inactif : {company}', message: 'Aucune activité depuis 7 jours.' } },
+      {
+        type: 'NOTIFY',
+        params: { recipients: 'owner', title: 'Lead inactif : {company}', message: 'Aucune activité depuis 7 jours.' },
+      },
     ],
     limits: { perLead: 'DAYS', days: 7, maxPerRun: 50 },
   },
@@ -618,7 +703,11 @@ export const SEED_RULES: Array<Partial<ICrmRule> & { systemKey: string }> = [
     description: 'Aucune saisie manuelle après la signature',
     trigger: { type: 'STATUS_CHANGED', params: { to: ['WON'] } },
     conditions: { op: 'AND', items: [] },
-    actions: [{ type: 'CREATE_CLIENT', params: {} }, { type: 'CREATE_PROJECT', params: {} }, { type: 'NOTIFY', params: { recipients: 'admins', title: 'Nouveau client : {company}' } }],
+    actions: [
+      { type: 'CREATE_CLIENT', params: {} },
+      { type: 'CREATE_PROJECT', params: {} },
+      { type: 'NOTIFY', params: { recipients: 'admins', title: 'Nouveau client : {company}' } },
+    ],
     limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
   },
   {
@@ -626,10 +715,19 @@ export const SEED_RULES: Array<Partial<ICrmRule> & { systemKey: string }> = [
     name: 'Nouveau lead de formulaire → assignation + e-mail',
     description: 'Réponse rapide, propriétaire désigné',
     trigger: { type: 'LEAD_CREATED', params: {} },
-    conditions: { op: 'AND', items: [{ field: 'source', operator: 'in', value: ['Site web', 'Formulaire', 'Site', 'FORMULAIRE_SITE'] }] },
+    conditions: {
+      op: 'AND',
+      items: [{ field: 'source', operator: 'in', value: ['Site web', 'Formulaire', 'Site', 'FORMULAIRE_SITE'] }],
+    },
     actions: [
       { type: 'ASSIGN', params: { strategy: 'round_robin' } },
-      { type: 'SEND_EMAIL', params: { subject: 'Nous avons bien reçu votre demande', body: 'Bonjour {contact},\n\nMerci pour votre message, nous revenons vers vous très vite.' } },
+      {
+        type: 'SEND_EMAIL',
+        params: {
+          subject: 'Nous avons bien reçu votre demande',
+          body: 'Bonjour {contact},\n\nMerci pour votre message, nous revenons vers vous très vite.',
+        },
+      },
       { type: 'CREATE_TASK', params: { title: 'Qualifier {company} sous 24 h', dueInDays: 1, assignTo: 'owner' } },
     ],
     limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
@@ -641,7 +739,13 @@ export const SEED_RULES: Array<Partial<ICrmRule> & { systemKey: string }> = [
     trigger: { type: 'LEAD_INACTIVE', params: { days: 5, statuses: ['PROPOSAL'] } },
     conditions: { op: 'AND', items: [{ field: 'budget', operator: 'gte', value: 10000 }] },
     actions: [
-      { type: 'SEND_EMAIL', params: { subject: 'Suite à notre proposition', body: 'Bonjour {contact},\n\nAvez-vous pu consulter notre proposition ?' } },
+      {
+        type: 'SEND_EMAIL',
+        params: {
+          subject: 'Suite à notre proposition',
+          body: 'Bonjour {contact},\n\nAvez-vous pu consulter notre proposition ?',
+        },
+      },
       { type: 'CREATE_TASK', params: { title: 'Appeler {contact} (proposition)', dueInDays: 1, assignTo: 'owner' } },
     ],
     limits: { perLead: 'DAYS', days: 5, maxPerRun: 50 },
@@ -665,7 +769,14 @@ export const SEED_RULES: Array<Partial<ICrmRule> & { systemKey: string }> = [
     conditions: { op: 'AND', items: [] },
     actions: [
       { type: 'CREATE_TASK', params: { title: 'Relancer {contact} après la démo', dueInDays: 1, assignTo: 'owner' } },
-      { type: 'NOTIFY', params: { recipients: 'owner', title: 'Suivi post-démo : {company}', message: 'Aucun échange depuis la démo il y a 3 jours.' } },
+      {
+        type: 'NOTIFY',
+        params: {
+          recipients: 'owner',
+          title: 'Suivi post-démo : {company}',
+          message: 'Aucun échange depuis la démo il y a 3 jours.',
+        },
+      },
     ],
     limits: { perLead: 'DAYS', days: 7, maxPerRun: 50 },
   },
@@ -675,7 +786,10 @@ export const SEED_RULES: Array<Partial<ICrmRule> & { systemKey: string }> = [
     description: 'Garde la porte ouverte sans encombrer le pipeline',
     trigger: { type: 'STATUS_CHANGED', params: { to: ['LOST'] } },
     conditions: { op: 'AND', items: [] },
-    actions: [{ type: 'ADD_TAG', params: { tag: 'recontacter-6m' } }, { type: 'CREATE_TASK', params: { title: 'Reprendre contact avec {company}', dueInDays: 180, assignTo: 'owner' } }],
+    actions: [
+      { type: 'ADD_TAG', params: { tag: 'recontacter-6m' } },
+      { type: 'CREATE_TASK', params: { title: 'Reprendre contact avec {company}', dueInDays: 180, assignTo: 'owner' } },
+    ],
     limits: { perLead: 'ONCE', days: 7, maxPerRun: 50 },
   },
 ]
@@ -704,7 +818,9 @@ let activeSystemKeys: { keys: Set<string>; at: number } | null = null
 /** Vrai si la règle prédéfinie `systemKey` est ACTIVE (lecture en base, cache court). */
 export async function isSystemRuleActive(systemKey: string, now: number = Date.now()): Promise<boolean> {
   if (!activeSystemKeys || now - activeSystemKeys.at >= SYSTEM_RULE_CACHE_MS) {
-    const rules = await CrmRule.find({ status: 'ACTIVE', systemKey: { $exists: true, $ne: null } }).select('systemKey').lean()
+    const rules = await CrmRule.find({ status: 'ACTIVE', systemKey: { $exists: true, $ne: null } })
+      .select('systemKey')
+      .lean()
     activeSystemKeys = { keys: new Set(rules.map((r) => String(r.systemKey))), at: now }
   }
   return activeSystemKeys.keys.has(systemKey)

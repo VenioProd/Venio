@@ -18,7 +18,14 @@ vi.mock('../../../components/admin/InteractionTimeline', () => ({ default: () =>
 vi.mock('../../../components/admin/RevenueChain', () => ({ default: () => <p>Revenue chain</p> }))
 vi.mock('./rich/LeadEnrichedPanel', () => ({ default: () => <p>Enriched panel</p> }))
 
-const dup = { _id: 'dup1', company: 'Acme SAS', contactName: 'Jean', contactEmail: 'j@acme.fr', contactPhone: '0612345678', status: 'QUALIFIED' }
+const dup = {
+  _id: 'dup1',
+  company: 'Acme SAS',
+  contactName: 'Jean',
+  contactEmail: 'j@acme.fr',
+  contactPhone: '0612345678',
+  status: 'QUALIFIED',
+}
 const lead: Lead = { _id: 'lead1', company: 'Acme', contactEmail: 'a@acme.fr', status: 'LEAD' }
 const other: Lead = { _id: 'lead2', company: 'Globex', contactEmail: 'x@globex.fr', status: 'LEAD' }
 
@@ -43,7 +50,9 @@ afterEach(() => {
 
 describe('i18n', () => {
   it('les clés de doublons et de fusion existent en français et en anglais', () => {
-    const keys = Object.keys(fr).filter((k) => k.startsWith('crm.merge.') || k.startsWith('crm.duplicates.') || k.includes('duplicates.block'))
+    const keys = Object.keys(fr).filter(
+      (k) => k.startsWith('crm.merge.') || k.startsWith('crm.duplicates.') || k.includes('duplicates.block'),
+    )
     expect(keys.length).toBeGreaterThanOrEqual(17)
     for (const key of keys) expect(en, key).toHaveProperty([key])
   })
@@ -51,7 +60,14 @@ describe('i18n', () => {
 
 describe('formulaire de création : bandeau de doublons', () => {
   const Form = ({ form }: { form: typeof EMPTY_FORM }) => (
-    <LeadFormPanel form={form} admins={[]} isSuperAdmin canManageCrm onFormChange={() => {}} onSubmit={(e) => e.preventDefault()} />
+    <LeadFormPanel
+      form={form}
+      admins={[]}
+      isSuperAdmin
+      canManageCrm
+      onFormChange={() => {}}
+      onSubmit={(e) => e.preventDefault()}
+    />
   )
 
   it("n'appelle rien tant que les champs sont vides", async () => {
@@ -67,7 +83,9 @@ describe('formulaire de création : bandeau de doublons', () => {
   it('interroge le serveur après le délai, avec e-mail, téléphone et entreprise, puis affiche les doublons', async () => {
     vi.useFakeTimers()
     mockApi({ '/api/admin/crm/check-duplicate': { duplicates: [dup], enabled: true } })
-    render(<Form form={{ ...EMPTY_FORM, company: 'Acme', contactEmail: 'j@acme.fr', contactPhone: '06 12 34 56 78' }} />)
+    render(
+      <Form form={{ ...EMPTY_FORM, company: 'Acme', contactEmail: 'j@acme.fr', contactPhone: '06 12 34 56 78' }} />,
+    )
     await act(async () => {
       await vi.advanceTimersByTimeAsync(DUPLICATE_DEBOUNCE_MS - 1)
     })
@@ -77,7 +95,11 @@ describe('formulaire de création : bandeau de doublons', () => {
     })
     const [[, options]] = calls('/api/admin/crm/check-duplicate') as [[string, { method: string; body: string }]]
     expect(options.method).toBe('POST')
-    expect(JSON.parse(options.body)).toMatchObject({ company: 'Acme', contactEmail: 'j@acme.fr', contactPhone: '06 12 34 56 78' })
+    expect(JSON.parse(options.body)).toMatchObject({
+      company: 'Acme',
+      contactEmail: 'j@acme.fr',
+      contactPhone: '06 12 34 56 78',
+    })
     expect(screen.getByRole('status').textContent).toContain('Acme SAS')
     expect(screen.getByRole('status').textContent).toContain('1 doublon probable')
   })
@@ -151,7 +173,10 @@ describe('fiche lead : Fusionner dans…', () => {
 
     // La requête de suggestions exclut le lead lui-même.
     await waitFor(() => expect(calls('/api/admin/crm/check-duplicate')).toHaveLength(1))
-    expect(JSON.parse((calls('/api/admin/crm/check-duplicate')[0][1] as { body: string }).body)).toMatchObject({ excludeId: 'lead1', company: 'Acme' })
+    expect(JSON.parse((calls('/api/admin/crm/check-duplicate')[0][1] as { body: string }).body)).toMatchObject({
+      excludeId: 'lead1',
+      company: 'Acme',
+    })
 
     fireEvent.click(await screen.findByRole('button', { name: /Acme SAS/ }))
     // Confirmation avant tout appel d'écriture.
@@ -181,7 +206,9 @@ describe('MergeLeadDialog : refus du serveur', () => {
     const onMerged = vi.fn()
     mockApi({
       '/api/admin/crm/check-duplicate': { duplicates: [dup], enabled: true },
-      '/api/admin/crm/leads/dup1/merge': new Error('Les deux leads sont gagnés avec des clients différents : fusion refusée'),
+      '/api/admin/crm/leads/dup1/merge': new Error(
+        'Les deux leads sont gagnés avec des clients différents : fusion refusée',
+      ),
     })
     render(<MergeLeadDialog lead={lead} candidates={[]} onCancel={() => {}} onMerged={onMerged} />)
     fireEvent.click(await screen.findByRole('button', { name: /Acme SAS/ }))

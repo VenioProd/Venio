@@ -13,7 +13,9 @@ const services = vi.hoisted(() => ({
 const auth = vi.hoisted(() => ({ role: 'SUPER_ADMIN' }))
 
 vi.mock('../services/pilotage', () => services)
-vi.mock('../lib/api', () => ({ apiFetch: vi.fn().mockResolvedValue({ users: [{ _id: 'u1', name: 'Alice', email: 'a@x.fr', role: 'COMMERCIAL' }] }) }))
+vi.mock('../lib/api', () => ({
+  apiFetch: vi.fn().mockResolvedValue({ users: [{ _id: 'u1', name: 'Alice', email: 'a@x.fr', role: 'COMMERCIAL' }] }),
+}))
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'me', role: auth.role } }) }))
 
 import ForecastSection from '../pages/admin/analytics/crm/ForecastSection'
@@ -54,7 +56,15 @@ function forecast(overrides: Partial<ForecastResponse> = {}): ForecastResponse {
           projectedProgress: 0.46,
         },
       }),
-      month({ month: '2026-12', openCount: 0, gross: 0, weighted: 0, wonCount: 0, wonAmount: 0, categories: { committed: bucket(), probable: bucket(), pipeline: bucket() } }),
+      month({
+        month: '2026-12',
+        openCount: 0,
+        gross: 0,
+        weighted: 0,
+        wonCount: 0,
+        wonAmount: 0,
+        categories: { committed: bucket(), probable: bucket(), pipeline: bucket() },
+      }),
     ],
     overdue: bucket(),
     unscheduled: bucket(),
@@ -114,7 +124,9 @@ describe('ForecastSection', () => {
   })
 
   it('signale les retards et les affaires sans date, et se tait sinon', async () => {
-    services.fetchForecast.mockResolvedValue(forecast({ overdue: bucket(2, 900, 450), unscheduled: bucket(1, 100, 50) }))
+    services.fetchForecast.mockResolvedValue(
+      forecast({ overdue: bucket(2, 900, 450), unscheduled: bucket(1, 100, 50) }),
+    )
     const { unmount } = render(<ForecastSection />)
     await screen.findByText(/2 affaires ouvertes ont une clôture prévue dépassée/)
     expect(screen.getByText(/1 affaire ouverte n'a pas de date de clôture prévue/)).toBeInTheDocument()
@@ -176,7 +188,9 @@ describe('Objectifs (administrateurs)', () => {
 
     fireEvent.change(amount, { target: { value: '12000' } })
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
-    await waitFor(() => expect(services.updateGoal).toHaveBeenCalledWith('g1', { amountTarget: 12000, wonCountTarget: 4 }))
+    await waitFor(() =>
+      expect(services.updateGoal).toHaveBeenCalledWith('g1', { amountTarget: 12000, wonCountTarget: 4 }),
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
     await waitFor(() => expect(services.deleteGoal).toHaveBeenCalledWith('g1'))

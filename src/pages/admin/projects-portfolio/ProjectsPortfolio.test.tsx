@@ -32,9 +32,29 @@ const item = (o: Partial<PortfolioItem>): PortfolioItem => ({
   ...o,
 })
 const lumen = item({})
-const boreal = item({ _id: 'p2', name: 'Extranet Boréal', overdueDays: 0, daysToDue: 30, risks: [], urgency: 0, actions: [], budgetPct: 66 })
+const boreal = item({
+  _id: 'p2',
+  name: 'Extranet Boréal',
+  overdueDays: 0,
+  daysToDue: 30,
+  risks: [],
+  urgency: 0,
+  actions: [],
+  budgetPct: 66,
+})
 const overview: PortfolioOverview = {
-  pulse: { total: 2, active: 2, done: 0, late: 1, atRisk: 1, dueIn7Days: 0, dueIn48h: 0, toBill: 0, budget: { total: 18000, invoiced: 20160, pct: 112 }, load: { pct: 87, overloaded: 0 } },
+  pulse: {
+    total: 2,
+    active: 2,
+    done: 0,
+    late: 1,
+    atRisk: 1,
+    dueIn7Days: 0,
+    dueIn48h: 0,
+    toBill: 0,
+    budget: { total: 18000, invoiced: 20160, pct: 112 },
+    load: { pct: 87, overloaded: 0 },
+  },
   queue: [lumen],
   upcoming: [],
   workload: [],
@@ -47,12 +67,18 @@ beforeEach(() => {
     if (path === '/api/admin/projects/overview') return overview
     if (path === '/api/admin/projects/views') return { views: [] }
     if (path === '/api/admin/admins') return { users: [{ _id: 'u1', name: 'Camille Martin' }] }
-    if (path === '/api/admin/projects/bulk') return { succeeded: 1, failed: 0, results: [{ id: 'p2', ok: true }], echo: options }
+    if (path === '/api/admin/projects/bulk')
+      return { succeeded: 1, failed: 0, results: [{ id: 'p2', ok: true }], echo: options }
     throw new Error(`Unexpected ${path}`)
   })
 })
 
-const renderIt = () => render(<MemoryRouter><ProjectsPortfolio /></MemoryRouter>)
+const renderIt = () =>
+  render(
+    <MemoryRouter>
+      <ProjectsPortfolio />
+    </MemoryRouter>,
+  )
 
 describe('ProjectsPortfolio', () => {
   it('affiche la file À traiter et les indicateurs', async () => {

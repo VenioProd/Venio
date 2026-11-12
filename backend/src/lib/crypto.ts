@@ -51,10 +51,7 @@ export function encrypt(plaintext: string): string {
   const iv = crypto.randomBytes(IV_LENGTH)
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH })
 
-  const encrypted = Buffer.concat([
-    cipher.update(plaintext, 'utf8'),
-    cipher.final(),
-  ])
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
   const authTag = cipher.getAuthTag()
 
   // Pack: IV (16) + AuthTag (16) + Ciphertext
@@ -80,10 +77,7 @@ export function decrypt(encryptedBase64: string): string {
   const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH })
   decipher.setAuthTag(authTag)
 
-  const decrypted = Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ])
+  const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()])
 
   return decrypted.toString('utf8')
 }

@@ -59,7 +59,7 @@ router.post(
       // Mark all messages as read by this admin user
       await Message.updateMany(
         { project: projectId, readBy: { $ne: req.user!.id } },
-        { $addToSet: { readBy: req.user!.id } }
+        { $addToSet: { readBy: req.user!.id } },
       )
 
       const populated = await message.populate('sender', 'name email role')
@@ -68,7 +68,7 @@ router.post(
     } catch (err) {
       return next(err)
     }
-  }
+  },
 )
 
 // POST /api/admin/projects/:projectId/messages/read — mark all messages as read
@@ -83,7 +83,7 @@ router.post('/:projectId/messages/read', async (req: Request, res: Response, nex
 
     await Message.updateMany(
       { project: projectId, readBy: { $ne: req.user!.id } },
-      { $addToSet: { readBy: req.user!.id } }
+      { $addToSet: { readBy: req.user!.id } },
     )
 
     return res.json({ success: true })

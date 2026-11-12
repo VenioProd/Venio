@@ -51,9 +51,8 @@ describe('education AI assistance — review-gated drafts', () => {
   ] as const
 
   it.each(cases)('generates a %s editable draft without writing a domain entity', async (mode, input, field) => {
-    const { EducationSession, EducationAssignment, EducationSubmission, EducationAiGeneration } = await import(
-      '../models/education/index.js'
-    )
+    const { EducationSession, EducationAssignment, EducationSubmission, EducationAiGeneration } =
+      await import('../models/education/index.js')
     const response = await request(app).post('/api/admin/education/ai/generate').send({ mode, input }).expect(201)
 
     expect(response.body.draft.fields[field]).toBeDefined()

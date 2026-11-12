@@ -33,7 +33,9 @@ describe('lien de désinscription — jeton signé', () => {
   it('une signature altérée, un contenu modifié ou un format faux sont refusés', () => {
     const token = signUnsubscribeToken({ leadId, email: 'ana@example.test' })
     const [body, sig] = token.split('.')
-    const forgedBody = Buffer.from(JSON.stringify({ l: leadId, e: 'autre@example.test', x: 9999999999 })).toString('base64url')
+    const forgedBody = Buffer.from(JSON.stringify({ l: leadId, e: 'autre@example.test', x: 9999999999 })).toString(
+      'base64url',
+    )
     expect(verifyUnsubscribeToken(`${body}.${sig.slice(0, -2)}xx`)).toEqual({ ok: false, reason: 'INVALID' })
     expect(verifyUnsubscribeToken(`${forgedBody}.${sig}`)).toEqual({ ok: false, reason: 'INVALID' })
     expect(verifyUnsubscribeToken('pas-un-jeton')).toEqual({ ok: false, reason: 'INVALID' })
@@ -68,26 +70,40 @@ describe('lien de désinscription — jeton signé', () => {
 
 describe('patch RGPD — normalisation et préparation', () => {
   it('ne garde que les valeurs connues', () => {
-    expect(normalizePrivacyPatch({ doNotContact: 'oui', consent: { status: 'PEUT-ÊTRE', basis: 'CONTRACT' } })).toEqual({ consent: { basis: 'CONTRACT' } })
-    expect(normalizePrivacyPatch({ doNotContact: true, doNotContactReason: '  Appel  ' })).toEqual({ doNotContact: true, doNotContactReason: 'Appel' })
+    expect(normalizePrivacyPatch({ doNotContact: 'oui', consent: { status: 'PEUT-ÊTRE', basis: 'CONTRACT' } })).toEqual(
+      { consent: { basis: 'CONTRACT' } },
+    )
+    expect(normalizePrivacyPatch({ doNotContact: true, doNotContactReason: '  Appel  ' })).toEqual({
+      doNotContact: true,
+      doNotContactReason: 'Appel',
+    })
     expect(normalizePrivacyPatch({})).toEqual({})
   })
 
   it('date l’opposition, la levée et le changement de consentement, et ignore ce qui ne change pas', () => {
     const now = new Date('2026-11-06T10:00:00Z')
     const patch: Record<string, any> = { doNotContact: true, consent: { status: 'WITHDRAWN' } }
-    const events = preparePrivacyChange({ doNotContact: false, consent: { status: 'GRANTED', basis: 'CONSENT', source: 'admin', at: null } }, patch, 'admin', now)
+    const events = preparePrivacyChange(
+      { doNotContact: false, consent: { status: 'GRANTED', basis: 'CONSENT', source: 'admin', at: null } },
+      patch,
+      'admin',
+      now,
+    )
     expect(patch.doNotContactAt).toEqual(now)
     expect(patch.doNotContactReason).toBe('MANUAL')
     expect(patch.consent).toEqual({ status: 'WITHDRAWN', basis: 'CONSENT', source: 'admin', at: now })
     expect(events.map((e) => e.type)).toEqual(['CONSENT_CHANGED', 'DO_NOT_CONTACT'])
 
     const same: Record<string, any> = { doNotContact: true, consent: { status: 'GRANTED' } }
-    expect(preparePrivacyChange({ doNotContact: true, consent: { status: 'GRANTED', basis: 'CONSENT' } }, same, 'admin')).toEqual([])
+    expect(
+      preparePrivacyChange({ doNotContact: true, consent: { status: 'GRANTED', basis: 'CONSENT' } }, same, 'admin'),
+    ).toEqual([])
     expect(same).toEqual({})
 
     const lift: Record<string, any> = { doNotContact: false }
-    expect(preparePrivacyChange({ doNotContact: true }, lift, 'admin').map((e) => e.type)).toEqual(['DO_NOT_CONTACT_LIFTED'])
+    expect(preparePrivacyChange({ doNotContact: true }, lift, 'admin').map((e) => e.type)).toEqual([
+      'DO_NOT_CONTACT_LIFTED',
+    ])
     expect(lift.doNotContactAt).toBeNull()
   })
 })
@@ -117,10 +133,18 @@ describe('RGPD — base de données', () => {
   })
 
   it('checkProspectContact bloque par la fiche ou par la liste de suppression (insensible à la casse)', async () => {
-    expect(await checkProspectContact({ doNotContact: true, contactEmail: 'a@x.test' })).toEqual({ allowed: false, reason: 'DO_NOT_CONTACT', via: 'LEAD' })
+    expect(await checkProspectContact({ doNotContact: true, contactEmail: 'a@x.test' })).toEqual({
+      allowed: false,
+      reason: 'DO_NOT_CONTACT',
+      via: 'LEAD',
+    })
     expect((await checkProspectContact({ doNotContact: false, contactEmail: 'b@x.test' })).allowed).toBe(true)
     await addSuppression('B@X.test ', { reason: 'MANUAL' })
-    expect(await checkProspectContact({ doNotContact: false, contactEmail: 'b@x.test' })).toEqual({ allowed: false, reason: 'DO_NOT_CONTACT', via: 'SUPPRESSION_LIST' })
+    expect(await checkProspectContact({ doNotContact: false, contactEmail: 'b@x.test' })).toEqual({
+      allowed: false,
+      reason: 'DO_NOT_CONTACT',
+      via: 'SUPPRESSION_LIST',
+    })
     // Idempotent : une seconde inscription ne crée rien et garde la raison d'origine.
     expect(await addSuppression('b@x.test', { reason: 'UNSUBSCRIBE' })).toBe(false)
     expect(await SuppressionEntry.countDocuments()).toBe(1)
@@ -160,11 +184,24 @@ describe('RGPD — base de données', () => {
       body: 'Bonjour Ana',
       recipients: [{ email: 'ana@acme.test', name: 'Ana', status: 'SENT' }],
     })
-    await LeadActivity.create({ leadId: lead._id, type: 'CONTACT_FORM_SUBMITTED', label: 'x', payload: { message: 'Je suis Ana', source: 'FORMULAIRE_SITE' } })
+    await LeadActivity.create({
+      leadId: lead._id,
+      type: 'CONTACT_FORM_SUBMITTED',
+      label: 'x',
+      payload: { message: 'Je suis Ana', source: 'FORMULAIRE_SITE' },
+    })
 
     expect(await anonymizeLead(lead, { actor: null, source: 'admin', reason: 'REQUEST' })).toEqual({ anonymized: true })
     const fresh = await Lead.findById(lead._id).lean()
-    expect(fresh).toMatchObject({ contactName: 'Anonymisé (demande)', contactEmail: '', contactPhone: '', notes: 'Anonymisé (demande)', interactionNotes: '', company: 'Acme', status: 'LOST' })
+    expect(fresh).toMatchObject({
+      contactName: 'Anonymisé (demande)',
+      contactEmail: '',
+      contactPhone: '',
+      notes: 'Anonymisé (demande)',
+      interactionNotes: '',
+      company: 'Acme',
+      status: 'LOST',
+    })
     expect(fresh?.anonymizedAt).toBeInstanceOf(Date)
     const interaction = await Interaction.findOne({ subjectId: lead._id }).lean()
     expect(interaction?.body).toBe('Anonymisé (demande)')
@@ -176,7 +213,9 @@ describe('RGPD — base de données', () => {
     // L'opposition survit : l'adresse reste reconnue.
     expect(await SuppressionEntry.exists({ emailNormalized: 'ana@acme.test' })).toBeTruthy()
     // Une seconde anonymisation ne fait rien.
-    expect(await anonymizeLead((await Lead.findById(lead._id))!, { actor: null, source: 'admin', reason: 'REQUEST' })).toEqual({ anonymized: false })
+    expect(
+      await anonymizeLead((await Lead.findById(lead._id))!, { actor: null, source: 'admin', reason: 'REQUEST' }),
+    ).toEqual({ anonymized: false })
   })
 
   it('l’export des données personnelles rassemble le lead, l’historique et les échanges', async () => {
@@ -196,7 +235,14 @@ describe('RGPD — base de données', () => {
     const old = new Date('2020-01-01T00:00:00Z')
     await Lead.collection.insertMany([
       { company: 'Sans consentement', status: 'LEAD', updatedAt: old, createdAt: old },
-      { company: 'Base contractuelle', status: 'LEAD', consent: { status: 'GRANTED', basis: 'CONTRACT' }, doNotContact: true, updatedAt: old, createdAt: old },
+      {
+        company: 'Base contractuelle',
+        status: 'LEAD',
+        consent: { status: 'GRANTED', basis: 'CONTRACT' },
+        doNotContact: true,
+        updatedAt: old,
+        createdAt: old,
+      },
       { company: 'Base vide', status: 'LEAD', consent: { status: 'GRANTED' }, updatedAt: old, createdAt: old },
     ])
     const dry = await backfillLeadPrivacy(true)
@@ -214,6 +260,12 @@ describe('RGPD — base de données', () => {
     for (const r of rows) expect(r.updatedAt).toEqual(old)
 
     const again = await backfillLeadPrivacy(false)
-    expect(again).toMatchObject({ missingConsent: 0, missingBasis: 0, missingStatus: 0, missingDoNotContact: 0, modified: 0 })
+    expect(again).toMatchObject({
+      missingConsent: 0,
+      missingBasis: 0,
+      missingStatus: 0,
+      missingDoNotContact: 0,
+      modified: 0,
+    })
   })
 })

@@ -140,12 +140,7 @@ function splitParams(s: string): string[] {
  * Décode les échappements ICS dans une valeur texte.
  */
 export function unescapeValue(v: string): string {
-  return v
-    .replace(/\\N/g, '\n')
-    .replace(/\\n/g, '\n')
-    .replace(/\\,/g, ',')
-    .replace(/\\;/g, ';')
-    .replace(/\\\\/g, '\\')
+  return v.replace(/\\N/g, '\n').replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\')
 }
 
 // ─────────────────────── Dates avec / sans fuseau ─────────────────────────
@@ -264,12 +259,7 @@ export function parseDuration(value: string): number {
   const hours = Number(m[4] || 0)
   const minutes = Number(m[5] || 0)
   const seconds = Number(m[6] || 0)
-  const ms =
-    weeks * 7 * 86_400_000 +
-    days * 86_400_000 +
-    hours * 3_600_000 +
-    minutes * 60_000 +
-    seconds * 1_000
+  const ms = weeks * 7 * 86_400_000 + days * 86_400_000 + hours * 3_600_000 + minutes * 60_000 + seconds * 1_000
   return ms
 }
 
@@ -365,14 +355,16 @@ function stepMsFor(freq: RruleParsed['freq'], interval: number): number {
 }
 
 function addMonths(d: Date, months: number): Date {
-  return new Date(Date.UTC(
-    d.getUTCFullYear(),
-    d.getUTCMonth() + months,
-    d.getUTCDate(),
-    d.getUTCHours(),
-    d.getUTCMinutes(),
-    d.getUTCSeconds(),
-  ))
+  return new Date(
+    Date.UTC(
+      d.getUTCFullYear(),
+      d.getUTCMonth() + months,
+      d.getUTCDate(),
+      d.getUTCHours(),
+      d.getUTCMinutes(),
+      d.getUTCSeconds(),
+    ),
+  )
 }
 
 function expandWeeklyByDay(
@@ -544,11 +536,7 @@ export function parseIcs(raw: string): ParsedIcsEvent[] {
 /**
  * Parse + expanse les RRULE et restreint à la fenêtre [windowStart, windowEnd].
  */
-export function parseAndExpand(
-  raw: string,
-  windowStart: Date,
-  windowEnd: Date,
-): ExpandedEvent[] {
+export function parseAndExpand(raw: string, windowStart: Date, windowEnd: Date): ExpandedEvent[] {
   const events = parseIcs(raw)
   const out: ExpandedEvent[] = []
   for (const ev of events) {

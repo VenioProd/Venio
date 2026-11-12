@@ -98,16 +98,7 @@ const BLOCK_TYPE_MAP: Record<string, { type: string; level?: number }> = {
 export interface NoteBlockShape {
   id: string
   type:
-    | 'heading'
-    | 'paragraph'
-    | 'checklist'
-    | 'bullet'
-    | 'numbered'
-    | 'quote'
-    | 'callout'
-    | 'code'
-    | 'divider'
-    | 'link'
+    'heading' | 'paragraph' | 'checklist' | 'bullet' | 'numbered' | 'quote' | 'callout' | 'code' | 'divider' | 'link'
   text: string
   checked: boolean
   level: number

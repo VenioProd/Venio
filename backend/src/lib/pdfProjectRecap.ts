@@ -70,7 +70,13 @@ interface GenerateRecapParams {
 /**
  * Generate a project recap PDF.
  */
-export async function generateProjectRecapPdf({ project, client, tasks, updates, sections }: GenerateRecapParams): Promise<Buffer> {
+export async function generateProjectRecapPdf({
+  project,
+  client,
+  tasks,
+  updates,
+  sections,
+}: GenerateRecapParams): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const pdf = new PDFDocument({ margin: 50, size: 'A4' })
     const chunks: Buffer[] = []
@@ -81,7 +87,10 @@ export async function generateProjectRecapPdf({ project, client, tasks, updates,
     // Header
     pdf.fontSize(22).text('RÉCAPITULATIF PROJET', { align: 'center' })
     pdf.moveDown(0.5)
-    pdf.fontSize(10).fillColor('#666').text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, { align: 'center' })
+    pdf
+      .fontSize(10)
+      .fillColor('#666')
+      .text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, { align: 'center' })
     pdf.fillColor('#000')
     pdf.moveDown(1.5)
 
@@ -107,9 +116,13 @@ export async function generateProjectRecapPdf({ project, client, tasks, updates,
     if (project.budget?.amount) {
       pdf.moveDown(1)
       pdf.fontSize(12).text('Budget')
-      pdf.fontSize(10).text(`Montant: ${Number(project.budget.amount).toLocaleString('fr-FR')} ${project.budget.currency || 'EUR'}`)
+      pdf
+        .fontSize(10)
+        .text(`Montant: ${Number(project.budget.amount).toLocaleString('fr-FR')} ${project.budget.currency || 'EUR'}`)
       if (project.billing?.amountInvoiced) {
-        pdf.text(`Facturé: ${Number(project.billing.amountInvoiced).toLocaleString('fr-FR')} ${project.budget.currency || 'EUR'}`)
+        pdf.text(
+          `Facturé: ${Number(project.billing.amountInvoiced).toLocaleString('fr-FR')} ${project.budget.currency || 'EUR'}`,
+        )
       }
     }
 
@@ -144,7 +157,9 @@ export async function generateProjectRecapPdf({ project, client, tasks, updates,
         if (byStatus[t.status] !== undefined) byStatus[t.status]++
       }
       pdf.fontSize(10)
-      pdf.text(`À faire: ${byStatus.A_FAIRE}  |  En cours: ${byStatus.EN_COURS}  |  En review: ${byStatus.EN_REVIEW}  |  Terminé: ${byStatus.TERMINE}`)
+      pdf.text(
+        `À faire: ${byStatus.A_FAIRE}  |  En cours: ${byStatus.EN_COURS}  |  En review: ${byStatus.EN_REVIEW}  |  Terminé: ${byStatus.TERMINE}`,
+      )
       pdf.moveDown(0.5)
 
       for (const t of tasks) {

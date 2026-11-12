@@ -58,7 +58,10 @@ vi.mock('../lib/email/send.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   sendBulkEmail,
 }))
-vi.mock('../lib/email.js', async (importOriginal) => ({ ...(await importOriginal<Record<string, unknown>>()), ...mail }))
+vi.mock('../lib/email.js', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  ...mail,
+}))
 vi.mock('../lib/notifications.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   createNotification,
@@ -81,7 +84,7 @@ const fakeReq = (id: string, role: string, crmEntities?: string[]) =>
 // ───────────────────────────────────────────────────────────────────────────
 
 describe('périmètre ADMIN / fonctions pures', () => {
-  it('sans restriction d\'entité : lit et écrit tout le CRM', () => {
+  it("sans restriction d'entité : lit et écrit tout le CRM", () => {
     const admin = fakeReq(ME, 'ADMIN')
     expect(readsUnrestrictedCrm(admin)).toBe(true)
     expect(leadScopeFilter(admin)).toEqual({})
@@ -94,7 +97,7 @@ describe('périmètre ADMIN / fonctions pures', () => {
     expect(leadWriteScopeFilter(fakeReq(ME, 'ADMIN', []))).toEqual({})
   })
 
-  it('avec restriction d\'entité : tout le CRM, mais seulement dans ses entités', () => {
+  it("avec restriction d'entité : tout le CRM, mais seulement dans ses entités", () => {
     const admin = fakeReq(ME, 'ADMIN', ['ARROW'])
     expect(readsUnrestrictedCrm(admin)).toBe(false)
     expect(leadScopeFilter(admin)).toEqual({ entity: { $in: ['ARROW'] } })
@@ -106,7 +109,7 @@ describe('périmètre ADMIN / fonctions pures', () => {
     expect(isLeadOutOfScope(admin, { assignedTo: ME, entity: 'VENIO' })).toBe(true)
   })
 
-  it('le commercial lit tout mais n\'écrit toujours que sur ses leads', () => {
+  it("le commercial lit tout mais n'écrit toujours que sur ses leads", () => {
     const commercial = fakeReq(ME, 'COMMERCIAL')
     expect(leadScopeFilter(commercial)).toEqual({})
     expect(leadWriteScopeFilter(commercial)).toEqual({ $or: [{ assignedTo: ME }, { createdBy: ME }] })
@@ -189,11 +192,29 @@ describe('périmètre ADMIN / routes', () => {
   let arrow: string
 
   beforeEach(async () => {
-    venio = String((await Lead.create({ company: 'Venio B', entity: 'VENIO', createdBy: team.commercialB.id, assignedTo: team.commercialB.id }))._id)
-    arrow = String((await Lead.create({ company: 'Arrow B', entity: 'ARROW', createdBy: team.commercialB.id, assignedTo: team.commercialB.id }))._id)
+    venio = String(
+      (
+        await Lead.create({
+          company: 'Venio B',
+          entity: 'VENIO',
+          createdBy: team.commercialB.id,
+          assignedTo: team.commercialB.id,
+        })
+      )._id,
+    )
+    arrow = String(
+      (
+        await Lead.create({
+          company: 'Arrow B',
+          entity: 'ARROW',
+          createdBy: team.commercialB.id,
+          assignedTo: team.commercialB.id,
+        })
+      )._id,
+    )
   })
 
-  it('un administrateur sans restriction lit, modifie et supprime le lead d\'un autre', async () => {
+  it("un administrateur sans restriction lit, modifie et supprime le lead d'un autre", async () => {
     const list = await request(app).get('/api/admin/crm/leads').expect(200)
     expect(companies(list.body)).toEqual(['Arrow B', 'Venio B'])
     await request(app).get(`/api/admin/crm/leads/${venio}`).expect(200)
@@ -203,7 +224,7 @@ describe('périmètre ADMIN / routes', () => {
     expect(await Lead.findById(venio)).toBeNull()
   })
 
-  it('un administrateur restreint à ARROW lit et écrit tout ARROW, rien d\'autre', async () => {
+  it("un administrateur restreint à ARROW lit et écrit tout ARROW, rien d'autre", async () => {
     as(team.admin, ['ARROW'])
     const list = await request(app).get('/api/admin/crm/leads').expect(200)
     expect(companies(list.body)).toEqual(['Arrow B'])
@@ -221,7 +242,7 @@ describe('périmètre ADMIN / routes', () => {
 // 2. Rattachement / détachement de projet
 // ───────────────────────────────────────────────────────────────────────────
 
-describe('rattachement de projet / périmètre d\'écriture du lead', () => {
+describe("rattachement de projet / périmètre d'écriture du lead", () => {
   let client: string
   let project: string
   let foreignLead: string
@@ -231,12 +252,33 @@ describe('rattachement de projet / périmètre d\'écriture du lead', () => {
   beforeEach(async () => {
     // Client suivi par le commercial A : ses projets lui sont lisibles.
     client = String(
-      (await User.create({ email: 'client-a@crm-admin.test', name: 'Client A', role: 'CLIENT', passwordHash: 'x', ownerAdminId: team.commercialA.id }))._id,
+      (
+        await User.create({
+          email: 'client-a@crm-admin.test',
+          name: 'Client A',
+          role: 'CLIENT',
+          passwordHash: 'x',
+          ownerAdminId: team.commercialA.id,
+        })
+      )._id,
     )
     project = String((await Project.create({ name: 'Site', client }))._id)
-    foreignLead = String((await Lead.create({ company: 'De B', createdBy: team.commercialB.id, assignedTo: team.commercialB.id }))._id)
-    ownLead = String((await Lead.create({ company: 'De A', createdBy: team.commercialA.id, assignedTo: team.commercialA.id }))._id)
-    arrowLead = String((await Lead.create({ company: 'Arrow', entity: 'ARROW', createdBy: team.commercialB.id, assignedTo: team.commercialB.id }))._id)
+    foreignLead = String(
+      (await Lead.create({ company: 'De B', createdBy: team.commercialB.id, assignedTo: team.commercialB.id }))._id,
+    )
+    ownLead = String(
+      (await Lead.create({ company: 'De A', createdBy: team.commercialA.id, assignedTo: team.commercialA.id }))._id,
+    )
+    arrowLead = String(
+      (
+        await Lead.create({
+          company: 'Arrow',
+          entity: 'ARROW',
+          createdBy: team.commercialB.id,
+          assignedTo: team.commercialB.id,
+        })
+      )._id,
+    )
   })
 
   const link = (lead: string) => request(app).post(`/api/admin/crm/leads/${lead}/projects/${project}`)
@@ -246,7 +288,7 @@ describe('rattachement de projet / périmètre d\'écriture du lead', () => {
     return found?.sourceLead ? String(found.sourceLead) : null
   }
 
-  it.each(['superAdmin', 'admin'])('%s rattache puis détache un projet au lead d\'un autre', async (who) => {
+  it.each(['superAdmin', 'admin'])("%s rattache puis détache un projet au lead d'un autre", async (who) => {
     as(team[who]!)
     await link(foreignLead).expect(200)
     expect(await sourceLead()).toBe(foreignLead)
@@ -256,7 +298,7 @@ describe('rattachement de projet / périmètre d\'écriture du lead', () => {
     expect(await LeadActivity.countDocuments({ leadId: foreignLead, type: 'PROJECT_UNLINKED' })).toBe(1)
   })
 
-  it('le commercial rattache un projet à son lead, pas au lead d\'un autre', async () => {
+  it("le commercial rattache un projet à son lead, pas au lead d'un autre", async () => {
     as(team.commercialA)
     await link(foreignLead).expect(404)
     expect(await sourceLead()).toBeNull()
@@ -264,7 +306,7 @@ describe('rattachement de projet / périmètre d\'écriture du lead', () => {
     expect(await sourceLead()).toBe(ownLead)
   })
 
-  it('le commercial ne détache pas le projet du lead d\'un autre', async () => {
+  it("le commercial ne détache pas le projet du lead d'un autre", async () => {
     await Project.updateOne({ _id: project }, { $set: { sourceLead: foreignLead } })
     as(team.commercialA)
     await unlink(foreignLead).expect(404)
@@ -299,7 +341,12 @@ describe('envoi groupé / destinataires « ne pas contacter »', () => {
 
   it('retire les adresses de la liste et des leads opposés, envoie aux autres', async () => {
     await SuppressionEntry.create({ emailNormalized: 'liste@ex.test', reason: 'UNSUBSCRIBE' })
-    const opposed = await Lead.create({ company: 'Opposé', contactEmail: 'Oppose@Ex.test', doNotContact: true, createdBy: team.admin.id })
+    const opposed = await Lead.create({
+      company: 'Opposé',
+      contactEmail: 'Oppose@Ex.test',
+      doNotContact: true,
+      createdBy: team.admin.id,
+    })
     const listed = await Lead.create({ company: 'Inscrit', contactEmail: 'liste@ex.test', createdBy: team.admin.id })
     await Lead.create({ company: 'Libre', contactEmail: 'libre@ex.test', createdBy: team.admin.id })
 
@@ -317,14 +364,16 @@ describe('envoi groupé / destinataires « ne pas contacter »', () => {
 
     // Journal : une activité EMAIL_BLOCKED par lead concerné, aucune pour les autres.
     const blockedActivities = await LeadActivity.find({ type: 'EMAIL_BLOCKED' }).lean()
-    expect(blockedActivities.map((a) => String(a.leadId)).sort()).toEqual([String(opposed._id), String(listed._id)].sort())
+    expect(blockedActivities.map((a) => String(a.leadId)).sort()).toEqual(
+      [String(opposed._id), String(listed._id)].sort(),
+    )
     for (const activity of blockedActivities) {
       expect(activity.payload).toMatchObject({ reason: 'DO_NOT_CONTACT', channel: 'email_composer' })
       expect(String(activity.actorId)).toBe(team.admin.id)
     }
   })
 
-  it('tous les destinataires bloqués : rien n\'est envoyé, la liste est rendue', async () => {
+  it("tous les destinataires bloqués : rien n'est envoyé, la liste est rendue", async () => {
     await SuppressionEntry.create({ emailNormalized: 'liste@ex.test', reason: 'MANUAL' })
     const res = await send(['liste@ex.test']).expect(200)
     expect(sendBulkEmail).not.toHaveBeenCalled()
@@ -340,8 +389,18 @@ describe('envoi groupé / destinataires « ne pas contacter »', () => {
   })
 
   it('un lead opposé à une autre adresse ne bloque pas un destinataire différent', async () => {
-    await Lead.create({ company: 'Opposé', contactEmail: 'oppose@ex.test', doNotContact: true, createdBy: team.admin.id })
-    await Lead.create({ company: 'Non opposé', contactEmail: 'ok@ex.test', doNotContact: false, createdBy: team.admin.id })
+    await Lead.create({
+      company: 'Opposé',
+      contactEmail: 'oppose@ex.test',
+      doNotContact: true,
+      createdBy: team.admin.id,
+    })
+    await Lead.create({
+      company: 'Non opposé',
+      contactEmail: 'ok@ex.test',
+      doNotContact: false,
+      createdBy: team.admin.id,
+    })
     const res = await send(['ok@ex.test']).expect(200)
     expect(res.body.blocked).toEqual([])
     expect(res.body.sent).toBe(1)
@@ -357,8 +416,16 @@ describe('relance de proposition / seuil partagé', () => {
   const ctx = () => ({ now, dateKey: 'x', meta: {}, settings: { config: {} } }) as never
 
   async function proposalSince(days: number) {
-    const lead = await Lead.create({ company: `P${days}`, status: 'PROPOSAL', assignedTo: team.commercialA.id, createdBy: team.commercialA.id })
-    await Lead.collection.updateOne({ _id: lead._id }, { $set: { statusChangedAt: new Date(now.getTime() - days * DAY) } })
+    const lead = await Lead.create({
+      company: `P${days}`,
+      status: 'PROPOSAL',
+      assignedTo: team.commercialA.id,
+      createdBy: team.commercialA.id,
+    })
+    await Lead.collection.updateOne(
+      { _id: lead._id },
+      { $set: { statusChangedAt: new Date(now.getTime() - days * DAY) } },
+    )
     return String(lead._id)
   }
 
@@ -386,14 +453,17 @@ describe('relance de proposition / seuil partagé', () => {
   })
 })
 
-
 describe('envoi groupé libre — rôles autorisés', () => {
   it('refuse un VIEWER (403) et laisse passer un ADMIN', async () => {
     as(team.viewer)
-    const denied = await request(app).post('/api/admin/email-composer/send').send({ subject: 'Test', body: 'Bonjour', recipients: ['x@example.test'] })
+    const denied = await request(app)
+      .post('/api/admin/email-composer/send')
+      .send({ subject: 'Test', body: 'Bonjour', recipients: ['x@example.test'] })
     expect(denied.status).toBe(403)
     as(team.admin)
-    const allowed = await request(app).post('/api/admin/email-composer/send').send({ subject: 'Test', body: 'Bonjour', recipients: ['x@example.test'] })
+    const allowed = await request(app)
+      .post('/api/admin/email-composer/send')
+      .send({ subject: 'Test', body: 'Bonjour', recipients: ['x@example.test'] })
     expect(allowed.status).not.toBe(403)
   })
 })

@@ -44,9 +44,8 @@ export async function getTrialBalance(params: TrialBalanceParams = {}): Promise<
     accountClass: accountClass ?? null,
   })
 
-  const rows: TrialBalanceRow[] = (includeZero
-    ? balances
-    : balances.filter((b) => b.debit !== 0 || b.credit !== 0)
+  const rows: TrialBalanceRow[] = (
+    includeZero ? balances : balances.filter((b) => b.debit !== 0 || b.credit !== 0)
   ).map((b) => ({
     accountCode: b.accountCode,
     accountLabel: b.accountLabel,

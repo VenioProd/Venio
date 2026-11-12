@@ -6,7 +6,7 @@
   height: 100%;
   pointer-events: none;
   z-index: 1;
-  background-image: 
+  background-image:
     linear-gradient(rgba(0, 0, 0, 0.3) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 0, 0, 0.3) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -15,4 +15,3 @@
   transform-origin: center center;
   mix-blend-mode: multiply;
 }
-

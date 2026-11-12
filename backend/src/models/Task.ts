@@ -25,16 +25,18 @@ const taskSchema = new mongoose.Schema<ITask>(
     order: { type: Number, default: 0 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     isArchived: { type: Boolean, default: false },
-    attachments: [{
-      originalName: { type: String, required: true },
-      storagePath: { type: String, required: true },
-      mimeType: { type: String, required: true },
-      size: { type: Number, required: true },
-      uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      uploadedAt: { type: Date, default: Date.now },
-    }],
+    attachments: [
+      {
+        originalName: { type: String, required: true },
+        storagePath: { type: String, required: true },
+        mimeType: { type: String, required: true },
+        size: { type: Number, required: true },
+        uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 taskSchema.index({ project: 1, status: 1 })

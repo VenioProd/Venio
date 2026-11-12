@@ -177,7 +177,9 @@ describe('GET /crm/leads/:id/revenue — devis directs', () => {
     const lead = await seedLead({ status: 'WON' })
     const direct = await seedProposal({ leadId: lead._id })
 
-    const { body } = await request(app).get('/api/admin/crm/leads/' + lead._id + '/revenue').expect(200)
+    const { body } = await request(app)
+      .get('/api/admin/crm/leads/' + lead._id + '/revenue')
+      .expect(200)
     expect(body.summary.signed).toBe(1200)
     expect(body.byCurrency.EUR.signed).toBe(1200)
     expect(body.proposals.map((proposal: { _id: string }) => proposal._id)).toContain(String(direct._id))
@@ -190,7 +192,9 @@ describe('GET /crm/leads/:id/revenue — devis directs', () => {
     const document = await seedDocument(project._id, { total: 1200 })
     await seedProposal({ leadId: lead._id, project: project._id, client: clientId, billingDocument: document._id })
 
-    const { body } = await request(app).get('/api/admin/crm/leads/' + lead._id + '/revenue').expect(200)
+    const { body } = await request(app)
+      .get('/api/admin/crm/leads/' + lead._id + '/revenue')
+      .expect(200)
     expect(body.summary.signed).toBe(1200)
     expect(body.proposals).toHaveLength(1)
   })
@@ -239,7 +243,12 @@ describe('GET /crm/forecast', () => {
 
   it('regroupe par mois de clôture prévue : brut, pondéré, ouverts', async () => {
     await seedLead({ status: 'DEMO', budget: 1000, probability: 50, expectedCloseAt: new Date('2026-11-10T10:00:00Z') })
-    await seedLead({ status: 'PROPOSAL', budget: 2000, probability: 80, expectedCloseAt: new Date('2026-11-25T10:00:00Z') })
+    await seedLead({
+      status: 'PROPOSAL',
+      budget: 2000,
+      probability: 80,
+      expectedCloseAt: new Date('2026-11-25T10:00:00Z'),
+    })
     await seedLead({ status: 'LEAD', budget: 500, probability: 10, expectedCloseAt: new Date('2027-01-05T10:00:00Z') })
 
     const { body } = await request(app).get('/api/admin/crm/forecast?from=2026-11&months=3').expect(200)
@@ -263,9 +272,20 @@ describe('GET /crm/forecast', () => {
   })
 
   it('mesure le réalisé par statusChangedAt et ignore les fermés/archivés dans les ouverts', async () => {
-    await seedLead({ status: 'WON', budget: 5000, statusChangedAt: new Date('2026-11-15T10:00:00Z'), expectedCloseAt: new Date('2026-12-20T10:00:00Z') })
+    await seedLead({
+      status: 'WON',
+      budget: 5000,
+      statusChangedAt: new Date('2026-11-15T10:00:00Z'),
+      expectedCloseAt: new Date('2026-12-20T10:00:00Z'),
+    })
     await seedLead({ status: 'LOST', budget: 900, expectedCloseAt: new Date('2026-11-10T10:00:00Z') })
-    await seedLead({ status: 'DEMO', budget: 800, probability: 50, expectedCloseAt: new Date('2026-11-10T10:00:00Z'), archivedAt: new Date() })
+    await seedLead({
+      status: 'DEMO',
+      budget: 800,
+      probability: 50,
+      expectedCloseAt: new Date('2026-11-10T10:00:00Z'),
+      archivedAt: new Date(),
+    })
 
     const { body } = await request(app).get('/api/admin/crm/forecast?from=2026-11&months=2').expect(200)
     expect(body.months[0]).toMatchObject({ wonCount: 1, wonAmount: 5000, openCount: 0 })
@@ -283,8 +303,20 @@ describe('GET /crm/forecast', () => {
   })
 
   it('filtre par entité', async () => {
-    await seedLead({ status: 'DEMO', budget: 1000, probability: 50, entity: 'ARROW', expectedCloseAt: new Date('2026-11-10T10:00:00Z') })
-    await seedLead({ status: 'DEMO', budget: 300, probability: 50, entity: 'VENIO', expectedCloseAt: new Date('2026-11-10T10:00:00Z') })
+    await seedLead({
+      status: 'DEMO',
+      budget: 1000,
+      probability: 50,
+      entity: 'ARROW',
+      expectedCloseAt: new Date('2026-11-10T10:00:00Z'),
+    })
+    await seedLead({
+      status: 'DEMO',
+      budget: 300,
+      probability: 50,
+      entity: 'VENIO',
+      expectedCloseAt: new Date('2026-11-10T10:00:00Z'),
+    })
 
     const arrow = await request(app).get('/api/admin/crm/forecast?from=2026-11&months=1&entity=ARROW').expect(200)
     expect(arrow.body.entity).toBe('ARROW')
@@ -294,8 +326,20 @@ describe('GET /crm/forecast', () => {
   })
 
   it('restreint un utilisateur limité à des entités', async () => {
-    await seedLead({ status: 'DEMO', budget: 1000, probability: 50, entity: 'ARROW', expectedCloseAt: new Date('2026-11-10T10:00:00Z') })
-    await seedLead({ status: 'DEMO', budget: 300, probability: 50, entity: 'VENIO', expectedCloseAt: new Date('2026-11-10T10:00:00Z') })
+    await seedLead({
+      status: 'DEMO',
+      budget: 1000,
+      probability: 50,
+      entity: 'ARROW',
+      expectedCloseAt: new Date('2026-11-10T10:00:00Z'),
+    })
+    await seedLead({
+      status: 'DEMO',
+      budget: 300,
+      probability: 50,
+      entity: 'VENIO',
+      expectedCloseAt: new Date('2026-11-10T10:00:00Z'),
+    })
     await CrmGoal.create({ period: '2026-11', entity: null, amountTarget: 9999 })
     await CrmGoal.create({ period: '2026-11', entity: 'ARROW', amountTarget: 1500 })
 
@@ -313,8 +357,20 @@ describe('GET /crm/forecast', () => {
   })
 
   it('filtre par commercial, et interdit celui d’un autre à qui ne voit pas tout', async () => {
-    await seedLead({ status: 'DEMO', budget: 1000, probability: 50, assignedTo: team.commercialA!.id, expectedCloseAt: new Date('2026-11-10T10:00:00Z') })
-    await seedLead({ status: 'DEMO', budget: 300, probability: 50, assignedTo: team.commercialB!.id, expectedCloseAt: new Date('2026-11-10T10:00:00Z') })
+    await seedLead({
+      status: 'DEMO',
+      budget: 1000,
+      probability: 50,
+      assignedTo: team.commercialA!.id,
+      expectedCloseAt: new Date('2026-11-10T10:00:00Z'),
+    })
+    await seedLead({
+      status: 'DEMO',
+      budget: 300,
+      probability: 50,
+      assignedTo: team.commercialB!.id,
+      expectedCloseAt: new Date('2026-11-10T10:00:00Z'),
+    })
 
     const mine = await request(app)
       .get('/api/admin/crm/forecast?from=2026-11&months=1&userId=' + team.commercialB!.id)
@@ -365,41 +421,100 @@ describe('Objectifs /crm/goals', () => {
 
     as(team.admin!)
     const created = await request(app).post('/api/admin/crm/goals').send(body).expect(201)
-    expect(created.body.goal).toMatchObject({ period: '2026-11', entity: null, userId: null, amountTarget: 10000, wonCountTarget: 4 })
+    expect(created.body.goal).toMatchObject({
+      period: '2026-11',
+      entity: null,
+      userId: null,
+      amountTarget: 10000,
+      wonCountTarget: 4,
+    })
 
     as(team.commercialA!)
-    await request(app).patch('/api/admin/crm/goals/' + created.body.goal._id).send({ amountTarget: 1 }).expect(403)
-    await request(app).delete('/api/admin/crm/goals/' + created.body.goal._id).expect(403)
+    await request(app)
+      .patch('/api/admin/crm/goals/' + created.body.goal._id)
+      .send({ amountTarget: 1 })
+      .expect(403)
+    await request(app)
+      .delete('/api/admin/crm/goals/' + created.body.goal._id)
+      .expect(403)
     expect(await CrmGoal.countDocuments()).toBe(1)
   })
 
   it('crée, modifie les cibles, supprime', async () => {
-    const created = await request(app).post('/api/admin/crm/goals').send({ ...body, entity: 'ARROW' }).expect(201)
+    const created = await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, entity: 'ARROW' })
+      .expect(201)
     const id = created.body.goal._id
-    const patched = await request(app).patch('/api/admin/crm/goals/' + id).send({ amountTarget: 12000.456, wonCountTarget: 6 }).expect(200)
-    expect(patched.body.goal).toMatchObject({ amountTarget: 12000.46, wonCountTarget: 6, period: '2026-11', entity: 'ARROW' })
-    await request(app).delete('/api/admin/crm/goals/' + id).expect(200)
+    const patched = await request(app)
+      .patch('/api/admin/crm/goals/' + id)
+      .send({ amountTarget: 12000.456, wonCountTarget: 6 })
+      .expect(200)
+    expect(patched.body.goal).toMatchObject({
+      amountTarget: 12000.46,
+      wonCountTarget: 6,
+      period: '2026-11',
+      entity: 'ARROW',
+    })
+    await request(app)
+      .delete('/api/admin/crm/goals/' + id)
+      .expect(200)
     expect(await CrmGoal.countDocuments()).toBe(0)
-    await request(app).delete('/api/admin/crm/goals/' + id).expect(404)
-    await request(app).patch('/api/admin/crm/goals/' + id).send({ amountTarget: 1 }).expect(404)
+    await request(app)
+      .delete('/api/admin/crm/goals/' + id)
+      .expect(404)
+    await request(app)
+      .patch('/api/admin/crm/goals/' + id)
+      .send({ amountTarget: 1 })
+      .expect(404)
   })
 
   it('refuse un second objectif pour le même mois et le même périmètre', async () => {
     await request(app).post('/api/admin/crm/goals').send(body).expect(201)
     await request(app).post('/api/admin/crm/goals').send(body).expect(409)
-    await request(app).post('/api/admin/crm/goals').send({ ...body, entity: 'ARROW' }).expect(201)
-    await request(app).post('/api/admin/crm/goals').send({ ...body, userId: team.commercialA!.id }).expect(201)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, entity: 'ARROW' })
+      .expect(201)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, userId: team.commercialA!.id })
+      .expect(201)
   })
 
   it('valide les entrées', async () => {
-    await request(app).post('/api/admin/crm/goals').send({ ...body, period: '2026-13' }).expect(400)
-    await request(app).post('/api/admin/crm/goals').send({ ...body, period: 'nov' }).expect(400)
-    await request(app).post('/api/admin/crm/goals').send({ ...body, entity: 'PLUTON' }).expect(400)
-    await request(app).post('/api/admin/crm/goals').send({ ...body, amountTarget: -1 }).expect(400)
-    await request(app).post('/api/admin/crm/goals').send({ ...body, amountTarget: '100' }).expect(400)
-    await request(app).post('/api/admin/crm/goals').send({ ...body, wonCountTarget: 1.5 }).expect(400)
-    await request(app).post('/api/admin/crm/goals').send({ ...body, userId: team.client!.id }).expect(400)
-    await request(app).post('/api/admin/crm/goals').send({ ...body, userId: team.inactive!.id }).expect(400)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, period: '2026-13' })
+      .expect(400)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, period: 'nov' })
+      .expect(400)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, entity: 'PLUTON' })
+      .expect(400)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, amountTarget: -1 })
+      .expect(400)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, amountTarget: '100' })
+      .expect(400)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, wonCountTarget: 1.5 })
+      .expect(400)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, userId: team.client!.id })
+      .expect(400)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, userId: team.inactive!.id })
+      .expect(400)
     await request(app).get('/api/admin/crm/goals?from=2026').expect(400)
     expect(await CrmGoal.countDocuments()).toBe(0)
   })
@@ -407,12 +522,23 @@ describe('Objectifs /crm/goals', () => {
   it('cantonne un administrateur restreint à ses entités', async () => {
     as(team.admin!, { crmEntities: ['ARROW'] })
     await request(app).post('/api/admin/crm/goals').send(body).expect(403)
-    await request(app).post('/api/admin/crm/goals').send({ ...body, entity: 'VENIO' }).expect(403)
-    const ok = await request(app).post('/api/admin/crm/goals').send({ ...body, entity: 'ARROW' }).expect(201)
+    await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, entity: 'VENIO' })
+      .expect(403)
+    const ok = await request(app)
+      .post('/api/admin/crm/goals')
+      .send({ ...body, entity: 'ARROW' })
+      .expect(201)
 
     const other = await CrmGoal.create({ period: '2026-11', entity: 'VENIO', amountTarget: 5 })
-    await request(app).patch('/api/admin/crm/goals/' + other._id).send({ amountTarget: 6 }).expect(403)
-    await request(app).delete('/api/admin/crm/goals/' + other._id).expect(403)
+    await request(app)
+      .patch('/api/admin/crm/goals/' + other._id)
+      .send({ amountTarget: 6 })
+      .expect(403)
+    await request(app)
+      .delete('/api/admin/crm/goals/' + other._id)
+      .expect(403)
 
     const list = await request(app).get('/api/admin/crm/goals').expect(200)
     expect(list.body.goals.map((goal: { _id: string }) => goal._id)).toEqual([ok.body.goal._id])

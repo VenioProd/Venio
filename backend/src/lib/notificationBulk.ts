@@ -5,8 +5,7 @@ export const NOTIFICATION_BULK_ACTIONS = ['read', 'unread', 'archive', 'unarchiv
 export type NotificationBulkAction = (typeof NOTIFICATION_BULK_ACTIONS)[number]
 
 export type NotificationBulkParse =
-  | { ok: true; ids: string[]; action: NotificationBulkAction }
-  | { ok: false; error: string }
+  { ok: true; ids: string[]; action: NotificationBulkAction } | { ok: false; error: string }
 
 /** Valide le corps `{ ids, action }` (ids : 1 à 200 ObjectId). */
 export function parseNotificationBulkBody(body: unknown): NotificationBulkParse {

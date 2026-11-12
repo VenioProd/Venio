@@ -43,14 +43,19 @@ const definition: AutomationDefinition = {
     const inactiveDays = (ctx.settings.config?.inactiveDays as number) || DEFAULT_INACTIVE_DAYS
     const threshold = new Date(ctx.now.getTime() - inactiveDays * 24 * 3600_000)
 
-    const inactiveLeads = await Lead.find(withActiveLeads({
-      status: { $nin: ['WON', 'LOST'] },
-      updatedAt: { $lt: threshold },
-      assignedTo: { $ne: null },
-    })).populate('assignedTo', 'email name')
+    const inactiveLeads = await Lead.find(
+      withActiveLeads({
+        status: { $nin: ['WON', 'LOST'] },
+        updatedAt: { $lt: threshold },
+        assignedTo: { $ne: null },
+      }),
+    ).populate('assignedTo', 'email name')
 
     // Group leads by assignee
-    const byAssignee = new Map<string, { user: { _id: string; email: string; name: string }; leads: typeof inactiveLeads }>()
+    const byAssignee = new Map<
+      string,
+      { user: { _id: string; email: string; name: string }; leads: typeof inactiveLeads }
+    >()
 
     for (const lead of inactiveLeads) {
       const assignee = lead.assignedTo as { _id: unknown; email?: string; name?: string } | null
@@ -74,7 +79,7 @@ const definition: AutomationDefinition = {
         recipient: userId,
         type: 'CRM_FOLLOWUP' as never,
         title: `${leads.length} lead(s) inactif(s) depuis ${inactiveDays}j`,
-        message: `Leads sans activite : ${leads.map(l => l.company).join(', ')}`,
+        message: `Leads sans activite : ${leads.map((l) => l.company).join(', ')}`,
         link: '/admin/crm',
       })
 
@@ -82,7 +87,7 @@ const definition: AutomationDefinition = {
       await sendColdLeadsReminderEmail({
         to: user.email,
         assigneeName: user.name,
-        leads: leads.map(l => ({
+        leads: leads.map((l) => ({
           company: l.company,
           contactName: l.contactName,
           daysSinceContact: Math.floor((ctx.now.getTime() - new Date(l.updatedAt).getTime()) / 86400_000),

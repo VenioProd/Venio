@@ -14,7 +14,15 @@ export interface QuickSelectFilter {
  * visibles (ex. « les lues », « plus vieilles que 30 j »). Chaque raccourci
  * remplace la sélection courante.
  */
-export default function QuickSelect({ select, filters, total }: { select: MultiSelect; filters: QuickSelectFilter[]; total: number }) {
+export default function QuickSelect({
+  select,
+  filters,
+  total,
+}: {
+  select: MultiSelect
+  filters: QuickSelectFilter[]
+  total: number
+}) {
   const { t } = useI18n()
   if (total === 0) return null
   return (

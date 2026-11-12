@@ -35,10 +35,7 @@ const definition: AutomationDefinition = {
 
     // Find tools with old passwords
     const staleTools = await ToolAccess.find({
-      $or: [
-        { lastRotatedAt: { $lt: threshold } },
-        { lastRotatedAt: null, createdAt: { $lt: threshold } },
-      ],
+      $or: [{ lastRotatedAt: { $lt: threshold } }, { lastRotatedAt: null, createdAt: { $lt: threshold } }],
     }).select('name category lastRotatedAt createdAt')
 
     if (staleTools.length === 0) {

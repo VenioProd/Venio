@@ -391,12 +391,10 @@ router.get(
  */
 async function loadLeadForDataRights(req: Request, res: Response) {
   if (!administersCrm(req)) {
-    res
-      .status(403)
-      .json({
-        error: 'Les demandes sur les données personnelles sont réservées aux administrateurs du CRM',
-        code: 'CRM_ADMIN_REQUIRED',
-      })
+    res.status(403).json({
+      error: 'Les demandes sur les données personnelles sont réservées aux administrateurs du CRM',
+      code: 'CRM_ADMIN_REQUIRED',
+    })
     return null
   }
   const lead = await Lead.findById(req.params.id)

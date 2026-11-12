@@ -15,7 +15,12 @@ import {
  * téléphone. Informatif : ne bloque jamais la saisie (le blocage éventuel est
  * un réglage serveur).
  */
-const DuplicatesBanner: React.FC<DuplicateQuery> = ({ company = '', contactEmail = '', contactPhone = '', excludeId }) => {
+const DuplicatesBanner: React.FC<DuplicateQuery> = ({
+  company = '',
+  contactEmail = '',
+  contactPhone = '',
+  excludeId,
+}) => {
   const { t } = useI18n()
   const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([])
   const statusLabel = (status: string) => (STATUS_MAP[status] ? t(STATUS_MAP[status].labelKey) : status)
@@ -39,7 +44,17 @@ const DuplicatesBanner: React.FC<DuplicateQuery> = ({ company = '', contactEmail
 
   if (duplicates.length === 0) return null
   return (
-    <div className="crm-duplicates-banner" role="status" style={{ margin: '12px 0', padding: '10px 14px', borderRadius: 8, border: '1px solid #d97706', background: 'color-mix(in srgb, #d97706 10%, transparent)' }}>
+    <div
+      className="crm-duplicates-banner"
+      role="status"
+      style={{
+        margin: '12px 0',
+        padding: '10px 14px',
+        borderRadius: 8,
+        border: '1px solid #d97706',
+        background: 'color-mix(in srgb, #d97706 10%, transparent)',
+      }}
+    >
       <strong>{t('crm.duplicates.title', { count: duplicates.length })}</strong>
       <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
         {duplicates.map((d) => (

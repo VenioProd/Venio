@@ -35,14 +35,19 @@ beforeEach(() => {
     if (options?.method === 'DELETE') return { demoAccesses: [] } as never
     return { demoAccesses: [ACCESS] } as never
   })
-  Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn().mockResolvedValue(undefined) }, configurable: true })
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    configurable: true,
+  })
 })
 
 describe('Accès démo', () => {
   it('affiche l’avertissement en permanence et ne montre jamais le mot de passe avant clic', () => {
     const { container } = mount()
     expect(
-      screen.getByText('Uniquement des comptes de démonstration à données fictives. Jamais d’identifiants réels de production, de clients ou d’outils internes.'),
+      screen.getByText(
+        'Uniquement des comptes de démonstration à données fictives. Jamais d’identifiants réels de production, de clients ou d’outils internes.',
+      ),
     ).toBeInTheDocument()
     expect(screen.getByText('demo-dir')).toBeInTheDocument()
     expect(screen.getByText('••••')).toBeInTheDocument()
@@ -54,7 +59,9 @@ describe('Accès démo', () => {
     const { container } = mount()
     fireEvent.click(screen.getByRole('button', { name: /Afficher le mot de passe/ }))
     expect(await screen.findByText(SECRET)).toBeInTheDocument()
-    expect(mockedFetch).toHaveBeenCalledWith('/api/admin/project-sheets/sheet1/demo-accesses/d1/reveal', { method: 'POST' })
+    expect(mockedFetch).toHaveBeenCalledWith('/api/admin/project-sheets/sheet1/demo-accesses/d1/reveal', {
+      method: 'POST',
+    })
     fireEvent.click(screen.getByRole('button', { name: /Masquer le mot de passe/ }))
     expect(container.textContent).not.toContain(SECRET)
     expect(screen.getByText('••••')).toBeInTheDocument()
@@ -92,7 +99,9 @@ describe('Accès démo', () => {
   it('ajoute un accès (POST) et remonte la nouvelle liste', async () => {
     const { onChange } = mount()
     fireEvent.click(screen.getByRole('button', { name: /Ajouter un accès démo/ }))
-    expect(screen.getByText('Ne saisissez jamais de secret (mot de passe, clé, jeton) dans une fiche.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Ne saisissez jamais de secret (mot de passe, clé, jeton) dans une fiche.'),
+    ).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('URL'), { target: { value: 'https://demo2.example.test' } })
     fireEvent.change(screen.getByLabelText('Rôle du compte'), { target: { value: 'Formateur' } })
     fireEvent.change(screen.getByLabelText('Identifiant'), { target: { value: 'demo-form' } })

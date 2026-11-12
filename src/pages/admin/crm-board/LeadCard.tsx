@@ -3,7 +3,15 @@ import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
 import { formatDate, formatMoney } from '../../../i18n/format'
 import type { Lead, AdminUser } from '../../../types/crm.types'
-import { ENTITY_MAP, PRIORITY_MAP, PROJECT_MAP, SOURCE_LABEL_KEYS, getLeadAlerts, labelOfValue, leadEntity } from './constants'
+import {
+  ENTITY_MAP,
+  PRIORITY_MAP,
+  PROJECT_MAP,
+  SOURCE_LABEL_KEYS,
+  getLeadAlerts,
+  labelOfValue,
+  leadEntity,
+} from './constants'
 import { useCrmThresholds } from './thresholdsContext'
 
 interface LeadCardProps {

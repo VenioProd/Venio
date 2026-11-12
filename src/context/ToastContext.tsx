@@ -33,23 +33,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
-  const showToast = useCallback(
-    (message: string, type: ToastType, duration?: number) => {
-      const id = `toast-${Date.now()}-${++toastCounter}`
-      const resolvedDuration = duration ?? DEFAULT_DURATIONS[type]
+  const showToast = useCallback((message: string, type: ToastType, duration?: number) => {
+    const id = `toast-${Date.now()}-${++toastCounter}`
+    const resolvedDuration = duration ?? DEFAULT_DURATIONS[type]
 
-      const toast: Toast = { id, message, type, duration: resolvedDuration }
-      setToasts((prev) => [...prev, toast])
+    const toast: Toast = { id, message, type, duration: resolvedDuration }
+    setToasts((prev) => [...prev, toast])
 
-      return id
-    },
-    []
-  )
+    return id
+  }, [])
 
-  const value = useMemo(
-    () => ({ toasts, showToast, removeToast }),
-    [toasts, showToast, removeToast]
-  )
+  const value = useMemo(() => ({ toasts, showToast, removeToast }), [toasts, showToast, removeToast])
 
   return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>
 }

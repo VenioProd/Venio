@@ -1,9 +1,5 @@
 import type { Document, Types } from 'mongoose'
-import type {
-  InternalConversationRole,
-  InternalConversationType,
-  InternalConversationVisibility,
-} from '../enums.js'
+import type { InternalConversationRole, InternalConversationType, InternalConversationVisibility } from '../enums.js'
 
 export interface IInternalConversation extends Document {
   type: InternalConversationType

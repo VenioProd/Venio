@@ -70,7 +70,7 @@ describe('summariseRevenue', () => {
 })
 
 describe('summariseRevenue — devises', () => {
-  it("ne mélange jamais deux devises : EUR par défaut, le reste ailleurs", () => {
+  it('ne mélange jamais deux devises : EUR par défaut, le reste ailleurs', () => {
     const documents = [
       doc({ total: 1000 }),
       doc({ total: 500, currency: 'USD' }),
@@ -89,7 +89,9 @@ describe('summariseRevenue — devises', () => {
 })
 
 describe('leadRevenueEntries — devis rattachés directement au lead', () => {
-  const lines = [{ _id: 'l1', description: 'Site', quantity: 2, unitPrice: 500, taxRate: 20, isOptional: false }] as never
+  const lines = [
+    { _id: 'l1', description: 'Site', quantity: 2, unitPrice: 500, taxRate: 20, isOptional: false },
+  ] as never
   const none = new Map<string, string>()
 
   it('compte un devis signé sans projet, TTC, depuis ses lignes', () => {
@@ -103,7 +105,7 @@ describe('leadRevenueEntries — devis rattachés directement au lead', () => {
     expect(summariseRevenue(entries.map((entry) => entry.document)).signed).toBe(1200)
   })
 
-  it("ignore un devis non signé", () => {
+  it('ignore un devis non signé', () => {
     const entries = leadRevenueEntries({
       documents: [],
       leadByProject: none,
@@ -327,7 +329,7 @@ describe('buildForecast', () => {
     expect(categories.pipeline).toEqual({ count: 1, gross: 1000, weighted: 390 })
   })
 
-  it("classe les dates dans le mois de Paris, pas le mois UTC", () => {
+  it('classe les dates dans le mois de Paris, pas le mois UTC', () => {
     const forecast = buildForecast(
       [
         // 30 nov. 23:30 UTC = 1er déc. 00:30 à Paris (UTC+1)
@@ -348,7 +350,13 @@ describe('buildForecast', () => {
     const forecast = buildForecast(
       [
         { status: 'LOST', budget: 1000, expectedCloseAt: '2026-11-10T10:00:00Z' },
-        { status: 'DEMO', budget: 1000, probability: 50, expectedCloseAt: '2026-11-10T10:00:00Z', archivedAt: new Date() },
+        {
+          status: 'DEMO',
+          budget: 1000,
+          probability: 50,
+          expectedCloseAt: '2026-11-10T10:00:00Z',
+          archivedAt: new Date(),
+        },
         { status: 'DEMO', budget: 800, probability: 50, expectedCloseAt: '2026-09-10T10:00:00Z' },
         { status: 'DEMO', budget: 600, probability: 50, expectedCloseAt: null },
         { status: 'DEMO', budget: 100, probability: 50, expectedCloseAt: '2028-01-01T10:00:00Z' },
@@ -360,10 +368,16 @@ describe('buildForecast', () => {
     expect(forecast.unscheduled).toEqual({ count: 1, gross: 600, weighted: 300 })
   })
 
-  it("mesure le réalisé par statusChangedAt (mois de Paris), pas par clôture prévue", () => {
+  it('mesure le réalisé par statusChangedAt (mois de Paris), pas par clôture prévue', () => {
     const forecast = buildForecast(
       [
-        { status: 'WON', budget: 5000, probability: 100, expectedCloseAt: '2026-12-01T10:00:00Z', statusChangedAt: '2026-11-15T10:00:00Z' },
+        {
+          status: 'WON',
+          budget: 5000,
+          probability: 100,
+          expectedCloseAt: '2026-12-01T10:00:00Z',
+          statusChangedAt: '2026-11-15T10:00:00Z',
+        },
         { status: 'WON', budget: 700, statusChangedAt: '2026-11-30T23:30:00Z' },
         { status: 'WON', budget: 900, statusChangedAt: null },
       ],
@@ -395,7 +409,7 @@ describe('buildForecast', () => {
     expect(buildForecast(leads, { ...opts, goals }).months[1]!.goal).toBeNull()
   })
 
-  it('calcule les mois à travers un changement d\'année', () => {
+  it("calcule les mois à travers un changement d'année", () => {
     expect(addMonths('2026-11', 2)).toBe('2027-01')
     expect(addMonths('2026-01', -1)).toBe('2025-12')
     expect(monthRange('2026-12', 3)).toEqual(['2026-12', '2027-01', '2027-02'])

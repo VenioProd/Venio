@@ -54,9 +54,7 @@ const definition: AutomationDefinition = {
       if (totalTasks === 0) continue
 
       const completionRate = ((totalTasks - openTasks) / totalTasks) * 100
-      const daysUntilDeadline = Math.floor(
-        (new Date(project.endDate).getTime() - ctx.now.getTime()) / 86400_000
-      )
+      const daysUntilDeadline = Math.floor((new Date(project.endDate).getTime() - ctx.now.getTime()) / 86400_000)
 
       // Risk: many open tasks + close deadline
       const isAtRisk = completionRate < 70 && daysUntilDeadline <= 7

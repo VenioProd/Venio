@@ -65,7 +65,10 @@ export function computeSignals(input: ProjectSignalsInput, now: Date = new Date(
   let expectedProgress: number | null = null
   if (input.startDate && due && due > input.startDate) {
     const span = due.getTime() - new Date(input.startDate).getTime()
-    expectedProgress = Math.max(0, Math.min(100, Math.round(((now.getTime() - new Date(input.startDate).getTime()) / span) * 100)))
+    expectedProgress = Math.max(
+      0,
+      Math.min(100, Math.round(((now.getTime() - new Date(input.startDate).getTime()) / span) * 100)),
+    )
   }
 
   const budgetPct =
@@ -74,7 +77,9 @@ export function computeSignals(input: ProjectSignalsInput, now: Date = new Date(
       : null
 
   const lastActivityAt = input.lastActivityAt ?? input.updatedAt ?? null
-  const staleDays = lastActivityAt ? Math.max(0, Math.floor((now.getTime() - new Date(lastActivityAt).getTime()) / DAY)) : 0
+  const staleDays = lastActivityAt
+    ? Math.max(0, Math.floor((now.getTime() - new Date(lastActivityAt).getTime()) / DAY))
+    : 0
 
   const risks: Risk[] = []
   if (overdueDays > 0) risks.push({ code: 'LATE', value: overdueDays })
@@ -89,7 +94,8 @@ export function computeSignals(input: ProjectSignalsInput, now: Date = new Date(
   ) {
     risks.push({ code: 'PROJECTED_LATE', value: expectedProgress })
   }
-  if (active && daysToDue !== null && daysToDue >= 0 && daysToDue <= 3) risks.push({ code: 'DUE_SOON', value: daysToDue })
+  if (active && daysToDue !== null && daysToDue >= 0 && daysToDue <= 3)
+    risks.push({ code: 'DUE_SOON', value: daysToDue })
   if (active && staleDays >= STALE_DAYS) risks.push({ code: 'STALE', value: staleDays })
   if (input.status === 'EN_ATTENTE') risks.push({ code: 'WAITING_CLIENT', value: null })
   if (input.status === 'TERMINE' && input.billingStatus !== 'FACTURE') risks.push({ code: 'TO_BILL', value: null })
@@ -103,7 +109,10 @@ export function computeSignals(input: ProjectSignalsInput, now: Date = new Date(
     TO_BILL: 30,
     WAITING_CLIENT: 10,
   }
-  const urgency = risks.reduce((max, r) => Math.max(max, weight[r.code] + (r.code === 'LATE' ? Math.min(r.value ?? 0, 60) : 0)), 0)
+  const urgency = risks.reduce(
+    (max, r) => Math.max(max, weight[r.code] + (r.code === 'LATE' ? Math.min(r.value ?? 0, 60) : 0)),
+    0,
+  )
 
   const actions: ProjectAction[] = []
   const has = (c: RiskCode) => risks.some((r) => r.code === c)
@@ -113,7 +122,18 @@ export function computeSignals(input: ProjectSignalsInput, now: Date = new Date(
   if (has('STALE') || has('WAITING_CLIENT')) actions.push('RESUME')
   if (has('TO_BILL')) actions.push('INVOICE', 'ARCHIVE')
 
-  return { progress, expectedProgress, daysToDue, overdueDays, budgetPct, staleDays, lastActivityAt, risks, urgency, actions }
+  return {
+    progress,
+    expectedProgress,
+    daysToDue,
+    overdueDays,
+    budgetPct,
+    staleDays,
+    lastActivityAt,
+    risks,
+    urgency,
+    actions,
+  }
 }
 
 export interface WorkloadInput {
@@ -150,7 +170,10 @@ export async function buildPortfolioOverview(projectIds: string[] | null, now: D
         },
       },
     ]),
-    ProjectUpdate.aggregate([{ $match: { project: { $in: ids } } }, { $group: { _id: '$project', last: { $max: '$createdAt' } } }]),
+    ProjectUpdate.aggregate([
+      { $match: { project: { $in: ids } } },
+      { $group: { _id: '$project', last: { $max: '$createdAt' } } },
+    ]),
     Task.find({
       project: { $in: ids },
       isArchived: { $ne: true },
@@ -168,7 +191,9 @@ export async function buildPortfolioOverview(projectIds: string[] | null, now: D
     const id = String(p._id)
     const stat = statByProject.get(id)
     const candidates = [p.updatedAt, stat?.lastTask, updateByProject.get(id)].filter(Boolean) as Date[]
-    const lastActivityAt = candidates.length ? new Date(Math.max(...candidates.map((d) => new Date(d).getTime()))) : null
+    const lastActivityAt = candidates.length
+      ? new Date(Math.max(...candidates.map((d) => new Date(d).getTime())))
+      : null
     const signals = computeSignals(
       {
         status: p.status,
@@ -195,7 +220,11 @@ export async function buildPortfolioOverview(projectIds: string[] | null, now: D
       client: client ? { _id: String(client._id), name: client.companyName || client.name || '' } : null,
       assignedTo: assignee ? { _id: String(assignee._id), name: assignee.name || '' } : null,
       endDate: p.endDate ?? null,
-      budget: { amount: p.budget?.amount ?? null, invoiced: p.billing?.amountInvoiced ?? null, currency: p.budget?.currency ?? 'EUR' },
+      budget: {
+        amount: p.budget?.amount ?? null,
+        invoiced: p.billing?.amountInvoiced ?? null,
+        currency: p.budget?.currency ?? 'EUR',
+      },
       tasks: { total: stat?.total ?? 0, done: stat?.done ?? 0 },
       ...signals,
     }
@@ -242,7 +271,14 @@ export async function buildPortfolioOverview(projectIds: string[] | null, now: D
     .filter((i) => i.status !== 'TERMINE' && i.endDate && i.daysToDue !== null && i.daysToDue <= LOAD_WINDOW_DAYS)
     .sort((a, b) => (a.daysToDue ?? 0) - (b.daysToDue ?? 0))
     .slice(0, 10)
-    .map((i) => ({ _id: i._id, name: i.name, assignedTo: i.assignedTo, endDate: i.endDate, daysToDue: i.daysToDue, overdueDays: i.overdueDays }))
+    .map((i) => ({
+      _id: i._id,
+      name: i.name,
+      assignedTo: i.assignedTo,
+      endDate: i.endDate,
+      daysToDue: i.daysToDue,
+      overdueDays: i.overdueDays,
+    }))
 
   return {
     pulse: {
@@ -254,7 +290,11 @@ export async function buildPortfolioOverview(projectIds: string[] | null, now: D
       dueIn7Days: active.filter((i) => i.daysToDue !== null && i.daysToDue >= 0 && i.daysToDue <= 7).length,
       dueIn48h: active.filter((i) => i.daysToDue !== null && i.daysToDue >= 0 && i.daysToDue <= 2).length,
       toBill: items.filter((i) => i.risks.some((r) => r.code === 'TO_BILL')).length,
-      budget: { total: budgetTotal, invoiced: budgetInvoiced, pct: budgetTotal > 0 ? Math.round((budgetInvoiced / budgetTotal) * 100) : null },
+      budget: {
+        total: budgetTotal,
+        invoiced: budgetInvoiced,
+        pct: budgetTotal > 0 ? Math.round((budgetInvoiced / budgetTotal) * 100) : null,
+      },
       load: {
         pct: workload.length ? Math.round(workload.reduce((s, w) => s + w.loadPct, 0) / workload.length) : null,
         overloaded: workload.filter((w) => w.loadPct > 100).length,

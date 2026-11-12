@@ -16,10 +16,7 @@ if (!MONGO_URI) {
 async function fix(): Promise<void> {
   await mongoose.connect(MONGO_URI!)
 
-  const result = await User.updateOne(
-    { email: OLD_EMAIL },
-    { $set: { email: NEW_EMAIL } }
-  )
+  const result = await User.updateOne({ email: OLD_EMAIL }, { $set: { email: NEW_EMAIL } })
 
   if (result.matchedCount === 0) {
     console.log('Aucun utilisateur trouvé avec:', OLD_EMAIL)

@@ -40,17 +40,19 @@ const internSchema = new Schema<IIntern>(
     nextcloudUsername: { type: String, default: '' },
     nextcloudPassword: { type: String, default: '' },
     conventions: {
-      type: [{
-        filename: { type: String, required: true },
-        originalName: { type: String, required: true },
-        size: { type: Number, required: true },
-        uploadedAt: { type: Date, default: Date.now },
-      }],
+      type: [
+        {
+          filename: { type: String, required: true },
+          originalName: { type: String, required: true },
+          size: { type: Number, required: true },
+          uploadedAt: { type: Date, default: Date.now },
+        },
+      ],
       default: [],
     },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 internSchema.index({ userId: 1 }, { unique: true })

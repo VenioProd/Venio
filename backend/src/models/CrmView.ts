@@ -25,7 +25,10 @@ const crmViewSchema = new mongoose.Schema<ICrmView>(
     filters: { type: mongoose.Schema.Types.Mixed, default: {} },
     columns: { type: [String], default: [] },
     sort: {
-      type: new mongoose.Schema({ key: { type: String, required: true }, dir: { type: Number, enum: [1, -1], required: true } }, { _id: false }),
+      type: new mongoose.Schema(
+        { key: { type: String, required: true }, dir: { type: Number, enum: [1, -1], required: true } },
+        { _id: false },
+      ),
       default: null,
     },
     mode: { type: String, enum: CRM_VIEW_MODES, default: 'table' },

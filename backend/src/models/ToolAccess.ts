@@ -32,7 +32,7 @@ const toolAccessSchema = new Schema<IToolAccess>(
     addedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     addedByName: { type: String, required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 toolAccessSchema.index({ name: 1 })

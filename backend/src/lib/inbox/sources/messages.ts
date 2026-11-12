@@ -7,9 +7,7 @@ const TAG: InboxTag = { label: 'MSG', color: '#8b5cf6' }
 
 export async function getMessageItems(userId: string): Promise<InboxItem[]> {
   // Get all conversations the user is a member of, with lastReadAt
-  const memberships = await InternalConversationMember.find({ user: userId })
-    .select('conversation lastReadAt')
-    .lean()
+  const memberships = await InternalConversationMember.find({ user: userId }).select('conversation lastReadAt').lean()
   if (memberships.length === 0) return []
 
   const conversationIds = memberships.map((m: any) => m.conversation)
@@ -31,12 +29,10 @@ export async function getMessageItems(userId: string): Promise<InboxItem[]> {
     id: `message:${c._id}`,
     type: 'message' as const,
     sourceId: String(c._id),
-    title: c.type === 'DM'
-      ? `DM ${c.name ?? '(sans nom)'}`
-      : `#${c.name ?? 'canal'} (non lus)`,
-    meta: [
-      c.lastMessageAt ? `dernier msg ${new Date(c.lastMessageAt).toLocaleDateString('fr-FR')}` : '',
-    ].filter(Boolean),
+    title: c.type === 'DM' ? `DM ${c.name ?? '(sans nom)'}` : `#${c.name ?? 'canal'} (non lus)`,
+    meta: [c.lastMessageAt ? `dernier msg ${new Date(c.lastMessageAt).toLocaleDateString('fr-FR')}` : ''].filter(
+      Boolean,
+    ),
     urgency: scoreUrgency({ type: 'message' }),
     tag: TAG,
     actions: [{ kind: 'read' as const, label: 'Lire ⏎', shortcut: 'enter' }],

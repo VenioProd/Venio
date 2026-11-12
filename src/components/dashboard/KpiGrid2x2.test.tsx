@@ -21,7 +21,7 @@ describe('KpiGrid2x2', () => {
       delta: { value: (i + 1) * 3, direction: 'up' as const },
     }))
     render(<KpiGrid2x2 kpis={kpisWithDeltas} />)
-    expect(screen.getByText(/\+12%/)).toBeTruthy()  // 4th card has +12
+    expect(screen.getByText(/\+12%/)).toBeTruthy() // 4th card has +12
   })
 
   it('rend les labels visibles', () => {

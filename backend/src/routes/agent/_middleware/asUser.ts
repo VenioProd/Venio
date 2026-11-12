@@ -20,14 +20,12 @@ export async function loadAgentUserPayload(req: Request): Promise<JwtPayload> {
   if (!tokenId) {
     throw new AgentApiError(500, 'NO_TOKEN', 'Token absent du contexte (bug ordre middleware)')
   }
-  const user = await User.findOne({ agentTokenId: tokenId, isActive: true })
-    .select('_id name email role')
-    .lean()
+  const user = await User.findOne({ agentTokenId: tokenId, isActive: true }).select('_id name email role').lean()
   if (!user) {
     throw new AgentApiError(
       500,
       'AGENT_USER_MISSING',
-      'Aucun User AGENT actif associé à ce token — backfill peut-être nécessaire'
+      'Aucun User AGENT actif associé à ce token — backfill peut-être nécessaire',
     )
   }
   if (user.role !== 'AGENT') {

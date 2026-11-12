@@ -16,7 +16,7 @@ const documentSchema = new mongoose.Schema<IDocument>(
     uploadedAt: { type: Date, default: Date.now },
     downloadedAt: { type: Date, default: null },
   },
-  { timestamps: false }
+  { timestamps: false },
 )
 
 export default mongoose.model<IDocument>('Document', documentSchema)

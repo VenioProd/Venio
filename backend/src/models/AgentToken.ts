@@ -66,7 +66,7 @@ const agentTokenSchema = new mongoose.Schema<IAgentToken>(
     revokedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     notes: { type: String, default: '', maxlength: 1000 },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 // Lookup rapide à la requête : (prefix, status) → 1 candidat normalement

@@ -133,11 +133,14 @@ export function normalizeLeadPatch(
   if (body.contactEmail !== undefined) payload.contactEmail = String(body.contactEmail || '')
   if (body.contactPhone !== undefined) payload.contactPhone = String(body.contactPhone || '')
   if (body.source !== undefined) payload.source = String(body.source || '')
-  if (typeof body.project === 'string' && (['', ...LEAD_PROJECTS] as string[]).includes(body.project)) payload.project = body.project
+  if (typeof body.project === 'string' && (['', ...LEAD_PROJECTS] as string[]).includes(body.project))
+    payload.project = body.project
   // Entité du groupe : valeur connue seulement ; une valeur inconnue est ignorée comme les autres énumérations.
   if (isGroupEntity(body.entity)) payload.entity = body.entity
-  if (typeof body.status === 'string' && (CRM_STATUSES as readonly string[]).includes(body.status)) payload.status = body.status
-  if (typeof body.priority === 'string' && (LEAD_PRIORITIES as readonly string[]).includes(body.priority)) payload.priority = body.priority
+  if (typeof body.status === 'string' && (CRM_STATUSES as readonly string[]).includes(body.status))
+    payload.status = body.status
+  if (typeof body.priority === 'string' && (LEAD_PRIORITIES as readonly string[]).includes(body.priority))
+    payload.priority = body.priority
   if (body.budget !== undefined) {
     const value = Number(body.budget)
     payload.budget = Number.isNaN(value) ? null : value
@@ -146,17 +149,29 @@ export function normalizeLeadPatch(
   if (body.lastContactAt !== undefined) payload.lastContactAt = body.lastContactAt ? new Date(body.lastContactAt) : null
   if (body.notes !== undefined) payload.notes = String(body.notes || '')
   if (body.serviceType !== undefined) payload.serviceType = String(body.serviceType || '')
-  if (typeof body.leadTemperature === 'string' && (LEAD_TEMPERATURES as readonly string[]).includes(body.leadTemperature)) {
+  if (
+    typeof body.leadTemperature === 'string' &&
+    (LEAD_TEMPERATURES as readonly string[]).includes(body.leadTemperature)
+  ) {
     payload.leadTemperature = body.leadTemperature
   }
   if (body.interactionNotes !== undefined) payload.interactionNotes = String(body.interactionNotes || '')
   if (body.lostReason !== undefined) payload.lostReason = String(body.lostReason || '').trim()
   if (body.lostComment !== undefined) payload.lostComment = String(body.lostComment || '')
   if (body.assignedTo !== undefined) {
-    payload.assignedTo = opts.lenientAssignee ? (isObjectId(body.assignedTo) ? body.assignedTo : null) : body.assignedTo || null
+    payload.assignedTo = opts.lenientAssignee
+      ? isObjectId(body.assignedTo)
+        ? body.assignedTo
+        : null
+      : body.assignedTo || null
   }
   // Valeurs normalisées pour la détection de doublons (voir lib/crmDedup), déduites des champs saisis présents.
-  return { ...payload, ...normalizeEnrichedLeadFields(body), ...normalizePrivacyPatch(body), ...normalizedLeadFields(payload) }
+  return {
+    ...payload,
+    ...normalizeEnrichedLeadFields(body),
+    ...normalizePrivacyPatch(body),
+    ...normalizedLeadFields(payload),
+  }
 }
 
 // ───────────────────────── Validation ─────────────────────────
@@ -173,7 +188,11 @@ export function assertLostReason(reason: unknown, settings: Pick<ICrmSettings, '
 export async function assertAssignable(userId: unknown): Promise<void> {
   if (userId == null || userId === '') return
   if (!(await isAssignableCrmUser(String(userId)))) {
-    throw new LeadChangeError(400, 'INVALID_ASSIGNEE', 'Commercial introuvable, inactif ou non habilité à suivre un lead')
+    throw new LeadChangeError(
+      400,
+      'INVALID_ASSIGNEE',
+      'Commercial introuvable, inactif ou non habilité à suivre un lead',
+    )
   }
 }
 
@@ -310,7 +329,13 @@ export async function applyLeadChange(
 
   // ── Historique ──
   if (created && settings.activityLogging) {
-    await logLeadActivity(lead._id, 'CREATED', `Lead créé${suffix}`, { company: lead.company, source: ctx.source }, ctx.actor)
+    await logLeadActivity(
+      lead._id,
+      'CREATED',
+      `Lead créé${suffix}`,
+      { company: lead.company, source: ctx.source },
+      ctx.actor,
+    )
   }
   // Les changements de statut sont toujours consignés : ils fondent l'entonnoir
   // et les vitesses du pilotage, qui ne peut pas reconstituer ceux qui manquent.
@@ -319,7 +344,13 @@ export async function applyLeadChange(
       lead._id,
       'STATUS_CHANGE',
       `Statut: ${t.from} → ${t.to}${t.auto ? ' (auto-qualification)' : ''}${suffix}`,
-      { from: t.from, to: t.to, source: ctx.source, ...(t.auto ? { auto: 'AUTO_QUALIFIED' } : {}), ...(ctx.activityMeta ?? {}) },
+      {
+        from: t.from,
+        to: t.to,
+        source: ctx.source,
+        ...(t.auto ? { auto: 'AUTO_QUALIFIED' } : {}),
+        ...(ctx.activityMeta ?? {}),
+      },
       ctx.actor,
     )
   }
@@ -327,7 +358,13 @@ export async function applyLeadChange(
   const newAssignee = lead.assignedTo ? String(lead.assignedTo) : null
   const assigneeChanged = created ? Boolean(newAssignee) : newAssignee !== oldAssignee
   if (!created && assigneeChanged && settings.activityLogging) {
-    await logLeadActivity(lead._id, 'ASSIGNED', `Lead réassigné${suffix}`, { from: oldAssignee, to: newAssignee, ...(ctx.activityMeta ?? {}) }, ctx.actor)
+    await logLeadActivity(
+      lead._id,
+      'ASSIGNED',
+      `Lead réassigné${suffix}`,
+      { from: oldAssignee, to: newAssignee, ...(ctx.activityMeta ?? {}) },
+      ctx.actor,
+    )
   }
   if (!created && patch.archivedAt !== undefined && settings.activityLogging) {
     await logLeadActivity(

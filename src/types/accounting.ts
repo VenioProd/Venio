@@ -382,12 +382,7 @@ export interface IClassificationRule {
 }
 
 export type ExternalTransactionStatus =
-  | 'RECEIVED'
-  | 'CLASSIFIED'
-  | 'POSTED'
-  | 'AWAITING_REVIEW'
-  | 'REJECTED'
-  | 'DUPLICATE'
+  'RECEIVED' | 'CLASSIFIED' | 'POSTED' | 'AWAITING_REVIEW' | 'REJECTED' | 'DUPLICATE'
 
 export interface IExternalTransaction {
   _id: string

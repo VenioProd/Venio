@@ -121,12 +121,10 @@ const definition: AutomationDefinition = {
     const prevMonthRevenue = prevMonthRevenueAgg[0]?.total || 0
 
     // Build comparison
-    const lastWonLostRatio = lastMonthWonLeads + lastMonthLostLeads > 0
-      ? `${lastMonthWonLeads}/${lastMonthLostLeads}`
-      : '0/0'
-    const prevWonLostRatio = prevMonthWonLeads + prevMonthLostLeads > 0
-      ? `${prevMonthWonLeads}/${prevMonthLostLeads}`
-      : '0/0'
+    const lastWonLostRatio =
+      lastMonthWonLeads + lastMonthLostLeads > 0 ? `${lastMonthWonLeads}/${lastMonthLostLeads}` : '0/0'
+    const prevWonLostRatio =
+      prevMonthWonLeads + prevMonthLostLeads > 0 ? `${prevMonthWonLeads}/${prevMonthLostLeads}` : '0/0'
 
     const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2 })
 

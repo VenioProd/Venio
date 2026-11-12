@@ -45,7 +45,11 @@ export function shiftMonth(month: string, delta: number): string {
 
 /** Mois courant 'YYYY-MM' en heure de Paris (celle de la prévision). */
 export function currentParisMonth(now: Date = new Date()): string {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit' }).formatToParts(now)
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(now)
   return parts.find((part) => part.type === 'year')!.value + '-' + parts.find((part) => part.type === 'month')!.value
 }
 

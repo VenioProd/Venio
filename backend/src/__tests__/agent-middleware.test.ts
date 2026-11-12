@@ -87,7 +87,7 @@ describe('Agent / requireScope middleware', () => {
     expect(res.body.details?.missing.sort()).toEqual(['read:projects', 'write:crm'])
   })
 
-  it('returns 401 when no token attached (bug d\'ordre de middleware)', async () => {
+  it("returns 401 when no token attached (bug d'ordre de middleware)", async () => {
     const app = buildApp(null) // pas de token injecté
     app.get('/test', requireScope('read:crm'), (_req, res) => {
       res.json({ ok: true })

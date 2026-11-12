@@ -19,7 +19,7 @@ const internalConversationSchema = new mongoose.Schema<IInternalConversation>(
     isArchived: { type: Boolean, default: false, index: true },
     lastMessageAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 internalConversationSchema.index({ slug: 1 }, { unique: true, sparse: true })

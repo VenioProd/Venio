@@ -59,72 +59,56 @@ router.get('/resources', requireScope('read:resources'), async (req: Request, re
   }
 })
 
-router.get(
-  '/resources/categories',
-  requireScope('read:resources'),
-  (_req: Request, res: Response) => {
-    res.json({ categories: RESOURCE_CATEGORIES })
-  }
-)
+router.get('/resources/categories', requireScope('read:resources'), (_req: Request, res: Response) => {
+  res.json({ categories: RESOURCE_CATEGORIES })
+})
 
-router.get(
-  '/resources/:id',
-  requireScope('read:resources'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const r = await CompanyResource.findById(req.params.id).lean()
-      if (!r) return respondError(res, 404, 'NOT_FOUND', 'Resource introuvable')
-      res.json(r)
-    } catch (err) {
-      next(err)
-    }
+router.get('/resources/:id', requireScope('read:resources'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const r = await CompanyResource.findById(req.params.id).lean()
+    if (!r) return respondError(res, 404, 'NOT_FOUND', 'Resource introuvable')
+    res.json(r)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
-router.patch(
-  '/resources/:id',
-  requireScope('write:resources'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const r = await CompanyResource.findById(req.params.id)
-      if (!r) return respondError(res, 404, 'NOT_FOUND', 'Resource introuvable')
-      const before = r.toObject()
-      if (typeof req.body.name === 'string') r.name = req.body.name
-      if (typeof req.body.description === 'string') r.description = req.body.description
-      if (typeof req.body.category === 'string' && (RESOURCE_CATEGORIES as readonly string[]).includes(req.body.category)) {
-        r.category = req.body.category
-      }
-      await r.save()
-      res.locals.audit = { entityType: 'CompanyResource', entityId: String(r._id), before, after: r.toObject() }
-      res.json(r.toObject())
-    } catch (err) {
-      next(err)
+router.patch('/resources/:id', requireScope('write:resources'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const r = await CompanyResource.findById(req.params.id)
+    if (!r) return respondError(res, 404, 'NOT_FOUND', 'Resource introuvable')
+    const before = r.toObject()
+    if (typeof req.body.name === 'string') r.name = req.body.name
+    if (typeof req.body.description === 'string') r.description = req.body.description
+    if (
+      typeof req.body.category === 'string' &&
+      (RESOURCE_CATEGORIES as readonly string[]).includes(req.body.category)
+    ) {
+      r.category = req.body.category
     }
+    await r.save()
+    res.locals.audit = { entityType: 'CompanyResource', entityId: String(r._id), before, after: r.toObject() }
+    res.json(r.toObject())
+  } catch (err) {
+    next(err)
   }
-)
+})
 
-router.delete(
-  '/resources/:id',
-  requireScope('write:resources'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const r = await CompanyResource.findById(req.params.id)
-      if (!r) return respondError(res, 404, 'NOT_FOUND', 'Resource introuvable')
-      const before = r.toObject()
-      await CompanyResource.deleteOne({ _id: r._id })
-      res.locals.audit = { entityType: 'CompanyResource', entityId: String(r._id), before }
-      res.json({ ok: true, deletedId: String(r._id) })
-    } catch (err) {
-      next(err)
-    }
+router.delete('/resources/:id', requireScope('write:resources'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const r = await CompanyResource.findById(req.params.id)
+    if (!r) return respondError(res, 404, 'NOT_FOUND', 'Resource introuvable')
+    const before = r.toObject()
+    await CompanyResource.deleteOne({ _id: r._id })
+    res.locals.audit = { entityType: 'CompanyResource', entityId: String(r._id), before }
+    res.json({ ok: true, deletedId: String(r._id) })
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 // ═════════════════════════════════════════════════════════════════════════
 // ToolAccess
@@ -141,28 +125,24 @@ function sanitizeToolAccess<T extends { password?: unknown }>(obj: T): Omit<T, '
   return obj
 }
 
-router.get(
-  '/tool-access',
-  requireScope('read:toolaccess'),
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const pag = parsePagination(req)
-      const filter: Record<string, unknown> = {}
-      if (typeof req.query.category === 'string') filter.category = req.query.category
-      if (typeof req.query.q === 'string' && req.query.q.trim()) {
-        const regex = new RegExp(req.query.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
-        filter.$or = [{ name: regex }, { url: regex }]
-      }
-      const [items, total] = await Promise.all([
-        ToolAccess.find(filter).sort({ updatedAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
-        ToolAccess.countDocuments(filter),
-      ])
-      res.json(paginatedResponse(items.map(sanitizeToolAccess), pag, total))
-    } catch (err) {
-      next(err)
+router.get('/tool-access', requireScope('read:toolaccess'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const pag = parsePagination(req)
+    const filter: Record<string, unknown> = {}
+    if (typeof req.query.category === 'string') filter.category = req.query.category
+    if (typeof req.query.q === 'string' && req.query.q.trim()) {
+      const regex = new RegExp(req.query.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+      filter.$or = [{ name: regex }, { url: regex }]
     }
+    const [items, total] = await Promise.all([
+      ToolAccess.find(filter).sort({ updatedAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
+      ToolAccess.countDocuments(filter),
+    ])
+    res.json(paginatedResponse(items.map(sanitizeToolAccess), pag, total))
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.post(
   '/tool-access',
@@ -170,7 +150,9 @@ router.post(
   body('name').isString().trim().isLength({ min: 1 }),
   body('login').isString().trim().isLength({ min: 1 }),
   body('password').isString().isLength({ min: 1 }),
-  body('category').optional().isIn(TOOL_CATEGORIES as unknown as string[]),
+  body('category')
+    .optional()
+    .isIn(TOOL_CATEGORIES as unknown as string[]),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
@@ -200,65 +182,55 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.patch(
-  '/tool-access/:id',
-  requireScope('write:toolaccess'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const t = await ToolAccess.findById(req.params.id)
-      if (!t) return respondError(res, 404, 'NOT_FOUND', 'Tool introuvable')
-      const before = { ...t.toObject(), password: undefined } // pas dans audit
-      const stringFields = ['name', 'url', 'login', 'notes']
-      for (const f of stringFields) {
-        if (typeof req.body[f] === 'string') {
-          ;(t as unknown as Record<string, string>)[f] = req.body[f]
-        }
+router.patch('/tool-access/:id', requireScope('write:toolaccess'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const t = await ToolAccess.findById(req.params.id)
+    if (!t) return respondError(res, 404, 'NOT_FOUND', 'Tool introuvable')
+    const before = { ...t.toObject(), password: undefined } // pas dans audit
+    const stringFields = ['name', 'url', 'login', 'notes']
+    for (const f of stringFields) {
+      if (typeof req.body[f] === 'string') {
+        ;(t as unknown as Record<string, string>)[f] = req.body[f]
       }
-      if (typeof req.body.category === 'string' && (TOOL_CATEGORIES as readonly string[]).includes(req.body.category)) {
-        t.category = req.body.category as typeof t.category
-      }
-      if (typeof req.body.password === 'string' && req.body.password.length > 0) {
-        t.password = req.body.password
-        t.lastRotatedAt = new Date()
-      }
-      await t.save()
-      res.locals.audit = {
-        entityType: 'ToolAccess',
-        entityId: String(t._id),
-        entityRef: t.name,
-        summary: `Modification accès outil "${t.name}"${req.body.password ? ' (rotation password)' : ''}`,
-        before,
-        after: { ...t.toObject(), password: undefined },
-      }
-      res.json(sanitizeToolAccess(t.toObject()))
-    } catch (err) {
-      next(err)
     }
+    if (typeof req.body.category === 'string' && (TOOL_CATEGORIES as readonly string[]).includes(req.body.category)) {
+      t.category = req.body.category as typeof t.category
+    }
+    if (typeof req.body.password === 'string' && req.body.password.length > 0) {
+      t.password = req.body.password
+      t.lastRotatedAt = new Date()
+    }
+    await t.save()
+    res.locals.audit = {
+      entityType: 'ToolAccess',
+      entityId: String(t._id),
+      entityRef: t.name,
+      summary: `Modification accès outil "${t.name}"${req.body.password ? ' (rotation password)' : ''}`,
+      before,
+      after: { ...t.toObject(), password: undefined },
+    }
+    res.json(sanitizeToolAccess(t.toObject()))
+  } catch (err) {
+    next(err)
   }
-)
+})
 
-router.delete(
-  '/tool-access/:id',
-  requireScope('write:toolaccess'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const t = await ToolAccess.findById(req.params.id)
-      if (!t) return respondError(res, 404, 'NOT_FOUND', 'Tool introuvable')
-      const before = { ...t.toObject(), password: undefined }
-      await ToolAccess.deleteOne({ _id: t._id })
-      res.locals.audit = { entityType: 'ToolAccess', entityId: String(t._id), entityRef: t.name, before }
-      res.json({ ok: true, deletedId: String(t._id) })
-    } catch (err) {
-      next(err)
-    }
+router.delete('/tool-access/:id', requireScope('write:toolaccess'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const t = await ToolAccess.findById(req.params.id)
+    if (!t) return respondError(res, 404, 'NOT_FOUND', 'Tool introuvable')
+    const before = { ...t.toObject(), password: undefined }
+    await ToolAccess.deleteOne({ _id: t._id })
+    res.locals.audit = { entityType: 'ToolAccess', entityId: String(t._id), entityRef: t.name, before }
+    res.json({ ok: true, deletedId: String(t._id) })
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 export default router

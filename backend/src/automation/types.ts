@@ -25,7 +25,7 @@ export interface AutomationDefinition {
   title: string
   domain: string
   triggerType: TriggerType
-  schedule?: string                           // cron expression or time string for cron triggers
+  schedule?: string // cron expression or time string for cron triggers
   channels: Channel[]
   recipientStrategy: RecipientStrategy[]
   retryable: boolean
@@ -46,11 +46,11 @@ export interface AutomationDefinition {
 // ── Runtime context passed to evaluate/execute ─────────────
 export interface AutomationContext {
   now: Date
-  dateKey: string                             // YYYY-MM-DD
-  weekKey: string                             // YYYY-WXX
-  monthKey: string                            // YYYY-MM
+  dateKey: string // YYYY-MM-DD
+  weekKey: string // YYYY-WXX
+  monthKey: string // YYYY-MM
   settings: AutomationSettingsDoc
-  meta?: Record<string, unknown>              // extra event data
+  meta?: Record<string, unknown> // extra event data
 }
 
 // ── Result returned by execute ─────────────────────────────
@@ -67,7 +67,7 @@ export interface AutomationSettingsDoc {
   channels: Channel[]
   throttleWindowMinutes: number
   escalationEnabled: boolean
-  config: Record<string, unknown>             // key-specific config
+  config: Record<string, unknown> // key-specific config
   updatedAt: Date
 }
 
@@ -101,8 +101,8 @@ export interface AutomationLockDoc {
 
 // ── Event payload (for event-driven triggers) ──────────────
 export interface AutomationEvent {
-  type: string                                // e.g. 'project.status.changed'
-  entityType: string                          // e.g. 'project'
+  type: string // e.g. 'project.status.changed'
+  entityType: string // e.g. 'project'
   entityId: string
   actor?: string | Types.ObjectId
   data?: Record<string, unknown>

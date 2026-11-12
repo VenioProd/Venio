@@ -38,11 +38,13 @@ const definition: AutomationDefinition = {
 
     const fortyEightHoursAgo = new Date(ctx.now.getTime() - 48 * 3600_000)
 
-    const hotLeads = await Lead.find(withActiveLeads({
-      leadTemperature: { $in: ['CHAUD', 'TRES_CHAUD'] },
-      status: { $nin: ['WON', 'LOST'] },
-      updatedAt: { $lt: fortyEightHoursAgo },
-    })).populate('assignedTo', '_id email name')
+    const hotLeads = await Lead.find(
+      withActiveLeads({
+        leadTemperature: { $in: ['CHAUD', 'TRES_CHAUD'] },
+        status: { $nin: ['WON', 'LOST'] },
+        updatedAt: { $lt: fortyEightHoursAgo },
+      }),
+    ).populate('assignedTo', '_id email name')
 
     if (hotLeads.length === 0) {
       return { actionsExecuted: [], recipientsNotified: [], details: { hotLeadsFound: 0 } }
@@ -70,7 +72,7 @@ const definition: AutomationDefinition = {
 
     // Notify each assignee
     for (const [userId, { leads }] of byAssignee) {
-      const leadNames = leads.map(l => l.company || l.contactName).join(', ')
+      const leadNames = leads.map((l) => l.company || l.contactName).join(', ')
       await createNotification({
         recipient: userId,
         type: 'CRM_ALERT' as never,

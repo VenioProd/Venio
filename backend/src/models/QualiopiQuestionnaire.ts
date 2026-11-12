@@ -2,26 +2,35 @@ import mongoose from 'mongoose'
 import crypto from 'crypto'
 import type { IQualiopiQuestionnaire } from '../types/models/index.js'
 
-const answerSchema = new mongoose.Schema({
-  questionIndex: { type: Number, required: true },
-  value: { type: String, default: '' },
-}, { _id: false })
+const answerSchema = new mongoose.Schema(
+  {
+    questionIndex: { type: Number, required: true },
+    value: { type: String, default: '' },
+  },
+  { _id: false },
+)
 
-const responseSchema = new mongoose.Schema({
-  respondentName: { type: String, required: true, trim: true },
-  respondentEmail: { type: String, required: true, trim: true },
-  formation: { type: String, default: '', trim: true },
-  answers: [answerSchema],
-  submittedAt: { type: Date, default: Date.now },
-}, { _id: true })
+const responseSchema = new mongoose.Schema(
+  {
+    respondentName: { type: String, required: true, trim: true },
+    respondentEmail: { type: String, required: true, trim: true },
+    formation: { type: String, default: '', trim: true },
+    answers: [answerSchema],
+    submittedAt: { type: Date, default: Date.now },
+  },
+  { _id: true },
+)
 
-const questionSchema = new mongoose.Schema({
-  type: { type: String, enum: ['rating', 'text', 'multiple_choice'], required: true },
-  label: { type: String, required: true, trim: true },
-  options: [{ type: String, trim: true }],
-  required: { type: Boolean, default: true },
-  order: { type: Number, default: 0 },
-}, { _id: true })
+const questionSchema = new mongoose.Schema(
+  {
+    type: { type: String, enum: ['rating', 'text', 'multiple_choice'], required: true },
+    label: { type: String, required: true, trim: true },
+    options: [{ type: String, trim: true }],
+    required: { type: Boolean, default: true },
+    order: { type: Number, default: 0 },
+  },
+  { _id: true },
+)
 
 const qualiopiQuestionnaireSchema = new mongoose.Schema<IQualiopiQuestionnaire>(
   {
@@ -33,7 +42,7 @@ const qualiopiQuestionnaireSchema = new mongoose.Schema<IQualiopiQuestionnaire>(
     responses: [responseSchema],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 qualiopiQuestionnaireSchema.index({ token: 1 })

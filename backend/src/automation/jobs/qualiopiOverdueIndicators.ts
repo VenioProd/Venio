@@ -66,11 +66,7 @@ const definition: AutomationDefinition = {
         // Check sub-elements
         const subElements = indicator.subElements || []
         for (const sub of subElements) {
-          if (
-            ['A_FAIRE', 'EN_COURS'].includes(sub.status) &&
-            sub.dueDate &&
-            new Date(sub.dueDate) < ctx.now
-          ) {
+          if (['A_FAIRE', 'EN_COURS'].includes(sub.status) && sub.dueDate && new Date(sub.dueDate) < ctx.now) {
             overdueItems.push({
               criterionNumber: criterion.number,
               indicatorNumber: indicator.number,
@@ -128,10 +124,7 @@ const definition: AutomationDefinition = {
 
     const globalSummary = overdueItems
       .slice(0, 8)
-      .map(
-        (i) =>
-          `• Critère ${i.criterionNumber}, Ind. ${i.indicatorNumber} : ${i.title} (${i.status})`
-      )
+      .map((i) => `• Critère ${i.criterionNumber}, Ind. ${i.indicatorNumber} : ${i.title} (${i.status})`)
       .join('\n')
 
     for (const admin of admins) {

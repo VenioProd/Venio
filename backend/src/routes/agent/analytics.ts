@@ -26,15 +26,14 @@ router.get(
   requireScope('read:analytics'),
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const [clientsCount, leadsCount, projectsCount, openTickets, pendingTasks, openInvoices] =
-        await Promise.all([
-          User.countDocuments({ role: 'CLIENT' }),
-          Lead.countDocuments({}),
-          Project.countDocuments({ $or: [{ isArchived: false }, { isArchived: { $exists: false } }] }),
-          InternalTicket.countDocuments({ status: { $in: ['OUVERT', 'EN_COURS'] } }),
-          Task.countDocuments({ status: { $in: ['A_FAIRE', 'EN_COURS'] } }),
-          BillingDocument.countDocuments({ status: { $in: ['ISSUED', 'SENT', 'ACCEPTED'] } }),
-        ])
+      const [clientsCount, leadsCount, projectsCount, openTickets, pendingTasks, openInvoices] = await Promise.all([
+        User.countDocuments({ role: 'CLIENT' }),
+        Lead.countDocuments({}),
+        Project.countDocuments({ $or: [{ isArchived: false }, { isArchived: { $exists: false } }] }),
+        InternalTicket.countDocuments({ status: { $in: ['OUVERT', 'EN_COURS'] } }),
+        Task.countDocuments({ status: { $in: ['A_FAIRE', 'EN_COURS'] } }),
+        BillingDocument.countDocuments({ status: { $in: ['ISSUED', 'SENT', 'ACCEPTED'] } }),
+      ])
       res.json({
         users: { clients: clientsCount },
         crm: { leads: leadsCount },
@@ -47,7 +46,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get('/analytics/crm', requireScope('read:analytics'), async (_req, res, next) => {

@@ -33,7 +33,8 @@ async function seed() {
     // 1 — Ticket résolu avec réponse
     {
       title: 'Comment acceder aux maquettes Figma du projet Alyah ?',
-      message: 'Bonjour, je travaille sur le projet Alyah et je n\'arrive pas a trouver le lien vers les maquettes Figma. Est-ce que quelqu\'un peut me donner l\'acces ?',
+      message:
+        "Bonjour, je travaille sur le projet Alyah et je n'arrive pas a trouver le lien vers les maquettes Figma. Est-ce que quelqu'un peut me donner l'acces ?",
       category: 'QUESTION',
       priority: 'NORMALE',
       status: 'RESOLU',
@@ -45,7 +46,8 @@ async function seed() {
         {
           authorId: sa1._id,
           authorName: sa1.name,
-          message: 'Salut ! Je t\'ai envoye l\'invitation Figma sur ton email. Tu devrais recevoir le lien dans quelques minutes. N\'hesite pas si tu as besoin d\'autre chose.',
+          message:
+            "Salut ! Je t'ai envoye l'invitation Figma sur ton email. Tu devrais recevoir le lien dans quelques minutes. N'hesite pas si tu as besoin d'autre chose.",
           createdAt: ago(4),
         },
       ],
@@ -53,7 +55,8 @@ async function seed() {
     // 2 — Ticket ouvert urgent
     {
       title: 'Bug critique sur la page de facturation',
-      message: 'La page de facturation affiche une erreur 500 quand on essaie de generer un PDF pour les factures de plus de 10 lignes. Ca bloque la facturation du client TechnoVision. Merci de regarder en urgence.',
+      message:
+        'La page de facturation affiche une erreur 500 quand on essaie de generer un PDF pour les factures de plus de 10 lignes. Ca bloque la facturation du client TechnoVision. Merci de regarder en urgence.',
       category: 'PROBLEME',
       priority: 'URGENTE',
       status: 'OUVERT',
@@ -65,8 +68,9 @@ async function seed() {
     },
     // 3 — Ticket en cours avec discussion
     {
-      title: 'Demande d\'ajout d\'un nouveau template de projet',
-      message: 'Pour les projets de type "site vitrine", on repete toujours les memes etapes. Est-ce qu\'on pourrait creer un template avec les taches pre-remplies ?\n\nEtapes souhaitees :\n1. Brief client\n2. Maquettes\n3. Integration\n4. Tests\n5. Mise en ligne',
+      title: "Demande d'ajout d'un nouveau template de projet",
+      message:
+        'Pour les projets de type "site vitrine", on repete toujours les memes etapes. Est-ce qu\'on pourrait creer un template avec les taches pre-remplies ?\n\nEtapes souhaitees :\n1. Brief client\n2. Maquettes\n3. Integration\n4. Tests\n5. Mise en ligne',
       category: 'DEMANDE',
       priority: 'HAUTE',
       status: 'EN_COURS',
@@ -78,13 +82,15 @@ async function seed() {
         {
           authorId: sa1._id,
           authorName: sa1.name,
-          message: 'Bonne idee ! Je vais regarder pour ajouter ca dans la section templates. Tu peux me lister les sous-taches pour chaque etape ?',
+          message:
+            'Bonne idee ! Je vais regarder pour ajouter ca dans la section templates. Tu peux me lister les sous-taches pour chaque etape ?',
           createdAt: ago(2),
         },
         {
           authorId: allUsers[Math.min(2, allUsers.length - 1)]._id,
           authorName: allUsers[Math.min(2, allUsers.length - 1)].name,
-          message: 'Pour le brief : reunion kickoff, questionnaire client, benchmark concurrence.\nPour les maquettes : wireframes, maquettes desktop, maquettes mobile, validation client.',
+          message:
+            'Pour le brief : reunion kickoff, questionnaire client, benchmark concurrence.\nPour les maquettes : wireframes, maquettes desktop, maquettes mobile, validation client.',
           createdAt: ago(2),
         },
       ],
@@ -92,7 +98,8 @@ async function seed() {
     // 4 — Ticket fermé
     {
       title: 'Probleme de connexion VPN',
-      message: 'Je n\'arrive plus a me connecter au VPN depuis ce matin. J\'ai essaye de redemarrer et de reinstaller le client mais rien ne marche.',
+      message:
+        "Je n'arrive plus a me connecter au VPN depuis ce matin. J'ai essaye de redemarrer et de reinstaller le client mais rien ne marche.",
       category: 'PROBLEME',
       priority: 'HAUTE',
       status: 'FERME',
@@ -118,7 +125,7 @@ async function seed() {
     // 5 — Question simple ouverte
     {
       title: 'Ou trouver la documentation API ?',
-      message: 'Je cherche la doc de l\'API pour integrer le webhook de notifications. C\'est sur Notion ou ailleurs ?',
+      message: "Je cherche la doc de l'API pour integrer le webhook de notifications. C'est sur Notion ou ailleurs ?",
       category: 'QUESTION',
       priority: 'BASSE',
       status: 'OUVERT',
@@ -131,7 +138,8 @@ async function seed() {
     // 6 — Demande de matériel
     {
       title: 'Demande de deuxieme ecran',
-      message: 'Bonjour, est-il possible d\'avoir un deuxieme ecran pour mon poste ? Ca m\'aiderait beaucoup pour le dev et le design en parallele.',
+      message:
+        "Bonjour, est-il possible d'avoir un deuxieme ecran pour mon poste ? Ca m'aiderait beaucoup pour le dev et le design en parallele.",
       category: 'DEMANDE',
       priority: 'BASSE',
       status: 'RESOLU',
@@ -143,13 +151,14 @@ async function seed() {
         {
           authorId: sa1._id,
           authorName: sa1.name,
-          message: 'Pas de souci, j\'ai commande un ecran 27" qui devrait arriver d\'ici vendredi. Je te previens quand il est la.',
+          message:
+            "Pas de souci, j'ai commande un ecran 27\" qui devrait arriver d'ici vendredi. Je te previens quand il est la.",
           createdAt: ago(14),
         },
         {
           authorId: sa1._id,
           authorName: sa1.name,
-          message: 'L\'ecran est arrive, tu peux le recuperer a l\'accueil.',
+          message: "L'ecran est arrive, tu peux le recuperer a l'accueil.",
           createdAt: ago(12),
         },
       ],
@@ -157,7 +166,8 @@ async function seed() {
     // 7 — Ticket en cours
     {
       title: 'Mise a jour des accreditations Qualiopi',
-      message: 'Il faut mettre a jour les documents de preuve pour le critere 4 (indicateurs 13 a 16) avant l\'audit du mois prochain. Qui s\'en occupe ?',
+      message:
+        "Il faut mettre a jour les documents de preuve pour le critere 4 (indicateurs 13 a 16) avant l'audit du mois prochain. Qui s'en occupe ?",
       category: 'QUESTION',
       priority: 'HAUTE',
       status: 'EN_COURS',
@@ -169,7 +179,7 @@ async function seed() {
         {
           authorId: sa1._id,
           authorName: sa1.name,
-          message: 'Je m\'en charge. Je vais uploader les documents sur la page Qualiopi cette semaine.',
+          message: "Je m'en charge. Je vais uploader les documents sur la page Qualiopi cette semaine.",
           createdAt: ago(1),
         },
       ],

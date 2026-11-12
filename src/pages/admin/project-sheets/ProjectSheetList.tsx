@@ -110,7 +110,11 @@ export default function ProjectSheetList() {
               {t(psKey('list.cancel'))}
             </button>
           </div>
-          {createError && <p role="alert" className="ps-error">{createError}</p>}
+          {createError && (
+            <p role="alert" className="ps-error">
+              {createError}
+            </p>
+          )}
         </form>
       )}
 
@@ -133,9 +137,13 @@ export default function ProjectSheetList() {
       {loading && sheets.length === 0 ? (
         <p role="status">{t(psKey('list.loading'))}</p>
       ) : error ? (
-        <p role="alert" className="ps-error">{t(psKey('list.error'))}</p>
+        <p role="alert" className="ps-error">
+          {t(psKey('list.error'))}
+        </p>
       ) : sheets.length === 0 ? (
-        <p className="ps-empty-list">{searching ? t(psKey('list.emptySearch'), { q: debounced }) : t(psKey('list.empty'))}</p>
+        <p className="ps-empty-list">
+          {searching ? t(psKey('list.emptySearch'), { q: debounced }) : t(psKey('list.empty'))}
+        </p>
       ) : (
         <ul className="ps-grid" aria-busy={loading}>
           {sheets.map((sheet) => (
@@ -152,7 +160,9 @@ export default function ProjectSheetList() {
                 </div>
                 <p className="ps-card__oneliner">{sheet.oneLiner || <em>{t(psKey('list.noOneLiner'))}</em>}</p>
                 <p className="ps-card__meta">
-                  {sheet.referent ? t(psKey('list.referent'), { name: sheet.referent.name }) : t(psKey('list.noReferent'))}
+                  {sheet.referent
+                    ? t(psKey('list.referent'), { name: sheet.referent.name })
+                    : t(psKey('list.noReferent'))}
                 </p>
               </Link>
               {searching && sheet.matches && sheet.matches.length > 0 && (

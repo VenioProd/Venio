@@ -111,7 +111,8 @@ export function useMultiSelect<T>(items: readonly T[], getId: (item: T) => strin
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return
       const target = event.target as HTMLElement | null
-      if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"], [aria-modal="true"]')) return
+      if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"], [aria-modal="true"]'))
+        return
       clear()
     }
     window.addEventListener('keydown', onKey)

@@ -60,7 +60,8 @@ function cleanupOldBackups(): void {
   try {
     if (!fs.existsSync(BACKUP_DIR)) return
 
-    const entries = fs.readdirSync(BACKUP_DIR)
+    const entries = fs
+      .readdirSync(BACKUP_DIR)
       .filter((name) => name.startsWith('venio-backup-'))
       .map((name) => ({
         name,
@@ -86,7 +87,8 @@ export function listBackups(): BackupEntry[] {
   try {
     if (!fs.existsSync(BACKUP_DIR)) return []
 
-    return fs.readdirSync(BACKUP_DIR)
+    return fs
+      .readdirSync(BACKUP_DIR)
       .filter((name) => name.startsWith('venio-backup-'))
       .map((name) => {
         const fullPath = path.join(BACKUP_DIR, name)

@@ -175,9 +175,10 @@ export interface EmojiSuggestion {
   emoji: string
 }
 
-const ALL_ENTRIES: EmojiSuggestion[] = Object.entries(EMOJI_SHORTCODES).map(
-  ([shortcode, emoji]) => ({ shortcode, emoji })
-)
+const ALL_ENTRIES: EmojiSuggestion[] = Object.entries(EMOJI_SHORTCODES).map(([shortcode, emoji]) => ({
+  shortcode,
+  emoji,
+}))
 
 /**
  * Retourne les suggestions correspondant au préfixe tapé (ex: "sm" → smile, smiling).

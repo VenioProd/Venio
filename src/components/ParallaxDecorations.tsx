@@ -16,10 +16,10 @@ const ParallaxDecorations = () => {
   return (
     <div className="parallax-decorations">
       {/* Un seul cercle très subtil */}
-      <div 
+      <div
         className="parallax-circle parallax-circle-1"
-        style={{ 
-          transform: `translateY(${scrollY * 0.03}px)` 
+        style={{
+          transform: `translateY(${scrollY * 0.03}px)`,
         }}
       />
     </div>

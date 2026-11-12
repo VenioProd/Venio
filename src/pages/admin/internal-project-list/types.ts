@@ -22,7 +22,14 @@ export interface Mission {
     blocked: boolean
     blockedReason: string
   }[]
-  steps: { _id: string; title: string; description: string; done: boolean; waitingReview: boolean; assignedTo?: string }[]
+  steps: {
+    _id: string
+    title: string
+    description: string
+    done: boolean
+    waitingReview: boolean
+    assignedTo?: string
+  }[]
   deliverables: { _id: string; title: string; description: string; done: boolean; assignedTo?: string }[]
   files: { _id: string; originalName: string; mimeType: string; size: number }[]
   createdAt: string

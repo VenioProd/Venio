@@ -116,17 +116,24 @@ export default function ProjectSheetDetail() {
           body: JSON.stringify({ ...patch, baseUpdatedAt }),
         })
         setSheet(res.sheet)
-        if (res.sheet.slug && res.sheet.slug !== slug) navigate('/admin/projets/fiches/' + res.sheet.slug, { replace: true })
+        if (res.sheet.slug && res.sheet.slug !== slug)
+          navigate('/admin/projets/fiches/' + res.sheet.slug, { replace: true })
       } catch (err) {
         const info = apiErrorInfo(err)
-        if (info.code === 'SHEET_CONFLICT' || info.status === 409) throw new SheetConflictError(t(psKey('edit.conflict')))
+        if (info.code === 'SHEET_CONFLICT' || info.status === 409)
+          throw new SheetConflictError(t(psKey('edit.conflict')))
         throw new Error(info.message || t(psKey('edit.saveError')))
       }
     },
     [sheetId, baseUpdatedAt, slug, navigate, t],
   )
 
-  if (state === 'loading' && !sheet) return <p role="status" className="ps-page">{t(psKey('detail.loading'))}</p>
+  if (state === 'loading' && !sheet)
+    return (
+      <p role="status" className="ps-page">
+        {t(psKey('detail.loading'))}
+      </p>
+    )
   if (state === 'notFound')
     return (
       <div className="ps-page">
@@ -137,7 +144,9 @@ export default function ProjectSheetDetail() {
   if (state === 'error' || !sheet)
     return (
       <div className="ps-page">
-        <p role="alert" className="ps-error">{t(psKey('detail.error'))}</p>
+        <p role="alert" className="ps-error">
+          {t(psKey('detail.error'))}
+        </p>
         <Link to="/admin/projets/fiches">{t(psKey('detail.back'))}</Link>
       </div>
     )
@@ -148,7 +157,11 @@ export default function ProjectSheetDetail() {
   const websites = sheet.websites.filter((w) => w.url)
   const common = { canEdit: sheet.canEdit, save, onReload: load }
   const computedLinks = [
-    sheet.crm && { key: 'crm', href: sheet.crm.href, label: t(psKey('links.crm'), { open: sheet.crm.openLeads, won: sheet.crm.wonLeads }) },
+    sheet.crm && {
+      key: 'crm',
+      href: sheet.crm.href,
+      label: t(psKey('links.crm'), { open: sheet.crm.openLeads, won: sheet.crm.wonLeads }),
+    },
     sheet.devProject?.href && {
       key: 'dev',
       href: sheet.devProject.href,
@@ -223,7 +236,9 @@ export default function ProjectSheetDetail() {
               </div>
               <div>
                 <dt>{t(psKey('form.websites'))}</dt>
-                <dd>{websites.length ? websites.map((w) => w.label || w.url).join(', ') : t(psKey('detail.noWebsites'))}</dd>
+                <dd>
+                  {websites.length ? websites.map((w) => w.label || w.url).join(', ') : t(psKey('detail.noWebsites'))}
+                </dd>
               </div>
               <div>
                 <dt>{t(psKey('form.archived'))}</dt>
@@ -258,7 +273,9 @@ export default function ProjectSheetDetail() {
             makeDraft={() => ({ links: sheet.links.map((l) => ({ ...l })), devProject: sheet.devProject?._id ?? '' })}
             renderEditor={(draft, setDraft) => <LinksEditor draft={draft} onChange={setDraft} meta={meta} />}
             toPatch={(draft) => ({
-              links: draft.links.filter((l) => l.url.trim()).map((l) => ({ type: l.type, label: l.label.trim(), url: l.url.trim() })),
+              links: draft.links
+                .filter((l) => l.url.trim())
+                .map((l) => ({ type: l.type, label: l.label.trim(), url: l.url.trim() })),
               devProject: draft.devProject || null,
             })}
           >
@@ -412,7 +429,12 @@ export default function ProjectSheetDetail() {
 
       <div className="ps-layout">
         <nav className={'ps-toc' + (tocOpen ? ' is-open' : '')} aria-label={t(psKey('toc.aria'))}>
-          <button type="button" className="ps-toc__toggle" aria-expanded={tocOpen} onClick={() => setTocOpen((open) => !open)}>
+          <button
+            type="button"
+            className="ps-toc__toggle"
+            aria-expanded={tocOpen}
+            onClick={() => setTocOpen((open) => !open)}
+          >
             {t(psKey('toc.title'))}
           </button>
           <ol>

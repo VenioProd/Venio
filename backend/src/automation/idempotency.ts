@@ -15,7 +15,7 @@ const DEFAULT_LOCK_TTL_HOURS = 25 // slightly over 24h for daily jobs
 export async function acquireLock(
   idempotencyKey: string,
   automationKey: string,
-  ttlHours: number = DEFAULT_LOCK_TTL_HOURS
+  ttlHours: number = DEFAULT_LOCK_TTL_HOURS,
 ): Promise<boolean> {
   try {
     await AutomationLock.create({
@@ -45,10 +45,7 @@ export async function releaseLock(idempotencyKey: string): Promise<void> {
 /**
  * Update lock status (e.g. after failure).
  */
-export async function updateLockStatus(
-  idempotencyKey: string,
-  status: ExecutionStatus
-): Promise<void> {
+export async function updateLockStatus(idempotencyKey: string, status: ExecutionStatus): Promise<void> {
   await AutomationLock.updateOne({ idempotencyKey }, { $set: { status } })
 }
 

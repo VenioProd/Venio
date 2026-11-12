@@ -10,15 +10,7 @@
  *   err.errors = [{ field: 'currency', message: '...' }, ...]
  */
 
-const VALID_TYPES = new Set<string>([
-  'SALE',
-  'REFUND',
-  'EXPENSE',
-  'FEE',
-  'PAYMENT',
-  'TRANSFER',
-  'ADJUSTMENT',
-])
+const VALID_TYPES = new Set<string>(['SALE', 'REFUND', 'EXPENSE', 'FEE', 'PAYMENT', 'TRANSFER', 'ADJUSTMENT'])
 
 const AUX_KINDS = new Set<string>(['CLIENT', 'SUPPLIER', 'OTHER'])
 
@@ -92,11 +84,7 @@ interface RawLine {
   auxiliaryRef?: { kind?: unknown; externalId?: unknown } | unknown
 }
 
-function normalizeLine(
-  line: unknown,
-  index: number,
-  errors: PayloadFieldError[]
-): NormalizedLine | null {
+function normalizeLine(line: unknown, index: number, errors: PayloadFieldError[]): NormalizedLine | null {
   if (!line || typeof line !== 'object') {
     errors.push({ field: `lines[${index}]`, message: 'Ligne invalide' })
     return null
@@ -146,10 +134,7 @@ function normalizeLine(
     label: l.label ? String(l.label) : '',
     debit,
     credit,
-    vatRateValue:
-      l.vatRateValue != null && Number.isFinite(Number(l.vatRateValue))
-        ? Number(l.vatRateValue)
-        : null,
+    vatRateValue: l.vatRateValue != null && Number.isFinite(Number(l.vatRateValue)) ? Number(l.vatRateValue) : null,
     lettrage: l.lettrage ? String(l.lettrage) : '',
     auxiliaryRef,
   }
@@ -175,7 +160,9 @@ export function normalizePayload(rawEntry: unknown): NormalizedPayload {
     errors.push({ field: 'externalId', message: 'externalId requis' })
   }
 
-  const type = String(raw.type || '').toUpperCase().trim()
+  const type = String(raw.type || '')
+    .toUpperCase()
+    .trim()
   if (!type) {
     errors.push({ field: 'type', message: 'type requis' })
   } else if (!VALID_TYPES.has(type)) {
@@ -190,7 +177,9 @@ export function normalizePayload(rawEntry: unknown): NormalizedPayload {
     errors.push({ field: 'date', message: 'date requise (ISO 8601)' })
   }
 
-  const currency = String(raw.currency || 'EUR').toUpperCase().trim()
+  const currency = String(raw.currency || 'EUR')
+    .toUpperCase()
+    .trim()
   if (currency !== 'EUR') {
     // MVP : multi-devises non supporté. Voir issue #80 pour stocker
     // originalAmount/originalCurrency et convertir via un taux du jour ou explicite.
@@ -202,9 +191,7 @@ export function normalizePayload(rawEntry: unknown): NormalizedPayload {
 
   const description = raw.description ? String(raw.description) : ''
   const category = raw.category ? String(raw.category) : ''
-  const tags = Array.isArray(raw.tags)
-    ? (raw.tags as unknown[]).map((t) => String(t)).filter(Boolean)
-    : []
+  const tags = Array.isArray(raw.tags) ? (raw.tags as unknown[]).map((t) => String(t)).filter(Boolean) : []
   const metadata =
     raw.metadata && typeof raw.metadata === 'object' && !Array.isArray(raw.metadata)
       ? (raw.metadata as Record<string, unknown>)
@@ -214,7 +201,9 @@ export function normalizePayload(rawEntry: unknown): NormalizedPayload {
   let lines: NormalizedLine[] | undefined
   let journalCode: string | undefined
   if (Array.isArray(raw.lines) && (raw.lines as unknown[]).length > 0) {
-    journalCode = String(raw.journalCode || '').toUpperCase().trim()
+    journalCode = String(raw.journalCode || '')
+      .toUpperCase()
+      .trim()
     if (!journalCode) {
       errors.push({
         field: 'journalCode',

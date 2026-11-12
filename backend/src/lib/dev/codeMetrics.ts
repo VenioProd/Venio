@@ -989,7 +989,8 @@ export function computeProjectCodeMetrics(
   const scanOpts = { ...DEFAULT_OPTS, ...(opts.limits || {}) }
   try {
     const { files, durationMs, truncated } = scanFs(resolved, scanOpts)
-    const { totals, byExtension, largeFiles, todoFixmes, backendRoutesWithoutTest, topFilesGlobal, typescriptDebt } = aggregate(files)
+    const { totals, byExtension, largeFiles, todoFixmes, backendRoutesWithoutTest, topFilesGlobal, typescriptDebt } =
+      aggregate(files)
     const payload: CodeMetricsSummary = {
       available: true,
       source: 'filesystem',

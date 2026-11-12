@@ -75,7 +75,10 @@ describe('droits', () => {
   it('ADMIN et SUPER_ADMIN administrent la liste', async () => {
     for (const member of [team.admin, team.superAdmin]) {
       as(member)
-      const res = await request(app).post(URL).send({ email: `${member.role}@y.test` }).expect(201)
+      const res = await request(app)
+        .post(URL)
+        .send({ email: `${member.role}@y.test` })
+        .expect(201)
       expect(res.body.entry.email).toBe(`${member.role.toLowerCase()}@y.test`)
       expect((await request(app).get(URL).expect(200)).body.canAdminister).toBe(true)
     }
@@ -118,7 +121,11 @@ describe('retrait', () => {
       createdBy: team.commercialA.id,
       assignedTo: team.commercialA.id,
     })
-    const entry = await SuppressionEntry.create({ emailNormalized: 'ana@domaine.test', reason: 'OPPOSITION', leadId: lead._id })
+    const entry = await SuppressionEntry.create({
+      emailNormalized: 'ana@domaine.test',
+      reason: 'OPPOSITION',
+      leadId: lead._id,
+    })
     await request(app).delete(`${URL}/${entry._id}`).expect(200)
     expect(await SuppressionEntry.countDocuments()).toBe(0)
     expect((await Lead.findById(lead._id))!.doNotContact).toBe(true)
@@ -137,7 +144,11 @@ describe('retrait', () => {
 describe('liste : pagination et recherche', () => {
   const seedMany = async (n: number) => {
     for (let i = 1; i <= n; i++) {
-      await SuppressionEntry.create({ emailNormalized: `user${String(i).padStart(2, '0')}@exemple.test`, reason: 'MANUAL', createdAt: new Date(2026, 0, i) })
+      await SuppressionEntry.create({
+        emailNormalized: `user${String(i).padStart(2, '0')}@exemple.test`,
+        reason: 'MANUAL',
+        createdAt: new Date(2026, 0, i),
+      })
     }
   }
 

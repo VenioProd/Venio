@@ -33,94 +33,105 @@ router.get('/:projectId/sections', requirePermission(PERMISSIONS.VIEW_CONTENT), 
 })
 
 // POST /api/admin/projects/:projectId/sections - Créer une section
-router.post('/:projectId/sections', requirePermission(PERMISSIONS.EDIT_CONTENT), async (req: Request, res: Response) => {
-  try {
-    const { projectId } = req.params
-    const { title, description, order, isVisible } = req.body
+router.post(
+  '/:projectId/sections',
+  requirePermission(PERMISSIONS.EDIT_CONTENT),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params
+      const { title, description, order, isVisible } = req.body
 
-    const project = await Project.findById(projectId)
-    if (!project) {
-      return res.status(404).json({ error: 'Projet non trouvé' })
+      const project = await Project.findById(projectId)
+      if (!project) {
+        return res.status(404).json({ error: 'Projet non trouvé' })
+      }
+
+      // Déterminer l'ordre automatiquement si non fourni
+      let sectionOrder = order
+      if (sectionOrder === undefined) {
+        const lastSection = await ProjectSection.findOne({ project: projectId }).sort({ order: -1 })
+        sectionOrder = lastSection ? lastSection.order + 1 : 0
+      }
+
+      const section = new ProjectSection({
+        project: projectId,
+        title,
+        description: description || '',
+        order: sectionOrder,
+        isVisible: isVisible !== undefined ? isVisible : true,
+        createdBy: req.user!.id,
+      })
+
+      await section.save()
+      await section.populate('createdBy', 'name email')
+
+      res.status(201).json({ section })
+    } catch (err) {
+      logger.error(err)
+      res.status(500).json({ error: 'Erreur serveur' })
     }
-
-    // Déterminer l'ordre automatiquement si non fourni
-    let sectionOrder = order
-    if (sectionOrder === undefined) {
-      const lastSection = await ProjectSection.findOne({ project: projectId })
-        .sort({ order: -1 })
-      sectionOrder = lastSection ? lastSection.order + 1 : 0
-    }
-
-    const section = new ProjectSection({
-      project: projectId,
-      title,
-      description: description || '',
-      order: sectionOrder,
-      isVisible: isVisible !== undefined ? isVisible : true,
-      createdBy: req.user!.id,
-    })
-
-    await section.save()
-    await section.populate('createdBy', 'name email')
-
-    res.status(201).json({ section })
-  } catch (err) {
-    logger.error(err)
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
+  },
+)
 
 // PATCH /api/admin/projects/:projectId/sections/:sectionId - Modifier une section
-router.patch('/:projectId/sections/:sectionId', requirePermission(PERMISSIONS.EDIT_CONTENT), async (req: Request, res: Response) => {
-  try {
-    const { projectId, sectionId } = req.params
-    const { title, description, order, isVisible } = req.body
+router.patch(
+  '/:projectId/sections/:sectionId',
+  requirePermission(PERMISSIONS.EDIT_CONTENT),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId, sectionId } = req.params
+      const { title, description, order, isVisible } = req.body
 
-    const section = await ProjectSection.findOne({
-      _id: sectionId,
-      project: projectId,
-    })
+      const section = await ProjectSection.findOne({
+        _id: sectionId,
+        project: projectId,
+      })
 
-    if (!section) {
-      return res.status(404).json({ error: 'Section non trouvée' })
+      if (!section) {
+        return res.status(404).json({ error: 'Section non trouvée' })
+      }
+
+      if (title !== undefined) section.title = title
+      if (description !== undefined) section.description = description
+      if (order !== undefined) section.order = order
+      if (isVisible !== undefined) section.isVisible = isVisible
+
+      await section.save()
+      await section.populate('createdBy', 'name email')
+
+      res.json({ section })
+    } catch (err) {
+      logger.error(err)
+      res.status(500).json({ error: 'Erreur serveur' })
     }
-
-    if (title !== undefined) section.title = title
-    if (description !== undefined) section.description = description
-    if (order !== undefined) section.order = order
-    if (isVisible !== undefined) section.isVisible = isVisible
-
-    await section.save()
-    await section.populate('createdBy', 'name email')
-
-    res.json({ section })
-  } catch (err) {
-    logger.error(err)
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
+  },
+)
 
 // DELETE /api/admin/projects/:projectId/sections/:sectionId - Supprimer une section
-router.delete('/:projectId/sections/:sectionId', requirePermission(PERMISSIONS.EDIT_CONTENT), async (req: Request, res: Response) => {
-  try {
-    const { projectId, sectionId } = req.params
+router.delete(
+  '/:projectId/sections/:sectionId',
+  requirePermission(PERMISSIONS.EDIT_CONTENT),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId, sectionId } = req.params
 
-    const section = await ProjectSection.findOne({
-      _id: sectionId,
-      project: projectId,
-    })
+      const section = await ProjectSection.findOne({
+        _id: sectionId,
+        project: projectId,
+      })
 
-    if (!section) {
-      return res.status(404).json({ error: 'Section non trouvée' })
+      if (!section) {
+        return res.status(404).json({ error: 'Section non trouvée' })
+      }
+
+      await section.deleteOne()
+
+      res.json({ message: 'Section supprimée' })
+    } catch (err) {
+      logger.error(err)
+      res.status(500).json({ error: 'Erreur serveur' })
     }
-
-    await section.deleteOne()
-
-    res.json({ message: 'Section supprimée' })
-  } catch (err) {
-    logger.error(err)
-    res.status(500).json({ error: 'Erreur serveur' })
-  }
-})
+  },
+)
 
 export default router

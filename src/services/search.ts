@@ -9,6 +9,6 @@ export interface SearchResult {
 }
 
 export async function globalSearch(q: string): Promise<SearchResult[]> {
-  const res = await apiFetch(`/api/admin/search?q=${encodeURIComponent(q)}`) as { results: SearchResult[] }
+  const res = (await apiFetch(`/api/admin/search?q=${encodeURIComponent(q)}`)) as { results: SearchResult[] }
   return res.results
 }

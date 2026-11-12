@@ -39,7 +39,7 @@ router.patch('/:id/read', async (req: Request, res: Response, next: NextFunction
     const notification = await Notification.findOneAndUpdate(
       { _id: req.params.id, recipient: req.user!.id },
       { isRead: true },
-      { new: true }
+      { new: true },
     )
     if (!notification) {
       return res.status(404).json({ error: 'Notification non trouvée' })
@@ -53,10 +53,7 @@ router.patch('/:id/read', async (req: Request, res: Response, next: NextFunction
 // POST /api/admin/notifications/read-all
 router.post('/read-all', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await Notification.updateMany(
-      { recipient: req.user!.id, isRead: false },
-      { isRead: true }
-    )
+    await Notification.updateMany({ recipient: req.user!.id, isRead: false }, { isRead: true })
     return res.json({ success: true })
   } catch (err) {
     return next(err)

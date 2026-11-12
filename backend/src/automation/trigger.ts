@@ -11,10 +11,7 @@ import logger from '../lib/logger.js'
  * Trigger one or more event-driven automations in the background.
  * Errors are caught and logged — never throws.
  */
-export function triggerAutomations(
-  keys: string[],
-  meta: Record<string, unknown>
-): void {
+export function triggerAutomations(keys: string[], meta: Record<string, unknown>): void {
   const ctx = buildContext(meta)
 
   for (const key of keys) {

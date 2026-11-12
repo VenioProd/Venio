@@ -6,11 +6,7 @@ const DEFAULT_TAG: InboxTag = { label: 'PIN', color: '#7dd3fc' }
 export async function getPinnedItems(userId: string): Promise<InboxItem[]> {
   const pins = await InboxPin.find({
     userId,
-    $or: [
-      { expiresAt: { $exists: false } },
-      { expiresAt: null },
-      { expiresAt: { $gt: new Date() } },
-    ],
+    $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }, { expiresAt: { $gt: new Date() } }],
   }).lean()
 
   return pins.map((p: any) => ({
@@ -19,7 +15,7 @@ export async function getPinnedItems(userId: string): Promise<InboxItem[]> {
     sourceId: String(p._id),
     title: p.title,
     meta: [`📌 Épinglé ${new Date(p.createdAt).toLocaleDateString('fr-FR')}`],
-    urgency: 25,  // base score for pin (matches scoreUrgency)
+    urgency: 25, // base score for pin (matches scoreUrgency)
     tag: p.color ? { ...DEFAULT_TAG, color: p.color } : DEFAULT_TAG,
     actions: [
       { kind: 'open' as const, label: 'Ouvrir ⏎', shortcut: 'enter' },

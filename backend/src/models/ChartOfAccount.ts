@@ -31,7 +31,7 @@ const chartOfAccountSchema = new mongoose.Schema<IChartOfAccount, ChartOfAccount
     isActive: { type: Boolean, default: true },
     description: { type: String, default: '' },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 chartOfAccountSchema.index({ accountClass: 1, code: 1 })

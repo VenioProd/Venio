@@ -68,10 +68,7 @@ router.get(
       if (typeof req.query.fiscalYear === 'string' && isValidObjectId(req.query.fiscalYear)) {
         filter.fiscalYear = req.query.fiscalYear
       }
-      if (
-        typeof req.query.status === 'string' &&
-        (ENTRY_STATUSES as readonly string[]).includes(req.query.status)
-      ) {
+      if (typeof req.query.status === 'string' && (ENTRY_STATUSES as readonly string[]).includes(req.query.status)) {
         filter.status = req.query.status
       }
       if (typeof req.query.from === 'string' || typeof req.query.to === 'string') {
@@ -102,7 +99,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -126,7 +123,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -143,7 +140,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -169,7 +166,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -182,7 +179,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -195,7 +192,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -226,7 +223,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -236,15 +233,13 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
-      const d = await VatDeclaration.findById(req.params.id)
-        .populate('fiscalYear', 'label startDate endDate')
-        .lean()
+      const d = await VatDeclaration.findById(req.params.id).populate('fiscalYear', 'label startDate endDate').lean()
       if (!d) return respondError(res, 404, 'NOT_FOUND', 'Déclaration introuvable')
       res.json(d)
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -256,15 +251,12 @@ router.get(
   requireScope('read:accounting'),
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const items = await ExternalSource.find()
-        .sort({ createdAt: -1 })
-        .select('-apiKeyHash -webhookSecret')
-        .lean()
+      const items = await ExternalSource.find().sort({ createdAt: -1 }).select('-apiKeyHash -webhookSecret').lean()
       res.json({ items })
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -274,15 +266,13 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
-      const s = await ExternalSource.findById(req.params.id)
-        .select('-apiKeyHash -webhookSecret')
-        .lean()
+      const s = await ExternalSource.findById(req.params.id).select('-apiKeyHash -webhookSecret').lean()
       if (!s) return respondError(res, 404, 'NOT_FOUND', 'Source introuvable')
       res.json(s)
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.get(
@@ -300,18 +290,14 @@ router.get(
       }
       if (typeof req.query.status === 'string') filter.status = req.query.status
       const [items, total] = await Promise.all([
-        ExternalTransaction.find(filter)
-          .sort({ receivedAt: -1 })
-          .skip(pag.skip)
-          .limit(pag.limit)
-          .lean(),
+        ExternalTransaction.find(filter).sort({ receivedAt: -1 }).skip(pag.skip).limit(pag.limit).lean(),
         ExternalTransaction.countDocuments(filter),
       ])
       res.json(paginatedResponse(items, pag, total))
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -337,9 +323,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const fyId =
-        typeof req.query.fiscalYear === 'string' && isValidObjectId(req.query.fiscalYear)
-          ? req.query.fiscalYear
-          : null
+        typeof req.query.fiscalYear === 'string' && isValidObjectId(req.query.fiscalYear) ? req.query.fiscalYear : null
       const fiscalYear = fyId
         ? await FiscalYear.findById(fyId).lean()
         : await FiscalYear.findOne({ status: 'OUVERT' }).sort({ startDate: -1 }).lean()
@@ -389,7 +373,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

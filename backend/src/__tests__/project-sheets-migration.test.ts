@@ -75,7 +75,13 @@ describe('Migration 012 — fiches projets', () => {
   })
 
   it('rattache les filiales existantes et crée une fiche vide pour les autres', async () => {
-    const arrow = await Subsidiary.create({ name: 'Arrow', slug: 'arrow', status: 'ACTIVE', createdBy: creator, accentColor: '#112233' })
+    const arrow = await Subsidiary.create({
+      name: 'Arrow',
+      slug: 'arrow',
+      status: 'ACTIVE',
+      createdBy: creator,
+      accentColor: '#112233',
+    })
     const sukuna = await Subsidiary.create({ name: 'Sukuna', slug: 'sukuna', createdBy: creator })
     const yumi = await Subsidiary.create({
       name: 'Yumi',

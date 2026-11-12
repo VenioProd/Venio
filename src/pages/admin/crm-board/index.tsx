@@ -101,10 +101,7 @@ const CrmBoard = () => {
     },
     [setSearchParams],
   )
-  const matchesEntity = useCallback(
-    (lead: Lead) => !filterEntity || leadEntity(lead) === filterEntity,
-    [filterEntity],
-  )
+  const matchesEntity = useCallback((lead: Lead) => !filterEntity || leadEntity(lead) === filterEntity, [filterEntity])
   const [sortField, setSortField] = useState<string>('updatedAt')
   const [sortDir, setSortDir] = useState<string>('desc')
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
@@ -474,7 +471,9 @@ const CrmBoard = () => {
   const worklistOverdueCount = projectGroups?.overdue.length ?? 0
   const lostReasons = worklist?.lostReasons ?? []
   const totalLeads = entityLeads.length
-  const activeFilters = [filterStatus, filterPriority, filterAssignee, filterProject, filterEntity, search].filter(Boolean).length
+  const activeFilters = [filterStatus, filterPriority, filterAssignee, filterProject, filterEntity, search].filter(
+    Boolean,
+  ).length
 
   return (
     <CrmThresholdsContext.Provider value={worklist?.thresholds ?? DEFAULT_WORKLIST_THRESHOLDS}>
@@ -515,7 +514,14 @@ const CrmBoard = () => {
                   title={t('crmRich.view.enrichedTable')}
                   aria-label={t('crmRich.view.enrichedTable')}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <line x1="8" y1="6" x2="21" y2="6" />
                     <line x1="8" y1="12" x2="21" y2="12" />
                     <line x1="8" y1="18" x2="21" y2="18" />

@@ -100,8 +100,10 @@ const en: Record<keyof typeof fr, string> = {
   'crmRich.bulk.clearAria': 'Deselect all',
   'crmRich.bulk.assignConfirm': 'Assign {count, plural, one {# lead} other {# leads}} to {name}',
   'crmRich.bulk.statusConfirm': 'Move {count, plural, one {# lead} other {# leads}} to “{status}”',
-  'crmRich.bulk.archiveConfirm': 'Archive {count, plural, one {# lead} other {# leads}}? They leave the pipeline but can be restored.',
-  'crmRich.bulk.deleteConfirm': 'Permanently delete {count, plural, one {# lead} other {# leads}}, their tasks and their exchanges? Archiving is preferable.',
+  'crmRich.bulk.archiveConfirm':
+    'Archive {count, plural, one {# lead} other {# leads}}? They leave the pipeline but can be restored.',
+  'crmRich.bulk.deleteConfirm':
+    'Permanently delete {count, plural, one {# lead} other {# leads}}, their tasks and their exchanges? Archiving is preferable.',
   'crmRich.bulk.confirmTitle': 'Confirm bulk action',
   'crmRich.bulk.confirm': 'Confirm',
   'crmRich.bulk.cancel': 'Cancel',

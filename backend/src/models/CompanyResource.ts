@@ -34,7 +34,7 @@ const schema = new mongoose.Schema<ICompanyResource>(
     size: { type: Number, default: 0 },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 export default mongoose.model<ICompanyResource>('CompanyResource', schema)

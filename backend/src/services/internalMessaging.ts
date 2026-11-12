@@ -46,7 +46,9 @@ function toObjectId(id: string) {
 }
 
 function buildMemberKey(userIds: string[]): string {
-  return Array.from(new Set(userIds.map(String))).sort().join(':')
+  return Array.from(new Set(userIds.map(String)))
+    .sort()
+    .join(':')
 }
 
 export async function canAccessConversation(conversationId: string, user: JwtPayload): Promise<boolean> {
@@ -66,7 +68,7 @@ export async function ensureMembership(conversationId: string, userId: string) {
   return InternalConversationMember.findOneAndUpdate(
     { conversation: conversationId, user: userId },
     { $setOnInsert: { role: 'MEMBER' } },
-    { new: true, upsert: true }
+    { new: true, upsert: true },
   )
 }
 
@@ -91,16 +93,15 @@ export async function listConversations(user: JwtPayload) {
   assertInternalUser(user)
   await ensureGeneralChannel(user)
 
-  const memberships = await InternalConversationMember.find({ user: user.id }).select('conversation lastReadAt muted role')
+  const memberships = await InternalConversationMember.find({ user: user.id }).select(
+    'conversation lastReadAt muted role',
+  )
   const memberConversationIds = memberships.map((member) => member.conversation)
   const membershipByConversation = new Map(memberships.map((member) => [member.conversation.toString(), member]))
 
   const conversations = await InternalConversation.find({
     isArchived: false,
-    $or: [
-      { visibility: 'PUBLIC' },
-      { _id: { $in: memberConversationIds } },
-    ],
+    $or: [{ visibility: 'PUBLIC' }, { _id: { $in: memberConversationIds } }],
   })
     .sort({ lastMessageAt: -1, updatedAt: -1 })
     .lean()
@@ -121,43 +122,50 @@ export async function listConversations(user: JwtPayload) {
     }
   }
 
-  const unreadCounts = await Promise.all(conversations.map(async (conversation) => {
-    const membership = membershipByConversation.get(conversation._id.toString())
-    const query: Record<string, unknown> = {
-      conversation: conversation._id,
-      sender: { $ne: toObjectId(user.id) },
-      deletedAt: null,
-    }
-    if (membership?.lastReadAt) {
-      query.createdAt = { $gt: membership.lastReadAt }
-    } else if (!membership) {
-      return [conversation._id.toString(), 0] as const
-    }
-    return [conversation._id.toString(), await InternalMessage.countDocuments(query)] as const
-  }))
+  const unreadCounts = await Promise.all(
+    conversations.map(async (conversation) => {
+      const membership = membershipByConversation.get(conversation._id.toString())
+      const query: Record<string, unknown> = {
+        conversation: conversation._id,
+        sender: { $ne: toObjectId(user.id) },
+        deletedAt: null,
+      }
+      if (membership?.lastReadAt) {
+        query.createdAt = { $gt: membership.lastReadAt }
+      } else if (!membership) {
+        return [conversation._id.toString(), 0] as const
+      }
+      return [conversation._id.toString(), await InternalMessage.countDocuments(query)] as const
+    }),
+  )
   const unreadByConversation = new Map(unreadCounts)
 
   return conversations.map((conversation) => {
     const membership = membershipByConversation.get(conversation._id.toString())
     return {
       ...conversation,
-      membership: membership ? {
-        role: membership.role,
-        muted: membership.muted,
-        lastReadAt: membership.lastReadAt,
-      } : null,
+      membership: membership
+        ? {
+            role: membership.role,
+            muted: membership.muted,
+            lastReadAt: membership.lastReadAt,
+          }
+        : null,
       unreadCount: unreadByConversation.get(conversation._id.toString()) || 0,
       lastMessage: lastMessageByConversation.get(conversation._id.toString()) || null,
     }
   })
 }
 
-export async function createConversation(user: JwtPayload, input: {
-  type: 'CHANNEL' | 'DM' | 'GROUP'
-  name?: string
-  visibility?: 'PUBLIC' | 'PRIVATE'
-  participantIds?: string[]
-}) {
+export async function createConversation(
+  user: JwtPayload,
+  input: {
+    type: 'CHANNEL' | 'DM' | 'GROUP'
+    name?: string
+    visibility?: 'PUBLIC' | 'PRIVATE'
+    participantIds?: string[]
+  },
+) {
   assertInternalUser(user)
 
   const participantIds = Array.from(new Set([user.id, ...(input.participantIds || [])]))
@@ -189,11 +197,13 @@ export async function createConversation(user: JwtPayload, input: {
       memberKey,
       createdBy: user.id,
     })
-    await InternalConversationMember.insertMany(participantIds.map((participantId) => ({
-      conversation: conversation._id,
-      user: participantId,
-      role: participantId === user.id ? 'OWNER' : 'MEMBER',
-    })))
+    await InternalConversationMember.insertMany(
+      participantIds.map((participantId) => ({
+        conversation: conversation._id,
+        user: participantId,
+        role: participantId === user.id ? 'OWNER' : 'MEMBER',
+      })),
+    )
     return conversation
   }
 
@@ -209,15 +219,21 @@ export async function createConversation(user: JwtPayload, input: {
     memberKey: input.type === 'GROUP' ? buildMemberKey(participantIds) : '',
     createdBy: user.id,
   })
-  await InternalConversationMember.insertMany(participantIds.map((participantId) => ({
-    conversation: conversation._id,
-    user: participantId,
-    role: participantId === user.id ? 'OWNER' : 'MEMBER',
-  })))
+  await InternalConversationMember.insertMany(
+    participantIds.map((participantId) => ({
+      conversation: conversation._id,
+      user: participantId,
+      role: participantId === user.id ? 'OWNER' : 'MEMBER',
+    })),
+  )
   return conversation
 }
 
-export async function listMessages(user: JwtPayload, conversationId: string, options: { before?: string; limit?: number } = {}) {
+export async function listMessages(
+  user: JwtPayload,
+  conversationId: string,
+  options: { before?: string; limit?: number } = {},
+) {
   if (!(await canAccessConversation(conversationId, user))) {
     throw Object.assign(new Error('Conversation non trouvée'), { status: 404 })
   }
@@ -235,21 +251,32 @@ export async function listMessages(user: JwtPayload, conversationId: string, opt
     .then((messages) => messages.reverse())
 }
 
-async function notifyMessageRecipients(user: JwtPayload, conversationId: string, messageId: string, content: string, mentionIds: string[]) {
+async function notifyMessageRecipients(
+  user: JwtPayload,
+  conversationId: string,
+  messageId: string,
+  content: string,
+  mentionIds: string[],
+) {
   const conversation = await InternalConversation.findById(conversationId)
   if (!conversation) return
 
   const recipients = new Set<string>(mentionIds.filter((id) => id !== user.id))
   if (conversation.type === 'DM' || conversation.type === 'GROUP') {
-    const members = await InternalConversationMember.find({ conversation: conversationId, user: { $ne: user.id }, muted: false })
+    const members = await InternalConversationMember.find({
+      conversation: conversationId,
+      user: { $ne: user.id },
+      muted: false,
+    })
     members.forEach((member) => recipients.add(member.user.toString()))
   }
 
   if (recipients.size === 0) return
 
-  const title = conversation.type === 'CHANNEL'
-    ? `Mention dans #${conversation.slug || conversation.name}`
-    : `Nouveau message de ${user.name || 'Venio'}`
+  const title =
+    conversation.type === 'CHANNEL'
+      ? `Mention dans #${conversation.slug || conversation.name}`
+      : `Nouveau message de ${user.name || 'Venio'}`
   const preview = content.length > 140 ? `${content.slice(0, 137)}...` : content
   const link = `/admin/messages?conversation=${conversationId}&message=${messageId}`
 
@@ -262,14 +289,17 @@ async function notifyMessageRecipients(user: JwtPayload, conversationId: string,
 
   const inAppRecipients = recipientList.filter((_, idx) => inAppAllowed[idx])
   if (inAppRecipients.length > 0) {
-    await Notification.insertMany(inAppRecipients.map((recipient) => ({
-      recipient,
-      type: 'INTERNAL_MESSAGE',
-      title,
-      message: preview,
-      link,
-      metadata: { conversationId, messageId },
-    })), { ordered: false })
+    await Notification.insertMany(
+      inAppRecipients.map((recipient) => ({
+        recipient,
+        type: 'INTERNAL_MESSAGE',
+        title,
+        message: preview,
+        link,
+        metadata: { conversationId, messageId },
+      })),
+      { ordered: false },
+    )
   }
 
   // Push web pour chaque destinataire autorisé (background, ne bloque pas)
@@ -285,11 +315,15 @@ async function notifyMessageRecipients(user: JwtPayload, conversationId: string,
   })
 }
 
-export async function createMessage(user: JwtPayload, conversationId: string, input: {
-  content: string
-  parentMessage?: string | null
-  attachments?: IInternalMessageAttachment[]
-}) {
+export async function createMessage(
+  user: JwtPayload,
+  conversationId: string,
+  input: {
+    content: string
+    parentMessage?: string | null
+    attachments?: IInternalMessageAttachment[]
+  },
+) {
   assertInternalUser(user)
   if (!(await canAccessConversation(conversationId, user))) {
     throw Object.assign(new Error('Conversation non trouvée'), { status: 404 })
@@ -327,7 +361,7 @@ export async function markConversationRead(user: JwtPayload, conversationId: str
   return InternalConversationMember.findOneAndUpdate(
     { conversation: conversationId, user: user.id },
     { $set: { lastReadAt: new Date() }, $setOnInsert: { role: 'MEMBER' } },
-    { upsert: true, new: true }
+    { upsert: true, new: true },
   )
 }
 
@@ -345,10 +379,7 @@ export async function searchMessages(user: JwtPayload, query: string) {
   return InternalMessage.find({
     conversation: { $in: conversationIds },
     deletedAt: null,
-    $or: [
-      { content: regex },
-      { 'attachments.originalName': regex },
-    ],
+    $or: [{ content: regex }, { 'attachments.originalName': regex }],
   })
     .sort({ createdAt: -1 })
     .limit(30)

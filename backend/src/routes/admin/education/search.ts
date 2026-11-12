@@ -103,7 +103,10 @@ async function resolveDocumentParentContext(
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const q = String(req.query.q || '').trim()
-    if (!q) return res.json({ results: { classes: [], students: [], sessions: [], assignments: [], notes: [], documents: [] } })
+    if (!q)
+      return res.json({
+        results: { classes: [], students: [], sessions: [], assignments: [], notes: [], documents: [] },
+      })
 
     const filter = { ...ownerFilter(req), $text: { $search: q } }
     const limit = 8
@@ -125,7 +128,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     )
 
     res.json({ results: { classes, students, sessions, assignments, notes, documents: documentsWithContext } })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // GET /advanced — recherche pédagogique avancée avec filtres
@@ -213,7 +218,10 @@ router.get('/advanced', async (req: Request, res: Response, next: NextFunction) 
       assignmentFilter.deadline = range
     }
     const assignmentsP = want('assignments')
-      ? EducationAssignment.find(assignmentFilter).limit(limit).sort('-updatedAt').populate('classId', 'name color school')
+      ? EducationAssignment.find(assignmentFilter)
+          .limit(limit)
+          .sort('-updatedAt')
+          .populate('classId', 'name color school')
       : Promise.resolve([])
 
     // 6) Notes (text search seulement — pas de classId direct, mais on filtre via links si restreint)
@@ -224,13 +232,15 @@ router.get('/advanced', async (req: Request, res: Response, next: NextFunction) 
         $elemMatch: { type: 'class', refId: { $in: restrictedClassIds } },
       }
     }
-    const notesP = want('notes')
-      ? EducationNote.find(noteFilter).limit(limit).sort('-updatedAt')
-      : Promise.resolve([])
+    const notesP = want('notes') ? EducationNote.find(noteFilter).limit(limit).sort('-updatedAt') : Promise.resolve([])
 
     // 7) Compteurs : on garde le compte total pour chaque catégorie (info de cadrage)
     const [classes, students, sessions, assignments, notes] = await Promise.all([
-      classesP, studentsP, sessionsP, assignmentsP, notesP,
+      classesP,
+      studentsP,
+      sessionsP,
+      assignmentsP,
+      notesP,
     ])
 
     // 8) Liste des écoles disponibles (toujours retournée pour alimenter le select)
@@ -253,14 +263,18 @@ router.get('/advanced', async (req: Request, res: Response, next: NextFunction) 
       },
       schools,
     })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // GET /facets — facettes pour alimenter les filtres UI (écoles, classes, kinds, statuses)
 router.get('/facets', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const [classes, schoolsAgg] = await Promise.all([
-      EducationClass.find({ ...ownerFilter(req) }).select('_id name school color status').sort('school name'),
+      EducationClass.find({ ...ownerFilter(req) })
+        .select('_id name school color status')
+        .sort('school name'),
       EducationClass.aggregate([
         { $match: { owner: asObjectId(req.user!.id), deletedAt: null } },
         { $group: { _id: '$school', count: { $sum: 1 } } },
@@ -270,9 +284,13 @@ router.get('/facets', async (req: Request, res: Response, next: NextFunction) =>
     ])
     res.json({
       classes,
-      schools: schoolsAgg.map((s: { _id: string; count: number }) => ({ name: s._id, count: s.count })).filter((s) => s.name),
+      schools: schoolsAgg
+        .map((s: { _id: string; count: number }) => ({ name: s._id, count: s.count }))
+        .filter((s) => s.name),
     })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // GET /by-school — fiches école : aggregate par school avec compteurs
@@ -297,7 +315,9 @@ router.get('/by-school', async (req: Request, res: Response, next: NextFunction)
     }
 
     res.json({ schools: Array.from(grouped.values()) })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 export default router

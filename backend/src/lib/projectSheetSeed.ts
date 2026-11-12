@@ -64,7 +64,8 @@ export const SHEET_SEEDS: SheetSeed[] = [
     audience: '- Hôtellerie-restauration\n- Marques premium\n- Luxe',
     positioning: 'Discours décalé et anti-bullshit : on refuse le marketing tiède.',
     brandVoice: 'Décalé, direct, anti-bullshit. Exigeant sur le fond, jamais tiède.',
-    stack: 'Plateforme Venio : site public et back-office (CRM, projets, comptabilité, Qualiopi, tickets, dev tracker).',
+    stack:
+      'Plateforme Venio : site public et back-office (CRM, projets, comptabilité, Qualiopi, tickets, dev tracker).',
   },
   {
     slug: 'creatio',
@@ -154,11 +155,7 @@ export const SHEET_SEEDS: SheetSeed[] = [
       'Vision : plateforme **multi-établissements**. Arrow est la **priorité commerciale** du groupe.',
     ].join('\n'),
     audience: '- Écoles\n- Organismes de formation',
-    positioning: [
-      '- Remplace 5 à 10 outils.',
-      '- Conformité RNCP, Qualiopi et RGPD.',
-      '- IA embarquée.',
-    ].join('\n'),
+    positioning: ['- Remplace 5 à 10 outils.', '- Conformité RNCP, Qualiopi et RGPD.', '- IA embarquée.'].join('\n'),
     offers: [
       'Tarifs **indicatifs recommandés — à valider avant toute diffusion** :',
       '',
@@ -204,8 +201,7 @@ export const SHEET_SEEDS: SheetSeed[] = [
     websites: [],
     links: [],
     oneLiner: 'Projet porté par Venio autour d’un réseau de galeries d’art — à compléter par Raphael.',
-    whatWeDo:
-      'Projet porté par Venio, lié à un **réseau de galeries d’art**. Description à compléter par Raphael.',
+    whatWeDo: 'Projet porté par Venio, lié à un **réseau de galeries d’art**. Description à compléter par Raphael.',
     keyFigures: '39 galeries en prospection dans le CRM (novembre 2026).',
   },
 ]
@@ -247,7 +243,11 @@ export async function seedProjectSheets({ dryRun = false } = {}): Promise<SeedRe
   const report: SeedReport = { created: [], completed: [], emptyCreated: [], unchanged: [] }
   const subsidiaries = await Subsidiary.find({}).select('name slug status archived accentColor logoUrl').lean()
   const claimed = new Set(
-    (await ProjectSheet.find({ subsidiary: { $ne: null } }).select('subsidiary').lean()).map((s) => String(s.subsidiary)),
+    (
+      await ProjectSheet.find({ subsidiary: { $ne: null } })
+        .select('subsidiary')
+        .lean()
+    ).map((s) => String(s.subsidiary)),
   )
 
   for (const seed of SHEET_SEEDS) {

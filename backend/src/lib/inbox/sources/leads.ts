@@ -10,17 +10,11 @@ export async function getLeadItems(): Promise<InboxItem[]> {
   const leads = await Lead.find({
     leadTemperature: { $in: ['CHAUD', 'TRES_CHAUD'] },
     status: { $nin: ['WON', 'LOST'] },
-    $or: [
-      { nextActionAt: { $exists: false } },
-      { nextActionAt: null },
-      { nextActionAt: { $lt: cutoff } },
-    ],
+    $or: [{ nextActionAt: { $exists: false } }, { nextActionAt: null }, { nextActionAt: { $lt: cutoff } }],
   }).lean()
 
   return leads.map((l: any) => {
-    const daysSince = l.nextActionAt
-      ? Math.floor((Date.now() - new Date(l.nextActionAt).getTime()) / 86400000)
-      : 999
+    const daysSince = l.nextActionAt ? Math.floor((Date.now() - new Date(l.nextActionAt).getTime()) / 86400000) : 999
     return {
       id: `lead:${l._id}`,
       type: 'lead' as const,

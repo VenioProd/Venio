@@ -19,7 +19,7 @@ const journalSchema = new mongoose.Schema<IJournal, JournalModel>(
     isActive: { type: Boolean, default: true },
     isSystem: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 // Recherche par code (force l'uppercase puisque le schema l'applique)

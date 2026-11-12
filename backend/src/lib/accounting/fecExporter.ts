@@ -164,10 +164,7 @@ export async function exportFec(params: ExportFecParams): Promise<ExportFecResul
           {
             $match: {
               $expr: {
-                $and: [
-                  { $eq: ['$_id', '$$entryId'] },
-                  { $in: ['$status', VALID_STATUSES] },
-                ],
+                $and: [{ $eq: ['$_id', '$$entryId'] }, { $in: ['$status', VALID_STATUSES] }],
               },
             },
           },
@@ -259,8 +256,7 @@ export async function exportFec(params: ExportFecParams): Promise<ExportFecResul
     const validDate = formatDateFec(row.validatedAt || row.lockedAt || row.entryDate)
     const currency = String(row.currency || 'EUR').toUpperCase()
     const isForeign = Boolean(currency) && currency !== 'EUR'
-    const montantDevise =
-      isForeign && row.originalAmount != null ? formatAmountFec(row.originalAmount) : ''
+    const montantDevise = isForeign && row.originalAmount != null ? formatAmountFec(row.originalAmount) : ''
     const iDevise = isForeign ? cleanField(row.originalCurrency || currency) : ''
 
     const cols = [

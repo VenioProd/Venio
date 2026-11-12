@@ -89,7 +89,8 @@ const fr = {
   'portfolio.workload.empty': 'Aucune tâche ouverte assignée.',
   'portfolio.workload.counts': '{projects} projet(s) · {tasks} tâche(s)',
   'portfolio.delete.title': 'Supprimer définitivement ?',
-  'portfolio.delete.message': '{count} projet(s) et leurs sections, tâches et fichiers seront supprimés. Les projets qui portent une facture, une écriture ou un devis envoyé seront refusés : archivez-les plutôt.',
+  'portfolio.delete.message':
+    '{count} projet(s) et leurs sections, tâches et fichiers seront supprimés. Les projets qui portent une facture, une écriture ou un devis envoyé seront refusés : archivez-les plutôt.',
   'portfolio.postpone.newDate': 'Nouvelle échéance',
   'portfolio.risk.late': '{value} j de retard',
   'portfolio.risk.budget': 'Budget {value} %',

@@ -207,7 +207,9 @@ export default function DemoAccesses({ sheetId, accesses, canEdit, canReveal, on
                       <button
                         type="button"
                         className="ps-btn"
-                        aria-label={t(psKey(password !== undefined ? 'demo.hideAria' : 'demo.showAria'), { role: access.role })}
+                        aria-label={t(psKey(password !== undefined ? 'demo.hideAria' : 'demo.showAria'), {
+                          role: access.role,
+                        })}
                         onClick={() => toggle(access._id)}
                       >
                         {t(psKey(password !== undefined ? 'demo.hide' : 'demo.show'))}
@@ -277,15 +279,31 @@ export default function DemoAccesses({ sheetId, accesses, canEdit, canReveal, on
           <fieldset disabled={busy} className="ps-fields">
             <label>
               {t(psKey('demo.url'))}
-              <input type="url" value={form.url} maxLength={2000} required onChange={(e) => setForm({ ...form, url: e.target.value })} />
+              <input
+                type="url"
+                value={form.url}
+                maxLength={2000}
+                required
+                onChange={(e) => setForm({ ...form, url: e.target.value })}
+              />
             </label>
             <label>
               {t(psKey('demo.role'))}
-              <input value={form.role} maxLength={120} required onChange={(e) => setForm({ ...form, role: e.target.value })} />
+              <input
+                value={form.role}
+                maxLength={120}
+                required
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+              />
             </label>
             <label>
               {t(psKey('demo.username'))}
-              <input value={form.username} maxLength={200} autoComplete="off" onChange={(e) => setForm({ ...form, username: e.target.value })} />
+              <input
+                value={form.username}
+                maxLength={200}
+                autoComplete="off"
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+              />
             </label>
             <label>
               {t(psKey('demo.password'))}
@@ -300,7 +318,12 @@ export default function DemoAccesses({ sheetId, accesses, canEdit, canReveal, on
             </label>
             <label>
               {t(psKey('demo.notes'))}
-              <textarea rows={3} value={form.notes} maxLength={2000} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              <textarea
+                rows={3}
+                value={form.notes}
+                maxLength={2000}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
             </label>
           </fieldset>
           {formError && (

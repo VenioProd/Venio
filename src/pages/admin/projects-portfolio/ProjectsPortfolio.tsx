@@ -31,7 +31,11 @@ interface Admin {
   name: string
 }
 
-const STATUS_LABEL_KEY = { EN_COURS: 'status.inProgress', EN_ATTENTE: 'status.pending', TERMINE: 'status.completed' } as const satisfies Record<string, MessageKey>
+const STATUS_LABEL_KEY = {
+  EN_COURS: 'status.inProgress',
+  EN_ATTENTE: 'status.pending',
+  TERMINE: 'status.completed',
+} as const satisfies Record<string, MessageKey>
 const STATUS_TONE = { EN_COURS: 'sky', EN_ATTENTE: 'amber', TERMINE: 'mint' } as const
 const ACTION_LABEL_KEY: Record<ProjectAction, MessageKey> = {
   POSTPONE: 'portfolio.action.postpone',
@@ -111,17 +115,25 @@ export default function ProjectsPortfolio() {
     if (!ids.length || busy) return
     setBusy(true)
     try {
-      const res = await apiFetch<{ succeeded: number; failed: number; results: { id: string; ok: boolean; error?: string }[] }>(
-        '/api/admin/projects/bulk',
-        {
-          method: 'POST',
-          headers: confirmed ? sensitiveActionHeaders('PROJECT_DELETE') : undefined,
-          body: JSON.stringify({ action, ids, value }),
-        },
-      )
+      const res = await apiFetch<{
+        succeeded: number
+        failed: number
+        results: { id: string; ok: boolean; error?: string }[]
+      }>('/api/admin/projects/bulk', {
+        method: 'POST',
+        headers: confirmed ? sensitiveActionHeaders('PROJECT_DELETE') : undefined,
+        body: JSON.stringify({ action, ids, value }),
+      })
       if (res.failed) {
         const first = res.results.find((r) => !r.ok)
-        showToast(t('portfolio.toast.partial', { ok: res.succeeded, failed: res.failed, error: first?.error ?? t('portfolio.toast.unknownError') }), 'error')
+        showToast(
+          t('portfolio.toast.partial', {
+            ok: res.succeeded,
+            failed: res.failed,
+            error: first?.error ?? t('portfolio.toast.unknownError'),
+          }),
+          'error',
+        )
       } else {
         showToast(t('portfolio.toast.updated', { count: res.succeeded }), 'success')
       }
@@ -169,7 +181,15 @@ export default function ProjectsPortfolio() {
       return next
     })
 
-  if (error) return <p role="alert">{t('portfolio.loadError')} <button type="button" className="pf-link" onClick={load}>{t('portfolio.retry')}</button></p>
+  if (error)
+    return (
+      <p role="alert">
+        {t('portfolio.loadError')}{' '}
+        <button type="button" className="pf-link" onClick={load}>
+          {t('portfolio.retry')}
+        </button>
+      </p>
+    )
   if (!data) return <p role="status">{t('portfolio.loading')}</p>
 
   const { pulse } = data
@@ -189,21 +209,45 @@ export default function ProjectsPortfolio() {
       </p>
 
       <section className="pf-card pf-pulse" aria-label={t('portfolio.pulse.aria')}>
-        <Pulse label={t('portfolio.pulse.active')} value={pulse.active} sub={t('portfolio.pulse.activeSub', { total: pulse.total, done: pulse.done })} />
-        <Pulse label={t('portfolio.pulse.late')} value={pulse.late} hot={pulse.late > 0} sub={t('portfolio.pulse.atRisk', { count: pulse.atRisk })} />
-        <Pulse label={t('portfolio.pulse.due7')} value={pulse.dueIn7Days} sub={t('portfolio.pulse.due48', { count: pulse.dueIn48h })} />
+        <Pulse
+          label={t('portfolio.pulse.active')}
+          value={pulse.active}
+          sub={t('portfolio.pulse.activeSub', { total: pulse.total, done: pulse.done })}
+        />
+        <Pulse
+          label={t('portfolio.pulse.late')}
+          value={pulse.late}
+          hot={pulse.late > 0}
+          sub={t('portfolio.pulse.atRisk', { count: pulse.atRisk })}
+        />
+        <Pulse
+          label={t('portfolio.pulse.due7')}
+          value={pulse.dueIn7Days}
+          sub={t('portfolio.pulse.due48', { count: pulse.dueIn48h })}
+        />
         <Pulse
           label={t('portfolio.pulse.budget')}
           isNew
           value={pulse.budget.pct == null ? '—' : `${pulse.budget.pct} %`}
-          sub={pulse.budget.total ? t('portfolio.pulse.budgetSub', { invoiced: money(pulse.budget.invoiced), total: money(pulse.budget.total) }) : t('portfolio.pulse.noBudget')}
+          sub={
+            pulse.budget.total
+              ? t('portfolio.pulse.budgetSub', {
+                  invoiced: money(pulse.budget.invoiced),
+                  total: money(pulse.budget.total),
+                })
+              : t('portfolio.pulse.noBudget')
+          }
           meter={pulse.budget.pct}
         />
         <Pulse
           label={t('portfolio.pulse.load')}
           isNew
           value={pulse.load.pct == null ? '—' : `${pulse.load.pct} %`}
-          sub={pulse.load.overloaded ? t('portfolio.pulse.overloaded', { count: pulse.load.overloaded }) : t('portfolio.pulse.withinCapacity')}
+          sub={
+            pulse.load.overloaded
+              ? t('portfolio.pulse.overloaded', { count: pulse.load.overloaded })
+              : t('portfolio.pulse.withinCapacity')
+          }
           meter={pulse.load.pct}
         />
       </section>
@@ -213,7 +257,8 @@ export default function ProjectsPortfolio() {
           <section className="pf-card pf-queue" aria-label={t('portfolio.queue.title')}>
             <header className="pf-card-h">
               <h2>
-                {t('portfolio.queue.title')} <span className={`pf-count ${data.queue.length ? 'hot' : ''}`}>{data.queue.length}</span>
+                {t('portfolio.queue.title')}{' '}
+                <span className={`pf-count ${data.queue.length ? 'hot' : ''}`}>{data.queue.length}</span>
               </h2>
             </header>
             {data.queue.length === 0 ? (
@@ -250,7 +295,8 @@ export default function ProjectsPortfolio() {
                           aria-label={t('portfolio.queue.newOwnerAria', { name: item.name })}
                           defaultValue=""
                           onChange={(e) => {
-                            if (e.target.value) bulk('set-assignee', [item._id], e.target.value).then(() => setInline(null))
+                            if (e.target.value)
+                              bulk('set-assignee', [item._id], e.target.value).then(() => setInline(null))
                           }}
                         >
                           <option value="" disabled>
@@ -265,11 +311,20 @@ export default function ProjectsPortfolio() {
                       ) : (
                         item.actions.map((a, idx) =>
                           a === 'REMIND_CLIENT' || a === 'INVOICE' ? (
-                            <Link key={a} to={`/admin/projets/${item._id}`} className={`pf-btn ${idx === 0 ? 'primary' : ''}`}>
+                            <Link
+                              key={a}
+                              to={`/admin/projets/${item._id}`}
+                              className={`pf-btn ${idx === 0 ? 'primary' : ''}`}
+                            >
                               {t(ACTION_LABEL_KEY[a])}
                             </Link>
                           ) : (
-                            <button key={a} type="button" className={`pf-btn ${idx === 0 ? 'primary' : ''}`} onClick={() => doAction(item, a)}>
+                            <button
+                              key={a}
+                              type="button"
+                              className={`pf-btn ${idx === 0 ? 'primary' : ''}`}
+                              onClick={() => doAction(item, a)}
+                            >
                               {t(ACTION_LABEL_KEY[a])}
                             </button>
                           ),
@@ -288,18 +343,34 @@ export default function ProjectsPortfolio() {
             </header>
             <div className="pf-views" role="group" aria-label={t('portfolio.views.aria')}>
               {BUILTIN_VIEWS.map((v) => (
-                <button key={v.id} type="button" className="pf-flt" aria-pressed={sameFilters(filters, v.filters)} onClick={() => setFilters(v.filters)}>
+                <button
+                  key={v.id}
+                  type="button"
+                  className="pf-flt"
+                  aria-pressed={sameFilters(filters, v.filters)}
+                  onClick={() => setFilters(v.filters)}
+                >
                   {t(v.labelKey)} <span className="pf-count">{counts[v.id] ?? 0}</span>
                 </button>
               ))}
               {views.map((v) => (
                 <span key={v._id} className="pf-view-wrap">
-                  <button type="button" className="pf-flt" aria-pressed={sameFilters(filters, { ...EMPTY_FILTERS, ...v.filters })} onClick={() => setFilters({ ...EMPTY_FILTERS, ...v.filters })}>
+                  <button
+                    type="button"
+                    className="pf-flt"
+                    aria-pressed={sameFilters(filters, { ...EMPTY_FILTERS, ...v.filters })}
+                    onClick={() => setFilters({ ...EMPTY_FILTERS, ...v.filters })}
+                  >
                     {v.name}
                     {v.shared ? t('portfolio.views.shared') : ''}
                   </button>
                   {v.mine && (
-                    <button type="button" className="pf-x" aria-label={t('portfolio.views.deleteAria', { name: v.name })} onClick={() => deleteView(v._id)}>
+                    <button
+                      type="button"
+                      className="pf-x"
+                      aria-label={t('portfolio.views.deleteAria', { name: v.name })}
+                      onClick={() => deleteView(v._id)}
+                    >
                       ×
                     </button>
                   )}
@@ -317,7 +388,15 @@ export default function ProjectsPortfolio() {
                     saveView(savingView)
                   }}
                 >
-                  <input className="pf-input" autoFocus aria-label={t('portfolio.views.name')} maxLength={60} value={savingView} onChange={(e) => setSavingView(e.target.value)} placeholder={t('portfolio.views.name')} />
+                  <input
+                    className="pf-input"
+                    autoFocus
+                    aria-label={t('portfolio.views.name')}
+                    maxLength={60}
+                    value={savingView}
+                    onChange={(e) => setSavingView(e.target.value)}
+                    placeholder={t('portfolio.views.name')}
+                  />
                   <button type="submit" className="pf-btn primary">
                     {t('portfolio.views.ok')}
                   </button>
@@ -329,14 +408,31 @@ export default function ProjectsPortfolio() {
             </div>
 
             <div className="pf-fbar">
-              <input className="pf-input" type="search" aria-label={t('portfolio.filter.searchAria')} placeholder={t('portfolio.filter.searchPlaceholder')} value={filters.q} onChange={(e) => set('q', e.target.value)} />
-              <select className="pf-sel" aria-label={t('portfolio.filter.status')} value={filters.status} onChange={(e) => set('status', e.target.value)}>
+              <input
+                className="pf-input"
+                type="search"
+                aria-label={t('portfolio.filter.searchAria')}
+                placeholder={t('portfolio.filter.searchPlaceholder')}
+                value={filters.q}
+                onChange={(e) => set('q', e.target.value)}
+              />
+              <select
+                className="pf-sel"
+                aria-label={t('portfolio.filter.status')}
+                value={filters.status}
+                onChange={(e) => set('status', e.target.value)}
+              >
                 <option value="">{t('portfolio.filter.statusAll')}</option>
                 <option value="EN_COURS">{t('status.inProgress')}</option>
                 <option value="EN_ATTENTE">{t('status.pending')}</option>
                 <option value="TERMINE">{t('status.completed')}</option>
               </select>
-              <select className="pf-sel" aria-label={t('portfolio.filter.owner')} value={filters.assignedTo} onChange={(e) => set('assignedTo', e.target.value)}>
+              <select
+                className="pf-sel"
+                aria-label={t('portfolio.filter.owner')}
+                value={filters.assignedTo}
+                onChange={(e) => set('assignedTo', e.target.value)}
+              >
                 <option value="">{t('portfolio.filter.ownerAll')}</option>
                 {admins.map((a) => (
                   <option key={a._id} value={a._id}>
@@ -344,14 +440,24 @@ export default function ProjectsPortfolio() {
                   </option>
                 ))}
               </select>
-              <select className="pf-sel" aria-label={t('portfolio.filter.priority')} value={filters.priority} onChange={(e) => set('priority', e.target.value)}>
+              <select
+                className="pf-sel"
+                aria-label={t('portfolio.filter.priority')}
+                value={filters.priority}
+                onChange={(e) => set('priority', e.target.value)}
+              >
                 <option value="">{t('portfolio.filter.priorityAll')}</option>
                 <option value="URGENTE">{t('portfolio.priority.URGENTE')}</option>
                 <option value="HAUTE">{t('portfolio.priority.HAUTE')}</option>
                 <option value="NORMALE">{t('portfolio.priority.NORMALE')}</option>
                 <option value="BASSE">{t('portfolio.priority.BASSE')}</option>
               </select>
-              <select className="pf-sel" aria-label={t('portfolio.filter.sort')} value={filters.sort} onChange={(e) => set('sort', e.target.value as SortKey)}>
+              <select
+                className="pf-sel"
+                aria-label={t('portfolio.filter.sort')}
+                value={filters.sort}
+                onChange={(e) => set('sort', e.target.value as SortKey)}
+              >
                 <option value="urgency">{t('portfolio.filter.sortUrgency')}</option>
                 <option value="dueDate">{t('portfolio.filter.sortDue')}</option>
                 <option value="budget">{t('portfolio.filter.sortBudget')}</option>
@@ -361,7 +467,13 @@ export default function ProjectsPortfolio() {
 
             <div className="pf-table" role="table" aria-label={t('portfolio.table.aria')}>
               <div className="pf-th" role="row">
-                <input type="checkbox" className="pf-chk" aria-label={t('bulk.selectAll')} checked={allPicked} onChange={(e) => setSelected(e.target.checked ? new Set(rows.map((r) => r._id)) : new Set())} />
+                <input
+                  type="checkbox"
+                  className="pf-chk"
+                  aria-label={t('bulk.selectAll')}
+                  checked={allPicked}
+                  onChange={(e) => setSelected(e.target.checked ? new Set(rows.map((r) => r._id)) : new Set())}
+                />
                 <span>{t('portfolio.table.project')}</span>
                 <span>{t('portfolio.table.status')}</span>
                 <span className="pf-h-prog">{t('portfolio.table.progress')}</span>
@@ -373,28 +485,58 @@ export default function ProjectsPortfolio() {
               {rows.map((i) => {
                 const on = selected.has(i._id)
                 const tone = STATUS_TONE[i.status]
-                const dueTone = i.overdueDays > 0 ? 'late' : i.daysToDue !== null && i.daysToDue <= 7 && i.status !== 'TERMINE' ? 'soon' : ''
+                const dueTone =
+                  i.overdueDays > 0
+                    ? 'late'
+                    : i.daysToDue !== null && i.daysToDue <= 7 && i.status !== 'TERMINE'
+                      ? 'soon'
+                      : ''
                 const budTone = i.budgetPct == null ? '' : i.budgetPct > 100 ? 'bad' : i.budgetPct >= 85 ? 'warn' : ''
                 return (
                   <div key={i._id} className="pf-tr" role="row" aria-selected={on}>
-                    <input type="checkbox" className="pf-chk" aria-label={t('portfolio.table.selectRow', { name: i.name })} checked={on} onChange={() => toggle(i._id)} />
+                    <input
+                      type="checkbox"
+                      className="pf-chk"
+                      aria-label={t('portfolio.table.selectRow', { name: i.name })}
+                      checked={on}
+                      onChange={() => toggle(i._id)}
+                    />
                     <div className="pf-cell-n">
                       <Link to={`/admin/projets/${i._id}`}>{i.name}</Link>
-                      <span>{[i.client?.name, i.priority !== 'NORMALE' ? t(PRIORITY_LABEL_KEY[i.priority]).toLowerCase() : null].filter(Boolean).join(' · ')}</span>
+                      <span>
+                        {[
+                          i.client?.name,
+                          i.priority !== 'NORMALE' ? t(PRIORITY_LABEL_KEY[i.priority]).toLowerCase() : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
                     </div>
                     <div className="pf-cell-st">
-                      <span className={`pf-chip dot ${i.overdueDays > 0 ? 'rose' : tone}`}>{i.overdueDays > 0 ? t('portfolio.late') : t(STATUS_LABEL_KEY[i.status])}</span>
+                      <span className={`pf-chip dot ${i.overdueDays > 0 ? 'rose' : tone}`}>
+                        {i.overdueDays > 0 ? t('portfolio.late') : t(STATUS_LABEL_KEY[i.status])}
+                      </span>
                     </div>
                     <div className="pf-cell-pr">
                       <span className="pf-mono">{i.progress} %</span>
-                      <div className="pf-meter"><i style={{ width: `${i.progress}%` }} /></div>
+                      <div className="pf-meter">
+                        <i style={{ width: `${i.progress}%` }} />
+                      </div>
                     </div>
                     <div className={`pf-cell-d ${dueTone}`}>{dueLabel(i)}</div>
                     <div className={`pf-cell-b ${budTone}`}>
                       {i.budgetPct == null ? '—' : `${i.budgetPct} %`}
                       {i.budget.amount ? <small>{money(i.budget.amount)}</small> : null}
                     </div>
-                    <div className="pf-cell-r">{i.assignedTo ? <span className="pf-av" title={i.assignedTo.name}>{initials(i.assignedTo.name)}</span> : '—'}</div>
+                    <div className="pf-cell-r">
+                      {i.assignedTo ? (
+                        <span className="pf-av" title={i.assignedTo.name}>
+                          {initials(i.assignedTo.name)}
+                        </span>
+                      ) : (
+                        '—'
+                      )}
+                    </div>
                   </div>
                 )
               })}
@@ -403,13 +545,25 @@ export default function ProjectsPortfolio() {
             {picked.length > 0 && (
               <div className="pf-bulk" role="region" aria-label={t('bulk.toolbar')}>
                 <span className="pf-bulk-n">{t('portfolio.bulk.selected', { count: picked.length })}</span>
-                <select className="pf-sel" aria-label={t('portfolio.bulk.changeStatus')} value="" disabled={busy} onChange={(e) => e.target.value && bulk('set-status', picked, e.target.value)}>
+                <select
+                  className="pf-sel"
+                  aria-label={t('portfolio.bulk.changeStatus')}
+                  value=""
+                  disabled={busy}
+                  onChange={(e) => e.target.value && bulk('set-status', picked, e.target.value)}
+                >
                   <option value="">{t('portfolio.bulk.statusPlaceholder')}</option>
                   <option value="EN_COURS">{t('status.inProgress')}</option>
                   <option value="EN_ATTENTE">{t('status.pending')}</option>
                   <option value="TERMINE">{t('status.completed')}</option>
                 </select>
-                <select className="pf-sel" aria-label={t('portfolio.bulk.changeOwner')} value="" disabled={busy} onChange={(e) => e.target.value && bulk('set-assignee', picked, e.target.value)}>
+                <select
+                  className="pf-sel"
+                  aria-label={t('portfolio.bulk.changeOwner')}
+                  value=""
+                  disabled={busy}
+                  onChange={(e) => e.target.value && bulk('set-assignee', picked, e.target.value)}
+                >
                   <option value="">{t('portfolio.bulk.ownerPlaceholder')}</option>
                   {admins.map((a) => (
                     <option key={a._id} value={a._id}>
@@ -423,15 +577,18 @@ export default function ProjectsPortfolio() {
                 <button type="button" className="pf-btn danger" disabled={busy} onClick={() => setConfirmDelete(true)}>
                   {t('bulk.action.delete')}
                 </button>
-                <button type="button" className="pf-x" aria-label={t('bulk.clear')} onClick={() => setSelected(new Set())}>
+                <button
+                  type="button"
+                  className="pf-x"
+                  aria-label={t('bulk.clear')}
+                  onClick={() => setSelected(new Set())}
+                >
                   ×
                 </button>
               </div>
             )}
             <div className="pf-foot">
-              <span>
-                {t('portfolio.foot.count', { shown: rows.length, total: data.items.length })}
-              </span>
+              <span>{t('portfolio.foot.count', { shown: rows.length, total: data.items.length })}</span>
               <span className="pf-mono">{t('portfolio.foot.formula')}</span>
             </div>
           </section>
@@ -450,7 +607,9 @@ export default function ProjectsPortfolio() {
               <ul className="pf-tl">
                 {data.upcoming.map((u) => (
                   <li key={u._id}>
-                    <time className={u.overdueDays > 0 ? 'pf-neg' : ''}>{u.overdueDays > 0 ? t('portfolio.due.overdue', { count: u.overdueDays }) : shortDate(u.endDate)}</time>
+                    <time className={u.overdueDays > 0 ? 'pf-neg' : ''}>
+                      {u.overdueDays > 0 ? t('portfolio.due.overdue', { count: u.overdueDays }) : shortDate(u.endDate)}
+                    </time>
                     <div>
                       <Link to={`/admin/projets/${u._id}`}>{u.name}</Link>
                       <span>{u.assignedTo?.name ?? t('portfolio.unassigned')}</span>
@@ -475,9 +634,7 @@ export default function ProjectsPortfolio() {
                     <span className="pf-av">{initials(w.name)}</span>
                     <div>
                       <b>{w.name}</b>
-                      <span>
-                        {t('portfolio.workload.counts', { projects: w.projects, tasks: w.openTasks })}
-                      </span>
+                      <span>{t('portfolio.workload.counts', { projects: w.projects, tasks: w.openTasks })}</span>
                       <div className={`pf-meter ${w.loadPct > 100 ? 'bad' : w.loadPct >= 85 ? 'warn' : ''}`}>
                         <i style={{ width: `${Math.min(100, w.loadPct)}%` }} />
                       </div>
@@ -507,7 +664,21 @@ export default function ProjectsPortfolio() {
   )
 }
 
-function Pulse({ label, value, sub, hot, isNew, meter }: { label: string; value: number | string; sub: string; hot?: boolean; isNew?: boolean; meter?: number | null }) {
+function Pulse({
+  label,
+  value,
+  sub,
+  hot,
+  isNew,
+  meter,
+}: {
+  label: string
+  value: number | string
+  sub: string
+  hot?: boolean
+  isNew?: boolean
+  meter?: number | null
+}) {
   const { t } = useI18n()
   return (
     <div className={`pf-pc ${hot ? 'hot' : ''}`}>
@@ -536,7 +707,14 @@ function PostponeForm({ onSubmit, onCancel }: { onSubmit: (date: string) => void
         onSubmit(date)
       }}
     >
-      <input className="pf-input" type="date" aria-label={t('portfolio.postpone.newDate')} value={date} onChange={(e) => setDate(e.target.value)} required />
+      <input
+        className="pf-input"
+        type="date"
+        aria-label={t('portfolio.postpone.newDate')}
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        required
+      />
       <button type="submit" className="pf-btn primary">
         {t('portfolio.views.ok')}
       </button>

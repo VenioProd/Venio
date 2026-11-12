@@ -20,7 +20,7 @@ const schema = new mongoose.Schema<IArrowPilotage>(
     cadence: { type: [String], default: [] },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 export default mongoose.model<IArrowPilotage>('ArrowPilotage', schema)

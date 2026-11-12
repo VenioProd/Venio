@@ -14,7 +14,15 @@ interface LeadAssignmentLead {
 /**
  * Envoie un email de notification d'assignation de lead au commercial.
  */
-export async function sendLeadAssignmentEmail({ to, assigneeName, lead }: { to: string; assigneeName: string; lead: LeadAssignmentLead }): Promise<EmailResult> {
+export async function sendLeadAssignmentEmail({
+  to,
+  assigneeName,
+  lead,
+}: {
+  to: string
+  assigneeName: string
+  lead: LeadAssignmentLead
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -80,7 +88,15 @@ interface ColdLeadItem {
 /**
  * Envoie un email de rappel pour les leads froids (sans contact depuis X jours).
  */
-export async function sendColdLeadsReminderEmail({ to, assigneeName, leads }: { to: string; assigneeName: string; leads: ColdLeadItem[] }): Promise<EmailResult> {
+export async function sendColdLeadsReminderEmail({
+  to,
+  assigneeName,
+  leads,
+}: {
+  to: string
+  assigneeName: string
+  leads: ColdLeadItem[]
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -89,10 +105,17 @@ export async function sendColdLeadsReminderEmail({ to, assigneeName, leads }: { 
   const appName = process.env.APP_NAME || 'Venio'
   const crmUrl = process.env.CRM_URL || 'http://localhost:5501/admin/crm'
 
-  const leadsList = leads.map(l => `- ${l.company} (${l.contactName || 'Contact non renseigné'}) — ${l.daysSinceContact} jours sans contact`).join('\n')
-  const leadsHtml = leads.map(l =>
-    `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(l.company)}</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(l.contactName || 'Non renseigné')}</td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #f59e0b; font-weight: 600;">${l.daysSinceContact}j</td></tr>`
-  ).join('')
+  const leadsList = leads
+    .map(
+      (l) => `- ${l.company} (${l.contactName || 'Contact non renseigné'}) — ${l.daysSinceContact} jours sans contact`,
+    )
+    .join('\n')
+  const leadsHtml = leads
+    .map(
+      (l) =>
+        `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(l.company)}</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(l.contactName || 'Non renseigné')}</td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #f59e0b; font-weight: 600;">${l.daysSinceContact}j</td></tr>`,
+    )
+    .join('')
 
   try {
     await transporter.sendMail({
@@ -137,7 +160,15 @@ interface OverdueLeadItem {
 /**
  * Envoie un email récapitulatif des actions en retard.
  */
-export async function sendOverdueActionsEmail({ to, assigneeName, leads }: { to: string; assigneeName: string; leads: OverdueLeadItem[] }): Promise<EmailResult> {
+export async function sendOverdueActionsEmail({
+  to,
+  assigneeName,
+  leads,
+}: {
+  to: string
+  assigneeName: string
+  leads: OverdueLeadItem[]
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -146,10 +177,18 @@ export async function sendOverdueActionsEmail({ to, assigneeName, leads }: { to:
   const appName = process.env.APP_NAME || 'Venio'
   const crmUrl = process.env.CRM_URL || 'http://localhost:5501/admin/crm'
 
-  const leadsList = leads.map(l => `- ${l.company} — Action prévue le ${new Date(l.nextActionAt).toLocaleDateString('fr-FR')} (${l.daysOverdue}j de retard)`).join('\n')
-  const leadsHtml = leads.map(l =>
-    `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(l.company)}</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${new Date(l.nextActionAt).toLocaleDateString('fr-FR')}</td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #ef4444; font-weight: 600;">${l.daysOverdue}j</td></tr>`
-  ).join('')
+  const leadsList = leads
+    .map(
+      (l) =>
+        `- ${l.company} — Action prévue le ${new Date(l.nextActionAt).toLocaleDateString('fr-FR')} (${l.daysOverdue}j de retard)`,
+    )
+    .join('\n')
+  const leadsHtml = leads
+    .map(
+      (l) =>
+        `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(l.company)}</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${new Date(l.nextActionAt).toLocaleDateString('fr-FR')}</td><td style="padding: 8px; border-bottom: 1px solid #eee; color: #ef4444; font-weight: 600;">${l.daysOverdue}j</td></tr>`,
+    )
+    .join('')
 
   try {
     await transporter.sendMail({
@@ -194,7 +233,19 @@ interface EscalationLead {
 /**
  * Envoie un email d'escalade au manager.
  */
-export async function sendEscalationEmail({ to, managerName, lead, assigneeName, daysSinceAssignment }: { to: string; managerName: string; lead: EscalationLead; assigneeName: string; daysSinceAssignment: number }): Promise<EmailResult> {
+export async function sendEscalationEmail({
+  to,
+  managerName,
+  lead,
+  assigneeName,
+  daysSinceAssignment,
+}: {
+  to: string
+  managerName: string
+  lead: EscalationLead
+  assigneeName: string
+  daysSinceAssignment: number
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -250,7 +301,17 @@ interface ProposalReminderLead {
 /**
  * Envoie un email de rappel avant expiration de proposition.
  */
-export async function sendProposalReminderEmail({ to, assigneeName, lead, daysInProposal }: { to: string; assigneeName: string; lead: ProposalReminderLead; daysInProposal: number | null }): Promise<EmailResult> {
+export async function sendProposalReminderEmail({
+  to,
+  assigneeName,
+  lead,
+  daysInProposal,
+}: {
+  to: string
+  assigneeName: string
+  lead: ProposalReminderLead
+  daysInProposal: number | null
+}): Promise<EmailResult> {
   const transporter = getTransporter()
   if (!transporter) {
     return { sent: false, error: 'SMTP non configuré (SMTP_USER / SMTP_PASS)' }
@@ -278,7 +339,7 @@ export async function sendProposalReminderEmail({ to, assigneeName, lead, daysIn
       html: [
         `<p>Bonjour ${escapeHtml(assigneeName)},</p>`,
         `<p>Le lead <strong>"${escapeHtml(lead.company)}"</strong> est en statut <strong>PROPOSITION</strong> depuis <strong>${daysInProposal} jours</strong>.</p>`,
-        '<p>Pensez à relancer ce prospect pour ne pas perdre l\'opportunité.</p>',
+        "<p>Pensez à relancer ce prospect pour ne pas perdre l'opportunité.</p>",
         `<p><a href="${escapeHtml(crmUrl)}" style="display: inline-block; padding: 10px 20px; background: #f97316; color: white; text-decoration: none; border-radius: 6px;">Voir la proposition</a></p>`,
         `<p>— L'équipe ${escapeHtml(appName)}</p>`,
       ].join(''),

@@ -44,7 +44,9 @@ const renderPage = () =>
   )
 
 const writes = () =>
-  apiFetch.mock.calls.filter(([url, opts]) => url.startsWith('/api/admin/crm/suppression') && (opts as RequestInit | undefined)?.method)
+  apiFetch.mock.calls.filter(
+    ([url, opts]) => url.startsWith('/api/admin/crm/suppression') && (opts as RequestInit | undefined)?.method,
+  )
 
 describe('réglages CRM — liste « ne pas contacter »', () => {
   it('affiche le tableau, la mention sur les leads et le nom de l’auteur', async () => {
@@ -79,7 +81,10 @@ describe('réglages CRM — liste « ne pas contacter »', () => {
     const [url, opts] = writes()[0]
     expect(url).toBe('/api/admin/crm/suppression')
     expect((opts as RequestInit).method).toBe('POST')
-    expect(JSON.parse(String((opts as RequestInit).body))).toEqual({ email: 'nouveau@exemple.test', reason: 'OPPOSITION' })
+    expect(JSON.parse(String((opts as RequestInit).body))).toEqual({
+      email: 'nouveau@exemple.test',
+      reason: 'OPPOSITION',
+    })
     expect(await screen.findByText('Adresse ajoutée à la liste.')).toBeInTheDocument()
   })
 

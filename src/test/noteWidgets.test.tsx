@@ -17,7 +17,10 @@ vi.mock('../services/workspace', () => ({
 import NoteCollectionWidget from '../pages/admin/mon-espace/widgets/NoteCollectionWidget'
 import PostItWall from '../pages/admin/mon-espace/widgets/PostItWall'
 
-beforeEach(() => { vi.clearAllMocks(); getNotes.mockResolvedValue([]) })
+beforeEach(() => {
+  vi.clearAllMocks()
+  getNotes.mockResolvedValue([])
+})
 
 describe('NoteCollectionWidget', () => {
   it('charge les notes du bon type', async () => {
@@ -38,7 +41,9 @@ describe('NoteCollectionWidget', () => {
 
 describe('PostItWall', () => {
   it('affiche les post-it', async () => {
-    getNotes.mockResolvedValue([{ _id: 'p1', type: 'POSTIT', title: '', content: 'Rappel', color: '#fde68a', order: 0 }])
+    getNotes.mockResolvedValue([
+      { _id: 'p1', type: 'POSTIT', title: '', content: 'Rappel', color: '#fde68a', order: 0 },
+    ])
     render(<PostItWall />)
     await waitFor(() => expect(screen.getByText('Rappel')).toBeInTheDocument())
   })

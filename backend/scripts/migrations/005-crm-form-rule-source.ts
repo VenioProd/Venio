@@ -31,7 +31,9 @@ export async function addFormSourceToRule(): Promise<number> {
   const res = await CrmRule.collection.updateMany(
     {
       systemKey: FORM_RULE_KEY,
-      'conditions.items': { $elemMatch: { field: 'source', operator: 'in', value: { $type: 'array', $ne: FORM_SOURCE } } },
+      'conditions.items': {
+        $elemMatch: { field: 'source', operator: 'in', value: { $type: 'array', $ne: FORM_SOURCE } },
+      },
     },
     { $addToSet: { 'conditions.items.$[cond].value': FORM_SOURCE } },
     { arrayFilters: [{ 'cond.field': 'source', 'cond.operator': 'in', 'cond.value': { $type: 'array' } }] },

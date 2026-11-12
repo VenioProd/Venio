@@ -109,7 +109,7 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -120,8 +120,12 @@ router.get(
 router.post(
   '/documents',
   requireScope('write:documents'),
-  body('project').custom((v) => isValidObjectId(v)).withMessage('project (ObjectId) requis'),
-  body('type').isIn(DOC_TYPES as unknown as string[]).withMessage(`type ${DOC_TYPES.join('/')} requis`),
+  body('project')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('project (ObjectId) requis'),
+  body('type')
+    .isIn(DOC_TYPES as unknown as string[])
+    .withMessage(`type ${DOC_TYPES.join('/')} requis`),
   body('originalName').isString().trim().isLength({ min: 1 }).withMessage('originalName requis'),
   body('mimeType').isString().trim().isLength({ min: 3 }).withMessage('mimeType requis'),
   body('contentBase64').isString().isLength({ min: 4 }).withMessage('contentBase64 requis'),
@@ -142,13 +146,13 @@ router.post(
           res,
           413,
           'FILE_TOO_LARGE',
-          `Limite ${RAW_LIMIT_MB} Mo dépassée (reçu : ${(buffer.length / 1024 / 1024).toFixed(2)} Mo)`
+          `Limite ${RAW_LIMIT_MB} Mo dépassée (reçu : ${(buffer.length / 1024 / 1024).toFixed(2)} Mo)`,
         )
       }
 
       // Storage path : uploads/agent/<projectId>/<timestamp>-<random>-<filename>
       const filename = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}-${safeFilename(
-        String(req.body.originalName)
+        String(req.body.originalName),
       )}`
       const relDir = path.join('uploads', 'agent', String(project._id))
       const relPath = path.join(relDir, filename)
@@ -184,7 +188,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -217,15 +221,12 @@ router.get(
       }
 
       res.setHeader('Content-Type', doc.mimeType)
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${doc.originalName.replace(/"/g, '_')}"`
-      )
+      res.setHeader('Content-Disposition', `attachment; filename="${doc.originalName.replace(/"/g, '_')}"`)
       createReadStream(absPath).pipe(res)
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -233,36 +234,40 @@ router.get(
 // DELETE /documents/:id. Body : { ids, action: 'delete' }. Scope write:documents.
 // ───────────────────────────────────────────────────────────────────────────
 
-router.post('/documents/bulk', requireScope('write:documents'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const parsed = parseBulkIds(req.body?.ids)
-    if (!parsed.ok) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
-    if (req.body?.action !== 'delete') {
-      return respondError(res, 400, 'VALIDATION_ERROR', 'action doit valoir delete')
-    }
-    const result = await runBulk(parsed.ids, async (id) => {
-      const doc = await Document.findById(id)
-      if (!doc) throw new BulkItemError('Document introuvable')
-      const absPath = path.resolve(process.cwd(), doc.storagePath)
-      await Document.deleteOne({ _id: doc._id })
-      if (absPath.startsWith(uploadsRoot())) {
-        try {
-          await fs.unlink(absPath)
-        } catch (err) {
-          if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
-        }
+router.post(
+  '/documents/bulk',
+  requireScope('write:documents'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsed = parseBulkIds(req.body?.ids)
+      if (!parsed.ok) return respondError(res, 400, 'VALIDATION_ERROR', parsed.error)
+      if (req.body?.action !== 'delete') {
+        return respondError(res, 400, 'VALIDATION_ERROR', 'action doit valoir delete')
       }
-    })
-    res.locals.audit = {
-      entityType: 'Document',
-      summary: `Suppression groupée de ${parsed.ids.length} document(s) : ${result.succeeded.length} réussi(s), ${result.failed.length} échec(s)`,
-      extra: { bulk: true, action: 'delete', ...result },
+      const result = await runBulk(parsed.ids, async (id) => {
+        const doc = await Document.findById(id)
+        if (!doc) throw new BulkItemError('Document introuvable')
+        const absPath = path.resolve(process.cwd(), doc.storagePath)
+        await Document.deleteOne({ _id: doc._id })
+        if (absPath.startsWith(uploadsRoot())) {
+          try {
+            await fs.unlink(absPath)
+          } catch (err) {
+            if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+          }
+        }
+      })
+      res.locals.audit = {
+        entityType: 'Document',
+        summary: `Suppression groupée de ${parsed.ids.length} document(s) : ${result.succeeded.length} réussi(s), ${result.failed.length} échec(s)`,
+        extra: { bulk: true, action: 'delete', ...result },
+      }
+      res.json(result)
+    } catch (err) {
+      next(err)
     }
-    res.json(result)
-  } catch (err) {
-    next(err)
-  }
-})
+  },
+)
 
 // ───────────────────────────────────────────────────────────────────────────
 // DELETE /documents/:id — supprime DB + fichier (best-effort)
@@ -300,7 +305,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

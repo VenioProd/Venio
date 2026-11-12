@@ -58,10 +58,19 @@ async function seed() {
   const { default: DevIssue } = await import('../models/DevIssue.js')
   const live = await DevProject.create({ key: 'LIVE', name: 'Vivant', createdBy: systemUserId })
   const old = await DevProject.create({ key: 'OLD', name: 'Ancien', createdBy: systemUserId })
-  for (const [p, id] of [[live, 'LIVE-1'], [old, 'OLD-1']] as const) {
+  for (const [p, id] of [
+    [live, 'LIVE-1'],
+    [old, 'OLD-1'],
+  ] as const) {
     await DevIssue.create({
-      project: p._id, identifier: id, title: 'T', number: 1,
-      status: 'TODO', priority: 'URGENT', type: 'TASK', reporter: systemUserId,
+      project: p._id,
+      identifier: id,
+      title: 'T',
+      number: 1,
+      status: 'TODO',
+      priority: 'URGENT',
+      type: 'TASK',
+      reporter: systemUserId,
     })
   }
   return { live, old, DevProject, DevIssue }
@@ -77,14 +86,22 @@ describe('PATCH /api/admin/dev/projects/:id — archivage', () => {
   it('archive puis restaure, tickets intacts, audit tracé', async () => {
     const { old, DevIssue } = await seed()
     const { default: AuditLog } = await import('../models/AuditLog.js')
-    const a = await request(app).patch(`/api/admin/dev/projects/${old._id}`).set(MANAGE).send({ status: 'ARCHIVED' }).expect(200)
+    const a = await request(app)
+      .patch(`/api/admin/dev/projects/${old._id}`)
+      .set(MANAGE)
+      .send({ status: 'ARCHIVED' })
+      .expect(200)
     expect(a.body.status).toBe('ARCHIVED')
     expect(a.body.archivedAt).toBeTruthy()
     const issue = await DevIssue.findOne({ identifier: 'OLD-1' }).lean()
     expect(issue!.archivedAt ?? null).toBeNull()
     expect(await AuditLog.countDocuments({ action: 'DEV_PROJECT_ARCHIVED' })).toBe(1)
 
-    const r = await request(app).patch(`/api/admin/dev/projects/${old._id}`).set(MANAGE).send({ status: 'ACTIVE' }).expect(200)
+    const r = await request(app)
+      .patch(`/api/admin/dev/projects/${old._id}`)
+      .set(MANAGE)
+      .send({ status: 'ACTIVE' })
+      .expect(200)
     expect(r.body.status).toBe('ACTIVE')
     expect(r.body.archivedAt).toBeNull()
     expect(await AuditLog.countDocuments({ action: 'DEV_PROJECT_RESTORED' })).toBe(1)

@@ -65,13 +65,7 @@ function BulkControl({ action, disabled }: { action: BulkAction; disabled: boole
   )
 }
 
-function BulkSelect({
-  action,
-  disabled,
-}: {
-  action: Extract<BulkAction, { kind: 'select' }>
-  disabled: boolean
-}) {
+function BulkSelect({ action, disabled }: { action: Extract<BulkAction, { kind: 'select' }>; disabled: boolean }) {
   const [value, setValue] = useState('')
   const onChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const next = event.target.value
@@ -81,7 +75,13 @@ function BulkSelect({
     setValue('')
   }
   return (
-    <select className="bulk-bar__select" aria-label={action.label} value={value} onChange={onChange} disabled={disabled}>
+    <select
+      className="bulk-bar__select"
+      aria-label={action.label}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+    >
       <option value="">{action.label}</option>
       {action.options.map((option) => (
         <option key={option.value} value={option.value}>

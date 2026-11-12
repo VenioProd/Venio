@@ -63,7 +63,9 @@ describe('Ambiance widgets', () => {
     fireEvent.change(screen.getByLabelText('Lien du raccourci'), { target: { value: '/admin/inbox/conversations' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter un raccourci' }))
     await waitFor(() =>
-      expect(saveLayout).toHaveBeenCalledWith({ shortcuts: [{ label: 'Support', link: '/admin/inbox/conversations' }] }),
+      expect(saveLayout).toHaveBeenCalledWith({
+        shortcuts: [{ label: 'Support', link: '/admin/inbox/conversations' }],
+      }),
     )
     expect(screen.getByRole('link', { name: 'Support' })).toHaveAttribute('href', '/admin/inbox/conversations')
   })

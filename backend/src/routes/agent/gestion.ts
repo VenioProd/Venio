@@ -65,33 +65,30 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.get(
-  '/internal-projects/:id',
-  requireScope('read:gestion'),
-  param('id').isMongoId(),
-  async (req, res, next) => {
-    if (emit(req, res)) return
-    try {
-      const p = await InternalProject.findById(req.params.id)
-        .populate('members', 'name email')
-        .populate('createdBy', 'name email')
-        .lean()
-      if (!p) return respondError(res, 404, 'NOT_FOUND', 'Projet interne introuvable')
-      res.json(p)
-    } catch (err) {
-      next(err)
-    }
+router.get('/internal-projects/:id', requireScope('read:gestion'), param('id').isMongoId(), async (req, res, next) => {
+  if (emit(req, res)) return
+  try {
+    const p = await InternalProject.findById(req.params.id)
+      .populate('members', 'name email')
+      .populate('createdBy', 'name email')
+      .lean()
+    if (!p) return respondError(res, 404, 'NOT_FOUND', 'Projet interne introuvable')
+    res.json(p)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.post(
   '/internal-projects',
   requireScope('write:gestion'),
   body('name').isString().trim().isLength({ min: 1 }),
-  body('entity').isIn(ENTITIES as unknown as string[]).withMessage(`entity ∈ ${ENTITIES.join('|')}`),
+  body('entity')
+    .isIn(ENTITIES as unknown as string[])
+    .withMessage(`entity ∈ ${ENTITIES.join('|')}`),
   body('poles').optional().isArray(),
   body('members').optional().isArray(),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -137,7 +134,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -163,7 +160,7 @@ router.patch(
       }
       if (Array.isArray(req.body.poles)) {
         p.poles = req.body.poles.filter(
-          (x: unknown) => typeof x === 'string' && (POLES as readonly string[]).includes(x)
+          (x: unknown) => typeof x === 'string' && (POLES as readonly string[]).includes(x),
         )
       }
       if (Array.isArray(req.body.members)) {
@@ -186,7 +183,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -205,15 +202,11 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
-router.get(
-  '/internal-projects/_meta/options',
-  requireScope('read:gestion'),
-  (_req: Request, res: Response) => {
-    res.json({ entities: ENTITIES, poles: POLES, statuses: STATUSES, priorities: PRIORITIES })
-  }
-)
+router.get('/internal-projects/_meta/options', requireScope('read:gestion'), (_req: Request, res: Response) => {
+  res.json({ entities: ENTITIES, poles: POLES, statuses: STATUSES, priorities: PRIORITIES })
+})
 
 export default router

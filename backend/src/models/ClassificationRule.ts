@@ -1,9 +1,5 @@
 import mongoose from 'mongoose'
-import type {
-  IClassificationRule,
-  IRuleConditions,
-  IRuleMapping,
-} from '../types/models/index.js'
+import type { IClassificationRule, IRuleConditions, IRuleMapping } from '../types/models/index.js'
 
 /**
  * ClassificationRule = règle de mapping comptable appliquée à une transaction
@@ -42,7 +38,7 @@ const ruleConditionSchema = new mongoose.Schema<IRuleConditions>(
     tagsAll: { type: [String], default: [] },
     tagsAny: { type: [String], default: [] },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const ruleMappingSchema = new mongoose.Schema<IRuleMapping>(
@@ -56,7 +52,7 @@ const ruleMappingSchema = new mongoose.Schema<IRuleMapping>(
     autoValidate: { type: Boolean, default: false },
     assignToAuxiliary: { type: Boolean, default: false },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const classificationRuleSchema = new mongoose.Schema<IClassificationRule>(
@@ -70,7 +66,7 @@ const classificationRuleSchema = new mongoose.Schema<IClassificationRule>(
     matchCount: { type: Number, default: 0 },
     lastMatchedAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 classificationRuleSchema.index({ source: 1, priority: -1 })

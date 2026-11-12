@@ -3,12 +3,7 @@ import request from 'supertest'
 import type { Express } from 'express'
 import mongoose from 'mongoose'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
-import {
-  createTestApp,
-  createAgentTokenInDb,
-  authHeaders,
-  uniqueIdempotencyKey,
-} from './helpers/agentTestApp.js'
+import { createTestApp, createAgentTokenInDb, authHeaders, uniqueIdempotencyKey } from './helpers/agentTestApp.js'
 import User from '../models/User.js'
 import DevProject from '../models/DevProject.js'
 import DevIssue from '../models/DevIssue.js'
@@ -89,7 +84,11 @@ describe('mergeGithubLink', () => {
       ciStatus: null,
       mergedAt: null,
     }
-    expect(mergeGithubLink(prev, { ciStatus: 'SUCCESS' })).toMatchObject({ repo: 'venio/app', prNumber: 1, ciStatus: 'SUCCESS' })
+    expect(mergeGithubLink(prev, { ciStatus: 'SUCCESS' })).toMatchObject({
+      repo: 'venio/app',
+      prNumber: 1,
+      ciStatus: 'SUCCESS',
+    })
   })
 })
 
@@ -159,7 +158,15 @@ describe('PATCH /api/v1/agent/dev/issues/:id — github link', () => {
       number: 1,
       title: 'A',
       reporter: systemUserId,
-      github: { repo: 'venio/app', prNumber: 1, prUrl: null, branch: null, commitSha: null, ciStatus: null, mergedAt: null },
+      github: {
+        repo: 'venio/app',
+        prNumber: 1,
+        prUrl: null,
+        branch: null,
+        commitSha: null,
+        ciStatus: null,
+        mergedAt: null,
+      },
     })
     const { plainSecret } = await createAgentTokenInDb(['write:dev'])
     const res = await request(app)

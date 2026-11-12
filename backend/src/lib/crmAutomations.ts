@@ -435,4 +435,3 @@ export async function autoCreateProjectFromLead(lead: LeadData, actorId: Types.O
 
   return project
 }
-

@@ -36,10 +36,7 @@ const definition: AutomationDefinition = {
     const users = await User.find({
       role: { $in: ['SUPER_ADMIN', 'ADMIN', 'RH'] },
       isActive: { $ne: false },
-      $or: [
-        { passwordChangedAt: { $lt: threshold } },
-        { passwordChangedAt: null, createdAt: { $lt: threshold } },
-      ],
+      $or: [{ passwordChangedAt: { $lt: threshold } }, { passwordChangedAt: null, createdAt: { $lt: threshold } }],
     }).select('_id name email passwordChangedAt createdAt')
 
     const actionsExecuted: string[] = []
@@ -47,9 +44,7 @@ const definition: AutomationDefinition = {
 
     for (const user of users) {
       const lastChanged = user.passwordChangedAt || user.createdAt
-      const daysSince = Math.floor(
-        (ctx.now.getTime() - new Date(lastChanged).getTime()) / 86400_000
-      )
+      const daysSince = Math.floor((ctx.now.getTime() - new Date(lastChanged).getTime()) / 86400_000)
 
       await createNotification({
         recipient: user._id.toString(),

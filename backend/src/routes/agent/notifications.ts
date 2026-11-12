@@ -76,14 +76,18 @@ router.get(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
   '/notifications',
   requireScope('write:notifications'),
-  body('recipient').custom((v) => isValidObjectId(v)).withMessage('recipient requis'),
-  body('type').isIn(NOTIFICATION_TYPES as unknown as string[]).withMessage('type requis'),
+  body('recipient')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('recipient requis'),
+  body('type')
+    .isIn(NOTIFICATION_TYPES as unknown as string[])
+    .withMessage('type requis'),
   body('title').isString().trim().isLength({ min: 1 }).withMessage('title requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
@@ -109,7 +113,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.patch(
@@ -137,7 +141,7 @@ router.patch(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 /**
@@ -162,19 +166,21 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.post(
   '/notifications/mark-all-read',
   requireScope('write:notifications'),
-  body('recipient').custom((v) => isValidObjectId(v)).withMessage('recipient requis'),
+  body('recipient')
+    .custom((v) => isValidObjectId(v))
+    .withMessage('recipient requis'),
   async (req: Request, res: Response, next: NextFunction) => {
     if (emit(req, res)) return
     try {
       const result = await Notification.updateMany(
         { recipient: req.body.recipient, isRead: false },
-        { $set: { isRead: true } }
+        { $set: { isRead: true } },
       )
       res.locals.audit = {
         entityType: 'Notification',
@@ -185,7 +191,7 @@ router.post(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 router.delete(
@@ -208,7 +214,7 @@ router.delete(
     } catch (err) {
       next(err)
     }
-  }
+  },
 )
 
 export default router

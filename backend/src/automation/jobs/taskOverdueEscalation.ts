@@ -40,7 +40,9 @@ const definition: AutomationDefinition = {
     const overdueTasks = await Task.find({
       dueDate: { $lt: now },
       status: { $nin: ['TERMINE', 'VALIDE'] },
-    }).populate('assignedTo', 'email name').populate('project', 'name assignedTo')
+    })
+      .populate('assignedTo', 'email name')
+      .populate('project', 'name assignedTo')
 
     const actionsExecuted: string[] = []
     const recipientsNotified: string[] = []

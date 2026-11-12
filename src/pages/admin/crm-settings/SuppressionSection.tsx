@@ -79,7 +79,10 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
     if (!canManage || busy) return
     setBusy(true)
     try {
-      await apiFetch('/api/admin/crm/suppression', { method: 'POST', body: JSON.stringify({ email: email.trim(), reason }) })
+      await apiFetch('/api/admin/crm/suppression', {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim(), reason }),
+      })
       setEmail('')
       setFeedback({ type: 'success', text: t('crmSuppression.add.done') })
       await load()
@@ -153,7 +156,9 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
         )}
       </form>
 
-      {loadError && <div className="crm-settings-message crm-settings-message-error">{t('crmSuppression.loadError')}</div>}
+      {loadError && (
+        <div className="crm-settings-message crm-settings-message-error">{t('crmSuppression.loadError')}</div>
+      )}
 
       {data && (
         <>
@@ -177,7 +182,9 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
                     <tr key={row.id}>
                       <td style={cell}>{row.email}</td>
                       <td style={cell}>{t(reasonKey(row.reason))}</td>
-                      <td style={cell}>{formatDate(row.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                      <td style={cell}>
+                        {formatDate(row.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </td>
                       <td style={cell}>{row.createdBy?.name ?? t('crmSuppression.by.person')}</td>
                       {canManage && (
                         <td style={cell}>

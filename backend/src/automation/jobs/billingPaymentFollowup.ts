@@ -43,14 +43,10 @@ const definition: AutomationDefinition = {
     const recipientsNotified: string[] = []
 
     for (const invoice of unpaidInvoices) {
-      const daysPastDue = Math.floor(
-        (ctx.now.getTime() - new Date(invoice.dueDate).getTime()) / 86400_000
-      )
+      const daysPastDue = Math.floor((ctx.now.getTime() - new Date(invoice.dueDate).getTime()) / 86400_000)
 
       // Determine which stage we're at
-      const currentStage = REMINDER_STAGES.find(
-        (stage) => daysPastDue >= stage && daysPastDue < stage + 1
-      )
+      const currentStage = REMINDER_STAGES.find((stage) => daysPastDue >= stage && daysPastDue < stage + 1)
       if (!currentStage) continue // not on a reminder day
 
       const client = invoice.client as { _id?: unknown; email?: string; name?: string } | null

@@ -231,9 +231,15 @@ describe('création de lead / entité par défaut', () => {
     as(team.superAdmin)
     const plain = await request(app).post('/api/admin/crm/leads').send({ company: 'Simple' }).expect(201)
     expect(plain.body.lead.entity).toBe('VENIO')
-    const artosera = await request(app).post('/api/admin/crm/leads').send({ company: 'Musée', project: 'ARTOSERA' }).expect(201)
+    const artosera = await request(app)
+      .post('/api/admin/crm/leads')
+      .send({ company: 'Musée', project: 'ARTOSERA' })
+      .expect(201)
     expect(artosera.body.lead.entity).toBe('VENIO')
-    const arrow = await request(app).post('/api/admin/crm/leads').send({ company: 'École', project: 'ARROW' }).expect(201)
+    const arrow = await request(app)
+      .post('/api/admin/crm/leads')
+      .send({ company: 'École', project: 'ARROW' })
+      .expect(201)
     expect(arrow.body.lead.entity).toBe('ARROW')
     const explicit = await request(app)
       .post('/api/admin/crm/leads')
@@ -251,10 +257,18 @@ describe('création de lead / entité par défaut', () => {
 
   it('PATCH change l’entité ; une modification sans entité ne la touche pas', async () => {
     as(team.superAdmin)
-    const lead = await Lead.create({ company: 'Mobile', project: 'ARROW', entity: 'ARROW', createdBy: team.superAdmin.id })
+    const lead = await Lead.create({
+      company: 'Mobile',
+      project: 'ARROW',
+      entity: 'ARROW',
+      createdBy: team.superAdmin.id,
+    })
     const moved = await request(app).patch(`/api/admin/crm/leads/${lead._id}`).send({ entity: 'FORMATIO' }).expect(200)
     expect(moved.body.lead.entity).toBe('FORMATIO')
-    const other = await request(app).patch(`/api/admin/crm/leads/${lead._id}`).send({ notes: 'n', project: 'VIGNO' }).expect(200)
+    const other = await request(app)
+      .patch(`/api/admin/crm/leads/${lead._id}`)
+      .send({ notes: 'n', project: 'VIGNO' })
+      .expect(200)
     expect(other.body.lead.entity).toBe('FORMATIO')
     await request(app).patch(`/api/admin/crm/leads/${lead._id}`).send({ entity: 'NOPE' }).expect(400)
   })
@@ -328,7 +342,10 @@ describe('routes admin / périmètre par entité', () => {
     as(team.commercialA, ['ARROW'])
     const created = await request(app).post('/api/admin/crm/leads').send({ company: 'Nouveau' }).expect(201)
     expect(created.body.lead.entity).toBe('ARROW')
-    const refused = await request(app).post('/api/admin/crm/leads').send({ company: 'Ailleurs', entity: 'DECISIO' }).expect(403)
+    const refused = await request(app)
+      .post('/api/admin/crm/leads')
+      .send({ company: 'Ailleurs', entity: 'DECISIO' })
+      .expect(403)
     expect(refused.body.code).toBe('LEAD_ENTITY_FORBIDDEN')
     expect(await Lead.countDocuments({ company: 'Ailleurs' })).toBe(0)
   })

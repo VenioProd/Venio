@@ -24,7 +24,15 @@ function mount() {
 
 const SHEETS = [
   makeListItem(),
-  makeListItem({ _id: 'sheet2', slug: 'creatio', name: 'Creatio', reviewStatus: 'TO_COMPLETE', status: 'LAUNCHING', oneLiner: '', referent: null }),
+  makeListItem({
+    _id: 'sheet2',
+    slug: 'creatio',
+    name: 'Creatio',
+    reviewStatus: 'TO_COMPLETE',
+    status: 'LAUNCHING',
+    oneLiner: '',
+    referent: null,
+  }),
   makeListItem({ _id: 'sheet3', slug: 'decisio', name: 'Decisio', reviewStatus: 'VALIDATED', status: 'PAUSED' }),
 ]
 
@@ -65,14 +73,19 @@ describe('Liste des fiches projets', () => {
     fireEvent.change(input, { target: { value: 'tarif' } })
     // Pas d'appel immédiat : le debounce attend ~300 ms.
     expect(mockedFetch).toHaveBeenCalledTimes(1)
-    await waitFor(() => expect(mockedFetch).toHaveBeenLastCalledWith('/api/admin/project-sheets?q=tarif'), { timeout: 2000 })
+    await waitFor(() => expect(mockedFetch).toHaveBeenLastCalledWith('/api/admin/project-sheets?q=tarif'), {
+      timeout: 2000,
+    })
     expect(await screen.findByText('… pack Start à 49 € …')).toBeInTheDocument()
     expect(screen.getByText('Offres et tarifs')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Creatio' })).toBeNull()
   })
 
   it('n’affiche pas d’extraits hors recherche', async () => {
-    mockedFetch.mockResolvedValue({ sheets: [makeListItem({ matches: [{ field: 'offers', excerpt: 'extrait caché' }] })], canEdit: false })
+    mockedFetch.mockResolvedValue({
+      sheets: [makeListItem({ matches: [{ field: 'offers', excerpt: 'extrait caché' }] })],
+      canEdit: false,
+    })
     mount()
     await screen.findByRole('heading', { name: 'Arrow' })
     expect(screen.queryByText('extrait caché')).toBeNull()
@@ -90,7 +103,9 @@ describe('Liste des fiches projets', () => {
     await screen.findByRole('heading', { name: 'Arrow' })
     mockedFetch.mockResolvedValue({ sheets: [], canEdit: false })
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'zzz' } })
-    expect(await screen.findByText('Aucune fiche ne correspond à « zzz ».', undefined, { timeout: 2000 })).toBeInTheDocument()
+    expect(
+      await screen.findByText('Aucune fiche ne correspond à « zzz ».', undefined, { timeout: 2000 }),
+    ).toBeInTheDocument()
   })
 
   it('masque « Nouvelle fiche » en lecture seule', async () => {

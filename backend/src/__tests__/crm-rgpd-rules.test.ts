@@ -50,12 +50,20 @@ afterAll(teardownMongo)
 beforeEach(async () => {
   await clearDb()
   mail.calls.length = 0
-  await CrmSettings.create({ roundRobinEnabled: false, emailOnAssignment: false, activityLogging: true, scoringEnabled: false })
+  await CrmSettings.create({
+    roundRobinEnabled: false,
+    emailOnAssignment: false,
+    activityLogging: true,
+    scoringEnabled: false,
+  })
   const owner = await User.create({ email: 'owner@rgpd.test', name: 'Owner', role: 'COMMERCIAL', passwordHash: 'x' })
   ownerId = String(owner._id)
 })
 
-const activeRule = (actions: Array<{ type: string; params?: Record<string, unknown> }>, extra: Record<string, unknown> = {}) =>
+const activeRule = (
+  actions: Array<{ type: string; params?: Record<string, unknown> }>,
+  extra: Record<string, unknown> = {},
+) =>
   CrmRule.create({
     name: `Règle ${Math.random().toString(36).slice(2, 7)}`,
     status: 'ACTIVE',
@@ -90,7 +98,11 @@ describe('SEND_EMAIL — opposition et liste de suppression', () => {
     expect(mail.calls).toHaveLength(0)
     const run = await CrmRuleRun.findOne().lean()
     expect(run?.status).toBe('SKIP')
-    expect(run?.steps[0]).toMatchObject({ action: 'SEND_EMAIL', status: 'SKIP', payload: { reason: 'DO_NOT_CONTACT', via: 'LEAD' } })
+    expect(run?.steps[0]).toMatchObject({
+      action: 'SEND_EMAIL',
+      status: 'SKIP',
+      payload: { reason: 'DO_NOT_CONTACT', via: 'LEAD' },
+    })
   })
 
   it('n’envoie rien à une adresse de la liste de suppression, même portée par un autre lead', async () => {
@@ -99,7 +111,10 @@ describe('SEND_EMAIL — opposition et liste de suppression', () => {
     const lead = await Lead.create({ company: 'Acme bis', contactEmail: 'ana@acme.test' })
     await fire(lead._id)
     expect(mail.calls).toHaveLength(0)
-    expect((await CrmRuleRun.findOne().lean())?.steps[0]).toMatchObject({ status: 'SKIP', payload: { reason: 'DO_NOT_CONTACT', via: 'SUPPRESSION_LIST' } })
+    expect((await CrmRuleRun.findOne().lean())?.steps[0]).toMatchObject({
+      status: 'SKIP',
+      payload: { reason: 'DO_NOT_CONTACT', via: 'SUPPRESSION_LIST' },
+    })
   })
 
   it('un e-mail en attente de validation ne part pas si la personne s’est désinscrite entre-temps', async () => {
@@ -127,7 +142,13 @@ describe('SEND_EMAIL — opposition et liste de suppression', () => {
 
 describe('actions de règles via le service unique', () => {
   it('ASSIGN refuse un commercial inactif ou non habilité, et passe par le service pour un assigné valide', async () => {
-    const inactive = await User.create({ email: 'off@rgpd.test', name: 'Off', role: 'COMMERCIAL', passwordHash: 'x', isActive: false })
+    const inactive = await User.create({
+      email: 'off@rgpd.test',
+      name: 'Off',
+      role: 'COMMERCIAL',
+      passwordHash: 'x',
+      isActive: false,
+    })
     const compta = await User.create({ email: 'cpt@rgpd.test', name: 'Cpt', role: 'COMPTABLE', passwordHash: 'x' })
     for (const userId of [String(inactive._id), String(compta._id)]) {
       await clearRules()
@@ -166,7 +187,9 @@ describe('actions de règles via le service unique', () => {
   it('ADD_TAG et ARCHIVE passent par le service : historique avec la règle, aucun événement émis', async () => {
     const rule = await activeRule([{ type: 'ADD_TAG', params: { tag: 'rgpd' } }, { type: 'ARCHIVE' }])
     // Une règle à l'écoute d'une assignation ou d'un statut ne doit pas être réveillée par ces écritures.
-    const listener = await activeRule([{ type: 'ADD_TAG', params: { tag: 'écho' } }], { trigger: { type: 'STATUS_CHANGED', params: {} } })
+    const listener = await activeRule([{ type: 'ADD_TAG', params: { tag: 'écho' } }], {
+      trigger: { type: 'STATUS_CHANGED', params: {} },
+    })
     const lead = await Lead.create({ company: 'Acme', tags: ['existant'] })
     await fire(lead._id)
     const fresh = await Lead.findById(lead._id).lean()
@@ -181,7 +204,9 @@ describe('actions de règles via le service unique', () => {
 
   it('anti-boucle : ASSIGN déclenche les règles « assigné » une fois, à la profondeur suivante', async () => {
     const assigner = await activeRule([{ type: 'ASSIGN', params: { userId: ownerId } }])
-    const onAssigned = await activeRule([{ type: 'ADD_TAG', params: { tag: 'assigné' } }], { trigger: { type: 'LEAD_ASSIGNED', params: {} } })
+    const onAssigned = await activeRule([{ type: 'ADD_TAG', params: { tag: 'assigné' } }], {
+      trigger: { type: 'LEAD_ASSIGNED', params: {} },
+    })
     const lead = await Lead.create({ company: 'Acme' })
     await fire(lead._id)
     await new Promise((r) => setTimeout(r, 50))

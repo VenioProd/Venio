@@ -29,7 +29,7 @@ const fileSchema = new Schema<IReportFile>(
     mimetype: { type: String, required: true },
     size: { type: Number, required: true },
   },
-  { _id: false }
+  { _id: false },
 )
 
 const activityReportSchema = new Schema<IActivityReport>(
@@ -45,7 +45,7 @@ const activityReportSchema = new Schema<IActivityReport>(
     validePar: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     valideAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 )
 
 activityReportSchema.index({ internId: 1, date: -1 })

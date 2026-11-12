@@ -15,7 +15,10 @@ describe('ClassExportActions', () => {
   it('shows the active export state and prevents a parallel download', async () => {
     let complete: (() => void) | undefined
     vi.mocked(downloadClassWorkspaceExport).mockImplementation(
-      () => new Promise<void>((resolve) => { complete = resolve }),
+      () =>
+        new Promise<void>((resolve) => {
+          complete = resolve
+        }),
     )
     render(<ClassExportActions classId="classe-1" />)
 
@@ -26,7 +29,9 @@ describe('ClassExportActions', () => {
     expect(screen.getByRole('button', { name: 'Exporter la classe en JSON' })).toBeDisabled()
 
     complete?.()
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Exporter les cours en CSV' })).toHaveTextContent('CSV'))
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Exporter les cours en CSV' })).toHaveTextContent('CSV'),
+    )
   })
 
   it('renders an explicit download error', async () => {

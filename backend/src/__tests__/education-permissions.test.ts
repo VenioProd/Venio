@@ -143,9 +143,7 @@ describe('education access — super-admin only', () => {
   })
 
   it('VIEWER ne peut pas télécharger un document pédagogique (GET → 403)', async () => {
-    await request(app)
-      .get(`/api/admin/education/documents/${new mongoose.Types.ObjectId()}/download`)
-      .expect(403)
+    await request(app).get(`/api/admin/education/documents/${new mongoose.Types.ObjectId()}/download`).expect(403)
   })
 
   it('VIEWER ne peut pas générer un brouillon d’assistance (POST /ai/generate → 403)', async () => {

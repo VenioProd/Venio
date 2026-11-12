@@ -36,16 +36,19 @@ beforeEach(() => {
 const writes = () => apiFetch.mock.calls.filter(([, opts]) => (opts as RequestInit | undefined)?.method === 'PATCH')
 
 describe('réglages CRM — gardes de rôle', () => {
-  it.each(['MANAGER', 'COMMERCIAL', 'STAGIAIRE'])('%s : lecture seule avec bandeau, contrôles désactivés, aucun PATCH', async (role) => {
-    auth.role = role
-    renderPage()
-    expect(await screen.findByText(/Lecture seule/)).toBeInTheDocument()
-    const boxes = screen.getAllByRole('checkbox')
-    expect(boxes.length).toBeGreaterThan(0)
-    for (const box of boxes) expect(box).toBeDisabled()
-    fireEvent.click(boxes[0])
-    expect(writes()).toEqual([])
-  })
+  it.each(['MANAGER', 'COMMERCIAL', 'STAGIAIRE'])(
+    '%s : lecture seule avec bandeau, contrôles désactivés, aucun PATCH',
+    async (role) => {
+      auth.role = role
+      renderPage()
+      expect(await screen.findByText(/Lecture seule/)).toBeInTheDocument()
+      const boxes = screen.getAllByRole('checkbox')
+      expect(boxes.length).toBeGreaterThan(0)
+      for (const box of boxes) expect(box).toBeDisabled()
+      fireEvent.click(boxes[0])
+      expect(writes()).toEqual([])
+    },
+  )
 
   it.each(['ADMIN', 'SUPER_ADMIN'])('%s : modifiable, sans bandeau', async (role) => {
     auth.role = role

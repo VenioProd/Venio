@@ -10,9 +10,7 @@ import { DEV_CI_STATUSES, type DevCiStatus, type DevIssueGithubLink } from '../.
  * Light validation only — we want this to be a flexible base for future
  * automation (webhook ingest) without baking GitHub-specific business rules in.
  */
-export function parseGithubPatch(
-  raw: unknown
-): Partial<DevIssueGithubLink> | null | undefined {
+export function parseGithubPatch(raw: unknown): Partial<DevIssueGithubLink> | null | undefined {
   if (raw === undefined) return undefined
   if (raw === null) return null
   if (typeof raw !== 'object') return undefined
@@ -28,17 +26,16 @@ export function parseGithubPatch(
     out.prNumber = Number.isFinite(n) && n > 0 ? Math.floor(n) : null
   }
   if ('prUrl' in src) {
-    out.prUrl = typeof src.prUrl === 'string' && /^https?:\/\//.test(src.prUrl)
-      ? src.prUrl.trim().slice(0, 500)
-      : null
+    out.prUrl = typeof src.prUrl === 'string' && /^https?:\/\//.test(src.prUrl) ? src.prUrl.trim().slice(0, 500) : null
   }
   if ('branch' in src) {
     out.branch = typeof src.branch === 'string' && src.branch.trim() ? src.branch.trim().slice(0, 200) : null
   }
   if ('commitSha' in src) {
-    out.commitSha = typeof src.commitSha === 'string' && /^[a-f0-9]{7,40}$/i.test(src.commitSha.trim())
-      ? src.commitSha.trim().toLowerCase()
-      : null
+    out.commitSha =
+      typeof src.commitSha === 'string' && /^[a-f0-9]{7,40}$/i.test(src.commitSha.trim())
+        ? src.commitSha.trim().toLowerCase()
+        : null
   }
   if ('ciStatus' in src) {
     out.ciStatus =
@@ -64,7 +61,7 @@ export function parseGithubPatch(
  */
 export function mergeGithubLink(
   prev: DevIssueGithubLink | null,
-  patch: Partial<DevIssueGithubLink>
+  patch: Partial<DevIssueGithubLink>,
 ): DevIssueGithubLink {
   const base: DevIssueGithubLink = prev ?? {
     repo: null,

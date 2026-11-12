@@ -2,11 +2,16 @@ import { apiFetch } from '../../../../lib/api'
 import type { CrmRule, CrmRuleRun, RuleDraft, RuleStatus, RunsPage, SimulationResult } from './types'
 
 const BASE = '/api/admin/crm/rules'
-const json = (method: string, body?: unknown): RequestInit => ({ method, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+const json = (method: string, body?: unknown): RequestInit => ({
+  method,
+  ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+})
 
 export const fetchRules = async (): Promise<CrmRule[]> => (await apiFetch<{ items: CrmRule[] }>(BASE)).items ?? []
 
-export function fetchRuns(params: { status?: string; rule?: string; page?: number; pageSize?: number } = {}): Promise<RunsPage> {
+export function fetchRuns(
+  params: { status?: string; rule?: string; page?: number; pageSize?: number } = {},
+): Promise<RunsPage> {
   const q = new URLSearchParams()
   if (params.status && params.status !== 'all') q.set('status', params.status)
   if (params.rule) q.set('rule', params.rule)

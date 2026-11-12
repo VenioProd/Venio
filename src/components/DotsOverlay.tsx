@@ -6,4 +6,3 @@ const DotsOverlay = () => {
 }
 
 export default DotsOverlay
-

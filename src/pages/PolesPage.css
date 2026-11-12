@@ -16,7 +16,7 @@
   color: rgba(255, 255, 255, 0.95);
   margin-bottom: 20px;
   letter-spacing: 3px;
-  text-shadow: 
+  text-shadow:
     0 0 10px rgba(var(--primary-rgb), 0.5),
     0 0 20px rgba(var(--primary-rgb), 0.4),
     0 0 30px rgba(var(--primary-rgb), 0.3),
@@ -29,8 +29,9 @@
 }
 
 @keyframes neonPulse {
-  0%, 100% {
-    text-shadow: 
+  0%,
+  100% {
+    text-shadow:
       0 0 10px rgba(var(--primary-rgb), 0.5),
       0 0 20px rgba(var(--primary-rgb), 0.4),
       0 0 30px rgba(var(--primary-rgb), 0.3),
@@ -38,7 +39,7 @@
       0 0 70px rgba(var(--primary-rgb), 0.1);
   }
   50% {
-    text-shadow: 
+    text-shadow:
       0 0 15px rgba(var(--primary-rgb), 0.7),
       0 0 25px rgba(var(--primary-rgb), 0.6),
       0 0 35px rgba(var(--primary-rgb), 0.5),
@@ -69,15 +70,8 @@
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   overflow: hidden;
-  clip-path: polygon(
-    0 0,
-    calc(100% - 25px) 0,
-    100% 25px,
-    100% 100%,
-    25px 100%,
-    0 calc(100% - 25px)
-  );
-  box-shadow: 
+  clip-path: polygon(0 0, calc(100% - 25px) 0, 100% 25px, 100% 100%, 25px 100%, 0 calc(100% - 25px));
+  box-shadow:
     12px 12px 24px var(--neumorphism-dark),
     -6px -6px 12px var(--neumorphism-light),
     inset -2px -2px 4px var(--neumorphism-dark),
@@ -92,10 +86,7 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(45deg, 
-    transparent 30%, 
-    rgba(255, 255, 255, 0.02) 50%, 
-    transparent 70%);
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.02) 50%, transparent 70%);
   transform: rotate(45deg);
   transition: all 0.6s;
   z-index: 0;
@@ -126,7 +117,7 @@
 .poles-intro:hover {
   background: var(--bg-card-hover);
   transform: translateY(-10px) rotateX(2deg);
-  box-shadow: 
+  box-shadow:
     16px 16px 32px var(--neumorphism-dark),
     -8px -8px 16px var(--neumorphism-light),
     inset -2px -2px 4px var(--neumorphism-dark),
@@ -165,7 +156,7 @@
   .poles-hero {
     padding: 60px 15px 40px;
   }
-  
+
   .poles-hero h1 {
     font-size: clamp(28px, 8vw, 48px);
     letter-spacing: 1px;
@@ -173,13 +164,12 @@
     overflow-wrap: break-word;
     padding: 0 10px;
   }
-  
+
   .poles-subtitle {
     font-size: 18px;
   }
-  
+
   .poles-intro {
     padding: 30px 20px;
   }
 }
-

@@ -3,7 +3,14 @@ import request from 'supertest'
 import express, { type Express, type NextFunction, type Request, type Response } from 'express'
 import mongoose from 'mongoose'
 import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
-import { asReqUser, newIdempotencyKey, resetCrmSettings, seedTeam, type Team, type TeamMember } from './crm-routes-helpers.js'
+import {
+  asReqUser,
+  newIdempotencyKey,
+  resetCrmSettings,
+  seedTeam,
+  type Team,
+  type TeamMember,
+} from './crm-routes-helpers.js'
 
 /**
  * Non-régression des routes leads de l'admin CRM (POST, PATCH, DELETE).
@@ -81,7 +88,7 @@ beforeEach(async () => {
 // Droits d'accès aux routes d'écriture
 // ───────────────────────────────────────────────────────────────────────────
 
-describe('admin CRM leads / droits d\'accès', () => {
+describe("admin CRM leads / droits d'accès", () => {
   it('401 sans authentification', async () => {
     as(null)
     await request(app).post('/api/admin/crm/leads').send({ company: 'X' }).expect(401)
@@ -133,14 +140,14 @@ describe('admin CRM leads / POST', () => {
     expect(await activityTypes(lead._id)).toEqual(['CREATED'])
   })
 
-  it('journalise CREATED avec l\'auteur de la création', async () => {
+  it("journalise CREATED avec l'auteur de la création", async () => {
     const res = await request(app).post('/api/admin/crm/leads').send({ company: 'Trace' }).expect(201)
     const activity = await LeadActivity.findOne({ leadId: res.body.lead._id }).lean()
     expect(activity?.type).toBe('CREATED')
     expect(String(activity?.actorId)).toBe(team.superAdmin.id)
   })
 
-  it('n\'écrit pas le journal si activityLogging est désactivé', async () => {
+  it("n'écrit pas le journal si activityLogging est désactivé", async () => {
     await resetCrmSettings({ activityLogging: false })
     const res = await request(app).post('/api/admin/crm/leads').send({ company: 'Silence' }).expect(201)
     expect(await LeadActivity.countDocuments({ leadId: res.body.lead._id })).toBe(0)
@@ -154,7 +161,10 @@ describe('admin CRM leads / POST', () => {
   })
 
   it('400 pour un e-mail de contact invalide', async () => {
-    const res = await request(app).post('/api/admin/crm/leads').send({ company: 'X', contactEmail: 'pas-un-mail' }).expect(400)
+    const res = await request(app)
+      .post('/api/admin/crm/leads')
+      .send({ company: 'X', contactEmail: 'pas-un-mail' })
+      .expect(400)
     expect(res.body.error).toBe('Email de contact invalide')
   })
 
@@ -198,7 +208,7 @@ describe('admin CRM leads / POST', () => {
       ['un client', () => team.client.id],
       ['un identifiant inconnu', () => String(new mongoose.Types.ObjectId())],
       ['un identifiant mal formé', () => 'pas-un-id'],
-    ])('400 si l\'assigné est %s', async (_label, id) => {
+    ])("400 si l'assigné est %s", async (_label, id) => {
       const res = await request(app).post('/api/admin/crm/leads').send({ company: 'X', assignedTo: id() }).expect(400)
       expect(res.body.error).toBe('Commercial introuvable, inactif ou non habilité à suivre un lead')
       expect(await Lead.countDocuments()).toBe(0)
@@ -225,7 +235,7 @@ describe('admin CRM leads / POST', () => {
       expect(res.body.lead.assignedTo ?? null).toBeNull()
     })
 
-    it('super-admin sans assigné avec round-robin : un membre de l\'équipe admin est désigné', async () => {
+    it("super-admin sans assigné avec round-robin : un membre de l'équipe admin est désigné", async () => {
       await resetCrmSettings({ roundRobinEnabled: true })
       const res = await request(app).post('/api/admin/crm/leads').send({ company: 'X' }).expect(201)
       const assignee = await User.findById(res.body.lead.assignedTo).lean()
@@ -245,14 +255,17 @@ describe('admin CRM leads / POST', () => {
       expect(res.body.lead.status).toBe('QUALIFIED')
     })
 
-    it('pas d\'auto-qualification sans source, sans budget ou avec budget nul', async () => {
+    it("pas d'auto-qualification sans source, sans budget ou avec budget nul", async () => {
       const a = await request(app).post('/api/admin/crm/leads').send({ company: 'A', budget: 5000 }).expect(201)
       const b = await request(app).post('/api/admin/crm/leads').send({ company: 'B', source: 'Salon' }).expect(201)
-      const c = await request(app).post('/api/admin/crm/leads').send({ company: 'C', budget: 0, source: 'Salon' }).expect(201)
+      const c = await request(app)
+        .post('/api/admin/crm/leads')
+        .send({ company: 'C', budget: 0, source: 'Salon' })
+        .expect(201)
       expect([a, b, c].map((r) => r.body.lead.status)).toEqual(['LEAD', 'LEAD', 'LEAD'])
     })
 
-    it('pas d\'auto-qualification si le réglage est désactivé', async () => {
+    it("pas d'auto-qualification si le réglage est désactivé", async () => {
       await resetCrmSettings({ autoQualifyEnabled: false })
       const res = await request(app)
         .post('/api/admin/crm/leads')
@@ -261,7 +274,7 @@ describe('admin CRM leads / POST', () => {
       expect(res.body.lead.status).toBe('LEAD')
     })
 
-    it('l\'auto-qualification ne touche pas un statut explicite', async () => {
+    it("l'auto-qualification ne touche pas un statut explicite", async () => {
       const res = await request(app)
         .post('/api/admin/crm/leads')
         .send({ company: 'X', budget: 5000, source: 'Salon', status: 'CONTACTED' })
@@ -270,9 +283,15 @@ describe('admin CRM leads / POST', () => {
     })
 
     it('CONTACTED renseigne lastContactAt ; PROPOSAL et DEMO programment la prochaine action', async () => {
-      const contacted = await request(app).post('/api/admin/crm/leads').send({ company: 'C', status: 'CONTACTED' }).expect(201)
+      const contacted = await request(app)
+        .post('/api/admin/crm/leads')
+        .send({ company: 'C', status: 'CONTACTED' })
+        .expect(201)
       expect(contacted.body.lead.lastContactAt).toBeTruthy()
-      const proposal = await request(app).post('/api/admin/crm/leads').send({ company: 'P', status: 'PROPOSAL' }).expect(201)
+      const proposal = await request(app)
+        .post('/api/admin/crm/leads')
+        .send({ company: 'P', status: 'PROPOSAL' })
+        .expect(201)
       expect(proposal.body.lead.nextActionAt).toBeTruthy()
       const demo = await request(app).post('/api/admin/crm/leads').send({ company: 'D', status: 'DEMO' }).expect(201)
       expect(demo.body.lead.nextActionAt).toBeTruthy()
@@ -301,7 +320,7 @@ describe('admin CRM leads / POST', () => {
   })
 
   describe('Idempotency-Key', () => {
-    it('400 INVALID_IDEMPOTENCY_KEY si la clé n\'est pas un UUID', async () => {
+    it("400 INVALID_IDEMPOTENCY_KEY si la clé n'est pas un UUID", async () => {
       const res = await request(app)
         .post('/api/admin/crm/leads')
         .set('Idempotency-Key', 'pas-un-uuid')
@@ -313,8 +332,15 @@ describe('admin CRM leads / POST', () => {
 
     it('rejoue la même réponse sans créer de second lead', async () => {
       const key = newIdempotencyKey()
-      const first = await request(app).post('/api/admin/crm/leads').set('Idempotency-Key', key).send({ company: 'Une fois' }).expect(201)
-      const second = await request(app).post('/api/admin/crm/leads').set('Idempotency-Key', key).send({ company: 'Une fois' })
+      const first = await request(app)
+        .post('/api/admin/crm/leads')
+        .set('Idempotency-Key', key)
+        .send({ company: 'Une fois' })
+        .expect(201)
+      const second = await request(app)
+        .post('/api/admin/crm/leads')
+        .set('Idempotency-Key', key)
+        .send({ company: 'Une fois' })
       expect(second.status).toBe(201)
       expect(second.body.lead._id).toBe(first.body.lead._id)
       expect(await Lead.countDocuments()).toBe(1)
@@ -348,15 +374,28 @@ describe('admin CRM leads / PATCH', () => {
     const lead = await makeLead()
     const res = await request(app)
       .patch(`/api/admin/crm/leads/${lead._id}`)
-      .send({ company: ' Renommé ', contactPhone: '0102030405', priority: 'URGENTE', leadTemperature: 'CHAUD', createdBy: team.commercialA.id, status: 'NOPE' })
+      .send({
+        company: ' Renommé ',
+        contactPhone: '0102030405',
+        priority: 'URGENTE',
+        leadTemperature: 'CHAUD',
+        createdBy: team.commercialA.id,
+        status: 'NOPE',
+      })
       .expect(200)
     expect(Object.keys(res.body)).toEqual(['lead'])
-    expect(res.body.lead).toMatchObject({ company: 'Renommé', contactPhone: '0102030405', priority: 'URGENTE', leadTemperature: 'CHAUD', status: 'LEAD' })
+    expect(res.body.lead).toMatchObject({
+      company: 'Renommé',
+      contactPhone: '0102030405',
+      priority: 'URGENTE',
+      leadTemperature: 'CHAUD',
+      status: 'LEAD',
+    })
     const inDb = await Lead.findById(lead._id).lean()
     expect(String(inDb?.createdBy)).toBe(team.superAdmin.id)
   })
 
-  it('400 pour un projet hors liste, rien n\'est modifié', async () => {
+  it("400 pour un projet hors liste, rien n'est modifié", async () => {
     const lead = await makeLead({ project: 'VIGNO' })
     const res = await request(app).patch(`/api/admin/crm/leads/${lead._id}`).send({ project: 'INCONNU' }).expect(400)
     expect(res.body.error).toBe('Projet invalide')
@@ -382,14 +421,14 @@ describe('admin CRM leads / PATCH', () => {
       expect((await Lead.findById(lead._id).lean())?.statusChangedAt?.toISOString()).toBe(when.toISOString())
     })
 
-    it('journalise toujours STATUS_CHANGE (pilotage) même si activityLogging est désactivé, et rien d\'autre', async () => {
+    it("journalise toujours STATUS_CHANGE (pilotage) même si activityLogging est désactivé, et rien d'autre", async () => {
       await resetCrmSettings({ activityLogging: false })
       const lead = await makeLead()
       await request(app).patch(`/api/admin/crm/leads/${lead._id}`).send({ status: 'DEMO' }).expect(200)
       expect(await activityTypes(lead._id)).toEqual(['STATUS_CHANGE'])
     })
 
-    it('CONTACTED renseigne lastContactAt s\'il est vide et le conserve sinon', async () => {
+    it("CONTACTED renseigne lastContactAt s'il est vide et le conserve sinon", async () => {
       const a = await makeLead()
       const resA = await request(app).patch(`/api/admin/crm/leads/${a._id}`).send({ status: 'CONTACTED' }).expect(200)
       expect(resA.body.lead.lastContactAt).toBeTruthy()
@@ -433,7 +472,7 @@ describe('admin CRM leads / PATCH', () => {
       expect((await Lead.findById(lead._id).lean())?.status).toBe('LEAD')
     })
 
-    it('accepte un statut LOST sans motif (le motif n\'est pas obligatoire)', async () => {
+    it("accepte un statut LOST sans motif (le motif n'est pas obligatoire)", async () => {
       const lead = await makeLead()
       const res = await request(app).patch(`/api/admin/crm/leads/${lead._id}`).send({ status: 'LOST' }).expect(200)
       expect(res.body.lead.status).toBe('LOST')
@@ -492,7 +531,7 @@ describe('admin CRM leads / PATCH', () => {
       expect(String((await Lead.findById(lead._id).lean())?.assignedTo)).toBe(team.commercialB.id)
     })
 
-    it('le créateur non titulaire peut modifier le reste du lead sans toucher à l\'assignation', async () => {
+    it("le créateur non titulaire peut modifier le reste du lead sans toucher à l'assignation", async () => {
       const lead = await makeLead({ assignedTo: team.commercialB.id, createdBy: team.commercialA.id })
       as(team.commercialA)
       await request(app)
@@ -515,26 +554,35 @@ describe('admin CRM leads / PATCH', () => {
       expect((change as { payload?: { auto?: string } }).payload?.auto).toBe('AUTO_QUALIFIED')
     })
 
-    it('ne qualifie pas si le réglage est désactivé ou si le statut n\'est plus LEAD', async () => {
+    it("ne qualifie pas si le réglage est désactivé ou si le statut n'est plus LEAD", async () => {
       await resetCrmSettings({ autoQualifyEnabled: false })
       const a = await makeLead()
-      const resA = await request(app).patch(`/api/admin/crm/leads/${a._id}`).send({ budget: 4000, source: 'Salon' }).expect(200)
+      const resA = await request(app)
+        .patch(`/api/admin/crm/leads/${a._id}`)
+        .send({ budget: 4000, source: 'Salon' })
+        .expect(200)
       expect(resA.body.lead.status).toBe('LEAD')
 
       await resetCrmSettings()
       const b = await makeLead({ status: 'DEMO' })
-      const resB = await request(app).patch(`/api/admin/crm/leads/${b._id}`).send({ budget: 4000, source: 'Salon' }).expect(200)
+      const resB = await request(app)
+        .patch(`/api/admin/crm/leads/${b._id}`)
+        .send({ budget: 4000, source: 'Salon' })
+        .expect(200)
       expect(resB.body.lead.status).toBe('DEMO')
     })
 
-    it('met à jour statusChangedAt lors de l\'auto-qualification', async () => {
+    it("met à jour statusChangedAt lors de l'auto-qualification", async () => {
       const lead = await makeLead({ statusChangedAt: new Date('2020-01-01T00:00:00Z') })
-      const res = await request(app).patch(`/api/admin/crm/leads/${lead._id}`).send({ budget: 4000, source: 'Salon' }).expect(200)
+      const res = await request(app)
+        .patch(`/api/admin/crm/leads/${lead._id}`)
+        .send({ budget: 4000, source: 'Salon' })
+        .expect(200)
       expect(new Date(res.body.lead.statusChangedAt).getFullYear()).toBeGreaterThan(2020)
     })
 
     it.todo(
-      'BUG audit : l\'auto-qualification (LEAD -> QUALIFIED) devrait aussi journaliser STATUS_CHANGE { from: LEAD, to: QUALIFIED } — aujourd\'hui seul AUTO_QUALIFIED est écrit, ce qui trouble l\'entonnoir de pilotage',
+      "BUG audit : l'auto-qualification (LEAD -> QUALIFIED) devrait aussi journaliser STATUS_CHANGE { from: LEAD, to: QUALIFIED } — aujourd'hui seul AUTO_QUALIFIED est écrit, ce qui trouble l'entonnoir de pilotage",
     )
     it.todo(
       'BUG audit : un PATCH qui passe à QUALIFIED explicitement et celui qui qualifie automatiquement devraient laisser la même trace de transition',
@@ -543,7 +591,11 @@ describe('admin CRM leads / PATCH', () => {
 
   describe('passage à WON', () => {
     it('crée le compte client, relie le lead et journalise CONVERTED', async () => {
-      const lead = await makeLead({ contactName: 'Gaëlle', contactEmail: 'gaelle@example.com', nextActionAt: new Date('2030-01-01T00:00:00Z') })
+      const lead = await makeLead({
+        contactName: 'Gaëlle',
+        contactEmail: 'gaelle@example.com',
+        nextActionAt: new Date('2030-01-01T00:00:00Z'),
+      })
       const res = await request(app).patch(`/api/admin/crm/leads/${lead._id}`).send({ status: 'WON' }).expect(200)
       expect(res.body.lead.status).toBe('WON')
       expect(res.body.lead.nextActionAt ?? null).toBeNull()
@@ -557,7 +609,7 @@ describe('admin CRM leads / PATCH', () => {
       expect(types).toContain('CONVERTED')
     })
 
-    it('réutilise le compte client existant de même e-mail au lieu d\'en créer un second', async () => {
+    it("réutilise le compte client existant de même e-mail au lieu d'en créer un second", async () => {
       const existing = await User.create({ email: 'deja@example.com', name: 'Déjà', role: 'CLIENT', passwordHash: 'x' })
       const lead = await makeLead({ contactEmail: 'deja@example.com' })
       await request(app).patch(`/api/admin/crm/leads/${lead._id}`).send({ status: 'WON' }).expect(200)
@@ -573,10 +625,10 @@ describe('admin CRM leads / PATCH', () => {
     })
 
     it.todo(
-      'BUG audit : la conversion WON ne devrait s\'exécuter qu\'une fois — la route admin appelle ensureClientForWonLead ET déclenche l\'automatisation crm.auto_convert_won_lead (double conversion / double projet possible)',
+      "BUG audit : la conversion WON ne devrait s'exécuter qu'une fois — la route admin appelle ensureClientForWonLead ET déclenche l'automatisation crm.auto_convert_won_lead (double conversion / double projet possible)",
     )
     it.todo(
-      'BUG audit : un lead passé à WON par l\'API agent ou le traitement groupé devrait suivre la même conversion que la route admin (aujourd\'hui seul l\'admin crée client et projet)',
+      "BUG audit : un lead passé à WON par l'API agent ou le traitement groupé devrait suivre la même conversion que la route admin (aujourd'hui seul l'admin crée client et projet)",
     )
   })
 
@@ -584,8 +636,15 @@ describe('admin CRM leads / PATCH', () => {
     it('rejoue la même réponse pour un PATCH répété', async () => {
       const lead = await makeLead()
       const key = newIdempotencyKey()
-      const first = await request(app).patch(`/api/admin/crm/leads/${lead._id}`).set('Idempotency-Key', key).send({ status: 'DEMO' }).expect(200)
-      const second = await request(app).patch(`/api/admin/crm/leads/${lead._id}`).set('Idempotency-Key', key).send({ status: 'DEMO' })
+      const first = await request(app)
+        .patch(`/api/admin/crm/leads/${lead._id}`)
+        .set('Idempotency-Key', key)
+        .send({ status: 'DEMO' })
+        .expect(200)
+      const second = await request(app)
+        .patch(`/api/admin/crm/leads/${lead._id}`)
+        .set('Idempotency-Key', key)
+        .send({ status: 'DEMO' })
       expect(second.status).toBe(200)
       expect(second.body.lead._id).toBe(first.body.lead._id)
       expect(await LeadActivity.countDocuments({ leadId: lead._id, type: 'STATUS_CHANGE' })).toBe(1)

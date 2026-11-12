@@ -104,16 +104,116 @@ interface DemoLead {
 }
 
 const demoLeads: DemoLead[] = [
-  { company: 'TechVision SAS', contactName: 'Marie Dupont', contactEmail: 'marie.dupont@techvision.fr', contactPhone: '06 12 34 56 78', source: 'Site web', status: 'LEAD', priority: 'HAUTE', budget: 15000, notes: 'Intéressé par refonte + SEO.' },
-  { company: 'Agence Lumière', contactName: 'Thomas Bernard', contactEmail: 't.bernard@agencelumiere.com', contactPhone: '01 23 45 67 89', source: 'Recommandation', status: 'QUALIFIED', priority: 'NORMALE', budget: 8000, notes: 'Projet branding Q2.' },
-  { company: 'Startup Flow', contactName: 'Julie Martin', contactEmail: 'julie@startupflow.io', contactPhone: '07 98 76 54 32', source: 'LinkedIn', status: 'CONTACTED', priority: 'HAUTE', budget: 22000, notes: 'Démo prévue la semaine prochaine.' },
-  { company: 'Maison Verte', contactName: 'Pierre Lefebvre', contactEmail: 'p.lefebvre@maisonverte.fr', contactPhone: '04 56 78 90 12', source: 'Salon', status: 'DEMO', priority: 'NORMALE', budget: 12000, notes: 'Démo effectuée, en attente de retour.' },
-  { company: 'Digital First', contactName: 'Sophie Moreau', contactEmail: 'sophie@digitalfirst.co', contactPhone: '06 11 22 33 44', source: 'Site web', status: 'PROPOSAL', priority: 'URGENTE', budget: 18000, notes: 'Proposition envoyée, relance prévue.' },
-  { company: 'Studio Nord', contactName: 'Lucas Petit', contactEmail: 'lucas@studionord.fr', contactPhone: '03 44 55 66 77', source: 'Recommandation', status: 'WON', priority: 'NORMALE', budget: 9500, notes: 'Signé le 15/01.' },
-  { company: 'Eco Solutions', contactName: 'Claire Roux', contactEmail: 'c.roux@ecosolutions.eu', contactPhone: '', source: 'Cold call', status: 'LOST', priority: 'BASSE', budget: 5000, notes: 'Budget insuffisant, pas de suite.' },
-  { company: 'DataDrive', contactName: 'Nicolas Simon', contactEmail: 'n.simon@datadrive.io', contactPhone: '06 77 88 99 00', source: 'LinkedIn', status: 'LEAD', priority: 'NORMALE', budget: null, notes: 'À qualifier.' },
-  { company: 'Art & Cie', contactName: 'Emma Laurent', contactEmail: 'emma@artetcie.com', contactPhone: '01 98 87 76 65', source: 'Site web', status: 'QUALIFIED', priority: 'HAUTE', budget: 14000, notes: 'Projet identité + site.' },
-  { company: 'Scale Up Lab', contactName: 'Alexandre Girard', contactEmail: 'a.girard@scaleuplab.com', contactPhone: '07 65 43 21 00', source: 'Salon', status: 'CONTACTED', priority: 'NORMALE', budget: 30000, notes: 'Premier échange positif.' },
+  {
+    company: 'TechVision SAS',
+    contactName: 'Marie Dupont',
+    contactEmail: 'marie.dupont@techvision.fr',
+    contactPhone: '06 12 34 56 78',
+    source: 'Site web',
+    status: 'LEAD',
+    priority: 'HAUTE',
+    budget: 15000,
+    notes: 'Intéressé par refonte + SEO.',
+  },
+  {
+    company: 'Agence Lumière',
+    contactName: 'Thomas Bernard',
+    contactEmail: 't.bernard@agencelumiere.com',
+    contactPhone: '01 23 45 67 89',
+    source: 'Recommandation',
+    status: 'QUALIFIED',
+    priority: 'NORMALE',
+    budget: 8000,
+    notes: 'Projet branding Q2.',
+  },
+  {
+    company: 'Startup Flow',
+    contactName: 'Julie Martin',
+    contactEmail: 'julie@startupflow.io',
+    contactPhone: '07 98 76 54 32',
+    source: 'LinkedIn',
+    status: 'CONTACTED',
+    priority: 'HAUTE',
+    budget: 22000,
+    notes: 'Démo prévue la semaine prochaine.',
+  },
+  {
+    company: 'Maison Verte',
+    contactName: 'Pierre Lefebvre',
+    contactEmail: 'p.lefebvre@maisonverte.fr',
+    contactPhone: '04 56 78 90 12',
+    source: 'Salon',
+    status: 'DEMO',
+    priority: 'NORMALE',
+    budget: 12000,
+    notes: 'Démo effectuée, en attente de retour.',
+  },
+  {
+    company: 'Digital First',
+    contactName: 'Sophie Moreau',
+    contactEmail: 'sophie@digitalfirst.co',
+    contactPhone: '06 11 22 33 44',
+    source: 'Site web',
+    status: 'PROPOSAL',
+    priority: 'URGENTE',
+    budget: 18000,
+    notes: 'Proposition envoyée, relance prévue.',
+  },
+  {
+    company: 'Studio Nord',
+    contactName: 'Lucas Petit',
+    contactEmail: 'lucas@studionord.fr',
+    contactPhone: '03 44 55 66 77',
+    source: 'Recommandation',
+    status: 'WON',
+    priority: 'NORMALE',
+    budget: 9500,
+    notes: 'Signé le 15/01.',
+  },
+  {
+    company: 'Eco Solutions',
+    contactName: 'Claire Roux',
+    contactEmail: 'c.roux@ecosolutions.eu',
+    contactPhone: '',
+    source: 'Cold call',
+    status: 'LOST',
+    priority: 'BASSE',
+    budget: 5000,
+    notes: 'Budget insuffisant, pas de suite.',
+  },
+  {
+    company: 'DataDrive',
+    contactName: 'Nicolas Simon',
+    contactEmail: 'n.simon@datadrive.io',
+    contactPhone: '06 77 88 99 00',
+    source: 'LinkedIn',
+    status: 'LEAD',
+    priority: 'NORMALE',
+    budget: null,
+    notes: 'À qualifier.',
+  },
+  {
+    company: 'Art & Cie',
+    contactName: 'Emma Laurent',
+    contactEmail: 'emma@artetcie.com',
+    contactPhone: '01 98 87 76 65',
+    source: 'Site web',
+    status: 'QUALIFIED',
+    priority: 'HAUTE',
+    budget: 14000,
+    notes: 'Projet identité + site.',
+  },
+  {
+    company: 'Scale Up Lab',
+    contactName: 'Alexandre Girard',
+    contactEmail: 'a.girard@scaleuplab.com',
+    contactPhone: '07 65 43 21 00',
+    source: 'Salon',
+    status: 'CONTACTED',
+    priority: 'NORMALE',
+    budget: 30000,
+    notes: 'Premier échange positif.',
+  },
 ]
 
 async function seed(): Promise<void> {
@@ -134,7 +234,7 @@ async function seed(): Promise<void> {
       email: client.email,
       passwordHash,
       role: 'CLIENT',
-    }))
+    })),
   )
 
   const projects: Record<string, unknown>[] = []
@@ -178,7 +278,9 @@ async function seed(): Promise<void> {
     await Lead.insertMany(leads)
     console.log(`Seed OK: ${clients.length} clients, ${projects.length} projets, ${leads.length} prospects CRM`)
   } else {
-    console.log(`Seed OK: ${clients.length} clients, ${projects.length} projets (aucun admin pour créer des prospects CRM)`)
+    console.log(
+      `Seed OK: ${clients.length} clients, ${projects.length} projets (aucun admin pour créer des prospects CRM)`,
+    )
   }
 
   await mongoose.disconnect()

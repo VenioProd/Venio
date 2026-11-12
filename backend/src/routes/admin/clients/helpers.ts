@@ -57,7 +57,10 @@ export function normalizeClientPayload(body: Record<string, any> = {}): Record<s
 
   if (body.tags !== undefined) {
     payload.tags = Array.isArray(body.tags)
-      ? body.tags.filter((tag: unknown) => typeof tag === 'string').map((tag: string) => tag.trim()).filter(Boolean)
+      ? body.tags
+          .filter((tag: unknown) => typeof tag === 'string')
+          .map((tag: string) => tag.trim())
+          .filter(Boolean)
       : []
   }
 
@@ -96,7 +99,13 @@ export async function ensureClient(clientId: string, req?: Request): Promise<any
   return client
 }
 
-export async function logActivity({ clientId, actorId, type, label, payload = {} }: {
+export async function logActivity({
+  clientId,
+  actorId,
+  type,
+  label,
+  payload = {},
+}: {
   clientId: unknown
   actorId: string
   type: string
@@ -113,20 +122,24 @@ export async function logActivity({ clientId, actorId, type, label, payload = {}
 }
 
 export function computeProjectProgress(project: any, items: any[] = []): number {
-  const deliverableItems = items.filter((item) => ['LIVRABLE', 'MAQUETTE', 'DOCUMENTATION', 'LIEN', 'NOTE'].includes(item.type))
+  const deliverableItems = items.filter((item) =>
+    ['LIVRABLE', 'MAQUETTE', 'DOCUMENTATION', 'LIEN', 'NOTE'].includes(item.type),
+  )
   const milestoneItems = items.filter((item) => item.type === 'LIVRABLE')
   const completedStatuses = new Set(['TERMINE', 'VALIDE'])
 
-  const milestoneRatio = milestoneItems.length === 0
-    ? 0
-    : milestoneItems.filter((item) => completedStatuses.has(item.status)).length / milestoneItems.length
+  const milestoneRatio =
+    milestoneItems.length === 0
+      ? 0
+      : milestoneItems.filter((item) => completedStatuses.has(item.status)).length / milestoneItems.length
 
-  const deliverableRatio = deliverableItems.length === 0
-    ? 0
-    : deliverableItems.filter((item) => completedStatuses.has(item.status)).length / deliverableItems.length
+  const deliverableRatio =
+    deliverableItems.length === 0
+      ? 0
+      : deliverableItems.filter((item) => completedStatuses.has(item.status)).length / deliverableItems.length
 
   const statusBonus = project.status === 'TERMINE' ? 1 : project.status === 'EN_COURS' ? 0.55 : 0.25
 
-  const value = ((milestoneRatio * 0.45) + (deliverableRatio * 0.35) + (statusBonus * 0.2)) * 100
+  const value = (milestoneRatio * 0.45 + deliverableRatio * 0.35 + statusBonus * 0.2) * 100
   return Math.max(0, Math.min(100, Math.round(value)))
 }

@@ -62,11 +62,11 @@ const definition: AutomationDefinition = {
     const recipientsNotified: string[] = []
 
     if (silentProjects.length > 0) {
-      const summary = silentProjects
-        .map(p => `• "${p.name}" — ${p.daysSilent}j sans activité`)
-        .join('\n')
+      const summary = silentProjects.map((p) => `• "${p.name}" — ${p.daysSilent}j sans activité`).join('\n')
 
-      const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: { $ne: false } }).select('_id')
+      const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: { $ne: false } }).select(
+        '_id',
+      )
 
       for (const admin of admins) {
         const adminId = (admin._id as object).toString()

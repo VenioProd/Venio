@@ -57,7 +57,8 @@ const definition: AutomationDefinition = {
       recipient: (client._id as object).toString(),
       type: 'ONBOARDING' as never,
       title: `Bienvenue sur Venio, ${clientName} !`,
-      message: 'Votre espace client est prêt. Vous pouvez consulter vos projets, documents et messages depuis votre tableau de bord.',
+      message:
+        'Votre espace client est prêt. Vous pouvez consulter vos projets, documents et messages depuis votre tableau de bord.',
       link: '/client/dashboard',
     })
     recipientsNotified.push((client._id as object).toString())

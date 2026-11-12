@@ -35,7 +35,9 @@ const definition: AutomationDefinition = {
     const projects = await Project.find({
       status: 'EN_COURS',
       isArchived: { $ne: true },
-    }).populate('assignedTo', '_id name').populate('client', '_id')
+    })
+      .populate('assignedTo', '_id name')
+      .populate('client', '_id')
 
     const actionsExecuted: string[] = []
     const recipientsNotified: string[] = []
@@ -76,7 +78,7 @@ const definition: AutomationDefinition = {
       if (!manager) continue
 
       const managerId = (manager._id as object).toString()
-      const message = `Projet "${project.name}" — en attente du client :\n${issues.map(i => `• ${i}`).join('\n')}`
+      const message = `Projet "${project.name}" — en attente du client :\n${issues.map((i) => `• ${i}`).join('\n')}`
 
       await createNotification({
         recipient: managerId,

@@ -33,11 +33,7 @@ export function hasDryRunFlag(args = process.argv): boolean {
 }
 
 // --- Données ciblées -------------------------------------------------------
-const testAdminEmails = [
-  'hugo@venio.paris',
-  'ines@venio.paris',
-  'maxime@venio.paris',
-]
+const testAdminEmails = ['hugo@venio.paris', 'ines@venio.paris', 'maxime@venio.paris']
 
 const testClientExact = [
   'demo@venio.com',
@@ -54,9 +50,16 @@ const testClientExact = [
 ]
 
 const demoLeadCompanies = [
-  'TechVision SAS', 'Agence Lumière', 'Startup Flow', 'Maison Verte',
-  'Digital First', 'Studio Nord', 'Eco Solutions', 'DataDrive',
-  'Art & Cie', 'Scale Up Lab',
+  'TechVision SAS',
+  'Agence Lumière',
+  'Startup Flow',
+  'Maison Verte',
+  'Digital First',
+  'Studio Nord',
+  'Eco Solutions',
+  'DataDrive',
+  'Art & Cie',
+  'Scale Up Lab',
 ]
 
 // ---------------------------------------------------------------------------
@@ -96,7 +99,9 @@ export async function cleanupDemoData({ dryRun, allowDemoCleanup }: CleanupOptio
       const deletedProjects = await Project.deleteMany({ client: { $in: allTestUserIds } })
       await ClientActivity.deleteMany({ clientId: { $in: allTestUserIds } })
       const deletedUsers = await User.deleteMany({ _id: { $in: allTestUserIds } })
-      console.log(`  🧹 Supprimé : ${deletedUsers.deletedCount} compte(s), ${deletedProjects.deletedCount} projet(s) associé(s)`)
+      console.log(
+        `  🧹 Supprimé : ${deletedUsers.deletedCount} compte(s), ${deletedProjects.deletedCount} projet(s) associé(s)`,
+      )
     } else {
       // Dry-run : afficher les projets qui seraient supprimés
       const projectsToDelete = await Project.find({ client: { $in: allTestUserIds } }).select('projectNumber name')
@@ -166,7 +171,7 @@ export async function cleanupDemoData({ dryRun, allowDemoCleanup }: CleanupOptio
   console.log('')
 
   if (dryRun) {
-    console.log('✅ DRY RUN terminé — aucune donnée n\'a été modifiée.')
+    console.log("✅ DRY RUN terminé — aucune donnée n'a été modifiée.")
   } else {
     console.log('✅ Cleanup terminé.')
   }
@@ -189,8 +194,7 @@ export async function main(): Promise<void> {
   }
 }
 
-const invokedAsScript = process.argv[1] !== undefined
-  && import.meta.url === pathToFileURL(process.argv[1]).href
+const invokedAsScript = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
 
 if (invokedAsScript) {
   void main().catch((err: unknown) => {

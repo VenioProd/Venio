@@ -311,7 +311,9 @@ export function listDevProjects(
   status?: DevProjectStatus | 'all',
   opts: { includeArchived?: boolean } = {},
 ): Promise<{ projects: DevProject[] }> {
-  return apiFetch(`/api/admin/dev/projects${qs({ status, includeArchived: opts.includeArchived ? 'true' : undefined })}`)
+  return apiFetch(
+    `/api/admin/dev/projects${qs({ status, includeArchived: opts.includeArchived ? 'true' : undefined })}`,
+  )
 }
 
 /** Archive (ARCHIVED) ou restaure (ACTIVE) un projet ; les tickets ne sont pas modifiés. */
@@ -1042,7 +1044,6 @@ export function computeWeightedProgress(byStatus: Record<DevIssueStatus, number>
   if (nonCancelled === 0) return 0
   return Math.round(weighted / nonCancelled)
 }
-
 
 // Boîte à idées (suggestions de features)
 export type DevSuggestionStatus = 'NEW' | 'STUDIED' | 'ACCEPTED' | 'REJECTED'

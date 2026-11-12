@@ -67,7 +67,7 @@ describe('createIssueWithRetry', () => {
         status: 'BACKLOG',
         priority: 'NO_PRIORITY',
         reporter: systemUserId,
-      })
+      }),
     )
     const results = await Promise.all(creates)
     const numbers = results.map((r) => r.number).sort((a, b) => a - b)
