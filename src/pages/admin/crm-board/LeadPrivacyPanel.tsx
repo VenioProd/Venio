@@ -34,7 +34,8 @@ interface Props {
 
 const CONSENT_STATUSES: ConsentStatus[] = ['UNKNOWN', 'GRANTED', 'WITHDRAWN']
 const LEGAL_BASES: LegalBasis[] = ['LEGITIMATE_INTEREST', 'CONSENT', 'CONTRACT']
-const longDate = (iso?: string | null) => (iso ? formatDate(iso, { day: 'numeric', month: 'long', year: 'numeric' }) : '')
+const longDate = (iso?: string | null) =>
+  iso ? formatDate(iso, { day: 'numeric', month: 'long', year: 'numeric' }) : ''
 
 export default function LeadPrivacyPanel({ lead, canManageCrm, onUpdateLead, onLocalChange }: Props) {
   const { t } = useI18n()
@@ -133,16 +134,19 @@ export default function LeadPrivacyPanel({ lead, canManageCrm, onUpdateLead, onL
       {failed && <p className="crm-privacy-error">{t('crmPrivacy.panel.loadError')}</p>}
       {!status && !failed && <p className="rich-dim">{t('crmPrivacy.panel.loading')}</p>}
 
-      {anonymizedAt && <p className="crm-privacy-note">{t('crmPrivacy.anonymized', { date: longDate(anonymizedAt) })}</p>}
+      {anonymizedAt && (
+        <p className="crm-privacy-note">{t('crmPrivacy.anonymized', { date: longDate(anonymizedAt) })}</p>
+      )}
 
       <div className="crm-modal-quick-grid">
         <div className="crm-modal-quick-field">
           <label>{t('crmPrivacy.consent.label')}</label>
           {editable ? (
             <CustomSelect
-              className="portal-input"
               value={consent.status}
-              onChange={(v) => void save({ consent: { status: v } }, { consent: { ...consent, status: v as ConsentStatus } })}
+              onChange={(v) =>
+                void save({ consent: { status: v } }, { consent: { ...consent, status: v as ConsentStatus } })
+              }
               options={CONSENT_STATUSES.map((s) => ({ value: s, label: t(`crmPrivacy.consent.${s}` as MessageKey) }))}
             />
           ) : (
@@ -153,9 +157,10 @@ export default function LeadPrivacyPanel({ lead, canManageCrm, onUpdateLead, onL
           <label>{t('crmPrivacy.basis.label')}</label>
           {editable ? (
             <CustomSelect
-              className="portal-input"
               value={consent.basis}
-              onChange={(v) => void save({ consent: { basis: v } }, { consent: { ...consent, basis: v as LegalBasis } })}
+              onChange={(v) =>
+                void save({ consent: { basis: v } }, { consent: { ...consent, basis: v as LegalBasis } })
+              }
               options={LEGAL_BASES.map((b) => ({ value: b, label: t(`crmPrivacy.basis.${b}` as MessageKey) }))}
             />
           ) : (
@@ -164,7 +169,9 @@ export default function LeadPrivacyPanel({ lead, canManageCrm, onUpdateLead, onL
         </div>
       </div>
       {consent.at && (
-        <p className="rich-dim">{t('crmPrivacy.consent.since', { date: longDate(consent.at), source: consent.source || '—' })}</p>
+        <p className="rich-dim">
+          {t('crmPrivacy.consent.since', { date: longDate(consent.at), source: consent.source || '—' })}
+        </p>
       )}
 
       <label className="crm-privacy-check">
@@ -181,15 +188,29 @@ export default function LeadPrivacyPanel({ lead, canManageCrm, onUpdateLead, onL
           ? t('crmPrivacy.doNotContact.since', { date: longDate(status.doNotContactAt) })
           : t('crmPrivacy.doNotContact.hint')}
       </p>
-      {status?.suppressed && <p className="crm-privacy-note" role="note">{t('crmPrivacy.suppressed')}</p>}
+      {status?.suppressed && (
+        <p className="crm-privacy-note" role="note">
+          {t('crmPrivacy.suppressed')}
+        </p>
+      )}
 
       {isCrmAdmin && (
         <div className="crm-modal-quick-btns" style={{ marginTop: 8 }}>
-          <button type="button" className="portal-button secondary" disabled={busy !== null} onClick={() => void exportData()}>
+          <button
+            type="button"
+            className="portal-button secondary"
+            disabled={busy !== null}
+            onClick={() => void exportData()}
+          >
             {busy === 'export' ? t('crmPrivacy.exporting') : t('crmPrivacy.export')}
           </button>
           {!anonymizedAt && (
-            <button type="button" className="portal-button secondary danger" disabled={busy !== null} onClick={() => void anonymize()}>
+            <button
+              type="button"
+              className="portal-button secondary danger"
+              disabled={busy !== null}
+              onClick={() => void anonymize()}
+            >
               {t('crmPrivacy.anonymize')}
             </button>
           )}

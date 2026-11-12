@@ -45,10 +45,21 @@ const CrmBoard = () => {
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
   const [searchParams, setSearchParams] = useSearchParams()
-  const [viewMode, setViewMode] = useState<string>(() => {
-    const requested = searchParams.get('mode')
-    return requested === 'file' || requested === 'table' || requested === 'kanban' ? requested : 'liste'
-  })
+  const requestedMode = searchParams.get('mode')
+  const viewMode =
+    requestedMode === 'file' || requestedMode === 'table' || requestedMode === 'kanban' ? requestedMode : 'liste'
+  const setParam = useCallback(
+    (key: string, value: string) =>
+      setSearchParams(
+        (params) => {
+          if (value) params.set(key, value)
+          else params.delete(key)
+          return params
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  )
 
   // File de travail : groupes, seuils d'alerte effectifs et délais de relance,
   // tous servis par /crm/worklist. Les seuils alimentent aussi les badges des
@@ -67,10 +78,14 @@ const CrmBoard = () => {
   const [showForm, setShowForm] = useState<boolean>(false)
 
   // Table view state
-  const [search, setSearch] = useState<string>('')
-  const [filterStatus, setFilterStatus] = useState<string>('')
-  const [filterPriority, setFilterPriority] = useState<string>('')
-  const [filterAssignee, setFilterAssignee] = useState<string>('')
+  const search = searchParams.get('q') || ''
+  const setSearch = (value: string) => setParam('q', value)
+  const filterStatus = searchParams.get('status') || ''
+  const setFilterStatus = (value: string) => setParam('status', value)
+  const filterPriority = searchParams.get('priority') || ''
+  const setFilterPriority = (value: string) => setParam('priority', value)
+  const filterAssignee = searchParams.get('owner') || ''
+  const setFilterAssignee = (value: string) => setParam('owner', value)
   const requestedProject = searchParams.get('project') || ''
   const filterProject = CRM_PROJECTS.some((project) => project.key === requestedProject) ? requestedProject : ''
   const setFilterProject = useCallback(
@@ -101,12 +116,11 @@ const CrmBoard = () => {
     },
     [setSearchParams],
   )
-  const matchesEntity = useCallback(
-    (lead: Lead) => !filterEntity || leadEntity(lead) === filterEntity,
-    [filterEntity],
-  )
-  const [sortField, setSortField] = useState<string>('updatedAt')
-  const [sortDir, setSortDir] = useState<string>('desc')
+  const matchesEntity = useCallback((lead: Lead) => !filterEntity || leadEntity(lead) === filterEntity, [filterEntity])
+  const sortField = searchParams.get('sort') || 'updatedAt'
+  const setSortField = (value: string) => setParam('sort', value)
+  const sortDir = searchParams.get('dir') === 'asc' ? 'asc' : 'desc'
+  const setSortDir = (value: string) => setParam('dir', value)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
@@ -164,12 +178,9 @@ const CrmBoard = () => {
   }, [viewMode, pipelineStale])
 
   const changeViewMode = (mode: string) => {
-    setViewMode(mode)
     setSearchParams(
       (params) => {
-        // Le Kanban et le tableau enrichi (défaut) ne sont pas portés par l'URL, comme avant.
-        if (mode === 'file' || mode === 'table') params.set('mode', mode)
-        else params.delete('mode')
+        params.set('mode', mode)
         return params
       },
       { replace: true },
@@ -421,13 +432,13 @@ const CrmBoard = () => {
   const toggleSort = useCallback(
     (field: string) => {
       if (sortField === field) {
-        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+        setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
       } else {
         setSortField(field)
         setSortDir('asc')
       }
     },
-    [sortField],
+    [sortField, sortDir, setParam],
   )
 
   const toggleGroup = useCallback((statusKey: string) => {
@@ -449,13 +460,14 @@ const CrmBoard = () => {
   }, [allCollapsed])
 
   const clearFilters = useCallback(() => {
-    setSearch('')
-    setFilterStatus('')
-    setFilterPriority('')
-    setFilterAssignee('')
-    setFilterProject('')
-    setFilterEntity('')
-  }, [setFilterProject, setFilterEntity])
+    setSearchParams(
+      (params) => {
+        for (const key of ['q', 'status', 'priority', 'owner', 'project', 'entity']) params.delete(key)
+        return params
+      },
+      { replace: true },
+    )
+  }, [setSearchParams])
 
   const keepLead = (lead: Lead) => (!filterProject || lead.project === filterProject) && matchesEntity(lead)
   const projectColumns = columns.map((column) => ({
@@ -474,7 +486,23 @@ const CrmBoard = () => {
   const worklistOverdueCount = projectGroups?.overdue.length ?? 0
   const lostReasons = worklist?.lostReasons ?? []
   const totalLeads = entityLeads.length
-  const activeFilters = [filterStatus, filterPriority, filterAssignee, filterProject, filterEntity, search].filter(Boolean).length
+  const activeFilters = [filterStatus, filterPriority, filterAssignee, filterProject, filterEntity, search].filter(
+    Boolean,
+  ).length
+
+  const entityFilterControl = (
+    <label className="crm-entity-filter">
+      {t('crm.col.entity')}
+      <select value={filterEntity} onChange={(event) => setFilterEntity(event.target.value)}>
+        <option value="">{t('crm.filters.allEntities')}</option>
+        {CRM_ENTITIES.map((entity) => (
+          <option key={entity.key} value={entity.key}>
+            {t(entity.labelKey)}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
 
   return (
     <CrmThresholdsContext.Provider value={worklist?.thresholds ?? DEFAULT_WORKLIST_THRESHOLDS}>
@@ -491,6 +519,8 @@ const CrmBoard = () => {
                   className={`crm-view-btn ${viewMode === 'file' ? 'active' : ''}`}
                   onClick={() => changeViewMode('file')}
                   title={t('crm.page.viewQueue')}
+                  aria-pressed={viewMode === 'file'}
+                  aria-label={t('crm.page.viewQueue')}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -507,15 +537,24 @@ const CrmBoard = () => {
                     <polyline points="3 12 4 13 6 11" />
                     <circle cx="4" cy="18" r="1" />
                   </svg>
+                  <span className="crm-view-label">{t('crm.page.viewQueue')}</span>
                   {worklistOverdueCount > 0 && <span className="crm-view-btn-count">{worklistOverdueCount}</span>}
                 </button>
                 <button
                   className={`crm-view-btn ${viewMode === 'liste' ? 'active' : ''}`}
                   onClick={() => changeViewMode('liste')}
                   title={t('crmRich.view.enrichedTable')}
+                  aria-pressed={viewMode === 'liste'}
                   aria-label={t('crmRich.view.enrichedTable')}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <line x1="8" y1="6" x2="21" y2="6" />
                     <line x1="8" y1="12" x2="21" y2="12" />
                     <line x1="8" y1="18" x2="21" y2="18" />
@@ -523,11 +562,13 @@ const CrmBoard = () => {
                     <line x1="3" y1="12" x2="3.01" y2="12" />
                     <line x1="3" y1="18" x2="3.01" y2="18" />
                   </svg>
+                  <span className="crm-view-label">{t('crmRich.view.enrichedTable')}</span>
                 </button>
                 <button
-                  className={`crm-view-btn ${viewMode === 'table' ? 'active' : ''}`}
+                  className={`crm-view-btn crm-view-legacy ${viewMode === 'table' ? 'active' : ''}`}
                   onClick={() => changeViewMode('table')}
                   title={t('crm.page.viewTable')}
+                  aria-pressed={viewMode === 'table'}
                   aria-label={t('crm.page.viewTable')}
                 >
                   <svg
@@ -543,11 +584,14 @@ const CrmBoard = () => {
                     <line x1="3" y1="15" x2="21" y2="15" />
                     <line x1="9" y1="3" x2="9" y2="21" />
                   </svg>
+                  <span className="crm-view-label">{t('crm.page.viewTable')}</span>
                 </button>
                 <button
                   className={`crm-view-btn ${viewMode === 'kanban' ? 'active' : ''}`}
                   onClick={() => changeViewMode('kanban')}
                   title={t('crm.page.viewKanban')}
+                  aria-pressed={viewMode === 'kanban'}
+                  aria-label={t('crm.page.viewKanban')}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -561,6 +605,7 @@ const CrmBoard = () => {
                     <rect x="9" y="3" width="6" height="12" rx="1" />
                     <rect x="16" y="3" width="6" height="15" rx="1" />
                   </svg>
+                  <span className="crm-view-label">{t('crm.page.viewKanban')}</span>
                 </button>
               </div>
               <button
@@ -655,22 +700,12 @@ const CrmBoard = () => {
         <div
           className="portal-card"
           style={{
-            marginTop: 24,
+            marginTop: 12,
             padding: viewMode === 'table' || viewMode === 'liste' ? 0 : undefined,
             overflow: 'visible',
           }}
         >
-          <label className="crm-table-toolbar crm-entity-filter">
-            {t('crm.col.entity')}
-            <select value={filterEntity} onChange={(event) => setFilterEntity(event.target.value)}>
-              <option value="">{t('crm.filters.allEntities')}</option>
-              {CRM_ENTITIES.map((entity) => (
-                <option key={entity.key} value={entity.key}>
-                  {t(entity.labelKey)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {viewMode !== 'liste' && entityFilterControl}
           {viewMode !== 'table' && viewMode !== 'liste' && (
             <label className="crm-table-toolbar">
               {t('crm.col.project')}
@@ -712,6 +747,7 @@ const CrmBoard = () => {
               onOpenLead={setExpandedLead}
               onReload={load}
               onError={setError}
+              entityFilter={entityFilterControl}
               project={filterProject}
               onProjectChange={setFilterProject}
             />

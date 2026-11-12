@@ -1,7 +1,8 @@
 import type fr from '../fr/crmRich'
 
 const en: Record<keyof typeof fr, string> = {
-  'crmRich.new': 'New',
+  'crmRich.analytics.owner': 'Salesperson',
+  'crmRich.analytics.externalRep': 'External salesperson',
   'crmRich.col.company': 'Lead',
   'crmRich.col.status': 'Status',
   'crmRich.col.project': 'Linked platform',
@@ -100,8 +101,10 @@ const en: Record<keyof typeof fr, string> = {
   'crmRich.bulk.clearAria': 'Deselect all',
   'crmRich.bulk.assignConfirm': 'Assign {count, plural, one {# lead} other {# leads}} to {name}',
   'crmRich.bulk.statusConfirm': 'Move {count, plural, one {# lead} other {# leads}} to “{status}”',
-  'crmRich.bulk.archiveConfirm': 'Archive {count, plural, one {# lead} other {# leads}}? They leave the pipeline but can be restored.',
-  'crmRich.bulk.deleteConfirm': 'Permanently delete {count, plural, one {# lead} other {# leads}}, their tasks and their exchanges? Archiving is preferable.',
+  'crmRich.bulk.archiveConfirm':
+    'Archive {count, plural, one {# lead} other {# leads}}? They leave the pipeline but can be restored.',
+  'crmRich.bulk.deleteConfirm':
+    'Permanently delete {count, plural, one {# lead} other {# leads}}, their tasks and their exchanges? Archiving is preferable.',
   'crmRich.bulk.confirmTitle': 'Confirm bulk action',
   'crmRich.bulk.confirm': 'Confirm',
   'crmRich.bulk.cancel': 'Cancel',
@@ -115,7 +118,10 @@ const en: Record<keyof typeof fr, string> = {
   'crmRich.panel.tabTasks': 'Tasks',
   'crmRich.panel.tabDocs': 'Documents',
   'crmRich.panel.tabAutomations': 'Automations',
-  'crmRich.panel.loadFailed': 'Unable to load. Try again by reopening the record.',
+  'crmRich.panel.loadFailed': 'Unable to load. Please try again.',
+  'crmRich.panel.retry': 'Retry',
+  'crmRich.table.more': 'Show details',
+  'crmRich.table.less': 'Show less',
   'crmRich.panel.loading': 'Loading…',
   'crmRich.panel.amount': 'Amount',
   'crmRich.panel.probability': 'Probability',

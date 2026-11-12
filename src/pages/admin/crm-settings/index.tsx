@@ -1,5 +1,6 @@
 import PageHeader from '../../../components/admin/ui/PageHeader'
 import React, { useEffect, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
@@ -155,7 +156,13 @@ export default function CrmSettings() {
         }
       />
 
-      {message && <div className={`crm-settings-message crm-settings-message-${message.type}`}>{message.text}</div>}
+      {message &&
+        createPortal(
+          <div role="status" className={`crm-settings-toast crm-settings-message crm-settings-message-${message.type}`}>
+            {message.text}
+          </div>,
+          document.body,
+        )}
 
       {!canManage && (
         <div className="crm-settings-message crm-settings-readonly" role="note">
@@ -178,7 +185,13 @@ export default function CrmSettings() {
         <SuppressionSection canManage={canManage} />
       </div>
 
-      {saving && <div className="crm-settings-saving">{t('crm.common.saving')}</div>}
+      {saving &&
+        createPortal(
+          <div className="crm-settings-saving" role="status">
+            {t('crm.common.saving')}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

@@ -54,8 +54,9 @@ const PilotageSection: React.FC = () => {
 
   const resolveOwner = useMemo(() => {
     const byId = new Map(admins.map((admin) => [admin._id, admin.name]))
-    return (key: string) => byId.get(key) ?? displayKey(key)
-  }, [admins])
+    return (key: string) =>
+      byId.get(key) ?? (key === 'NON_RENSEIGNE' ? displayKey(key) : t('crmRich.analytics.externalRep'))
+  }, [admins, t])
 
   return (
     <section className="analytics-chart-card pilotage-section" style={{ marginTop: 24 }}>

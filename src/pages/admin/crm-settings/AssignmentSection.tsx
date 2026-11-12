@@ -30,7 +30,7 @@ const AssignmentSection: React.FC<SectionProps> = ({ settings, canManage, update
         </label>
       </div>
 
-      <div className="crm-settings-item">
+      <div className="crm-settings-item crm-settings-item-full">
         <div className="crm-settings-item-info">
           <h3>{t('crm.settings.assignment.defaultCloser')}</h3>
           <p>{t('crm.settings.assignment.defaultCloserDesc')}</p>

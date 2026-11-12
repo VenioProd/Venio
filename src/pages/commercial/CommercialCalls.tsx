@@ -326,7 +326,7 @@ export default function CommercialCalls() {
   return (
     <div onKeyDown={keyboard}>
       <h1>{t('commercial.calls.title')}</h1>
-      <p className="commercial-muted">{t('commercial.calls.shortcuts')}</p>
+      <p className="commercial-muted commercial-call-shortcuts">{t('commercial.calls.shortcuts')}</p>
       {settings && (
         <CallLeadImport
           region={settings.defaultRegion}
@@ -422,13 +422,13 @@ export default function CommercialCalls() {
                 disabled={busy || loading}
                 onClick={() => open(expanded ? null : lead._id)}
               >
-                <span>
+                <span data-label={t('commercial.field.company')}>
                   <strong>{lead.company}</strong>
                   <small>{lead.contactName || '—'}</small>
                 </span>
-                <span>{lead.contactPhone || '—'}</span>
-                <span>{outcomeLabel(lead.lastCallOutcome)}</span>
-                <span>{formatDay(lead.nextActionAt)}</span>
+                <span data-label={t('commercial.field.phone')}>{lead.contactPhone || '—'}</span>
+                <span data-label={t('commercial.calls.outcome')}>{outcomeLabel(lead.lastCallOutcome)}</span>
+                <span data-label={t('commercial.field.nextAction')}>{formatDay(lead.nextActionAt)}</span>
               </button>
               {expanded && (
                 <form

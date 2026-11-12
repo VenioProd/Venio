@@ -145,7 +145,7 @@ const CommercialLeads = () => {
           </p>
         </div>
       ) : (
-        <div className="admin-table-wrapper">
+        <div className="admin-table-wrapper commercial-leads-list">
           <table className="admin-table">
             <thead>
               <tr>
@@ -158,17 +158,17 @@ const CommercialLeads = () => {
             <tbody>
               {leads.map((lead) => (
                 <tr key={lead._id}>
-                  <td>
+                  <td data-label={t('commercial.leads.colCompany')}>
                     <Link className="commercial-link" to={`/commercial/leads/${lead._id}`}>
                       {lead.company}
                     </Link>
                     {lead.contactName && <div className="commercial-muted">{lead.contactName}</div>}
                   </td>
-                  <td>
+                  <td data-label={t('commercial.leads.colStatus')}>
                     <LeadStatusBadge lead={lead} />
                   </td>
-                  <td>{formatDay(lead.nextActionAt)}</td>
-                  <td>{formatDay(lead.updatedAt)}</td>
+                  <td data-label={t('commercial.leads.colNextAction')}>{formatDay(lead.nextActionAt)}</td>
+                  <td data-label={t('commercial.leads.colUpdated')}>{formatDay(lead.updatedAt)}</td>
                 </tr>
               ))}
             </tbody>

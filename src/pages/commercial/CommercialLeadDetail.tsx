@@ -241,7 +241,6 @@ const CommercialLeadDetail = () => {
                 <input className="portal-input" disabled value={t(STATUS_LABEL_KEYS[lead.status])} />
               ) : (
                 <CustomSelect
-                  className="portal-input"
                   value={String(form.status)}
                   onChange={(value) => setForm({ ...form, status: value as RepLead['status'] })}
                   options={REP_EDITABLE_STATUSES.map((key) => ({ value: key, label: t(STATUS_LABEL_KEYS[key]) }))}
@@ -275,7 +274,6 @@ const CommercialLeadDetail = () => {
           {!readOnly && (
             <form onSubmit={logExchange} style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
               <CustomSelect
-                className="portal-input"
                 value={exchange.kind}
                 onChange={(value) => setExchange({ ...exchange, kind: value as RepInteraction['kind'] })}
                 options={Object.entries(KIND_LABEL_KEYS).map(([value, key]) => ({ value, label: t(key) }))}

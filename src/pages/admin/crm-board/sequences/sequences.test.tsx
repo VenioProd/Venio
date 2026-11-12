@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CrmSequences from './index'
@@ -10,11 +11,20 @@ import type { Lead } from '../../../../types/crm.types'
 
 const apiFetch = vi.fn()
 const auth = vi.hoisted(() => ({ role: 'ADMIN' }))
-vi.mock('../../../../context/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'u1', name: 'Léa Durand', role: auth.role } }) }))
+vi.mock('../../../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { _id: 'u1', name: 'Léa Durand', role: auth.role } }),
+}))
 vi.mock('../../../../lib/api', () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }))
 vi.mock('../../../../lib/exportCsv', () => ({ exportToCsv: vi.fn() }))
 
-const emailStep = { type: 'EMAIL', delayDays: 0, sendHourParis: 9, subject: 'Bonjour {contact}', body: 'Chez {company}', taskTitle: '' }
+const emailStep = {
+  type: 'EMAIL',
+  delayDays: 0,
+  sendHourParis: 9,
+  subject: 'Bonjour {contact}',
+  body: 'Chez {company}',
+  taskTitle: '',
+}
 const seq = (over: Record<string, unknown> = {}) => ({
   _id: 's1',
   name: 'Relance démo',
@@ -39,19 +49,33 @@ const enrollment = (over: Record<string, unknown> = {}) => ({
 })
 
 const calls = () =>
-  apiFetch.mock.calls.map(([url, opts]) => ({ url: String(url), method: (opts as RequestInit | undefined)?.method ?? 'GET', body: (opts as RequestInit | undefined)?.body as string | undefined }))
+  apiFetch.mock.calls.map(([url, opts]) => ({
+    url: String(url),
+    method: (opts as RequestInit | undefined)?.method ?? 'GET',
+    body: (opts as RequestInit | undefined)?.body as string | undefined,
+  }))
 
 let sequences: ReturnType<typeof seq>[]
 
 beforeEach(() => {
   auth.role = 'ADMIN'
-  sequences = [seq(), seq({ _id: 's2', name: 'Nurturing actif', status: 'ACTIVE', stats: { total: 0, active: 0, paused: 0, completed: 0, stopped: 0, stoppedByReason: {} } })]
+  sequences = [
+    seq(),
+    seq({
+      _id: 's2',
+      name: 'Nurturing actif',
+      status: 'ACTIVE',
+      stats: { total: 0, active: 0, paused: 0, completed: 0, stopped: 0, stoppedByReason: {} },
+    }),
+  ]
   apiFetch.mockReset()
   apiFetch.mockImplementation(async (url: string, opts?: RequestInit) => {
     const method = opts?.method ?? 'GET'
     if (url === '/api/admin/crm/sequences' && method === 'GET') return { items: sequences, canAdminister: true }
-    if (url === '/api/admin/crm/sequences' && method === 'POST') return seq({ _id: 's9', ...JSON.parse(String(opts?.body)) })
-    if (/\/sequences\/s\d$/.test(url) && method === 'PATCH') return seq({ ...sequences.find((s) => url.endsWith(s._id)), ...JSON.parse(String(opts?.body)) })
+    if (url === '/api/admin/crm/sequences' && method === 'POST')
+      return seq({ _id: 's9', ...JSON.parse(String(opts?.body)) })
+    if (/\/sequences\/s\d$/.test(url) && method === 'PATCH')
+      return seq({ ...sequences.find((s) => url.endsWith(s._id)), ...JSON.parse(String(opts?.body)) })
     if (/\/sequences\/s\d\/enrollments/.test(url)) return { items: [enrollment()], page: 1, pageSize: 25, total: 1 }
     if (/\/sequences\/s\d\/unenroll$/.test(url)) return { sequenceId: 's1', stopped: ['l1'], notEnrolled: [] }
     if (/\/sequences\/s\d\/enroll$/.test(url)) {
@@ -69,8 +93,23 @@ beforeEach(() => {
     if (url === '/api/admin/crm/leads/lead1/sequences')
       return {
         items: [
-          enrollment({ _id: 'e1', sequence: { _id: 's2', name: 'Nurturing actif', status: 'ACTIVE', steps: [emailStep, emailStep, emailStep] }, currentStep: 1 }),
-          enrollment({ _id: 'e2', sequence: { _id: 's1', name: 'Relance démo', status: 'ACTIVE', steps: [emailStep, emailStep] }, status: 'STOPPED', stoppedReason: 'REPLY', nextRunAt: null }),
+          enrollment({
+            _id: 'e1',
+            sequence: {
+              _id: 's2',
+              name: 'Nurturing actif',
+              status: 'ACTIVE',
+              steps: [emailStep, emailStep, emailStep],
+            },
+            currentStep: 1,
+          }),
+          enrollment({
+            _id: 'e2',
+            sequence: { _id: 's1', name: 'Relance démo', status: 'ACTIVE', steps: [emailStep, emailStep] },
+            status: 'STOPPED',
+            stoppedReason: 'REPLY',
+            nextRunAt: null,
+          }),
         ],
       }
     return { items: [] }
@@ -104,9 +143,25 @@ describe('onglet Séquences', () => {
   it('active une séquence puis la met en pause avec un PATCH status', async () => {
     render(<CrmSequences />)
     fireEvent.click(await screen.findByRole('button', { name: 'Activer la séquence « Relance démo »' }))
-    await waitFor(() => expect(calls()).toContainEqual(expect.objectContaining({ url: '/api/admin/crm/sequences/s1', method: 'PATCH', body: JSON.stringify({ status: 'ACTIVE' }) })))
+    await waitFor(() =>
+      expect(calls()).toContainEqual(
+        expect.objectContaining({
+          url: '/api/admin/crm/sequences/s1',
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'ACTIVE' }),
+        }),
+      ),
+    )
     fireEvent.click(await screen.findByRole('button', { name: 'Mettre en pause la séquence « Relance démo »' }))
-    await waitFor(() => expect(calls()).toContainEqual(expect.objectContaining({ url: '/api/admin/crm/sequences/s1', method: 'PATCH', body: JSON.stringify({ status: 'PAUSED' }) })))
+    await waitFor(() =>
+      expect(calls()).toContainEqual(
+        expect.objectContaining({
+          url: '/api/admin/crm/sequences/s1',
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'PAUSED' }),
+        }),
+      ),
+    )
   })
 
   it('crée une séquence : POST avec les étapes saisies', async () => {
@@ -127,7 +182,13 @@ describe('onglet Séquences', () => {
     expect(post.url).toBe('/api/admin/crm/sequences')
     expect(body.name).toBe('Ma séquence')
     expect(body.steps).toHaveLength(2)
-    expect(body.steps[0]).toMatchObject({ type: 'EMAIL', subject: 'Salut {contact}', body: 'Message', delayDays: 0, sendHourParis: 9 })
+    expect(body.steps[0]).toMatchObject({
+      type: 'EMAIL',
+      subject: 'Salut {contact}',
+      body: 'Message',
+      delayDays: 0,
+      sendHourParis: 9,
+    })
     expect(body.steps[1]).toMatchObject({ type: 'TASK', taskTitle: 'Appeler', delayDays: 4 })
     expect(body.stopOn).toEqual({ reply: true, statusChange: true, statuses: ['WON', 'LOST'] })
     expect(body.entity).toBeNull()
@@ -153,7 +214,15 @@ describe('onglet Séquences', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Arrêtée' }))
     await waitFor(() => expect(calls().some((c) => c.url.includes('status=STOPPED'))).toBe(true))
     fireEvent.click(await screen.findByRole('button', { name: 'Désinscrire Atelier Lumière' }))
-    await waitFor(() => expect(calls()).toContainEqual(expect.objectContaining({ url: '/api/admin/crm/sequences/s1/unenroll', method: 'POST', body: JSON.stringify({ leadIds: ['l1'] }) })))
+    await waitFor(() =>
+      expect(calls()).toContainEqual(
+        expect.objectContaining({
+          url: '/api/admin/crm/sequences/s1/unenroll',
+          method: 'POST',
+          body: JSON.stringify({ leadIds: ['l1'] }),
+        }),
+      ),
+    )
   })
 })
 
@@ -192,7 +261,14 @@ describe('constructeur — variables et aperçu', () => {
 describe('<EnrollDialog />', () => {
   it('affiche les inscrits et les refus avec leur libellé, et prévient si la séquence n’est pas active', async () => {
     const onEnrolled = vi.fn()
-    render(<EnrollDialog leadIds={['a', 'b', 'c']} leadLabels={{ b: 'Brasserie Quai 9' }} onClose={vi.fn()} onEnrolled={onEnrolled} />)
+    render(
+      <EnrollDialog
+        leadIds={['a', 'b', 'c']}
+        leadLabels={{ b: 'Brasserie Quai 9' }}
+        onClose={vi.fn()}
+        onEnrolled={onEnrolled}
+      />,
+    )
     const select = await screen.findByLabelText('Séquence')
     fireEvent.change(select, { target: { value: 's1' } })
     expect(screen.getByText(/rien ne partira tant qu’elle n’est pas activée/)).toBeInTheDocument()
@@ -202,7 +278,13 @@ describe('<EnrollDialog />', () => {
     expect(summary).toHaveTextContent('Brasserie Quai 9 — Marqué « ne pas contacter »')
     expect(summary).toHaveTextContent('Lead c — Déjà inscrit à cette séquence')
     expect(onEnrolled).toHaveBeenCalled()
-    expect(calls()).toContainEqual(expect.objectContaining({ url: '/api/admin/crm/sequences/s1/enroll', method: 'POST', body: JSON.stringify({ leadIds: ['a', 'b', 'c'] }) }))
+    expect(calls()).toContainEqual(
+      expect.objectContaining({
+        url: '/api/admin/crm/sequences/s1/enroll',
+        method: 'POST',
+        body: JSON.stringify({ leadIds: ['a', 'b', 'c'] }),
+      }),
+    )
   })
 })
 
@@ -217,7 +299,15 @@ describe('<LeadSequencesPanel />', () => {
     // l’inscription arrêtée n’a pas de bouton « Désinscrire »
     expect(within(screen.getByTestId('lead-enr-e2')).queryByRole('button')).toBeNull()
     fireEvent.click(within(active).getByRole('button', { name: 'Désinscrire de « Nurturing actif »' }))
-    await waitFor(() => expect(calls()).toContainEqual(expect.objectContaining({ url: '/api/admin/crm/sequences/s2/unenroll', method: 'POST', body: JSON.stringify({ leadIds: ['lead1'] }) })))
+    await waitFor(() =>
+      expect(calls()).toContainEqual(
+        expect.objectContaining({
+          url: '/api/admin/crm/sequences/s2/unenroll',
+          method: 'POST',
+          body: JSON.stringify({ leadIds: ['lead1'] }),
+        }),
+      ),
+    )
   })
 
   it('inscrit le lead via le dialogue', async () => {
@@ -226,7 +316,15 @@ describe('<LeadSequencesPanel />', () => {
     const dialog = await screen.findByRole('dialog')
     fireEvent.change(await within(dialog).findByLabelText('Séquence'), { target: { value: 's2' } })
     fireEvent.click(within(dialog).getByRole('button', { name: 'Inscrire' }))
-    await waitFor(() => expect(calls()).toContainEqual(expect.objectContaining({ url: '/api/admin/crm/sequences/s2/enroll', method: 'POST', body: JSON.stringify({ leadIds: ['lead1'] }) })))
+    await waitFor(() =>
+      expect(calls()).toContainEqual(
+        expect.objectContaining({
+          url: '/api/admin/crm/sequences/s2/enroll',
+          method: 'POST',
+          body: JSON.stringify({ leadIds: ['lead1'] }),
+        }),
+      ),
+    )
   })
 
   it('sans manage_crm : lecture seule', async () => {
@@ -243,7 +341,21 @@ describe('action groupée du board', () => {
     { _id: 'b', company: 'Brasserie Quai 9', status: 'LEAD', budget: 6000 },
   ]
   const setup = (canManageCrm = true) =>
-    render(<RichLeadTable project="" onProjectChange={vi.fn()} leads={leads} admins={[]} adminsById={{}} canManageCrm={canManageCrm} onOpenLead={vi.fn()} onReload={vi.fn().mockResolvedValue(undefined)} onError={vi.fn()} />)
+    render(
+      <MemoryRouter>
+        <RichLeadTable
+          project=""
+          onProjectChange={vi.fn()}
+          leads={leads}
+          admins={[]}
+          adminsById={{}}
+          canManageCrm={canManageCrm}
+          onOpenLead={vi.fn()}
+          onReload={vi.fn().mockResolvedValue(undefined)}
+          onError={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
 
   it('« Ajouter à une séquence » apparaît sur la sélection et ouvre le dialogue d’inscription', async () => {
     localStorage.clear()

@@ -82,7 +82,6 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               onChange={(e) => onFormChange({ ...form, contactPhone: e.target.value })}
             />
             <CustomSelect
-              className="portal-input"
               value={form.source}
               onChange={(v) => onFormChange({ ...form, source: v })}
               options={[
@@ -91,7 +90,6 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               ]}
             />
             <CustomSelect
-              className="portal-input"
               value={form.project}
               onChange={(v) => onFormChange({ ...form, project: v })}
               options={[
@@ -100,7 +98,6 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               ]}
             />
             <CustomSelect
-              className="portal-input"
               value={form.entity}
               onChange={(v) => onFormChange({ ...form, entity: v })}
               options={[
@@ -118,7 +115,6 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               onChange={(e) => onFormChange({ ...form, budget: e.target.value })}
             />
             <CustomSelect
-              className="portal-input"
               value={form.priority}
               onChange={(v) => onFormChange({ ...form, priority: v })}
               options={[
@@ -129,14 +125,12 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               ]}
             />
             <CustomSelect
-              className="portal-input"
               value={form.status}
               onChange={(v) => onFormChange({ ...form, status: v })}
               options={CRM_STATUSES.map((s) => ({ value: s.key, label: t(s.labelKey) }))}
             />
             {isSuperAdmin && (
               <CustomSelect
-                className="portal-input"
                 value={form.assignedTo}
                 onChange={(v) => onFormChange({ ...form, assignedTo: v })}
                 options={[
@@ -152,7 +146,6 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               onChange={(e) => onFormChange({ ...form, nextActionAt: e.target.value })}
             />
             <CustomSelect
-              className="portal-input"
               value={form.serviceType}
               onChange={(v) => onFormChange({ ...form, serviceType: v })}
               options={[
@@ -161,7 +154,6 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
               ]}
             />
             <CustomSelect
-              className="portal-input"
               value={form.leadTemperature}
               onChange={(v) => onFormChange({ ...form, leadTemperature: v })}
               options={CRM_TEMPERATURES.map((tp) => ({ value: tp.key, label: t(tp.labelKey) }))}

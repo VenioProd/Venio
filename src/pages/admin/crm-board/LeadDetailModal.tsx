@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
@@ -51,6 +52,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
 }) => {
   const { t } = useI18n()
   const [merging, setMerging] = useState(false)
+  const [notice, setNotice] = useState('')
   const drawerRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef(onClose)
   useEffect(() => {
@@ -61,10 +63,16 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
     const panel = drawerRef.current
     panel?.focus()
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeRef.current()
-      if (event.key !== 'Tab' || !panel) return
+      const activeDialog = document.activeElement?.closest('[role="dialog"], [role="alertdialog"]')
+      if (activeDialog && !panel?.contains(activeDialog)) return
+      const focusPanel = panel?.querySelector<HTMLElement>('[role="dialog"]') ?? panel
+      if (event.key === 'Escape') {
+        if (focusPanel === panel) closeRef.current()
+        return
+      }
+      if (event.key !== 'Tab' || !focusPanel) return
       const controls = Array.from(
-        panel.querySelectorAll<HTMLElement>(
+        focusPanel.querySelectorAll<HTMLElement>(
           'a[href], button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex="0"]',
         ),
       ).filter((element) => element.getClientRects().length > 0)
@@ -74,10 +82,10 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
         event.preventDefault()
         return
       }
-      if (event.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === focusPanel)) {
         event.preventDefault()
         last.focus()
-      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === panel)) {
+      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === focusPanel)) {
         event.preventDefault()
         first.focus()
       }
@@ -88,7 +96,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
       previous?.focus()
     }
   }, [])
-  return (
+  return createPortal(
     <div className="crm-modal-overlay crm-detail-overlay" onClick={onClose}>
       <div
         className="crm-modal crm-detail-drawer"
@@ -130,27 +138,29 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               <strong>{t('crm.detail.service')}</strong>{' '}
               {labelOfValue(t, SERVICE_TYPE_LABEL_KEYS, lead.serviceType) || '—'}
             </p>
-            <p>
-              <strong>{t('crm.detail.project')}</strong>{' '}
-              {PROJECT_MAP[lead.project || ''] ? (
-                <span
-                  style={{
-                    display: 'inline-block',
-                    padding: '2px 10px',
-                    borderRadius: 'var(--r-pill)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: PROJECT_MAP[lead.project || ''].color,
-                    background: `color-mix(in srgb, ${PROJECT_MAP[lead.project || ''].color} 12%, transparent)`,
-                    border: `1px solid color-mix(in srgb, ${PROJECT_MAP[lead.project || ''].color} 30%, transparent)`,
-                  }}
-                >
-                  {t(PROJECT_MAP[lead.project || ''].labelKey)}
-                </span>
-              ) : (
-                '—'
-              )}
-            </p>
+            {lead.project !== leadEntity(lead) && (
+              <p>
+                <strong>{t('crm.detail.project')}</strong>{' '}
+                {PROJECT_MAP[lead.project || ''] ? (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '2px 10px',
+                      borderRadius: 'var(--r-pill)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: PROJECT_MAP[lead.project || ''].color,
+                      background: `color-mix(in srgb, ${PROJECT_MAP[lead.project || ''].color} 12%, transparent)`,
+                      border: `1px solid color-mix(in srgb, ${PROJECT_MAP[lead.project || ''].color} 30%, transparent)`,
+                    }}
+                  >
+                    {t(PROJECT_MAP[lead.project || ''].labelKey)}
+                  </span>
+                ) : (
+                  '—'
+                )}
+              </p>
+            )}
             <p>
               <strong>{t('crm.detail.entity')}</strong> {t(ENTITY_MAP[leadEntity(lead)]!.labelKey)}
             </p>
@@ -197,7 +207,10 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     .filter(Boolean)
                     .join('\n')
                   if (text) {
-                    navigator.clipboard.writeText(text).then(() => alert(t('crm.detail.copied')))
+                    navigator.clipboard
+                      .writeText(text)
+                      .then(() => setNotice(t('crm.detail.copied')))
+                      .catch(() => setNotice(t('crm.detail.copyFailed')))
                   }
                 }}
               >
@@ -205,6 +218,15 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               </button>
             </div>
           </div>
+
+          {notice && (
+            <p className="rich-notice" role="status">
+              {notice}
+              <button type="button" onClick={() => setNotice('')} aria-label={t('common.close')}>
+                ×
+              </button>
+            </p>
+          )}
 
           {/* Actions rapides : statut, chaleur, assignation, prochaine action */}
           {canManageCrm && (
@@ -214,7 +236,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 <div className="crm-modal-quick-field">
                   <label>{t('crm.detail.status')}</label>
                   <CustomSelect
-                    className="portal-input"
                     value={lead.status || 'LEAD'}
                     onChange={(v) => {
                       onLeadChange((prev) => (prev ? { ...prev, status: v } : prev))
@@ -226,7 +247,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 <div className="crm-modal-quick-field">
                   <label>{t('crm.col.entity')}</label>
                   <CustomSelect
-                    className="portal-input"
                     value={leadEntity(lead)}
                     onChange={(v) => {
                       onLeadChange((prev) => (prev ? { ...prev, entity: v } : prev))
@@ -238,7 +258,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 <div className="crm-modal-quick-field">
                   <label>{t('crm.col.temperature')}</label>
                   <CustomSelect
-                    className="portal-input"
                     value={lead.leadTemperature || 'TIEDE'}
                     onChange={(v) => {
                       onLeadChange((prev) => (prev ? { ...prev, leadTemperature: v } : prev))
@@ -250,7 +269,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 <div className="crm-modal-quick-field">
                   <label>{t('crm.detail.assignedTo')}</label>
                   <CustomSelect
-                    className="portal-input"
                     value={lead.assignedTo || ''}
                     onChange={(v) => {
                       const val = v || null
@@ -393,7 +411,8 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

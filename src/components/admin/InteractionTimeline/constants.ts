@@ -13,7 +13,12 @@ export interface KindConfig {
 export const INTERACTION_KINDS: KindConfig[] = [
   { key: 'EMAIL', labelKey: 'compB.timeline.kindEmail', badgeKey: 'compB.timeline.badgeEmail', color: '#0ea5e9' },
   { key: 'CALL', labelKey: 'compB.timeline.kindCall', badgeKey: 'compB.timeline.badgeCall', color: '#8b5cf6' },
-  { key: 'MEETING', labelKey: 'compB.timeline.kindMeeting', badgeKey: 'compB.timeline.badgeMeeting', color: '#f59e0b' },
+  {
+    key: 'MEETING',
+    labelKey: 'compB.timeline.kindMeeting',
+    badgeKey: 'compB.timeline.badgeMeeting',
+    color: 'var(--warning)',
+  },
   { key: 'NOTE', labelKey: 'compB.timeline.kindNote', badgeKey: 'compB.timeline.badgeNote', color: '#64748b' },
 ]
 
@@ -25,7 +30,7 @@ export const SYSTEM_KIND: KindConfig = {
   key: 'NOTE',
   labelKey: 'compB.timeline.kindSystem',
   badgeKey: 'compB.timeline.badgeSystem',
-  color: '#475569',
+  color: 'var(--text-secondary)',
 }
 
 /** Les types qu'on peut consigner à la main. Un email sortant part de son propre composeur. */
