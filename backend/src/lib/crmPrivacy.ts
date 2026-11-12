@@ -59,7 +59,7 @@ export async function suppressedAmong(emails: string[]): Promise<Set<string>> {
   const rows = await SuppressionEntry.find({ emailNormalized: { $in: wanted } })
     .select('emailNormalized')
     .lean()
-  return new Set(rows.map((r) => r.emailNormalized))
+  return new Set(rows.map((r) => r.emailNormalized!))
 }
 
 export async function isEmailSuppressed(email: unknown): Promise<boolean> {

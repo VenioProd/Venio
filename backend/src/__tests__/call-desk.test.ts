@@ -163,7 +163,8 @@ it('ordonne la file par curseur et exclut refus, mauvais numéros, relances futu
   expect((await Lead.findById(wrong._id))!.phoneInvalid).toBe(true)
   expect((await post(`/leads/${wrong._id}/quick-call`, quick('NO_ANSWER'))).status).toBe(409)
   await lead('Sans téléphone', { ...list, contactPhone: '   ' })
-  const blocked = await lead('Refus', list)
+  // Numéro propre : un refus inscrit le numéro en opposition pour toutes les fiches qui le portent.
+  const blocked = await lead('Refus', { ...list, contactPhone: '+33699999999' })
   const refusal = quick('DO_NOT_CALL')
   const [refused, replayed] = await Promise.all([
     post(`/leads/${blocked._id}/quick-call`, refusal),

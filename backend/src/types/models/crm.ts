@@ -104,6 +104,10 @@ export interface ICrmSettings extends Document {
   }[]
   callScriptTags: string[]
   callDefaultRegion: string
+  telephony: {
+    callingHours: { timezone: string; days: number[]; start: string; end: string }
+    attemptCapPerDay: number
+  }
   roundRobinEnabled: boolean
   autoQualifyEnabled: boolean
   autoLastContactOnContacted: boolean

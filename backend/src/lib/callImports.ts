@@ -4,6 +4,7 @@ import { getCountries, parsePhoneNumberFromString, type CountryCode } from 'libp
 import Lead, { LEAD_PROJECTS } from '../models/Lead.js'
 import LeadActivity from '../models/LeadActivity.js'
 import CrmSettings from '../models/CrmSettings.js'
+import SuppressionEntry from '../models/SuppressionEntry.js'
 import User from '../models/User.js'
 import { EXTERNAL_SALES_ROLE, repLeadFilter } from './externalSales.js'
 import { entityFromProject } from './groupEntities.js'
@@ -118,6 +119,20 @@ export async function importCallLeads(input: {
       // Dédoublonnage dans le seul périmètre du destinataire, sans révéler les autres fichiers.
       const existing = await Lead.find(repLeadFilter(input.externalRep)).select('contactPhone').session(session).lean()
       const phones = new Set(existing.map((lead) => normalizePhone(lead.contactPhone, region)).filter(Boolean))
+      // Liste d'opposition : globale, elle vaut quel que soit le commercial destinataire.
+      const candidates = rows.flatMap((row) => {
+        const value = row && typeof row === 'object' ? (row as Record<string, unknown>).contactPhone : null
+        const phone = typeof value === 'string' ? normalizePhone(value.trim(), region) : null
+        return phone ? [phone] : []
+      })
+      const suppressed = new Set(
+        (
+          await SuppressionEntry.find({ phoneNormalized: { $in: candidates } })
+            .select('phoneNormalized')
+            .session(session)
+            .lean()
+        ).map((entry) => entry.phoneNormalized),
+      )
       const creates: Record<string, unknown>[] = []
       const report = { created: 0, duplicates: 0, rejected: 0, errors: [] as { row: number; reason: string }[] }
       for (const [index, row] of rows.entries()) {
@@ -131,6 +146,7 @@ export async function importCallLeads(input: {
         else if (!phone) reason = 'INVALID_PHONE'
         else if (data.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.contactEmail)) reason = 'INVALID_EMAIL'
         else if (Object.values(data).some((value) => value.length > 20000)) reason = 'FIELD_TOO_LONG'
+        else if (suppressed.has(phone)) reason = 'PHONE_SUPPRESSED'
         if (reason) {
           report.rejected++
           report.errors.push({ row: input.csv && typeof item.csvLine === 'number' ? item.csvLine : index + 1, reason })

@@ -98,6 +98,9 @@ import adminActivityCenterRoutes from './routes/admin/activityCenter.js'
 import adminWorkspaceRoutes from './routes/admin/workspace.js'
 import adminHomeRoutes from './routes/admin/home.js'
 import commercialRoutes from './routes/commercial/index.js'
+import telephonyRoutes from './routes/telephony/index.js'
+import { ensurePhoneSuppressionIndexes } from './lib/callGuards.js'
+import { telephonyCspSources } from './lib/telephony/index.js'
 import adminExternalSalesRoutes from './routes/admin/externalSales.js'
 import clientProjectContentRoutes from './routes/client/projectContent.js'
 import clientProjectPhaseRoutes from './routes/client/projectPhases.js'
@@ -149,6 +152,8 @@ if (!mongoUri) {
 // animé est désormais rendu en CSS, donc aucun CDN JavaScript n'est chargé. Si
 // Sentry est activé, son origine est ajoutée à connectSrc.
 const sentryIngest = process.env.SENTRY_DSN ? new URL(process.env.SENTRY_DSN).origin : null
+// Signalisation du SDK Voice de Twilio : ouverte seulement quand la téléphonie est configurée.
+const telephonyCsp = telephonyCspSources()
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -160,7 +165,8 @@ app.use(
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com'],
             imgSrc: ["'self'", 'data:', 'blob:'],
-            connectSrc: ["'self'", ...(sentryIngest ? [sentryIngest] : [])],
+            connectSrc: ["'self'", ...(sentryIngest ? [sentryIngest] : []), ...telephonyCsp.connectSrc],
+            ...(telephonyCsp.mediaSrc.length ? { mediaSrc: ["'self'", ...telephonyCsp.mediaSrc] } : {}),
             frameSrc: ["'self'", 'blob:'],
             objectSrc: ["'none'"],
             baseUri: ["'self'"],
@@ -221,6 +227,8 @@ app.use(
 // via express.raw() puis parse manuellement le JSON.
 app.use('/api/external', externalRoutes)
 app.use('/api/stripe', stripeRoutes)
+// Webhooks Twilio : formulaire signé, parsé par le routeur lui-même.
+app.use('/api/telephony', telephonyRoutes)
 
 // API agent : limite body plus haute (8 MiB) pour permettre l'upload de
 // documents en base64 (jusqu'à ~5 MiB bruts ≈ 6,7 MiB encodés). Le wrapper
@@ -566,6 +574,8 @@ mongoose
   .then(async () => {
     // Écrites dans les transactions d'encaissement : collection et index doivent préexister.
     await Promise.all([StripeEvent.init(), InvoicePaymentLink.init(), SalesCommission.init()])
+    // Opposition par numéro : l'ancien index unique sur l'adresse refuserait la deuxième entrée « numéro ».
+    await ensurePhoneSuppressionIndexes().catch((err) => logger.error({ err }, 'Phone suppression indexes failed'))
     // Bootstrap SUPER_ADMIN — idempotent, vérifié à chaque démarrage.
     // Note : les migrations one-shot historiques (unset plainPassword, fix slug:null)
     // ont été sorties vers backend/scripts/migrations/. Voir le README de ce dossier.

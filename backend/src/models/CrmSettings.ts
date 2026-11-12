@@ -92,6 +92,29 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
     },
     callScriptTags: { type: [String], default: ['DEFAULT'] },
     callDefaultRegion: { type: String, default: 'FR' },
+    // Téléphonie (lot A) : appliquées par le serveur au lancement et à la mise en relation.
+    telephony: {
+      callingHours: {
+        timezone: {
+          type: String,
+          default: 'Europe/Paris',
+          validate: (value: string) => {
+            try {
+              new Intl.DateTimeFormat('fr-FR', { timeZone: value })
+              return true
+            } catch {
+              return false
+            }
+          },
+        },
+        // 0 = dimanche … 6 = samedi.
+        days: { type: [{ type: Number, min: 0, max: 6 }], default: [1, 2, 3, 4, 5] },
+        start: { type: String, default: '09:00', match: /^([01]\d|2[0-3]):[0-5]\d$/ },
+        end: { type: String, default: '20:00', match: /^([01]\d|2[0-3]):[0-5]\d$/ },
+      },
+      // Tentatives par numéro et par jour local, tous commerciaux confondus.
+      attemptCapPerDay: { type: Number, default: 3, min: 1, max: 20 },
+    },
     roundRobinEnabled: { type: Boolean, default: true },
 
     // ═══════════════════════════════════════════════════════════════
