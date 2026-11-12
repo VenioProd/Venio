@@ -8,6 +8,7 @@ import adminTech from './adminTech'
 import beta from './beta'
 import bulk from './bulk'
 import changeReq from './changeReq'
+import callInsights from './callInsights'
 import commercial from './commercial'
 import client from './client'
 import compA from './compA'
@@ -44,6 +45,7 @@ const messages = {
   ...beta,
   ...bulk,
   ...changeReq,
+  ...callInsights,
   ...commercial,
   ...client,
   ...compA,
