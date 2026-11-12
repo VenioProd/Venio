@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import CrmSequences from '../sequences'
 import { useAuth } from '../../../../context/AuthContext'
 import { useI18n } from '../../../../context/I18nContext'
 import { canAdministerCrm } from '../../../../lib/crmAccess'
@@ -13,9 +15,10 @@ import { handleTabKeys } from './tabKeys'
 import { draftFromRule, emptyDraft, type CrmRule, type CrmRuleRun, type RuleDraft } from './types'
 import './automations.css'
 
-type Section = 'regles' | 'journal' | 'modeles'
+type Section = 'regles' | 'sequences' | 'journal' | 'modeles'
 const SECTIONS: Array<{ key: Section; labelKey: MessageKey }> = [
   { key: 'regles', labelKey: 'crmAuto.tab.rules' },
+  { key: 'sequences', labelKey: 'crmSeq.section' },
   { key: 'journal', labelKey: 'crmAuto.tab.journal' },
   { key: 'modeles', labelKey: 'crmAuto.tab.templates' },
 ]
@@ -28,7 +31,7 @@ interface BuilderState {
 
 const errorText = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback)
 
-export default function CrmAutomations() {
+export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (count: number) => void }) {
   const { t } = useI18n()
   const { user } = useAuth()
   // Réservé SUPER_ADMIN / ADMIN : miroir de la règle serveur (administersCrm).
@@ -39,7 +42,16 @@ export default function CrmAutomations() {
   const [pending, setPending] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [section, setSection] = useState<Section>('regles')
+  const [params, setParams] = useSearchParams()
+  const section = SECTIONS.find((item) => item.key === params.get('section'))?.key ?? 'regles'
+  const setSection = (value: Section) =>
+    setParams(
+      (current) => {
+        current.set('section', value)
+        return current
+      },
+      { replace: true },
+    )
   const [filter, setFilter] = useState<JournalFilter>('all')
   const [version, setVersion] = useState(0)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -59,13 +71,14 @@ export default function CrmAutomations() {
       setRecent(page.items ?? [])
       setRecentTotal(page.total ?? 0)
       setPending(pend.total ?? 0)
+      onPendingCount?.(pend.total ?? 0)
       setLoadError(null)
     } catch (e) {
       setLoadError(errorText(e, t('crmAuto.loadError')))
     } finally {
       setLoading(false)
     }
-  }, [t])
+  }, [t, onPendingCount])
 
   useEffect(() => {
     void reload()
@@ -279,7 +292,10 @@ export default function CrmAutomations() {
             />
           ))}
       </div>
-      <div role="tabpanel" id="crm-auto-panel-journal" aria-labelledby={tabId(1)} hidden={section !== 'journal'}>
+      <div role="tabpanel" id="crm-auto-panel-sequences" aria-labelledby={tabId(1)} hidden={section !== 'sequences'}>
+        {section === 'sequences' && <CrmSequences />}
+      </div>
+      <div role="tabpanel" id="crm-auto-panel-journal" aria-labelledby={tabId(2)} hidden={section !== 'journal'}>
         {section === 'journal' && (
           <RunsJournal
             canAdminister={canAdminister}
@@ -294,7 +310,7 @@ export default function CrmAutomations() {
           />
         )}
       </div>
-      <div role="tabpanel" id="crm-auto-panel-modeles" aria-labelledby={tabId(2)} hidden={section !== 'modeles'}>
+      <div role="tabpanel" id="crm-auto-panel-modeles" aria-labelledby={tabId(3)} hidden={section !== 'modeles'}>
         {section === 'modeles' && <TemplatesGrid canAdminister={canAdminister} onUse={applyTemplate} />}
       </div>
       {recentTotal > 0 && section === 'regles' && (

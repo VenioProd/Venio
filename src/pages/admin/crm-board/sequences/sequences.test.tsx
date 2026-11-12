@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CrmSequences from './index'
@@ -341,17 +342,19 @@ describe('action groupée du board', () => {
   ]
   const setup = (canManageCrm = true) =>
     render(
-      <RichLeadTable
-        project=""
-        onProjectChange={vi.fn()}
-        leads={leads}
-        admins={[]}
-        adminsById={{}}
-        canManageCrm={canManageCrm}
-        onOpenLead={vi.fn()}
-        onReload={vi.fn().mockResolvedValue(undefined)}
-        onError={vi.fn()}
-      />,
+      <MemoryRouter>
+        <RichLeadTable
+          project=""
+          onProjectChange={vi.fn()}
+          leads={leads}
+          admins={[]}
+          adminsById={{}}
+          canManageCrm={canManageCrm}
+          onOpenLead={vi.fn()}
+          onReload={vi.fn().mockResolvedValue(undefined)}
+          onError={vi.fn()}
+        />
+      </MemoryRouter>,
     )
 
   it('« Ajouter à une séquence » apparaît sur la sélection et ouvre le dialogue d’inscription', async () => {
@@ -360,6 +363,7 @@ describe('action groupée du board', () => {
     expect(screen.queryByRole('button', { name: 'Ajouter à une séquence' })).toBeNull()
     fireEvent.click(screen.getByLabelText('Sélectionner Atelier Pivoine'))
     fireEvent.click(screen.getByLabelText('Sélectionner Brasserie Quai 9'))
+    fireEvent.click(screen.getByRole('button', { name: 'Plus' }))
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter à une séquence' }))
     expect(await screen.findByRole('dialog')).toHaveTextContent('2 lead(s) sélectionné(s).')
   })

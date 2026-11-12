@@ -234,8 +234,8 @@
   margin-top: 4px;
 }
 .commercial-call-row.voicemail {
-  border-left: 4px solid #e5484d;
-  background: rgba(229, 72, 77, 0.1);
+  border-left: 4px solid var(--critical);
+  background: var(--critical-surface);
 }
 .commercial-call-row.selected {
   outline: 2px solid var(--primary-light);
@@ -290,4 +290,74 @@
   border: 0;
   padding: 0;
   min-width: 0;
+}
+
+.commercial-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.commercial-tabs .admin-tab {
+  flex: none;
+  white-space: nowrap;
+}
+.commercial-main > * {
+  min-width: 0;
+}
+@media (hover: none), (any-pointer: coarse) {
+  .commercial-call-shortcuts,
+  .commercial-call-outcomes kbd {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .commercial-leads-list {
+    overflow: visible;
+    border: 0;
+  }
+  .commercial-leads-list .admin-table,
+  .commercial-leads-list tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .commercial-leads-list thead {
+    display: none;
+  }
+  .commercial-leads-list tr {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--r-lg);
+    background: var(--bg-secondary);
+  }
+  .commercial-space .commercial-leads-list .admin-table td {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .commercial-leads-list td::before,
+  .commercial-call-row > span::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--text-secondary);
+    font-size: 11px;
+    margin-bottom: 3px;
+  }
+  .commercial-call-columns {
+    display: none;
+  }
+  .commercial-call-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .commercial-call-row > span {
+    min-width: 0;
+  }
 }

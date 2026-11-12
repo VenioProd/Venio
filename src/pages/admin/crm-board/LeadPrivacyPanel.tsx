@@ -71,8 +71,8 @@ export default function LeadPrivacyPanel({ lead, canManageCrm, onUpdateLead, onL
     setBusy('save')
     setMessage(null)
     try {
-      await onUpdateLead(lead._id, patch)
       onLocalChange(local)
+      await onUpdateLead(lead._id, patch)
       load()
     } catch {
       setMessage({ kind: 'error', text: t('crmPrivacy.saveError') })
@@ -143,7 +143,6 @@ export default function LeadPrivacyPanel({ lead, canManageCrm, onUpdateLead, onL
           <label>{t('crmPrivacy.consent.label')}</label>
           {editable ? (
             <CustomSelect
-              className="portal-input"
               value={consent.status}
               onChange={(v) =>
                 void save({ consent: { status: v } }, { consent: { ...consent, status: v as ConsentStatus } })
@@ -158,7 +157,6 @@ export default function LeadPrivacyPanel({ lead, canManageCrm, onUpdateLead, onL
           <label>{t('crmPrivacy.basis.label')}</label>
           {editable ? (
             <CustomSelect
-              className="portal-input"
               value={consent.basis}
               onChange={(v) =>
                 void save({ consent: { basis: v } }, { consent: { ...consent, basis: v as LegalBasis } })

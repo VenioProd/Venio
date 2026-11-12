@@ -1,4 +1,7 @@
 const fr = {
+  'shell.hub.crm.queue': 'À traiter',
+  'shell.hub.crm.pilotage': 'Pilotage',
+  'shell.hub.crm.settings': 'Réglages',
   'shell.zone.commercial': 'Commercial',
   'shell.zone.production': 'Production',
   'shell.zone.organisation': 'Organisation',
@@ -247,7 +250,7 @@ const fr = {
   'shell.hub.crm.title': 'CRM',
   'shell.hub.crm.eyebrow': 'Commercial',
   'shell.hub.crm.subtitle': 'Pipeline, comptes clients, partenaires et automatisations.',
-  'shell.hub.crm.pipeline': 'Pipeline',
+  'shell.hub.crm.pipeline': 'Leads',
   'shell.hub.crm.comptes': 'Comptes clients',
   'shell.hub.crm.partenaires': 'Partenaires',
   'shell.hub.crm.automatisations': 'Automatisations',

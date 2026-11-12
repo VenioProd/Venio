@@ -14,7 +14,7 @@ export interface CrmOption {
 export const CRM_STATUSES: CrmOption[] = [
   { key: 'LEAD', labelKey: 'crm.status.lead', color: 'var(--cat-2)' },
   { key: 'QUALIFIED', labelKey: 'crm.status.qualified', color: 'var(--primary)' },
-  { key: 'CONTACTED', labelKey: 'crm.status.contacted', color: 'var(--cat-2)' },
+  { key: 'CONTACTED', labelKey: 'crm.status.contacted', color: 'var(--good)' },
   { key: 'DEMO', labelKey: 'crm.status.demo', color: 'var(--warning)' },
   { key: 'PROPOSAL', labelKey: 'crm.status.proposal', color: 'var(--cat-3)' },
   { key: 'WON', labelKey: 'crm.status.won', color: 'var(--good)' },
@@ -94,7 +94,7 @@ export const DEFAULT_ENTITY = 'VENIO'
 export const CRM_TEMPERATURES: CrmOption[] = [
   { key: 'FROID', labelKey: 'crm.temperature.cold', color: 'var(--text-muted)' },
   { key: 'TIEDE', labelKey: 'crm.temperature.warm', color: 'var(--warning)' },
-  { key: 'CHAUD', labelKey: 'crm.temperature.hot', color: 'var(--cat-3)' },
+  { key: 'CHAUD', labelKey: 'crm.temperature.hot', color: 'var(--warning)' },
   { key: 'TRES_CHAUD', labelKey: 'crm.temperature.veryHot', color: 'var(--critical)' },
 ]
 

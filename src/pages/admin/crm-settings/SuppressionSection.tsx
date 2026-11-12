@@ -113,10 +113,10 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
     }
   }
 
-  const cell: React.CSSProperties = { textAlign: 'left', padding: '6px 8px', fontSize: 13 }
+  const cell: React.CSSProperties = { textAlign: 'left', padding: '6px 8px', fontSize: 13, whiteSpace: 'nowrap' }
 
   return (
-    <section className="crm-settings-section" aria-labelledby="crm-settings-suppression">
+    <section className="crm-settings-section crm-settings-suppression" aria-labelledby="crm-settings-suppression">
       <div className="crm-settings-section-header">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
           <circle cx="12" cy="12" r="10" />
@@ -166,8 +166,8 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
           {data.entries.length === 0 ? (
             <p>{query ? t('crmSuppression.emptySearch') : t('crmSuppression.empty')}</p>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="crm-suppression-scroll">
+              <table className="crm-suppression-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={cell}>{t('crmSuppression.col.email')}</th>
@@ -215,7 +215,9 @@ const SuppressionSection: React.FC<Props> = ({ canManage }) => {
               >
                 {t('crmSuppression.prev')}
               </button>
-              <span style={{ fontSize: 13 }}>{t('crmSuppression.page', { page: data.page, pages: data.pages })}</span>
+              <span style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                {t('crmSuppression.page', { page: data.page, pages: data.pages })}
+              </span>
               <button
                 type="button"
                 className="portal-button secondary"

@@ -438,9 +438,9 @@
 }
 
 .forecast-goal-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  align-items: end;
   gap: 12px;
   margin: 12px 0 16px;
 }
@@ -460,4 +460,32 @@
 
 .forecast-goals input[type='number'] {
   width: 110px;
+}
+
+.forecast-goals .forecast-goal-form .portal-input {
+  width: 100%;
+  margin: 0;
+}
+.forecast-goal-form label {
+  min-width: 0;
+}
+.pilotage-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.forecast-goals {
+  min-width: 0;
+  overflow-x: auto;
+}
+.forecast-goal-actions {
+  flex-wrap: wrap;
+}
+
+.forecast-goals .pilotage-table,
+.forecast-table,
+.pilotage-table-scroll .pilotage-table td:first-child {
+  white-space: nowrap;
+}
+[data-theme='light'] .pilotage-periods button.active {
+  color: var(--text-primary);
 }

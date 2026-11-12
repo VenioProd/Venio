@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CrmBoard from './index'
@@ -13,7 +13,10 @@ import { fetchPilotage } from '../../../services/pilotage'
 /** Chantier 3A — entité du groupe dans le board CRM : filtre, badge, formulaire. */
 
 vi.mock('../../../lib/api', () => ({ apiFetch: vi.fn() }))
-vi.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'u1', role: 'SUPER_ADMIN' } }) }))
+const scope = vi.hoisted(() => ({ crmEntities: [] as string[] }))
+vi.mock('../../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { _id: 'u1', role: 'SUPER_ADMIN', crmEntities: scope.crmEntities } }),
+}))
 vi.mock('../../../components/admin/InteractionTimeline', () => ({ default: () => <p>Interaction timeline</p> }))
 vi.mock('../../../components/admin/RevenueChain', () => ({ default: () => <p>Revenue chain</p> }))
 
@@ -22,6 +25,7 @@ const decisio: Lead = { _id: 'lead-decisio', company: 'Cabinet Decisio', status:
 const legacy: Lead = { _id: 'lead-legacy', company: 'Ancien client', status: 'LEAD' }
 
 beforeEach(() => {
+  scope.crmEntities = []
   vi.mocked(apiFetch).mockReset()
   vi.mocked(apiFetch).mockImplementation(async (path: string) => {
     if (path === '/api/admin/crm/pipeline') return { columns: [{ status: 'LEAD', leads: [arrow, decisio, legacy] }] }
@@ -137,11 +141,19 @@ describe('formulaire lead / sélecteur d’entité', () => {
         onSubmit={vi.fn()}
       />,
     )
-    fireEvent.click(screen.getByText('Entité (selon le projet)'))
+    const select = screen.getByRole('combobox', { name: 'Entité (selon le projet)' })
     for (const label of ['Venio', 'Creatio', 'Decisio', 'Formatio']) {
-      expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
+      expect(within(select).getByRole('option', { name: label })).toBeInTheDocument()
     }
-    fireEvent.click(screen.getByRole('button', { name: 'Formatio' }))
+    fireEvent.change(select, { target: { value: 'FORMATIO' } })
     expect(onFormChange).toHaveBeenCalledWith(expect.objectContaining({ entity: 'FORMATIO' }))
   })
+})
+
+it('limite le filtre Entité au périmètre CRM du profil', async () => {
+  scope.crmEntities = ['ARROW']
+  const { container } = renderBoard('/admin/crm')
+  await screen.findByText('École Arrow')
+  const values = [...entitySelect(container).options].map((option) => option.value)
+  expect(values).toEqual(['', 'ARROW'])
 })

@@ -33,6 +33,14 @@ const MergeLeadDialog: React.FC<MergeLeadDialogProps> = ({ lead, candidates, onC
   const [error, setError] = useState('')
 
   useEffect(() => {
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCancel()
+    }
+    document.addEventListener('keydown', close)
+    return () => document.removeEventListener('keydown', close)
+  }, [onCancel])
+
+  useEffect(() => {
     let cancelled = false
     void fetchDuplicates({
       company: lead.company,
@@ -94,7 +102,7 @@ const MergeLeadDialog: React.FC<MergeLeadDialogProps> = ({ lead, candidates, onC
               <p>{t('crm.merge.confirm', { source: lead.company, target: target.company })}</p>
               <p style={{ fontSize: 13, opacity: 0.8 }}>{t('crm.merge.consequences', { target: target.company })}</p>
               {error && (
-                <p role="alert" style={{ color: 'var(--danger, #c00)' }}>
+                <p role="alert" style={{ color: 'var(--critical)' }}>
                   {error}
                 </p>
               )}

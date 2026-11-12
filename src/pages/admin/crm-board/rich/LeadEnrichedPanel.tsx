@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from '../../../../context/I18nContext'
 import type { MessageKey } from '../../../../i18n'
-import NewBadge from './NewBadge'
 import type { Lead } from '../../../../types/crm.types'
 import {
   fetchLeadDocuments,
@@ -47,19 +46,44 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
   const [failed, setFailed] = useState(false)
   const [tagDraft, setTagDraft] = useState('')
 
+  const [retry, setRetry] = useState(0)
   useEffect(() => {
+    let active = true
     setFailed(false)
-    const onError = () => setFailed(true)
-    if (tab === 'taches' && !tasks) fetchLeadTasks(lead._id).then(setTasks).catch(onError)
-    if (tab === 'documents' && !docs) fetchLeadDocuments(lead._id).then(setDocs).catch(onError)
-    if (tab === 'automatisations' && !runs) fetchLeadRuns(lead._id).then(setRuns).catch(onError)
-  }, [tab, lead._id, tasks, docs, runs])
+    setTasks(null)
+    setDocs(null)
+    setRuns(null)
+    const onError = () => {
+      if (active) setFailed(true)
+    }
+    if (tab === 'taches')
+      fetchLeadTasks(lead._id)
+        .then((value) => {
+          if (active) setTasks(value)
+        })
+        .catch(onError)
+    if (tab === 'documents')
+      fetchLeadDocuments(lead._id)
+        .then((value) => {
+          if (active) setDocs(value)
+        })
+        .catch(onError)
+    if (tab === 'automatisations')
+      fetchLeadRuns(lead._id)
+        .then((value) => {
+          if (active) setRuns(value)
+        })
+        .catch(onError)
+    return () => {
+      active = false
+    }
+  }, [tab, lead._id, retry])
 
   const save = async (patch: Record<string, unknown>) => {
-    await onUpdateLead(lead._id, patch)
     const local: Partial<Lead> = { ...(patch as Partial<Lead>) }
     if ('automationPaused' in patch) local.automationPausedAt = patch.automationPaused ? new Date().toISOString() : null
     onLocalChange(local)
+    await onUpdateLead(lead._id, patch)
   }
   const tags = lead.tags ?? []
 
@@ -81,7 +105,14 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
         ))}
       </div>
       <div role="tabpanel" id={`rich-panel-${tab}`} aria-labelledby={`rich-tab-${tab}`} className="rich-pbody">
-        {failed && <p className="rich-dim">{t('crmRich.panel.loadFailed')}</p>}
+        {failed && (
+          <div role="alert">
+            <p className="rich-dim">{t('crmRich.panel.loadFailed')}</p>
+            <button type="button" className="rich-btn" onClick={() => setRetry((value) => value + 1)}>
+              {t('crmRich.panel.retry')}
+            </button>
+          </div>
+        )}
 
         {tab === 'valeur' && (
           <>
@@ -91,31 +122,23 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                 <b>{formatEuro(lead.budget)}</b>
               </div>
               <div>
-                <small>
-                  {t('crmRich.panel.probability')}
-                  <NewBadge />
-                </small>
+                <small>{t('crmRich.panel.probability')}</small>
                 <b>{probabilityOf(lead)} %</b>
               </div>
               <div>
-                <small>
-                  {t('crmRich.panel.weighted')}
-                  <NewBadge />
-                </small>
+                <small>{t('crmRich.panel.weighted')}</small>
                 <b>{formatEuro(weightedOf(lead) || null)}</b>
               </div>
             </div>
             {canManageCrm && (
               <div className="rich-pgrid">
                 <label>
-                  <span>
-                    {t('crmRich.panel.probabilityPct')}
-                    <NewBadge />
-                  </span>
+                  <span>{t('crmRich.panel.probabilityPct')}</span>
                   <input
                     type="number"
                     min={0}
                     max={100}
+                    key={`${lead._id}:${lead.probability ?? ''}`}
                     defaultValue={lead.probability ?? ''}
                     placeholder={t('crmRich.panel.byStage', { value: probabilityOf(lead) })}
                     onBlur={(e) =>
@@ -125,12 +148,10 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                   />
                 </label>
                 <label>
-                  <span>
-                    {t('crmRich.panel.expectedClose')}
-                    <NewBadge />
-                  </span>
+                  <span>{t('crmRich.panel.expectedClose')}</span>
                   <input
                     type="date"
+                    key={`${lead._id}:${lead.expectedCloseAt ?? ''}`}
                     defaultValue={lead.expectedCloseAt?.slice(0, 10) ?? ''}
                     onBlur={(e) =>
                       e.target.value !== (lead.expectedCloseAt?.slice(0, 10) ?? '') &&
@@ -139,11 +160,9 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                   />
                 </label>
                 <label>
-                  <span>
-                    {t('crmRich.panel.nextAction')}
-                    <NewBadge />
-                  </span>
+                  <span>{t('crmRich.panel.nextAction')}</span>
                   <input
+                    key={`${lead._id}:${lead.nextActionLabel ?? ''}`}
                     defaultValue={lead.nextActionLabel ?? ''}
                     maxLength={200}
                     onBlur={(e) =>
@@ -152,11 +171,9 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                   />
                 </label>
                 <label>
-                  <span>
-                    {t('crmRich.panel.sector')}
-                    <NewBadge />
-                  </span>
+                  <span>{t('crmRich.panel.sector')}</span>
                   <input
+                    key={`${lead._id}:${lead.sector ?? ''}`}
                     defaultValue={lead.sector ?? ''}
                     maxLength={80}
                     onBlur={(e) => e.target.value !== (lead.sector ?? '') && save({ sector: e.target.value })}
@@ -165,10 +182,7 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
               </div>
             )}
             <div>
-              <small className="rich-sect">
-                {t('crmRich.panel.tags')}
-                <NewBadge />
-              </small>
+              <small className="rich-sect">{t('crmRich.panel.tags')}</small>
               <div className="rich-tags">
                 {tags.map((x) => (
                   <span key={x}>
@@ -211,10 +225,7 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
             </div>
             <dl className="rich-dl">
               <div>
-                <dt>
-                  {t('crmRich.panel.source')}
-                  <NewBadge />
-                </dt>
+                <dt>{t('crmRich.panel.source')}</dt>
                 <dd>
                   {lead.source || '—'}
                   {lead.sourceDetail ? ` · ${lead.sourceDetail}` : ''}
@@ -232,16 +243,14 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
                   checked={Boolean(lead.automationPausedAt)}
                   onChange={(e) => save({ automationPaused: e.target.checked })}
                 />
-                <span>
-                  {t('crmRich.panel.pauseAutomations')}
-                  <NewBadge />
-                </span>
+                <span>{t('crmRich.panel.pauseAutomations')}</span>
               </label>
             )}
           </>
         )}
 
-        {tab === 'taches' &&
+        {!failed &&
+          tab === 'taches' &&
           (tasks === null ? (
             <p className="rich-dim">{t('crmRich.panel.loading')}</p>
           ) : tasks.length === 0 ? (
@@ -261,7 +270,8 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
             </ul>
           ))}
 
-        {tab === 'documents' &&
+        {!failed &&
+          tab === 'documents' &&
           (docs === null ? (
             <p className="rich-dim">{t('crmRich.panel.loading')}</p>
           ) : docs.quotes.length + docs.projects.length === 0 ? (
@@ -288,7 +298,8 @@ export default function LeadEnrichedPanel({ lead, canManageCrm, onUpdateLead, on
             </ul>
           ))}
 
-        {tab === 'automatisations' &&
+        {!failed &&
+          tab === 'automatisations' &&
           (runs === null ? (
             <p className="rich-dim">{t('crmRich.panel.loading')}</p>
           ) : runs.length === 0 ? (

@@ -7,7 +7,7 @@ export interface AdminHubDefinition {
   titleKey: MessageKey
   eyebrowKey: MessageKey
   subtitleKey: MessageKey
-  tabs: readonly { id: string; labelKey: MessageKey; to: string; modules: readonly ModuleId[] }[]
+  tabs: readonly { id: string; labelKey: MessageKey; to: string; modules: readonly ModuleId[]; permission?: string }[]
 }
 
 export function canAccessHubModule(user: User | null, module: ModuleId): boolean {
@@ -77,7 +77,15 @@ export const ADMIN_HUBS = {
     eyebrowKey: 'shell.hub.crm.eyebrow',
     subtitleKey: 'shell.hub.crm.subtitle',
     tabs: [
+      { id: 'queue', labelKey: 'shell.hub.crm.queue', to: '/admin/crm/a-traiter', modules: ['crm'] },
       { id: 'pipeline', labelKey: 'shell.hub.crm.pipeline', to: '/admin/crm', modules: ['crm'] },
+      { id: 'pilotage', labelKey: 'shell.hub.crm.pilotage', to: '/admin/crm/pilotage', modules: ['crm'] },
+      {
+        id: 'automatisations',
+        labelKey: 'shell.hub.crm.automatisations',
+        to: '/admin/crm/automatisations',
+        modules: ['crm'],
+      },
       { id: 'comptes', labelKey: 'shell.hub.crm.comptes', to: '/admin/crm/comptes', modules: ['clients'] },
       {
         id: 'partenaires',
@@ -86,12 +94,12 @@ export const ADMIN_HUBS = {
         modules: ['external-sales'],
       },
       {
-        id: 'automatisations',
-        labelKey: 'shell.hub.crm.automatisations',
-        to: '/admin/crm/automatisations',
+        id: 'reglages',
+        labelKey: 'shell.hub.crm.settings',
+        to: '/admin/crm/reglages',
         modules: ['crm'],
+        permission: 'manage_crm',
       },
-      { id: 'sequences', labelKey: 'crmSeq.section', to: '/admin/crm/sequences', modules: ['crm'] },
     ],
   },
   projets: {

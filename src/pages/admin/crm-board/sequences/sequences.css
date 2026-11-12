@@ -18,7 +18,7 @@
 .crm-seq .crm-seq-meta {
   display: block;
   margin-top: 2px;
-  color: var(--dim);
+  color: var(--text-muted);
 }
 .crm-seq .crm-seq-block {
   display: block;
@@ -39,7 +39,7 @@
 }
 .crm-seq-stats dt {
   font-size: 11px;
-  color: var(--dim);
+  color: var(--text-muted);
 }
 .crm-seq-stats dd {
   margin: 2px 0 0;
@@ -247,4 +247,10 @@
   .crm-seq-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.crm-seq,
+.crm-seq-builder,
+.crm-seq-enroll {
+  --dim: var(--text-muted);
 }

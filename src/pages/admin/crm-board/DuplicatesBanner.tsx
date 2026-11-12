@@ -15,11 +15,12 @@ import {
  * téléphone. Informatif : ne bloque jamais la saisie (le blocage éventuel est
  * un réglage serveur).
  */
-const DuplicatesBanner: React.FC<DuplicateQuery> = ({
+const DuplicatesBanner: React.FC<DuplicateQuery & { onMerge?: () => void }> = ({
   company = '',
   contactEmail = '',
   contactPhone = '',
   excludeId,
+  onMerge,
 }) => {
   const { t } = useI18n()
   const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([])
@@ -51,11 +52,16 @@ const DuplicatesBanner: React.FC<DuplicateQuery> = ({
         margin: '12px 0',
         padding: '10px 14px',
         borderRadius: 8,
-        border: '1px solid #d97706',
-        background: 'color-mix(in srgb, #d97706 10%, transparent)',
+        border: '1px solid var(--warning)',
+        background: 'color-mix(in srgb, var(--warning) 10%, transparent)',
       }}
     >
       <strong>{t('crm.duplicates.title', { count: duplicates.length })}</strong>
+      {onMerge && (
+        <button type="button" className="portal-button secondary" onClick={onMerge}>
+          {t('crm.merge.open')}
+        </button>
+      )}
       <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
         {duplicates.map((d) => (
           <li key={d._id}>

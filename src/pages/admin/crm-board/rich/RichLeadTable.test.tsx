@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RichLeadTable from './RichLeadTable'
+import { exportToCsv } from '../../../../lib/exportCsv'
 import { weightedOf, probabilityOf } from './columns'
 import type { Lead } from '../../../../types/crm.types'
 
@@ -38,8 +40,17 @@ const setup = (extra: Partial<Parameters<typeof RichLeadTable>[0]> = {}) => {
     onError: vi.fn(),
     ...extra,
   }
-  render(<RichLeadTable {...props} />)
+  render(
+    <MemoryRouter initialEntries={['/admin/crm?project=ARROW&mode=liste']}>
+      <RichLeadTable {...props} />
+      <Location />
+    </MemoryRouter>,
+  )
   return props
+}
+
+function Location() {
+  return <output data-testid="url">{useLocation().search}</output>
 }
 
 describe('valeurs dérivées', () => {
@@ -51,19 +62,26 @@ describe('valeurs dérivées', () => {
   })
 })
 
-describe('<RichLeadTable />', () => {
-  beforeEach(() => {
-    apiFetch.mockReset()
-    apiFetch.mockResolvedValue({ items: [] })
-    localStorage.clear()
-  })
+beforeEach(() => {
+  apiFetch.mockReset()
+  apiFetch.mockResolvedValue({ items: [] })
+  localStorage.clear()
+})
 
-  it('affiche les colonnes par défaut triées par pondéré et ouvre la fiche', () => {
-    const props = setup()
+describe('<RichLeadTable />', () => {
+  it('trie l’activité récente d’abord, conserve les absents en dernier et ouvre la fiche', () => {
+    const props = setup({
+      leads: [
+        { ...leads[0], createdAt: '2026-11-12' },
+        { ...leads[1], lastInteractionAt: '2026-10-01' },
+        { ...leads[2], lastInteractionAt: '2026-11-01' },
+      ],
+    })
     const rows = screen.getAllByRole('row').slice(1)
-    expect(within(rows[0]).getByText('Atelier Pivoine')).toBeInTheDocument()
+    expect(within(rows[0]).getByText('Cèdres')).toBeInTheDocument()
+    expect(within(rows[2]).getByText('Atelier Pivoine')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Brasserie Quai 9/ }))
-    expect(props.onOpenLead).toHaveBeenCalledWith(leads[1])
+    expect(props.onOpenLead).toHaveBeenCalledWith(expect.objectContaining({ _id: 'b' }))
   })
 
   it('ajoute une colonne depuis le panneau et mémorise le choix', () => {
@@ -95,6 +113,45 @@ describe('<RichLeadTable />', () => {
     await waitFor(() => expect(props.onReload).toHaveBeenCalled())
     const call = apiFetch.mock.calls.find(([p]) => String(p).includes('/leads/bulk'))!
     expect(JSON.parse(call[1].body)).toMatchObject({ action: 'archive', ids: expect.arrayContaining(['a', 'b', 'c']) })
+  })
+
+  it('porte les filtres et le tri dans l’URL sans perdre le mode ni le projet', () => {
+    setup()
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Atelier' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Lead' }))
+    const params = new URLSearchParams(screen.getByTestId('url').textContent!)
+    expect(params.get('q')).toBe('Atelier')
+    expect(params.get('sort')).toBe('company')
+    expect(params.get('dir')).toBe('asc')
+    expect(params.get('mode')).toBe('liste')
+    expect(params.get('project')).toBe('ARROW')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Vues enregistrées' }), { target: { value: 'hot' } })
+    const hot = new URLSearchParams(screen.getByTestId('url').textContent!)
+    expect(hot.get('q')).toBeNull()
+    expect(hot.get('project')).toBeNull()
+    expect(hot.get('temperature')).toBe('HOT')
+    expect(hot.get('sort')).toBe('company')
+  })
+
+  it('saisit un tag dans un dialogue avant de l’envoyer aux leads sélectionnés', async () => {
+    apiFetch.mockImplementation((path: string) =>
+      Promise.resolve(path.includes('/bulk') ? { ok: 3, failed: 0 } : { items: [] }),
+    )
+    setup()
+    fireEvent.click(screen.getByLabelText('Tout sélectionner'))
+    fireEvent.click(screen.getByRole('button', { name: 'Plus' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Tag' }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'Prioritaire' } })
+    expect(apiFetch.mock.calls.some(([p]) => String(p).includes('/bulk'))).toBe(false)
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirmer' }))
+    await waitFor(() =>
+      expect(
+        apiFetch.mock.calls.some(
+          ([p, opts]) => String(p).includes('/bulk') && JSON.parse(opts.body).payload.tag === 'Prioritaire',
+        ),
+      ).toBe(true),
+    )
   })
 
   it('n’offre ni sélection ni actions groupées sans droit d’écriture', () => {
@@ -133,4 +190,37 @@ describe('<RichLeadTable />', () => {
       columns: expect.arrayContaining(['company', 'status']),
     })
   })
+})
+
+it('charge les archivés et restaure une ligne sans exposer les leads actifs', async () => {
+  apiFetch.mockImplementation(async (path: string) => {
+    if (path.includes('archived=true'))
+      return { leads: [{ _id: 'old', company: 'Ancien lead', status: 'LEAD', archivedAt: '2026-01-01' }] }
+    if (path.includes('/bulk')) return { ok: 1, failed: 0, results: [{ id: 'old', ok: true }] }
+    return { items: [] }
+  })
+  setup()
+  fireEvent.change(screen.getByRole('combobox', { name: 'Vues enregistrées' }), { target: { value: 'archived' } })
+  expect(await screen.findByText('Ancien lead')).toBeInTheDocument()
+  expect(screen.queryByText('Atelier Pivoine')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Restaurer' }))
+  await waitFor(() => expect(screen.queryByText('Ancien lead')).not.toBeInTheDocument())
+  expect(
+    apiFetch.mock.calls.some(([path, opts]) => path.includes('/bulk') && JSON.parse(opts.body).action === 'restore'),
+  ).toBe(true)
+})
+
+it('exporte les lignes filtrées et les colonnes affichées depuis le bouton de l’en-tête', async () => {
+  const exportRef = { current: null as (() => void) | null }
+  setup({ project: 'ARROW', exportRef })
+  fireEvent.click(screen.getByRole('button', { name: /Colonnes/ }))
+  fireEvent.click(screen.getByLabelText(/Secteur/))
+  exportRef.current?.()
+  expect(exportToCsv).toHaveBeenLastCalledWith('crm-leads.csv', expect.arrayContaining(['Lead', 'Secteur']), [
+    expect.arrayContaining(['Atelier Pivoine']),
+  ])
+  const calls = vi.mocked(exportToCsv).mock.calls
+  const [, headers, rows] = calls[calls.length - 1]
+  expect(headers).toHaveLength(8)
+  expect(rows[0]).toHaveLength(8)
 })

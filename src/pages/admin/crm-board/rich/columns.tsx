@@ -16,8 +16,6 @@ export interface RichColumn {
   key: string
   labelKey: MessageKey
   group: 'identity' | 'pipeline' | 'links' | 'origin' | 'team' | 'value' | 'activity' | 'qualification'
-  /** Donnée ou colonne apparue avec l'enrichissement du CRM. */
-  isNew?: boolean
   align?: 'right'
   /** Colonne obligatoire : identifie la ligne. */
   locked?: boolean
@@ -118,7 +116,6 @@ export const RICH_COLUMNS: RichColumn[] = [
     key: 'sourceDetail',
     labelKey: 'crmRich.col.sourceDetail',
     group: 'origin',
-    isNew: true,
     sortValue: (l) => l.sourceDetail || '',
     render: (l) => (l.sourceDetail ? <span className="rich-dim">{l.sourceDetail}</span> : dash),
     csv: (l) => l.sourceDetail || '',
@@ -130,7 +127,9 @@ export const RICH_COLUMNS: RichColumn[] = [
     sortValue: (l, { adminsById }) => adminsById[l.assignedTo || '']?.name || 'zzz',
     render: (l, { adminsById }) =>
       l.assignedTo && adminsById[l.assignedTo] ? (
-        adminsById[l.assignedTo].name
+        <span className="rich-ellipsis" title={adminsById[l.assignedTo].name}>
+          {adminsById[l.assignedTo].name}
+        </span>
       ) : (
         <span className="rich-pill rich-pill--warn">
           <i />
@@ -160,7 +159,6 @@ export const RICH_COLUMNS: RichColumn[] = [
     key: 'probability',
     labelKey: 'crmRich.col.probability',
     group: 'value',
-    isNew: true,
     sortValue: (l) => probabilityOf(l),
     render: (l) => (
       <span className="rich-prob">
@@ -176,7 +174,6 @@ export const RICH_COLUMNS: RichColumn[] = [
     key: 'weighted',
     labelKey: 'crmRich.col.weighted',
     group: 'value',
-    isNew: true,
     align: 'right',
     sortValue: (l) => weightedOf(l),
     render: (l) => <span className="rich-num">{weightedOf(l) ? formatEuro(weightedOf(l)) : '—'}</span>,
@@ -186,7 +183,6 @@ export const RICH_COLUMNS: RichColumn[] = [
     key: 'expectedCloseAt',
     labelKey: 'crmRich.col.expectedCloseAt',
     group: 'value',
-    isNew: true,
     sortValue: (l) => l.expectedCloseAt || '',
     render: (l) => <span className="rich-num">{shortDate(l.expectedCloseAt)}</span>,
     csv: (l) => (l.expectedCloseAt ? l.expectedCloseAt.slice(0, 10) : ''),
@@ -195,23 +191,24 @@ export const RICH_COLUMNS: RichColumn[] = [
     key: 'lastInteractionAt',
     labelKey: 'crmRich.col.lastInteractionAt',
     group: 'activity',
-    isNew: true,
-    sortValue: (l, { now }) => daysSince(lastActivityOf(l), now) ?? 9999,
+    sortValue: (l) => (l.lastInteractionAt ? new Date(l.lastInteractionAt).getTime() : 0),
     render: (l, { now }) => {
-      const d = daysSince(lastActivityOf(l), now)
+      const d = daysSince(l.lastInteractionAt ? new Date(l.lastInteractionAt) : null, now)
       return <span className={isOpen(l) && d != null && d >= 7 ? 'rich-late' : ''}>{relDays(d)}</span>
     },
-    csv: (l) => (lastActivityOf(l) ? lastActivityOf(l)!.toISOString().slice(0, 10) : ''),
+    csv: (l) => l.lastInteractionAt?.slice(0, 10) ?? '',
   },
   {
     key: 'nextAction',
     labelKey: 'crmRich.col.nextAction',
     group: 'activity',
-    isNew: true,
     sortValue: (l) => l.nextActionAt || '9',
     render: (l, { now }) =>
       l.nextActionAt || l.nextActionLabel ? (
-        <span className="rich-co">
+        <span
+          className="rich-co rich-ellipsis"
+          title={[l.nextActionLabel, shortDate(l.nextActionAt)].filter(Boolean).join(' — ')}
+        >
           <b>{l.nextActionLabel || translate('crmRich.todo')}</b>
           <span className={isLate(l, now) ? 'rich-late' : ''}>{shortDate(l.nextActionAt)}</span>
         </span>
@@ -253,7 +250,6 @@ export const RICH_COLUMNS: RichColumn[] = [
     key: 'tags',
     labelKey: 'crmRich.col.tags',
     group: 'qualification',
-    isNew: true,
     sortValue: (l) => (l.tags ?? []).join(),
     render: (l) =>
       l.tags?.length ? (
@@ -261,6 +257,7 @@ export const RICH_COLUMNS: RichColumn[] = [
           {l.tags.slice(0, 3).map((x) => (
             <span key={x}>{x}</span>
           ))}
+          {l.tags.length > 3 && <span>+{l.tags.length - 3}</span>}
         </span>
       ) : (
         dash
@@ -271,7 +268,6 @@ export const RICH_COLUMNS: RichColumn[] = [
     key: 'daysInStage',
     labelKey: 'crmRich.col.daysInStage',
     group: 'pipeline',
-    isNew: true,
     align: 'right',
     sortValue: (l, { now }) => daysSince(l.statusChangedAt ? new Date(l.statusChangedAt) : null, now) ?? 0,
     render: (l, { now }) => {
@@ -288,7 +284,6 @@ export const RICH_COLUMNS: RichColumn[] = [
     key: 'sector',
     labelKey: 'crmRich.col.sector',
     group: 'identity',
-    isNew: true,
     sortValue: (l) => l.sector || '',
     render: (l) => l.sector || dash,
     csv: (l) => l.sector || '',
@@ -299,16 +294,11 @@ export const COLUMN_MAP: Record<string, RichColumn> = Object.fromEntries(RICH_CO
 export const DEFAULT_COLUMNS = [
   'company',
   'status',
-  'project',
-  'source',
   'assignedTo',
-  'budget',
-  'probability',
   'weighted',
-  'lastInteractionAt',
   'nextAction',
+  'lastInteractionAt',
   'leadTemperature',
-  'tags',
 ]
 export const COLUMN_GROUPS = [
   'identity',

@@ -78,7 +78,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
         >
           {t(entityInfo.labelKey)}
         </span>
-        {projectInfo && (
+        {projectInfo && lead.project !== entityInfo.key && (
           <span className="crm-project-pill" style={{ '--project-color': projectInfo.color } as React.CSSProperties}>
             {t(projectInfo.labelKey)}
           </span>
@@ -93,13 +93,12 @@ const LeadCard: React.FC<LeadCardProps> = ({
         )}
         {lead.source && <span className="crm-badge">{labelOfValue(t, SOURCE_LABEL_KEYS, lead.source)}</span>}
         {lead.budget != null && (
-          <span className="crm-card-amount">{formatMoney(lead.budget, 'EUR', { maximumFractionDigits: 2 })}</span>
+          <span className="crm-card-amount">{formatMoney(lead.budget, 'EUR', { maximumFractionDigits: 0 })}</span>
         )}
       </div>
       <div className="crm-card-row crm-card-assignee" style={{ marginTop: 8 }}>
         {canManageCrm && (
           <CustomSelect
-            className="portal-input"
             value={lead.assignedTo || ''}
             onChange={(v) => onUpdateLead(lead._id, { assignedTo: v || null })}
             options={[

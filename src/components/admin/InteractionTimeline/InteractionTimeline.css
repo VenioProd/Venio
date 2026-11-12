@@ -157,7 +157,7 @@
   padding: 3px 6px;
   border-radius: var(--r-sm);
   border: 1px solid var(--kind-color, var(--text-muted));
-  color: var(--kind-color, var(--text-muted));
+  color: var(--text-primary);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: normal;

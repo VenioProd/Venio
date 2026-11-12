@@ -255,7 +255,6 @@ describe('Compatibilité des URL admin', () => {
     ['/admin/stagiaires/u1', 'InternDetail'],
     ['/admin/filiales/s1', 'SubsidiaryDetail'],
     ['/admin/demandes-clients/r1', 'ChangeRequestDetail'],
-    ['/admin/crm/leads/l1', 'CrmBoard'],
     ['/admin/dev/issues/i1', 'DevWorkspace'],
     ['/admin/dev/projects/p1', 'DevProjectCockpit'],
     ['/admin/beta/campaigns/c1', 'CampaignCockpit'],
@@ -265,6 +264,13 @@ describe('Compatibilité des URL admin', () => {
     expect(await screen.findByText(`Page ${page}`)).toBeInTheDocument()
     expect(screen.getByLabelText('URL')).toHaveTextContent(path)
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+  })
+
+  it('garde les onglets du CRM sur la fiche d’un lead', async () => {
+    mount('/admin/crm/leads/l1')
+    expect(await screen.findByText('Page CrmBoard')).toBeInTheDocument()
+    expect(screen.getByLabelText('URL')).toHaveTextContent('/admin/crm/leads/l1')
+    expect(screen.getByRole('tablist')).toBeInTheDocument()
   })
 
   it.each(['/admin', '/admin/mon-espace'])(

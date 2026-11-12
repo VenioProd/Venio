@@ -60,21 +60,23 @@ const LeadTableRow: React.FC<LeadTableRowProps> = ({
       className={`crm-table-row ${isOverdue ? 'crm-row-overdue' : ''} ${isCold ? 'crm-row-cold' : ''} ${isStale ? 'crm-row-stale' : ''}`}
     >
       <td className="crm-td crm-td-company">
-        <span className="crm-row-color-indicator" style={{ background: groupColor }} />
-        {lead.company}
-        {alerts.length > 0 && (
-          <span className="crm-alerts-inline">
-            {alerts.map((alert) => (
-              <span
-                key={alert.type}
-                className="crm-alert-badge"
-                style={{ '--alert-color': alert.color } as React.CSSProperties}
-              >
-                {alert.label}
-              </span>
-            ))}
-          </span>
-        )}
+        <div className="crm-company-content">
+          <span className="crm-row-color-indicator" style={{ background: groupColor }} />
+          {lead.company}
+          {alerts.length > 0 && (
+            <span className="crm-alerts-inline">
+              {alerts.map((alert) => (
+                <span
+                  key={alert.type}
+                  className="crm-alert-badge"
+                  style={{ '--alert-color': alert.color } as React.CSSProperties}
+                >
+                  {alert.label}
+                </span>
+              ))}
+            </span>
+          )}
+        </div>
       </td>
       <td className="crm-td" data-label={t('crm.col.contact')}>
         {lead.contactName || '\u2014'}

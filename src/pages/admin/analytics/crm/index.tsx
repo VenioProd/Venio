@@ -20,7 +20,7 @@ import './PilotageSection.css'
  * leads créés dans la période : c'est la seule façon de dire quelque chose d'un
  * taux de passage.
  */
-const PilotageSection: React.FC = () => {
+const PilotageSection: React.FC<{ crmEntities?: string[] }> = ({ crmEntities }) => {
   const { t } = useI18n()
   const [period, setPeriod] = useState<PilotagePeriod>('90d')
   // Entité du groupe ('' : tout le périmètre de l'utilisateur).
@@ -54,8 +54,10 @@ const PilotageSection: React.FC = () => {
 
   const resolveOwner = useMemo(() => {
     const byId = new Map(admins.map((admin) => [admin._id, admin.name]))
-    return (key: string) => byId.get(key) ?? displayKey(key)
-  }, [admins])
+    return (key: string) =>
+      byId.get(key) ??
+      (key === 'NON_RENSEIGNE' ? displayKey(key) : `${t('crmRich.analytics.externalRep')} ${key.slice(-4)}`)
+  }, [admins, t])
 
   return (
     <section className="analytics-chart-card pilotage-section" style={{ marginTop: 24 }}>
@@ -72,7 +74,7 @@ const PilotageSection: React.FC = () => {
             onChange={(event) => setEntity(event.target.value)}
           >
             <option value="">{t('crm.filters.allEntities')}</option>
-            {CRM_ENTITIES.map((option) => (
+            {CRM_ENTITIES.filter((option) => !crmEntities?.length || crmEntities.includes(option.key)).map((option) => (
               <option key={option.key} value={option.key}>
                 {t(option.labelKey)}
               </option>

@@ -82,11 +82,17 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
       <form className="forecast-goal-form" onSubmit={add}>
         <label>
           <span>{t('adminTech.forecast.goalPeriod')}</span>
-          <input type="month" value={period} onChange={(event) => setPeriod(event.target.value)} required />
+          <input
+            className="portal-input"
+            type="month"
+            value={period}
+            onChange={(event) => setPeriod(event.target.value)}
+            required
+          />
         </label>
         <label>
           <span>{t('adminTech.forecast.goalEntity')}</span>
-          <select value={entity} onChange={(event) => setEntity(event.target.value)}>
+          <select className="portal-input" value={entity} onChange={(event) => setEntity(event.target.value)}>
             <option value="">{t('adminTech.forecast.goalAllGroup')}</option>
             {CRM_ENTITIES.map((option) => (
               <option key={option.key} value={option.key}>
@@ -97,7 +103,7 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
         </label>
         <label>
           <span>{t('adminTech.forecast.goalUser')}</span>
-          <select value={userId} onChange={(event) => setUserId(event.target.value)}>
+          <select className="portal-input" value={userId} onChange={(event) => setUserId(event.target.value)}>
             <option value="">{t('adminTech.forecast.goalTeam')}</option>
             {admins.map((admin) => (
               <option key={admin._id} value={admin._id}>
@@ -108,11 +114,19 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
         </label>
         <label>
           <span>{t('adminTech.forecast.goalAmount')}</span>
-          <input type="number" min="0" step="100" value={amount} onChange={(event) => setAmount(event.target.value)} />
+          <input
+            className="portal-input"
+            type="number"
+            min="0"
+            step="100"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+          />
         </label>
         <label>
           <span>{t('adminTech.forecast.goalWonCount')}</span>
           <input
+            className="portal-input"
             type="number"
             min="0"
             step="1"
@@ -120,7 +134,7 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
             onChange={(event) => setWonCount(event.target.value)}
           />
         </label>
-        <button type="submit" className="btn-primary">
+        <button type="submit" className="portal-button">
           {t('adminTech.forecast.goalAdd')}
         </button>
       </form>
@@ -154,6 +168,7 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
                   <td>{userName(goal.userId)}</td>
                   <td>
                     <input
+                      className="portal-input"
                       type="number"
                       min="0"
                       step="100"
@@ -165,6 +180,7 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
                   </td>
                   <td>
                     <input
+                      className="portal-input"
                       type="number"
                       min="0"
                       step="1"
@@ -176,6 +192,7 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
                   <td className="forecast-goal-actions">
                     <button
                       type="button"
+                      className="portal-button secondary"
                       onClick={() =>
                         void run(() =>
                           updateGoal(goal._id, {
@@ -187,7 +204,11 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
                     >
                       {t('adminTech.forecast.goalSave')}
                     </button>
-                    <button type="button" onClick={() => void run(() => deleteGoal(goal._id))}>
+                    <button
+                      type="button"
+                      className="portal-button secondary"
+                      onClick={() => void run(() => deleteGoal(goal._id))}
+                    >
                       {t('adminTech.forecast.goalDelete')}
                     </button>
                   </td>

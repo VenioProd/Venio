@@ -84,7 +84,7 @@ export default function CallsSection({
                   ))}
                 </select>
               </label>
-              <label className="crm-settings-item-controls">
+              <label className="crm-settings-item-controls crm-call-reached">
                 <input
                   type="checkbox"
                   checked={outcome.reached}
