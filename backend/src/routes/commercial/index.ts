@@ -10,6 +10,7 @@ import Interaction from '../../models/Interaction.js'
 import User from '../../models/User.js'
 import SalesCommission from '../../models/SalesCommission.js'
 import CrmSettings from '../../models/CrmSettings.js'
+import Call from '../../models/Call.js'
 import { logLeadActivity, checkDuplicateLead } from '../../lib/crmAutomations.js'
 import { logInteraction } from '../../lib/interactions.js'
 import { createLead, applyLeadChange, isLeadChangeError } from '../../lib/crmLeadService.js'
@@ -285,21 +286,53 @@ router.post(
   body('occurredAt').optional({ values: 'falsy' }).isISO8601().withMessage('Date invalide'),
   body('subject').optional().isString().isLength({ max: 500 }),
   body('body').optional().isString().isLength({ max: 20000 }),
+  body('callId').optional().isMongoId().withMessage('Appel invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (invalid(req, res)) return
       const lead = await findRepLead(req, res)
       if (!lead || rejectHandedOff(lead, res)) return
-      const interaction = await logInteraction({
-        subjectType: 'LEAD',
-        subjectId: lead._id as Types.ObjectId,
-        kind: req.body.kind,
-        direction: req.body.direction,
-        occurredAt: req.body.occurredAt ? new Date(req.body.occurredAt) : undefined,
-        subject: req.body.subject,
-        body: req.body.body,
-        author: req.user!.id,
-      })
+      // Échange relié à un appel passé depuis le navigateur : heure et durée viennent de l'appel,
+      // comme pour quick-call. L'appel est réservé d'abord, pour n'être consigné qu'une fois.
+      let call: { _id: unknown; occurredAt: Date; durationSec: number | null } | null = null
+      if (req.body.callId) {
+        if (req.body.kind !== 'CALL')
+          return res.status(400).json({ error: 'Seul un échange « Appel » se relie à un appel' })
+        const found = await Call.findOne({ _id: req.body.callId, author: req.user!.id, lead: lead._id })
+        if (!found) return res.status(404).json({ error: 'Appel introuvable' })
+        if (found.interaction) return res.status(409).json({ error: 'Appel déjà consigné' })
+        call = {
+          _id: found._id,
+          occurredAt: found.answeredAt ?? found.startedAt ?? found.createdAt,
+          durationSec: found.durationSec,
+        }
+      }
+      const interactionId = new mongoose.Types.ObjectId()
+      if (call) {
+        const reserved = await Call.updateOne(
+          { _id: call._id, interaction: null },
+          { $set: { interaction: interactionId } },
+        )
+        if (!reserved.modifiedCount) return res.status(409).json({ error: 'Appel déjà consigné' })
+      }
+      let interaction: Awaited<ReturnType<typeof logInteraction>>
+      try {
+        interaction = await logInteraction({
+          id: interactionId,
+          subjectType: 'LEAD',
+          subjectId: lead._id as Types.ObjectId,
+          kind: req.body.kind,
+          direction: req.body.direction,
+          occurredAt: call ? call.occurredAt : req.body.occurredAt ? new Date(req.body.occurredAt) : undefined,
+          ...(call && call.durationSec !== null ? { durationSec: call.durationSec } : {}),
+          subject: req.body.subject,
+          body: req.body.body,
+          author: req.user!.id,
+        })
+      } catch (err) {
+        if (call) await Call.updateOne({ _id: call._id, interaction: interactionId }, { $set: { interaction: null } })
+        throw err
+      }
       if (req.body.kind !== 'NOTE') {
         lead.lastContactAt = interaction.occurredAt
         await lead.save()

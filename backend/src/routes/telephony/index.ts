@@ -2,10 +2,9 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import mongoose from 'mongoose'
 import Call, { CALL_STATUSES, TERMINAL_CALL_STATUSES, type ICall } from '../../models/Call.js'
 import Lead from '../../models/Lead.js'
-import User from '../../models/User.js'
 import Interaction from '../../models/Interaction.js'
 import CrmSettings from '../../models/CrmSettings.js'
-import { EXTERNAL_SALES_ROLE, repLeadFilter } from '../../lib/externalSales.js'
+import { callerScope } from '../../lib/callDeskScope.js'
 import { assertCallable, isPhoneSuppressed } from '../../lib/callGuards.js'
 import { normalizePhone } from '../../lib/callImports.js'
 import {
@@ -57,8 +56,10 @@ async function cancelCall(call: ICall, reason: string) {
 /**
  * Mise en relation demandée par le navigateur (`device.connect({ params: { callId } })`).
  * L'appel est retrouvé par son identifiant **et** par l'identité du jeton ; le
- * numéro est relu sur le lead et les gardes sont repassées. Tout autre champ
- * (dont `To`) est ignoré.
+ * numéro est relu sur le lead et les gardes sont repassées dans le périmètre
+ * actuel de l'auteur, externe ou membre de l'équipe (`callerScope`) : auteur
+ * désactivé, sans droit d'appel ou dont le périmètre ne couvre plus la fiche,
+ * refusé. Tout autre champ (dont `To`) est ignoré.
  */
 router.post('/twilio/voice', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -78,11 +79,8 @@ router.post('/twilio/voice', async (req: Request, res: Response, next: NextFunct
     }
     if (call.status !== 'CREATED') return sendTwiml(res, hangupTwiml())
 
-    const [author, lead, settings] = await Promise.all([
-      User.exists({ _id: authorId, role: EXTERNAL_SALES_ROLE, isActive: true }),
-      Lead.findOne({ _id: call.lead, ...repLeadFilter(authorId) }),
-      CrmSettings.getSettings(),
-    ])
+    const [author, settings] = await Promise.all([callerScope(authorId), CrmSettings.getSettings()])
+    const lead = author ? await Lead.findOne({ _id: call.lead, ...author.filter }) : null
     let refusal = ''
     if (!author || !lead) refusal = 'OUT_OF_SCOPE'
     else if (normalizePhone(String(lead.contactPhone ?? ''), settings.callDefaultRegion) !== call.to)
@@ -91,7 +89,7 @@ router.post('/twilio/voice', async (req: Request, res: Response, next: NextFunct
     else {
       try {
         // Le rang réservé au lancement fait foi : les tentatives qui le précèdent sont celles du jour.
-        assertCallable(lead, { now: new Date(), settings, attemptsToday: call.attemptNo - 1 })
+        assertCallable(lead, { now: new Date(), settings, attemptsToday: call.attemptNo - 1, scope: author.kind })
       } catch (err) {
         refusal = (err as { code?: string }).code ?? 'LEAD_NOT_CALLABLE'
       }

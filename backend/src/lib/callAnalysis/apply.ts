@@ -35,6 +35,8 @@ export interface ApplyBody {
 interface Context {
   actor: string
   scope: ApplyScope
+  /** Périmètre de l'équipe (`teamCallLeadFilter`), repassé dans la transaction ; l'externe a `repLeadFilter`. */
+  leadScope?: Record<string, unknown>
 }
 
 const fail = (status: number, code: string, message: string, details: Record<string, unknown> = {}) =>
@@ -67,10 +69,12 @@ function requestHash(body: ApplyBody): string {
   return computeRequestHash({ fields: body.fields ?? [], heat: body.heat ?? null, actions: body.actions ?? [] })
 }
 
-const leadFilter = (analysis: ICallAnalysis, ctx: Context) => ({
-  _id: analysis.lead,
+const scopedLead = (leadId: unknown, ctx: Context) => ({
+  _id: leadId,
   ...(ctx.scope === 'rep' ? repLeadFilter(ctx.actor) : {}),
+  ...(ctx.leadScope ? { $and: [ctx.leadScope] } : {}),
 })
+const leadFilter = (analysis: ICallAnalysis, ctx: Context) => scopedLead(analysis.lead, ctx)
 
 /** Fiche transmise au closer ou sortie du périmètre de l'externe : lecture seule pour lui. */
 function assertWritable(lead: ILead, ctx: Context): void {
@@ -342,17 +346,23 @@ export async function rejectCallAnalysis(analysisId: Types.ObjectId | string, ct
 export async function resolveCallHold(
   leadId: Types.ObjectId | string,
   action: 'CONFIRM' | 'DISMISS',
-  ctx: Context,
+  ctx: Context & { analysisErased?: boolean },
 ): Promise<ILead> {
   if (action === 'DISMISS' && ctx.scope === 'rep')
     throw fail(403, 'OPT_OUT_TEAM_ONLY', 'Seule l’équipe peut lever une opposition détectée')
   return runInTransaction(async (session) => {
-    const lead = await Lead.findOne({ _id: leadId, ...(ctx.scope === 'rep' ? repLeadFilter(ctx.actor) : {}) }).session(
-      session,
-    )
+    const lead = await Lead.findOne(scopedLead(leadId, ctx)).session(session)
     if (!lead) throw fail(404, 'NOT_FOUND', 'Lead not found')
+    // Transmise au closer : l'externe garde la lecture, la décision revient à l'équipe.
+    if (ctx.scope === 'rep' && lead.closingHandoff)
+      throw fail(409, 'LEAD_HANDED_OFF', 'Dossier transmis pour closing : la décision revient au closer')
     if (!lead.callHold) throw fail(409, 'NO_CALL_HOLD', 'Aucune opposition en attente sur cette fiche')
-    const hold = { analysisId: String(lead.callHold.analysis), callId: String(lead.callHold.call) }
+    const hold = {
+      analysisId: String(lead.callHold.analysis),
+      callId: String(lead.callHold.call),
+      // Analyse effacée par une opposition à l'enregistrement : l'équipe décide sur la seule trace de la retenue.
+      ...(ctx.analysisErased ? { analysisErased: true } : {}),
+    }
     await applyLeadChange(
       lead,
       action === 'CONFIRM' ? { callHold: null, doNotCall: true, nextActionAt: null } : { callHold: null },

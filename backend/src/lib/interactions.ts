@@ -97,6 +97,8 @@ export function toTimelineEntry(item: {
 }
 
 export interface LogInteractionInput {
+  /** Identifiant imposé (réservé d'avance, par exemple sur l'appel qu'il consigne). */
+  id?: Types.ObjectId
   automated?: boolean
   subjectType: InteractionSubjectType
   subjectId: Types.ObjectId | string
@@ -141,6 +143,7 @@ export async function syncLeadLastInteraction(
 
 export async function logInteraction(input: LogInteractionInput) {
   const interaction = await Interaction.create({
+    ...(input.id ? { _id: input.id } : {}),
     outcome: input.outcome,
     scriptTag: input.scriptTag,
     durationSec: input.durationSec,
