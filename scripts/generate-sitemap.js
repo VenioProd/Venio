@@ -2,7 +2,7 @@ import { existsSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
-import { publicRoutes, SITE_URL } from './public-routes.js'
+import { NOINDEX_PATHS, publicRoutes, SITE_URL } from './public-routes.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -12,6 +12,7 @@ const currentDate = new Date().toISOString().split('T')[0]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${publicRoutes
+  .filter((route) => !NOINDEX_PATHS.includes(route.path))
   .map(
     (route) => `  <url>
     <loc>${SITE_URL}${route.path || '/'}</loc>

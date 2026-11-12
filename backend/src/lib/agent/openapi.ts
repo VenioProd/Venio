@@ -26,11 +26,19 @@ export interface ExtractedRoute {
   path: string // ex "/clients/:id"
 }
 
+// Express 5 conserve les chemins de montage dans des closures ; les préfixes sont déclarés par l’appelant.
+const mountPrefixes = new WeakMap<Router, string>()
+
 /**
  * Parcourt récursivement la stack Express pour extraire toutes les routes
  * définies. Fonctionne pour les routes directes ET les sous-routeurs montés.
  */
-export function extractRoutes(router: Router, basePath = ''): ExtractedRoute[] {
+export function extractRoutes(
+  router: Router,
+  basePath = '',
+  mounts: ReadonlyMap<Router, string> = new Map(),
+): ExtractedRoute[] {
+  for (const [mountedRouter, prefix] of mounts) mountPrefixes.set(mountedRouter, prefix)
   const out: ExtractedRoute[] = []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stack = (router as unknown as { stack: any[] }).stack || []
@@ -43,31 +51,15 @@ export function extractRoutes(router: Router, basePath = ''): ExtractedRoute[] {
         out.push({ method: m.toUpperCase(), path })
       }
     } else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
-      // Sous-routeur monté avec router.use(prefix, subRouter).
-      // Le préfixe est encodé dans layer.regexp. On essaie de reverse-engineer
-      // un éventuel préfixe simple ; si la regex correspond juste à "/" on
-      // garde basePath inchangé.
-      const subBase = extractPrefixFromRegexp(layer.regexp) || ''
-      out.push(...extractRoutes(layer.handle as Router, basePath + subBase))
+      const subRouter = layer.handle as Router
+      const prefix = mountPrefixes.get(subRouter)
+      if (prefix === undefined && !layer.slash) {
+        throw new Error('Declare the mount prefix for this router when extracting OpenAPI routes')
+      }
+      out.push(...extractRoutes(subRouter, basePath + (prefix ?? '')))
     }
   }
   return out
-}
-
-/**
- * Tente d'extraire un préfixe lisible d'une regex Express. Pour le cas
- * `router.use('/', subRouter)`, retourne '' (pas de préfixe à ajouter).
- * Pour `router.use('/foo', subRouter)`, on parse la source de la regex.
- */
-function extractPrefixFromRegexp(regexp: RegExp | undefined): string {
-  if (!regexp) return ''
-  // Heuristique : on extrait les littéraux entre les meta-chars.
-  // Pour '/' → /^\/?(?=\/|$)/i → retourne ''
-  // Pour '/foo' → /^\/foo\/?(?=\/|$)/i → retourne '/foo'
-  const source = regexp.source
-  const match = source.match(/^\^\\?\/?(.+?)\\\/\?\(\?=\\\/\|\$\)/)
-  if (!match) return ''
-  return '/' + match[1]!.replace(/\\\//g, '/').replace(/\\/g, '')
 }
 
 /**
@@ -144,7 +136,8 @@ export function buildOpenApiSpec(routes: ExtractedRoute[]): Record<string, unkno
                 content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
               },
               '409': {
-                description: 'Conflit (clé d’idempotence réutilisée pour une autre opération, body modifié, ou contrainte)',
+                description:
+                  'Conflit (clé d’idempotence réutilisée pour une autre opération, body modifié, ou contrainte)',
                 content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
               },
             }
@@ -179,8 +172,8 @@ export function buildOpenApiSpec(routes: ExtractedRoute[]): Record<string, unkno
       title: 'Venio Agent API',
       version: '1.0.0',
       description:
-        "API REST de pilotage de Venio par des agents externes (Kuro, intégrations tierces). " +
-        "Auth Bearer + scopes. Cf. docs/api-agent.md pour la doc complète.",
+        'API REST de pilotage de Venio par des agents externes (Kuro, intégrations tierces). ' +
+        'Auth Bearer + scopes. Cf. docs/api-agent.md pour la doc complète.',
     },
     servers: [{ url: '/api/v1/agent' }],
     components: {

@@ -1,0 +1,17 @@
+name: Apple packages
+
+on:
+  pull_request:
+    paths: ['apps/apple/**']
+  push:
+    branches: [main]
+    paths: ['apps/apple/**']
+
+jobs:
+  venio-kit:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test VenioKit
+        working-directory: apps/apple/Packages/VenioKit
+        run: swift test

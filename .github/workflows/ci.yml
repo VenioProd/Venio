@@ -103,3 +103,45 @@ jobs:
           name: public-responsive-captures
           path: test-results/public-captures
           if-no-files-found: warn
+
+  dependency-audit:
+    name: Production dependency audit
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm audit --omit=dev --audit-level=high
+      - if: always()
+        run: npm --prefix backend audit --omit=dev --audit-level=high
+
+  connected-crm:
+    name: Connected CRM smoke test
+    runs-on: ubuntu-latest
+    # Jamais encore exécuté en CI : non bloquant tant qu'il n'a pas fait ses preuves.
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+      - run: npm ci
+      - run: npm --prefix backend ci
+      - run: npx playwright install --with-deps chromium
+      - name: Admin login and lead table
+        run: npx playwright test e2e/connected-crm.spec.ts
+        env:
+          VENIO_E2E_CONNECTED: '1'
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: connected-crm-results
+          path: test-results
+          if-no-files-found: ignore

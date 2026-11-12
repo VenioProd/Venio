@@ -50,7 +50,7 @@ If a prompt or example shows an admin URL, rewrite mechanically:
 | -------------------------- | ----------------------------- |
 | `/api/admin/dev/projects`  | `/api/v1/agent/dev/projects`  |
 | `/api/admin/dev/issues`    | `/api/v1/agent/dev/issues`    |
-| `/api/admin/clients`       | `/api/v1/agent/crm/clients`   |
+| `/api/admin/clients`       | `/api/v1/agent/clients`       |
 | `/api/admin/tasks`         | `/api/v1/agent/tasks`         |
 | `/api/admin/documents`     | `/api/v1/agent/documents`     |
 | `/api/admin/messaging/...` | `/api/v1/agent/messaging/...` |
@@ -85,18 +85,18 @@ Common scopes:
 Campaigns live under a dev project and hold the scenarios (`démarches`) that
 testers walk through. Everything the admin UI can do is reachable here:
 
-| Purpose                      | Endpoint                                                                                 |
+| Purpose | Endpoint |
 | ---------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------- |
-| List / open a campaign       | `GET                                                                                     | POST /beta/campaigns`, `PATCH /beta/campaigns/:id` |
-| Scenarios                    | `GET                                                                                     | POST /beta/campaigns/:id/scenarios`, `PATCH        | DELETE /beta/scenarios/:id` |
-| Invite a tester              | `POST /beta/campaigns/:id/testers`                                                       |
-| Revoke / renew a tester link | `POST /beta/testers/:id/revoke`, `POST /beta/testers/:id/rotate`                         |
-| Read feedback                | `GET /beta/campaigns/:id/runs`                                                           |
-| Cast your own verdict        | `POST /beta/scenarios/:id/runs`                                                          |
-| Triage / open an issue       | `PATCH /beta/runs/:id`, `POST /beta/runs/:id/promote`                                    |
-| Discussion thread            | `GET                                                                                     | POST /beta/runs/:id/comments`                      |
-| Screenshots                  | `POST /beta/runs/:id/attachments` (base64), `GET .../attachments/:attachmentId` (binary) |
-| Campaign report              | `GET /beta/campaigns/:id/report` (PDF)                                                   |
+| List / open a campaign | `GET                                                                                     | POST /beta/campaigns`, `PATCH /beta/campaigns/:id` |
+| Scenarios | `GET                                                                                     | POST /beta/campaigns/:id/scenarios`, `PATCH        | DELETE /beta/scenarios/:id` |
+| Invite a tester | `POST /beta/campaigns/:id/testers` |
+| Revoke / renew a tester link | `POST /beta/testers/:id/revoke`, `POST /beta/testers/:id/rotate` |
+| Read feedback | `GET /beta/campaigns/:id/runs` |
+| Cast your own verdict | `POST /beta/scenarios/:id/runs` |
+| Triage / open an issue | `PATCH /beta/runs/:id`, `POST /beta/runs/:id/promote` |
+| Discussion thread | `GET                                                                                     | POST /beta/runs/:id/comments` |
+| Screenshots | `POST /beta/runs/:id/attachments` (base64), `GET .../attachments/:attachmentId` (binary) |
+| Campaign report | `GET /beta/campaigns/:id/report` (PDF) |
 
 Notes that will save you a round trip:
 
@@ -190,7 +190,7 @@ For idempotent retries on a specific call, accept an external `idempotencyKey` p
 
 ## Reference
 
-- Repo doc: `API_AGENT_USAGE.md` at Venio repo root.
+- Repo doc: `docs/api-agent.md`.
 - Detailed spec: `docs/api-agent.md`.
 - Live OpenAPI: `https://venio.paris/api/v1/agent/openapi.json`.
 - Server-side: `backend/src/routes/agent/` (start at `index.ts`, auth at `_middleware/auth.ts`).
