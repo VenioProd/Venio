@@ -2,6 +2,10 @@ import express, { type Request, type Response } from 'express'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import crypto from 'crypto'
+import { requireAdmin } from '../../../middleware/role.js'
+import { isInternManager, requireInternManager } from './access.js'
+import { attachmentFileFilter, serveUploadedFile } from '../../../lib/attachmentResponse.js'
 import auth from '../../../middleware/auth.js'
 import Intern from '../../../models/Intern.js'
 import ActivityReport from '../../../models/ActivityReport.js'
@@ -12,6 +16,10 @@ import { sendInternReportEmail, sendReportValidatedEmail } from '../../../lib/em
 import { getInternSettings } from '../../../models/InternSettings.js'
 
 const router = express.Router()
+router.use(auth, requireAdmin)
+
+// Chacun saisit et relit ses propres rapports ; ceux des autres sont réservés aux gestionnaires.
+const managesInterns = (req: Request) => isInternManager(req.user?.role)
 
 // ── Upload config for activity reports ──
 const uploadsDir = path.resolve('uploads/reports')
@@ -21,25 +29,26 @@ const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => {
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
-    cb(null, `${Date.now()}-${safeName}`)
+    cb(null, `${crypto.randomUUID()}-${safeName}`)
   },
 })
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })
+const upload = multer({ storage, fileFilter: attachmentFileFilter, limits: { fileSize: 50 * 1024 * 1024 } })
 
-// Serve uploaded files (pas d'auth — noms de fichiers non devinables)
-router.get('/reports/files/:filename', (req: Request, res: Response) => {
-  const filePath = path.resolve(uploadsDir, req.params.filename as string)
-  if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
+router.get('/reports/files/:filename', async (req: Request, res: Response) => {
+  const filename = req.params.filename as string
+  const report = await ActivityReport.exists({
+    'attachments.filename': filename,
+    ...(managesInterns(req) ? {} : { userId: req.user!.id }),
+  })
+  if (!report) return res.status(404).json({ error: 'Fichier introuvable' })
+  const filePath = path.resolve(uploadsDir, filename)
+  if (!filePath.startsWith(uploadsDir + path.sep)) return res.status(403).json({ error: 'Access denied' })
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
-  // dotfiles: 'allow' — le chemin absolu peut contenir un segment commençant par « . »
-  res.sendFile(filePath, { dotfiles: 'allow' })
+  serveUploadedFile(res, filePath, filename)
 })
 
-// Auth requis pour les autres routes de ce router
-router.use(auth)
-
 // GET /api/admin/interns/reports/all — tous les rapports (admin)
-router.get('/reports/all', async (req: Request, res: Response) => {
+router.get('/reports/all', requireInternManager, async (req: Request, res: Response) => {
   try {
     const { internId, date, status } = req.query
     const filter: Record<string, unknown> = {}
@@ -92,7 +101,9 @@ router.get('/reports/mine', async (req: Request, res: Response) => {
       })
     }
 
-    const reports = await ActivityReport.find({ internId: intern._id }).populate('validePar', 'name').sort({ date: -1 })
+    const reports = await ActivityReport.find({ internId: intern._id, userId: user.id })
+      .populate('validePar', 'name')
+      .sort({ date: -1 })
     res.json(reports)
   } catch {
     res.status(500).json({ error: 'Erreur serveur' })
@@ -108,7 +119,7 @@ router.post('/reports', upload.array('files', 10), async (req: Request, res: Res
 
     let intern = await Intern.findOne({ userId: user.id })
 
-    if (!intern && req.body.internId) {
+    if (!intern && managesInterns(req) && req.body.internId) {
       intern = await Intern.findById(req.body.internId)
     }
 
@@ -200,7 +211,7 @@ router.patch('/reports/:id', upload.array('files', 10), async (req: Request, res
     if (!report) return res.status(404).json({ error: 'Rapport introuvable' })
 
     const isOwner = report.userId.toString() === user.id
-    const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
+    const isAdmin = managesInterns(req)
 
     if (!isOwner && !isAdmin) return res.status(403).json({ error: 'Non autorise' })
 
@@ -288,7 +299,7 @@ router.delete('/reports/:id', async (req: Request, res: Response) => {
     if (!report) return res.status(404).json({ error: 'Rapport introuvable' })
 
     const isOwner = report.userId.toString() === user.id
-    const isAdmin = user.role === 'SUPER_ADMIN'
+    const isAdmin = managesInterns(req)
 
     if (!isOwner && !isAdmin) return res.status(403).json({ error: 'Non autorise' })
 

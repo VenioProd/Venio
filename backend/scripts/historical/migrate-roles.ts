@@ -10,8 +10,10 @@
 
 import mongoose from 'mongoose'
 
-const MONGO_URI =
-  process.env.MONGODB_URI || 'mongodb+srv://venio:K9%21rT%407qL%23e2F%24XwM8@veniocluster.suwlznc.mongodb.net/venio'
+const MONGO_URI = process.env.MONGODB_URI
+if (!MONGO_URI) {
+  throw new Error('MONGODB_URI est requis')
+}
 
 async function run() {
   console.log('Connecting to MongoDB…')

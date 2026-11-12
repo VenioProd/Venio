@@ -11,6 +11,13 @@ import { formatMoney } from '../../i18n/format'
 import type { MessageKey } from '../../i18n'
 import './RevenueChain.css'
 
+type RevenueData = Omit<LeadRevenueResponse, 'documents' | 'summary' | 'proposals' | 'byCurrency'> & {
+  documents: LeadRevenueResponse['documents'] | null
+  summary: LeadRevenueResponse['summary'] | null
+  proposals: LeadRevenueResponse['proposals'] | null
+  byCurrency?: LeadRevenueResponse['byCurrency'] | null
+}
+
 interface RevenueChainProps {
   leadId: string
   canManage: boolean
@@ -33,7 +40,7 @@ const DOCUMENT_LABEL_KEYS: Record<string, MessageKey> = {
  */
 const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
   const { t } = useI18n()
-  const [data, setData] = useState<LeadRevenueResponse | null>(null)
+  const [data, setData] = useState<RevenueData | null>(null)
   const [candidates, setCandidates] = useState<LeadProject[]>([])
   const [candidateReason, setCandidateReason] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -88,7 +95,8 @@ const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
   if (loading && !data) return <div className="admin-loading">{t('compB.revenue.loading')}</div>
   if (!data) return error ? <div className="admin-error">{error}</div> : null
 
-  const documentsByProject = (projectId: string) => data.documents.filter((document) => document.project === projectId)
+  const documentsByProject = (projectId: string) =>
+    (data.documents ?? []).filter((document) => document.project === projectId)
 
   return (
     <div className="revenue-chain">
@@ -99,11 +107,15 @@ const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
         </div>
         <div className="revenue-summary-item">
           <span className="revenue-summary-label">{t('compB.revenue.signed')}</span>
-          <span className="revenue-summary-value">{money(data.summary.signed)}</span>
+          <span className="revenue-summary-value">
+            {data.summary ? money(data.summary.signed) : t('projects.content.hiddenEmoji')}
+          </span>
         </div>
         <div className="revenue-summary-item">
           <span className="revenue-summary-label">{t('compB.revenue.collected')}</span>
-          <span className="revenue-summary-value">{money(data.summary.collected)}</span>
+          <span className="revenue-summary-value">
+            {data.summary ? money(data.summary.collected) : t('projects.content.hiddenEmoji')}
+          </span>
         </div>
       </div>
 
@@ -131,7 +143,9 @@ const RevenueChain: React.FC<RevenueChainProps> = ({ leadId, canManage }) => {
               </div>
 
               {documentsByProject(project._id).length === 0 ? (
-                <p className="revenue-note">{t('compB.revenue.noDocument')}</p>
+                <p className="revenue-note">
+                  {data.documents === null ? t('projects.content.hiddenEmoji') : t('compB.revenue.noDocument')}
+                </p>
               ) : (
                 <ul className="revenue-documents">
                   {documentsByProject(project._id).map((document) => (

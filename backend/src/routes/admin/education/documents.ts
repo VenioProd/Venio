@@ -1,5 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import multer from 'multer'
+import { attachmentFileFilter, serveUploadedFile } from '../../../lib/attachmentResponse.js'
 import path from 'path'
 import fs from 'fs'
 import mongoose from 'mongoose'
@@ -27,7 +28,7 @@ const storage = multer.diskStorage({
     cb(null, `${unique}${ext}`)
   },
 })
-const upload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } })
+const upload = multer({ storage, fileFilter: attachmentFileFilter, limits: { fileSize: 25 * 1024 * 1024 } })
 
 // VENIO-46 — Inférence du parent legacy à partir des liens BDD pour rester
 // compatible avec les anciens consumers (search, drawers existants).
@@ -208,9 +209,7 @@ router.get('/:id/download', async (req: Request, res: Response, next: NextFuncti
     }
     const filePath = path.resolve(item.storagePath)
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier manquant' })
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(item.originalName)}"`)
-    res.setHeader('Content-Type', item.mimeType || 'application/octet-stream')
-    res.sendFile(filePath)
+    return serveUploadedFile(res, filePath, item.originalName)
   } catch (err) {
     next(err)
   }

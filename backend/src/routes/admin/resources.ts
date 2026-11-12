@@ -1,5 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import multer from 'multer'
+import { attachmentFileFilter, serveUploadedFile } from '../../lib/attachmentResponse.js'
 import path from 'path'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
@@ -27,7 +28,7 @@ const storage = multer.diskStorage({
     cb(null, `${unique}${ext}`)
   },
 })
-const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } }) // 100MB
+const upload = multer({ storage, fileFilter: attachmentFileFilter, limits: { fileSize: 100 * 1024 * 1024 } }) // 100MB
 
 // GET / — list all resources
 router.get(
@@ -60,9 +61,7 @@ router.get(
       const filePath = path.resolve(resource.storagePath)
       if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable sur le serveur' })
 
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(resource.originalName)}"`)
-      res.setHeader('Content-Type', resource.mimeType)
-      return res.sendFile(filePath)
+      return serveUploadedFile(res, filePath, resource.originalName)
     } catch (err) {
       return next(err)
     }

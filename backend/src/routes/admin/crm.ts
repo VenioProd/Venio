@@ -4,7 +4,7 @@ import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { body, validationResult } from 'express-validator'
 import auth from '../../middleware/auth.js'
-import { requireAdmin, requirePermission } from '../../middleware/role.js'
+import { requireAdmin, requirePermission, userHasPermission } from '../../middleware/role.js'
 import Lead, { LEAD_PROJECTS } from '../../models/Lead.js'
 import LeadActivity from '../../models/LeadActivity.js'
 import User from '../../models/User.js'
@@ -511,6 +511,16 @@ router.get(
         .select('name status createdAt')
         .lean()
       const projectIds = projects.map((project) => project._id)
+      if (!(await userHasPermission(req, PERMISSIONS.VIEW_BILLING))) {
+        return res.json({
+          lead: { _id: String(lead._id), company: lead.company, budget: lead.budget ?? null },
+          projects,
+          proposals: null,
+          documents: null,
+          summary: null,
+          byCurrency: null,
+        })
+      }
 
       // Devis rattachés au lead lui-même (leadId), avec ou sans projet : ceux
       // d'un projet non lisible par l'utilisateur sont écartés.
@@ -783,6 +793,12 @@ router.get(
       const revenueDocuments = entries.map((entry) => entry.document)
       const byCurrency = summariseRevenueByCurrency(revenueDocuments)
 
+      const canViewBilling = await userHasPermission(req, PERMISSIONS.VIEW_BILLING)
+      const performance = (key: 'source' | 'assignedTo') =>
+        groupPerformance(leads, key, signedByLead).map((row) => ({
+          ...row,
+          wonSigned: canViewBilling ? row.wonSigned : null,
+        }))
       const declaredBudget = leads.reduce((sum, lead) => sum + (lead.budget ?? 0), 0)
 
       return res.json({
@@ -796,8 +812,10 @@ router.get(
           linkedProjects: cohortProjects.length,
           // signed / collected / documents : EUR uniquement. Les autres devises
           // ne sont jamais additionnées : voir byCurrency.
-          ...byCurrency[DEFAULT_CURRENCY]!,
-          byCurrency,
+          signed: canViewBilling ? byCurrency[DEFAULT_CURRENCY]!.signed : null,
+          collected: canViewBilling ? byCurrency[DEFAULT_CURRENCY]!.collected : null,
+          documents: canViewBilling ? byCurrency[DEFAULT_CURRENCY]!.documents : null,
+          byCurrency: canViewBilling ? byCurrency : null,
         },
         // Le pipeline porte sur les affaires EN COURS, quelle que soit leur
         // date de création : ce n'est pas la cohorte, seulement ses taux.
@@ -818,11 +836,11 @@ router.get(
         ),
         velocity: computeVelocity(leads, transitions),
         losses: buildLossBreakdown(leads, transitions),
-        bySource: groupPerformance(leads, 'source', signedByLead),
+        bySource: performance('source'),
         // Ventiler par personne n'a de sens que pour qui voit tout le monde :
         // sur un périmètre restreint, la table n'aurait qu'une ligne et
         // suggérerait une comparaison qui n'existe pas.
-        byOwner: seesEveryone ? groupPerformance(leads, 'assignedTo', signedByLead) : null,
+        byOwner: seesEveryone ? performance('assignedTo') : null,
         coverage: assessCoverage(leads, transitions),
       })
     } catch (err) {

@@ -1,5 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import multer from 'multer'
+import { attachmentFileFilter, serveUploadedFile } from '../../lib/attachmentResponse.js'
 import path from 'path'
 import fs from 'fs'
 import mongoose from 'mongoose'
@@ -35,7 +36,11 @@ const missionStorage = multer.diskStorage({
     cb(null, `${unique}${ext}`)
   },
 })
-const missionUpload = multer({ storage: missionStorage, limits: { fileSize: 50 * 1024 * 1024 } }) // 50MB
+const missionUpload = multer({
+  storage: missionStorage,
+  fileFilter: attachmentFileFilter,
+  limits: { fileSize: 50 * 1024 * 1024 },
+}) // 50MB
 
 // Resolve whether the current user can see a project (admin always yes, intern only if member by pole or direct)
 async function canAccess(userId: string, userRole: string, project: any): Promise<boolean> {
@@ -604,9 +609,7 @@ router.get(
       const filePath = path.resolve(file.storagePath)
       if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier manquant sur le serveur' })
 
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.originalName)}"`)
-      res.setHeader('Content-Type', file.mimeType)
-      return res.sendFile(filePath)
+      return serveUploadedFile(res, filePath, file.originalName)
     } catch (err) {
       return next(err)
     }

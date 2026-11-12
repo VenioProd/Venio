@@ -13,7 +13,7 @@ import Project from '../../models/Project.js'
 import User from '../../models/User.js'
 import { notifyUsers } from '../../lib/notifyHelpers.js'
 import { syncUploadToNextcloud } from '../../lib/nextcloud.js'
-import { findAttachmentMeta, serveAttachment } from '../../lib/attachmentResponse.js'
+import { attachmentFileFilter, findAttachmentMeta, serveAttachment } from '../../lib/attachmentResponse.js'
 import { runInTransaction } from '../../lib/transaction.js'
 import { lockProject } from '../../lib/projectWriteLock.js'
 import {
@@ -40,7 +40,7 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${safeName}`)
   },
 })
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })
+const upload = multer({ storage, fileFilter: attachmentFileFilter, limits: { fileSize: 50 * 1024 * 1024 } })
 
 const ACTIVE_STATUSES: ChangeRequestStatus[] = ['PLANIFIEE', 'EN_COURS', 'LIVREE']
 

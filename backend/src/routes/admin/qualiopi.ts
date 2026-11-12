@@ -1,5 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import multer from 'multer'
+import { attachmentFileFilter } from '../../lib/attachmentResponse.js'
 import path from 'path'
 import fs from 'fs'
 import auth from '../../middleware/auth.js'
@@ -20,7 +21,7 @@ const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
 })
-const upload = multer({ storage, limits: { fileSize: 200 * 1024 * 1024 } })
+const upload = multer({ storage, fileFilter: attachmentFileFilter, limits: { fileSize: 200 * 1024 * 1024 } })
 
 // GET all criteria with indicators and sub-elements
 router.get(

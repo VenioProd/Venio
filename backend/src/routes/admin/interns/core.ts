@@ -17,8 +17,11 @@ import { sendAdminCredentials } from '../../../lib/email.js'
 import { revokeUserSessions } from '../../../lib/session.js'
 import { countWorkingDaysSince } from '../../../lib/workingDays.js'
 import logger from '../../../lib/logger.js'
+import { requireInternManager } from './access.js'
+import { attachmentFileFilter, serveUploadedFile } from '../../../lib/attachmentResponse.js'
 
 const router = express.Router()
+router.use(auth, requireAdmin, requireInternManager)
 
 // ── Upload config for activity reports ──
 const uploadsDir = path.resolve('uploads/reports')
@@ -31,24 +34,22 @@ const conventionStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, conventionsDir),
   filename: (_req, file, cb) => {
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
-    cb(null, `${Date.now()}-${safeName}`)
+    cb(null, `${crypto.randomUUID()}-${safeName}`)
   },
 })
-const uploadConvention = multer({ storage: conventionStorage, limits: { fileSize: 20 * 1024 * 1024 } })
-
-// Serve uploaded files (pas d'auth — noms de fichiers non devinables)
+const uploadConvention = multer({
+  storage: conventionStorage,
+  fileFilter: attachmentFileFilter,
+  limits: { fileSize: 20 * 1024 * 1024 },
+})
 
 // Serve convention files
 router.get('/conventions/files/:filename', (req: Request, res: Response) => {
   const filePath = path.resolve(conventionsDir, req.params.filename as string)
-  if (!filePath.startsWith(conventionsDir)) return res.status(403).json({ error: 'Access denied' })
+  if (!filePath.startsWith(conventionsDir + path.sep)) return res.status(403).json({ error: 'Access denied' })
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
-  // dotfiles: 'allow' — le chemin absolu peut contenir un segment commençant par « . »
-  res.sendFile(filePath, { dotfiles: 'allow' })
+  serveUploadedFile(res, filePath, req.params.filename as string)
 })
-
-// Auth requis pour toutes les autres routes
-router.use(auth)
 
 // ═══════════════════════════════════════════════════
 // PARTIE 1 — Gestion des stagiaires (admin only)

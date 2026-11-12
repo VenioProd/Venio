@@ -1,5 +1,6 @@
 import express, { type NextFunction, type Request, type Response } from 'express'
 import multer from 'multer'
+import { attachmentFileFilter, serveUploadedFile } from '../../lib/attachmentResponse.js'
 import mongoose from 'mongoose'
 import Project from '../../models/Project.js'
 import { hasProjectAccess } from '../../lib/adminProjectAccess.js'
@@ -32,7 +33,7 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${crypto.randomUUID()}-${safeName}`)
   },
 })
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } })
+const upload = multer({ storage, fileFilter: attachmentFileFilter, limits: { fileSize: 50 * 1024 * 1024 } })
 
 // Serve uploaded files
 router.get('/files/:filename', requirePermission(PERMISSIONS.VIEW_TICKETS), async (req: Request, res: Response) => {
@@ -49,8 +50,7 @@ router.get('/files/:filename', requirePermission(PERMISSIONS.VIEW_TICKETS), asyn
     const filePath = path.resolve(uploadsDir, filename)
     if (!filePath.startsWith(uploadsDir)) return res.status(403).json({ error: 'Access denied' })
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable' })
-    // dotfiles: 'allow' — le chemin absolu peut contenir un segment commençant par « . »
-    return res.sendFile(filePath, { dotfiles: 'allow' })
+    return serveUploadedFile(res, filePath, filename)
   } catch {
     return res.status(500).json({ error: 'Erreur serveur' })
   }
