@@ -4,6 +4,7 @@ import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import { requirePermission } from '../../middleware/role.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
+import { buildUnsubscribeUrl, normalizeEmail, prospectContacts } from '../../lib/crmPrivacy.js'
 import User from '../../models/User.js'
 import { sendBulkEmail, EmailTransportUnavailableError } from '../../lib/email/send.js'
 import { logBlockedRecipients, screenBulkRecipients } from '../../lib/crmBulkEmailGuard.js'
@@ -48,7 +49,7 @@ router.post(
   requireComposerSender,
   body('subject').trim().notEmpty().withMessage("L'objet est requis"),
   body('body').trim().notEmpty().withMessage('Le corps du message est requis'),
-  body('recipients').isArray({ min: 1 }).withMessage('Au moins un destinataire est requis'),
+  body('recipients').isArray({ min: 1, max: 500 }).withMessage('Entre 1 et 500 destinataires sont requis'),
   body('recipients.*').isEmail().withMessage('Adresse email invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -83,14 +84,25 @@ router.post(
       }
 
       // Chemin d'envoi partagé avec le journal des échanges (lib/email/send.ts).
-      const { results, sent, failed, total } = await sendBulkEmail({
-        subject,
-        body: messageBody,
-        recipients: screening.allowed.map((email: string) => ({ email })),
-        senderName: (req.user as { name?: string }).name,
-        ctaUrl,
-        ctaLabel,
-      })
+      const { leads: prospects } = await prospectContacts(screening.allowed)
+      const byEmail = new Map(prospects.map((lead) => [normalizeEmail(lead.contactEmail), lead._id]))
+      const results = []
+      for (const email of screening.allowed) {
+        const leadId = byEmail.get(email)
+        const outcome = await sendBulkEmail({
+          subject,
+          body: messageBody,
+          recipients: [{ email }],
+          senderName: (req.user as { name?: string }).name,
+          ctaUrl,
+          ctaLabel,
+          ...(leadId ? { unsubscribeUrl: buildUnsubscribeUrl(leadId, email) } : {}),
+        })
+        results.push(...outcome.results)
+      }
+      const sent = results.filter((result) => result.success).length
+      const total = results.length
+      const failed = total - sent
 
       return res.json({ sent, failed, total, results, blocked })
     } catch (err) {

@@ -1,5 +1,6 @@
 import express, { type Request, type Response } from 'express'
 import rateLimit from 'express-rate-limit'
+import { logInteraction } from '../../lib/interactions.js'
 import Lead from '../../models/Lead.js'
 import CrmSettings from '../../models/CrmSettings.js'
 import { checkDuplicateLead, logLeadActivity } from '../../lib/crmAutomations.js'
@@ -116,11 +117,16 @@ router.post('/', contactLimiter, async (req: Request, res: Response) => {
     // Une adresse de la liste « ne pas contacter » qui écrit de nouveau : l'équipe le voit dans l'historique.
     const suppressed = await isEmailSuppressed(normalizedEmail)
 
+    const interaction = await logInteraction({
+      subjectType: 'LEAD', subjectId: lead._id, kind: 'EMAIL', direction: 'IN',
+      subject: submission.subject, body: readableNote || submission.message, occurredAt: now,
+    })
     await logLeadActivity(
       lead._id,
       'CONTACT_FORM_SUBMITTED',
       isNewLead ? 'Nouveau contact reçu depuis le site' : 'Nouveau message reçu depuis le site',
       {
+        interactionId: String(interaction._id),
         source: 'FORMULAIRE_SITE',
         subject: submission.subject,
         message: submission.message,

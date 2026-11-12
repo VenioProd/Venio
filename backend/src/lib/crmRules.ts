@@ -4,8 +4,9 @@ import User from '../models/User.js'
 import Project from '../models/Project.js'
 import PersonalTask from '../models/PersonalTask.js'
 import CrmRule, { type ICrmRule, type IRuleAction, type IRuleCondition, type RuleTrigger } from '../models/CrmRule.js'
+import { INTERACTION_BODY_MAX_LENGTH, INTERACTION_SUBJECT_MAX_LENGTH } from '../models/Interaction.js'
 import CrmRuleRun, { type IRunStep } from '../models/CrmRuleRun.js'
-import { ADMIN_ROLES } from './permissions.js'
+import { ADMIN_ROLES, hasPermissionResolved, PERMISSIONS } from './permissions.js'
 import { getRoundRobinAssignee } from './crmAutomations.js'
 import { ensureClientForWonLead, ensureProjectForWonLead } from './crmClientConversion.js'
 import { createNotification } from './notifications.js'
@@ -179,10 +180,14 @@ async function ownerOf(lead: PlainLead, spec: unknown): Promise<string | null> {
 }
 
 async function adminIds(): Promise<string[]> {
-  const admins = await User.find({ role: { $in: ADMIN_ROLES } })
-    .select('_id')
+  const admins = await User.find({ role: { $in: ADMIN_ROLES }, isActive: true })
+    .select('_id role grantedPermissions deniedPermissions')
     .lean()
-  return admins.map((a) => String(a._id))
+  return admins
+    .filter((a) =>
+      hasPermissionResolved(a.role, PERMISSIONS.VIEW_CRM, a.grantedPermissions ?? [], a.deniedPermissions ?? []),
+    )
+    .map((a) => String(a._id))
 }
 
 async function runAction(action: IRuleAction, rule: ICrmRule, lead: LeadDoc, ctx: EngineCtx): Promise<StepResult> {
@@ -365,20 +370,26 @@ export async function deliverEmail(
 ): Promise<StepResult> {
   const contact = await checkProspectContact(lead, mail.to)
   if (!contact.allowed) return blocked(contact.via)
+  let outcome
   try {
-    const outcome = await sendBulkEmail({
+    outcome = await sendBulkEmail({
       subject: mail.subject,
       body: mail.body,
       recipients: [{ email: mail.to, name: lead.contactName }],
       unsubscribeUrl: buildUnsubscribeUrl(lead._id as Types.ObjectId, mail.to),
     })
+  } catch (err) {
+    return { status: 'ERR', message: `E-mail non envoyé : ${(err as Error).message}` }
+  }
+  try {
     await logInteraction({
+      automated: true,
       subjectType: 'LEAD',
       subjectId: lead._id,
       kind: 'EMAIL',
       direction: 'OUT',
-      subject: mail.subject,
-      body: mail.body,
+      subject: mail.subject.slice(0, INTERACTION_SUBJECT_MAX_LENGTH),
+      body: mail.body.slice(0, INTERACTION_BODY_MAX_LENGTH),
       author: authorId,
       recipients: outcome.results.map((r: { email: string; name: string; success: boolean; error?: string }) => ({
         email: r.email,
@@ -388,12 +399,12 @@ export async function deliverEmail(
       })),
       deliveryStatus: outcome.failed === 0 ? 'SENT' : outcome.sent === 0 ? 'FAILED' : 'PARTIAL',
     })
-    return outcome.failed === 0
-      ? ok(`E-mail « ${mail.subject} » envoyé à ${mail.to}`)
-      : { status: 'ERR', message: `E-mail refusé : ${outcome.results[0]?.error ?? 'échec SMTP'}` }
   } catch (err) {
-    return { status: 'ERR', message: `E-mail non envoyé : ${(err as Error).message}` }
+    logger.error({ err, leadId: String(lead._id) }, '[crm-rules] journalisation après envoi impossible')
   }
+  return outcome.failed === 0
+    ? ok(`E-mail « ${mail.subject} » envoyé à ${mail.to}`)
+    : { status: 'ERR', message: `E-mail refusé : ${outcome.results[0]?.error ?? 'échec SMTP'}` }
 }
 
 // ───────────────────────── Exécution d'une règle ─────────────────────────
@@ -455,7 +466,12 @@ export async function runRule(rule: ICrmRule, lead: LeadDoc, event: LeadEvent, c
       result = { status: 'ERR', message: (err as Error).message }
       logger.warn({ data: (err as Error).message }, `[crm-rules] ${rule.name}/${action.type}`)
     }
-    steps.push({ action: action.type, at: new Date(), ...result })
+    steps.push({
+      action: action.type,
+      at: new Date(),
+      ...result,
+      payload: { ...result.payload, retry: { event, action: { type: action.type, params: action.params }, ctx } },
+    })
     if (result.status === 'ERR') break
   }
 
@@ -537,6 +553,7 @@ export async function onLeadInteraction(
   leadId: Types.ObjectId | string,
   occurredAt: Date,
   interactionId: string,
+  automated = false,
 ): Promise<void> {
   const lead = await Lead.findByIdAndUpdate(
     leadId,
@@ -544,6 +561,7 @@ export async function onLeadInteraction(
     { new: false },
   ).select('_id')
   if (!lead) return
+  if (automated) return
   await fireLeadEvent(leadId, { type: 'INTERACTION_LOGGED', key: `interaction:${interactionId}` })
 }
 
@@ -574,7 +592,17 @@ export async function candidatesFor(
   } else {
     return []
   }
-  const leads = await Lead.find(filter).limit(2000)
+  const leads = await Lead.find(filter)
+  const lastRuns = await CrmRuleRun.aggregate([
+    { $match: { rule: rule._id, status: { $in: ['OK', 'ERR', 'PENDING', 'RUNNING'] } } },
+    { $group: { _id: '$lead', at: { $max: '$createdAt' } } },
+  ])
+  const lastByLead = new Map(lastRuns.map((r) => [String(r._id), new Date(r.at).getTime()]))
+  leads.sort(
+    (a, b) =>
+      (lastByLead.get(String(a._id)) ?? 0) - (lastByLead.get(String(b._id)) ?? 0) ||
+      String(a._id).localeCompare(String(b._id)),
+  )
   if (rule.trigger.type !== 'LEAD_INACTIVE') return leads
   const days = Number(p.days ?? 7)
   return leads.filter((l) => (now.getTime() - lastActivityAt(l).getTime()) / DAY_MS >= days)
@@ -593,12 +621,15 @@ export async function sweepRules(now: Date = new Date()): Promise<{ rules: numbe
   let runs = 0
   for (const rule of rules) {
     try {
-      const leads = (await candidatesFor(rule, now))
-        .filter((l) => evaluateConditions(rule.conditions, l, now))
-        .slice(0, rule.limits.maxPerRun)
+      const leads = (await candidatesFor(rule, now)).filter((l) => evaluateConditions(rule.conditions, l, now))
+      let processed = 0
       for (const lead of leads) {
+        if (processed >= rule.limits.maxPerRun) break
         const run = await runRule(rule, lead, sweepEvent(rule, now), { ...ctxRoot(), quietSkip: true })
-        if (run) runs++
+        if (run) {
+          runs++
+          processed++
+        }
       }
     } catch (err) {
       logger.error({ data: (err as Error).message }, `[crm-rules] sweep ${rule.name}`)
@@ -638,17 +669,24 @@ export async function simulateRule(
 
 /** Valide l'envoi d'un e-mail en attente (étape PENDING d'une exécution). */
 export async function approveRun(runId: string, actorId: string) {
-  const run = await CrmRuleRun.findById(runId)
-  if (!run || run.status !== 'PENDING') return null
+  const run = await CrmRuleRun.findOneAndUpdate(
+    { _id: runId, status: 'PENDING' },
+    { $set: { status: 'RUNNING' } },
+    { new: true },
+  )
+  if (!run) return null
   const lead = await Lead.findById(run.lead)
-  if (!lead) return null
+  if (!lead) {
+    await CrmRuleRun.updateOne({ _id: run._id }, { $set: { status: 'SKIP' } })
+    return null
+  }
   for (const step of run.steps) {
     if (step.status !== 'PENDING' || !step.payload) continue
     const result = await deliverEmail(lead, step.payload as { to: string; subject: string; body: string }, actorId)
     // Un envoi bloqué (opposition survenue entre-temps) reste une étape ignorée, avec sa raison.
     step.status = result.status === 'ERR' ? 'ERR' : result.status === 'SKIP' ? 'SKIP' : 'OK'
     step.message = result.message
-    step.payload = result.status === 'SKIP' ? result.payload : undefined
+    step.payload = { ...(result.status === 'ERR' ? step.payload : result.payload), retry: step.payload.retry }
   }
   run.status = run.steps.some((s) => s.status === 'ERR')
     ? 'ERR'
@@ -676,20 +714,51 @@ export async function rejectRun(runId: string) {
   return run
 }
 
-/** Rejoue une exécution en erreur : l'idempotence des actions (tâche déjà ouverte, tag présent…) évite les doublons. */
+/** Reprend les seules étapes en erreur, sans rejouer les effets déjà réussis. */
 export async function retryRun(runId: string) {
-  const run = await CrmRuleRun.findById(runId)
-  if (!run || run.status !== 'ERR') return null
-  const rule = await CrmRule.findById(run.rule)
-  const lead = await Lead.findById(run.lead)
+  const original = await CrmRuleRun.findById(runId)
+  if (!original || original.status !== 'ERR') return null
+  const rule = await CrmRule.findById(original.rule)
+  const lead = await Lead.findById(original.lead)
   if (!rule || !lead) return null
-  await CrmRuleRun.deleteOne({ _id: run._id })
-  return runRule(
-    rule,
-    lead,
-    { type: rule.trigger.type, key: run.eventKey.split(':').slice(2).join(':') || 'retry', to: undefined },
-    { ...ctxRoot(), depth: 0 },
+  const run = await CrmRuleRun.findOneAndUpdate(
+    { _id: runId, status: 'ERR' },
+    { $set: { status: 'RUNNING' } },
+    { new: true },
   )
+  if (!run) return null
+  try {
+    for (const step of run.steps) {
+      if (step.status !== 'ERR') continue
+      const retry = step.payload?.retry as { event: LeadEvent; action: IRuleAction; ctx: EngineCtx } | undefined
+      if (!retry) continue
+      let result: StepResult
+      try {
+        result =
+          step.payload?.to && step.action === 'SEND_EMAIL'
+            ? await deliverEmail(lead, step.payload as { to: string; subject: string; body: string }, null)
+            : await runAction(retry.action, rule, lead, retry.ctx)
+      } catch (err) {
+        result = { status: 'ERR', message: (err as Error).message }
+      }
+      step.status = result.status
+      step.message = result.message
+      step.at = new Date()
+      step.payload = { ...(result.status === 'ERR' ? step.payload : result.payload), retry }
+      run.markModified('steps')
+      await run.save()
+    }
+    run.status = run.steps.some((s) => s.status === 'ERR')
+      ? 'ERR'
+      : run.steps.some((s) => s.status === 'PENDING')
+        ? 'PENDING'
+        : 'OK'
+    await run.save()
+    return run
+  } catch (err) {
+    await CrmRuleRun.updateOne({ _id: run._id, status: 'RUNNING' }, { $set: { status: 'ERR' } })
+    throw err
+  }
 }
 
 // ───────────────────────── Règles prédéfinies ─────────────────────────

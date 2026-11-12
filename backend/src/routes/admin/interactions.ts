@@ -1,5 +1,8 @@
 import express, { type Request, type Response, type NextFunction } from 'express'
 import mongoose from 'mongoose'
+import { createHash } from 'node:crypto'
+import UserIdempotencyKey from '../../models/UserIdempotencyKey.js'
+import { computeRequestHash, isValidIdempotencyKey } from '../../lib/agent/idempotency.js'
 import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import Interaction, {
@@ -14,7 +17,13 @@ import { sendBulkEmail, deliveryStatusFrom, EmailTransportUnavailableError } fro
 import type { InteractionKind } from '../../types/models/index.js'
 import Lead from '../../models/Lead.js'
 import { logLeadActivity } from '../../lib/crmAutomations.js'
-import { DO_NOT_CONTACT, MANUAL_EMAIL_MAX_RECIPIENTS, normalizeEmail, suppressedAmong } from '../../lib/crmPrivacy.js'
+import {
+  DO_NOT_CONTACT,
+  MANUAL_EMAIL_MAX_RECIPIENTS,
+  normalizeEmail,
+  checkProspectContact,
+  buildUnsubscribeUrl,
+} from '../../lib/crmPrivacy.js'
 
 const router = express.Router()
 
@@ -194,117 +203,198 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
   }
 })
 
+async function reserveEmailRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const key = req.get('Idempotency-Key')
+  if (key === undefined) return next()
+  if (!isValidIdempotencyKey(key)) {
+    res.status(400).json({ error: 'Idempotency-Key invalide', code: 'INVALID_IDEMPOTENCY_KEY' })
+    return
+  }
+  const record = {
+    userId: req.user!.id,
+    key: createHash('sha256').update(key).digest('hex'),
+    method: req.method,
+    path: req.originalUrl.split('?')[0],
+    requestHash: computeRequestHash(req.body),
+  }
+  try {
+    const reserved = await UserIdempotencyKey.create(record)
+    const send = res.json.bind(res)
+    let stored = false
+    res.json = (body: unknown) => {
+      stored = true
+      UserIdempotencyKey.updateOne(
+        { _id: reserved._id },
+        { $set: { responseStatus: res.statusCode, responseBody: body } },
+      ).then(
+        () => send(body),
+        () => send(body),
+      )
+      return res
+    }
+    res.on('finish', () => {
+      if (!stored)
+        UserIdempotencyKey.updateOne({ _id: reserved._id }, { $set: { responseStatus: res.statusCode } }).catch(
+          () => {},
+        )
+    })
+    next()
+  } catch (err) {
+    if ((err as { code?: number }).code !== 11000) return next(err)
+    const previous = await UserIdempotencyKey.findOne({ userId: record.userId, key: record.key }).lean()
+    if (
+      !previous ||
+      previous.path !== record.path ||
+      previous.method !== record.method ||
+      previous.requestHash !== record.requestHash
+    ) {
+      res.status(409).json({ code: 'IDEMPOTENCY_CONFLICT', error: 'Cette clé a déjà servi pour une autre opération' })
+    } else if (previous.responseStatus === null) {
+      res.status(409).json({ code: 'IDEMPOTENCY_IN_PROGRESS', error: 'Cet envoi est en cours de traitement' })
+    } else {
+      res.status(previous.responseStatus).json(previous.responseBody)
+    }
+  }
+}
+
 // ─── Envoyer un email et le journaliser ──────────────────────────────────────
 
-router.post('/:subjectType/:subjectId/email', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const subject = await resolveSubject(req, res, 'write')
-    if (!subject) return undefined
+router.post(
+  '/:subjectType/:subjectId/email',
+  reserveEmailRequest,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const subject = await resolveSubject(req, res, 'write')
+      if (!subject) return undefined
 
-    const subjectLine = String(req.body?.subject ?? '').trim()
-    const body = String(req.body?.body ?? '')
-    if (!subjectLine) return res.status(400).json({ error: "L'objet est requis" })
-    if (!body.trim()) return res.status(400).json({ error: 'Le corps du message est requis' })
-    if (body.length > INTERACTION_BODY_MAX_LENGTH) {
-      return res.status(400).json({ error: `Le contenu dépasse ${INTERACTION_BODY_MAX_LENGTH} caractères` })
-    }
+      const subjectLine = String(req.body?.subject ?? '').trim()
+      const body = String(req.body?.body ?? '')
+      if (!subjectLine) return res.status(400).json({ error: "L'objet est requis" })
+      if (!body.trim()) return res.status(400).json({ error: 'Le corps du message est requis' })
+      if (body.length > INTERACTION_BODY_MAX_LENGTH) {
+        return res.status(400).json({ error: `Le contenu dépasse ${INTERACTION_BODY_MAX_LENGTH} caractères` })
+      }
 
-    const requested: unknown = req.body?.recipients
-    // Destinataires libres : un envoi depuis la fiche reste un échange, pas une campagne.
-    if (Array.isArray(requested) && requested.length > MANUAL_EMAIL_MAX_RECIPIENTS) {
-      return res.status(400).json({
-        error: `${MANUAL_EMAIL_MAX_RECIPIENTS} destinataires au maximum par envoi`,
-        code: 'TOO_MANY_RECIPIENTS',
-      })
-    }
-    const recipients =
-      Array.isArray(requested) && requested.length > 0
-        ? requested.map((entry) =>
-            typeof entry === 'string'
-              ? { email: entry }
-              : { email: String((entry as { email?: string })?.email ?? '') },
-          )
-        : subject.contactEmail
-          ? [{ email: subject.contactEmail, name: subject.contactName }]
-          : []
-
-    const valid = recipients.filter((recipient) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.email))
-    if (valid.length === 0) {
-      return res.status(400).json({ error: 'Aucun destinataire valide' })
-    }
-
-    // RGPD : un prospect qui s'est opposé, ou une adresse de la liste de
-    // suppression, ne reçoit rien. L'envoi est refusé en entier (pas de
-    // message partiel) et le refus est consigné dans l'historique du lead.
-    if (subject.type === 'LEAD') {
-      const lead = await Lead.findById(subject.id).select('doNotContact')
-      const suppressed = await suppressedAmong(valid.map((recipient) => recipient.email))
-      const blockedEmails = valid.map((recipient) => normalizeEmail(recipient.email)).filter((email) => suppressed.has(email))
-      if (lead?.doNotContact || blockedEmails.length > 0) {
-        const via = lead?.doNotContact ? 'LEAD' : 'SUPPRESSION_LIST'
-        await logLeadActivity(
-          subject.id,
-          'EMAIL_BLOCKED',
-          'E-mail non envoyé : ne pas contacter',
-          { reason: DO_NOT_CONTACT, via, blockedCount: lead?.doNotContact ? valid.length : blockedEmails.length },
-          req.user!.id,
-        ).catch(() => {})
-        return res.status(409).json({
-          error: lead?.doNotContact
-            ? 'Ce contact s’est opposé à la prospection : aucun e-mail ne peut lui être envoyé'
-            : 'Une ou plusieurs adresses figurent dans la liste « ne pas contacter »',
-          code: DO_NOT_CONTACT,
-          via,
-          blocked: lead?.doNotContact ? valid.map((recipient) => normalizeEmail(recipient.email)) : blockedEmails,
+      const requested: unknown = req.body?.recipients
+      // Destinataires libres : un envoi depuis la fiche reste un échange, pas une campagne.
+      if (Array.isArray(requested) && requested.length > MANUAL_EMAIL_MAX_RECIPIENTS) {
+        return res.status(400).json({
+          error: `${MANUAL_EMAIL_MAX_RECIPIENTS} destinataires au maximum par envoi`,
+          code: 'TOO_MANY_RECIPIENTS',
         })
       }
-    }
+      const recipients =
+        Array.isArray(requested) && requested.length > 0
+          ? requested.map((entry) =>
+              typeof entry === 'string'
+                ? { email: entry }
+                : { email: String((entry as { email?: string })?.email ?? '') },
+            )
+          : subject.contactEmail
+            ? [{ email: subject.contactEmail, name: subject.contactName }]
+            : []
 
-    let outcome
-    try {
-      outcome = await sendBulkEmail({
+      const valid = [
+        ...new Map(
+          recipients
+            .filter((recipient) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.email))
+            .map((recipient) => [
+              normalizeEmail(recipient.email),
+              { ...recipient, email: normalizeEmail(recipient.email) },
+            ]),
+        ).values(),
+      ]
+      if (valid.length === 0) {
+        return res.status(400).json({ error: 'Aucun destinataire valide' })
+      }
+
+      // RGPD : un prospect qui s'est opposé, ou une adresse de la liste de
+      // suppression, ne reçoit rien. L'envoi est refusé en entier (pas de
+      // message partiel) et le refus est consigné dans l'historique du lead.
+      if (subject.type === 'LEAD') {
+        const lead = await Lead.findById(subject.id).select('doNotContact')
+        const checks = await Promise.all(valid.map((recipient) => checkProspectContact(lead, recipient.email)))
+        const blockedEmails = valid
+          .filter((_, index) => !checks[index].allowed)
+          .map((recipient) => normalizeEmail(recipient.email))
+        if (lead?.doNotContact || blockedEmails.length > 0) {
+          const via = lead?.doNotContact ? 'LEAD' : checks.find((check) => !check.allowed)?.via
+          await logLeadActivity(
+            subject.id,
+            'EMAIL_BLOCKED',
+            'E-mail non envoyé : ne pas contacter',
+            { reason: DO_NOT_CONTACT, via, blockedCount: lead?.doNotContact ? valid.length : blockedEmails.length },
+            req.user!.id,
+          ).catch(() => {})
+          return res.status(409).json({
+            error: lead?.doNotContact
+              ? 'Ce contact s’est opposé à la prospection : aucun e-mail ne peut lui être envoyé'
+              : 'Une ou plusieurs adresses figurent dans la liste « ne pas contacter »',
+            code: DO_NOT_CONTACT,
+            via,
+            blocked: lead?.doNotContact ? valid.map((recipient) => normalizeEmail(recipient.email)) : blockedEmails,
+          })
+        }
+      }
+
+      let outcome
+      try {
+        const outcomes = await Promise.all(
+          valid.map((recipient) =>
+            sendBulkEmail({
+              subject: subjectLine,
+              body,
+              recipients: [recipient],
+              senderName: (req.user as { name?: string }).name,
+              ...(subject.type === 'LEAD' ? { unsubscribeUrl: buildUnsubscribeUrl(subject.id, recipient.email) } : {}),
+            }),
+          ),
+        )
+        const results = outcomes.flatMap((result) => result.results)
+        outcome = {
+          results,
+          sent: outcomes.reduce((n, o) => n + o.sent, 0),
+          failed: outcomes.reduce((n, o) => n + o.failed, 0),
+          total: results.length,
+        }
+      } catch (err) {
+        if (err instanceof EmailTransportUnavailableError) {
+          return res.status(503).json({ error: err.message })
+        }
+        throw err
+      }
+
+      // On journalise quel que soit le résultat : une relance qui n'est pas
+      // partie est une information au moins aussi utile qu'une relance partie.
+      const interaction = await logInteraction({
+        subjectType: subject.type,
+        subjectId: subject.id,
+        kind: 'EMAIL',
+        direction: 'OUT',
         subject: subjectLine,
         body,
-        recipients: valid,
-        senderName: (req.user as { name?: string }).name,
+        author: req.user!.id,
+        recipients: outcome.results.map((result) => ({
+          email: result.email,
+          name: result.name,
+          status: result.success ? 'SENT' : 'FAILED',
+          error: result.error ?? '',
+        })),
+        deliveryStatus: deliveryStatusFrom(outcome.results),
+      })
+
+      const status = outcome.failed === 0 ? 201 : outcome.sent === 0 ? 502 : 207
+      return res.status(status).json({
+        interaction,
+        sent: outcome.sent,
+        failed: outcome.failed,
+        total: outcome.total,
+        results: outcome.results,
       })
     } catch (err) {
-      if (err instanceof EmailTransportUnavailableError) {
-        return res.status(503).json({ error: err.message })
-      }
-      throw err
+      return next(err)
     }
-
-    // On journalise quel que soit le résultat : une relance qui n'est pas
-    // partie est une information au moins aussi utile qu'une relance partie.
-    const interaction = await logInteraction({
-      subjectType: subject.type,
-      subjectId: subject.id,
-      kind: 'EMAIL',
-      direction: 'OUT',
-      subject: subjectLine,
-      body,
-      author: req.user!.id,
-      recipients: outcome.results.map((result) => ({
-        email: result.email,
-        name: result.name,
-        status: result.success ? 'SENT' : 'FAILED',
-        error: result.error ?? '',
-      })),
-      deliveryStatus: deliveryStatusFrom(outcome.results),
-    })
-
-    const status = outcome.failed === 0 ? 201 : outcome.sent === 0 ? 502 : 207
-    return res.status(status).json({
-      interaction,
-      sent: outcome.sent,
-      failed: outcome.failed,
-      total: outcome.total,
-      results: outcome.results,
-    })
-  } catch (err) {
-    return next(err)
-  }
-})
+  },
+)
 
 export default router

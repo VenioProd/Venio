@@ -97,6 +97,7 @@ export function toTimelineEntry(item: {
 }
 
 export interface LogInteractionInput {
+  automated?: boolean
   subjectType: InteractionSubjectType
   subjectId: Types.ObjectId | string
   kind: InteractionKind
@@ -169,7 +170,7 @@ export async function logInteraction(input: LogInteractionInput) {
     // Compteurs du lead et déclencheur « interaction consignée » : jamais bloquants.
     import('./crmRules.js')
       .then(async (m) => {
-        await m.onLeadInteraction(input.subjectId, interaction.occurredAt, String(interaction._id))
+        await m.onLeadInteraction(input.subjectId, interaction.occurredAt, String(interaction._id), input.automated)
         // onLeadInteraction pose la date de CET échange : un échange antérieur ne doit pas faire reculer le lead.
         await syncLeadLastInteraction(input.subjectId)
       })
@@ -207,7 +208,12 @@ export async function buildTimeline(
   const limit = Math.min(options.limit ?? TIMELINE_MAX_ENTRIES, TIMELINE_MAX_ENTRIES)
 
   const systemQuery =
-    subjectType === 'LEAD' ? LeadActivity.find({ leadId: subjectId }) : ClientActivity.find({ clientId: subjectId })
+    subjectType === 'LEAD'
+      ? LeadActivity.find({
+          leadId: subjectId,
+          $nor: [{ type: 'CONTACT_FORM_SUBMITTED', 'payload.interactionId': { $exists: true } }],
+        })
+      : ClientActivity.find({ clientId: subjectId })
 
   const [interactions, systemEvents] = await Promise.all([
     Interaction.find({ subjectType, subjectId })

@@ -4,10 +4,10 @@
 
 import { getCronAutomations } from './registry.js'
 import { runAutomation, buildContext } from './engine.js'
-import type { AutomationDefinition } from './types.js'
 import logger from '../lib/logger.js'
 
 let intervalId: ReturnType<typeof setInterval> | null = null
+const attemptedOn = new Map<string, string>()
 const CHECK_INTERVAL_MS = 60_000 // 60 seconds
 let lastTickAt: string | null = null
 let lastFailureAt: string | null = null
@@ -30,7 +30,11 @@ export function shouldRunNow(schedule: string | undefined, now: Date): boolean {
 
   const hours = now.getHours()
   const minutes = now.getMinutes()
-  const currentTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+  const due = (time: string) => {
+    const [hour, minute] = time.split(':').map(Number)
+    const elapsed = hours * 60 + minutes - (hour * 60 + minute)
+    return hour < 24 && minute < 60 && elapsed >= 0 && elapsed <= 120
+  }
 
   // "monday:07:00" format
   const dayMatch = schedule.match(/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday):(\d{2}:\d{2})$/i)
@@ -38,12 +42,13 @@ export function shouldRunNow(schedule: string | undefined, now: Date): boolean {
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
     const targetDay = dayNames.indexOf(dayMatch[1].toLowerCase())
     if (now.getDay() !== targetDay) return false
-    return currentTime === dayMatch[2]
+    return due(dayMatch[2])
   }
 
   // "HH:MM" format (daily)
-  if (/^\d{2}:\d{2}$/.test(schedule)) {
-    return currentTime === schedule
+  const daily = /^(?:daily )?(\d{2}:\d{2})$/.exec(schedule)
+  if (daily) {
+    return due(daily[1])
   }
 
   return false
@@ -57,7 +62,11 @@ async function tick(): Promise<void> {
   const now = new Date()
   const cronJobs = getCronAutomations()
 
-  const dueJobs = cronJobs.filter((job) => shouldRunNow(job.schedule, now))
+  // La fenêtre de rattrapage dure deux heures : chaque tâche n'est tentée qu'une fois par jour
+  // dans ce processus ; le verrou en base couvre les redémarrages.
+  const day = now.toDateString()
+  const dueJobs = cronJobs.filter((job) => shouldRunNow(job.schedule, now) && attemptedOn.get(job.key) !== day)
+  for (const job of dueJobs) attemptedOn.set(job.key, day)
 
   if (dueJobs.length === 0) return
 

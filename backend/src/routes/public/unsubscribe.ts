@@ -5,15 +5,7 @@ import { buildActorFromReq, recordAudit } from '../../lib/audit/auditHelpers.js'
 import { escapeHtml } from '../../lib/email/transport.js'
 import logger from '../../lib/logger.js'
 
-/**
- * Désinscription des e-mails de prospection (RGPD, chantier 3D).
- *
- * Le lien signé (`lib/crmPrivacy.ts`) figure dans chaque e-mail envoyé par les
- * règles du CRM. GET pose l'opposition sur le lead et inscrit l'adresse dans
- * la liste de suppression, puis affiche une page de confirmation ; POST fait
- * de même pour la désinscription « en un clic » des messageries (RFC 8058).
- * Idempotent : un second clic confirme sans rien changer.
- */
+/** GET confirme l'intention ; POST applique l'opposition, y compris en un clic (RFC 8058). */
 const router = express.Router()
 
 const limiter = rateLimit({
@@ -23,7 +15,7 @@ const limiter = rateLimit({
   legacyHeaders: false,
 })
 
-function page(title: string, message: string): string {
+function page(title: string, message: string, token?: string): string {
   const appName = escapeHtml(process.env.APP_NAME || 'Venio')
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -37,6 +29,7 @@ function page(title: string, message: string): string {
   <main style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:32px;">
     <h1 style="font-size:20px;margin:0 0 12px;">${escapeHtml(title)}</h1>
     <p style="line-height:1.5;margin:0;">${escapeHtml(message)}</p>
+    ${token ? `<form method="post" action="?token=${escapeHtml(encodeURIComponent(token))}"><input type="hidden" name="confirm" value="1"><button type="submit">Confirmer la désinscription</button></form>` : ''}
     <p style="font-size:13px;color:#64748b;margin:24px 0 0;">${appName}</p>
   </main>
 </body>
@@ -50,6 +43,7 @@ async function handle(req: Request): Promise<{ status: number; title: string; me
       ? { status: 410, title: 'Lien expiré', message: 'Ce lien de désinscription a expiré. Répondez simplement à notre dernier message pour ne plus être contacté.' }
       : { status: 400, title: 'Lien invalide', message: 'Ce lien de désinscription n’est pas valide.' }
   }
+  if (req.method === 'GET') return { status: 200, title: 'Confirmer la désinscription', message: 'Souhaitez-vous ne plus recevoir nos e-mails de prospection ?' }
   const result = await applyUnsubscribe(check.leadId, check.email)
   if (!result.alreadySuppressed) {
     await recordAudit({
@@ -71,7 +65,7 @@ async function handle(req: Request): Promise<{ status: number; title: string; me
 router.get('/', limiter, async (req: Request, res: Response) => {
   try {
     const out = await handle(req)
-    res.status(out.status).type('html').send(page(out.title, out.message))
+    res.status(out.status).type('html').send(page(out.title, out.message, out.status === 200 ? String(req.query.token) : undefined))
   } catch (err) {
     logger.error({ err }, '[unsubscribe] échec')
     res.status(503).type('html').send(page('Service indisponible', 'La désinscription n’a pas pu être enregistrée. Réessayez dans quelques minutes.'))
@@ -79,10 +73,11 @@ router.get('/', limiter, async (req: Request, res: Response) => {
 })
 
 // Désinscription en un clic (en-tête List-Unsubscribe-Post) : même effet, réponse sans page.
-router.post('/', limiter, async (req: Request, res: Response) => {
+router.post('/', limiter, express.urlencoded({ extended: false }), async (req: Request, res: Response) => {
   try {
     const out = await handle(req)
-    res.status(out.status).json({ ok: out.status === 200 })
+    if (req.body?.confirm !== '1') res.status(out.status).json({ ok: out.status === 200 })
+    else res.status(out.status).type('html').send(page(out.title, out.message))
   } catch (err) {
     logger.error({ err }, '[unsubscribe] échec')
     res.status(503).json({ ok: false })

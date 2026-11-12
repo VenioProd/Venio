@@ -1023,6 +1023,23 @@ router.patch(
       }
       const updates = req.body || {}
       validateCallSettings(updates)
+      const validateNumbers = (values: Record<string, unknown>, prefix = ''): string | null => {
+        for (const [key, value] of Object.entries(values)) {
+          const field = `${prefix}${key}`
+          if (
+            CrmSettings.schema.path(field)?.instance === 'Number' &&
+            (typeof value !== 'number' || !Number.isFinite(value) || value < 0)
+          )
+            return field
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            const invalid = validateNumbers(value as Record<string, unknown>, `${field}.`)
+            if (invalid) return invalid
+          }
+        }
+        return null
+      }
+      const invalidNumber = validateNumbers(updates)
+      if (invalidNumber) return res.status(400).json({ error: `${invalidNumber} : nombre positif ou nul attendu` })
       // Remove fields that shouldn't be updated directly
       delete updates._id
       delete updates.createdAt
