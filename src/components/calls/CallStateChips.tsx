@@ -6,8 +6,10 @@ import './callInsights.css'
 export default function CallStateChips({ call }: { call: LeadCall }) {
   const { t } = useI18n()
   const recording = call.recording.objection ? 'STOPPED' : call.recording.status
-  const transcript = call.transcriptStatus ?? 'none'
-  const analysis = call.analysisStatus ?? 'none'
+  // Opposition à l'enregistrement : il n'y aura ni transcript ni analyse, on le dit plutôt que « pas encore ».
+  const never = recording === 'STOPPED' && !call.transcriptStatus
+  const transcript = call.transcriptStatus ?? (never ? 'never' : 'none')
+  const analysis = call.analysisStatus ?? (never ? 'never' : 'none')
   const tone = (ok: boolean, bad = false) => (bad ? ' ci-chip--bad' : ok ? ' ci-chip--ok' : '')
   return (
     <ul className="ci-chips">

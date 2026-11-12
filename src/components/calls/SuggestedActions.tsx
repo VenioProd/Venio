@@ -89,18 +89,20 @@ export default function SuggestedActions({
                         />
                       </label>
                     )}
-                    <label className="ci-inline-field" htmlFor={dateId}>
-                      <span>{t('callInsights.actions.due')}</span>
-                      <input
-                        id={dateId}
-                        className="portal-input"
-                        type="datetime-local"
-                        value={toLocalInput(current.dueAt)}
-                        onChange={(event) =>
-                          onChange(action.id, { ...current, dueAt: fromLocalInput(event.target.value) })
-                        }
-                      />
-                    </label>
+                    {acceptable && (
+                      <label className="ci-inline-field" htmlFor={dateId}>
+                        <span>{t('callInsights.actions.due')}</span>
+                        <input
+                          id={dateId}
+                          className="portal-input"
+                          type="datetime-local"
+                          value={toLocalInput(current.dueAt)}
+                          onChange={(event) =>
+                            onChange(action.id, { ...current, dueAt: fromLocalInput(event.target.value) })
+                          }
+                        />
+                      </label>
+                    )}
                     <div
                       className="ci-gestures"
                       role="group"

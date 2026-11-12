@@ -47,7 +47,7 @@ const en = {
   'calls.fallback.retry': 'Try browser calling again',
   'calls.leaveConfirm': 'A call is in progress. Leaving this page will hang up. Continue?',
   'calls.hangupFirst': 'Hang up to save or switch lead.',
-  'calls.held': 'Lead on hold: an opt-out was detected on a call. It cannot be called again until a decision is made.',
+  'calls.held': 'Lead on hold: it cannot be called for now.',
   'calls.recording.on': 'Recording in progress.',
   'calls.recording.notice': 'The prospect is told by an automatic message.',
   'calls.recording.objection': 'The prospect refuses the recording',

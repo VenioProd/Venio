@@ -421,7 +421,7 @@
   margin: 0 0 8px;
   font-size: 14px;
 }
-.recent-calls ul {
+.recent-calls > ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -442,6 +442,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
+}
+.recent-call-head > .ci-chips {
+  flex: 1 1 260px;
+  min-width: 0;
 }
 .recent-call-title {
   display: grid;

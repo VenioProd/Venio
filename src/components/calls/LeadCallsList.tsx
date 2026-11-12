@@ -64,7 +64,7 @@ export default function LeadCallsList({
                     : t(`calls.status.${call.status}` as 'calls.status.COMPLETED')}
                 </span>
               </span>
-              <CallStateChips call={call} />
+              {answered && <CallStateChips call={call} />}
             </>
           )
           return (

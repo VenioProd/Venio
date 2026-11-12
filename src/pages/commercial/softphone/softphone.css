@@ -104,8 +104,8 @@ html.theme-portail .softphone-bar .portal-button.softphone-hangup:hover:not(:dis
 }
 .softphone-recording-state {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-wrap: nowrap;
+  align-items: baseline;
   gap: 6px;
   margin: 0;
   font-size: 13px;

@@ -43,7 +43,7 @@ export default function OptOutAlert({ quote, onQuote, held = false, onConfirm, o
       <PhoneOff size={20} aria-hidden />
       <div>
         <strong>{t('callInsights.optOut.title')}</strong>
-        <p>{t('callInsights.optOut.body')}</p>
+        {!done && <p>{t('callInsights.optOut.body')}</p>}
         {quote && <QuoteLine quote={quote} onQuote={onQuote} />}
         {done === 'CONFIRM' ? (
           <p className="ci-optout-state" role="status">
