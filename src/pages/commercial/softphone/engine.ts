@@ -2,6 +2,8 @@ import type { Call, Device } from '@twilio/voice-sdk'
 import {
   callErrorCode,
   callsApi,
+  createCallsApi,
+  DEFAULT_CALLS_PREFIX,
   settleCall,
   type CallErrorCode,
   type CallRecord,
@@ -53,7 +55,9 @@ export interface SoftphoneSnapshot {
 export interface SoftphoneDeps {
   loadSdk: () => Promise<{ Device: typeof Device }>
   api: Pick<typeof callsApi, 'token' | 'create' | 'hangup' | 'stopRecording'>
-  settle: (callId: string) => Promise<CallRecord | null>
+  /** Les routes d'un autre préfixe que `/api/commercial` (l'équipe passe par `/api/admin/call-desk`). */
+  apiFor: (prefix: string) => SoftphoneDeps['api']
+  settle: (callId: string, prefix: string) => Promise<CallRecord | null>
   getUserMedia: (constraints: MediaStreamConstraints) => Promise<MediaStream>
   now: () => number
   uuid: () => string
@@ -117,6 +121,8 @@ export class Softphone {
   private device: Device | null = null
   private tokenExpiresAt = 0
   private edge: string | null = null
+  /** Préfixe d'API de l'appel en cours (ou du dernier) : un seul moteur pour toute l'app, quel que soit l'écran. */
+  private prefix = DEFAULT_CALLS_PREFIX
   private call: Call | null = null
   private aborted = false
 
@@ -124,7 +130,8 @@ export class Softphone {
     this.deps = {
       loadSdk: () => import('@twilio/voice-sdk'),
       api: callsApi,
-      settle: (callId) => settleCall(callId),
+      apiFor: (prefix) => createCallsApi(prefix),
+      settle: (callId, prefix) => settleCall(callId, { prefix }),
       getUserMedia: (constraints) => navigator.mediaDevices.getUserMedia(constraints),
       now: () => Date.now(),
       uuid: () => crypto.randomUUID(),
@@ -158,6 +165,10 @@ export class Softphone {
     return this.snapshotValue.phase !== 'idle'
   }
 
+  private get api() {
+    return this.prefix === DEFAULT_CALLS_PREFIX ? this.deps.api : this.deps.apiFor(this.prefix)
+  }
+
   /** Réglages du serveur utiles au `Device` : l'edge de l'opérateur lu dans `GET /calls/config`. */
   configure(options: { edge?: string | null }) {
     this.edge = options.edge || null
@@ -173,9 +184,12 @@ export class Softphone {
     if (!this.busy) this.update({ fallback: null, failure: null })
   }
 
-  async start(leadId: string) {
+  async start(leadId: string, prefix: string = DEFAULT_CALLS_PREFIX) {
     if (this.busy) return
     this.aborted = false
+    // Un jeton émis par un autre routeur n'est pas réutilisable.
+    if (prefix !== this.prefix) this.destroyDevice()
+    this.prefix = prefix
     this.update({
       phase: 'preparing',
       leadId,
@@ -196,7 +210,7 @@ export class Softphone {
       const device = await this.prepareDevice(SdkDevice)
       this.guard()
       // Le serveur ne compte une tentative qu'une fois le micro et le jeton obtenus.
-      const { callId } = await this.deps.api.create(leadId, this.deps.uuid())
+      const { callId } = await this.api.create(leadId, this.deps.uuid())
       this.update({ callId, phase: 'connecting' })
       this.guard()
       await this.applyMicrophone(device)
@@ -213,7 +227,7 @@ export class Softphone {
     if (phase === 'idle' || phase === 'ending') return
     this.aborted = true
     this.update({ phase: 'ending' })
-    if (callId) void this.deps.api.hangup(callId).catch(() => undefined)
+    if (callId) void this.api.hangup(callId).catch(() => undefined)
     this.call?.disconnect()
   }
 
@@ -226,7 +240,7 @@ export class Softphone {
     if (!callId || phase === 'idle' || recordingStop === 'pending' || recordingStop === 'stopped') return
     this.update({ recordingStop: 'pending' })
     try {
-      await this.deps.api.stopRecording(callId)
+      await this.api.stopRecording(callId)
       if (this.snapshotValue.callId === callId) this.update({ recordingStop: 'stopped' })
     } catch {
       if (this.snapshotValue.callId === callId) this.update({ recordingStop: 'failed' })
@@ -268,7 +282,7 @@ export class Softphone {
   }
 
   private async fetchToken(): Promise<VoiceToken> {
-    const token = await this.deps.api.token()
+    const token = await this.api.token()
     this.tokenExpiresAt = Date.parse(token.expiresAt) || 0
     return token
   }
@@ -338,7 +352,7 @@ export class Softphone {
     this.call = null
     this.update({ phase: 'ending', muted: false })
     this.destroyDevice()
-    const record = await this.deps.settle(callId)
+    const record = await this.deps.settle(callId, this.prefix)
     this.update({
       phase: 'idle',
       answeredAt: null,
@@ -371,8 +385,8 @@ export class Softphone {
 
     if (callId) {
       // L'appel existe côté serveur mais n'a pas pu partir : on le ferme et on relit son état.
-      void this.deps.api.hangup(callId).catch(() => undefined)
-      const record = err instanceof Aborted ? await this.deps.settle(callId) : null
+      void this.api.hangup(callId).catch(() => undefined)
+      const record = err instanceof Aborted ? await this.deps.settle(callId, this.prefix) : null
       this.update({
         phase: 'idle',
         failure,

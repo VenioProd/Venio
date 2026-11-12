@@ -260,6 +260,10 @@ describe('CallInsights — alignements sur le serveur', () => {
     server.analysis!.current.callHold = { at: '2026-11-12T10:07:00.000Z', reason: 'OPT_OUT_DETECTED' }
     mount({ canLiftHold: true })
     fireEvent.click(await screen.findByRole('button', { name: 'Lever la retenue' }))
+    // La confirmation dit ce que cela autorise, et rien ne part avant elle.
+    expect(await screen.findByText(/sera de nouveau appelable/)).toBeInTheDocument()
+    expect(server.requests.some((item) => item.path.endsWith('/analysis/opt-out'))).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Oui, lever la retenue' }))
     expect(await screen.findByText(/Retenue levée/)).toBeInTheDocument()
     expect(server.requests.find((item) => item.path.endsWith('/analysis/opt-out'))?.body).toEqual({ action: 'DISMISS' })
   })

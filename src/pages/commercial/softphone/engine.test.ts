@@ -218,4 +218,46 @@ describe('Softphone', () => {
     await phone.stopRecording() // déjà arrêté : aucune requête de plus
     expect(api.stopRecording).toHaveBeenCalledTimes(2)
   })
+  it('appelle par le routeur demandé, avec son jeton, son raccrochage et sa relecture, et un seul appel à la fois', async () => {
+    const team = {
+      token: vi.fn(async () => ({
+        token: 'jwt-team',
+        identity: 'admin1',
+        expiresAt: new Date(Date.now() + 600_000).toISOString(),
+      })),
+      create: vi.fn(async () => ({ callId: 'team-call' })),
+      hangup: vi.fn(async () => ({ status: 'CANCELED' as const })),
+      stopRecording: vi.fn(async () => ({ recording: { status: 'STOPPED' as const, objection: true } })),
+    }
+    const apiFor = vi.fn(() => team)
+    const settle = vi.fn(async () => record())
+    const { phone, api } = setup({ apiFor, settle })
+
+    await phone.start('lead1', '/api/admin/call-desk')
+    expect(apiFor).toHaveBeenCalledWith('/api/admin/call-desk')
+    expect(team.token).toHaveBeenCalled()
+    expect(team.create).toHaveBeenCalledWith('lead1', 'request-1')
+    expect(api.create).not.toHaveBeenCalled()
+    expect(FakeDevice.last?.connect).toHaveBeenCalledWith({ params: { callId: 'team-call' } })
+
+    // Un deuxième appel, d'où qu'il vienne, est refusé tant que le premier dure.
+    await phone.start('lead2')
+    await phone.start('lead3', '/api/admin/call-desk')
+    expect(team.create).toHaveBeenCalledTimes(1)
+    expect(api.create).not.toHaveBeenCalled()
+
+    FakeDevice.call.emit('accept')
+    await phone.stopRecording()
+    expect(team.stopRecording).toHaveBeenCalledWith('team-call')
+
+    phone.hangup()
+    expect(team.hangup).toHaveBeenCalledWith('team-call')
+    FakeDevice.call.emit('disconnect')
+    await flush()
+    expect(settle).toHaveBeenCalledWith('team-call', '/api/admin/call-desk')
+
+    // Le prochain appel sans préfixe repart sur le routeur du commercial.
+    await phone.start('lead4')
+    expect(api.create).toHaveBeenCalledWith('lead4', 'request-1')
+  })
 })

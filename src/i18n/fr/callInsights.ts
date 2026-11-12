@@ -165,10 +165,15 @@ const fr = {
   'callInsights.leadCalls.title': 'Appels',
   'callInsights.leadCalls.empty': 'Aucun appel passé depuis Venio sur cette fiche.',
   'callInsights.leadCalls.error': 'La liste des appels n’a pas pu être chargée.',
+  'callInsights.leadCalls.by': 'Appel de {name}',
   'callInsights.optOut.held':
     'La fiche est retenue : elle ne sera pas rappelée tant que l’opposition n’est pas confirmée ou levée.',
   'callInsights.optOut.confirm': 'Confirmer : ne plus appeler',
   'callInsights.optOut.lift': 'Lever la retenue',
+  'callInsights.optOut.liftTitle': 'Lever la retenue de cette fiche ?',
+  'callInsights.optOut.liftConfirm':
+    'La fiche sera de nouveau appelable : elle revient dans les files d’appel, celle de l’équipe comme celle du commercial, et le numéro pourra être recomposé. L’opposition relevée par l’analyse ne sera pas retenue. À faire seulement si le prospect ne s’est pas opposé ; sinon, confirmez l’opposition.',
+  'callInsights.optOut.liftAction': 'Oui, lever la retenue',
   'callInsights.optOut.teamLifts': 'Lever la retenue revient à l’équipe : en cas de doute, laissez la fiche retenue.',
   'callInsights.optOut.settled': 'Plus aucune retenue en attente sur cette fiche (opposition confirmée ou levée).',
   'callInsights.optOut.confirmed': 'Opposition confirmée : ce numéro ne sera plus appelé.',

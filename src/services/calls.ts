@@ -46,6 +46,10 @@ export interface CallRecord {
 /** Une ligne de `GET /leads/:id/calls` : les 20 derniers appels de l'auteur sur la fiche. */
 export interface LeadCall {
   _id: string
+  /** Équipe seulement : l'appel d'un commercial externe sur une fiche transmise porte son auteur. */
+  author?: { _id: string; name: string }
+  /** Équipe seulement : vrai pour mes propres appels. */
+  own?: boolean
   status: CallStatus
   startedAt: string | null
   answeredAt: string | null
@@ -117,13 +121,14 @@ export const callsApi = createCallsApi()
  */
 export async function settleCall(
   callId: string,
-  options: { attempts?: number; delayMs?: number; sleep?: (ms: number) => Promise<void> } = {},
+  options: { attempts?: number; delayMs?: number; sleep?: (ms: number) => Promise<void>; prefix?: string } = {},
 ): Promise<CallRecord | null> {
+  const api = options.prefix && options.prefix !== DEFAULT_CALLS_PREFIX ? createCallsApi(options.prefix) : callsApi
   const { attempts = 8, delayMs = 1500, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = options
   let last: CallRecord | null = null
   for (let index = 0; index < attempts; index += 1) {
     try {
-      last = await callsApi.get(callId)
+      last = await api.get(callId)
       if (FINAL_CALL_STATUSES.includes(last.status)) return last
     } catch {
       // Une lecture ratée ne doit pas faire perdre le résultat : on réessaie, puis on rend le dernier état connu.

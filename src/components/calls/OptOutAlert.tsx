@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { PhoneOff } from 'lucide-react'
+import ConfirmModal from '../ConfirmModal'
 import { useI18n } from '../../context/I18nContext'
 import { apiErrorCode } from '../../services/callInsights'
 import { QuoteLine } from './ui'
@@ -21,6 +23,7 @@ export default function OptOutAlert({ quote, onQuote, held = false, onConfirm, o
   const { t } = useI18n()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [liftOpen, setLiftOpen] = useState(false)
   const [done, setDone] = useState<'CONFIRM' | 'DISMISS' | null>(null)
 
   async function run(action: 'CONFIRM' | 'DISMISS', handler: () => Promise<void>) {
@@ -73,7 +76,7 @@ export default function OptOutAlert({ quote, onQuote, held = false, onConfirm, o
                     type="button"
                     className="portal-button secondary"
                     disabled={busy}
-                    onClick={() => void run('DISMISS', onLift)}
+                    onClick={() => setLiftOpen(true)}
                   >
                     {t('callInsights.optOut.lift')}
                   </button>
@@ -91,6 +94,23 @@ export default function OptOutAlert({ quote, onQuote, held = false, onConfirm, o
           </p>
         )}
       </div>
+      {onLift &&
+        createPortal(
+          <ConfirmModal
+            isOpen={liftOpen}
+            variant="warning"
+            title={t('callInsights.optOut.liftTitle')}
+            message={t('callInsights.optOut.liftConfirm')}
+            confirmLabel={t('callInsights.optOut.liftAction')}
+            cancelLabel={t('common.cancel')}
+            onCancel={() => setLiftOpen(false)}
+            onConfirm={() => {
+              setLiftOpen(false)
+              void run('DISMISS', onLift)
+            }}
+          />,
+          document.body,
+        )}
     </div>
   )
 }

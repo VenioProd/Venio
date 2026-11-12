@@ -162,10 +162,15 @@ const en = {
   'callInsights.leadCalls.title': 'Calls',
   'callInsights.leadCalls.empty': 'No call made from Venio on this lead yet.',
   'callInsights.leadCalls.error': 'The list of calls could not be loaded.',
+  'callInsights.leadCalls.by': 'Call by {name}',
   'callInsights.optOut.held':
     'The lead is on hold: it will not be called again until the opt-out is confirmed or lifted.',
   'callInsights.optOut.confirm': 'Confirm: do not call again',
   'callInsights.optOut.lift': 'Lift the hold',
+  'callInsights.optOut.liftTitle': 'Lift the hold on this lead?',
+  'callInsights.optOut.liftConfirm':
+    'The lead will be callable again: it returns to the call queues, the team’s and the sales rep’s, and the number can be dialled again. The opt-out found by the analysis will not be kept. Only do this if the prospect did not object; otherwise confirm the opt-out.',
+  'callInsights.optOut.liftAction': 'Yes, lift the hold',
   'callInsights.optOut.teamLifts': 'Lifting the hold is up to the team: when in doubt, leave the lead on hold.',
   'callInsights.optOut.settled': 'No hold pending on this lead any more (opt-out confirmed or lifted).',
   'callInsights.optOut.confirmed': 'Opt-out confirmed: this number will not be called again.',
