@@ -44,7 +44,9 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({ rows, resolveLabel,
               <td>{row.lost}</td>
               <td className="is-strong">{formatPercent(row.winRate)}</td>
               <td className="is-muted">{row.wonBudget > 0 ? formatEuro(row.wonBudget) : '—'}</td>
-              <td className="is-strong">{row.wonSigned > 0 ? formatEuro(row.wonSigned) : '—'}</td>
+              <td className="is-strong">
+                {row.wonSigned !== null && row.wonSigned > 0 ? formatEuro(row.wonSigned) : '—'}
+              </td>
             </tr>
           ))}
         </tbody>

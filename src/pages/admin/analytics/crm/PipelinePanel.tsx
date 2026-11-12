@@ -33,14 +33,18 @@ const PipelinePanel: React.FC<PipelinePanelProps> = ({ pipeline, revenue }) => {
         </div>
         <div className="pilotage-money-item">
           <span className="pilotage-money-label">{t('adminTech.pilotage.signed')}</span>
-          <span className="pilotage-money-value">{formatEuro(revenue.signed)}</span>
+          <span className="pilotage-money-value">
+            {revenue.signed === null ? t('projects.content.hiddenEmoji') : formatEuro(revenue.signed)}
+          </span>
           <span className="pilotage-money-sub">
             {t('adminTech.pilotage.linkedProjects', { count: revenue.linkedProjects })}
           </span>
         </div>
         <div className="pilotage-money-item">
           <span className="pilotage-money-label">{t('adminTech.pilotage.collected')}</span>
-          <span className="pilotage-money-value">{formatEuro(revenue.collected)}</span>
+          <span className="pilotage-money-value">
+            {revenue.collected === null ? t('projects.content.hiddenEmoji') : formatEuro(revenue.collected)}
+          </span>
           <span className="pilotage-money-sub">{t('adminTech.pilotage.collectedSub')}</span>
         </div>
       </div>

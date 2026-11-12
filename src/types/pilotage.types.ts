@@ -28,8 +28,8 @@ export interface PerformanceRow {
   winRate: number | null
   /** Budget déclaré à la saisie du lead. */
   wonBudget: number
-  /** Montant réellement signé. L'écart avec wonBudget est l'intérêt. */
-  wonSigned: number
+  /** Montant réellement signé. L'écart avec wonBudget est l'intérêt. `null` sans droit financier. */
+  wonSigned: number | null
 }
 
 export interface PipelineStageResult {
@@ -64,10 +64,11 @@ export interface RevenueBlock {
   currency?: string
   declaredBudget: number
   linkedProjects: number
-  signed: number
-  collected: number
-  documents: number
-  byCurrency?: Record<string, RevenueSummary>
+  /** signed, collected, documents et byCurrency valent `null` sans droit financier. */
+  signed: number | null
+  collected: number | null
+  documents: number | null
+  byCurrency?: Record<string, RevenueSummary> | null
 }
 
 export interface PilotageResponse {
