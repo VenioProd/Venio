@@ -7,8 +7,10 @@ import idempotentRequest from '../../middleware/idempotentRequest.js'
 import Lead from '../../models/Lead.js'
 import LeadActivity from '../../models/LeadActivity.js'
 import User from '../../models/User.js'
+import CrmSettings from '../../models/CrmSettings.js'
 import SalesCommission from '../../models/SalesCommission.js'
 import { PERMISSIONS } from '../../lib/permissions.js'
+import { applyLeadChange } from '../../lib/crmLeadService.js'
 import { recordAudit, buildActorFromReq } from '../../lib/audit/auditHelpers.js'
 import { COMMISSION_RATE_BP, EXTERNAL_SALES_ROLE, commissionTotals } from '../../lib/externalSales.js'
 
@@ -160,33 +162,31 @@ router.post(
         ? { externalRep: new mongoose.Types.ObjectId(String(req.body.fromRep)) }
         : { _id: { $in: req.body.leadIds.map((id: string) => new mongoose.Types.ObjectId(id)) } }
       const leads = await Lead.find({
-        ...filter,
+        $and: [filter],
         externalRep: target === null ? { $ne: null } : { $nin: [null, target] },
-      })
-        .select('externalRep')
-        .limit(MAX_REASSIGN + 1)
-        .lean()
+      }).limit(MAX_REASSIGN + 1)
       if (leads.length > MAX_REASSIGN) {
         return res.status(400).json({ error: `Plus de ${MAX_REASSIGN} fiches : réattribuez-les par lots` })
       }
-      // Une seule écriture, atomique fiche par fiche : l'assignation suit si elle
-      // désignait l'ancien titulaire ; celle d'un closer reste.
       const ids = leads.map((lead) => lead._id)
-      await Lead.collection.updateMany({ _id: { $in: ids } }, [
-        {
-          $set: {
-            assignedTo: { $cond: [{ $eq: ['$assignedTo', '$externalRep'] }, target, '$assignedTo'] },
+      const previousReps = new Map(leads.map((lead) => [String(lead._id), String(lead.externalRep)]))
+      const settings = await CrmSettings.getSettings()
+      for (const lead of leads) {
+        await applyLeadChange(
+          lead,
+          {
             externalRep: target,
-            updatedAt: '$$NOW',
+            ...(String(lead.assignedTo) === String(lead.externalRep) ? { assignedTo: target } : {}),
           },
-        },
-      ])
+          { actor: req.user!.id, source: 'bulk', validateAssignee: false, settings },
+        )
+      }
       await LeadActivity.insertMany(
         leads.map((lead) => ({
           leadId: lead._id,
           type: 'EXTERNAL_REP_CHANGED',
           label: toRep ? `Fiche réattribuée à ${toRep.name}` : "Fiche rendue à l'équipe",
-          payload: { from: String(lead.externalRep), to: target ? String(target) : null },
+          payload: { from: previousReps.get(String(lead._id)), to: target ? String(target) : null },
           actorId: req.user!.id,
         })),
       )

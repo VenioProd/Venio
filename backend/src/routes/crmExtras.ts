@@ -17,10 +17,11 @@ import {
   type LeadChangeContext,
 } from '../lib/crmLeadService.js'
 import { approveRun, rejectRun, retryRun, simulateRule } from '../lib/crmRules.js'
-import { isAssignableCrmUser } from '../lib/crmScope.js'
+import { canReassignLead, isAssignableCrmUser } from '../lib/crmScope.js'
 import { weightedValue } from '../lib/crmRevenue.js'
 import { entityCondition, isGroupEntity, leadEntityOf, type GroupEntity } from '../lib/groupEntities.js'
 import { buildActorFromReq, recordAudit } from '../lib/audit/auditHelpers.js'
+import { readableProjectIds } from '../lib/adminProjectAccess.js'
 import { createCrmSequencesRouter } from './crmSequences.js'
 
 /**
@@ -264,7 +265,7 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
         // L'assigné est contrôlé une fois, avant la boucle.
         validateAssignee: false,
       }
-      const results: Array<{ id: string; ok: boolean; error?: string }> = []
+      const results: Array<{ id: string; ok: boolean; error?: string; code?: string }> = []
       for (const id of [...new Set<string>(ids)]) {
         try {
           const lead = await Lead.findOne({ _id: id, ...scope })
@@ -276,6 +277,10 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
             // Même cascade que la suppression unitaire (service de lead).
             await deleteLeadCascade(lead)
           } else if (action === 'assign') {
+            if (!canReassignLead(me, lead, payload.userId)) {
+              results.push({ id, ok: false, error: 'Seul le titulaire du lead ou un super-admin peut le réassigner' })
+              continue
+            }
             await applyLeadChange(lead, { assignedTo: payload.userId }, change)
           } else if (action === 'status') {
             if (lead.status !== payload.status) {
@@ -297,7 +302,12 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
           }
           results.push({ id, ok: true })
         } catch (err) {
-          results.push({ id, ok: false, error: (err as Error).message })
+          results.push({
+            id,
+            ok: false,
+            error: (err as Error).message,
+            ...(isLeadChangeError(err) ? { code: err.code } : {}),
+          })
         }
       }
       const okCount = results.filter((r) => r.ok).length
@@ -425,12 +435,17 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
     wrap(async (req, res) => {
       const lead = await loadLead(req, res)
       if (!lead) return
+      const ids = req.user ? await readableProjectIds(req.user) : null
+      const quoteScope = ids === null ? {} : { $or: [{ project: null }, { project: { $in: ids } }] }
+      const projectScope = ids === null ? {} : { _id: { $in: ids } }
       const [quotes, projects] = await Promise.all([
-        QuoteProposal.find({ leadId: lead._id })
+        QuoteProposal.find({ leadId: lead._id, ...quoteScope })
           .select('title reference status expiresAt createdAt')
           .sort({ createdAt: -1 })
           .lean(),
-        Project.find({ sourceLead: lead._id }).select('name status').lean(),
+        Project.find({ sourceLead: lead._id, ...projectScope })
+          .select('name status')
+          .lean(),
       ])
       res.json({ quotes, projects })
     }),
@@ -552,6 +567,11 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
       if (!approvesRuns(req)) return a.fail(res, 403, 'CRM_ADMIN_REQUIRED', RULES_ADMIN_MESSAGE)
       if (!isId(req.params.id)) return a.fail(res, 400, 'VALIDATION_ERROR', 'Identifiant invalide')
       const me = await a.actor(req)
+      const execution = await CrmRuleRun.findById(req.params.id).select('lead').lean()
+      if (!execution) return a.fail(res, 409, 'NOT_APPLICABLE', `Exécution introuvable ou non ${label}`)
+      if (!(await Lead.exists({ _id: execution.lead, ...a.leadScope(req) }))) {
+        return a.fail(res, 404, 'NOT_FOUND', 'Exécution introuvable')
+      }
       const run = await fn(req.params.id, me.id)
       if (!run) return a.fail(res, 409, 'NOT_APPLICABLE', `Exécution introuvable ou non ${label}`)
       res.json(run)
@@ -634,7 +654,7 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
       if (!isId(req.params.id)) return a.fail(res, 400, 'VALIDATION_ERROR', 'Identifiant invalide')
       const rule = await CrmRule.findById(req.params.id)
       if (!rule) return a.fail(res, 404, 'NOT_FOUND', 'Règle introuvable')
-      res.json(await simulateRule(rule, { record: req.body?.record === true }))
+      res.json(await simulateRule(rule, { record: req.body?.record === true, leadScope: a.leadScope(req) }))
     }),
   )
 

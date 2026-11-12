@@ -6,6 +6,7 @@ import LeadActivity from '../models/LeadActivity.js'
 import CrmSettings from '../models/CrmSettings.js'
 import User from '../models/User.js'
 import { EXTERNAL_SALES_ROLE, repLeadFilter } from './externalSales.js'
+import { entityFromProject } from './groupEntities.js'
 import { runInTransaction } from './transaction.js'
 
 export function callError(status: number, message: string) {
@@ -145,6 +146,7 @@ export async function importCallLeads(input: {
           contactPhone: phone,
           callList: callList.trim(),
           project,
+          entity: entityFromProject(project),
           externalRep: input.externalRep,
           assignedTo: input.externalRep,
           createdBy: input.actorId ?? null,

@@ -1,6 +1,5 @@
-import Lead from '../models/Lead.js'
 import { logLeadActivity } from './crmAutomations.js'
-import { DO_NOT_CONTACT, normalizeEmail, suppressedAmong } from './crmPrivacy.js'
+import { DO_NOT_CONTACT, normalizeEmail, prospectContacts } from './crmPrivacy.js'
 import logger from './logger.js'
 
 /**
@@ -36,21 +35,11 @@ export async function screenBulkRecipients(recipients: string[]): Promise<Recipi
   const emails = [...new Set(recipients.map(normalizeEmail).filter(Boolean))]
   if (emails.length === 0) return { allowed: [], blocked: [], leadIdsByEmail: new Map() }
 
-  const suppressed = await suppressedAmong(emails)
-  // `contactEmail` en plus du champ normalisé : un lead antérieur à la
-  // migration 008 n'a pas forcément `contactEmailNormalized`.
-  const leads = await Lead.find({
-    $or: [{ contactEmailNormalized: { $in: emails } }, { contactEmail: { $in: emails } }],
-  })
-    .select('_id contactEmail doNotContact')
-    .lean()
-
-  const opposed = new Set<string>()
+  const { suppressed, opposed, leads } = await prospectContacts(emails)
   const leadIdsByEmail = new Map<string, string[]>()
   for (const lead of leads) {
     const email = normalizeEmail(lead.contactEmail)
     if (!emails.includes(email)) continue
-    if (lead.doNotContact) opposed.add(email)
     if (lead.doNotContact || suppressed.has(email)) {
       leadIdsByEmail.set(email, [...(leadIdsByEmail.get(email) ?? []), String(lead._id)])
     }

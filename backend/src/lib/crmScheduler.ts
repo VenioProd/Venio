@@ -62,11 +62,19 @@ import {
 } from './email.js'
 import { invoicePaymentBalance } from './projectFinance/payments.js'
 import logger from './logger.js'
-import { withActiveLeads } from '../automation/jobs/crmLeadScope.js'
+import { withActiveLeads as activeLeads } from '../automation/jobs/crmLeadScope.js'
+import { teamLeadFilter } from './crmScope.js'
+
 import { parisParts, parisWeekKey, parseHHMM } from '../automation/jobs/crmParisTime.js'
 import { acquireSchedulerLock, releaseSchedulerLock } from '../models/SchedulerLock.js'
 import { isCoveredByActiveRule, SYSTEM_RULE_FOR } from './crmRules.js'
 import { proposalReminderCutoff, proposalReminderDaysOf } from './crmProposalReminder.js'
+
+const withActiveLeads = (filter: Record<string, unknown>) =>
+  activeLeads({
+    ...filter,
+    $and: [...((filter.$and as Record<string, unknown>[]) ?? []), teamLeadFilter()],
+  })
 
 interface SchedulerResult {
   processed: number

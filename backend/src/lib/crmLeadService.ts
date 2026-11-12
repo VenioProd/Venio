@@ -1,5 +1,6 @@
-import mongoose, { type Types } from 'mongoose'
+import mongoose, { type ClientSession, type Types } from 'mongoose'
 import Lead, { LEAD_PROJECTS } from '../models/Lead.js'
+import SalesCommission from '../models/SalesCommission.js'
 import LeadActivity from '../models/LeadActivity.js'
 import Interaction from '../models/Interaction.js'
 import PersonalTask from '../models/PersonalTask.js'
@@ -9,7 +10,7 @@ import User from '../models/User.js'
 import CrmSettings from '../models/CrmSettings.js'
 import type { ICrmSettings } from '../types/models/index.js'
 import { calculateLeadScore, logLeadActivity, notifyAssignment, shouldAutoQualify } from './crmAutomations.js'
-import { processWonLead, type WonLeadOutcome } from './crmClientConversion.js'
+import { assertWonClientEmail, processWonLead, type WonLeadOutcome } from './crmClientConversion.js'
 import { normalizedLeadFields } from './crmDedup.js'
 import { normalizeEnrichedLeadFields } from './crmLeadFields.js'
 import { normalizePrivacyPatch, preparePrivacyChange } from './crmPrivacy.js'
@@ -43,6 +44,8 @@ export interface LeadChangeContext {
   source: LeadChangeSource
   /** Réglages déjà chargés (action groupée) ; relus sinon. */
   settings?: ICrmSettings
+  /** Session de l'écriture et de son historique ; les événements sont émis après validation de la transaction. */
+  session?: ClientSession
   /** Émettre les événements des règles (défaut : oui). Une règle les émet elle-même, avec sa profondeur. */
   emit?: boolean
   /** Contrôler que l'assigné est un membre actif habilité (défaut : oui). */
@@ -107,6 +110,7 @@ export interface LeadChangeResult {
   /** Transitions de statut écrites dans l'historique, dans l'ordre. */
   transitions: Array<{ from: string; to: string; auto: boolean }>
   assigneeChanged: boolean
+  statusActivityIds: Types.ObjectId[]
   /** Résultat de la conversion WON ; `null` si le lead n'est pas gagné. */
   won: WonLeadOutcome | null
 }
@@ -287,6 +291,23 @@ export async function applyLeadChange(
   const assigneeTouched = patch.assignedTo !== undefined && String(patch.assignedTo ?? '') !== String(oldAssignee ?? '')
   if (assigneeTouched && ctx.validateAssignee !== false) await assertAssignable(patch.assignedTo)
 
+  if ((patch.status ?? existing?.status) === 'WON') {
+    try {
+      await assertWonClientEmail(
+        {
+          contactEmail: patch.contactEmail ?? existing?.contactEmail,
+          clientAccountId: patch.clientAccountId ?? existing?.clientAccountId,
+        },
+        ctx.session,
+      )
+    } catch (err) {
+      if ((err as { code?: string }).code === 'CLIENT_EMAIL_CONFLICT') {
+        throw new LeadChangeError(409, 'CLIENT_EMAIL_CONFLICT', (err as Error).message)
+      }
+      throw err
+    }
+  }
+
   // Consentement et opposition : fusion avec l'existant, dates posées ici.
   const privacyEvents = preparePrivacyChange(existing, patch, ctx.source)
 
@@ -323,13 +344,17 @@ export async function applyLeadChange(
     lead.score = calculateLeadScore(lead as any, settings.scoringWeights as any)
   }
 
-  // L'acteur ne reçoit pas la notification d'assignation de son propre geste (hook du modèle).
-  if (ctx.actor) lead.$locals.assignmentActorId = ctx.actor
-  await lead.save()
+  // L'externe n'a pas accès au lien d'assignation de l'administration.
+  lead.$locals.assignmentActorId =
+    lead.externalRep && String(lead.assignedTo) === String(lead.externalRep) ? String(lead.externalRep) : ctx.actor
+  await lead.save({ session: ctx.session })
 
   // ── Historique ──
+  const logActivity: typeof logLeadActivity = (...args) =>
+    logLeadActivity(args[0], args[1], args[2], args[3], args[4], ctx.session)
+  const statusActivityIds: Types.ObjectId[] = []
   if (created && settings.activityLogging) {
-    await logLeadActivity(
+    await logActivity(
       lead._id,
       'CREATED',
       `Lead créé${suffix}`,
@@ -340,7 +365,7 @@ export async function applyLeadChange(
   // Les changements de statut sont toujours consignés : ils fondent l'entonnoir
   // et les vitesses du pilotage, qui ne peut pas reconstituer ceux qui manquent.
   for (const t of transitions) {
-    await logLeadActivity(
+    const activity = await logActivity(
       lead._id,
       'STATUS_CHANGE',
       `Statut: ${t.from} → ${t.to}${t.auto ? ' (auto-qualification)' : ''}${suffix}`,
@@ -353,12 +378,13 @@ export async function applyLeadChange(
       },
       ctx.actor,
     )
+    statusActivityIds.push(activity._id as Types.ObjectId)
   }
 
   const newAssignee = lead.assignedTo ? String(lead.assignedTo) : null
   const assigneeChanged = created ? Boolean(newAssignee) : newAssignee !== oldAssignee
   if (!created && assigneeChanged && settings.activityLogging) {
-    await logLeadActivity(
+    await logActivity(
       lead._id,
       'ASSIGNED',
       `Lead réassigné${suffix}`,
@@ -367,7 +393,7 @@ export async function applyLeadChange(
     )
   }
   if (!created && patch.archivedAt !== undefined && settings.activityLogging) {
-    await logLeadActivity(
+    await logActivity(
       lead._id,
       lead.archivedAt ? 'ARCHIVED' : 'RESTORED',
       `${lead.archivedAt ? 'Lead archivé' : 'Lead restauré'}${suffix}`,
@@ -377,7 +403,7 @@ export async function applyLeadChange(
   }
   // Consentement et opposition : toujours consignés, ils prouvent le respect des droits de la personne.
   for (const event of privacyEvents) {
-    await logLeadActivity(lead._id, event.type, `${event.label}${suffix}`, event.payload, ctx.actor)
+    await logActivity(lead._id, event.type, `${event.label}${suffix}`, event.payload, ctx.actor)
   }
 
   // ── Notifications ──
@@ -402,14 +428,14 @@ export async function applyLeadChange(
   // Séquences : opposition, désinscription, anonymisation, archivage ou statut d'arrêt
   // closent les inscriptions ouvertes du lead, quel que soit le canal (et même sans émission
   // d'événements). Import différé : le module des séquences importe les règles, qui importent ce service.
-  if (!created) {
+  if (!created && !ctx.session) {
     const { stopSequencesOnLeadChange } = await import('./crmSequences.js')
     await stopSequencesOnLeadChange(lead, before, ctx.actor)
   }
 
-  if (ctx.emit !== false) emitLeadChanges(lead, before, ctx.actor)
+  if (ctx.emit !== false && !ctx.session) emitLeadChanges(lead, before, ctx.actor)
 
-  return { lead, created, before, transitions, assigneeChanged, won }
+  return { lead, created, before, transitions, assigneeChanged, statusActivityIds, won }
 }
 
 /** Raccourci de création. */
@@ -422,7 +448,25 @@ export function createLead(patch: Record<string, any>, ctx: LeadChangeContext): 
  * échanges, tâches, exécutions de règles, inscriptions aux séquences. Les projets et devis restent (ils
  * portent du chiffre d'affaires).
  */
-export async function deleteLeadCascade(lead: Pick<LeadDoc, '_id'>): Promise<void> {
+export async function deleteLeadCascade(
+  lead: Pick<LeadDoc, '_id'>,
+  opts: { afterMerge?: boolean } = {},
+): Promise<void> {
+  // Une fusion a déjà déplacé commissions, comptes clients et CA vers la cible : sa source peut partir.
+  if (!opts.afterMerge) {
+    const [won, commission, client] = await Promise.all([
+      Lead.exists({ _id: lead._id, status: 'WON' }),
+      SalesCommission.exists({ lead: lead._id }),
+      User.exists({ originLead: lead._id }),
+    ])
+    if (won || commission || client) {
+      throw new LeadChangeError(
+        409,
+        'LEAD_DELETE_FORBIDDEN',
+        'Ce lead gagné ou lié à un client ou une commission doit être archivé',
+      )
+    }
+  }
   await Promise.all([
     LeadActivity.deleteMany({ leadId: lead._id }),
     Interaction.deleteMany({ subjectType: 'LEAD', subjectId: lead._id }),

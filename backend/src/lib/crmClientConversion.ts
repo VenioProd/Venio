@@ -6,12 +6,32 @@ import { createClientFolders } from './nextcloud.js'
 import { autoCreateProjectFromLead, logLeadActivity } from './crmAutomations.js'
 import logger from './logger.js'
 
+export async function assertWonClientEmail(
+  lead: { contactEmail?: string; clientAccountId?: unknown },
+  session?: import('mongoose').ClientSession,
+): Promise<void> {
+  const email = (lead.contactEmail || '').trim().toLowerCase()
+  if (!email) return
+  if (
+    lead.clientAccountId &&
+    (await User.exists({ _id: lead.clientAccountId, role: 'CLIENT' }).session(session ?? null))
+  )
+    return
+  if (await User.exists({ email, role: { $ne: 'CLIENT' } }).session(session ?? null)) {
+    throw Object.assign(new Error('Cet e-mail appartient déjà à un compte non client'), {
+      status: 409,
+      code: 'CLIENT_EMAIL_CONFLICT',
+    })
+  }
+}
+
 export async function ensureClientForWonLead(
   lead: any,
   actorId: string | null = null,
   enableActivityLog: boolean = true,
 ): Promise<any> {
   if (!lead || lead.status !== 'WON') return null
+  await assertWonClientEmail(lead)
 
   const normalizedEmail = (lead.contactEmail || '').trim().toLowerCase()
   let client: any = null

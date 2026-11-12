@@ -1,4 +1,6 @@
 import crypto from 'crypto'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import type { Types } from 'mongoose'
 import Lead, { CONSENT_STATUSES, LEGAL_BASES } from '../models/Lead.js'
 import LeadActivity from '../models/LeadActivity.js'
@@ -95,6 +97,24 @@ export interface ContactCheck {
   via?: 'LEAD' | 'SUPPRESSION_LIST'
 }
 
+/** Même contrôle d'adresse pour les envois unitaires et groupés. */
+export async function prospectContacts(emails: string[]) {
+  const wanted = [...new Set(emails.map(normalizeEmail).filter(Boolean))]
+  if (!wanted.length) return { suppressed: new Set<string>(), opposed: new Set<string>(), leads: [] }
+  const suppressed = await suppressedAmong(wanted)
+  const escaped = wanted.map((email) => email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const leads = await Lead.find({
+    $or: [
+      { contactEmailNormalized: { $in: wanted } },
+      { contactEmail: { $in: escaped.map((email) => new RegExp(`^\\s*${email}\\s*$`, 'i')) } },
+    ],
+  })
+    .select('_id contactEmail doNotContact')
+    .lean()
+  const opposed = new Set(leads.filter((lead) => lead.doNotContact).map((lead) => normalizeEmail(lead.contactEmail)))
+  return { suppressed, opposed, leads }
+}
+
 /** Peut-on écrire à `email` (par défaut l'adresse du lead) dans le cadre de la prospection ? */
 export async function checkProspectContact(
   lead: { doNotContact?: boolean | null; contactEmail?: string | null } | null,
@@ -102,7 +122,9 @@ export async function checkProspectContact(
 ): Promise<ContactCheck> {
   if (lead?.doNotContact) return { allowed: false, reason: DO_NOT_CONTACT, via: 'LEAD' }
   const target = email ?? lead?.contactEmail ?? ''
-  if (await isEmailSuppressed(target)) return { allowed: false, reason: DO_NOT_CONTACT, via: 'SUPPRESSION_LIST' }
+  const { suppressed, opposed } = await prospectContacts([target])
+  if (suppressed.has(normalizeEmail(target))) return { allowed: false, reason: DO_NOT_CONTACT, via: 'SUPPRESSION_LIST' }
+  if (opposed.has(normalizeEmail(target))) return { allowed: false, reason: DO_NOT_CONTACT, via: 'LEAD' }
   return { allowed: true }
 }
 
@@ -338,6 +360,8 @@ export async function anonymizeLead(
   }
 
   const patch: Record<string, any> = {
+    extraInfo: {},
+    ...(lead.company.trim().toLowerCase() === lead.contactName.trim().toLowerCase() ? { company: label } : {}),
     contactName: label,
     contactEmail: '',
     contactPhone: '',
@@ -354,11 +378,16 @@ export async function anonymizeLead(
     patch.closingHandoff = { ...handoff, repNotes: '' }
   }
 
-  const { applyLeadChange } = await import('./crmLeadService.js')
-  await applyLeadChange(lead, patch, { actor: opts.actor, source: opts.source, emit: false, validateAssignee: false })
-
   const filter = { subjectType: 'LEAD', subjectId: lead._id }
-  await Interaction.updateMany(filter, { $set: { subject: '', body: label } })
+  const recordings = await Interaction.find({ ...filter, audio: { $ne: null } })
+    .select('audio')
+    .lean()
+  for (const interaction of recordings) {
+    if (interaction.audio?.filename)
+      await fs.rm(path.resolve('uploads', 'interactions', path.basename(interaction.audio.filename)), { force: true })
+  }
+  await Interaction.updateMany(filter, { $set: { subject: '', body: label, audio: null } })
+  await PersonalTask.updateMany({ leadId: lead._id }, { $set: { title: label } })
   await Interaction.updateMany(
     { ...filter, 'recipients.0': { $exists: true } },
     { $set: { 'recipients.$[].email': ANONYMIZED_EMAIL, 'recipients.$[].name': '', 'recipients.$[].error': '' } },
@@ -370,6 +399,9 @@ export async function anonymizeLead(
   // Les e-mails en attente de validation portent l'adresse et le texte : ils ne partiront plus.
   await CrmRuleRun.updateMany({ lead: lead._id, 'steps.0': { $exists: true } }, { $unset: { 'steps.$[].payload': '' } })
   await CrmRuleRun.updateMany({ lead: lead._id, status: 'PENDING' }, { $set: { status: 'SKIP' } })
+  const { applyLeadChange } = await import('./crmLeadService.js')
+  await applyLeadChange(lead, patch, { actor: opts.actor, source: opts.source, emit: false, validateAssignee: false })
+
   // Journal des séquences : les objets d'e-mails rendus peuvent porter le nom du contact.
   await CrmSequenceEnrollment.updateMany(
     { lead: lead._id, 'history.0': { $exists: true } },

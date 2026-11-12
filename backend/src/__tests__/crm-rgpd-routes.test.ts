@@ -275,21 +275,22 @@ describe('envoi manuel d’e-mail depuis la fiche', () => {
   })
 })
 
-describe('GET /api/public/unsubscribe', () => {
+describe('/api/public/unsubscribe', () => {
   it('lien valide : opposition, liste de suppression, page de confirmation, audit ; un second clic ne change rien', async () => {
     const lead = await makeLead()
     const token = privacy.signUnsubscribeToken({ leadId: lead._id, email: 'ana@domaine.test' })
     authState.user = null
-    const res = await request(app)
-      .get(`/api/public/unsubscribe?token=${encodeURIComponent(token)}`)
-      .expect(200)
+    const url = `/api/public/unsubscribe?token=${encodeURIComponent(token)}`
+    // Ouvrir le lien ne désinscrit pas : les antivirus de messagerie le préchargent.
+    const asked = await request(app).get(url).expect(200)
+    expect(asked.text).toContain('Confirmer la désinscription')
+    expect((await Lead.findById(lead._id).lean())?.doNotContact).toBe(false)
+    const res = await request(app).post(url).type('form').send('confirm=1').expect(200)
     expect(res.headers['content-type']).toContain('text/html')
     expect(res.text).toContain('Désinscription confirmée')
     expect((await Lead.findById(lead._id).lean())?.doNotContact).toBe(true)
     expect(await SuppressionEntry.exists({ emailNormalized: 'ana@domaine.test', reason: 'UNSUBSCRIBE' })).toBeTruthy()
-    await request(app)
-      .get(`/api/public/unsubscribe?token=${encodeURIComponent(token)}`)
-      .expect(200)
+    await request(app).post(url).type('form').send('confirm=1').expect(200)
     expect(await AuditLog.countDocuments({ action: 'CRM_LEAD_UNSUBSCRIBE' })).toBe(1)
   })
 

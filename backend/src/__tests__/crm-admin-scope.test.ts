@@ -352,8 +352,8 @@ describe('envoi groupé / destinataires « ne pas contacter »', () => {
 
     const res = await send(['libre@ex.test', 'LISTE@ex.test', 'oppose@ex.test', 'equipe@ex.test']).expect(200)
 
-    expect(sendBulkEmail).toHaveBeenCalledTimes(1)
-    const sentTo = sendBulkEmail.mock.calls[0]![0].recipients.map((r) => r.email)
+    // Un envoi par destinataire : chaque prospect reçoit son propre lien de désinscription.
+    const sentTo = sendBulkEmail.mock.calls.flatMap((call) => call[0].recipients.map((r) => r.email))
     expect(sentTo).toEqual(['libre@ex.test', 'equipe@ex.test'])
     expect(res.body.sent).toBe(2)
     expect(res.body.total).toBe(2)
@@ -383,7 +383,10 @@ describe('envoi groupé / destinataires « ne pas contacter »', () => {
 
   it('sans adresse bloquée : envoi inchangé, blocked vide', async () => {
     const res = await send(['a@ex.test', 'b@ex.test']).expect(200)
-    expect(sendBulkEmail.mock.calls[0]![0].recipients.map((r) => r.email)).toEqual(['a@ex.test', 'b@ex.test'])
+    expect(sendBulkEmail.mock.calls.flatMap((call) => call[0].recipients.map((r) => r.email))).toEqual([
+      'a@ex.test',
+      'b@ex.test',
+    ])
     expect(res.body.blocked).toEqual([])
     expect(await LeadActivity.countDocuments({ type: 'EMAIL_BLOCKED' })).toBe(0)
   })

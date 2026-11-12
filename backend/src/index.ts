@@ -521,13 +521,18 @@ app.use(jsonBodyErrorHandler)
 
 // Global error handler — hide stack traces in production
 app.use((err: Error & { status?: number; errors?: unknown[] }, _req: Request, res: Response, _next: NextFunction) => {
-  const status = err.status || 500
+  const invalidData = err instanceof mongoose.Error.ValidationError || err instanceof mongoose.Error.CastError
+  const status = invalidData ? 400 : err.status || 500
 
   logger.error({ err, status }, 'Unhandled request error')
 
   res.status(status).json({
-    error: status >= 500 && isProd ? 'Erreur interne du serveur' : err.message || 'Server error',
-    ...(status === 400 && err.errors ? { errors: err.errors } : {}),
+    error: invalidData
+      ? 'Données invalides'
+      : status >= 500 && isProd
+        ? 'Erreur interne du serveur'
+        : err.message || 'Server error',
+    ...(!invalidData && status === 400 && err.errors ? { errors: err.errors } : {}),
   })
 })
 

@@ -177,7 +177,7 @@ export async function mergeLeads(target: LeadDoc, source: LeadDoc, actor: string
     { sourceId: String(from), sourceCompany: source.company, sourceStatus: source.status, filledFields, moved },
     actor,
   )
-  await deleteLeadCascade(source)
+  await deleteLeadCascade(source, { afterMerge: true })
 
   const lead = (await Lead.findById(to)) ?? target
   return { lead, moved, filledFields }

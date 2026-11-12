@@ -12,6 +12,8 @@ import { callError, importCallLeads, mappedCsv, parseLeadCsv } from '../../lib/c
 import { computeRequestHash } from '../../lib/agent/idempotency.js'
 import { validateCallSettings } from '../../lib/callSettings.js'
 import { runInTransaction } from '../../lib/transaction.js'
+import { applyLeadChange } from '../../lib/crmLeadService.js'
+import { stopSequencesOnLeadChange } from '../../lib/crmSequences.js'
 import { emitLeadChanges, fireLeadEvent } from '../../lib/crmRules.js'
 import type { ILead } from '../../types/models/index.js'
 
@@ -237,44 +239,53 @@ router.post(
           const fields = [
             'status',
             'statusChangedAt',
+            'score',
+            'probability',
+            'lastContactAt',
             'lastCallOutcome',
             'lastCallAt',
             'nextActionAt',
             'interactionsCount',
             'lastInteractionAt',
           ]
-          if (outcome.reached) fields.push('lastContactAt')
           if (outcome.effect === 'DO_NOT_CALL') fields.push('doNotCall')
           if (outcome.effect === 'WRONG_NUMBER') fields.push('phoneInvalid')
           if (['LOST', 'DO_NOT_CALL'].includes(outcome.effect)) fields.push('lostReason', 'lostComment')
           const leadBefore = Object.fromEntries(fields.map((field) => [field, lead.get(field)]))
-          if (outcome.effect === 'MEETING') lead.status = 'DEMO'
-          else if (['LOST', 'DO_NOT_CALL'].includes(outcome.effect)) lead.status = 'LOST'
-          else if (outcome.effect === 'CALLBACK') lead.status = 'CONTACTED'
-          if (statusBefore !== lead.status) lead.statusChangedAt = now
-          const activityId = statusBefore !== lead.status ? new mongoose.Types.ObjectId() : null
-          lead.lastCallOutcome = input.outcome
-          lead.lastCallAt = now
-          lead.interactionsCount = (lead.interactionsCount ?? 0) + 1
-          if (!lead.lastInteractionAt || lead.lastInteractionAt < now) lead.lastInteractionAt = now
-          if (outcome.reached) lead.lastContactAt = now
-          lead.nextActionAt = nextActionAt
-          if (!nextActionAt && outcome.retryAfterMinutes !== null)
-            lead.nextActionAt = new Date(now.getTime() + outcome.retryAfterMinutes * 60000)
-          if (outcome.effect === 'DO_NOT_CALL') lead.doNotCall = true
-          if (outcome.effect === 'WRONG_NUMBER') lead.phoneInvalid = true
+          const patch: Record<string, any> = {
+            lastCallOutcome: input.outcome,
+            lastCallAt: now,
+            interactionsCount: (lead.interactionsCount ?? 0) + 1,
+            lastInteractionAt: !lead.lastInteractionAt || lead.lastInteractionAt < now ? now : lead.lastInteractionAt,
+            nextActionAt:
+              nextActionAt ??
+              (outcome.retryAfterMinutes !== null ? new Date(now.getTime() + outcome.retryAfterMinutes * 60000) : null),
+          }
+          if (outcome.effect === 'MEETING') patch.status = 'DEMO'
+          else if (['LOST', 'DO_NOT_CALL'].includes(outcome.effect)) patch.status = 'LOST'
+          else if (outcome.effect === 'CALLBACK') patch.status = 'CONTACTED'
+          if (outcome.reached) patch.lastContactAt = now
+          if (outcome.effect === 'DO_NOT_CALL') patch.doNotCall = true
+          if (outcome.effect === 'WRONG_NUMBER') patch.phoneInvalid = true
           if (['LOST', 'DO_NOT_CALL'].includes(outcome.effect)) {
-            lead.lostReason =
+            patch.lostReason =
               settings.lostReasons.find(
                 (reason) => reason.toLocaleLowerCase('fr') === outcome.fr.toLocaleLowerCase('fr'),
-              ) ?? outcome.fr
-            lead.lostComment = input.note
+              ) ?? ''
+            patch.lostComment = input.note
           }
-          if (['LOST', 'DO_NOT_CALL', 'WRONG_NUMBER'].includes(outcome.effect)) lead.nextActionAt = null
+          if (['LOST', 'DO_NOT_CALL', 'WRONG_NUMBER'].includes(outcome.effect)) patch.nextActionAt = null
+          const change = await applyLeadChange(lead, patch, {
+            actor: repId,
+            source: 'bulk',
+            settings,
+            session,
+            emit: false,
+          })
+          const activityId = change.statusActivityIds[0] ?? null
           for (const field of fields) {
-            if (!lead.isModified(field)) delete leadBefore[field]
+            if (JSON.stringify(leadBefore[field]) === JSON.stringify(lead.get(field))) delete leadBefore[field]
           }
-          await lead.save({ session })
           const [interaction] = await Interaction.create(
             [
               {
@@ -295,20 +306,6 @@ router.post(
             ],
             { session },
           )
-          if (statusBefore !== lead.status)
-            await LeadActivity.create(
-              [
-                {
-                  leadId: lead._id,
-                  _id: activityId,
-                  type: 'STATUS_CHANGE',
-                  label: `Statut : ${statusBefore} → ${lead.status}`,
-                  payload: { from: statusBefore, to: lead.status },
-                  actorId: repId,
-                },
-              ],
-              { session },
-            )
           return { id: interaction!._id, fresh: { lead, statusBefore, occurredAt: now } }
         })
       } catch (err) {
@@ -318,6 +315,7 @@ router.post(
       // Les règles du CRM s'exécutent une fois l'appel validé ; elles ne bloquent jamais la réponse.
       if (saved.fresh) {
         const { lead, statusBefore } = saved.fresh
+        await stopSequencesOnLeadChange(lead, { status: statusBefore }, repId)
         emitLeadChanges(lead, { status: statusBefore, assignedTo: lead.assignedTo }, repId)
         void fireLeadEvent(lead._id as mongoose.Types.ObjectId, {
           type: 'INTERACTION_LOGGED',

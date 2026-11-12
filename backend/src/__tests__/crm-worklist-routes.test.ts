@@ -86,9 +86,10 @@ describe('GET /api/admin/crm/worklist', () => {
     expect(response.body.counts).toEqual({ overdue: 1, today: 1, upcoming: 1, drifting: 1 })
   })
 
-  it('exclut les leads gagnés et perdus', async () => {
+  it('exclut les leads gagnés, perdus et archivés', async () => {
     await createLead({ company: 'Gagne', status: 'WON', nextActionAt: daysFromNow(-3) })
     await createLead({ company: 'Perdu', status: 'LOST', nextActionAt: daysFromNow(-3) })
+    await createLead({ company: 'Archivé', archivedAt: daysFromNow(-1), nextActionAt: daysFromNow(-3) })
 
     actAs(superAdminId, 'SUPER_ADMIN')
     const response = await request(app).get('/api/admin/crm/worklist').expect(200)

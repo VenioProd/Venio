@@ -58,7 +58,7 @@ describe('POST /api/contact', () => {
       createdBy: null,
     })
 
-    const activity = await LeadActivity.findOne({ leadId: lead!._id }).lean()
+    const activity = await LeadActivity.findOne({ leadId: lead!._id, type: 'CONTACT_FORM_SUBMITTED' }).lean()
     expect(activity).toMatchObject({
       type: 'CONTACT_FORM_SUBMITTED',
       label: 'Nouveau contact reçu depuis le site',

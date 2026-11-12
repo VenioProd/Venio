@@ -1,4 +1,5 @@
-import type { Types } from 'mongoose'
+import { parisParts, parisWallTimeToDate } from '../automation/jobs/crmParisTime.js'
+import type { ClientSession, Types } from 'mongoose'
 import LeadActivity from '../models/LeadActivity.js'
 import Lead from '../models/Lead.js'
 import User from '../models/User.js'
@@ -84,14 +85,16 @@ export async function logLeadActivity(
   label: string,
   payload: Record<string, unknown> = {},
   actorId: Types.ObjectId | string | null = null,
+  session?: ClientSession,
 ) {
-  return LeadActivity.create({
+  const activity = new LeadActivity({
     leadId,
     type,
     label,
     payload,
     actorId,
   })
+  return activity.save({ session })
 }
 
 /**
@@ -230,12 +233,10 @@ export function buildWorklist<T extends LeadSignalFields>(
   settings: WorklistSettings,
   now: Date = new Date(),
 ): WorklistGroups<T> {
-  const startOfToday = new Date(now)
-  startOfToday.setHours(0, 0, 0, 0)
-  const startOfTomorrow = new Date(startOfToday)
-  startOfTomorrow.setDate(startOfTomorrow.getDate() + 1)
-  const endOfWindow = new Date(startOfToday)
-  endOfWindow.setDate(endOfWindow.getDate() + UPCOMING_WINDOW_DAYS + 1)
+  const { year, month, day } = parisParts(now)
+  const startOfToday = parisWallTimeToDate(year, month, day, 0)
+  const startOfTomorrow = parisWallTimeToDate(year, month, day + 1, 0)
+  const endOfWindow = parisWallTimeToDate(year, month, day + UPCOMING_WINDOW_DAYS + 1, 0)
 
   const groups: WorklistGroups<T> = { overdue: [], today: [], upcoming: [], drifting: [] }
 
