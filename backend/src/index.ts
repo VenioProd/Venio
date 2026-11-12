@@ -117,6 +117,7 @@ import StripeEvent from './models/StripeEvent.js'
 import InvoicePaymentLink from './models/InvoicePaymentLink.js'
 import SalesCommission from './models/SalesCommission.js'
 import { startScheduler } from './lib/crmScheduler.js'
+import { startCallPipeline } from './lib/telephony/recording.js'
 import { initAutomationEngine } from './automation/index.js'
 import { startSubscriptionInvoiceScheduler } from './lib/projectFinance/subscriptionScheduler.js'
 import { startAutoLockScheduler } from './lib/accounting/autoLock.js'
@@ -606,6 +607,8 @@ mongoose
       logger.info({ port, version: APP_VERSION }, 'API listening')
       // Start CRM automation scheduler (legacy)
       startScheduler()
+      // Poste d'appel : fin de transcript → analyse, reprise de l'audio d'un enregistrement.
+      startCallPipeline()
       // Start new automation engine
       initAutomationEngine()
       // Verrouillage automatique des écritures comptables VALIDATED expirées

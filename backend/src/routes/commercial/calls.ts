@@ -14,7 +14,15 @@ import {
   telephonyConfig,
   telephonyError,
 } from '../../lib/telephony/index.js'
-import { hangupProviderCall } from '../../lib/telephony/rest.js'
+import { fetchProviderRecording, hangupProviderCall } from '../../lib/telephony/rest.js'
+import {
+  objectToRecording,
+  publicRecording,
+  recordingConfig,
+  recordingSettings,
+} from '../../lib/telephony/recording.js'
+import CallTranscript from '../../models/CallTranscript.js'
+import CallAnalysis from '../../models/CallAnalysis.js'
 
 /**
  * Appels du commercial externe (lot A). On lance un appel par l'identifiant du
@@ -45,6 +53,7 @@ router.get('/calls/config', async (_req, res, next) => {
       edge: config?.edge ?? null,
       callingHours: settings.telephony.callingHours,
       attemptCap: settings.telephony.attemptCapPerDay,
+      recording: recordingConfig(settings),
     })
   } catch (err) {
     next(err)
@@ -128,6 +137,7 @@ router.get('/calls/:id', async (req, res, next) => {
       durationSec: call.durationSec,
       answeredBy: call.answeredBy,
       suggestedOutcome: suggestedOutcome(call, settings.callOutcomes),
+      recording: publicRecording(call),
     })
   } catch (err) {
     next(err)
@@ -155,6 +165,84 @@ router.post('/calls/:id/hangup', async (req, res, next) => {
     // L'état final arrive ensuite par le rappel d'états de Twilio.
     await hangupProviderCall(config, current.providerCallSid)
     res.json({ status: current.status })
+  } catch (err) {
+    next(err)
+  }
+})
+
+/** Le prospect s'oppose à l'enregistrement : arrêt, effacement, aucun transcript. Rejouable. */
+router.post('/calls/:id/recording/stop', async (req, res, next) => {
+  try {
+    const call = await findOwnCall(req)
+    if (!call) throw telephonyError(404, 'NOT_FOUND')
+    res.json({ recording: publicRecording(await objectToRecording(call._id)) })
+  } catch (err) {
+    next(err)
+  }
+})
+
+/** Audio relayé par Venio, lu en mémoire : seulement s'il est conservé (`keepAudioDays` > 0) et encore là. */
+router.get('/calls/:id/recording', async (req, res, next) => {
+  try {
+    const call = await findOwnCall(req)
+    const recording = call?.recording
+    const config = telephonyConfig()
+    const settings = await CrmSettings.getSettings()
+    const held =
+      recording?.status === 'READY' &&
+      !recording.objection &&
+      recording.sid &&
+      (!recording.deleteAt || recording.deleteAt > new Date()) &&
+      recordingSettings(settings).keepAudioDays > 0
+    if (!call || !held || !config) throw telephonyError(404, 'NOT_FOUND')
+    const audio = await fetchProviderRecording(config, recording.sid!, recording.channels === 1 ? 1 : 2)
+    res.set({ 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store', 'Content-Length': String(audio.length) })
+    res.send(audio)
+  } catch (err) {
+    next(err)
+  }
+})
+
+/** Les 20 derniers appels de l'auteur sur ce lead, du plus récent au plus ancien. */
+router.get('/leads/:id/calls', async (req, res, next) => {
+  try {
+    const repId = String(req.user!.id)
+    const leadId = String(req.params.id)
+    const lead = mongoose.isObjectIdOrHexString(leadId)
+      ? await Lead.exists({ _id: leadId, ...repLeadFilter(repId) })
+      : null
+    if (!lead) throw telephonyError(404, 'NOT_FOUND')
+    const calls = await Call.find({ lead: leadId, author: repId })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(20)
+      .select('status startedAt answeredAt endedAt durationSec recording')
+      .lean()
+    const ids = calls.map((call) => call._id)
+    const [transcripts, analyses] = await Promise.all([
+      CallTranscript.find({ call: { $in: ids }, author: repId })
+        .select('call status')
+        .lean(),
+      CallAnalysis.find({ call: { $in: ids }, author: repId })
+        .select('call status')
+        .lean(),
+    ])
+    const statusOf = (rows: { call: unknown; status: string }[]) =>
+      new Map(rows.map((row) => [String(row.call), row.status]))
+    const transcriptStatus = statusOf(transcripts)
+    const analysisStatus = statusOf(analyses)
+    res.json({
+      calls: calls.map((call) => ({
+        _id: call._id,
+        status: call.status,
+        startedAt: call.startedAt,
+        answeredAt: call.answeredAt,
+        endedAt: call.endedAt,
+        durationSec: call.durationSec,
+        recording: publicRecording(call),
+        transcriptStatus: transcriptStatus.get(String(call._id)) ?? null,
+        analysisStatus: analysisStatus.get(String(call._id)) ?? null,
+      })),
+    })
   } catch (err) {
     next(err)
   }

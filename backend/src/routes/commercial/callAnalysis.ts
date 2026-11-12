@@ -2,11 +2,19 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import mongoose from 'mongoose'
 import idempotentRequest from '../../middleware/idempotentRequest.js'
 import CallAnalysis from '../../models/CallAnalysis.js'
+import Call from '../../models/Call.js'
+import CallTranscript from '../../models/CallTranscript.js'
 import Lead from '../../models/Lead.js'
 import { repLeadFilter } from '../../lib/externalSales.js'
 import { isLeadChangeError } from '../../lib/crmLeadService.js'
 import { toRepLead } from '../../lib/repLeadView.js'
-import { applyCallAnalysis, rejectCallAnalysis, resolveCallHold, retryAnalysis } from '../../lib/callAnalysis/index.js'
+import {
+  applyCallAnalysis,
+  enqueueAnalysis,
+  rejectCallAnalysis,
+  resolveCallHold,
+  retryAnalysis,
+} from '../../lib/callAnalysis/index.js'
 import { publicAnalysis } from '../../lib/callAnalysis/apply.js'
 import { currentValue, leadView, REP_ACCEPTABLE_KEYS } from '../../lib/callAnalysis/fields.js'
 
@@ -81,8 +89,41 @@ router.post(
   },
 )
 
+/**
+ * Aucune analyse encore : elle est créée si l'appel est à l'auteur, dans son
+ * périmètre, que son transcript est `DONE` et que le prospect ne s'est pas
+ * opposé à l'enregistrement. `null` sinon (404).
+ */
+async function createMissingAnalysis(req: Request) {
+  const callId = String(req.params.id)
+  if (!mongoose.isObjectIdOrHexString(callId)) return null
+  const [call, transcript] = await Promise.all([
+    Call.findOne({ _id: callId, author: req.user!.id }).select('lead author recording').lean(),
+    CallTranscript.findOne({ call: callId, author: req.user!.id, status: 'DONE' })
+      .select('segments durationSec')
+      .lean(),
+  ])
+  if (!call || !transcript || call.recording?.objection) return null
+  if (!(await Lead.exists({ _id: call.lead, ...repLeadFilter(req.user!.id) }))) return null
+  return enqueueAnalysis({
+    callId,
+    leadId: String(call.lead),
+    authorId: String(call.author),
+    segments: transcript.segments,
+    durationSec: transcript.durationSec,
+  })
+}
+
 router.post('/calls/:id/analysis/retry', idempotentRequest, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const exists = mongoose.isObjectIdOrHexString(String(req.params.id))
+      ? await CallAnalysis.exists({ call: String(req.params.id), author: req.user!.id })
+      : null
+    if (!exists) {
+      const created = await createMissingAnalysis(req)
+      if (!created) return res.status(404).json({ error: 'Analyse introuvable' })
+      return res.status(202).json({ analysis: await publicAnalysis(created) })
+    }
     const found = await findOwnAnalysis(req, res)
     if (!found) return
     const analysis = await retryAnalysis(found.analysis._id)

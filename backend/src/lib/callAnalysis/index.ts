@@ -56,18 +56,20 @@ function isDuplicateKey(err: unknown): boolean {
   return (err as { code?: number })?.code === 11000
 }
 
-export async function analyzeCall(input: {
+type AnalysisInput = {
   callId: string
   leadId: string
   authorId: string
   segments: TranscriptSegment[]
   durationSec: number | null
-}): Promise<{ analysisId: string }> {
+}
+
+/** Crée l'analyse `PENDING` ; une seule par appel, un second déclenchement renvoie la première. */
+async function createAnalysis(input: AnalysisInput): Promise<{ analysis: ICallAnalysis; created: boolean }> {
   const settings = await CrmSettings.getSettings()
   const now = new Date()
-  let analysis: ICallAnalysis
   try {
-    analysis = await CallAnalysis.create({
+    const analysis = await CallAnalysis.create({
       call: input.callId,
       lead: input.leadId,
       author: input.authorId,
@@ -78,14 +80,32 @@ export async function analyzeCall(input: {
       durationSec: input.durationSec,
       purgeAt: addMonths(now, analysisSettings(settings).retentionMonths),
     })
+    return { analysis, created: true }
   } catch (err) {
-    // Une seule analyse par appel : un second déclenchement renvoie la première.
     if (!isDuplicateKey(err)) throw err
-    const existing = await CallAnalysis.findOne({ call: input.callId }).select('_id').lean()
-    return { analysisId: String(existing!._id) }
+    return { analysis: (await CallAnalysis.findOne({ call: input.callId }))!, created: false }
   }
-  await runAnalysis(analysis._id, input.segments)
+}
+
+export async function analyzeCall(input: AnalysisInput): Promise<{ analysisId: string }> {
+  const { analysis, created } = await createAnalysis(input)
+  if (created) await runAnalysis(analysis._id, input.segments)
   return { analysisId: String(analysis._id) }
+}
+
+/**
+ * Comme `analyzeCall`, sans attendre le modèle : l'analyse est créée, puis
+ * exécutée en arrière-plan. Une analyse interrompue (redémarrage) reste
+ * `PENDING` et le balayage la reprend.
+ */
+export async function enqueueAnalysis(input: AnalysisInput): Promise<ICallAnalysis> {
+  const { analysis, created } = await createAnalysis(input)
+  if (created) {
+    void runAnalysis(analysis._id, input.segments).catch((err) =>
+      logger.error({ err, analysisId: String(analysis._id) }, '[callAnalysis] Échec en arrière-plan'),
+    )
+  }
+  return analysis
 }
 
 /** Transcript rangé par le lot C (`CallTranscript`), quand le modèle est chargé. Sert aux relances. */

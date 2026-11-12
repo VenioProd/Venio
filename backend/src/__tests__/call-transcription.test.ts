@@ -6,6 +6,7 @@ import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
 import { createSession } from '../lib/session.js'
 import commercialRoutes from '../routes/commercial/index.js'
 import CallTranscript from '../models/CallTranscript.js'
+import Lead from '../models/Lead.js'
 import CrmSettings from '../models/CrmSettings.js'
 import User from '../models/User.js'
 import {
@@ -188,7 +189,9 @@ it('purge les transcripts arrivés à échéance, garde les autres', async () =>
 })
 
 it('le transcript n’est lisible que par l’auteur de l’appel', async () => {
-  const { callId, leadId } = ids()
+  const { callId } = ids()
+  // La lecture exige aussi que le lead soit dans le périmètre de l'auteur (vague 2).
+  const leadId = String((await Lead.create({ company: 'Alpha', externalRep: repA }))._id)
   await CallTranscript.create({
     call: callId,
     lead: leadId,

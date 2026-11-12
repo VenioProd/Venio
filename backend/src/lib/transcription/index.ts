@@ -141,10 +141,12 @@ async function startJob(doc: ICallTranscript, audio: { fetch(): Promise<Buffer> 
   try {
     const audioUrl = await uploadAudio(buffer)
     const jobId = await submitJob({ audioUrl, language: doc.language, channels: doc.channels })
-    await CallTranscript.updateOne(
-      { _id: doc._id },
+    const attached = await CallTranscript.updateOne(
+      { _id: doc._id, status: { $in: ['PENDING', 'PROCESSING'] } },
       { $set: { status: 'PROCESSING', providerJobId: jobId, submittedAt: new Date(), leaseUntil: null, error: '' } },
     )
+    // Transcript effacé pendant l'envoi (opposition, anonymisation) : le travail ne doit pas survivre chez le fournisseur.
+    if (attached.matchedCount === 0) await deleteJob(jobId).catch(() => {})
     return false
   } catch (err) {
     return recordFailure(doc, errorCode(err, 'SUBMIT_FAILED'))
@@ -301,4 +303,50 @@ export async function purgeTranscripts(now = new Date()): Promise<{ purged: numb
   const { deletedCount } = await CallTranscript.deleteMany(due)
   if (deletedCount) logger.info({ purged: deletedCount }, 'transcription: purge')
   return { purged: deletedCount }
+}
+
+/**
+ * Efface des transcripts avant leur échéance (opposition à l'enregistrement,
+ * anonymisation), avec leur travail chez le fournisseur. Si le fournisseur ne
+ * répond pas, il reste un marqueur vide (`FAILED`, `DISCARDED`, sans texte) :
+ * il empêche toute nouvelle demande pour l'appel, le balayage rejoue la
+ * suppression chez le fournisseur et la purge l'efface.
+ */
+export async function discardTranscripts(filter: {
+  call?: Types.ObjectId | string
+  lead?: Types.ObjectId | string
+}): Promise<{ discarded: number }> {
+  if (!filter.call && !filter.lead) return { discarded: 0 }
+  const docs = await CallTranscript.find(filter).select('_id providerJobId providerDeletedAt').lean()
+  for (const doc of docs) {
+    let cleared = !doc.providerJobId || Boolean(doc.providerDeletedAt)
+    if (!cleared && isConfigured()) {
+      try {
+        await deleteJob(doc.providerJobId!)
+        cleared = true
+      } catch (err) {
+        cleared = err instanceof ProviderError && err.httpStatus === 404
+      }
+    }
+    if (cleared) await CallTranscript.deleteOne({ _id: doc._id })
+    else {
+      const now = new Date()
+      await CallTranscript.updateOne(
+        { _id: doc._id },
+        {
+          $set: {
+            status: 'FAILED',
+            segments: [],
+            durationSec: null,
+            error: 'DISCARDED',
+            purgeAt: now,
+            leaseUntil: null,
+            doneNotifiedAt: now,
+          },
+        },
+      )
+    }
+  }
+  if (docs.length) logger.info({ discarded: docs.length }, 'transcription: transcripts effacés')
+  return { discarded: docs.length }
 }
