@@ -202,7 +202,17 @@ export function createCallsRoutes(scope: CallDeskScope) {
         recordingSettings(settings).keepAudioDays > 0
       if (!call || !held || !config) throw telephonyError(404, 'NOT_FOUND')
       const audio = await fetchProviderRecording(config, recording.sid!, recording.channels === 1 ? 1 : 2)
-      res.set({ 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store', 'Content-Length': String(audio.length) })
+      res.set({ 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store', 'Accept-Ranges': 'bytes' })
+      // Le lecteur demande des plages (Safari n'en lit pas d'autre) : une seule plage servie, sinon l'audio entier.
+      const ranges = req.range(audio.length, { combine: true })
+      if (ranges === -1) return res.status(416).set('Content-Range', `bytes */${audio.length}`).end()
+      if (Array.isArray(ranges) && ranges.type === 'bytes' && ranges.length === 1) {
+        const { start, end } = ranges[0]!
+        res.status(206).set({ 'Content-Range': `bytes ${start}-${end}/${audio.length}` })
+        res.set('Content-Length', String(end - start + 1))
+        return res.end(audio.subarray(start, end + 1))
+      }
+      res.set('Content-Length', String(audio.length))
       res.send(audio)
     } catch (err) {
       next(err)
