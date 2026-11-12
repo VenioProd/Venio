@@ -1,5 +1,6 @@
 const fr = {
   'shell.hub.crm.queue': 'À traiter',
+  'shell.hub.crm.calls': 'Appels',
   'shell.hub.crm.pilotage': 'Pilotage',
   'shell.hub.crm.settings': 'Réglages',
   'shell.zone.commercial': 'Commercial',

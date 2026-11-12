@@ -43,6 +43,10 @@ export interface Lead {
   lastInteractionAt?: string | null
   interactionsCount?: number
   archivedAt?: string | null
+  /** Retenue après une opposition détectée sur un appel : la fiche n'est plus appelable en attendant la décision. */
+  callHold?: { at: string; reason: string } | null
+  /** Fiche transmise au closer par un commercial externe. */
+  closingHandoff?: { at: string } | null
   automationPausedAt?: string | null
   // ── RGPD (chantier 3D) ──
   consent?: LeadConsent

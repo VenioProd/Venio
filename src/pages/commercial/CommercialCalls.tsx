@@ -1,14 +1,10 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useI18n } from '../../context/I18nContext'
-import {
-  commercialApi,
-  formatDay,
-  type CallSettings,
-  type RepLead,
-  type RepInteraction,
-} from '../../services/externalSales'
+import { formatDay, type CallSettings, type RepLead, type RepInteraction } from '../../services/externalSales'
+import { commercialDesk, type CallDeskApi } from './callDesk'
 import CallLeadImport from './CallLeadImport'
+import './CommercialSpace.css'
 import RecentCalls, { type RecentCall } from './RecentCalls'
 import CallBar from './softphone/CallBar'
 import { useSoftphone } from './softphone/useSoftphone'
@@ -29,12 +25,18 @@ function localDate(value: string | null) {
 }
 
 export default function CommercialCalls() {
+  return <CallDesk desk={commercialDesk} />
+}
+
+/** La file d'appels, commune au commercial externe (`commercialDesk`) et à l'équipe (voir `crm-board/TeamCallDesk`). */
+export function CallDesk({ desk }: { desk: CallDeskApi }) {
   const { t, locale } = useI18n()
   const { user } = useAuth()
   const [settings, setSettings] = useState<CallSettings | null>(null)
   const [filters, setFilters] = useState<{ lists: string[]; projects: string[] }>({ lists: [], projects: [] })
   const [callList, setCallList] = useState('')
   const [project, setProject] = useState('')
+  const [mine, setMine] = useState(true)
   const [leads, setLeads] = useState<RepLead[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
@@ -58,7 +60,7 @@ export default function CommercialCalls() {
 
   useEffect(() => {
     let active = true
-    Promise.all([commercialApi.callSettings(), commercialApi.callFilters()])
+    Promise.all([desk.settings(), desk.filters()])
       .then(([config, options]) => {
         if (active) {
           setSettings(config)
@@ -71,12 +73,12 @@ export default function CommercialCalls() {
     return () => {
       active = false
     }
-  }, [refresh])
+  }, [desk, refresh])
 
   useEffect(() => {
     let active = true
-    commercialApi
-      .callQueue({ callList, project })
+    desk
+      .queue({ callList, project, ...(desk.mineToggle ? { mine } : {}) })
       .then((data) => {
         if (active) {
           setLeads(data.leads)
@@ -92,17 +94,17 @@ export default function CommercialCalls() {
     return () => {
       active = false
     }
-  }, [callList, project, refresh])
+  }, [desk, callList, project, mine, refresh])
 
   useEffect(() => {
     if (selected) noteRef.current?.focus()
     if (!selected) return
     let active = true
-    commercialApi
-      .lead(selected)
-      .then((data) => {
+    desk
+      .history(selected)
+      .then((items) => {
         if (active) {
-          setHistory((current) => ({ ...current, [selected]: data.interactions.slice(0, 5) }))
+          setHistory((current) => ({ ...current, [selected]: items }))
           setHistoryResult({ id: selected, error: '' })
         }
       })
@@ -112,7 +114,7 @@ export default function CommercialCalls() {
     return () => {
       active = false
     }
-  }, [selected])
+  }, [desk, selected])
 
   const resetQueue = () => {
     setLoading(true)
@@ -154,7 +156,7 @@ export default function CommercialCalls() {
     storeDraft(lead._id, draft)
   }
   // Après l'appel : le résultat se présélectionne d'après l'état final, et le callId part avec la fiche.
-  const softphone = useSoftphone({ onSettled: (call) => settleCall(call) })
+  const softphone = useSoftphone({ onSettled: (call) => settleCall(call), apiPrefix: desk.apiPrefix })
   const settleCall = (call: SettledCall) => {
     const lead = leads.find((item) => item._id === call.leadId)
     if (!lead) return
@@ -190,7 +192,7 @@ export default function CommercialCalls() {
     let next: string | null = start
     let page: RepLead[] = []
     do {
-      const data = await commercialApi.callQueue({ callList, project, cursor: next })
+      const data = await desk.queue({ callList, project, cursor: next, ...(desk.mineToggle ? { mine } : {}) })
       page = data.leads.filter((item) => !completed.current.has(item._id))
       next = data.nextCursor
     } while (!page.length && next)
@@ -226,7 +228,7 @@ export default function CommercialCalls() {
       const input = { ...draft, nextActionAt: draft.nextActionAt ? new Date(draft.nextActionAt).toISOString() : null }
       const body = JSON.stringify({ leadId: lead._id, ...input })
       if (attempt.current?.body !== body) attempt.current = { body, key: crypto.randomUUID() }
-      const receipt = await commercialApi.quickCall(lead._id, { ...input, clientRequestId: attempt.current.key })
+      const receipt = await desk.quickCall(lead._id, { ...input, clientRequestId: attempt.current.key })
       completed.current.add(lead._id)
       const index = leads.findIndex((item) => item._id === lead._id)
       setSaved({ lead, draft, index, interactionId: receipt.interactionId })
@@ -259,7 +261,7 @@ export default function CommercialCalls() {
     saving.current = true
     setBusy(true)
     try {
-      const restored = await commercialApi.undoQuickCall(saved.lead._id, saved.interactionId)
+      const restored = await desk.undoQuickCall(saved.lead._id, saved.interactionId)
       completed.current.delete(saved.lead._id)
       setLeads((current) => {
         const next = current.filter((item) => item._id !== saved.lead._id)
@@ -299,7 +301,7 @@ export default function CommercialCalls() {
     saving.current = true
     setBusy(true)
     try {
-      const data = await commercialApi.addScriptTag(newScript.trim())
+      const data = await desk.addScriptTag(newScript.trim())
       setSettings((current) => (current ? { ...current, scriptTags: data.scriptTags } : current))
       const lead = leads.find((item) => item._id === selected)
       if (lead) changeDraft(lead, { scriptTag: newScript.trim() })
@@ -323,10 +325,10 @@ export default function CommercialCalls() {
   }
   // Une analyse appliquée change la fiche : la ligne de la file se recharge.
   const reloadLead = (leadId: string) => {
-    commercialApi
+    desk
       .lead(leadId)
-      .then((data) =>
-        setLeads((current) => current.map((item) => (item._id === leadId ? { ...item, ...data.lead } : item))),
+      .then((fresh) =>
+        setLeads((current) => current.map((item) => (item._id === leadId ? { ...item, ...fresh } : item))),
       )
       .catch(() => undefined)
   }
@@ -367,9 +369,9 @@ export default function CommercialCalls() {
 
   return (
     <div onKeyDown={keyboard}>
-      <h1>{t('commercial.calls.title')}</h1>
+      {desk.team ? <h2>{t('commercial.calls.title')}</h2> : <h1>{t('commercial.calls.title')}</h1>}
       <p className="commercial-muted commercial-call-shortcuts">{t('commercial.calls.shortcuts')}</p>
-      {settings && (
+      {settings && desk.allowImport && (
         <CallLeadImport
           region={settings.defaultRegion}
           projects={settings.projects}
@@ -418,6 +420,25 @@ export default function CommercialCalls() {
             ))}
           </select>
         </label>
+        {desk.mineToggle && (
+          <div className="commercial-scope" role="group" aria-label={t('commercial.calls.scope')}>
+            {([true, false] as const).map((value) => (
+              <button
+                type="button"
+                key={String(value)}
+                className={`portal-button${mine === value ? '' : ' secondary'}`}
+                aria-pressed={mine === value}
+                onClick={() => {
+                  if (mine === value) return
+                  resetQueue()
+                  setMine(value)
+                }}
+              >
+                {t(value ? 'commercial.calls.scopeMine' : 'commercial.calls.scopeAll')}
+              </button>
+            ))}
+          </div>
+        )}
         <button type="button" className="portal-button secondary" onClick={refreshQueue}>
           {t('commercial.calls.refresh')}
         </button>
@@ -443,6 +464,8 @@ export default function CommercialCalls() {
       )}
       <RecentCalls
         items={recentCalls}
+        apiPrefix={desk.apiPrefix}
+        canLiftHold={desk.canLiftHold}
         onDismiss={(callId) => setRecentCalls((current) => current.filter((item) => item.callId !== callId))}
         onApplied={reloadLead}
       />
@@ -516,7 +539,8 @@ export default function CommercialCalls() {
                     />
                     {lead.callHold && (
                       <p className="commercial-hold" role="status">
-                        <strong>{t('commercial.hold.title')}</strong> {t('commercial.hold.body')}
+                        <strong>{t('commercial.hold.title')}</strong>{' '}
+                        {t(desk.team ? 'commercial.hold.bodyTeam' : 'commercial.hold.body')}
                       </p>
                     )}
                     <div className="commercial-toolbar">
@@ -608,30 +632,32 @@ export default function CommercialCalls() {
                           ))}
                         </select>
                       </label>
-                      <label>
-                        {t('commercial.calls.addScript')}
-                        <input
-                          className="portal-input"
-                          maxLength={60}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                              event.preventDefault()
-                              event.stopPropagation()
-                              void addScript()
-                            }
-                          }}
-                          value={newScript}
-                          onChange={(event) => setNewScript(event.target.value)}
-                        />
-                        <button
-                          type="button"
-                          className="portal-button secondary"
-                          disabled={!newScript.trim() || (settings?.scriptTags.length ?? 0) >= 30}
-                          onClick={() => void addScript()}
-                        >
+                      {desk.allowScriptTags && (
+                        <label>
                           {t('commercial.calls.addScript')}
-                        </button>
-                      </label>
+                          <input
+                            className="portal-input"
+                            maxLength={60}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                void addScript()
+                              }
+                            }}
+                            value={newScript}
+                            onChange={(event) => setNewScript(event.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="portal-button secondary"
+                            disabled={!newScript.trim() || (settings?.scriptTags.length ?? 0) >= 30}
+                            onClick={() => void addScript()}
+                          >
+                            {t('commercial.calls.addScript')}
+                          </button>
+                        </label>
+                      )}
                       <label>
                         {t('commercial.field.nextAction')}
                         {callback ? ' *' : ''}

@@ -189,6 +189,11 @@ const fr = {
   'commercial.admin.paidOn': 'Versée le {date}',
   'commercial.admin.due': 'Due',
   'commercial.hold.tag': 'Retenue',
+  'commercial.hold.bodyTeam':
+    'Une opposition a été détectée sur un appel : la fiche ne sera pas rappelée tant qu’elle n’est pas confirmée ou levée. Ouvrez l’analyse de l’appel pour confirmer l’opposition ou lever la retenue.',
+  'commercial.calls.scope': 'Périmètre de la file',
+  'commercial.calls.scopeMine': 'Mes fiches',
+  'commercial.calls.scopeAll': 'Tout mon périmètre',
   'commercial.hold.title': 'Fiche retenue.',
   'commercial.hold.body':
     'Une opposition a été détectée sur un appel : la fiche ne sera pas rappelée tant qu’elle n’est pas confirmée ou levée. Ouvrez l’analyse de l’appel pour confirmer l’opposition ; lever la retenue revient à l’équipe.',

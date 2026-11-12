@@ -15,6 +15,7 @@ import { fetchRuns } from '../crm-board/automations/api'
 const CrmBoard = lazy(() => import('../CrmBoard'))
 const ClientAccountList = lazy(() => import('../ClientAccountList'))
 const ExternalSales = lazy(() => import('../ExternalSales'))
+const TeamCallDesk = lazy(() => import('../crm-board/TeamCallDesk'))
 const CrmAutomations = lazy(() => import('../crm-board/automations'))
 const CrmSettings = lazy(() => import('../crm-settings'))
 const PilotageSection = lazy(() => import('../analytics/crm'))
@@ -58,6 +59,7 @@ export default function CrmHub() {
   const definition: AdminHubDefinition = ADMIN_HUBS.crm
   const panels: Record<string, ReactNode> = {
     queue: <CrmBoard queue onOverdueCount={setOverdue} />,
+    appels: <TeamCallDesk />,
     pipeline: <CrmBoard onOverdueCount={setOverdue} />,
     pilotage: (
       <>

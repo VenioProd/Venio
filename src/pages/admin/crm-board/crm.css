@@ -1544,3 +1544,37 @@ html.theme-portail .pipeline-page .crm-column-over {
     text-align: right;
   }
 }
+
+/* Barre d'appel de la fiche et retenue après opposition */
+.crm-detail-callbar {
+  margin-top: 12px;
+  min-width: 0;
+}
+.crm-detail-hold {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 2px solid var(--critical);
+  border-radius: var(--r-lg);
+  background: var(--critical-surface);
+  color: var(--text-primary);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.crm-detail-hold-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-light);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.crm-call-desk {
+  min-width: 0;
+  padding-top: 8px;
+}
+.commercial-scope {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
