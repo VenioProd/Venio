@@ -220,6 +220,16 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
     retentionMonths: { type: Number, default: 36, min: 6, max: 120 },
     // Tant qu'il est faux, la purge quotidienne ne fait que compter (simulation).
     retentionPurgeEnabled: { type: Boolean, default: false },
+
+    // ═══════════════════════════════════════════════════════════════
+    // TRANSCRIPTION DES APPELS (poste d'appel, lot C)
+    // ═══════════════════════════════════════════════════════════════
+    // Sans ASSEMBLYAI_API_KEY, une demande donne un transcript SKIPPED quel que soit ce réglage.
+    callTranscription: {
+      enabled: { type: Boolean, default: true },
+      language: { type: String, default: 'fr', trim: true, lowercase: true, match: /^[a-z]{2}(_[a-z]{2})?$/ },
+      retentionMonths: { type: Number, default: 12, min: 1, max: 36 },
+    },
   },
   { timestamps: true },
 )

@@ -151,6 +151,8 @@ export interface ICrmSettings extends Document {
   // ── RGPD (chantier 3D) ──
   retentionMonths: number
   retentionPurgeEnabled: boolean
+  // ── Transcription des appels (lot C) ──
+  callTranscription: { enabled: boolean; language: string; retentionMonths: number }
   createdAt: Date
   updatedAt: Date
 }
