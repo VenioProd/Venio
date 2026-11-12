@@ -21,6 +21,11 @@ import DuplicatesSection from './DuplicatesSection'
 import ReportsSection from './ReportsSection'
 import RetentionSection from './RetentionSection'
 import SuppressionSection from './SuppressionSection'
+import TelephonySection from './TelephonySection'
+import RecordingSection from './RecordingSection'
+import TranscriptionSection from './TranscriptionSection'
+import AnalysisSection from './AnalysisSection'
+import type { Providers } from './callAiModel'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 
@@ -31,6 +36,7 @@ export default function CrmSettings() {
 
   const [settings, setSettings] = useState<CrmSettingsData | null>(null)
   const [admins, setAdmins] = useState<AdminUser[]>([])
+  const [providers, setProviders] = useState<Providers | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [saving, setSaving] = useState<boolean>(false)
   const [message, setMessage] = useState<CrmSettingsMessage | null>(null)
@@ -40,10 +46,11 @@ export default function CrmSettings() {
     try {
       const [settingsRes, adminsRes] = await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiFetch<{ settings?: Record<string, any> }>('/api/admin/crm/settings'),
+        apiFetch<{ settings?: Record<string, any>; providers?: Providers }>('/api/admin/crm/settings'),
         apiFetch<{ users?: AdminUser[] }>('/api/admin/admins'),
       ])
       setSettings(settingsRes.settings || null)
+      setProviders(settingsRes.providers ?? null)
       setAdmins(adminsRes.users || [])
     } catch (err: unknown) {
       console.error('Error fetching CRM settings:', err)
@@ -77,6 +84,23 @@ export default function CrmSettings() {
     }
   }
   const updateSetting = (key: string, value: unknown) => updateSettings({ [key]: value })
+
+  // Les blocs d'appel s'enregistrent en entier et montrent le refus du serveur à côté de leurs champs.
+  const saveBlock = async (name: string, value: unknown): Promise<string | null> => {
+    if (!canManage) return null
+    try {
+      setSaving(true)
+      await apiFetch('/api/admin/crm/settings', { method: 'PATCH', body: JSON.stringify({ [name]: value }) })
+      setSettings((current) => (current ? { ...current, [name]: value } : current))
+      setMessage({ type: 'success', text: t('crmCallAi.saved') })
+      setTimeout(() => setMessage(null), 2000)
+      return null
+    } catch (err) {
+      return (err as Error).message || t('crm.settings.updateError')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const updateNestedSetting = async (parent: string, key: string, value: unknown) => {
     if (!canManage) return
@@ -131,6 +155,7 @@ export default function CrmSettings() {
   }
 
   const sectionProps = { settings, canManage, updateSetting }
+  const callAiProps = { settings, providers, canManage, saveBlock }
 
   return (
     <div className="portal-container crm-page-container pilotage-page crm-settings-page">
@@ -171,7 +196,7 @@ export default function CrmSettings() {
       )}
 
       <nav className="crm-settings-summary" aria-label={t('crm.settings.summary')}>
-        {(['qualification', 'followup', 'calls', 'compliance', 'reports'] as const).map((group) => (
+        {(['qualification', 'followup', 'callsAi', 'calls', 'compliance', 'reports'] as const).map((group) => (
           <a key={group} href={`#crm-settings-${group}`}>
             {t(`crm.settings.group.${group}`)}
           </a>
@@ -191,6 +216,18 @@ export default function CrmSettings() {
           <NotificationsSection {...sectionProps} />
           <AlertsSection {...sectionProps} />
           <EscalationSection {...sectionProps} admins={admins} />
+        </section>
+        <section id="crm-settings-callsAi" className="crm-settings-group">
+          <h2>{t('crm.settings.group.callsAi')}</h2>
+          <p className="crm-ai-intro">{t('crmCallAi.intro')}</p>
+          <div className="crm-ai-columns">
+            <TelephonySection {...callAiProps} />
+            <div className="crm-ai-stack">
+              <RecordingSection {...callAiProps} />
+              <TranscriptionSection {...callAiProps} />
+            </div>
+          </div>
+          <AnalysisSection {...callAiProps} />
         </section>
         <section id="crm-settings-calls" className="crm-settings-group">
           <h2>{t('crm.settings.group.calls')}</h2>

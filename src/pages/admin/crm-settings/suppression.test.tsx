@@ -99,6 +99,50 @@ describe('réglages CRM — liste « ne pas contacter »', () => {
     await waitFor(() => expect(writes()).toHaveLength(1))
     expect(writes()[0][0]).toBe('/api/admin/crm/suppression/id1')
     expect((writes()[0][1] as RequestInit).method).toBe('DELETE')
+    expect(JSON.parse(String((writes()[0][1] as RequestInit).body))).toEqual({ confirm: true })
+  })
+
+  it('ADMIN : liste les numéros, en ajoute un et ne le retire qu’après confirmation explicite', async () => {
+    const phoneRow = { id: 'p1', phone: '+33612345678', email: undefined, reason: 'OPPOSITION' }
+    apiFetch.mockImplementation(async (url: string, opts?: RequestInit) => {
+      if (url === '/api/admin/crm/settings') return { settings: { retentionMonths: 36, weeklyReportRecipients: [] } }
+      if (url === '/api/admin/admins') return { users: [] }
+      if (url.startsWith('/api/admin/crm/suppression') && !opts?.method) {
+        listings.push({ url })
+        const phones = new URL(url, 'http://x').searchParams.get('kind') === 'phone'
+        return phones
+          ? { entries: [row(1, phoneRow)], total: 1, page: 1, pages: 1 }
+          : { entries: [row(2)], total: 1, page: 1, pages: 1 }
+      }
+      if (opts?.method === 'POST') return { entry: { phone: '+33698765432' } }
+      return {}
+    })
+    renderPage()
+    await screen.findByText('user2@exemple.test')
+    fireEvent.click(screen.getByRole('button', { name: 'Numéros' }))
+    expect(await screen.findByText('+33612345678')).toBeInTheDocument()
+    expect(listings[listings.length - 1].url).toContain('kind=phone')
+    expect(screen.queryByText('user2@exemple.test')).toBeNull()
+
+    fireEvent.change(screen.getByLabelText('Numéro à ne pas appeler'), { target: { value: '06 98 76 54 32' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
+    await waitFor(() => expect(writes()).toHaveLength(1))
+    expect(JSON.parse(String((writes()[0][1] as RequestInit).body))).toEqual({
+      phone: '06 98 76 54 32',
+      reason: 'MANUAL',
+    })
+    expect(await screen.findByText('Numéro ajouté à la liste : +33698765432.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retirer +33612345678' }))
+    const dialog = await screen.findByText(/pourra de nouveau être appelé/)
+    expect(dialog.textContent).toContain('+33612345678')
+    expect(dialog.textContent).toContain('tracé à votre nom')
+    expect(writes()).toHaveLength(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Oui, retirer le numéro' }))
+    await waitFor(() => expect(writes()).toHaveLength(2))
+    expect(writes()[1][0]).toBe('/api/admin/crm/suppression/p1')
+    expect((writes()[1][1] as RequestInit).method).toBe('DELETE')
+    expect(JSON.parse(String((writes()[1][1] as RequestInit).body))).toEqual({ confirm: true })
   })
 
   it('annuler la confirmation n’appelle rien', async () => {

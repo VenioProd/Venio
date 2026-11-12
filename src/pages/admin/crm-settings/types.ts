@@ -23,3 +23,12 @@ export interface SectionProps {
   admins?: AdminUser[]
   handleRecipientsChange?: (value: string) => Promise<void>
 }
+
+export interface CallAiProps {
+  settings: CrmSettingsData
+  /** Ce que ce serveur sait faire ; `null` tant que le serveur n'a pas répondu. */
+  providers: import('./callAiModel').Providers | null
+  canManage: boolean
+  /** Enregistre un bloc en entier ; renvoie le message du serveur en cas de refus, sinon `null`. */
+  saveBlock: (name: string, value: unknown) => Promise<string | null>
+}

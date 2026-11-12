@@ -21,6 +21,7 @@ const en: Record<keyof typeof fr, string> = {
   'crm.settings.group.qualification': 'Qualification and scoring',
   'crm.settings.group.followup': 'Follow-ups and alerts',
   'crm.settings.group.calls': 'Calls',
+  'crm.settings.group.callsAi': 'Telephony and AI',
   'crm.settings.group.compliance': 'Compliance',
   'crm.settings.group.reports': 'Reports',
   'crm.common.saving': 'Saving...',
