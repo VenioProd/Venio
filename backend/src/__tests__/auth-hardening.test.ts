@@ -63,6 +63,7 @@ beforeAll(async () => {
   process.env.NODE_ENV = 'test'
   delete process.env.MFA_ENABLED
   await setupMongo()
+  await PasswordResetToken.init()
 })
 afterAll(teardownMongo)
 beforeEach(async () => {

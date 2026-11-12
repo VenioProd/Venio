@@ -50,7 +50,7 @@ If a prompt or example shows an admin URL, rewrite mechanically:
 | -------------------------- | ----------------------------- |
 | `/api/admin/dev/projects`  | `/api/v1/agent/dev/projects`  |
 | `/api/admin/dev/issues`    | `/api/v1/agent/dev/issues`    |
-| `/api/admin/clients`       | `/api/v1/agent/crm/clients`   |
+| `/api/admin/clients`       | `/api/v1/agent/clients`       |
 | `/api/admin/tasks`         | `/api/v1/agent/tasks`         |
 | `/api/admin/documents`     | `/api/v1/agent/documents`     |
 | `/api/admin/messaging/...` | `/api/v1/agent/messaging/...` |
@@ -190,7 +190,7 @@ For idempotent retries on a specific call, accept an external `idempotencyKey` p
 
 ## Reference
 
-- Repo doc: `API_AGENT_USAGE.md` at Venio repo root.
+- Repo doc: `docs/api-agent.md`.
 - Detailed spec: `docs/api-agent.md`.
 - Live OpenAPI: `https://venio.paris/api/v1/agent/openapi.json`.
 - Server-side: `backend/src/routes/agent/` (start at `index.ts`, auth at `_middleware/auth.ts`).

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { publicRoutes, SITE_URL } from './public-routes.js'
+import { NOINDEX_PATHS, publicRoutes, SITE_URL } from './public-routes.js'
 
 const distDir = join(process.cwd(), 'dist')
 const failures = []
@@ -55,6 +55,10 @@ for (const route of publicRoutes) {
 const sitemap = readFileSync(join(distDir, 'sitemap.xml'), 'utf8')
 for (const route of publicRoutes) {
   const loc = `${SITE_URL}${route.path || '/'}`
+  if (NOINDEX_PATHS.includes(route.path)) {
+    if (sitemap.includes(`<loc>${loc}</loc>`)) failures.push(`sitemap.xml: noindex page listed ${loc}`)
+    continue
+  }
   if (!sitemap.includes(`<loc>${loc}</loc>`)) failures.push(`sitemap.xml: missing ${loc}`)
 }
 

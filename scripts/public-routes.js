@@ -1,3 +1,6 @@
+// Pages publiques servies avec <meta name="robots" content="noindex"> : prérendues, mais hors sitemap.
+export const NOINDEX_PATHS = ['/legal', '/cgu', '/cgv', '/confidentialite']
+
 // Single source of truth for public, indexable pages. It feeds both sitemap.xml
 // and the static HTML emitted for crawlers that do not execute JavaScript.
 export const SITE_URL = 'https://venio.paris'

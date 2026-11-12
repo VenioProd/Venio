@@ -66,7 +66,16 @@ router.use(requestIdMiddleware)
 let cachedSpec: Record<string, unknown> | null = null
 router.get('/openapi.json', (_req: Request, res: Response) => {
   if (!cachedSpec) {
-    cachedSpec = buildOpenApiSpec(extractRoutes(router))
+    cachedSpec = buildOpenApiSpec(
+      extractRoutes(
+        router,
+        '',
+        new Map([
+          [crmExtrasRoutes, '/crm'],
+          [messagingRoutes, '/messaging'],
+        ]),
+      ),
+    )
   }
   res.json(cachedSpec)
 })

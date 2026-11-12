@@ -31,17 +31,12 @@ export default defineConfig(({ mode }) => {
       rolldownOptions: {
         output: {
           codeSplitting: {
+            includeDependenciesRecursively: false,
             groups: [
-              {
-                name(id) {
-                  if (id.includes('node_modules/react-router-dom')) return 'vendor-router'
-                  if (id.includes('node_modules/react-dom')) return 'vendor-react'
-                  if (id.includes('node_modules/react/')) return 'vendor-react'
-                  if (id.includes('node_modules/recharts')) return 'vendor-charts'
-                  if (id.includes('node_modules/socket.io-client')) return 'vendor-realtime'
-                  return null
-                },
-              },
+              { name: 'vendor-react', test: /node_modules\/(react|react-dom|scheduler)\//, priority: 30 },
+              { name: 'vendor-router', test: /node_modules\/(react-router|react-router-dom)\//, priority: 20 },
+              { name: 'vendor-charts', test: /node_modules\/recharts\//, priority: 10 },
+              { name: 'vendor-realtime', test: /node_modules\/socket.io-client\// },
             ],
           },
         },

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { gzipSync } from 'node:zlib'
-import { publicRoutes, SITE_URL } from './public-routes.js'
+import { NOINDEX_PATHS, publicRoutes, SITE_URL } from './public-routes.js'
 
 const distDir = join(process.cwd(), 'dist')
 const failures = []
@@ -70,6 +70,7 @@ if (initialCss > maxInitialCssGzip) {
 const sitemap = readFileSync(join(distDir, 'sitemap.xml'), 'utf8')
 for (const route of publicRoutes) {
   const canonical = `${SITE_URL}${route.path || '/'}`
+  if (NOINDEX_PATHS.includes(route.path)) continue
   if (!sitemap.includes(`<loc>${canonical}</loc>`)) failures.push(`sitemap: missing ${canonical}`)
 }
 
