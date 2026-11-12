@@ -30,9 +30,12 @@ describe('planification à la minute', () => {
     expect(shouldRunNow('*/5 * * * *', new Date('2026-08-26T10:07:00'))).toBe(false)
   })
 
-  it('conserve les formats horaires existants', () => {
+  it('conserve les formats horaires existants, avec deux heures de rattrapage', () => {
     expect(shouldRunNow('08:00', new Date('2026-08-26T08:00:00'))).toBe(true)
-    expect(shouldRunNow('08:00', new Date('2026-08-26T08:01:00'))).toBe(false)
+    expect(shouldRunNow('08:00', new Date('2026-08-26T07:59:00'))).toBe(false)
+    // Un redémarrage à l'heure dite ne fait plus sauter le jour ; le verrou du moteur évite la double exécution.
+    expect(shouldRunNow('08:00', new Date('2026-08-26T08:01:00'))).toBe(true)
+    expect(shouldRunNow('08:00', new Date('2026-08-26T10:01:00'))).toBe(false)
     expect(shouldRunNow(undefined, new Date())).toBe(false)
   })
 })

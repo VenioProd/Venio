@@ -45,6 +45,7 @@ export function serveAttachment(res: Response, filePath: string, downloadName: s
 // Types sans contenu actif : seuls ceux-là s'affichent dans le navigateur.
 const INLINE_TYPES: Record<string, string> = {
   '.pdf': 'application/pdf',
+  '.txt': 'text/plain; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
