@@ -180,6 +180,7 @@ struct ActiveCallView: View {
 /// Résultat de l'appel, saisi comme sur le web : présélectionné par l'état final, relié à l'appel.
 struct AfterCallView: View {
     @Environment(CommercialStore.self) private var store
+    @Environment(\.venioSession) private var session
     @Environment(\.locale) private var locale
     @Environment(\.venioPalette) private var palette
     @Environment(\.dismiss) private var dismiss
@@ -270,6 +271,8 @@ struct AfterCallView: View {
         do {
             try await desk.api.quickCall(leadId: call.leadId, input: input)
             saved = true
+            // La fiche locale vient de la synchro : la relancer pour voir étape, relance et échange.
+            await session?.refresh()
             await store.openLead(id: call.leadId)
         } catch { failed = true }
     }
@@ -293,7 +296,9 @@ struct LeadCallStatusView: View {
                 if let text = CallDeskText.analysis(call) { CommercialBadge(text: CommercialStrings.text(text, locale: locale), tone: call.analysisStatus == "READY" ? .warning : .accent) }
                 if call.analysisStatus == "READY", let url = desk.webLeadURL(leadId) {
                     VText("Chaque champ proposé par l’analyse se valide sur le web, citation à l’appui.").font(.caption).foregroundStyle(palette.textSecondary.color)
-                    Button { openURL(url) } label: { VText("Valider l’analyse sur le web") }.accessibilityIdentifier("afterCall.openWeb")
+                    Button { openURL(url) } label: {
+                        Label { VText("Valider l’analyse sur le web") } icon: { Image(systemName: "arrow.up.forward.square") }
+                    }.foregroundStyle(palette.accentText.color).accessibilityIdentifier("afterCall.openWeb")
                 }
             }
         }
@@ -320,7 +325,8 @@ struct LeadCallsSection: View {
     @State private var calls: [LeadCall] = []
 
     var body: some View {
-        Group {
+        // Conteneur toujours présent : un `Group` vide ne s'affiche pas et sa tâche ne partirait jamais.
+        VStack(spacing: 0) {
             if !calls.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     SectionHeading(title: "Appels", count: calls.count)
