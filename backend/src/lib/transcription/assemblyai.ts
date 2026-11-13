@@ -19,12 +19,33 @@ export class ProviderError extends Error {
   }
 }
 
-export function isConfigured(): boolean {
-  return Boolean(process.env.ASSEMBLYAI_API_KEY?.trim())
+/**
+ * Décision du propriétaire (13 nov. 2026) : transcription traitée en Europe,
+ * sans repli hors UE. Seul l'hôte européen est accepté ; le bouclage local ne
+ * sert qu'aux tests et au développement. Toute autre valeur désactive la
+ * transcription au lieu d'envoyer l'audio ailleurs.
+ */
+const EU_HOSTS = ['api.eu.assemblyai.com']
+
+function isAllowedBaseUrl(raw: string): boolean {
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    return false
+  }
+  if (url.search || url.hash) return false
+  if (url.protocol === 'https:' && EU_HOSTS.includes(url.hostname)) return true
+  const loopback = url.hostname === '127.0.0.1' || url.hostname === 'localhost'
+  return loopback && process.env.NODE_ENV !== 'production'
 }
 
 function baseUrl(): string {
   return (process.env.ASSEMBLYAI_BASE_URL?.trim() || DEFAULT_BASE_URL).replace(/\/+$/, '')
+}
+
+export function isConfigured(): boolean {
+  return Boolean(process.env.ASSEMBLYAI_API_KEY?.trim()) && isAllowedBaseUrl(baseUrl())
 }
 
 async function call<T>(method: string, path: string, code: string, body?: Buffer | object): Promise<T> {

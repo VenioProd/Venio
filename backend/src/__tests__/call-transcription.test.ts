@@ -231,3 +231,18 @@ it('sans clé : transcript SKIPPED, aucun appel au fournisseur', async () => {
   expect(await sweepTranscriptions()).toEqual({ polled: 0, done: 0, failed: 0 })
   expect(calls).toHaveLength(0)
 })
+
+it('point d’accès hors UE : transcript SKIPPED, rien n’est envoyé (traitement en Europe exigé)', async () => {
+  process.env.ASSEMBLYAI_BASE_URL = 'https://api.assemblyai.com'
+  try {
+    const { callId, leadId } = ids()
+    const source = audio()
+    await requestTranscription({ callId, leadId, authorId: repA, audio: source })
+    const t = await CallTranscript.findOne({ call: callId }).lean()
+    expect(t).toMatchObject({ status: 'SKIPPED', error: 'NOT_CONFIGURED' })
+    expect(source.fetch).not.toHaveBeenCalled()
+    expect(calls).toHaveLength(0)
+  } finally {
+    delete process.env.ASSEMBLYAI_BASE_URL
+  }
+})
