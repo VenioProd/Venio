@@ -1,11 +1,12 @@
 import { useI18n } from '../../context/I18nContext'
 import type { LeadCall } from '../../services/calls'
+import { recordingView } from './leadCalls'
 import './callInsights.css'
 
 /** Où en sont l'enregistrement, le transcript et l'analyse d'un appel — en toutes lettres, jamais par la couleur seule. */
 export default function CallStateChips({ call }: { call: LeadCall }) {
   const { t } = useI18n()
-  const recording = call.recording.objection ? 'STOPPED' : call.recording.status
+  const recording = recordingView(call.recording)
   // Opposition à l'enregistrement : il n'y aura ni transcript ni analyse, on le dit plutôt que « pas encore ».
   const never = recording === 'STOPPED' && !call.transcriptStatus
   const transcript = call.transcriptStatus ?? (never ? 'never' : 'none')

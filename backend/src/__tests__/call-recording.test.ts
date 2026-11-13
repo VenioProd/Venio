@@ -269,7 +269,7 @@ it('audio conservé : relayé à son auteur seulement, purgé à l’échéance 
   expect(list.body.calls).toEqual([
     expect.objectContaining({
       _id: callId,
-      recording: { status: 'READY', objection: false },
+      recording: { status: 'READY', objection: false, audio: 'PLAYABLE' },
       transcriptStatus: 'DONE',
     }),
   ])
@@ -282,11 +282,38 @@ it('audio conservé : relayé à son auteur seulement, purgé à l’échéance 
   expect((await as(cookieA).get(`/calls/${callId}/recording`)).status).toBe(404)
 })
 
-it('relais refusé quand l’audio n’est pas conservé ; retry crée l’analyse manquante pour l’auteur seulement', async () => {
+it('audio relayé par plages : une seule lecture chez l’opérateur, cache vidé à l’opposition du prospect', async () => {
+  await CrmSettings.updateSettings({
+    callRecording: { enabled: true, notice: { enabled: false, text: '' }, keepAudioDays: 30 },
+  } as never)
   const { callId } = await placeCall()
   await recEvent(callId, 'completed')
   await processing(callId)
+  vi.mocked(fetchProviderRecording).mockClear()
+
+  const head = await as(cookieA).get(`/calls/${callId}/recording`).set('Range', 'bytes=0-2').expect(206)
+  expect(head.headers['cache-control']).toBe('no-store')
+  expect(head.headers['content-range']).toBe('bytes 0-2/9')
+  expect(Buffer.from(head.body).toString()).toBe('ID3')
+  const tail = await as(cookieA).get(`/calls/${callId}/recording`).set('Range', 'bytes=3-').expect(206)
+  expect(Buffer.from(tail.body).toString()).toBe('-audio')
+  await as(cookieA).get(`/calls/${callId}/recording`).expect(200)
+  expect(fetchProviderRecording).toHaveBeenCalledTimes(1)
+
+  await as(cookieA).post(`/calls/${callId}/recording/stop`).expect(200)
   expect((await as(cookieA).get(`/calls/${callId}/recording`)).status).toBe(404)
+  // Un autre auteur ne passe jamais par le cache : le périmètre est vérifié avant.
+  expect((await as(cookieB).get(`/calls/${callId}/recording`)).status).toBe(404)
+})
+
+it('relais refusé quand l’audio n’est pas conservé ; retry crée l’analyse manquante pour l’auteur seulement', async () => {
+  const { lead, callId } = await placeCall()
+  await recEvent(callId, 'completed')
+  await processing(callId)
+  expect((await as(cookieA).get(`/calls/${callId}/recording`)).status).toBe(404)
+  // Gardé le temps du transcript puis supprimé : la liste le dit, au lieu d’un audio « conservé ».
+  const waiting = await as(cookieA).get(`/leads/${lead._id}/calls`).expect(200)
+  expect(waiting.body.calls[0].recording).toEqual({ status: 'READY', objection: false, audio: 'AWAITING_TRANSCRIPT' })
 
   await CallTranscript.updateOne({ call: callId }, { $set: { status: 'DONE', segments: [] } })
   expect((await as(cookieB).post(`/calls/${callId}/analysis/retry`)).status).toBe(404)

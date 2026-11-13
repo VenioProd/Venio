@@ -127,6 +127,29 @@ describe('LeadCallsList', () => {
     expect(await screen.findByText(/arrêté à la demande du prospect : rien n’a été conservé/)).toBeInTheDocument()
   })
 
+  it('dit « en attente du transcript » tant que l’audio, non conservé, attend son transcript', async () => {
+    server.calls = [
+      call({
+        recording: { status: 'READY', objection: false, audio: 'AWAITING_TRANSCRIPT' },
+        transcriptStatus: 'PROCESSING',
+        analysisStatus: null,
+      }),
+    ]
+    render(<LeadCallsList leadId="lead1" />)
+    const row = await screen.findByRole('button', { name: /6:42/ })
+    expect(row).toHaveTextContent('Audio : en attente du transcript')
+    expect(row).not.toHaveTextContent('Audio : conservé')
+    fireEvent.click(row)
+    expect(await screen.findByText(/gardé le temps du transcript, puis supprimé/)).toBeInTheDocument()
+    expect(document.querySelector('audio')).toBeNull()
+  })
+
+  it('dit « supprimé » plutôt que « conservé » quand le serveur ne relaie plus l’audio', async () => {
+    server.calls = [call({ recording: { status: 'READY', objection: false, audio: null } })]
+    render(<LeadCallsList leadId="lead1" />)
+    expect(await screen.findByRole('button', { name: /6:42/ })).toHaveTextContent('Audio : supprimé')
+  })
+
   it('utilise le préfixe d’API qu’on lui donne', async () => {
     render(<LeadCallsList leadId="lead1" apiPrefix="/api/admin/crm" />)
     await waitFor(() => expect(server.requests.map((item) => item.path)).toContain('/api/admin/crm/leads/lead1/calls'))

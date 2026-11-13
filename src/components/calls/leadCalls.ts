@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createCallsApi, type LeadCall } from '../../services/calls'
+import { createCallsApi, type CallRecording, type LeadCall, type RecordingStatus } from '../../services/calls'
 import type { AnalysisStatus, TranscriptStatus } from '../../services/callInsights'
 
 const TRANSCRIPT_FINAL: TranscriptStatus[] = ['DONE', 'FAILED', 'SKIPPED']
@@ -23,6 +23,18 @@ export function isCallSettled(call: LeadCall, now: number = Date.now()): boolean
   if (!TRANSCRIPT_FINAL.includes(transcript)) return false
   if (transcript !== 'DONE') return true
   return call.analysisStatus !== null && ANALYSIS_FINAL.includes(call.analysisStatus)
+}
+
+/**
+ * L'état de l'audio tel qu'on le dit : un enregistrement prêt n'est « conservé » que si le serveur le relaie ;
+ * il attend son transcript (puis sera supprimé) ou n'existe plus. `audio` absent : serveur plus ancien, lisible.
+ */
+export type RecordingView = RecordingStatus | 'AWAITING_TRANSCRIPT'
+export function recordingView(recording: CallRecording): RecordingView {
+  if (recording.objection) return 'STOPPED'
+  if (recording.status !== 'READY' || recording.audio === undefined || recording.audio === 'PLAYABLE')
+    return recording.status
+  return recording.audio === 'AWAITING_TRANSCRIPT' ? 'AWAITING_TRANSCRIPT' : 'DELETED'
 }
 
 /** Un appel décroché : seul cas où il y a un transcript ou un enregistrement à consulter. */

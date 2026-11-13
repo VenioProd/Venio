@@ -137,10 +137,13 @@ const en = {
   'callInsights.recording.STOPPED': 'stopped at the prospect’s request',
   'callInsights.recording.READY': 'kept',
   'callInsights.recording.DELETED': 'deleted',
+  'callInsights.recording.AWAITING_TRANSCRIPT': 'waiting for the transcript',
   'callInsights.recording.note.RECORDING': 'Recording in progress.',
   'callInsights.recording.note.STOPPED':
     'Recording stopped at the prospect’s request: nothing was kept and there is no transcript.',
   'callInsights.recording.note.DELETED': 'The audio was deleted after transcription: only the transcript is kept.',
+  'callInsights.recording.note.AWAITING_TRANSCRIPT':
+    'The audio is kept until the transcript is ready, then deleted: it won’t be playable.',
   'callInsights.chips.recording': 'Audio',
   'callInsights.chips.transcript': 'Transcript',
   'callInsights.chips.analysis': 'Analysis',

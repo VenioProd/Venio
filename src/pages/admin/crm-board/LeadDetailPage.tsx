@@ -5,6 +5,7 @@ import './crm.css'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
 import LeadCallsList from '../../../components/calls/LeadCallsList'
+import { useLeadCalls } from '../../../components/calls/leadCalls'
 import LeadCallBar from './LeadCallBar'
 import { TEAM_CALL_DESK_PREFIX } from './teamDeskApi'
 import CustomSelect from '../../../components/admin/CustomSelect'
@@ -118,6 +119,26 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
       .then((data) => onLeadChange(() => data.lead))
       .catch(() => undefined)
   }
+  // Les appels sont surveillés ici, quel que soit l'onglet : l'analyse arrive après la fin de l'appel et peut poser
+  // une retenue. Relue au même rythme que la liste (6 à 30 s, seulement tant qu'un appel attend), pas en boucle.
+  const leadCalls = useLeadCalls(lead._id, TEAM_CALL_DESK_PREFIX, callsRefresh)
+  const analysisSeen = useRef<{ leadId: string; statuses: Map<string, string | null> } | null>(null)
+  useEffect(() => {
+    if (leadCalls.loading || leadCalls.error) return
+    // Première lecture de cette fiche : on prend l'état de départ, la fiche vient d'être chargée avec lui.
+    const previous = analysisSeen.current?.leadId === lead._id ? analysisSeen.current.statuses : null
+    const statuses = new Map(leadCalls.calls.map((call) => [call._id, call.analysisStatus]))
+    analysisSeen.current = { leadId: lead._id, statuses }
+    if (!previous) return
+    const arrived = leadCalls.calls.some(
+      (call) =>
+        previous.get(call._id) !== call.analysisStatus &&
+        (call.analysisStatus === 'READY' || call.analysisStatus === 'APPLIED' || call.analysisStatus === 'PARTIAL'),
+    )
+    if (arrived) reloadLead()
+    // reloadLead ne dépend que de la fiche, déjà dans les dépendances.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadCalls.calls, leadCalls.loading, leadCalls.error, lead._id])
   const focusComposer = (email: boolean) => {
     const timeline = timelineRef.current
     if (email && !timeline?.querySelector('.interaction-email-composer'))
@@ -493,6 +514,7 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
                 onApplied={reloadLead}
                 holdCallId={lead.callHold?.call ?? null}
                 openRequest={openCall}
+                source={leadCalls}
               />
             )}
             {tab === 'sequences' && <LeadSequencesPanel leadId={lead._id} canManageCrm={canManageCrm} />}

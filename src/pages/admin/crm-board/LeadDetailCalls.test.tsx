@@ -44,6 +44,7 @@ const calls: LeadCall[] = [
 ]
 const requests: { path: string; method: string; body: unknown }[] = []
 let analysis = clone(analysisFixture)
+let listedCalls: LeadCall[] = calls
 
 function installApi() {
   vi.mocked(apiFetch).mockImplementation((async (path: string, options?: RequestInit) => {
@@ -51,7 +52,7 @@ function installApi() {
     requests.push({ path, method, body: options?.body ? JSON.parse(String(options.body)) : undefined })
     if (path === `${PREFIX}/calls/config`)
       return { enabled: true, callerId: '+33100000000', callingHours: null, attemptCap: 3 }
-    if (path === `${PREFIX}/leads/lead1/calls`) return { calls: clone(calls) }
+    if (path === `${PREFIX}/leads/lead1/calls`) return { calls: clone(listedCalls) }
     if (path === `${PREFIX}/calls/call-ext/transcript`) return clone(transcriptFixture)
     if (path === `${PREFIX}/calls/call-ext/analysis`) return clone(analysis)
     if (path === `${PREFIX}/calls/call-ext/analysis/apply`) return { lead: {}, analysis: analysis.analysis }
@@ -95,6 +96,7 @@ describe('Fiche du lead de l’équipe — appels', () => {
   beforeEach(() => {
     requests.length = 0
     analysis = clone(analysisFixture)
+    listedCalls = calls
     vi.stubGlobal('RTCPeerConnection', class {})
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
@@ -104,6 +106,7 @@ describe('Fiche du lead de l’équipe — appels', () => {
   })
   afterEach(() => {
     cleanup()
+    vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
@@ -192,5 +195,27 @@ describe('Fiche du lead de l’équipe — appels', () => {
     await screen.findByText('Résumé de l’appel')
     expect(screen.queryByRole('button', { name: 'Lever la retenue' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Confirmer : ne plus appeler/ })).not.toBeInTheDocument()
+  })
+
+  it('relit la fiche quand l’analyse d’un appel devient prête, même onglet Détails ouvert', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: new Date('2026-11-11T10:08:00.000Z') })
+    listedCalls = [{ ...calls[0]!, analysisStatus: 'PENDING' }]
+    mount({ canManageCrm: true })
+    await vi.waitFor(() => expect(sentToTeam('/leads/lead1/calls')).toBeDefined())
+    const leadReads = () => requests.filter((item) => item.path === '/api/admin/crm/leads/lead1').length
+    expect(leadReads()).toBe(0)
+
+    // Tant que l’analyse n’est pas prête : relecture des appels à rythme lent, jamais celle de la fiche.
+    await vi.advanceTimersByTimeAsync(7_000)
+    expect(leadReads()).toBe(0)
+
+    listedCalls = [{ ...calls[0]!, analysisStatus: 'READY' }]
+    await vi.advanceTimersByTimeAsync(10_000)
+    await vi.waitFor(() => expect(leadReads()).toBe(1))
+    // Une fois prête, plus de relecture : ni des appels (réglés), ni de la fiche.
+    const callReads = requests.filter((item) => item.path === `${PREFIX}/leads/lead1/calls`).length
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(requests.filter((item) => item.path === `${PREFIX}/leads/lead1/calls`).length).toBe(callReads)
+    expect(leadReads()).toBe(1)
   })
 })
