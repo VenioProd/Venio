@@ -12,7 +12,7 @@ it('lists compiled migrations and defaults to a dry run without writing data or 
   const entry = process.env.MIGRATION_TEST_ENTRY || 'src/scripts/migrate.ts'
   const loader = entry.endsWith('.ts') ? ['--import', 'tsx'] : []
   const listed = await exec(process.execPath, [...loader, entry, '--list'])
-  expect(listed.stdout.trim().split('\n')).toEqual(Array.from({ length: 14 }, (_, i) => String(i + 1).padStart(3, '0')))
+  expect(listed.stdout.trim().split('\n')).toEqual(Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0')))
   const mongo = await MongoMemoryServer.create()
   try {
     await mongoose.connect(mongo.getUri(), { autoIndex: false, autoCreate: false })
