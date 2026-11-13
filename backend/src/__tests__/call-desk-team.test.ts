@@ -285,8 +285,8 @@ it('liste d’un externe : invisible de l’équipe avant le passage, lisible ap
     (await team(admin).post(`/calls/${call._id}/analysis/apply`, { clientRequestId: crypto.randomUUID() })).status,
   ).toBe(404)
   expect((await launch(admin, listed._id)).status).toBe(404)
-  // Fiche saisie par l'externe hors liste d'appel : l'équipe la voit dans le CRM, pas ses appels.
-  const own = await Lead.create({ company: 'Saisie Rita', contactPhone: '+33655555555', externalRep: rep.id })
+  // Fiche confiée par l'équipe à l'externe, hors liste d'appel : l'équipe la voit dans le CRM, pas ses appels.
+  const own = await Lead.create({ company: 'Confiée à Rita', contactPhone: '+33655555555', externalRep: rep.id })
   const { call: ownCall } = await finishedCall(rep, own)
   expect((await team(admin).get(`/leads/${own._id}/calls`)).body.calls).toEqual([])
   for (const suffix of ['', '/transcript', '/analysis', '/recording'])
@@ -499,4 +499,99 @@ it('externe : un échange relié à son appel reprend heure et durée et n’est
   expect(String((await Call.findById(call._id))!.interaction)).toBe(String(interaction._id))
   expect((await log({ kind: 'CALL', callId: String(call._id) })).status).toBe(409)
   expect(await Interaction.countDocuments({ subjectId: listed._id })).toBe(1)
+})
+
+// ── Décisions du propriétaire du 13 nov. 2026 ──
+
+/** Fiche de liste de Rita, retenue par l'analyse de son appel. */
+async function heldRepLead(phone: string) {
+  const listed = await repListLead(phone)
+  const { call, analysis } = await finishedCall(rep, listed)
+  analysis.output!.optOut = { detected: true, quote: 'Ne me rappelez plus jamais', quoteVerified: true } as never
+  analysis.markModified('output')
+  await analysis.save()
+  const hold = { at: new Date(), reason: 'OPT_OUT_DETECTED', analysis: analysis._id, call: call._id }
+  await Lead.updateOne({ _id: listed._id }, { $set: { callHold: hold } })
+  return { listed, call }
+}
+const decide = (who: Who, leadId: unknown, action: string, key = crypto.randomUUID()) =>
+  request(app)
+    .post(`/api/admin/call-desk/leads/${leadId}/call-hold`)
+    .set('Cookie', who.cookie)
+    .set('Idempotency-Key', key)
+    .send({ action })
+
+it('retenue d’une fiche d’externe non transmise : l’équipe ne lit que la citation, sa date et l’auteur', async () => {
+  const { listed, call } = await heldRepLead('+33633333333')
+
+  const read = await team(admin).get(`/leads/${listed._id}/call-hold`)
+  expect(read.status).toBe(200)
+  expect(read.body).toEqual({
+    hold: {
+      at: TUESDAY_10H.toISOString(),
+      quote: 'Ne me rappelez plus jamais',
+      quoteVerified: true,
+      analysisErased: false,
+      author: { _id: rep.id, name: 'Rita' },
+    },
+  })
+  // Rien d'autre ne fuit : ni l'appel, ni le transcript, ni le reste de l'analyse.
+  const raw = JSON.stringify(read.body)
+  for (const secret of [String(call._id), 'restaurant', 'boutique', 'Préparer le devis', '+33633333333'])
+    expect(raw).not.toContain(secret)
+  for (const suffix of ['', '/transcript', '/analysis', '/recording'])
+    expect((await team(admin).get(`/calls/${call._id}${suffix}`)).status).toBe(404)
+
+  // Sans écriture sur la fiche : 404 ; sans MANAGE_CRM : 403 ; l'externe n'entre pas ici ; pas de retenue : 404.
+  expect((await team(com).get(`/leads/${listed._id}/call-hold`)).status).toBe(404)
+  expect((await decide(com, listed._id, 'DISMISS')).status).toBe(404)
+  expect((await team(stagiaire).get(`/leads/${listed._id}/call-hold`)).status).toBe(403)
+  expect((await team(rep).get(`/leads/${listed._id}/call-hold`)).status).toBe(403)
+  expect((await decide(rep, listed._id, 'DISMISS')).status).toBe(403)
+  const free = await repListLead('+33644444444')
+  expect((await team(admin).get(`/leads/${free._id}/call-hold`)).status).toBe(404)
+  expect((await Lead.findById(listed._id))!.callHold).not.toBeNull()
+})
+
+it('retenue : non transmise, décidée par la seule route étroite ; transmise, aussi par l’appel', async () => {
+  const { listed, call } = await heldRepLead('+33633333333')
+  // Non transmise : la décision par l'appel reste fermée, la route étroite lève la retenue.
+  expect((await team(admin).post(`/calls/${call._id}/analysis/opt-out`, { action: 'DISMISS' })).status).toBe(404)
+  const lifted = await decide(admin, listed._id, 'DISMISS')
+  expect(lifted.status).toBe(200)
+  expect(lifted.body).toEqual({ lead: { _id: String(listed._id), callHold: null, doNotCall: false } })
+  expect(
+    await LeadActivity.exists({ leadId: listed._id, type: 'CALL_OPT_OUT_DISMISSED', actorId: admin.id }),
+  ).toBeTruthy()
+  // La fiche revient dans la file de l'externe.
+  const repQueue = await commercial(rep).get('/calls/queue')
+  expect((repQueue.body.leads as Array<{ _id: string }>).map((lead) => String(lead._id))).toContain(String(listed._id))
+
+  // Transmise : la route étroite comme la décision par l'appel sont ouvertes à l'équipe, plus à l'externe.
+  const { listed: handed, call: handedCall } = await heldRepLead('+33655555555')
+  expect((await commercial(rep).post(`/leads/${handed._id}/ready-to-close`)).status).toBe(200)
+  expect(
+    (await commercial(rep).post(`/calls/${handedCall._id}/analysis/opt-out`, { action: 'CONFIRM' })).body.code,
+  ).toBe('LEAD_HANDED_OFF')
+  expect((await team(admin).get(`/calls/${handedCall._id}/analysis`)).status).toBe(200)
+  const confirmed = await decide(admin, handed._id, 'CONFIRM')
+  expect(confirmed.body.lead).toMatchObject({ callHold: null, doNotCall: true })
+  expect(
+    await LeadActivity.exists({ leadId: handed._id, type: 'CALL_OPT_OUT_CONFIRMED', actorId: admin.id }),
+  ).toBeTruthy()
+})
+
+it('retenue : la décision est idempotente, rejouée telle quelle, et ne se prend qu’une fois', async () => {
+  const { listed } = await heldRepLead('+33633333333')
+  const key = crypto.randomUUID()
+  const first = await decide(admin, listed._id, 'CONFIRM', key)
+  expect(first.status).toBe(200)
+  const replay = await decide(admin, listed._id, 'CONFIRM', key)
+  expect(replay.status).toBe(200)
+  expect(replay.body).toEqual(first.body)
+  expect((await decide(admin, listed._id, 'DISMISS', key)).body.code).toBe('IDEMPOTENCY_CONFLICT')
+  // Une nouvelle décision, quelle qu'elle soit : plus de retenue.
+  expect((await decide(admin, listed._id, 'DISMISS')).status).toBe(404)
+  expect(await LeadActivity.countDocuments({ leadId: listed._id, type: /^CALL_OPT_OUT_/ })).toBe(1)
+  expect((await Lead.findById(listed._id))!.doNotCall).toBe(true)
 })

@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
 import LeadCallsList from '../../../components/calls/LeadCallsList'
 import LeadCallBar from './LeadCallBar'
+import CallHoldDecision from './CallHoldDecision'
 import { TEAM_CALL_DESK_PREFIX } from './teamDeskApi'
 import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
@@ -73,6 +74,7 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
   // Relit les appels après un appel passé ici ; relit la fiche quand une analyse l'a modifiée.
   const [callsRefresh, setCallsRefresh] = useState(0)
   const [openCall, setOpenCall] = useState<{ callId: string; nonce: number } | null>(null)
+  const [holdDecision, setHoldDecision] = useState(false)
   const moreRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const [menuPos, setMenuPos] = useState<React.CSSProperties>({})
@@ -304,19 +306,32 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
           </div>
 
           {lead.callHold && (
-            <p className="crm-detail-hold" role="status">
-              <strong>{t('commercial.hold.title')}</strong> {t('commercial.hold.bodyTeam')}{' '}
-              <button
-                type="button"
-                className="crm-detail-hold-link"
-                onClick={() => {
-                  setTab('calls')
-                  if (lead.callHold?.call) setOpenCall({ callId: lead.callHold.call, nonce: Date.now() })
-                }}
-              >
-                {t('crm.detail.holdOpen')}
-              </button>
-            </p>
+            <div className="crm-detail-hold" role="status">
+              {/* Fiche d'un externe non transmise : ses appels restent fermés, la décision se prend sur la citation. */}
+              <strong>{t('commercial.hold.title')}</strong>{' '}
+              {t(lead.externalRep && !lead.closingHandoff ? 'callHold.body' : 'commercial.hold.bodyTeam')}{' '}
+              {lead.externalRep && !lead.closingHandoff ? (
+                canManageCrm &&
+                (holdDecision ? (
+                  <CallHoldDecision leadId={lead._id} onDecided={reloadLead} />
+                ) : (
+                  <button type="button" className="crm-detail-hold-link" onClick={() => setHoldDecision(true)}>
+                    {t('callHold.open')}
+                  </button>
+                ))
+              ) : (
+                <button
+                  type="button"
+                  className="crm-detail-hold-link"
+                  onClick={() => {
+                    setTab('calls')
+                    if (lead.callHold?.call) setOpenCall({ callId: lead.callHold.call, nonce: Date.now() })
+                  }}
+                >
+                  {t('crm.detail.holdOpen')}
+                </button>
+              )}
+            </div>
           )}
 
           {notice && (
