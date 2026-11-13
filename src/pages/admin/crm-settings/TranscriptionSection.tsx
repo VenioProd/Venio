@@ -37,6 +37,12 @@ export default function TranscriptionSection({ settings, providers, canManage, s
         onChange={(enabled) => setDraft({ ...draft, enabled })}
       />
       <div className={draft.enabled ? 'crm-ai-fields' : 'crm-ai-fields crm-ai-group-off'}>
+        <ToggleRow
+          label={t('crmCallAi.tr.live')}
+          help={t('crmCallAi.tr.liveHelp')}
+          checked={draft.live}
+          onChange={(live) => setDraft({ ...draft, live })}
+        />
         <label className="crm-ai-field">
           {t('crmCallAi.tr.language')}
           <select

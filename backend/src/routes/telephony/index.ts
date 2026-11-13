@@ -24,6 +24,7 @@ import {
   recordingSettings,
   transcribeRecording,
 } from '../../lib/telephony/recording.js'
+import { withLiveTranscription } from '../../lib/liveTranscription/index.js'
 import logger from '../../lib/logger.js'
 
 /**
@@ -119,7 +120,7 @@ router.post('/twilio/voice', async (req: Request, res: Response, next: NextFunct
       const current = await Call.findById(call._id).lean()
       return sendTwiml(res, current?.providerCallSid === callSid ? dialTwiml(config, call) : hangupTwiml())
     }
-    sendTwiml(res, dialTwiml(config, attached))
+    sendTwiml(res, await withLiveTranscription(dialTwiml(config, attached), attached))
   } catch (err) {
     next(err)
   }

@@ -75,6 +75,9 @@ const fr = {
   'crmCallAi.tr.languageOther': '{code} (valeur actuelle)',
   'crmCallAi.tr.retention': 'Conservation des transcripts (mois)',
   'crmCallAi.tr.retentionHelp': 'Passé ce délai, le transcript est supprimé. De 1 à 36 mois.',
+  'crmCallAi.tr.live': 'Transcription en direct pendant l’appel',
+  'crmCallAi.tr.liveHelp':
+    'Le commercial lit les deux voix pendant l’appel. Texte éphémère, jamais conservé, effacé à la fin de l’appel ou dès une opposition. Le prestataire facture la durée de l’appel en plus du transcript final.',
   'crmCallAi.tr.err.language': 'Choisissez une langue.',
   'crmCallAi.tr.err.retention': 'La conservation est un nombre entier de mois entre 1 et 36.',
   'crmCallAi.lang.fr': 'Français',

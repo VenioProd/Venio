@@ -257,6 +257,8 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
       enabled: { type: Boolean, default: true },
       language: { type: String, default: 'fr', trim: true, lowercase: true, match: /^[a-z]{2}(_[a-z]{2})?$/ },
       retentionMonths: { type: Number, default: 12, min: 1, max: 36 },
+      // Transcription en direct pendant l'appel (lot J), texte éphémère : désactivée par défaut.
+      live: { type: Boolean, default: false },
     },
 
     // ═══════════════════════════════════════════════════════════════

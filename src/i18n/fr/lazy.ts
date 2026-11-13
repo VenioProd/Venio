@@ -12,6 +12,7 @@ import changeReq from './changeReq'
 import callInsights from './callInsights'
 import suggestedActions from './suggestedActions'
 import callScriptReport from './callScriptReport'
+import liveTranscript from './liveTranscript'
 import commercial from './commercial'
 import client from './client'
 import compA from './compA'
@@ -53,6 +54,7 @@ const messages = {
   ...callInsights,
   ...suggestedActions,
   ...callScriptReport,
+  ...liveTranscript,
   ...commercial,
   ...client,
   ...compA,

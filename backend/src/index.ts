@@ -113,6 +113,8 @@ import clientChangeRequestRoutes from './routes/client/changeRequests.js'
 import clientVaultRoutes from './routes/client/vault.js'
 import clientFileRoutes from './routes/client/files.js'
 import { initInternalMessagingSocket } from './realtime/internalMessagingSocket.js'
+import { attachLiveTranscriptionServer } from './lib/liveTranscription/streamServer.js'
+import { liveTranscriptRoutes } from './lib/liveTranscription/routes.js'
 import bcrypt from 'bcryptjs'
 import User from './models/User.js'
 import StripeEvent from './models/StripeEvent.js'
@@ -374,6 +376,9 @@ app.use('/api/admin/crm/suppression', adminCrmSuppressionRoutes)
 app.use('/api/admin/crm/script-reports', adminCallScriptReportRoutes)
 app.use('/api/admin/crm', adminCrmExtrasRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
+// Transcription en direct (lot J) : flux SSE de l'auteur de l'appel, avant les routeurs du poste d'appel.
+app.use('/api/admin/call-desk', liveTranscriptRoutes.team)
+app.use('/api/commercial', liveTranscriptRoutes.rep)
 // Poste d'appel de l'équipe : les routeurs de l'espace commercial, avec le périmètre de l'équipe.
 app.use('/api/admin/call-desk', adminCallDeskRoutes)
 // Commerciaux externes : leur espace, et son pilotage côté équipe.
@@ -609,6 +614,8 @@ mongoose
   .then(() => {
     const server = createServer(app)
     initInternalMessagingSocket(server, corsOrigin)
+    // Flux audio de Twilio pour la transcription en direct (WebSocket signé).
+    attachLiveTranscriptionServer(server)
     server.listen(port, () => {
       logger.info({ port, version: APP_VERSION }, 'API listening')
       // Start CRM automation scheduler (legacy)

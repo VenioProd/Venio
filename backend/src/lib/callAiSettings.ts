@@ -100,7 +100,13 @@ function validateRecording(value: unknown) {
 }
 
 function validateTranscription(value: unknown) {
-  const block = exactKeys('callTranscription', value, ['enabled', 'language', 'retentionMonths'])
+  // `live` (lot J) est facultatif : absent, la transcription en direct est coupée.
+  const block = exactKeys('callTranscription', isRecord(value) ? { live: false, ...value } : value, [
+    'enabled',
+    'language',
+    'retentionMonths',
+    'live',
+  ])
   const language = text('callTranscription.language', block.language, 5, true).toLowerCase()
   if (!/^[a-z]{2}(_[a-z]{2})?$/.test(language))
     fail('callTranscription.language', 'callTranscription.language : code de langue attendu (fr, en, en_us…)')
@@ -108,6 +114,7 @@ function validateTranscription(value: unknown) {
     enabled: boolean('callTranscription.enabled', block.enabled),
     language,
     retentionMonths: integer('callTranscription.retentionMonths', block.retentionMonths, 1, 36),
+    live: boolean('callTranscription.live', block.live),
   }
 }
 

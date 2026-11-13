@@ -27,6 +27,8 @@ export interface SoftphoneController extends SoftphoneSnapshot {
   unavailable: SoftphoneFallback | null
   checking: boolean
   recording: RecordingConfig
+  /** Routeur d'appels de l'écran (volet de transcription en direct). */
+  apiPrefix: string
   microphones: { id: string; label: string }[]
   start: (leadId: string) => void
   hangup: () => void
@@ -143,6 +145,7 @@ export function useSoftphone(
     unavailable,
     checking: !unavailable && config === 'loading',
     recording,
+    apiPrefix: prefix,
     microphones,
     start: useCallback((leadId: string) => void engine.start(leadId, prefix), [engine, prefix]),
     hangup: useCallback(() => engine.hangup(), [engine]),

@@ -75,6 +75,9 @@ const en = {
   'crmCallAi.tr.languageOther': '{code} (current value)',
   'crmCallAi.tr.retention': 'Transcript retention (months)',
   'crmCallAi.tr.retentionHelp': 'After this time the transcript is deleted. From 1 to 36 months.',
+  'crmCallAi.tr.live': 'Live transcription during the call',
+  'crmCallAi.tr.liveHelp':
+    'The rep reads both voices during the call. Ephemeral text, never stored, cleared when the call ends or as soon as the prospect objects. The provider bills the call duration on top of the final transcript.',
   'crmCallAi.tr.err.language': 'Pick a language.',
   'crmCallAi.tr.err.retention': 'Retention is a whole number of months between 1 and 36.',
   'crmCallAi.lang.fr': 'French',
