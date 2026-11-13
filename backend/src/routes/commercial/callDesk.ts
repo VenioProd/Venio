@@ -18,7 +18,13 @@ import { emitLeadChanges, fireLeadEvent } from '../../lib/crmRules.js'
 import type { ILead } from '../../types/models/index.js'
 import Call from '../../models/Call.js'
 import SuppressionEntry from '../../models/SuppressionEntry.js'
-import { addPhoneSuppression, suppressedPhoneStages } from '../../lib/callGuards.js'
+import {
+  addPhoneSuppression,
+  attemptWindowOf,
+  callWindowCheck,
+  suppressedPhoneStages,
+  windowAttempts,
+} from '../../lib/callGuards.js'
 
 const OPEN_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO']
 
@@ -111,6 +117,8 @@ export function createCallDeskRoutes(scope: CallDeskScope) {
         phoneInvalid: { $ne: true },
         // Fiche retenue par une opposition détectée (absent ou null : proposable).
         callHold: null,
+        // Plafond de la fenêtre atteint sans jamais joindre personne (lot P).
+        callUnreachableAt: null,
         contactPhone: { $type: 'string', $regex: /\S/ },
         $or: [{ nextActionAt: null }, { nextActionAt: { $lte: new Date(asOf) } }],
       }
@@ -167,7 +175,18 @@ export function createCallDeskRoutes(scope: CallDeskScope) {
               JSON.stringify({ bucket: last.queueBucket, time: last.queueTime, id: String(last._id), asOf }),
             ).toString('base64url')
           : null
-      res.json({ leads: page.map(toRepLead), nextCursor })
+      // Lot P : pays, fuseaux et ce qui empêche d'appeler maintenant (le lancement repasse la garde exacte).
+      const now = new Date()
+      res.json({
+        leads: page.map((lead) => {
+          const { target, block } = callWindowCheck(lead, settings, now)
+          return {
+            ...toRepLead(lead),
+            callCheck: { country: target?.country ?? null, timeZones: target?.timeZones ?? [], block },
+          }
+        }),
+        nextCursor,
+      })
     } catch (err) {
       next(err)
     }
@@ -192,6 +211,7 @@ export function createCallDeskRoutes(scope: CallDeskScope) {
           callList: req.body.callList,
           project: req.body.project,
           region: req.body.region,
+          businessContact: req.body.businessContact,
           actorId: req.user!.id,
         })
         res.status(201).json(report)
@@ -314,6 +334,15 @@ export function createCallDeskRoutes(scope: CallDeskScope) {
               patch.lostComment = input.note
             }
             if (['LOST', 'DO_NOT_CALL', 'WRONG_NUMBER'].includes(outcome.effect)) patch.nextActionAt = null
+            // Lot P : la dernière tentative permise sur la fenêtre, sans jamais avoir joint personne → « non joignable ».
+            if (call && !outcome.reached && !lead.callUnreachableAt) {
+              const window = await windowAttempts(call.to, now, settings)
+              if (!window.reached && window.count >= attemptWindowOf(settings).max) {
+                fields.push('callUnreachableAt')
+                leadBefore.callUnreachableAt = lead.get('callUnreachableAt') ?? null
+                patch.callUnreachableAt = now
+              }
+            }
             const change = await applyLeadChange(lead, patch, {
               actor: repId,
               source: 'bulk',

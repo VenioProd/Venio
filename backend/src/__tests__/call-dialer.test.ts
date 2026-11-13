@@ -7,6 +7,7 @@ import { createSession } from '../lib/session.js'
 import commercialRoutes from '../routes/commercial/index.js'
 import telephonyRoutes from '../routes/telephony/index.js'
 import { deleteProviderRecording, fetchProviderRecording, hangupProviderCall } from '../lib/telephony/rest.js'
+import { DEFAULT_CALL_COUNTRIES } from '../lib/telephony/countries.js'
 import { validateCallAiSettings } from '../lib/callAiSettings.js'
 import Call from '../models/Call.js'
 import Lead from '../models/Lead.js'
@@ -48,7 +49,8 @@ let cookieA: string
 const get = (path: string) => request(app).get(`/api/commercial${path}`).set('Cookie', cookieA)
 const post = (path: string, body: object = {}) =>
   request(app).post(`/api/commercial${path}`).set('Cookie', cookieA).send(body)
-const lead = (company: string, phone: string) => Lead.create({ company, externalRep: repA, contactPhone: phone })
+const lead = (company: string, phone: string) =>
+  Lead.create({ company, businessContact: true, externalRep: repA, contactPhone: phone })
 const launch = (leadId: unknown, clientRequestId: string = crypto.randomUUID()) =>
   post(`/leads/${leadId}/calls`, { clientRequestId })
 const twilioPost = (path: string, params: Record<string, string>, signature?: string) =>
@@ -97,15 +99,16 @@ it('un seul appel à la fois par utilisateur : course, rejeu, fin d’appel, lan
     lead('Beta', '+33622222222'),
     lead('Gamma', '+33633333333'),
   ])
-  // Deux lancements simultanés (deux onglets, double clic) : un seul passe.
-  const key = crypto.randomUUID()
-  const raced = await Promise.all([launch(alpha._id, key), launch(beta._id)])
+  // Deux lancements simultanés (deux onglets, double clic) : un seul passe, l'un ou l'autre.
+  const keys = [crypto.randomUUID(), crypto.randomUUID()]
+  const raced = await Promise.all([launch(alpha._id, keys[0]), launch(beta._id, keys[1])])
   expect(raced.map((res) => res.status).sort()).toEqual([201, 409])
   const winner = raced.find((res) => res.status === 201)!
   expect(raced.find((res) => res.status === 409)!.body.code).toBe('CALL_IN_PROGRESS')
   expect(await Call.countDocuments()).toBe(1)
   // Le lancement rejoué rend le même appel ; un autre reste refusé tant que celui-ci occupe la ligne.
-  expect((await launch(alpha._id, key)).body.callId).toBe(winner.body.callId)
+  const won = raced.indexOf(winner)
+  expect((await launch([alpha, beta][won]!._id, keys[won])).body.callId).toBe(winner.body.callId)
   const callId = String(winner.body.callId)
   await voice(callId, 'CAp1')
   await status(callId, 'CAp1', 'in-progress')
@@ -200,6 +203,19 @@ it('humain détecté : rien ne coupe ; détection coupée dans les réglages : p
 })
 
 it('power dialer bloqué vers les États-Unis (+1 hors Canada) ; aperçu et clic permis', async () => {
+  // Lot P : Canada et États-Unis sont fermés par défaut ; ouverts ici pour isoler la garde du power dialer.
+  const settings = await CrmSettings.getSettings()
+  const telephony = settings.toObject().telephony
+  await CrmSettings.updateSettings({
+    telephony: {
+      ...telephony,
+      countries: telephony.countries!.map((rule) =>
+        ['CA', 'US'].includes(rule.code) ? { ...rule, enabled: true, defaultCallerId: true } : rule,
+      ),
+    },
+  } as never)
+  // 10 h à Paris : 4 h à New York, hors plage. 16 h à Paris : 10 h à New York et Montréal.
+  vi.setSystemTime(new Date('2026-11-10T15:00:00Z'))
   const [newYork, montreal] = await Promise.all([lead('NY', '+12125550123'), lead('Montréal', '+15145550123')])
   const power = await post(`/leads/${newYork._id}/calls`, { clientRequestId: crypto.randomUUID(), mode: 'power' })
   expect([power.status, power.body.code]).toEqual([409, 'POWER_DIALER_BLOCKED'])
@@ -212,10 +228,13 @@ it('power dialer bloqué vers les États-Unis (+1 hors Canada) ; aperçu et clic
 })
 
 it('réglages du dialer : bornés, facultatifs pour les écrans qui ne les envoient pas', () => {
-  const callingHours = { timezone: 'Europe/Paris', days: [1, 2, 3, 4, 5], start: '09:00', end: '20:00' }
-  expect(() => validateCallAiSettings({ telephony: { callingHours, attemptCapPerDay: 3 } })).not.toThrow()
+  const base = {
+    callingHours: { days: [1, 2, 3, 4, 5], start: '09:00', end: '18:30' },
+    attemptCapPerDay: 2,
+    attemptWindow: { days: 14, max: 6 },
+    countries: DEFAULT_CALL_COUNTRIES,
+  }
+  expect(() => validateCallAiSettings({ telephony: base })).not.toThrow()
   const dialer = { voicemailDetection: true, previewDelaySec: 10, powerDelaySec: 61 }
-  expect(() => validateCallAiSettings({ telephony: { callingHours, attemptCapPerDay: 3, dialer } })).toThrow(
-    /telephony\.dialer\.powerDelaySec/,
-  )
+  expect(() => validateCallAiSettings({ telephony: { ...base, dialer } })).toThrow(/telephony\.dialer\.powerDelaySec/)
 })

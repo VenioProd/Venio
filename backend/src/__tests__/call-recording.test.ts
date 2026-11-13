@@ -99,7 +99,13 @@ const recEvent = (callId: string, RecordingStatus: string, extra: Record<string,
 async function placeCall(leadExtra: object = {}, callSid = 'CAparent1') {
   // Ces tests enchaînent des appels laissés ouverts : la ligne unique (lot I) n'est pas leur objet.
   await mongoose.connection.collection('callerlines').deleteMany({})
-  const lead = await Lead.create({ company: 'Alpha', externalRep: repA, contactPhone: '+33612345678', ...leadExtra })
+  const lead = await Lead.create({
+    company: 'Alpha',
+    businessContact: true,
+    externalRep: repA,
+    contactPhone: '+33612345678',
+    ...leadExtra,
+  })
   const launched = await as(cookieA).post(`/leads/${lead._id}/calls`, { clientRequestId: crypto.randomUUID() })
   const callId = String(launched.body.callId)
   const voice = await twilioPost('/voice', { CallSid: callSid, From: `client:u_${repA}`, To: '', callId })
@@ -327,6 +333,7 @@ it('relais refusé quand l’audio n’est pas conservé ; retry crée l’analy
 it('fiche retenue (callHold) : absente de la file et refusée au lancement', async () => {
   const held = await Lead.create({
     company: 'Retenue',
+    businessContact: true,
     externalRep: repA,
     contactPhone: '+33611111111',
     callHold: {
@@ -336,7 +343,12 @@ it('fiche retenue (callHold) : absente de la file et refusée au lancement', asy
       call: new mongoose.Types.ObjectId(),
     },
   })
-  const free = await Lead.create({ company: 'Libre', externalRep: repA, contactPhone: '+33622222222' })
+  const free = await Lead.create({
+    company: 'Libre',
+    businessContact: true,
+    externalRep: repA,
+    contactPhone: '+33622222222',
+  })
   const queue = await as(cookieA).get('/calls/queue').expect(200)
   expect(queue.body.leads.map((item: { _id: string }) => item._id)).toEqual([String(free._id)])
   const launched = await as(cookieA).post(`/leads/${held._id}/calls`, { clientRequestId: crypto.randomUUID() })
@@ -387,7 +399,12 @@ it('anonymisation : ni audio, ni transcript, ni analyse, ni numéro ; l’export
 it('sans variables d’environnement : rien n’est enregistré et rien ne casse', async () => {
   for (const key of Object.keys(ENV)) delete process.env[key]
   expect((await as(cookieA).get('/calls/config')).body.recording).toEqual({ enabled: false, notice: false })
-  const lead = await Lead.create({ company: 'Alpha', externalRep: repA, contactPhone: '+33612345678' })
+  const lead = await Lead.create({
+    company: 'Alpha',
+    businessContact: true,
+    externalRep: repA,
+    contactPhone: '+33612345678',
+  })
   const stale = await Call.create({
     lead: lead._id,
     author: repA,

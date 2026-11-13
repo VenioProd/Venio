@@ -154,6 +154,9 @@ export function normalizeLeadPatch(
   if (body.nextActionAt !== undefined) payload.nextActionAt = body.nextActionAt ? new Date(body.nextActionAt) : null
   if (body.lastContactAt !== undefined) payload.lastContactAt = body.lastContactAt ? new Date(body.lastContactAt) : null
   if (body.notes !== undefined) payload.notes = String(body.notes || '')
+  // Lot P : contact professionnel (seul appelable) ; « non joignable » ne se lève qu'à la main.
+  if (typeof body.businessContact === 'boolean') payload.businessContact = body.businessContact
+  if (body.callUnreachableAt === null) payload.callUnreachableAt = null
   if (body.serviceType !== undefined) payload.serviceType = String(body.serviceType || '')
   if (
     typeof body.leadTemperature === 'string' &&

@@ -14,6 +14,10 @@ export function toRepLead(lead: ILead) {
     lastCallAt: lead.lastCallAt,
     doNotCall: lead.doNotCall,
     phoneInvalid: lead.phoneInvalid,
+    // Lot P ; absents des leads antérieurs (la file passe par un aggregate sans défauts).
+    phoneCountry: lead.phoneCountry ?? '',
+    businessContact: lead.businessContact ?? false,
+    callUnreachableAt: lead.callUnreachableAt ?? null,
     // Les leads antérieurs à l'import n'ont pas ce champ, et la file passe par un aggregate sans défauts.
     extraInfo: lead.extraInfo ?? {},
     status: lead.status,

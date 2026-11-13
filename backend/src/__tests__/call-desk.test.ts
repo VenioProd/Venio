@@ -35,7 +35,7 @@ const get = (path: string) => request(app).get(`/api/commercial${path}`).set('Co
 const post = (path: string, body: object) =>
   request(app).post(`/api/commercial${path}`).set('Cookie', cookieA).send(body)
 const lead = (company: string, extra: object = {}) =>
-  Lead.create({ company, externalRep: repA, contactPhone: '+33612345678', ...extra })
+  Lead.create({ company, businessContact: true, externalRep: repA, contactPhone: '+33612345678', ...extra })
 const quick = (outcome: string, extra: object = {}) => ({
   clientRequestId: crypto.randomUUID(),
   note: 'Échange rapide',
@@ -217,6 +217,7 @@ it('importe un CSV mappé avec dédoublonnage normalisé et rapport idempotent',
     callList: 'Salon',
     project: 'VENIO',
     externalRep: repB,
+    businessContact: true,
   }
   const send = () =>
     request(app).post('/api/commercial/calls/import').set('Cookie', cookieA).set('Idempotency-Key', key).send(payload)
@@ -242,9 +243,10 @@ it('importe en JSON via le scope agent avec Idempotency-Key et rattachement expl
   const key = crypto.randomUUID()
   const payload = {
     externalRep: repB,
-    region: 'US',
+    region: 'BE',
     callList: 'Agent',
-    leads: [{ company: 'US lead', contactPhone: '(202) 555-0123', extraInfo: { Segment: 'B2B' } }],
+    businessContact: true,
+    leads: [{ company: 'BE lead', contactPhone: '02 555 01 23', extraInfo: { Segment: 'B2B' } }],
   }
   const send = (body = payload, idempotencyKey = key) =>
     request(app)
@@ -260,7 +262,9 @@ it('importe en JSON via le scope agent avec Idempotency-Key et rattachement expl
   expect((await send({ ...payload, callList: 'Modifiée' })).status).toBe(409)
   expect(await Lead.countDocuments({ externalRep: repB })).toBe(1)
   expect(await Lead.findOne({ externalRep: repB }).lean()).toMatchObject({
-    contactPhone: '+12025550123',
+    contactPhone: '+3225550123',
+    phoneCountry: 'BE',
+    businessContact: true,
     extraInfo: { Segment: 'B2B' },
   })
   expect((await get('/calls/queue')).body.leads).toEqual([])

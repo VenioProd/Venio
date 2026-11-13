@@ -26,6 +26,12 @@ export interface ILead extends Document {
   lastCallOutcome: string | null
   lastCallAt: Date | null
   phoneInvalid: boolean
+  /** Lot P : pays du numéro (ISO 3166-1), déduit à l'enregistrement ; vide si invalide ou inconnu. */
+  phoneCountry?: string
+  /** Lot P : contact confirmé professionnel ; sinon la fiche n'est pas appelable. */
+  businessContact?: boolean
+  /** Lot P : plafond de tentatives atteint sans jamais joindre personne ; levé si le numéro change. */
+  callUnreachableAt?: Date | null
   extraInfo: Record<string, string>
   doNotCall: boolean
   source: string

@@ -87,7 +87,12 @@ async function setLive(live: boolean) {
 }
 
 async function placeCall(callSid = 'CAparent1') {
-  const lead = await Lead.create({ company: 'Alpha', externalRep: repA, contactPhone: '+33612345678' })
+  const lead = await Lead.create({
+    company: 'Alpha',
+    businessContact: true,
+    externalRep: repA,
+    contactPhone: '+33612345678',
+  })
   const launched = await request(app)
     .post(`/api/commercial/leads/${lead._id}/calls`)
     .set('Cookie', cookieA)

@@ -92,6 +92,8 @@ function repLeadPayload(input: Record<string, unknown> = {}) {
   for (const field of ['lostReason', 'lostComment']) {
     if (input[field] !== undefined) payload[field] = String(input[field] ?? '').trim()
   }
+  // Lot P : seul un contact professionnel est appelable.
+  if (typeof input.businessContact === 'boolean') payload.businessContact = input.businessContact
   if (input.status !== undefined) payload.status = input.status
   if (input.priority !== undefined) payload.priority = input.priority
   if (input.leadTemperature !== undefined) payload.leadTemperature = input.leadTemperature
@@ -184,6 +186,10 @@ router.post(
   '/leads',
   idempotentRequest,
   body('company').isString().trim().notEmpty().withMessage("Le nom de l'entreprise est requis"),
+  // Lot P, décision 3 : la fiche express n'accueille que des professionnels.
+  body('businessContact')
+    .custom((value) => value === true)
+    .withMessage('Confirmez que le contact est un professionnel'),
   ...leadValidators,
   async (req: Request, res: Response, next: NextFunction) => {
     try {

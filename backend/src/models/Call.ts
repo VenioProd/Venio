@@ -59,10 +59,15 @@ export interface ICall {
   answeredBy: 'HUMAN' | 'MACHINE' | 'UNKNOWN'
   interaction: Types.ObjectId | null
   clientRequestId: string
-  /** Jour local (fuseau des réglages, AAAA-MM-JJ) et rang de la tentative vers `to` ce jour-là. */
+  /** Jour local (premier fuseau du prospect depuis le lot P, AAAA-MM-JJ) et rang de la tentative vers `to` ce jour-là. */
   attemptDay: string
   attemptNo: number
   recording: ICallRecording | null
+  /** Lot P : `BRIDGE` = Twilio appelle d'abord le portable vérifié du commercial (mode pont), puis le prospect. */
+  via: 'BROWSER' | 'BRIDGE'
+  /** Mode pont : portable du commercial et branche de l'opérateur qui l'appelle. */
+  bridgeTo: string | null
+  bridgeCallSid: string | null
   events: { status: string; at: Date }[]
   createdAt: Date
   updatedAt: Date
@@ -106,6 +111,9 @@ const callSchema = new Schema<ICall>(
       ),
       default: null,
     },
+    via: { type: String, enum: ['BROWSER', 'BRIDGE'], default: 'BROWSER' },
+    bridgeTo: { type: String, default: null },
+    bridgeCallSid: { type: String, default: null },
     events: { type: [{ _id: false, status: { type: String, required: true }, at: { type: Date, required: true } }] },
   },
   { timestamps: true },
@@ -118,6 +126,8 @@ callSchema.index(
 callSchema.index({ author: 1, clientRequestId: 1 }, { unique: true })
 // Le rang est réservé par l'index : deux lancements simultanés ne dépassent pas le plafond.
 callSchema.index({ to: 1, attemptDay: 1, attemptNo: 1 }, { unique: true })
+// Fenêtre glissante des tentatives par numéro (lot P).
+callSchema.index({ to: 1, createdAt: -1 })
 callSchema.index({ lead: 1, createdAt: -1 })
 callSchema.index(
   { 'recording.status': 1, 'recording.deleteAt': 1 },

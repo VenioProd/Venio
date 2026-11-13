@@ -295,6 +295,7 @@ afterEach(() => {
 const newLead = () =>
   Lead.create({
     company: 'Boutique Alpha',
+    businessContact: true,
     contactName: 'Mme Alpha',
     contactPhone: '06 12 34 56 78',
     externalRep: rep.id,

@@ -9,6 +9,7 @@ import User from '../models/User.js'
 import { EXTERNAL_SALES_ROLE, repLeadFilter } from './externalSales.js'
 import { entityFromProject } from './groupEntities.js'
 import { runInTransaction } from './transaction.js'
+import { callCountryRules, phoneTarget } from './telephony/countries.js'
 
 export function callError(status: number, message: string) {
   return Object.assign(new Error(message), { status })
@@ -97,12 +98,23 @@ export async function importCallLeads(input: {
   project?: unknown
   region?: unknown
   csv?: boolean
+  /** Lot P : la case « contacts professionnels » est obligatoire ; sans elle, rien n'est importé. */
+  businessContact?: unknown
   actorId?: string
   agentRequest?: { tokenId: string; key: string; path: string; requestHash: string }
 }) {
   if (!Array.isArray(input.leads) || !input.leads.length || input.leads.length > 1000)
     throw callError(400, '1 à 1000 leads attendus')
+  if (input.businessContact !== true)
+    throw Object.assign(callError(400, 'Confirmez que ces contacts sont des professionnels'), {
+      code: 'BUSINESS_CONTACT_REQUIRED',
+    })
   const settings = await CrmSettings.getSettings()
+  const allowedCountries = new Set(
+    callCountryRules(settings)
+      .filter((rule) => rule.enabled)
+      .map((rule) => rule.code),
+  )
   const region = input.region ?? settings.callDefaultRegion
   const project = input.project ?? ''
   const callList = input.callList ?? ''
@@ -140,13 +152,15 @@ export async function importCallLeads(input: {
         const data = Object.fromEntries(
           IMPORT_FIELDS.map((field) => [field, typeof item[field] === 'string' ? item[field].trim() : '']),
         )
-        const phone = normalizePhone(data.contactPhone!, region)
+        const target = phoneTarget(data.contactPhone!, region)
+        const phone = target?.e164 ?? null
         let reason = ''
         if (!data.company || data.company.length > 300) reason = 'INVALID_COMPANY'
         else if (!phone) reason = 'INVALID_PHONE'
         else if (data.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.contactEmail)) reason = 'INVALID_EMAIL'
         else if (Object.values(data).some((value) => value.length > 20000)) reason = 'FIELD_TOO_LONG'
         else if (suppressed.has(phone)) reason = 'PHONE_SUPPRESSED'
+        else if (!allowedCountries.has(target!.country ?? '')) reason = 'COUNTRY_NOT_ALLOWED'
         if (reason) {
           report.rejected++
           report.errors.push({ row: input.csv && typeof item.csvLine === 'number' ? item.csvLine : index + 1, reason })
@@ -160,6 +174,8 @@ export async function importCallLeads(input: {
           ...data,
           extraInfo: extraInfo(item.extraInfo),
           contactPhone: phone,
+          phoneCountry: target!.country ?? '',
+          businessContact: true,
           callList: callList.trim(),
           project,
           entity: entityFromProject(project),

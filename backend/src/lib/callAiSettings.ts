@@ -1,4 +1,5 @@
 import { heatGridError } from './callAnalysis/heat.js'
+import { CALL_COUNTRIES } from './telephony/countries.js'
 
 /**
  * Contrôle, à l'enregistrement, des quatre blocs de réglages du poste d'appel
@@ -63,16 +64,47 @@ function validateDialer(value: unknown) {
   }
 }
 
+/** Lot P : un pays par entrée, tous ceux que Venio sait situer (`CALL_COUNTRIES`), ni plus ni moins. */
+function validateCountries(value: unknown) {
+  if (!Array.isArray(value) || value.length !== CALL_COUNTRIES.length)
+    fail('telephony.countries', `telephony.countries : ${CALL_COUNTRIES.length} pays attendus`)
+  const rules = new Map(
+    (value as unknown[]).map((item, index) => {
+      const field = `telephony.countries[${index}]`
+      const rule = exactKeys(field, item, ['code', 'enabled', 'defaultCallerId'])
+      if (typeof rule.code !== 'string' || !(CALL_COUNTRIES as readonly string[]).includes(rule.code))
+        fail(`${field}.code`, `${field}.code : pays inconnu`)
+      return [
+        rule.code as string,
+        {
+          code: rule.code as string,
+          enabled: boolean(`${field}.enabled`, rule.enabled),
+          defaultCallerId: boolean(`${field}.defaultCallerId`, rule.defaultCallerId),
+        },
+      ] as const
+    }),
+  )
+  if (rules.size !== CALL_COUNTRIES.length) fail('telephony.countries', 'telephony.countries : pays en double')
+  return CALL_COUNTRIES.map((code) => rules.get(code)!)
+}
+
 function validateTelephony(value: unknown) {
   const { dialer, ...rest } = isRecord(value) ? value : { dialer: undefined }
-  const block = exactKeys('telephony', isRecord(value) ? rest : value, ['callingHours', 'attemptCapPerDay'])
-  const hours = exactKeys('telephony.callingHours', block.callingHours, ['timezone', 'days', 'start', 'end'])
-  const timezone = text('telephony.callingHours.timezone', hours.timezone, 64, true)
-  try {
-    new Intl.DateTimeFormat('fr-FR', { timeZone: timezone })
-  } catch {
-    fail('telephony.callingHours.timezone', 'telephony.callingHours.timezone : fuseau horaire inconnu')
-  }
+  const block = exactKeys('telephony', isRecord(value) ? rest : value, [
+    'callingHours',
+    'attemptCapPerDay',
+    'attemptWindow',
+    'countries',
+  ])
+  // Lot P : la plage suit le fuseau du prospect ; un ancien écran peut encore envoyer `timezone`, ignoré.
+  const { timezone: _legacyTimezone, ...hourFields } = isRecord(block.callingHours)
+    ? block.callingHours
+    : { timezone: undefined }
+  const hours = exactKeys('telephony.callingHours', isRecord(block.callingHours) ? hourFields : block.callingHours, [
+    'days',
+    'start',
+    'end',
+  ])
   const days = hours.days
   if (!Array.isArray(days) || days.length < 1 || days.length > 7 || new Set(days).size !== days.length)
     fail('telephony.callingHours.days', 'telephony.callingHours.days : de 1 à 7 jours distincts attendus')
@@ -85,14 +117,23 @@ function validateTelephony(value: unknown) {
     fail('telephony.callingHours.end', 'telephony.callingHours.end : heure HH:MM attendue')
   if ((end as string) <= (start as string))
     fail('telephony.callingHours.end', "telephony.callingHours.end : l'heure de fin doit suivre l'heure de début")
+  const window = exactKeys('telephony.attemptWindow', block.attemptWindow, ['days', 'max'])
+  const attemptCapPerDay = integer('telephony.attemptCapPerDay', block.attemptCapPerDay, 1, 20)
+  const attemptWindow = {
+    days: integer('telephony.attemptWindow.days', window.days, 1, 60),
+    max: integer('telephony.attemptWindow.max', window.max, 1, 100),
+  }
+  if (attemptWindow.max < attemptCapPerDay)
+    fail('telephony.attemptWindow.max', 'telephony.attemptWindow.max : au moins le plafond quotidien')
   return {
     callingHours: {
-      timezone,
       days: [...checkedDays].sort((a, b) => a - b),
       start: start as string,
       end: end as string,
     },
-    attemptCapPerDay: integer('telephony.attemptCapPerDay', block.attemptCapPerDay, 1, 20),
+    attemptCapPerDay,
+    attemptWindow,
+    countries: validateCountries(block.countries),
     ...(dialer === undefined ? {} : { dialer: validateDialer(dialer) }),
   }
 }

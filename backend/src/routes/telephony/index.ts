@@ -5,7 +5,8 @@ import Lead from '../../models/Lead.js'
 import Interaction from '../../models/Interaction.js'
 import CrmSettings from '../../models/CrmSettings.js'
 import { callerScope } from '../../lib/callDeskScope.js'
-import { assertCallable, isPhoneSuppressed } from '../../lib/callGuards.js'
+import { assertCallable, isPhoneSuppressed, windowAttempts } from '../../lib/callGuards.js'
+import { bridgeGatherTwiml } from '../../lib/telephony/bridge.js'
 import { normalizePhone } from '../../lib/callImports.js'
 import {
   callStatusRank,
@@ -17,6 +18,7 @@ import {
   requireTelephony,
   telephonyConfig,
   userIdFromClient,
+  type TelephonyConfig,
 } from '../../lib/telephony/index.js'
 import { dialerSettings } from '../../lib/telephony/dialer.js'
 import { hangupProviderCall } from '../../lib/telephony/rest.js'
@@ -72,7 +74,8 @@ router.post('/twilio/voice', async (req: Request, res: Response, next: NextFunct
     const authorId = userIdFromClient(req.body.From)
     const callId = req.body.callId
     if (!callSid || !authorId || !mongoose.isObjectIdOrHexString(callId)) return sendTwiml(res, hangupTwiml())
-    const call = await Call.findOne({ _id: callId, author: authorId })
+    // Un appel en mode pont ne se relie que par le portable du commercial.
+    const call = await Call.findOne({ _id: callId, author: authorId, via: { $ne: 'BRIDGE' } })
     if (!call) return sendTwiml(res, hangupTwiml())
     // Une même requête rejouée reçoit la même réponse ; un autre appel ne peut pas reprendre ce callId.
     if (call.providerCallSid) {
@@ -84,54 +87,137 @@ router.post('/twilio/voice', async (req: Request, res: Response, next: NextFunct
     }
     if (call.status !== 'CREATED') return sendTwiml(res, hangupTwiml())
 
-    const [author, settings] = await Promise.all([callerScope(authorId), CrmSettings.getSettings()])
-    const lead = author ? await Lead.findOne({ _id: call.lead, ...author.filter }) : null
-    let refusal = ''
-    if (!author || !lead) refusal = 'OUT_OF_SCOPE'
-    else if (normalizePhone(String(lead.contactPhone ?? ''), settings.callDefaultRegion) !== call.to)
-      refusal = 'PHONE_CHANGED'
-    else if (await isPhoneSuppressed(call.to, settings.callDefaultRegion)) refusal = 'PHONE_SUPPRESSED'
-    else {
-      try {
-        // Le rang réservé au lancement fait foi : les tentatives qui le précèdent sont celles du jour.
-        assertCallable(lead, { now: new Date(), settings, attemptsToday: call.attemptNo - 1, scope: author.kind })
-      } catch (err) {
-        refusal = (err as { code?: string }).code ?? 'LEAD_NOT_CALLABLE'
-      }
-    }
-    if (refusal) {
-      await cancelCall(call, refusal)
-      return sendTwiml(res, hangupTwiml())
-    }
-
-    const now = new Date()
-    // L'enregistrement est décidé ici, une fois pour toutes ; une opposition déjà posée sur l'appel est gardée.
-    const attached = await Call.findOneAndUpdate(
-      { _id: call._id, status: 'CREATED', providerCallSid: null },
-      [
-        {
-          $set: {
-            providerCallSid: callSid,
-            startedAt: now,
-            recording: { $ifNull: ['$recording', { $literal: initialRecording(settings) }] },
-            events: { $concatArrays: [{ $ifNull: ['$events', []] }, [{ status: 'CONNECTING', at: now }]] },
-          },
-        },
-      ],
-      { new: true },
-    )
-    if (!attached) {
-      const current = await Call.findById(call._id).lean()
-      return sendTwiml(
-        res,
-        current?.providerCallSid === callSid ? dialTwiml(config, call, dialerSettings(settings)) : hangupTwiml(),
-      )
-    }
-    sendTwiml(res, await withLiveTranscription(dialTwiml(config, attached, dialerSettings(settings)), attached))
+    sendTwiml(res, await connectCall(config, call, callSid))
   } catch (err) {
     next(err)
   }
 })
+
+/**
+ * Repasse les gardes dans le périmètre actuel de l'auteur, puis attache la branche
+ * parente (`callSid` : le navigateur, ou le portable en mode pont) et rend le TwiML
+ * de composition. Refus : l'appel passe `CANCELED` et l'opérateur raccroche.
+ */
+async function connectCall(config: TelephonyConfig, call: ICall, callSid: string): Promise<string> {
+  const authorId = String(call.author)
+  const [author, settings] = await Promise.all([callerScope(authorId), CrmSettings.getSettings()])
+  const lead = author ? await Lead.findOne({ _id: call.lead, ...author.filter }) : null
+  let refusal = ''
+  if (!author || !lead) refusal = 'OUT_OF_SCOPE'
+  else if (normalizePhone(String(lead.contactPhone ?? ''), settings.callDefaultRegion) !== call.to)
+    refusal = 'PHONE_CHANGED'
+  else if (await isPhoneSuppressed(call.to, settings.callDefaultRegion)) refusal = 'PHONE_SUPPRESSED'
+  else {
+    try {
+      // Le rang réservé au lancement fait foi : les tentatives qui le précèdent sont celles du jour, et de la fenêtre.
+      const window = await windowAttempts(call.to, new Date(), settings, call._id)
+      assertCallable(lead, {
+        now: new Date(),
+        settings,
+        attempts: { today: call.attemptNo - 1, window: window.count },
+        scope: author.kind,
+      })
+    } catch (err) {
+      refusal = (err as { code?: string }).code ?? 'LEAD_NOT_CALLABLE'
+    }
+  }
+  if (refusal) {
+    await cancelCall(call, refusal)
+    return hangupTwiml()
+  }
+
+  const now = new Date()
+  // L'enregistrement est décidé ici, une fois pour toutes ; une opposition déjà posée sur l'appel est gardée.
+  const attached = await Call.findOneAndUpdate(
+    { _id: call._id, status: 'CREATED', providerCallSid: null },
+    [
+      {
+        $set: {
+          providerCallSid: callSid,
+          startedAt: now,
+          recording: { $ifNull: ['$recording', { $literal: initialRecording(settings) }] },
+          events: { $concatArrays: [{ $ifNull: ['$events', []] }, [{ status: 'CONNECTING', at: now }]] },
+        },
+      },
+    ],
+    { new: true },
+  )
+  if (!attached) {
+    const current = await Call.findById(call._id).lean()
+    return current?.providerCallSid === callSid ? dialTwiml(config, call, dialerSettings(settings)) : hangupTwiml()
+  }
+  return withLiveTranscription(dialTwiml(config, attached, dialerSettings(settings)), attached)
+}
+
+/**
+ * Mode pont (lot P), décroche du portable du commercial. La branche doit venir de
+ * l'appel lancé par Venio vers ce portable (`To`), et aucun prospect n'est appelé
+ * avant que le commercial tape 1 (un répondeur ne déclenche rien).
+ */
+router.post('/twilio/bridge', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const call = await bridgeCall(req)
+    if (!call) return sendTwiml(res, hangupTwiml())
+    if (call.providerCallSid) return sendTwiml(res, await replayDial(call))
+    sendTwiml(res, bridgeGatherTwiml(telephonyConfig()!, String(call._id)))
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.post('/twilio/bridge/confirm', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const call = await bridgeCall(req)
+    if (call?.providerCallSid) return sendTwiml(res, await replayDial(call))
+    if (!call || req.body.Digits !== '1') {
+      if (call) await cancelCall(call, 'BRIDGE_NOT_CONFIRMED')
+      return sendTwiml(res, hangupTwiml())
+    }
+    sendTwiml(res, await connectCall(telephonyConfig()!, call, String(req.body.CallSid)))
+  } catch (err) {
+    next(err)
+  }
+})
+
+/** Fin de la branche du portable : un appel jamais relié au prospect est annulé (refus, sans réponse, raccroché). */
+router.post('/twilio/bridge/status', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const callId = req.query.callId
+    const status = mapTwilioStatus(req.body.CallStatus)
+    if (!mongoose.isObjectIdOrHexString(callId) || !status || !TERMINAL_CALL_STATUSES.includes(status))
+      return res.sendStatus(204)
+    const now = new Date()
+    await Call.updateOne(
+      { _id: callId, via: 'BRIDGE', status: 'CREATED', providerCallSid: null, bridgeCallSid: req.body.CallSid },
+      {
+        $set: { status: 'CANCELED', endedAt: now },
+        $push: { events: { status: `BRIDGE:${String(req.body.CallStatus).slice(0, 20)}`, at: now } },
+      },
+    )
+    res.sendStatus(204)
+  } catch (err) {
+    next(err)
+  }
+})
+
+async function replayDial(call: ICall): Promise<string> {
+  return dialTwiml(telephonyConfig()!, call, dialerSettings(await CrmSettings.getSettings()))
+}
+
+/** L'appel en mode pont désigné par `callId`, encore à relier, et dont la branche appelle bien le portable enregistré. */
+async function bridgeCall(req: Request): Promise<ICall | null> {
+  const callId = req.query.callId
+  const callSid = typeof req.body.CallSid === 'string' ? req.body.CallSid : ''
+  if (!callSid || !mongoose.isObjectIdOrHexString(callId)) return null
+  const call = await Call.findById(callId)
+  if (!call || call.via !== 'BRIDGE' || !call.bridgeTo || req.body.To !== call.bridgeTo) return null
+  // Requête rejouée après la mise en relation : la même branche reçoit la même composition.
+  if (call.providerCallSid) return call.providerCallSid === callSid && call.status !== 'CANCELED' ? call : null
+  if (call.status !== 'CREATED') return null
+  // La branche est celle que Venio a créée ; tant que son identifiant n'est pas noté, `To` et la signature suffisent.
+  if (call.bridgeCallSid && call.bridgeCallSid !== callSid) return null
+  return call
+}
 
 /** États de la branche composée (`statusCallback` de `<Number>`). */
 router.post('/twilio/status', async (req: Request, res: Response, next: NextFunction) => {

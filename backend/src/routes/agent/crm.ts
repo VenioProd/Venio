@@ -281,6 +281,7 @@ router.post(
         callList: req.body.callList,
         project: req.body.project,
         region: req.body.region,
+        businessContact: req.body.businessContact,
         agentRequest: {
           tokenId: req.agentToken!.id,
           key: req.get('Idempotency-Key')!,
