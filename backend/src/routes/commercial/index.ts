@@ -14,8 +14,6 @@ import Call from '../../models/Call.js'
 import { logLeadActivity, checkDuplicateLead } from '../../lib/crmAutomations.js'
 import { logInteraction } from '../../lib/interactions.js'
 import { createLead, applyLeadChange, isLeadChangeError } from '../../lib/crmLeadService.js'
-import { notifyUsers } from '../../lib/notifyHelpers.js'
-import { ADMIN_ROLES } from '../../lib/permissions.js'
 import {
   COMMISSION_RATE_BP,
   EXTERNAL_SALES_ROLE,
@@ -29,6 +27,12 @@ import callsRoutes from './calls.js'
 import callTranscriptRoutes from './callTranscripts.js'
 import callAnalysisRoutes from './callAnalysis.js'
 import { toRepLead } from '../../lib/repLeadView.js'
+import {
+  closingHandoffPatch,
+  logClosingHandoff,
+  notifyClosingHandoff,
+  resolveCloser,
+} from '../../lib/closingHandoff.js'
 import type { ILead } from '../../types/models/index.js'
 
 /**
@@ -354,19 +358,6 @@ router.post(
   },
 )
 
-/** Le closer désigné dans les réglages CRM, ou à défaut les super-admins. */
-async function resolveCloser() {
-  const settings = await CrmSettings.getSettings()
-  if (settings.defaultCloserId) {
-    const closer = await User.findOne({ _id: settings.defaultCloserId, role: { $in: ADMIN_ROLES }, isActive: true })
-      .select('_id')
-      .lean()
-    if (closer) return { closer: closer._id as Types.ObjectId, recipients: [closer._id as Types.ObjectId] }
-  }
-  const superAdmins = await User.find({ role: 'SUPER_ADMIN', isActive: true }).select('_id').lean()
-  return { closer: null, recipients: superAdmins.map((admin) => admin._id as Types.ObjectId) }
-}
-
 router.post(
   '/leads/:id/ready-to-close',
   idempotentRequest,
@@ -385,14 +376,10 @@ router.post(
       lead.$where = { ...repLeadFilter(repId), closingHandoff: null }
       let handedOff: typeof lead
       try {
-        const result = await applyLeadChange(
-          lead,
-          {
-            closingHandoff: { at: new Date(), to: closer, by: repId, repNotes: lead.notes },
-            assignedTo: closer,
-          },
-          { actor: repId, source: 'bulk' },
-        )
+        const result = await applyLeadChange(lead, closingHandoffPatch(lead, repId, closer), {
+          actor: repId,
+          source: 'bulk',
+        })
         handedOff = result.lead
       } catch (err) {
         if (err instanceof mongoose.Error.DocumentNotFoundError) {
@@ -401,13 +388,7 @@ router.post(
         throw err
       }
       const message = typeof req.body.message === 'string' ? req.body.message.trim() : ''
-      await logLeadActivity(
-        lead._id,
-        'READY_TO_CLOSE',
-        'Dossier transmis pour closing',
-        { closerId: closer ? String(closer) : null, fallbackToSuperAdmins: !closer },
-        repId,
-      )
+      await logClosingHandoff(lead._id as Types.ObjectId, closer, repId)
       if (message) {
         await logInteraction({
           subjectType: 'LEAD',
@@ -418,13 +399,7 @@ router.post(
           author: repId,
         })
       }
-      await notifyUsers(recipients, {
-        type: 'CRM_LEAD_READY_TO_CLOSE',
-        title: 'Lead prêt à closer',
-        message: `${lead.company} — transmis par ${req.user!.name}`,
-        link: `/admin/crm/leads/${lead._id}`,
-        metadata: { leadId: String(lead._id), externalRepId: repId },
-      }).catch(() => {})
+      await notifyClosingHandoff(recipients, lead, { id: repId, name: req.user!.name })
       return res.json({ lead: toRepLead(handedOff) })
     } catch (err) {
       return next(err)

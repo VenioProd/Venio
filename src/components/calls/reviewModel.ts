@@ -1,5 +1,6 @@
 import { formatDate, formatMoney } from '../../i18n/format'
 import type {
+  ActionChoices,
   AnalysisReview,
   ApplyInput,
   CallAnalysisOutput,
@@ -17,6 +18,10 @@ export interface ActionState {
   dueAt: string | null
   /** Libellé modifié par la personne ; absent : celui de la proposition. */
   label?: string
+  /** `SEQUENCE` : séquence choisie. */
+  sequenceId?: string
+  /** `HANDOFF` de l'équipe : membre à qui passer la main. */
+  assigneeId?: string
 }
 
 export interface ReviewState {
@@ -27,20 +32,35 @@ export interface ReviewState {
 
 export const MAX_ACTIONS = 3
 
-/** Le serveur refuse d'accepter ces actions (`ACTION_NOT_AVAILABLE`) : elles se lisent, elles ne s'acceptent pas. */
-export const NOT_ACCEPTABLE_ACTIONS: readonly string[] = ['SEQUENCE', 'HANDOFF']
-export const isActionAcceptable = (action: { type: string }) => !NOT_ACCEPTABLE_ACTIONS.includes(action.type)
+/** Actions qui demandent un choix (séquence, membre) : acceptables seulement si le serveur fournit les choix. */
+export const CHOICE_ACTIONS: readonly string[] = ['SEQUENCE', 'HANDOFF']
+export const isActionAcceptable = (action: { type: string }, choices?: ActionChoices) =>
+  !CHOICE_ACTIONS.includes(action.type) || (Boolean(choices) && !choices!.teamOnly.includes(action.type as never))
+/** Choix encore manquant pour pouvoir accepter : la séquence, ou le membre qui reprend la fiche. */
+export function missingChoice(
+  action: { type: string },
+  state: ActionState | undefined,
+  choices?: ActionChoices,
+): 'sequence' | 'member' | null {
+  if (action.type === 'SEQUENCE' && !state?.sequenceId) return 'sequence'
+  if (action.type === 'HANDOFF' && choices?.handoff === 'MEMBER' && !state?.assigneeId) return 'member'
+  return null
+}
 
 /** Vrai si la clé peut être acceptée par l'auteur ; sans liste (`acceptableKeys` absent), toutes le peuvent. */
 export const isKeyAcceptable = (acceptableKeys: readonly string[] | undefined, key: string) =>
   !acceptableKeys || acceptableKeys.includes(key)
 
-export function initialState(output: CallAnalysisOutput): ReviewState {
+export function initialState(output: CallAnalysisOutput, choices?: ActionChoices): ReviewState {
   return {
     fields: {},
     heat: null,
     actions: Object.fromEntries(
-      output.actions.slice(0, MAX_ACTIONS).map((a) => [a.id, { decision: null, dueAt: a.dueAt }]),
+      output.actions.slice(0, MAX_ACTIONS).map((a) => {
+        // Séquence préremplie quand l'analyse en nomme une.
+        const sequenceId = a.type === 'SEQUENCE' ? choices?.suggestedSequences[a.id] : undefined
+        return [a.id, { decision: null, dueAt: a.dueAt, ...(sequenceId ? { sequenceId } : {}) }]
+      }),
     ),
   }
 }
@@ -84,7 +104,12 @@ export function parseEdited(key: FieldKey, text: string): FieldValue | undefined
 }
 
 /** Corps de l'envoi unique. Ce qui n'a pas été tranché part en IGNORE : ça n'écrit rien sur la fiche. */
-export function buildApplyInput(output: CallAnalysisOutput, state: ReviewState, clientRequestId: string): ApplyInput {
+export function buildApplyInput(
+  output: CallAnalysisOutput,
+  state: ReviewState,
+  clientRequestId: string,
+  choices?: ActionChoices,
+): ApplyInput {
   return {
     clientRequestId,
     fields: output.fields.map((field) => {
@@ -102,8 +127,16 @@ export function buildApplyInput(output: CallAnalysisOutput, state: ReviewState, 
           : { action: 'ACCEPT' },
     actions: output.actions.slice(0, MAX_ACTIONS).map((action) => {
       const current = state.actions[action.id]
-      if (current?.decision !== 'ACCEPT' || !isActionAcceptable(action))
+      if (current?.decision !== 'ACCEPT' || !isActionAcceptable(action, choices))
         return { id: action.id, action: 'IGNORE' as const }
+      if (action.type === 'SEQUENCE')
+        return { id: action.id, action: 'ACCEPT' as const, sequenceId: current.sequenceId }
+      if (action.type === 'HANDOFF')
+        return {
+          id: action.id,
+          action: 'ACCEPT' as const,
+          ...(choices?.handoff === 'MEMBER' ? { assigneeId: current.assigneeId } : {}),
+        }
       const label = current.label?.trim()
       return {
         id: action.id,
@@ -115,7 +148,12 @@ export function buildApplyInput(output: CallAnalysisOutput, state: ReviewState, 
   }
 }
 
-export function countDecisions(output: CallAnalysisOutput, state: ReviewState, acceptableKeys?: readonly string[]) {
+export function countDecisions(
+  output: CallAnalysisOutput,
+  state: ReviewState,
+  acceptableKeys?: readonly string[],
+  choices?: ActionChoices,
+) {
   let accepted = 0
   let ignored = 0
   let pending = 0
@@ -132,7 +170,7 @@ export function countDecisions(output: CallAnalysisOutput, state: ReviewState, a
   // Les actions qu'on ne peut pas accepter ne sont ni à décider ni comptées : elles partent en IGNORE.
   output.actions
     .slice(0, MAX_ACTIONS)
-    .filter(isActionAcceptable)
+    .filter((action) => isActionAcceptable(action, choices))
     .forEach((action) => tally(state.actions[action.id]?.decision))
   return { accepted, ignored, pending }
 }

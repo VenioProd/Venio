@@ -22,6 +22,7 @@ import {
 } from '../../lib/callAnalysis/index.js'
 import { publicAnalysis } from '../../lib/callAnalysis/apply.js'
 import { acceptableKeys, currentValue, leadView } from '../../lib/callAnalysis/fields.js'
+import { actionOptions } from '../../lib/callAnalysis/actions.js'
 import type { ILead } from '../../types/models/index.js'
 
 /**
@@ -72,7 +73,9 @@ export function createCallAnalysisRoutes(scope: CallDeskScope) {
       current.leadTemperature = view.leadTemperature
       current.nextActionAt = view.nextActionAt
       current.callHold = view.callHold
-      return res.json({ analysis: await publicAnalysis(found.analysis), current, acceptableKeys: keys })
+      // Choix des actions SEQUENCE / HANDOFF (séquences, membres) ; l'externe n'inscrit pas en séquence.
+      const actionChoices = await actionOptions(found.analysis.output, found.lead, scope.kind)
+      return res.json({ analysis: await publicAnalysis(found.analysis), current, acceptableKeys: keys, actionChoices })
     } catch (err) {
       return next(err)
     }

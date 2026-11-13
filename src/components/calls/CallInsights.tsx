@@ -257,6 +257,7 @@ export default function CallInsights({
         analysis={analysis.analysis}
         current={analysis.current}
         acceptableKeys={analysis.acceptableKeys}
+        actionChoices={analysis.actionChoices}
         onApply={apply}
         onReject={reject}
         onQuote={showQuote}

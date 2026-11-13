@@ -1,0 +1,51 @@
+/** Actions SEQUENCE et HANDOFF proposées par l’analyse d’un appel (poste d’appel IA, lot L). */
+const fr = {
+  'suggestedActions.type.HANDOFF_MEMBER': 'Passer la main',
+  'suggestedActions.sequence.field': 'Séquence',
+  'suggestedActions.sequence.placeholder': 'Choisir une séquence…',
+  'suggestedActions.sequence.suggested': '{name} (proposée par l’analyse)',
+  'suggestedActions.sequence.status.DRAFT': '{name} — brouillon, envois en attente',
+  'suggestedActions.sequence.status.PAUSED': '{name} — en pause, envois en attente',
+  'suggestedActions.sequence.none': 'Aucune séquence disponible pour cette fiche : ignorez l’action.',
+  'suggestedActions.sequence.missing': 'Choisissez une séquence pour pouvoir accepter.',
+  'suggestedActions.sequence.guards':
+    'L’inscription vérifie l’opposition, le consentement, la liste « ne pas contacter » et l’adresse e-mail.',
+  'suggestedActions.teamOnly':
+    'L’inscription à une séquence revient à l’équipe : elle n’est pas possible depuis cet espace.',
+  'suggestedActions.handoff.closer':
+    'Accepter transmet la fiche au closer, comme « Prêt à closer » : elle passe en lecture seule pour vous.',
+  'suggestedActions.handoff.member': 'Passer la main à',
+  'suggestedActions.handoff.placeholder': 'Choisir un membre…',
+  'suggestedActions.handoff.none': 'Aucun autre membre de l’équipe à qui passer la main.',
+  'suggestedActions.handoff.missing': 'Choisissez le membre qui reprend la fiche.',
+  'suggestedActions.recorded.enrolled': 'Inscrite à « {name} »',
+  'suggestedActions.recorded.pending': 'Inscription à « {name} » en cours',
+  'suggestedActions.recorded.refused': 'Inscription à « {name} » refusée : {reason}',
+  'suggestedActions.recorded.closer': 'Fiche transmise au closer',
+  'suggestedActions.recorded.member': 'Main passée à {name}',
+  'suggestedActions.reason.ANONYMIZED': 'la fiche est anonymisée',
+  'suggestedActions.reason.OPT_OUT_PENDING': 'une opposition détectée attend une décision',
+  'suggestedActions.reason.DO_NOT_CONTACT': 'le contact s’est opposé à la prospection',
+  'suggestedActions.reason.DO_NOT_CALL': 'le contact a demandé à ne plus être sollicité',
+  'suggestedActions.reason.CONSENT_WITHDRAWN': 'le consentement a été retiré',
+  'suggestedActions.reason.CONSENT_REQUIRED': 'la base légale est le consentement, et il n’a pas été donné',
+  'suggestedActions.reason.SUPPRESSED': 'l’adresse est dans la liste « ne pas contacter »',
+  'suggestedActions.reason.NO_EMAIL': 'la fiche n’a pas d’adresse e-mail valide',
+  'suggestedActions.reason.CLOSED': 'le lead est gagné ou perdu',
+  'suggestedActions.reason.ARCHIVED': 'le lead est archivé',
+  'suggestedActions.reason.ENTITY_MISMATCH': 'la séquence appartient à une autre entité',
+  'suggestedActions.reason.ALREADY_ENROLLED': 'le lead est déjà inscrit à cette séquence',
+  'suggestedActions.reason.NOT_FOUND': 'la séquence ou la fiche n’existe plus',
+  'suggestedActions.apiError.ACTION_TEAM_ONLY':
+    'L’inscription à une séquence revient à l’équipe : ignorez cette action.',
+  'suggestedActions.apiError.SEQUENCE_REQUIRED': 'Choisissez la séquence avant d’accepter.',
+  'suggestedActions.apiError.SEQUENCE_NOT_FOUND': 'Cette séquence n’existe plus : choisissez-en une autre.',
+  'suggestedActions.apiError.EMPTY_SEQUENCE': 'Cette séquence n’a aucune étape : choisissez-en une autre.',
+  'suggestedActions.apiError.SEQUENCE_NOT_ALLOWED': 'Inscription impossible : {reason}. Ignorez l’action.',
+  'suggestedActions.apiError.HANDOFF_ASSIGNEE_REQUIRED': 'Choisissez le membre qui reprend la fiche.',
+  'suggestedActions.apiError.HANDOFF_SAME_ASSIGNEE': 'Ce membre suit déjà la fiche : choisissez-en un autre.',
+  'suggestedActions.apiError.INVALID_ASSIGNEE': 'Ce membre est inactif ou ne peut pas suivre de lead.',
+  'suggestedActions.apiError.LEAD_NOT_OPEN': 'Seul un lead en cours peut être transmis au closer.',
+}
+
+export default fr

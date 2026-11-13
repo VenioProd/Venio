@@ -5,6 +5,7 @@ import { formatDateTime } from '../../i18n/format'
 import {
   apiErrorCode,
   apiErrorKey,
+  type ActionChoices,
   type ApplyInput,
   type CallAnalysis,
   type CallAnalysisOutput,
@@ -13,6 +14,7 @@ import {
 } from '../../services/callInsights'
 import HeatBreakdown from './HeatBreakdown'
 import SuggestedActions from './SuggestedActions'
+import { suggestedActionError } from './SuggestedActions.errors'
 import {
   buildApplyInput,
   countDecisions,
@@ -44,6 +46,8 @@ interface AnalysisReviewPanelProps {
   onQuote?: (quote: string) => void
   /** Lecture seule : aucun geste (consultation par l'équipe). */
   readOnly?: boolean
+  /** Choix des actions `SEQUENCE` et `HANDOFF` (séquences, membres) ; absent : elles ne s'acceptent pas. */
+  actionChoices?: ActionChoices
 }
 
 /** Codes d'erreur d'`apply`, `reject` et `opt-out` qui ont un message dédié (`callInsights.apiError.<CODE>`). */
@@ -296,12 +300,13 @@ export default function AnalysisReviewPanel({
   onReject,
   onQuote,
   readOnly = false,
+  actionChoices,
 }: AnalysisReviewPanelProps) {
   const { t } = useI18n()
   const output = analysis.output as CallAnalysisOutput
   const settled = analysis.status !== 'READY'
   const viewOnly = readOnly || settled
-  const [state, setState] = useState<ReviewState>(() => initialState(output))
+  const [state, setState] = useState<ReviewState>(() => initialState(output, actionChoices))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [confirmReject, setConfirmReject] = useState(false)
@@ -309,12 +314,14 @@ export default function AnalysisReviewPanel({
   const attempt = useRef<{ fingerprint: string; key: string } | null>(null)
   const sending = useRef(false)
 
-  const counts = countDecisions(output, state, acceptableKeys)
+  const counts = countDecisions(output, state, acceptableKeys, actionChoices)
   const decided = counts.accepted + counts.ignored > 0
 
   /** Message lisible pour un code d'erreur du serveur ; le message générique quand le code est inconnu. */
   function errorText(failure: unknown, fallback: 'callInsights.error.apply' | 'callInsights.error.reject') {
     const code = apiErrorCode(failure)
+    const actionError = suggestedActionError(failure, t)
+    if (actionError) return actionError
     if (!code || !KNOWN_ERROR_CODES.includes(code)) return t(fallback)
     const key = apiErrorKey(failure)
     const field = key && key in FIELD_LABELS ? t(`callInsights.field.${key}` as 'callInsights.field.budget') : key
@@ -337,7 +344,7 @@ export default function AnalysisReviewPanel({
   }
 
   function apply() {
-    const body = buildApplyInput(output, state, '')
+    const body = buildApplyInput(output, state, '', actionChoices)
     const fingerprint = JSON.stringify(body)
     if (attempt.current?.fingerprint !== fingerprint) attempt.current = { fingerprint, key: newKey() }
     const key = attempt.current.key
@@ -418,6 +425,7 @@ export default function AnalysisReviewPanel({
         onChange={(id, next) => setState((previous) => ({ ...previous, actions: { ...previous.actions, [id]: next } }))}
         review={analysis.review}
         readOnly={viewOnly}
+        choices={actionChoices}
       />
 
       {!viewOnly && (
