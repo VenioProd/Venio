@@ -68,6 +68,7 @@ const ClientBilling = lazy(() => import('./pages/espace-client/Billing'))
 // Espace commercial externe
 const CommercialSpace = lazy(() => import('./pages/commercial/CommercialSpace'))
 const CommercialCalls = lazy(() => import('./pages/commercial/CommercialCalls'))
+const CommercialScriptReports = lazy(() => import('./pages/commercial/CommercialScriptReports'))
 const CommercialLeads = lazy(() => import('./pages/commercial/CommercialLeads'))
 const CommercialLeadDetail = lazy(() => import('./pages/commercial/CommercialLeadDetail'))
 const CommercialClients = lazy(() =>
@@ -293,6 +294,7 @@ function AppShell() {
                   >
                     <Route index element={<CommercialLeads />} />
                     <Route path="calls" element={<CommercialCalls />} />
+                    <Route path="rapports-scripts" element={<CommercialScriptReports />} />
                     <Route path="leads/:id" element={<CommercialLeadDetail />} />
                     <Route path="clients" element={<CommercialClients />} />
                     <Route path="commissions" element={<CommercialCommissions />} />

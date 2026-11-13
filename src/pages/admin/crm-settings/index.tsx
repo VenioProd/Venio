@@ -25,6 +25,7 @@ import TelephonySection from './TelephonySection'
 import RecordingSection from './RecordingSection'
 import TranscriptionSection from './TranscriptionSection'
 import AnalysisSection from './AnalysisSection'
+import ScriptReportSection from './ScriptReportSection'
 import type { Providers } from './callAiModel'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
@@ -241,6 +242,7 @@ export default function CrmSettings() {
         <section id="crm-settings-reports" className="crm-settings-group">
           <h2>{t('crm.settings.group.reports')}</h2>
           <ReportsSection {...sectionProps} handleRecipientsChange={handleRecipientsChange} />
+          <ScriptReportSection {...callAiProps} />
         </section>
       </div>
 

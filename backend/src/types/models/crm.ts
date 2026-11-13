@@ -179,6 +179,8 @@ export interface ICrmSettings extends Document {
   callAnalysis: ICallAnalysisSettings
   // ── Enregistrement des appels (lot F1) ──
   callRecording: { enabled: boolean; notice: { enabled: boolean; text: string }; keepAudioDays: number }
+  // ── Rapport hebdomadaire des scripts (lot K) ──
+  callScriptReport: import('../../lib/callScriptReport/settings.js').CallScriptReportSettings
   createdAt: Date
   updatedAt: Date
 }

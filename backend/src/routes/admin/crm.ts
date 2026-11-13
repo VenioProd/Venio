@@ -13,6 +13,7 @@ import { CALL_AI_BLOCKS, SettingsBlockError, validateCallAiSettings } from '../.
 import { telephonyConfig } from '../../lib/telephony/index.js'
 import { isConfigured as isTranscriptionConfigured } from '../../lib/transcription/assemblyai.js'
 import { isAnalysisConfigured } from '../../lib/callAnalysis/model.js'
+import { validateScriptReportSettings } from '../../lib/callScriptReport/settings.js'
 import CrmSettings from '../../models/CrmSettings.js'
 import { ADMIN_ROLES, PERMISSIONS } from '../../lib/permissions.js'
 import { getRoundRobinAssignee, logLeadActivity, checkDuplicateLead, buildWorklist } from '../../lib/crmAutomations.js'
@@ -1032,7 +1033,13 @@ async function validateReportRecipients(
 }
 
 /** Champs dont la valeur est contrôlée : ils ne se modifient qu'entiers, jamais par chemin pointé. */
-const GUARDED_SETTINGS = ['weeklyReportRecipients', 'escalationManagerId', 'defaultCloserId', ...CALL_AI_BLOCKS]
+const GUARDED_SETTINGS = [
+  'weeklyReportRecipients',
+  'escalationManagerId',
+  'defaultCloserId',
+  'callScriptReport',
+  ...CALL_AI_BLOCKS,
+]
 
 // Update CRM settings
 router.patch(
@@ -1075,6 +1082,13 @@ router.patch(
 
       // Téléphonie, enregistrement, transcription, analyse : blocs entiers, valeurs bornées, grille cohérente.
       validateCallAiSettings(updates)
+
+      // Rapport hebdomadaire des scripts (lot K) : bloc entier, destinataires contrôlés.
+      if (updates.callScriptReport !== undefined) {
+        const check = await validateScriptReportSettings(updates.callScriptReport)
+        if (!check.ok) return res.status(400).json({ error: check.error, field: check.field })
+        updates.callScriptReport = check.value
+      }
 
       if (updates.weeklyReportRecipients !== undefined) {
         const check = await validateReportRecipients(updates.weeklyReportRecipients)

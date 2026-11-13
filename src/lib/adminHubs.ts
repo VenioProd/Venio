@@ -88,6 +88,13 @@ export const ADMIN_HUBS = {
       { id: 'pipeline', labelKey: 'shell.hub.crm.pipeline', to: '/admin/crm', modules: ['crm'] },
       { id: 'pilotage', labelKey: 'shell.hub.crm.pilotage', to: '/admin/crm/pilotage', modules: ['crm'] },
       {
+        id: 'scripts',
+        labelKey: 'callScriptReport.tab',
+        to: '/admin/crm/rapports-scripts',
+        modules: ['crm'],
+        permission: 'manage_crm',
+      },
+      {
         id: 'automatisations',
         labelKey: 'shell.hub.crm.automatisations',
         to: '/admin/crm/automatisations',
