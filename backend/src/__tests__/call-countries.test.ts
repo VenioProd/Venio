@@ -300,9 +300,11 @@ it('mode pont : portable vérifié, confirmation par 1, mêmes gardes, rien du n
   })
   // Le navigateur ne peut pas relier un appel en mode pont ; une autre branche que le portable non plus.
   expect((await voice(callId, 'CAbrowser')).text).not.toContain('<Dial')
-  expect((await twilioPost(`/bridge?callId=${callId}`, { CallSid: 'CAbridge1', To: '+33600000000' })).text).toContain(
-    '<Hangup',
-  )
+  const stranger = (await twilioPost(`/bridge?callId=${callId}`, { CallSid: 'CAbridge1', To: '+33600000000' })).text
+  expect(stranger).toContain('<Hangup')
+  expect(stranger).not.toContain('<Gather')
+  const otherLeg = (await twilioPost(`/bridge?callId=${callId}`, { CallSid: 'CAother', To: '+33698765432' })).text
+  expect(otherLeg).not.toContain('<Gather')
   const gather = (await twilioPost(`/bridge?callId=${callId}`, { CallSid: 'CAbridge1', To: '+33698765432' })).text
   expect(gather).toContain('<Gather')
   expect(gather).not.toContain('+33612345678')

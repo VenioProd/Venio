@@ -80,6 +80,7 @@ const as = (who: Account) => ({
 async function createLead(rep: Account, company: string): Promise<string> {
   const res = await as(rep).post('/api/commercial/leads', {
     company,
+    businessContact: true,
     contactEmail: `${company.toLowerCase().replace(/\W+/g, '-')}@prospect.test`,
   })
   expect(res.status).toBe(201)
@@ -220,10 +221,16 @@ describe('cloisonnement entre commerciaux externes', () => {
   })
 
   it("n'accepte pas qu'un externe s'attribue ou close un lead", async () => {
-    const res = await as(repA).post('/api/commercial/leads', { company: 'Gamma', status: 'WON', assignedTo: alex.id })
+    const res = await as(repA).post('/api/commercial/leads', {
+      company: 'Gamma',
+      businessContact: true,
+      status: 'WON',
+      assignedTo: alex.id,
+    })
     expect(res.status).toBe(400)
     const created = await as(repA).post('/api/commercial/leads', {
       company: 'Gamma',
+      businessContact: true,
       assignedTo: alex.id,
       externalRep: repB.id,
     })
@@ -334,6 +341,7 @@ describe('commissions sur l’encaissé', () => {
     const clientId = await convert(String(teamLead._id))
     const duplicate = await as(repA).post('/api/commercial/leads', {
       company: 'Boulangerie Beta',
+      businessContact: true,
       contactEmail: 'contact@beta.test',
     })
     // La conversion du doublon retrouve le compte par son email et le lui rattache.

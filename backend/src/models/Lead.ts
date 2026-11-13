@@ -194,12 +194,12 @@ leadSchema.pre('save', function () {
 async function phoneCountryOf(phone: unknown): Promise<string> {
   const value = String(phone ?? '').trim()
   if (!value) return ''
-  const international = /^(\+|00)/.test(value)
-  const region = international
-    ? 'FR'
-    : ((
-        await mongoose.model('CrmSettings').findOne().select('callDefaultRegion').lean<{ callDefaultRegion?: string }>()
-      )?.callDefaultRegion ?? 'FR')
+  // Modèle des réglages lu sans import (il n'est pas chargé dans tous les scripts) ; absent : France.
+  const settings = /^(\+|00)/.test(value) ? undefined : mongoose.models.CrmSettings
+  const region = settings
+    ? ((await settings.findOne().select('callDefaultRegion').lean<{ callDefaultRegion?: string }>())
+        ?.callDefaultRegion ?? 'FR')
+    : 'FR'
   return phoneTarget(value, region)?.country ?? ''
 }
 

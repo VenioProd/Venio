@@ -182,6 +182,7 @@ it('5 — isole une liste importée puis la rend à l’équipe après passage a
     actorId: ids.super!,
     project: 'ARROW',
     callList: 'Salon',
+    businessContact: true,
     leads: [{ company: 'Salon', contactPhone: '+33612345678' }],
   })
   const lead = (await Lead.findOne({ company: 'Salon' }))!
@@ -228,7 +229,7 @@ it('6 — applique le service aux créations externes, appels transactionnels et
   act('rep', 'COMMERCIAL_EXTERNE')
   const created = await request(app)
     .post('/commercial/leads')
-    .send({ company: 'Appels', contactEmail: 'call@test.local' })
+    .send({ company: 'Appels', businessContact: true, contactEmail: 'call@test.local' })
     .expect(201)
   const id = created.body.lead._id
   expect((await Lead.findById(id))!.score).not.toBeNull()
