@@ -67,7 +67,7 @@ it('fiche saisie par un externe hors liste : à lui seul jusqu’au passage, hor
   const created = await request(app)
     .post('/api/commercial/leads')
     .set('Cookie', rep.cookie)
-    .send({ company: 'Saisie Rita', contactPhone: '+33666666666' })
+    .send({ company: 'Saisie Rita', businessContact: true, contactPhone: '+33666666666' })
   expect(created.status).toBe(201)
   const entered = String(created.body.lead._id)
   expect((await Lead.findById(entered))!.enteredByRep).toBe(true)
