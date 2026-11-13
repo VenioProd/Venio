@@ -4,6 +4,7 @@ import SuppressionEntry, { type SuppressionReason } from '../models/SuppressionE
 import Call from '../models/Call.js'
 import { normalizePhone } from './callImports.js'
 import { telephonyError } from './telephony/index.js'
+import { callCountryRules, phoneTarget, type PhoneTarget } from './telephony/countries.js'
 import type { ICrmSettings, ILead } from '../types/models/index.js'
 
 /**
@@ -43,36 +44,83 @@ function minutesOf(value: string): number {
   return hours! * 60 + minutes!
 }
 
-export function withinCallingHours(now: Date, hours: ICrmSettings['telephony']['callingHours']): boolean {
-  const clock = localClock(now, hours.timezone)
+/** Dans la plage d'appel dans **chacun** des fuseaux possibles du prospect (lot P) ; jamais sans fuseau. */
+export function withinCallingHours(
+  now: Date,
+  hours: ICrmSettings['telephony']['callingHours'],
+  timeZones: string[],
+): boolean {
+  if (!timeZones.length) return false
   const start = minutesOf(hours.start)
   const end = minutesOf(hours.end)
-  const inWindow =
-    start < end ? clock.minutes >= start && clock.minutes < end : clock.minutes >= start || clock.minutes < end
-  return hours.days.includes(clock.weekday) && inWindow
+  return timeZones.every((timeZone) => {
+    const clock = localClock(now, timeZone)
+    return hours.days.includes(clock.weekday) && clock.minutes >= start && clock.minutes < end
+  })
 }
 
-/** Lève une erreur 409 portant le code du contrat si l'appel n'est pas permis maintenant. */
+export function attemptWindowOf(settings: Pick<ICrmSettings, 'telephony'>) {
+  return { days: settings.telephony.attemptWindow?.days ?? 14, max: settings.telephony.attemptWindow?.max ?? 6 }
+}
+
+type CallableLead = Pick<
+  ILead,
+  | 'status'
+  | 'closingHandoff'
+  | 'archivedAt'
+  | 'doNotContact'
+  | 'doNotCall'
+  | 'phoneInvalid'
+  | 'contactPhone'
+  | 'callHold'
+  | 'businessContact'
+  | 'callUnreachableAt'
+>
+
+/**
+ * Ce qui empêche d'appeler ce numéro maintenant, hors fiche et plafonds (lot P) :
+ * contact non professionnel, pays fermé, fuseau inconnu, hors plage dans le fuseau
+ * du prospect. Sert aussi à la file pour dire pourquoi une fiche attend.
+ */
+export function callWindowCheck(
+  lead: Pick<CallableLead, 'contactPhone' | 'businessContact'>,
+  settings: ICrmSettings,
+  now: Date,
+): { target: PhoneTarget | null; block: CallBlock | null } {
+  const target = phoneTarget(String(lead.contactPhone ?? ''), settings.callDefaultRegion)
+  let block: CallBlock | null = null
+  if (!target) block = 'LEAD_NOT_CALLABLE'
+  else if (!lead.businessContact) block = 'NOT_BUSINESS_CONTACT'
+  else if (!callCountryRules(settings).some((rule) => rule.enabled && rule.code === target.country))
+    block = 'COUNTRY_NOT_ALLOWED'
+  else if (!target.timeZones.length) block = 'TIMEZONE_UNKNOWN'
+  else if (!withinCallingHours(now, settings.telephony.callingHours, target.timeZones)) block = 'OUTSIDE_CALLING_HOURS'
+  return { target, block }
+}
+
+export type CallBlock =
+  'LEAD_NOT_CALLABLE' | 'NOT_BUSINESS_CONTACT' | 'COUNTRY_NOT_ALLOWED' | 'TIMEZONE_UNKNOWN' | 'OUTSIDE_CALLING_HOURS'
+
+/** Jour local du prospect qui sert au plafond quotidien : celui de son premier fuseau possible. */
+export function attemptDayOf(now: Date, target: PhoneTarget): string {
+  return localClock(now, target.timeZones[0] ?? 'Europe/Paris').day
+}
+
+/**
+ * Lève une erreur 409 portant le code du contrat si l'appel n'est pas permis maintenant ;
+ * rend le numéro résolu (E.164, pays, fuseaux).
+ */
 export function assertCallable(
-  lead: Pick<
-    ILead,
-    | 'status'
-    | 'closingHandoff'
-    | 'archivedAt'
-    | 'doNotContact'
-    | 'doNotCall'
-    | 'phoneInvalid'
-    | 'contactPhone'
-    | 'callHold'
-  >,
+  lead: CallableLead,
   ctx: {
     now: Date
     settings: ICrmSettings
-    attemptsToday: number
+    /** Tentatives déjà faites vers ce numéro : ce jour local, et sur la fenêtre glissante. */
+    attempts: { today: number; window: number }
     /** L'équipe appelle aussi une fiche transmise au closer ; l'externe s'arrête au passage. */
     scope?: 'rep' | 'team'
   },
-): void {
+): PhoneTarget {
   if (
     (ctx.scope !== 'team' && lead.closingHandoff) ||
     !CALLABLE_STATUSES.includes(lead.status) ||
@@ -81,13 +129,36 @@ export function assertCallable(
     lead.doNotCall ||
     lead.phoneInvalid ||
     // Opposition détectée par l'analyse, en attente d'une décision humaine.
-    lead.callHold ||
-    !normalizePhone(String(lead.contactPhone ?? ''), ctx.settings.callDefaultRegion)
+    lead.callHold
   )
     throw telephonyError(409, 'LEAD_NOT_CALLABLE')
-  if (!withinCallingHours(ctx.now, ctx.settings.telephony.callingHours))
-    throw telephonyError(409, 'OUTSIDE_CALLING_HOURS')
-  if (ctx.attemptsToday >= ctx.settings.telephony.attemptCapPerDay) throw telephonyError(409, 'ATTEMPT_CAP_REACHED')
+  if (lead.callUnreachableAt) throw telephonyError(409, 'LEAD_UNREACHABLE')
+  const { target, block } = callWindowCheck(lead, ctx.settings, ctx.now)
+  if (block) throw telephonyError(409, block)
+  if (ctx.attempts.today >= ctx.settings.telephony.attemptCapPerDay) throw telephonyError(409, 'ATTEMPT_CAP_REACHED')
+  if (ctx.attempts.window >= attemptWindowOf(ctx.settings).max) throw telephonyError(409, 'ATTEMPT_WINDOW_REACHED')
+  return target!
+}
+
+/**
+ * Tentatives vers ce numéro sur la fenêtre glissante (tous commerciaux), et si
+ * l'une d'elles a joint une personne. `before` : seulement les appels lancés
+ * avant celui-ci (ordre des identifiants), pour départager deux lancements simultanés.
+ */
+export async function windowAttempts(
+  to: string,
+  now: Date,
+  settings: ICrmSettings,
+  before?: Types.ObjectId,
+): Promise<{ count: number; reached: boolean }> {
+  const since = new Date(now.getTime() - attemptWindowOf(settings).days * 86_400_000)
+  const calls = await Call.find({ to, createdAt: { $gte: since }, ...(before ? { _id: { $lt: before } } : {}) })
+    .select('answeredAt answeredBy')
+    .lean()
+  return {
+    count: calls.length,
+    reached: calls.some((call) => Boolean(call.answeredAt) && call.answeredBy !== 'MACHINE'),
+  }
 }
 
 export async function isPhoneSuppressed(

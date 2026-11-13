@@ -16,6 +16,15 @@ export interface CallsConfig {
   recording?: { enabled: boolean; notice: boolean }
   /** Lot I : composition enchaînée et détection de messagerie (`CrmSettings.telephony.dialer`). */
   dialer?: DialerConfig
+  /** Lot P : l'appel passe par le portable vérifié de l'utilisateur (mode pont) au lieu du navigateur. */
+  bridge?: { active: boolean }
+}
+
+/** Lot P : réglage du mode pont de l'utilisateur. */
+export interface BridgeProfile {
+  enabled: boolean
+  phone: string | null
+  verified: boolean
 }
 
 export interface DialerConfig {
@@ -89,6 +98,15 @@ export const CALL_ERROR_CODES = [
   'ATTEMPT_CAP_REACHED',
   'CALL_IN_PROGRESS',
   'POWER_DIALER_BLOCKED',
+  // Lot P, multi-pays et mode pont.
+  'COUNTRY_NOT_ALLOWED',
+  'TIMEZONE_UNKNOWN',
+  'NOT_BUSINESS_CONTACT',
+  'ATTEMPT_WINDOW_REACHED',
+  'LEAD_UNREACHABLE',
+  'NO_CALLER_ID',
+  'BRIDGE_CLICK_ONLY',
+  'BRIDGE_FAILED',
 ] as const
 export type CallErrorCode = (typeof CALL_ERROR_CODES)[number]
 
@@ -109,7 +127,7 @@ export function createCallsApi(prefix: string = DEFAULT_CALLS_PREFIX) {
     token: () => apiFetch<VoiceToken>(`${prefix}/calls/token`, { method: 'POST' }),
     /** `mode: 'power'` : lancé par le power dialer, que le serveur refuse vers les États-Unis. */
     create: (leadId: string, clientRequestId: string, mode?: 'power') =>
-      apiFetch<{ callId: string }>(`${prefix}/leads/${encodeURIComponent(leadId)}/calls`, {
+      apiFetch<{ callId: string; via?: 'BROWSER' | 'BRIDGE' }>(`${prefix}/leads/${encodeURIComponent(leadId)}/calls`, {
         method: 'POST',
         body: JSON.stringify(mode ? { clientRequestId, mode } : { clientRequestId }),
       }),
@@ -123,6 +141,23 @@ export function createCallsApi(prefix: string = DEFAULT_CALLS_PREFIX) {
     /** Le prospect refuse l'enregistrement : arrêt immédiat, ce qui a été capté est effacé. Rejouable. */
     stopRecording: (callId: string) =>
       apiFetch<{ recording: CallRecording }>(`${call(callId)}/recording/stop`, { method: 'POST' }),
+    /** Mode pont (lot P) : lire, recevoir un code, le vérifier, activer. */
+    bridge: () => apiFetch<{ bridge: BridgeProfile }>(`${prefix}/calls/bridge`).then((data) => data.bridge),
+    sendBridgeCode: (phone: string) =>
+      apiFetch<{ expiresAt: string }>(`${prefix}/calls/bridge/code`, {
+        method: 'POST',
+        body: JSON.stringify({ phone }),
+      }),
+    verifyBridgeCode: (code: string) =>
+      apiFetch<{ bridge: BridgeProfile }>(`${prefix}/calls/bridge/verify`, {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+      }).then((data) => data.bridge),
+    setBridge: (enabled: boolean) =>
+      apiFetch<{ bridge: BridgeProfile }>(`${prefix}/calls/bridge`, {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled }),
+      }).then((data) => data.bridge),
     /** Adresse de l'audio relayé par Venio (même origine, cookie de session) ; 404 s'il n'est pas conservé. */
     recordingUrl: (callId: string) => `${call(callId)}/recording`,
   }

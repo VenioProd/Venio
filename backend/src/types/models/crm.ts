@@ -123,8 +123,12 @@ export interface ICrmSettings extends Document {
   callScriptTags: string[]
   callDefaultRegion: string
   telephony: {
-    callingHours: { timezone: string; days: number[]; start: string; end: string }
+    /** Dans le fuseau du prospect (lot P). */
+    callingHours: { days: number[]; start: string; end: string }
     attemptCapPerDay: number
+    /** Absents des réglages antérieurs au lot P : lire par `attemptWindowOf` et `callCountryRules`. */
+    attemptWindow?: { days: number; max: number }
+    countries?: { code: string; enabled: boolean; defaultCallerId: boolean }[]
     /** Absent des réglages antérieurs au lot I : lire par `dialerSettings`. */
     dialer?: { voicemailDetection: boolean; previewDelaySec: number; powerDelaySec: number }
   }

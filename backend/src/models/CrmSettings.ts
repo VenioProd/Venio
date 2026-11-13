@@ -1,3 +1,4 @@
+import { DEFAULT_CALL_COUNTRIES } from '../lib/telephony/countries.js'
 import mongoose, { Model } from 'mongoose'
 import type { ICrmSettings } from '../types/models/index.js'
 import { DEFAULT_CALL_ANALYSIS_SETTINGS } from '../lib/callAnalysis/heat.js'
@@ -99,26 +100,32 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
     callDefaultRegion: { type: String, default: 'FR' },
     // Téléphonie (lot A) : appliquées par le serveur au lancement et à la mise en relation.
     telephony: {
+      // Lot P : la plage s'entend dans le fuseau du prospect (déduit de son numéro), plus dans un fuseau unique.
       callingHours: {
-        timezone: {
-          type: String,
-          default: 'Europe/Paris',
-          validate: (value: string) => {
-            try {
-              new Intl.DateTimeFormat('fr-FR', { timeZone: value })
-              return true
-            } catch {
-              return false
-            }
-          },
-        },
         // 0 = dimanche … 6 = samedi.
         days: { type: [{ type: Number, min: 0, max: 6 }], default: [1, 2, 3, 4, 5] },
         start: { type: String, default: '09:00', match: /^([01]\d|2[0-3]):[0-5]\d$/ },
-        end: { type: String, default: '20:00', match: /^([01]\d|2[0-3]):[0-5]\d$/ },
+        end: { type: String, default: '18:30', match: /^([01]\d|2[0-3]):[0-5]\d$/ },
       },
-      // Tentatives par numéro et par jour local, tous commerciaux confondus.
-      attemptCapPerDay: { type: Number, default: 3, min: 1, max: 20 },
+      // Tentatives par numéro et par jour local du prospect, tous commerciaux confondus.
+      attemptCapPerDay: { type: Number, default: 2, min: 1, max: 20 },
+      // Lot P : plafond sur une fenêtre glissante, puis la fiche passe « non joignable ».
+      attemptWindow: {
+        days: { type: Number, default: 14, min: 1, max: 60 },
+        max: { type: Number, default: 6, min: 1, max: 100 },
+      },
+      // Lot P : pays appelables (défaut : `DEFAULT_CALL_COUNTRIES`).
+      countries: {
+        type: [
+          {
+            _id: false,
+            code: { type: String, required: true, match: /^[A-Z]{2}$/ },
+            enabled: { type: Boolean, default: false },
+            defaultCallerId: { type: Boolean, default: false },
+          },
+        ],
+        default: () => DEFAULT_CALL_COUNTRIES.map((rule) => ({ ...rule })),
+      },
       // Composition enchaînée et détection de messagerie (vague 4, lot I).
       dialer: {
         voicemailDetection: { type: Boolean, default: true },

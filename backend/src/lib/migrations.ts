@@ -15,6 +15,8 @@ import { ensureProjectSheetIndexes, seedProjectSheets } from './projectSheetSeed
 import { ensureAuthHardeningIndexes } from './auth/passwordReset.js'
 import { ensurePhoneSuppressionIndexes } from './callGuards.js'
 import { EXTERNAL_SALES_ROLE } from './externalSales.js'
+import { phoneTarget } from './telephony/countries.js'
+import CrmSettings from '../models/CrmSettings.js'
 
 interface Outcome {
   created: number
@@ -166,6 +168,26 @@ async function enrichLeads(dryRun: boolean) {
   return { probabilities, counters: stats.length, rules: await seedRules(dryRun) }
 }
 
+/**
+ * Migration 016 (lot P) : renseigne `phoneCountry` des fiches qui ne l'ont pas, sans toucher
+ * `updatedAt`. Rejouable : 0 la seconde fois. Le numéro national est lu dans la région du CRM.
+ */
+export async function backfillLeadPhoneCountry(dryRun = false) {
+  const { callDefaultRegion } = await CrmSettings.getSettings()
+  const leads = await Lead.find({ phoneCountry: { $exists: false }, contactPhone: { $type: 'string', $ne: '' } })
+    .select('contactPhone')
+    .lean()
+  const updates = leads.map((lead) => ({
+    updateOne: {
+      filter: { _id: lead._id, phoneCountry: { $exists: false } },
+      update: { $set: { phoneCountry: phoneTarget(String(lead.contactPhone), callDefaultRegion)?.country ?? '' } },
+      timestamps: false,
+    },
+  }))
+  if (!dryRun && updates.length) await Lead.bulkWrite(updates)
+  return { dryRun, leads: updates.length }
+}
+
 export const migrations: Record<string, (dryRun: boolean) => Promise<unknown>> = {
   '001': async (dryRun) => {
     const filter = { plainPassword: { $exists: true } }
@@ -198,4 +220,6 @@ export const migrations: Record<string, (dryRun: boolean) => Promise<unknown>> =
   '013': ensureAuthHardeningIndexes,
   '014': ensurePhoneSuppressionIndexes,
   '015': markRepEnteredLeads,
+  // Lot P : pays du numéro sur les fiches antérieures (le hook du modèle le tient à jour ensuite).
+  '016': backfillLeadPhoneCountry,
 }

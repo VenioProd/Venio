@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useI18n, type MessageKey } from '../../context/I18nContext'
 import { commercialApi, type CallImportReport } from '../../services/externalSales'
+import './callCountries/callCountries.css'
 
 const FIELDS: { value: string; key: MessageKey }[] = [
   { value: 'company', key: 'commercial.field.company' },
@@ -15,6 +16,7 @@ const ERROR_KEYS: Record<string, MessageKey> = {
   INVALID_PHONE: 'commercial.import.invalidPhone',
   INVALID_EMAIL: 'commercial.import.invalidEmail',
   FIELD_TOO_LONG: 'commercial.import.fieldTooLong',
+  COUNTRY_NOT_ALLOWED: 'callCountries.importReason.COUNTRY_NOT_ALLOWED',
 }
 export default function CallLeadImport({
   region,
@@ -34,6 +36,8 @@ export default function CallLeadImport({
   const [callList, setCallList] = useState('')
   const [project, setProject] = useState('')
   const [defaultRegion, setDefaultRegion] = useState(region)
+  // Lot P, décision 3 : on n'importe que des professionnels, confirmé à chaque import.
+  const [businessContact, setBusinessContact] = useState(false)
   const [report, setReport] = useState<CallImportReport | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -63,7 +67,7 @@ export default function CallLeadImport({
     setBusy(true)
     setError('')
     try {
-      const input = { csv, mapping, callList, project, region: defaultRegion.toUpperCase() }
+      const input = { csv, mapping, callList, project, region: defaultRegion.toUpperCase(), businessContact }
       const body = JSON.stringify(input)
       if (attempt.current?.body !== body) attempt.current = { body, key: crypto.randomUUID() }
       setReport(await commercialApi.importCalls(input, attempt.current.key))
@@ -141,11 +145,21 @@ export default function CallLeadImport({
                   onChange={(event) => setDefaultRegion(event.target.value)}
                 />
               </label>
+              <label className="commercial-wide call-pro-check">
+                <input
+                  type="checkbox"
+                  required
+                  checked={businessContact}
+                  onChange={(event) => setBusinessContact(event.target.checked)}
+                />
+                <span>{t('callCountries.importPro')}</span>
+              </label>
               <div className="commercial-wide">
                 <button
                   type="submit"
                   className="portal-button"
-                  disabled={busy || !mapping.company || !mapping.contactPhone}
+                  disabled={busy || !mapping.company || !mapping.contactPhone || !businessContact}
+                  title={businessContact ? undefined : t('callCountries.importProRequired')}
                 >
                   {t('commercial.import.submit')}
                 </button>

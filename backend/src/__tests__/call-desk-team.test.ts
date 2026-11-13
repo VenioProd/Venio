@@ -199,10 +199,18 @@ afterEach(() => {
 })
 
 const teamLead = (owner: Who, phone: string, extra: object = {}) =>
-  Lead.create({ company: `Fiche ${phone}`, contactPhone: phone, assignedTo: owner.id, createdBy: owner.id, ...extra })
+  Lead.create({
+    company: `Fiche ${phone}`,
+    businessContact: true,
+    contactPhone: phone,
+    assignedTo: owner.id,
+    createdBy: owner.id,
+    ...extra,
+  })
 const repListLead = (phone: string, extra: object = {}) =>
   Lead.create({
     company: `Liste ${phone}`,
+    businessContact: true,
     contactPhone: phone,
     externalRep: rep.id,
     callList: 'Liste Rita',
@@ -286,7 +294,12 @@ it('liste d’un externe : invisible de l’équipe avant le passage, lisible ap
   ).toBe(404)
   expect((await launch(admin, listed._id)).status).toBe(404)
   // Fiche confiée par l'équipe à l'externe, hors liste d'appel : l'équipe la voit dans le CRM, pas ses appels.
-  const own = await Lead.create({ company: 'Confiée à Rita', contactPhone: '+33655555555', externalRep: rep.id })
+  const own = await Lead.create({
+    company: 'Confiée à Rita',
+    businessContact: true,
+    contactPhone: '+33655555555',
+    externalRep: rep.id,
+  })
   const { call: ownCall } = await finishedCall(rep, own)
   expect((await team(admin).get(`/leads/${own._id}/calls`)).body.calls).toEqual([])
   for (const suffix of ['', '/transcript', '/analysis', '/recording'])

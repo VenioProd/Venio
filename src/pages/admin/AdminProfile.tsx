@@ -12,6 +12,8 @@ import NotificationPreferencesPanel from '../../components/NotificationPreferenc
 import UserAvatar from '../../components/UserAvatar'
 import AvatarCropModal from '../../components/AvatarCropModal'
 import LanguageSelect from '../../components/LanguageSelect'
+import BridgeSettings from '../commercial/callCountries/BridgeSettings'
+import { hasPermission, PERMISSIONS } from '../../lib/permissions'
 import '../espace-client/ClientPortal.css'
 import { passwordIssue } from '../../lib/passwordPolicy'
 
@@ -377,6 +379,11 @@ const AdminProfile = () => {
         <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>{t('common.language')}</h2>
         <LanguageSelect />
       </div>
+
+      {/* Lot P : mode pont du poste d'appel, pour les membres de l'équipe qui appellent. */}
+      {user?.role !== 'COMMERCIAL_EXTERNE' && hasPermission(user, PERMISSIONS.MANAGE_CRM) && (
+        <BridgeSettings prefix="/api/admin/call-desk" />
+      )}
 
       <div style={{ marginBottom: '24px' }}>
         <NotificationSettings />

@@ -6,16 +6,35 @@ import Lead from '../../models/Lead.js'
 import CrmSettings from '../../models/CrmSettings.js'
 import { findReadableCall, readableAuthors, repCallScope, type CallDeskScope } from '../../lib/callDeskScope.js'
 import User from '../../models/User.js'
-import { normalizePhone } from '../../lib/callImports.js'
-import { assertCallable, isPhoneSuppressed, localClock } from '../../lib/callGuards.js'
+import {
+  assertCallable,
+  attemptDayOf,
+  attemptWindowOf,
+  isPhoneSuppressed,
+  localClock,
+  windowAttempts,
+} from '../../lib/callGuards.js'
+import { callCountryRules, callerIdFor, phoneTarget } from '../../lib/telephony/countries.js'
+import {
+  activeBridgePhone,
+  bridgeAnswerUrl,
+  bridgeStatusUrl,
+  confirmBridgeCode,
+  publicBridge,
+  sendBridgeCode,
+} from '../../lib/telephony/bridge.js'
+import CallerProfile from '../../models/CallerProfile.js'
+import { applyLeadChange } from '../../lib/crmLeadService.js'
+import type { ICrmSettings } from '../../types/models/index.js'
 import {
   createVoiceToken,
   requireTelephony,
   suggestedOutcome,
   telephonyConfig,
   telephonyError,
+  type TelephonyConfig,
 } from '../../lib/telephony/index.js'
-import { fetchProviderRecording, hangupProviderCall } from '../../lib/telephony/rest.js'
+import { createBridgeCall, fetchProviderRecording, hangupProviderCall } from '../../lib/telephony/rest.js'
 import {
   claimLine,
   confirmLine,
@@ -72,6 +91,35 @@ const withAudio = (call: Pick<ICall, 'recording'>, keepAudioDays: number) => ({
   ...(call.recording?.status === 'READY' ? { audio: audioState(call.recording, keepAudioDays) } : {}),
 })
 
+/** Plafond de la fenêtre atteint sans jamais joindre personne : « non joignable », par `applyLeadChange` (lot P). */
+async function markUnreachable(leadId: string, actor: string, settings: ICrmSettings, now: Date) {
+  const lead = await Lead.findOne({ _id: leadId, callUnreachableAt: null })
+  if (lead) await applyLeadChange(lead, { callUnreachableAt: now }, { actor, source: 'bulk', settings, emit: false })
+}
+
+/**
+ * Mode pont : l'opérateur appelle le portable du commercial. Un échec annule l'appel (rien n'est parti
+ * vers le prospect) ; la tentative reste comptée, comme un appel du navigateur qui ne se relie pas.
+ */
+async function dialBridge(config: TelephonyConfig, callId: mongoose.Types.ObjectId, phone: string) {
+  try {
+    const sid = await createBridgeCall(config, {
+      to: phone,
+      from: config.callerId,
+      url: bridgeAnswerUrl(config, String(callId)),
+      statusCallback: bridgeStatusUrl(config, String(callId)),
+    })
+    await Call.updateOne({ _id: callId }, { $set: { bridgeCallSid: sid } })
+  } catch {
+    const now = new Date()
+    await Call.updateOne(
+      { _id: callId, status: 'CREATED', providerCallSid: null },
+      { $set: { status: 'CANCELED', endedAt: now }, $push: { events: { status: 'BRIDGE_FAILED', at: now } } },
+    )
+    throw telephonyError(502, 'BRIDGE_FAILED')
+  }
+}
+
 export function createCallsRoutes(scope: CallDeskScope) {
   const router = express.Router()
 
@@ -83,7 +131,7 @@ export function createCallsRoutes(scope: CallDeskScope) {
     return found?.own ? found.call : null
   }
 
-  router.get('/calls/config', scope.read, async (_req, res, next) => {
+  router.get('/calls/config', scope.read, async (req, res, next) => {
     try {
       const config = telephonyConfig()
       const settings = await CrmSettings.getSettings()
@@ -93,6 +141,9 @@ export function createCallsRoutes(scope: CallDeskScope) {
         edge: config?.edge ?? null,
         callingHours: settings.telephony.callingHours,
         attemptCap: settings.telephony.attemptCapPerDay,
+        attemptWindow: attemptWindowOf(settings),
+        // Lot P : l'appel passe par le portable vérifié de l'utilisateur au lieu du navigateur.
+        bridge: { active: Boolean(config && (await activeBridgePhone(String(req.user!.id)))) },
         recording: recordingConfig(settings),
         dialer: dialerSettings(settings),
       })
@@ -136,12 +187,16 @@ export function createCallsRoutes(scope: CallDeskScope) {
 
         const config = telephonyConfig()!
         const settings = await CrmSettings.getSettings()
-        const to = normalizePhone(String(lead.contactPhone ?? ''), settings.callDefaultRegion)
+        const target = phoneTarget(String(lead.contactPhone ?? ''), settings.callDefaultRegion)
+        const to = target?.e164 ?? null
         if (to && (await isPhoneSuppressed(to, settings.callDefaultRegion)))
           throw telephonyError(409, 'PHONE_SUPPRESSED')
         if (req.body.mode === 'power' && powerDialerBlocked(to)) throw telephonyError(409, 'POWER_DIALER_BLOCKED')
+        // Mode pont (lot P) : décidé par le serveur d'après le profil, un appel à la fois et au clic.
+        const bridgePhone = await activeBridgePhone(repId)
+        if (bridgePhone && req.body.mode === 'power') throw telephonyError(409, 'BRIDGE_CLICK_ONLY')
         const now = new Date()
-        const attemptDay = localClock(now, settings.telephony.callingHours.timezone).day
+        const attemptDay = target ? attemptDayOf(now, target) : localClock(now, 'Europe/Paris').day
         // Jamais deux appels à la fois pour un même utilisateur (lot I) : la ligne est réservée avant la
         // création, libérée si le lancement échoue, et revérifiée après.
         try {
@@ -155,24 +210,49 @@ export function createCallsRoutes(scope: CallDeskScope) {
         try {
           // Rang unique par numéro et par jour : un lancement concurrent qui prend le même rang recompte.
           for (let tries = 0; tries < 5; tries++) {
-            const last = await Call.findOne({ to, attemptDay }).sort({ attemptNo: -1 }).select('attemptNo').lean()
+            const last = to
+              ? await Call.findOne({ to, attemptDay }).sort({ attemptNo: -1 }).select('attemptNo').lean()
+              : null
             const attemptsToday = last?.attemptNo ?? 0
-            assertCallable(lead, { now, settings, attemptsToday, scope: scope.kind })
+            const window = to ? await windowAttempts(to, now, settings) : { count: 0, reached: false }
+            try {
+              assertCallable(lead, {
+                now,
+                settings,
+                attempts: { today: attemptsToday, window: window.count },
+                scope: scope.kind,
+              })
+            } catch (err) {
+              // Plafond de la fenêtre atteint sans avoir jamais joint personne : la fiche passe « non joignable ».
+              if ((err as { code?: string }).code === 'ATTEMPT_WINDOW_REACHED' && !window.reached)
+                await markUnreachable(String(lead._id), repId, settings, now)
+              throw err
+            }
+            const from = callerIdFor(target!.country, callCountryRules(settings), config.callerId)
+            if (!from) throw telephonyError(409, 'NO_CALLER_ID')
             try {
               const call = await Call.create({
                 _id: callId,
                 lead: lead._id,
                 author: repId,
                 to: to!,
-                from: config.callerId,
+                from,
                 clientRequestId,
                 attemptDay,
                 attemptNo: attemptsToday + 1,
+                via: bridgePhone ? 'BRIDGE' : 'BROWSER',
+                bridgeTo: bridgePhone,
                 events: [{ status: 'CREATED', at: now }],
               })
+              // Deux lancements simultanés sous le plafond de la fenêtre : le premier lancé (identifiant) passe.
+              if ((await windowAttempts(to!, now, settings, call._id)).count >= attemptWindowOf(settings).max) {
+                await Call.deleteOne({ _id: call._id })
+                throw telephonyError(409, 'ATTEMPT_WINDOW_REACHED')
+              }
               created = true
               await confirmLine(repId, call._id, now)
-              return res.status(201).json({ callId: call._id })
+              if (bridgePhone) await dialBridge(config, call._id, bridgePhone)
+              return res.status(201).json({ callId: call._id, via: call.via })
             } catch (err) {
               if (isDuplicate(err, 'clientRequestId') && (await replay())) return
               if (!isDuplicate(err, 'attemptNo')) throw err
@@ -187,6 +267,54 @@ export function createCallsRoutes(scope: CallDeskScope) {
       }
     },
   )
+
+  /** Mode pont : réglage de l'utilisateur, quel que soit son espace (lot P). */
+  router.get('/calls/bridge', scope.read, async (req, res, next) => {
+    try {
+      res.json({ bridge: publicBridge(await CallerProfile.findById(req.user!.id).select('bridge').lean()) })
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  /** Envoie un code au portable à vérifier, par un appel qui le lit. */
+  router.post('/calls/bridge/code', scope.write, requireTelephony, async (req, res, next) => {
+    try {
+      const settings = await CrmSettings.getSettings()
+      res
+        .status(202)
+        .json(
+          await sendBridgeCode(telephonyConfig()!, String(req.user!.id), req.body.phone, settings.callDefaultRegion),
+        )
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  router.post('/calls/bridge/verify', scope.write, async (req, res, next) => {
+    try {
+      res.json({ bridge: await confirmBridgeCode(String(req.user!.id), req.body.code) })
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  router.patch('/calls/bridge', scope.write, async (req, res, next) => {
+    try {
+      if (typeof req.body.enabled !== 'boolean') throw telephonyError(400, 'VALIDATION_ERROR')
+      const profile = await CallerProfile.findOneAndUpdate(
+        req.body.enabled
+          ? { _id: req.user!.id, 'bridge.verifiedAt': { $ne: null }, 'bridge.phone': { $ne: null } }
+          : { _id: req.user!.id },
+        { $set: { 'bridge.enabled': req.body.enabled } },
+        { new: true },
+      )
+      if (!profile && req.body.enabled) throw telephonyError(409, 'BRIDGE_NOT_VERIFIED')
+      res.json({ bridge: publicBridge(profile) })
+    } catch (err) {
+      next(err)
+    }
+  })
 
   router.get('/calls/:id', scope.read, async (req, res, next) => {
     try {
@@ -222,7 +350,13 @@ export function createCallsRoutes(scope: CallDeskScope) {
         { $set: { status: 'CANCELED', endedAt: now }, $push: { events: { status: 'HANGUP', at: now } } },
         { new: true },
       )
-      if (canceled) return res.json({ status: canceled.status })
+      if (canceled) {
+        // Mode pont : le portable du commercial sonne peut-être encore.
+        const config = telephonyConfig()
+        if (canceled.bridgeCallSid && config)
+          await hangupProviderCall(config, canceled.bridgeCallSid).catch(() => undefined)
+        return res.json({ status: canceled.status })
+      }
       const current = (await Call.findById(call._id))!
       if (TERMINAL_CALL_STATUSES.includes(current.status) || !current.providerCallSid)
         return res.json({ status: current.status })

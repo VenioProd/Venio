@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import request from 'supertest'
 import express, { type Express, type NextFunction, type Request, type Response } from 'express'
 import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
+import { DEFAULT_CALL_COUNTRIES } from '../lib/telephony/countries.js'
 import { asReqUser, resetCrmSettings, seedTeam, type Team, type TeamMember } from './crm-routes-helpers.js'
 
 /**
@@ -64,8 +65,10 @@ const analysis = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 const telephony = () => ({
-  callingHours: { timezone: 'Europe/Paris', days: [5, 1, 3], start: '10:00', end: '19:30' },
-  attemptCapPerDay: 2,
+  callingHours: { days: [5, 1, 3], start: '10:00', end: '19:30' },
+  attemptCapPerDay: 3,
+  attemptWindow: { days: 14, max: 6 },
+  countries: DEFAULT_CALL_COUNTRIES.map((rule) => ({ ...rule })),
 })
 
 describe('grille de chaleur', () => {
@@ -116,7 +119,7 @@ describe('blocs entiers', () => {
       const res = await patch({ [key]: 5 }).expect(400)
       expect(res.body.error).toContain('se modifie en entier')
     }
-    expect((await CrmSettings.findOne().lean())!.telephony.attemptCapPerDay).toBe(3)
+    expect((await CrmSettings.findOne().lean())!.telephony.attemptCapPerDay).toBe(2)
   })
 
   it('refuse un bloc partiel, une clé inconnue et un mauvais type', async () => {
@@ -134,7 +137,13 @@ describe('téléphonie', () => {
   it('enregistre la plage, trie les jours et refuse les valeurs incohérentes', async () => {
     const ok = await patch({ telephony: telephony() }).expect(200)
     expect(ok.body.settings.telephony.callingHours.days).toEqual([1, 3, 5])
-    expect(ok.body.settings.telephony).toMatchObject({ attemptCapPerDay: 2 })
+    expect(ok.body.settings.telephony).toMatchObject({ attemptCapPerDay: 3 })
+    // Un ancien écran envoie encore `timezone` : ignoré, la plage suit le fuseau du prospect (lot P).
+    const legacy = { ...telephony(), callingHours: { ...telephony().callingHours, timezone: 'Europe/Paris' } }
+    expect(
+      (await patch({ telephony: legacy }).expect(200)).body.settings.telephony.callingHours.timezone,
+    ).toBeUndefined()
+    const countries = telephony().countries
     const variants: Array<Record<string, unknown>> = [
       { ...telephony(), attemptCapPerDay: 0 },
       { ...telephony(), attemptCapPerDay: 21 },
@@ -144,10 +153,14 @@ describe('téléphonie', () => {
       { ...telephony(), callingHours: { ...telephony().callingHours, days: [7] } },
       { ...telephony(), callingHours: { ...telephony().callingHours, start: '20:00', end: '09:00' } },
       { ...telephony(), callingHours: { ...telephony().callingHours, start: '9h', end: '20:00' } },
-      { ...telephony(), callingHours: { ...telephony().callingHours, timezone: 'Mars/Olympus' } },
+      { ...telephony(), attemptWindow: { days: 14, max: 2 } },
+      { ...telephony(), attemptWindow: { days: 0, max: 6 } },
+      { ...telephony(), countries: countries.slice(1) },
+      { ...telephony(), countries: [...countries.slice(1), { code: 'JP', enabled: true, defaultCallerId: true }] },
+      { ...telephony(), countries: [...countries.slice(1), countries[1]] },
     ]
     for (const body of variants) await patch({ telephony: body }).expect(400)
-    expect((await CrmSettings.findOne().lean())!.telephony.attemptCapPerDay).toBe(2)
+    expect((await CrmSettings.findOne().lean())!.telephony.attemptCapPerDay).toBe(3)
   })
 })
 
@@ -191,7 +204,7 @@ describe('droits et état du serveur', () => {
     as(team.manager)
     await patch({ telephony: telephony() }).expect(403)
     await patch({ callAnalysis: analysis() }).expect(403)
-    expect((await CrmSettings.findOne().lean())!.telephony.attemptCapPerDay).toBe(3)
+    expect((await CrmSettings.findOne().lean())!.telephony.attemptCapPerDay).toBe(2)
   })
 
   it('GET indique ce que ce serveur sait faire, sans rien révéler des clés', async () => {

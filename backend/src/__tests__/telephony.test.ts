@@ -53,7 +53,7 @@ const as = (cookie: string) => ({
     request(app).post(`/api/commercial${path}`).set('Cookie', cookie).send(body),
 })
 const lead = (company: string, extra: object = {}) =>
-  Lead.create({ company, externalRep: repA, contactPhone: '+33612345678', ...extra })
+  Lead.create({ company, businessContact: true, externalRep: repA, contactPhone: '+33612345678', ...extra })
 const launch = (cookie: string, leadId: unknown, clientRequestId: string = crypto.randomUUID()) =>
   as(cookie).post(`/leads/${leadId}/calls`, { clientRequestId })
 const twilioPost = (path: string, params: Record<string, string>, signature?: string) =>
@@ -171,6 +171,7 @@ it('refuse un numéro opposé quel que soit le commercial : appel, file et impor
   const queue = await as(cookieA).get('/calls/queue')
   expect(queue.body.leads.map((item: { company: string }) => item.company)).toEqual(['Gamma'])
   const report = await importCallLeads({
+    businessContact: true,
     externalRep: repA,
     leads: [
       { company: 'Delta', contactPhone: '0612345678' },

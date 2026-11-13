@@ -41,6 +41,8 @@ export interface CallDeskApi {
   history: (leadId: string) => Promise<RepInteraction[]>
   /** Relecture d'une fiche après une analyse appliquée : les champs à fusionner dans la ligne de la file. */
   lead: (leadId: string) => Promise<Partial<RepLead>>
+  /** Lot P : confirmer que le contact est un professionnel (seul appelable). */
+  confirmBusinessContact?: (leadId: string) => Promise<unknown>
 }
 
 export const commercialDesk: CallDeskApi = {
@@ -58,4 +60,5 @@ export const commercialDesk: CallDeskApi = {
   addScriptTag: (tag) => commercialApi.addScriptTag(tag),
   history: (leadId) => commercialApi.lead(leadId).then((data) => data.interactions.slice(0, 5)),
   lead: (leadId) => commercialApi.lead(leadId).then((data) => data.lead),
+  confirmBusinessContact: (leadId) => commercialApi.updateLead(leadId, { businessContact: true }),
 }

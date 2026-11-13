@@ -5,6 +5,7 @@ import { createNotification } from '../lib/notifications.js'
 import logger from '../lib/logger.js'
 import { DEFAULT_GROUP_ENTITY, GROUP_ENTITIES } from '../lib/groupEntities.js'
 import { normalizeCompanyName, normalizeEmail, normalizePhone } from '../lib/crmDedup.js'
+import { phoneTarget } from '../lib/telephony/countries.js'
 
 // Projet / produit concerné par le lead. Vide pour les leads historiques.
 export const LEAD_PROJECTS = ['ARTOSERA', 'VIGNO', 'ARROW', 'VENIO', 'AUTRE'] as const
@@ -23,6 +24,10 @@ const leadSchema = new mongoose.Schema<ILead>(
     lastCallOutcome: { type: String, default: null },
     lastCallAt: { type: Date, default: null },
     phoneInvalid: { type: Boolean, default: false },
+    // ── Multi-pays (lot P) ──
+    phoneCountry: { type: String, default: '' },
+    businessContact: { type: Boolean, default: false },
+    callUnreachableAt: { type: Date, default: null },
     extraInfo: { type: mongoose.Schema.Types.Mixed, default: {} },
     doNotCall: { type: Boolean, default: false },
     source: { type: String, default: '' },
@@ -181,7 +186,27 @@ leadSchema.pre('validate', function () {
 })
 
 leadSchema.pre('save', function () {
-  if (!this.isNew && this.isModified('contactPhone')) this.phoneInvalid = false
+  if (!this.isNew && this.isModified('contactPhone')) {
+    this.phoneInvalid = false
+    this.callUnreachableAt = null
+  }
+})
+
+/** Région de lecture d'un numéro au format national : celle des réglages du CRM (lot P). */
+async function phoneCountryOf(phone: unknown): Promise<string> {
+  const value = String(phone ?? '').trim()
+  if (!value) return ''
+  // Modèle des réglages lu sans import (il n'est pas chargé dans tous les scripts) ; absent : France.
+  const settings = /^(\+|00)/.test(value) ? undefined : mongoose.models.CrmSettings
+  const region = settings
+    ? ((await settings.findOne().select('callDefaultRegion').lean<{ callDefaultRegion?: string }>())
+        ?.callDefaultRegion ?? 'FR')
+    : 'FR'
+  return phoneTarget(value, region)?.country ?? ''
+}
+
+leadSchema.pre('validate', async function () {
+  if (this.isNew || this.isModified('contactPhone')) this.phoneCountry = await phoneCountryOf(this.contactPhone)
 })
 for (const operation of ['updateOne', 'findOneAndUpdate'] as const) {
   leadSchema.pre(operation, async function () {
@@ -195,8 +220,9 @@ for (const operation of ['updateOne', 'findOneAndUpdate'] as const) {
       .session(this.getOptions().session ?? null)
       .lean<{ contactPhone: string }>()
     if (previous && previous.contactPhone !== String(phone)) {
-      update.$set = { ...update.$set, phoneInvalid: false }
+      update.$set = { ...update.$set, phoneInvalid: false, callUnreachableAt: null }
     }
+    update.$set = { ...update.$set, phoneCountry: await phoneCountryOf(phone) }
   })
 }
 

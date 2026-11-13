@@ -31,6 +31,8 @@ export interface SoftphoneController extends SoftphoneSnapshot {
   apiPrefix: string
   /** Réglages de la composition enchaînée (lot I). */
   dialer: DialerConfig
+  /** Lot P : les appels de l'utilisateur passent par son portable vérifié ; l'enchaînement se limite au clic. */
+  bridgeMode: boolean
   microphones: { id: string; label: string }[]
   /** `mode: 'power'` quand le power dialer lance l'appel. */
   start: (leadId: string, mode?: 'power') => void
@@ -61,6 +63,7 @@ export function useSoftphone(
   const [recording, setRecording] = useState<RecordingConfig>({ enabled: false, notice: false })
   const [dialer, setDialer] = useState<DialerConfig>(DEFAULT_DIALER)
   const [microphones, setMicrophones] = useState<{ id: string; label: string }[]>([])
+  const [bridge, setBridge] = useState(false)
   const supported = isSoftphoneSupported()
   const prefix = options.apiPrefix ?? DEFAULT_CALLS_PREFIX
   const active = snapshot.phase !== 'idle'
@@ -71,7 +74,8 @@ export function useSoftphone(
       .config()
       .then((value) => {
         if (!current) return
-        engine.configure({ edge: value.edge })
+        engine.configure({ edge: value.edge, bridge: Boolean(value.enabled && value.bridge?.active) })
+        setBridge(Boolean(value.enabled && value.bridge?.active))
         setRecording({ enabled: Boolean(value.recording?.enabled), notice: Boolean(value.recording?.notice) })
         if (value.dialer) setDialer(value.dialer)
         setConfig(value.enabled ? 'enabled' : 'disabled')
@@ -140,9 +144,15 @@ export function useSoftphone(
     [engine],
   )
 
+  // Mode pont (lot P) : ni micro ni WebRTC, seul le serveur compte.
   const unavailable: SoftphoneFallback | null =
-    snapshot.fallback ??
-    (!supported ? 'UNSUPPORTED' : config === 'disabled' ? 'DISABLED' : config === 'error' ? 'UNAVAILABLE' : null)
+    config === 'disabled'
+      ? 'DISABLED'
+      : config === 'error'
+        ? 'UNAVAILABLE'
+        : bridge
+          ? null
+          : (snapshot.fallback ?? (!supported ? 'UNSUPPORTED' : null))
 
   return {
     ...snapshot,
@@ -152,6 +162,7 @@ export function useSoftphone(
     recording,
     apiPrefix: prefix,
     dialer,
+    bridgeMode: bridge,
     microphones,
     start: useCallback((leadId: string, mode?: 'power') => void engine.start(leadId, prefix, mode), [engine, prefix]),
     hangup: useCallback(() => engine.hangup(), [engine]),

@@ -28,10 +28,12 @@ interface Props {
   disabled?: boolean
   /** La fiche est retenue après une opposition détectée : elle ne peut plus être appelée en attendant la décision. */
   held?: boolean
+  /** Lot P : raison pour laquelle cette fiche ne peut pas être appelée (pays, fuseau, contact non professionnel). */
+  blocked?: string | null
 }
 
 /** Barre d'appel : appeler, raccrocher, muet, clavier, chronomètre. Repli sur `tel:` quand le navigateur ne peut pas appeler. */
-export default function CallBar({ controller, leadId, phone, suggestion, disabled, held = false }: Props) {
+export default function CallBar({ controller, leadId, phone, suggestion, disabled, held = false, blocked }: Props) {
   const { t } = useI18n()
   const [keypad, setKeypad] = useState(false)
   const mine = controller.leadId === leadId
@@ -43,6 +45,8 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
   const last = controller.lastCall?.leadId === leadId ? controller.lastCall : null
   const live = phase === 'active' || phase === 'reconnecting'
   const stop = mine ? controller.recordingStop : 'idle'
+  // Mode pont (lot P) : le son passe par le portable, ni muet ni clavier ici.
+  const bridged = mine ? controller.bridge : controller.bridgeMode
 
   if (controller.unavailable) {
     return (
@@ -102,7 +106,7 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
             className="portal-button"
             aria-label={t('calls.callAria')}
             title={held ? t('calls.held') : !phone ? t('calls.noPhone') : undefined}
-            disabled={disabled || held || !phone || elsewhere || controller.checking}
+            disabled={disabled || held || Boolean(blocked) || !phone || elsewhere || controller.checking}
             onClick={() => {
               setKeypad(false)
               controller.start(leadId)
@@ -111,7 +115,7 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
             <Phone size={16} aria-hidden="true" /> {t('calls.call')}
           </button>
         )}
-        {phase === 'active' || phase === 'reconnecting' ? (
+        {!bridged && (phase === 'active' || phase === 'reconnecting') ? (
           <>
             <button
               type="button"
@@ -143,11 +147,15 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
           ? t('calls.checking')
           : held && !inCall
             ? t('calls.held')
-            : elsewhere
-              ? t('calls.busyElsewhere')
-              : inCall
-                ? t(`calls.state.${phase}` as MessageKey)
-                : summary || t('calls.state.idle')}
+            : blocked && !inCall
+              ? blocked
+              : elsewhere
+                ? t('calls.busyElsewhere')
+                : inCall
+                  ? bridged && (phase === 'connecting' || phase === 'ringing')
+                    ? t('callCountries.bridge.ringing')
+                    : t(`calls.state.${phase}` as MessageKey)
+                  : summary || t('calls.state.idle')}
       </p>
       {live && controller.recording.enabled && (
         <div className="softphone-recording" data-state={stop === 'stopped' ? 'stopped' : 'on'}>
@@ -207,7 +215,7 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
           ))}
         </div>
       )}
-      {controller.microphones.length > 1 && (
+      {!controller.bridgeMode && controller.microphones.length > 1 && (
         <label className="softphone-microphone">
           {t('calls.microphone')}
           <select

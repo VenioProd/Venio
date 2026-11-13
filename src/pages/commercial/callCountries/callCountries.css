@@ -1,0 +1,90 @@
+/* Poste d'appel multi-pays (lot P) : pays, heure locale du prospect, blocages. */
+.call-check {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+}
+.call-check-country {
+  padding: 0 0.3rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.call-check-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.call-check-block {
+  font-style: normal;
+  color: var(--warning);
+}
+.call-check-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+.call-check-confirm p {
+  margin: 0;
+  flex: 1 1 14rem;
+}
+.call-bridge {
+  display: grid;
+  gap: 0.75rem;
+}
+.call-bridge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+.call-bridge-row label {
+  display: grid;
+  gap: 0.25rem;
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+.call-bridge-row input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.call-pro-check,
+.commercial-form-grid .call-pro-check {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.call-pro-check input,
+.commercial-form-grid .call-pro-check input {
+  flex: none;
+  width: auto;
+  margin-top: 0.2rem;
+}
+.crm-ai-countries summary {
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
+.crm-ai-country-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.crm-ai-country-table th,
+.crm-ai-country-table td {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+.crm-ai-country-table td {
+  width: 5.5rem;
+  text-align: center;
+}
+.crm-ai-country-table thead th:not(:first-child) {
+  text-align: center;
+}

@@ -53,3 +53,29 @@ export async function fetchProviderRecording(
   if (audio.length > MAX_AUDIO_BYTES) throw new Error('RECORDING_TOO_LARGE')
   return audio
 }
+
+/**
+ * Mode pont (lot P) : l'opérateur appelle le portable du commercial ; à la décroche il
+ * demande `url` (signée), qui ne met en relation avec le prospect qu'après confirmation.
+ */
+export async function createBridgeCall(
+  config: TelephonyConfig,
+  input: { to: string; from: string; url: string; statusCallback: string },
+): Promise<string> {
+  const call = await client(config).calls.create({
+    to: input.to,
+    from: input.from,
+    url: input.url,
+    method: 'POST',
+    statusCallback: input.statusCallback,
+    statusCallbackMethod: 'POST',
+    statusCallbackEvent: ['completed'],
+    timeout: 30,
+  })
+  return call.sid
+}
+
+/** Vérification du portable du mode pont : un appel qui lit le code, sans rien d'autre. */
+export async function placeCodeCall(config: TelephonyConfig, input: { to: string; from: string; twiml: string }) {
+  await client(config).calls.create({ to: input.to, from: input.from, twiml: input.twiml, timeout: 30 })
+}

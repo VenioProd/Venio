@@ -27,7 +27,19 @@ export interface DialerStop {
  * Refus qui écartent seulement la fiche : l'enchaînement continue avec la suivante. Le power dialer
  * est refusé vers les États-Unis (+1 hors Canada) jusqu'à avis juridique ; l'aperçu et le clic restent permis.
  */
-const SKIPPED: readonly CallErrorCode[] = ['LEAD_NOT_CALLABLE', 'ATTEMPT_CAP_REACHED', 'POWER_DIALER_BLOCKED']
+const SKIPPED: readonly CallErrorCode[] = [
+  'LEAD_NOT_CALLABLE',
+  'ATTEMPT_CAP_REACHED',
+  'POWER_DIALER_BLOCKED',
+  // Lot P : la plage, le pays et les plafonds dépendent maintenant de chaque prospect.
+  'OUTSIDE_CALLING_HOURS',
+  'COUNTRY_NOT_ALLOWED',
+  'TIMEZONE_UNKNOWN',
+  'NOT_BUSINESS_CONTACT',
+  'ATTEMPT_WINDOW_REACHED',
+  'LEAD_UNREACHABLE',
+  'NO_CALLER_ID',
+]
 const TICK_MS = 200
 
 type Phone = Pick<SoftphoneController, 'active' | 'lastCall' | 'start'>
