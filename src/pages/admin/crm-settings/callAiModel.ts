@@ -7,9 +7,52 @@ import type { CrmSettingsData } from './types'
  * avant l'envoi, le serveur reste l'autorité.
  */
 
+export interface CallCountryRule {
+  code: string
+  enabled: boolean
+  /** Le numéro par défaut peut être présenté dans ce pays faute de numéro propre. */
+  defaultCallerId: boolean
+}
+
+/** Pays que le serveur sait situer (lot P) : l'UE ouverte, Royaume-Uni, Canada et États-Unis fermés. */
+export const EU_COUNTRIES = [
+  'AT',
+  'BE',
+  'BG',
+  'CY',
+  'CZ',
+  'DE',
+  'DK',
+  'EE',
+  'ES',
+  'FI',
+  'FR',
+  'GR',
+  'HR',
+  'HU',
+  'IE',
+  'IT',
+  'LT',
+  'LU',
+  'LV',
+  'MT',
+  'NL',
+  'PL',
+  'PT',
+  'RO',
+  'SE',
+  'SI',
+  'SK',
+]
+export const CALL_COUNTRIES = [...EU_COUNTRIES, 'GB', 'CA', 'US']
+
 export interface TelephonySettings {
-  callingHours: { timezone: string; days: number[]; start: string; end: string }
+  /** Dans le fuseau du prospect (lot P). */
+  callingHours: { days: number[]; start: string; end: string }
   attemptCapPerDay: number
+  /** Lot P : plafond sur une fenêtre glissante, puis « non joignable ». */
+  attemptWindow: { days: number; max: number }
+  countries: CallCountryRule[]
   /** Composition enchaînée et détection de messagerie (lot I). */
   dialer: { voicemailDetection: boolean; previewDelaySec: number; powerDelaySec: number }
 }
@@ -60,8 +103,14 @@ export const DEFAULT_NOTICE =
 export const MAX_CRITERIA = 12
 
 export const DEFAULT_TELEPHONY: TelephonySettings = {
-  callingHours: { timezone: 'Europe/Paris', days: [1, 2, 3, 4, 5], start: '09:00', end: '20:00' },
-  attemptCapPerDay: 3,
+  callingHours: { days: [1, 2, 3, 4, 5], start: '09:00', end: '18:30' },
+  attemptCapPerDay: 2,
+  attemptWindow: { days: 14, max: 6 },
+  countries: CALL_COUNTRIES.map((code) => ({
+    code,
+    enabled: EU_COUNTRIES.includes(code),
+    defaultCallerId: EU_COUNTRIES.includes(code),
+  })),
   dialer: { voicemailDetection: true, previewDelaySec: 10, powerDelaySec: 3 },
 }
 export const DEFAULT_RECORDING: RecordingSettings = {
@@ -121,12 +170,28 @@ export function readTelephony(settings: CrmSettingsData): TelephonySettings {
   const base = DEFAULT_TELEPHONY
   return {
     callingHours: {
-      timezone: str(hours.timezone, base.callingHours.timezone),
       days: Array.isArray(hours.days) ? (hours.days as number[]).filter(Number.isInteger) : [...base.callingHours.days],
       start: str(hours.start, base.callingHours.start),
       end: str(hours.end, base.callingHours.end),
     },
     attemptCapPerDay: num(raw.attemptCapPerDay, base.attemptCapPerDay),
+    attemptWindow: {
+      days: num(obj(raw.attemptWindow).days, base.attemptWindow.days),
+      max: num(obj(raw.attemptWindow).max, base.attemptWindow.max),
+    },
+    // Un pays absent des réglages enregistrés reprend sa valeur de départ (le serveur les veut tous).
+    countries: base.countries.map((rule) => {
+      const stored = (Array.isArray(raw.countries) ? raw.countries : [])
+        .map(obj)
+        .find((item) => item.code === rule.code)
+      return stored
+        ? {
+            code: rule.code,
+            enabled: bool(stored.enabled, false),
+            defaultCallerId: bool(stored.defaultCallerId, false),
+          }
+        : { ...rule }
+    }),
     dialer: {
       voicemailDetection: bool(obj(raw.dialer).voicemailDetection, base.dialer.voicemailDetection),
       previewDelaySec: num(obj(raw.dialer).previewDelaySec, base.dialer.previewDelaySec),
@@ -187,23 +252,15 @@ export const defaultAnalysisGrid = () => clone(DEFAULT_ANALYSIS.heatGrid)
 const isInt = (value: number, min: number, max: number) => Number.isInteger(value) && value >= min && value <= max
 const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/
 
-function validTimezone(timezone: string): boolean {
-  try {
-    new Intl.DateTimeFormat('fr-FR', { timeZone: timezone })
-    return true
-  } catch {
-    return false
-  }
-}
-
 export function telephonyIssues(value: TelephonySettings): Issue[] {
   const issues: Issue[] = []
   const hours = value.callingHours
   if (hours.days.length === 0) issues.push({ key: 'crmCallAi.tel.err.days' })
   if (!CLOCK.test(hours.start) || !CLOCK.test(hours.end)) issues.push({ key: 'crmCallAi.tel.err.clock' })
   else if (hours.end <= hours.start) issues.push({ key: 'crmCallAi.tel.err.order' })
-  if (!hours.timezone || !validTimezone(hours.timezone)) issues.push({ key: 'crmCallAi.tel.err.timezone' })
   if (!isInt(value.attemptCapPerDay, 1, 20)) issues.push({ key: 'crmCallAi.tel.err.cap' })
+  else if (!isInt(value.attemptWindow.days, 1, 60) || !isInt(value.attemptWindow.max, value.attemptCapPerDay, 100))
+    issues.push({ key: 'callCountries.settings.err.window' })
   if (!isInt(value.dialer.previewDelaySec, 0, 120) || !isInt(value.dialer.powerDelaySec, 0, 60))
     issues.push({ key: 'calls.dialer.settings.err' })
   return issues

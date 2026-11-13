@@ -75,18 +75,34 @@ describe('réglages CRM — appels et IA', () => {
   it('téléphonie : résume la plage et enregistre le bloc en entier', async () => {
     renderPage()
     const tel = await block(/^Téléphonie$/)
-    expect(tel.getByText(/lun\., mar\., mer\., jeu\., ven\., de 09:00 à 20:00/)).toBeInTheDocument()
+    // Lot P : plage dans le fuseau du prospect, 2 par jour, 6 sur 14 jours, UE ouverte.
+    expect(
+      tel.getByText(
+        /lun\., mar\., mer\., jeu\., ven\., de 09:00 à 18:30 heure du prospect, 2 par numéro et par jour, 6 sur 14 jours/,
+      ),
+    ).toBeInTheDocument()
+    expect(tel.getByText(/27 pays ouverts/)).toBeInTheDocument()
     fireEvent.click(tel.getByLabelText('sam.'))
     fireEvent.change(tel.getByLabelText(/^Tentatives par numéro et par jour/), { target: { value: '5' } })
+    fireEvent.click(tel.getByLabelText(/^Autorisé : Royaume-Uni/))
     fireEvent.click(tel.getByRole('button', { name: 'Enregistrer' }))
     await waitFor(() => expect(patches()).toHaveLength(1))
     const body = patches()[0]!
     expect(Object.keys(body)).toEqual(['telephony'])
-    expect(body.telephony).toEqual({
-      callingHours: { timezone: 'Europe/Paris', days: [1, 2, 3, 4, 5, 6], start: '09:00', end: '20:00' },
+    const telephony = body.telephony as { countries: { code: string; enabled: boolean; defaultCallerId: boolean }[] }
+    expect(telephony).toMatchObject({
+      callingHours: { days: [1, 2, 3, 4, 5, 6], start: '09:00', end: '18:30' },
       attemptCapPerDay: 5,
+      attemptWindow: { days: 14, max: 6 },
       dialer: { voicemailDetection: true, previewDelaySec: 10, powerDelaySec: 3 },
     })
+    expect(telephony.countries).toHaveLength(30)
+    expect(telephony.countries.find((rule) => rule.code === 'GB')).toEqual({
+      code: 'GB',
+      enabled: true,
+      defaultCallerId: false,
+    })
+    expect(telephony.countries.find((rule) => rule.code === 'US')!.enabled).toBe(false)
   })
 
   it('téléphonie : une plage inversée est refusée avant l’envoi', async () => {

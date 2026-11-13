@@ -1,24 +1,18 @@
-import { useMemo } from 'react'
 import { useI18n } from '../../../context/I18nContext'
 import type { MessageKey } from '../../../i18n'
 import CallAiBlock, { ServerPill, ToggleRow, numberValue, parseNumber, useBlockDraft } from './CallAiBlock'
-import { readTelephony, telephonyIssues, type TelephonySettings } from './callAiModel'
+import { EU_COUNTRIES, readTelephony, telephonyIssues, type TelephonySettings } from './callAiModel'
+import { countryName } from '../../commercial/callCountries/ProspectCallCheck'
+import '../../commercial/callCountries/callCountries.css'
 import type { CallAiProps } from './types'
 
 /** Lundi en premier, comme dans un agenda français. */
 const WEEK = [1, 2, 3, 4, 5, 6, 0] as const
 
-function timezones(current: string): string[] {
-  const intl = Intl as typeof Intl & { supportedValuesOf?: (key: 'timeZone') => string[] }
-  const list = typeof intl.supportedValuesOf === 'function' ? intl.supportedValuesOf('timeZone') : ['Europe/Paris']
-  return list.includes(current) ? list : [current, ...list]
-}
-
 export default function TelephonySection({ settings, providers, canManage, saveBlock }: CallAiProps) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { draft, setDraft, dirty, issues, discard } = useBlockDraft(readTelephony(settings), telephonyIssues)
   const hours = draft.callingHours
-  const zones = useMemo(() => timezones(hours.timezone), [hours.timezone])
   const setHours = (patch: Partial<TelephonySettings['callingHours']>) =>
     setDraft({ ...draft, callingHours: { ...hours, ...patch } })
   const toggleDay = (day: number) =>
@@ -87,21 +81,7 @@ export default function TelephonySection({ settings, providers, canManage, saveB
           />
         </label>
       </div>
-      <label className="crm-ai-field">
-        {t('crmCallAi.tel.timezone')}
-        <select
-          className="crm-settings-text-input"
-          value={hours.timezone}
-          onChange={(e) => setHours({ timezone: e.target.value })}
-        >
-          {zones.map((zone) => (
-            <option key={zone} value={zone}>
-              {zone}
-            </option>
-          ))}
-        </select>
-        <small>{t('crmCallAi.tel.timezoneHelp')}</small>
-      </label>
+      <p className="crm-ai-hint">{t('callCountries.settings.hoursHelp')}</p>
       <label className="crm-ai-field">
         {t('crmCallAi.tel.cap')}
         <input
@@ -115,6 +95,44 @@ export default function TelephonySection({ settings, providers, canManage, saveB
         />
         <small>{t('crmCallAi.tel.capHelp')}</small>
       </label>
+      <div className="crm-ai-group" role="group" aria-label={t('callCountries.settings.window')}>
+        <div className="crm-ai-fields">
+          <label className="crm-ai-field">
+            {t('callCountries.settings.windowMax')}
+            <input
+              className="crm-settings-text-input crm-ai-short"
+              type="number"
+              min={1}
+              max={100}
+              step={1}
+              value={numberValue(draft.attemptWindow.max)}
+              onChange={(e) =>
+                setDraft({ ...draft, attemptWindow: { ...draft.attemptWindow, max: parseNumber(e.target.value) } })
+              }
+            />
+          </label>
+          <label className="crm-ai-field">
+            {t('callCountries.settings.windowDays')}
+            <input
+              className="crm-settings-text-input crm-ai-short"
+              type="number"
+              min={1}
+              max={60}
+              step={1}
+              value={numberValue(draft.attemptWindow.days)}
+              onChange={(e) =>
+                setDraft({ ...draft, attemptWindow: { ...draft.attemptWindow, days: parseNumber(e.target.value) } })
+              }
+            />
+          </label>
+        </div>
+        <small>{t('callCountries.settings.windowHelp')}</small>
+      </div>
+      <CountryRules
+        rules={draft.countries}
+        locale={locale}
+        onChange={(countries) => setDraft({ ...draft, countries })}
+      />
       <div className="crm-ai-group" role="group" aria-label={t('calls.dialer.settings.title')}>
         <ToggleRow
           label={t('calls.dialer.settings.voicemail')}
@@ -158,14 +176,85 @@ export default function TelephonySection({ settings, providers, canManage, saveB
       <p className="crm-ai-summary" aria-live="polite">
         {hours.days.length === 0
           ? t('crmCallAi.tel.summaryNever')
-          : t('crmCallAi.tel.summary', {
+          : t('callCountries.settings.summary', {
               days: dayNames,
               start: hours.start,
               end: hours.end,
-              timezone: hours.timezone,
               cap: Number.isFinite(draft.attemptCapPerDay) ? draft.attemptCapPerDay : '?',
+              max: Number.isFinite(draft.attemptWindow.max) ? draft.attemptWindow.max : '?',
+              windowDays: Number.isFinite(draft.attemptWindow.days) ? draft.attemptWindow.days : '?',
             })}
       </p>
     </CallAiBlock>
+  )
+}
+
+/** Pays appelables (lot P) : UE puis hors UE ; une ligne par pays, deux cases. */
+function CountryRules({
+  rules,
+  locale,
+  onChange,
+}: {
+  rules: TelephonySettings['countries']
+  locale: string
+  onChange: (rules: TelephonySettings['countries']) => void
+}) {
+  const { t } = useI18n()
+  const set = (code: string, patch: Partial<TelephonySettings['countries'][number]>) =>
+    onChange(rules.map((rule) => (rule.code === code ? { ...rule, ...patch } : rule)))
+  const groups = [
+    { key: 'callCountries.settings.eu' as const, rules: rules.filter((rule) => EU_COUNTRIES.includes(rule.code)) },
+    { key: 'callCountries.settings.other' as const, rules: rules.filter((rule) => !EU_COUNTRIES.includes(rule.code)) },
+  ]
+  return (
+    <div className="crm-ai-group" role="group" aria-label={t('callCountries.settings.countries')}>
+      <span>
+        {t('callCountries.settings.countries')} ·{' '}
+        {t('callCountries.settings.openCount', { count: rules.filter((rule) => rule.enabled).length })}
+      </span>
+      <small>{t('callCountries.settings.countriesHelp')}</small>
+      {groups.map((group) => (
+        <details key={group.key} className="crm-ai-countries" open={group.key === 'callCountries.settings.other'}>
+          <summary>{t(group.key)}</summary>
+          <table className="crm-ai-country-table">
+            <thead>
+              <tr>
+                <th scope="col">{t('callCountries.settings.country')}</th>
+                <th scope="col">{t('callCountries.settings.enabled')}</th>
+                <th scope="col" title={t('callCountries.settings.defaultCallerIdHelp')}>
+                  {t('callCountries.settings.defaultCallerId')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {group.rules.map((rule) => (
+                <tr key={rule.code}>
+                  <th scope="row">
+                    {countryName(rule.code, locale)} <small>{rule.code}</small>
+                  </th>
+                  <td>
+                    <input
+                      type="checkbox"
+                      aria-label={`${t('callCountries.settings.enabled')} : ${countryName(rule.code, locale)}`}
+                      checked={rule.enabled}
+                      onChange={(e) => set(rule.code, { enabled: e.target.checked })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      aria-label={`${t('callCountries.settings.defaultCallerId')} : ${countryName(rule.code, locale)}`}
+                      checked={rule.defaultCallerId}
+                      onChange={(e) => set(rule.code, { defaultCallerId: e.target.checked })}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      ))}
+      <small>{t('callCountries.settings.defaultCallerIdHelp')}</small>
+    </div>
   )
 }

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { useI18n } from '../../context/I18nContext'
+import { useI18n, type MessageKey } from '../../context/I18nContext'
 import { formatDay, type CallSettings, type RepLead, type RepInteraction } from '../../services/externalSales'
 import { commercialDesk, type CallDeskApi } from './callDesk'
 import CallLeadImport from './CallLeadImport'
@@ -10,6 +10,7 @@ import CallBar from './softphone/CallBar'
 import { useSoftphone } from './softphone/useSoftphone'
 import type { SettledCall } from './softphone/engine'
 import DialerPanel from './softphone/DialerPanel'
+import ProspectCallCheck, { HARD_BLOCKS } from './callCountries/ProspectCallCheck'
 import { DIALER_MODES, useDialer, type DialerMode } from './softphone/dialer'
 
 const KIND_KEYS = {
@@ -178,7 +179,7 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
   const openLead = leads.find((item) => item._id === selected) ?? null
   const pendingOutcome = Boolean(openLead && draftFor(openLead).callId)
   const dialer = useDialer({
-    mode: softphone.unavailable ? 'click' : mode,
+    mode: softphone.unavailable || softphone.bridgeMode ? 'click' : mode,
     config: softphone.dialer,
     leadId: openLead?._id ?? null,
     idle: !busy && !loading,
@@ -193,6 +194,21 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
     softphone,
     onSkip: (leadId) => void skipLead(leadId),
   })
+  // Lot P : le commercial confirme que le contact est professionnel ; la fiche devient appelable.
+  const confirmBusinessContact = async (lead: RepLead) => {
+    try {
+      await desk.confirmBusinessContact?.(lead._id)
+      setLeads((current) =>
+        current.map((item) =>
+          item._id === lead._id && item.callCheck
+            ? { ...item, businessContact: true, callCheck: { ...item.callCheck, block: null } }
+            : item,
+        ),
+      )
+    } catch {
+      setError(t('callCountries.confirmProError'))
+    }
+  }
   const startDialer = () => {
     if (!openLead) open(leads[0]?._id ?? null)
     dialer.start()
@@ -540,7 +556,7 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
         onApplied={reloadLead}
       />
       <DialerPanel
-        mode={softphone.unavailable ? 'click' : mode}
+        mode={softphone.unavailable || softphone.bridgeMode ? 'click' : mode}
         onMode={changeMode}
         dialer={{ ...dialer, start: startDialer }}
         config={softphone.dialer}
@@ -548,7 +564,7 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
         calling={softphone.active}
         pendingOutcome={pendingOutcome}
         busy={busy || loading}
-        unavailable={Boolean(softphone.unavailable)}
+        unavailable={Boolean(softphone.unavailable) || softphone.bridgeMode}
         onSkip={() => openLead && void skipLead(openLead._id)}
       />
       {loading && <p role="status">{t('commercial.loading')}</p>}
@@ -579,7 +595,10 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
                   <small>{lead.contactName || '—'}</small>
                   {lead.callHold && <em className="commercial-hold-tag">{t('commercial.hold.tag')}</em>}
                 </span>
-                <span data-label={t('commercial.field.phone')}>{lead.contactPhone || '—'}</span>
+                <span data-label={t('commercial.field.phone')}>
+                  {lead.contactPhone || '—'}
+                  <ProspectCallCheck check={lead.callCheck} unreachable={Boolean(lead.callUnreachableAt)} />
+                </span>
                 <span data-label={t('commercial.calls.outcome')}>{outcomeLabel(lead.lastCallOutcome)}</span>
                 <span data-label={t('commercial.field.nextAction')}>{formatDay(lead.nextActionAt)}</span>
               </button>
@@ -607,11 +626,28 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
                   }}
                 >
                   <fieldset disabled={busy || loading}>
+                    {lead.callCheck?.block === 'NOT_BUSINESS_CONTACT' && desk.confirmBusinessContact && (
+                      <div className="call-check-confirm">
+                        <p>{t('callCountries.confirmProHelp')}</p>
+                        <button
+                          type="button"
+                          className="portal-button secondary"
+                          onClick={() => void confirmBusinessContact(lead)}
+                        >
+                          {t('callCountries.confirmPro')}
+                        </button>
+                      </div>
+                    )}
                     <CallBar
                       controller={softphone}
                       leadId={lead._id}
                       phone={lead.contactPhone}
                       disabled={busy}
+                      blocked={
+                        lead.callCheck?.block && HARD_BLOCKS.includes(lead.callCheck.block)
+                          ? t(`callCountries.block.${lead.callCheck.block}` as MessageKey)
+                          : null
+                      }
                       held={Boolean(lead.callHold)}
                       suggestion={
                         draft.callId && draft.outcome && draft.outcome === autoOutcomes[lead._id]

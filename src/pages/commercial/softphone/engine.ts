@@ -5,6 +5,7 @@ import {
   createCallsApi,
   DEFAULT_CALLS_PREFIX,
   settleCall,
+  FINAL_CALL_STATUSES,
   type CallErrorCode,
   type CallRecord,
   type VoiceToken,
@@ -50,11 +51,13 @@ export interface SoftphoneSnapshot {
   microphoneId: string
   /** Le prospect refuse l'enregistrement : `pending` pendant la requête, `stopped` une fois l'arrêt confirmé par le serveur. */
   recordingStop: 'idle' | 'pending' | 'stopped' | 'failed'
+  /** Lot P : l'appel passe par le portable du commercial (mode pont) ; ni micro, ni muet, ni clavier ici. */
+  bridge: boolean
 }
 
 export interface SoftphoneDeps {
   loadSdk: () => Promise<{ Device: typeof Device }>
-  api: Pick<typeof callsApi, 'token' | 'create' | 'hangup' | 'stopRecording'>
+  api: Pick<typeof callsApi, 'token' | 'create' | 'hangup' | 'stopRecording'> & Partial<Pick<typeof callsApi, 'get'>>
   /** Les routes d'un autre préfixe que `/api/commercial` (l'équipe passe par `/api/admin/call-desk`). */
   apiFor: (prefix: string) => SoftphoneDeps['api']
   settle: (callId: string, prefix: string) => Promise<CallRecord | null>
@@ -62,11 +65,16 @@ export interface SoftphoneDeps {
   now: () => number
   uuid: () => string
   storage: Pick<Storage, 'getItem' | 'setItem'> | null
+  /** Attente entre deux relectures de l'appel en mode pont. */
+  sleep: (ms: number) => Promise<void>
 }
 
 const MIC_KEY = 'venio-softphone-mic'
 const MIC_ERROR_CODES = [31201, 31208]
 const TOKEN_MARGIN_MS = 60_000
+const BRIDGE_POLL_MS = 1500
+/** Au-delà, l'écran cesse d'attendre l'appel en mode pont (la durée maximale d'un appel, plus une marge). */
+const BRIDGE_MAX_POLLS = Math.ceil((65 * 60_000) / BRIDGE_POLL_MS)
 const DIGITS = /^[0-9*#]$/
 
 class Aborted extends Error {}
@@ -112,6 +120,7 @@ const initialSnapshot = (microphoneId: string): SoftphoneSnapshot => ({
   lastCall: null,
   microphoneId,
   recordingStop: 'idle',
+  bridge: false,
 })
 
 export class Softphone {
@@ -125,6 +134,7 @@ export class Softphone {
   private prefix = DEFAULT_CALLS_PREFIX
   private call: Call | null = null
   private aborted = false
+  private bridgeMode = false
 
   constructor(deps: Partial<SoftphoneDeps> = {}) {
     this.deps = {
@@ -136,6 +146,7 @@ export class Softphone {
       now: () => Date.now(),
       uuid: () => crypto.randomUUID(),
       storage: defaultStorage(),
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
       ...deps,
     }
     let stored = ''
@@ -169,9 +180,10 @@ export class Softphone {
     return this.prefix === DEFAULT_CALLS_PREFIX ? this.deps.api : this.deps.apiFor(this.prefix)
   }
 
-  /** Réglages du serveur utiles au `Device` : l'edge de l'opérateur lu dans `GET /calls/config`. */
-  configure(options: { edge?: string | null }) {
+  /** Réglages du serveur : l'edge de l'opérateur et le mode pont, lus dans `GET /calls/config`. */
+  configure(options: { edge?: string | null; bridge?: boolean }) {
     this.edge = options.edge || null
+    this.bridgeMode = Boolean(options.bridge)
   }
 
   /** Efface le dernier résultat et la dernière erreur (nouvel appel, changement de fiche). */
@@ -199,7 +211,9 @@ export class Softphone {
       failure: null,
       lastCall: null,
       recordingStop: 'idle',
+      bridge: this.bridgeMode,
     })
+    if (this.bridgeMode) return this.startBridge(leadId, mode)
     try {
       if (!isSoftphoneSupported()) throw Object.assign(new Error('UNSUPPORTED'), { fallback: 'UNSUPPORTED' })
       await this.checkMicrophone()
@@ -218,6 +232,30 @@ export class Softphone {
       const call = await device.connect({ params: { callId } })
       this.attach(call, leadId, callId)
       if (this.aborted) call.disconnect()
+    } catch (err) {
+      await this.fail(err, leadId)
+    }
+  }
+
+  /**
+   * Mode pont (lot P) : le serveur fait appeler le portable du commercial, puis le prospect une fois
+   * qu'il a tapé 1. L'écran suit l'appel en le relisant ; raccrocher passe par le serveur.
+   */
+  private async startBridge(leadId: string, mode?: 'power') {
+    try {
+      const requestId = this.deps.uuid()
+      const { callId } = await (mode ? this.api.create(leadId, requestId, mode) : this.api.create(leadId, requestId))
+      this.update({ callId, phase: 'connecting' })
+      for (let polls = 0; polls < BRIDGE_MAX_POLLS && !this.aborted; polls += 1) {
+        await this.deps.sleep(BRIDGE_POLL_MS)
+        const record = await this.api.get?.(callId).catch(() => null)
+        if (!record) continue
+        if (FINAL_CALL_STATUSES.includes(record.status)) break
+        if (record.status === 'RINGING' && this.snapshotValue.phase === 'connecting') this.update({ phase: 'ringing' })
+        if (record.status === 'IN_PROGRESS' && this.snapshotValue.phase !== 'active' && !this.aborted)
+          this.update({ phase: 'active', answeredAt: this.deps.now() })
+      }
+      await this.finish(leadId, callId, null)
     } catch (err) {
       await this.fail(err, leadId)
     }

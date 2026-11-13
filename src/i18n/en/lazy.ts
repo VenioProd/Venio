@@ -8,6 +8,7 @@ import adminTech from './adminTech'
 import beta from './beta'
 import bulk from './bulk'
 import calls from './calls'
+import callCountries from './callCountries'
 import changeReq from './changeReq'
 import callInsights from './callInsights'
 import suggestedActions from './suggestedActions'
@@ -50,6 +51,7 @@ const messages = {
   ...beta,
   ...bulk,
   ...calls,
+  ...callCountries,
   ...changeReq,
   ...callInsights,
   ...suggestedActions,

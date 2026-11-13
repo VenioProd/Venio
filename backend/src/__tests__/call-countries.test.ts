@@ -7,6 +7,7 @@ import { createSession } from '../lib/session.js'
 import commercialRoutes from '../routes/commercial/index.js'
 import telephonyRoutes from '../routes/telephony/index.js'
 import { importCallLeads } from '../lib/callImports.js'
+import type { CallCountryRule as CountryRule } from '../lib/telephony/countries.js'
 import { addPhoneSuppression } from '../lib/callGuards.js'
 import { createBridgeCall, hangupProviderCall, placeCodeCall } from '../lib/telephony/rest.js'
 import Call from '../models/Call.js'
@@ -77,7 +78,7 @@ const openCountries = async (codes: string[], defaultCallerId = true) => {
   await CrmSettings.updateSettings({
     telephony: {
       ...telephony,
-      countries: telephony.countries!.map((rule) =>
+      countries: telephony.countries!.map((rule: CountryRule) =>
         codes.includes(rule.code) ? { ...rule, enabled: true, defaultCallerId } : rule,
       ),
     },

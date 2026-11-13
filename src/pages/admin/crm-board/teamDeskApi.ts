@@ -79,4 +79,6 @@ export const teamDesk: CallDeskApi = {
       for (const key of REFRESHED) if (key in lead) Object.assign(fresh, { [key]: lead[key] })
       return fresh
     }),
+  confirmBusinessContact: (leadId) =>
+    apiFetch(`/api/admin/crm/leads/${leadId}`, { method: 'PATCH', ...json({ businessContact: true }) }),
 }

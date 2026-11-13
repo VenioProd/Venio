@@ -31,8 +31,23 @@ export interface RepLead {
   handedOffAt: string | null
   /** Retenue après une opposition détectée sur un appel : la fiche n'est plus appelable en attendant la décision. */
   callHold?: { at: string; reason: string; call?: string | null } | null
+  /** Lot P : pays du numéro, contact confirmé professionnel, « non joignable » (plafond sans jamais joindre). */
+  phoneCountry?: string
+  businessContact?: boolean
+  callUnreachableAt?: string | null
+  /** File d'appels seulement : pays, fuseaux possibles et ce qui empêche d'appeler maintenant. */
+  callCheck?: CallCheck
   createdAt: string
   updatedAt: string
+}
+
+export type CallBlock =
+  'LEAD_NOT_CALLABLE' | 'NOT_BUSINESS_CONTACT' | 'COUNTRY_NOT_ALLOWED' | 'TIMEZONE_UNKNOWN' | 'OUTSIDE_CALLING_HOURS'
+
+export interface CallCheck {
+  country: string | null
+  timeZones: string[]
+  block: CallBlock | null
 }
 
 export interface RepActivity {
@@ -105,6 +120,7 @@ export type RepLeadInput = Partial<
     | 'leadTemperature'
     | 'lostReason'
     | 'lostComment'
+    | 'businessContact'
   >
 >
 
@@ -178,7 +194,15 @@ export const commercialApi = {
   previewCallImport: (csv: string) =>
     apiFetch<{ columns: string[] }>('/api/commercial/calls/import/preview', { method: 'POST', ...json({ csv }) }),
   importCalls: (
-    input: { csv: string; mapping: Record<string, string>; callList: string; project: string; region: string },
+    input: {
+      csv: string
+      mapping: Record<string, string>
+      callList: string
+      project: string
+      region: string
+      /** Lot P : case « contacts professionnels », obligatoire. */
+      businessContact: boolean
+    },
     key: string,
   ) =>
     apiFetch<CallImportReport>('/api/commercial/calls/import', {

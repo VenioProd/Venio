@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import './callCountries/callCountries.css'
 import { Link, useNavigate } from 'react-router-dom'
 import CustomSelect from '../../components/admin/CustomSelect'
 import { useI18n } from '../../context/I18nContext'
@@ -124,6 +125,18 @@ const CommercialLeads = () => {
             <label>
               {t('commercial.field.source')}
               <input {...field('source')} placeholder={t('commercial.field.sourcePlaceholder')} />
+            </label>
+            <label className="commercial-wide call-pro-check">
+              <input
+                type="checkbox"
+                required
+                checked={form.businessContact === true}
+                onChange={(event) => setForm({ ...form, businessContact: event.target.checked })}
+              />
+              <span>
+                {t('callCountries.proField')}
+                <small className="commercial-muted"> — {t('callCountries.proFieldHelp')}</small>
+              </span>
             </label>
           </div>
           <div className="admin-button-group" style={{ marginTop: 16 }}>

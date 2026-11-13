@@ -93,6 +93,7 @@ const CrmSettings = lazy(() => import('./pages/admin/crm-settings'))
 const Calendar = lazy(() => import('./pages/admin/Calendar'))
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
 const AccountSecurity = lazy(() => import('./pages/account/AccountSecurity'))
+const CommercialBridgeSettings = lazy(() => import('./pages/commercial/callCountries/BridgeSettings'))
 const AdminChangeRequestDetail = lazy(() => import('./pages/admin/change-requests/ChangeRequestDetail'))
 const AdminGuide = lazy(() => import('./pages/admin/AdminGuide'))
 const ClientGuide = lazy(() => import('./pages/espace-client/ClientGuide'))
@@ -298,7 +299,15 @@ function AppShell() {
                     <Route path="leads/:id" element={<CommercialLeadDetail />} />
                     <Route path="clients" element={<CommercialClients />} />
                     <Route path="commissions" element={<CommercialCommissions />} />
-                    <Route path="securite" element={<AccountSecurity />} />
+                    <Route
+                      path="securite"
+                      element={
+                        <>
+                          <AccountSecurity />
+                          <CommercialBridgeSettings prefix="/api/commercial" />
+                        </>
+                      }
+                    />
                   </Route>
 
                   {/* Admin */}

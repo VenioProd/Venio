@@ -7,7 +7,7 @@ import { createSession } from '../lib/session.js'
 import commercialRoutes from '../routes/commercial/index.js'
 import telephonyRoutes from '../routes/telephony/index.js'
 import { deleteProviderRecording, fetchProviderRecording, hangupProviderCall } from '../lib/telephony/rest.js'
-import { DEFAULT_CALL_COUNTRIES } from '../lib/telephony/countries.js'
+import { DEFAULT_CALL_COUNTRIES, type CallCountryRule as CountryRule } from '../lib/telephony/countries.js'
 import { validateCallAiSettings } from '../lib/callAiSettings.js'
 import Call from '../models/Call.js'
 import Lead from '../models/Lead.js'
@@ -209,7 +209,7 @@ it('power dialer bloqué vers les États-Unis (+1 hors Canada) ; aperçu et clic
   await CrmSettings.updateSettings({
     telephony: {
       ...telephony,
-      countries: telephony.countries!.map((rule) =>
+      countries: telephony.countries!.map((rule: CountryRule) =>
         ['CA', 'US'].includes(rule.code) ? { ...rule, enabled: true, defaultCallerId: true } : rule,
       ),
     },
