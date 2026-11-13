@@ -30,7 +30,8 @@ export interface SoftphoneController extends SoftphoneSnapshot {
   /** Réglages de la composition enchaînée (lot I). */
   dialer: DialerConfig
   microphones: { id: string; label: string }[]
-  start: (leadId: string) => void
+  /** `mode: 'power'` quand le power dialer lance l'appel. */
+  start: (leadId: string, mode?: 'power') => void
   hangup: () => void
   toggleMute: () => void
   sendDigit: (digit: string) => void
@@ -149,7 +150,7 @@ export function useSoftphone(
     recording,
     dialer,
     microphones,
-    start: useCallback((leadId: string) => void engine.start(leadId, prefix), [engine, prefix]),
+    start: useCallback((leadId: string, mode?: 'power') => void engine.start(leadId, prefix, mode), [engine, prefix]),
     hangup: useCallback(() => engine.hangup(), [engine]),
     toggleMute: useCallback(() => engine.toggleMute(), [engine]),
     sendDigit: useCallback((digit: string) => engine.sendDigit(digit), [engine]),

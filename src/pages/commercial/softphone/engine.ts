@@ -184,7 +184,7 @@ export class Softphone {
     if (!this.busy) this.update({ fallback: null, failure: null })
   }
 
-  async start(leadId: string, prefix: string = DEFAULT_CALLS_PREFIX) {
+  async start(leadId: string, prefix: string = DEFAULT_CALLS_PREFIX, mode?: 'power') {
     if (this.busy) return
     this.aborted = false
     // Un jeton émis par un autre routeur n'est pas réutilisable.
@@ -210,7 +210,8 @@ export class Softphone {
       const device = await this.prepareDevice(SdkDevice)
       this.guard()
       // Le serveur ne compte une tentative qu'une fois le micro et le jeton obtenus.
-      const { callId } = await this.api.create(leadId, this.deps.uuid())
+      const requestId = this.deps.uuid()
+      const { callId } = await (mode ? this.api.create(leadId, requestId, mode) : this.api.create(leadId, requestId))
       this.update({ callId, phase: 'connecting' })
       this.guard()
       await this.applyMicrophone(device)

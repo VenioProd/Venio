@@ -86,6 +86,7 @@ export const CALL_ERROR_CODES = [
   'OUTSIDE_CALLING_HOURS',
   'ATTEMPT_CAP_REACHED',
   'CALL_IN_PROGRESS',
+  'POWER_DIALER_BLOCKED',
 ] as const
 export type CallErrorCode = (typeof CALL_ERROR_CODES)[number]
 
@@ -104,10 +105,11 @@ export function createCallsApi(prefix: string = DEFAULT_CALLS_PREFIX) {
   return {
     config: () => apiFetch<CallsConfig>(`${prefix}/calls/config`),
     token: () => apiFetch<VoiceToken>(`${prefix}/calls/token`, { method: 'POST' }),
-    create: (leadId: string, clientRequestId: string) =>
+    /** `mode: 'power'` : lancé par le power dialer, que le serveur refuse vers les États-Unis. */
+    create: (leadId: string, clientRequestId: string, mode?: 'power') =>
       apiFetch<{ callId: string }>(`${prefix}/leads/${encodeURIComponent(leadId)}/calls`, {
         method: 'POST',
-        body: JSON.stringify({ clientRequestId }),
+        body: JSON.stringify(mode ? { clientRequestId, mode } : { clientRequestId }),
       }),
     get: (callId: string) => apiFetch<CallRecord>(call(callId)),
     hangup: (callId: string) => apiFetch<{ status: CallStatus }>(`${call(callId)}/hangup`, { method: 'POST' }),

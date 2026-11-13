@@ -23,8 +23,11 @@ export interface DialerStop {
   code?: CallErrorCode
 }
 
-/** Refus qui écartent seulement la fiche : l'enchaînement continue avec la suivante. */
-const SKIPPED: readonly CallErrorCode[] = ['LEAD_NOT_CALLABLE', 'ATTEMPT_CAP_REACHED']
+/**
+ * Refus qui écartent seulement la fiche : l'enchaînement continue avec la suivante. Le power dialer
+ * est refusé vers les États-Unis (+1 hors Canada) jusqu'à avis juridique ; l'aperçu et le clic restent permis.
+ */
+const SKIPPED: readonly CallErrorCode[] = ['LEAD_NOT_CALLABLE', 'ATTEMPT_CAP_REACHED', 'POWER_DIALER_BLOCKED']
 const TICK_MS = 200
 
 type Phone = Pick<SoftphoneController, 'active' | 'lastCall' | 'start'>
@@ -123,7 +126,7 @@ export function useDialer(options: DialerOptions): Dialer {
       if (!target || phone.active) return
       fired.current = armedKey
       setFirst(false)
-      phone.start(target)
+      phone.start(target, latest.current.mode === 'power' ? 'power' : undefined)
     }, TICK_MS)
     const kickoff = setTimeout(tick, 0)
     return () => {
@@ -198,7 +201,7 @@ export function useDialer(options: DialerOptions): Dialer {
     if (!target || phone.active) return
     setArm(null)
     setFirst(false)
-    phone.start(target)
+    phone.start(target, latest.current.mode === 'power' ? 'power' : undefined)
   }, [])
 
   const exhausted = running && idle && !leadId && !softphone.active

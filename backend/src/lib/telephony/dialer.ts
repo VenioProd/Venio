@@ -1,4 +1,5 @@
 import mongoose, { Schema, type Types } from 'mongoose'
+import { parsePhoneNumberFromString } from 'libphonenumber-js'
 import Call, { type ICall } from '../../models/Call.js'
 import type { ICrmSettings } from '../../types/models/index.js'
 import { DIAL_TIME_LIMIT_SEC, telephonyError } from './index.js'
@@ -23,6 +24,15 @@ export function dialerSettings(settings: Pick<ICrmSettings, 'telephony'>) {
     previewDelaySec: value?.previewDelaySec ?? DIALER_DEFAULTS.previewDelaySec,
     powerDelaySec: value?.powerDelaySec ?? DIALER_DEFAULTS.powerDelaySec,
   }
+}
+
+/**
+ * Décision du propriétaire (13 nov. 2026) : pas de power dialer vers les États-Unis jusqu'à avis
+ * juridique (TCPA). Bloqué : tout +1 hors Canada (numéros verts compris, faute de pouvoir les situer).
+ * L'aperçu et le clic restent permis.
+ */
+export function powerDialerBlocked(to: string | null | undefined): boolean {
+  return Boolean(to?.startsWith('+1')) && parsePhoneNumberFromString(to!)?.country !== 'CA'
 }
 
 interface ICallerLine {

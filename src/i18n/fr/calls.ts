@@ -57,6 +57,7 @@ const fr = {
     'L’arrêt n’a pas pu être confirmé. Réessayez tout de suite : l’enregistrement continue peut-être.',
   'calls.status.MACHINE': 'Messagerie détectée : appel raccroché, résultat « messagerie » noté.',
   'calls.error.CALL_IN_PROGRESS': 'Un autre appel est déjà en cours sur votre compte (autre onglet ?).',
+  'calls.error.POWER_DIALER_BLOCKED': 'Power dialer non autorisé vers les États-Unis : appelez en aperçu ou au clic.',
   'calls.dialer.group': 'Mode d’appel',
   'calls.dialer.mode.click': 'Au clic',
   'calls.dialer.mode.preview': 'Aperçu',

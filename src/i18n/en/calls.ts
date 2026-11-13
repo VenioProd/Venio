@@ -57,6 +57,7 @@ const en = {
     'The stop could not be confirmed. Try again right away: the recording may still be running.',
   'calls.status.MACHINE': 'Voicemail detected: call hung up, “voicemail” outcome logged.',
   'calls.error.CALL_IN_PROGRESS': 'Another call is already in progress on your account (another tab?).',
+  'calls.error.POWER_DIALER_BLOCKED': 'Power dialer not allowed to United States numbers: use preview or click mode.',
   'calls.dialer.group': 'Calling mode',
   'calls.dialer.mode.click': 'On click',
   'calls.dialer.mode.preview': 'Preview',

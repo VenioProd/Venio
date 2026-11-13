@@ -16,7 +16,14 @@ import {
   telephonyError,
 } from '../../lib/telephony/index.js'
 import { fetchProviderRecording, hangupProviderCall } from '../../lib/telephony/rest.js'
-import { claimLine, confirmLine, dialerSettings, releaseLine, repointLine } from '../../lib/telephony/dialer.js'
+import {
+  claimLine,
+  confirmLine,
+  dialerSettings,
+  powerDialerBlocked,
+  releaseLine,
+  repointLine,
+} from '../../lib/telephony/dialer.js'
 import {
   objectToRecording,
   publicRecording,
@@ -75,6 +82,8 @@ export function createCallsRoutes(scope: CallDeskScope) {
     scope.write,
     requireTelephony,
     body('clientRequestId').isUUID(),
+    // Mode d'appel du navigateur (lot I) : seul `power` change quelque chose (refus vers les États-Unis).
+    body('mode').optional().isIn(['click', 'preview', 'power']),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         if (!validationResult(req).isEmpty()) throw telephonyError(400, 'VALIDATION_ERROR')
@@ -102,6 +111,7 @@ export function createCallsRoutes(scope: CallDeskScope) {
         const to = normalizePhone(String(lead.contactPhone ?? ''), settings.callDefaultRegion)
         if (to && (await isPhoneSuppressed(to, settings.callDefaultRegion)))
           throw telephonyError(409, 'PHONE_SUPPRESSED')
+        if (req.body.mode === 'power' && powerDialerBlocked(to)) throw telephonyError(409, 'POWER_DIALER_BLOCKED')
         const now = new Date()
         const attemptDay = localClock(now, settings.telephony.callingHours.timezone).day
         // Jamais deux appels à la fois pour un même utilisateur (lot I) : la ligne est réservée avant la

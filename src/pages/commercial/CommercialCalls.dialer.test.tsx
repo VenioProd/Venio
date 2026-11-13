@@ -168,6 +168,19 @@ describe('CommercialCalls — composition enchaînée', () => {
     expect(sdk.calls).toHaveLength(2)
   })
 
+  it('power dialer : un numéro des États-Unis refusé par le serveur est passé, la suivante est appelée', async () => {
+    refusals = { lead1: 'POWER_DIALER_BLOCKED' }
+    renderCalls()
+    fireEvent.click(await screen.findByRole('button', { name: 'Power dialer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Démarrer' }))
+    await waitFor(() => expect(sdk.calls).toHaveLength(1))
+    expect(launches().map((item) => [item.path, item.body?.mode])).toEqual([
+      ['/api/commercial/leads/lead1/calls', 'power'],
+      ['/api/commercial/leads/lead2/calls', 'power'],
+    ])
+    expect(outcomes()).toHaveLength(0)
+  })
+
   it('messagerie détectée au clic : raccroché par le serveur, résultat « messagerie » noté d’office', async () => {
     records['call-lead1'] = { _id: 'call-lead1', status: 'COMPLETED', answeredBy: 'MACHINE', suggestedOutcome: 'MSG' }
     renderCalls()
@@ -178,6 +191,7 @@ describe('CommercialCalls — composition enchaînée', () => {
     lastCall().emit('disconnect')
     await waitFor(() => expect(outcomes()).toHaveLength(1))
     expect(outcomes()[0]!.body).toMatchObject({ callId: 'call-lead1', outcome: 'MSG' })
+    expect(launches()[0]!.body).not.toHaveProperty('mode')
     // Au clic, rien ne part ensuite tout seul.
     await new Promise((resolve) => setTimeout(resolve, 300))
     expect(sdk.calls).toHaveLength(1)

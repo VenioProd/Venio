@@ -199,6 +199,18 @@ it('humain détecté : rien ne coupe ; détection coupée dans les réglages : p
   expect((await voice(second, 'CAp2')).text).not.toContain('machineDetection')
 })
 
+it('power dialer bloqué vers les États-Unis (+1 hors Canada) ; aperçu et clic permis', async () => {
+  const [newYork, montreal] = await Promise.all([lead('NY', '+12125550123'), lead('Montréal', '+15145550123')])
+  const power = await post(`/leads/${newYork._id}/calls`, { clientRequestId: crypto.randomUUID(), mode: 'power' })
+  expect([power.status, power.body.code]).toEqual([409, 'POWER_DIALER_BLOCKED'])
+  expect(await Call.countDocuments()).toBe(0)
+  const canada = await post(`/leads/${montreal._id}/calls`, { clientRequestId: crypto.randomUUID(), mode: 'power' })
+  expect(canada.status).toBe(201)
+  await post(`/calls/${canada.body.callId}/hangup`)
+  const preview = await post(`/leads/${newYork._id}/calls`, { clientRequestId: crypto.randomUUID(), mode: 'preview' })
+  expect(preview.status).toBe(201)
+})
+
 it('réglages du dialer : bornés, facultatifs pour les écrans qui ne les envoient pas', () => {
   const callingHours = { timezone: 'Europe/Paris', days: [1, 2, 3, 4, 5], start: '09:00', end: '20:00' }
   expect(() => validateCallAiSettings({ telephony: { callingHours, attemptCapPerDay: 3 } })).not.toThrow()
