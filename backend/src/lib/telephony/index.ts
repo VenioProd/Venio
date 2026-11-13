@@ -26,7 +26,7 @@ export interface TelephonyConfig {
 
 export const TOKEN_TTL_SEC = 600
 /** Durée maximale d'une communication, en secondes (attribut `timeLimit` de `<Dial>`). */
-const DIAL_TIME_LIMIT_SEC = 3600
+export const DIAL_TIME_LIMIT_SEC = 3600
 
 export function telephonyConfig(): TelephonyConfig | null {
   const env = process.env
@@ -90,6 +90,11 @@ export function statusCallbackUrl(config: TelephonyConfig, callId: string): stri
   return `${config.publicBaseUrl}/api/telephony/twilio/status?callId=${callId}`
 }
 
+/** Rappel de la détection de messagerie de `<Number>` (asynchrone : l'appelé est déjà relié au commercial). */
+export function amdCallbackUrl(config: TelephonyConfig, callId: string): string {
+  return `${config.publicBaseUrl}/api/telephony/twilio/amd?callId=${callId}`
+}
+
 /** Rappel de l'enregistrement de `<Dial>` (`in-progress`, `completed`, `absent`). */
 export function recordingCallbackUrl(config: TelephonyConfig, callId: string): string {
   return `${config.publicBaseUrl}/api/telephony/twilio/recording?callId=${callId}`
@@ -102,7 +107,11 @@ export function recordingCallbackUrl(config: TelephonyConfig, callId: string): s
  * canal 2 = l'appelé. L'annonce, jouée à l'appelé seul après sa décroche et
  * avant la mise en relation, passe par l'attribut `url` de `<Number>`.
  */
-export function dialTwiml(config: TelephonyConfig, call: Pick<ICall, '_id' | 'to' | 'from' | 'recording'>): string {
+export function dialTwiml(
+  config: TelephonyConfig,
+  call: Pick<ICall, '_id' | 'to' | 'from' | 'recording'>,
+  options: { voicemailDetection?: boolean } = {},
+): string {
   const callId = String(call._id)
   const recorded = Boolean(call.recording && !call.recording.objection)
   const response = new twilio.twiml.VoiceResponse()
@@ -125,6 +134,15 @@ export function dialTwiml(config: TelephonyConfig, call: Pick<ICall, '_id' | 'to
       statusCallback: statusCallbackUrl(config, callId),
       statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
       statusCallbackMethod: 'POST',
+      // Détection de messagerie (lot I) : `Enable` rend son verdict dès les premières secondes, sans
+      // attendre le bip ; sur `<Number>` elle est toujours asynchrone (rappel `amdStatusCallback`).
+      ...(options.voicemailDetection
+        ? {
+            machineDetection: 'Enable',
+            amdStatusCallback: amdCallbackUrl(config, callId),
+            amdStatusCallbackMethod: 'POST',
+          }
+        : {}),
       ...(recorded && call.recording?.notice
         ? { url: `${config.publicBaseUrl}/api/telephony/twilio/notice?callId=${callId}`, method: 'POST' as const }
         : {}),

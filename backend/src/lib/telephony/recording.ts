@@ -28,6 +28,8 @@ import { deleteProviderRecording, fetchProviderRecording, stopProviderRecording 
  *   impossible), plus `keepAudioDays` ; l'opposition et l'anonymisation
  *   l'effacent sans attendre ;
  * - une opposition empêche tout transcript et toute analyse ;
+ * - un répondeur détecté (`answeredBy: 'MACHINE'`, lot I) aussi : son audio est
+ *   effacé dès que l'opérateur le livre ;
  * - aucune donnée d'appel dans les journaux : identifiants et codes seulement.
  */
 
@@ -157,7 +159,14 @@ async function scheduleAudioDeletion(callId: Types.ObjectId | string, now = new 
 /** Enregistrement prêt → demande de transcript (le canal 1, appel parent, porte le commercial). */
 export async function transcribeRecording(call: ICall): Promise<void> {
   const recording = call.recording
-  if (!telephonyConfig() || !recording || recording.status !== 'READY' || recording.objection || recording.deleteAt)
+  if (
+    !telephonyConfig() ||
+    !recording ||
+    recording.status !== 'READY' ||
+    recording.objection ||
+    recording.deleteAt ||
+    call.answeredBy === 'MACHINE'
+  )
     return
   const callId = String(call._id)
   await requestTranscription({
@@ -203,8 +212,9 @@ export async function onRecordingEvent(callId: string, body: Record<string, unkn
       'recording.completedAt': now,
     }
     const pending = { _id: call._id, 'recording.status': { $in: ['NONE', 'RECORDING', 'STOPPED'] } }
+    // Opposition, ou répondeur : rien n'est gardé.
     const objected = await Call.findOneAndUpdate(
-      { ...pending, 'recording.objection': true },
+      { ...pending, $or: [{ 'recording.objection': true }, { answeredBy: 'MACHINE' }] },
       { $set: { ...completed, 'recording.status': 'STOPPED', 'recording.deleteAt': now } },
       { new: true },
     )
@@ -213,7 +223,7 @@ export async function onRecordingEvent(callId: string, body: Record<string, unkn
       return null
     }
     return Call.findOneAndUpdate(
-      { ...pending, 'recording.objection': false },
+      { ...pending, 'recording.objection': false, answeredBy: { $ne: 'MACHINE' } },
       { $set: { ...completed, 'recording.status': 'READY' } },
       { new: true },
     )
@@ -254,10 +264,28 @@ export async function objectToRecording(callId: Types.ObjectId): Promise<ICall> 
   return (await Call.findById(callId))!
 }
 
+/**
+ * Répondeur détecté (lot I) : l'audio capté avant le raccrochage est effacé
+ * dès qu'il est terminé chez l'opérateur, et rien n'en est transcrit ni analysé.
+ * Rejouable.
+ */
+export async function discardVoicemailAudio(callId: Types.ObjectId | string): Promise<void> {
+  const now = new Date()
+  await Call.updateOne(
+    { _id: callId, 'recording.status': { $in: HELD_STATUSES }, 'recording.deleteAt': null },
+    { $set: { 'recording.deleteAt': now } },
+  )
+  const call = await Call.findById(callId).select('_id recording').lean()
+  // Pas encore terminé : le rappel `completed` l'effacera (voir `onRecordingEvent`).
+  if (call?.recording?.completedAt && HELD_STATUSES.includes(call.recording.status)) await deleteRecording(call)
+  await discardTranscripts({ call: callId })
+  await CallAnalysis.deleteMany({ call: callId })
+}
+
 /** Transcript obtenu : échéance de l'audio, puis analyse en arrière-plan. */
 export async function handleTranscriptDone(t: TranscriptDone): Promise<void> {
-  const call = await Call.findById(t.callId).select('recording').lean()
-  if (call?.recording?.objection) {
+  const call = await Call.findById(t.callId).select('recording answeredBy').lean()
+  if (call?.recording?.objection || call?.answeredBy === 'MACHINE') {
     await discardTranscripts({ call: t.callId })
     return
   }

@@ -125,6 +125,8 @@ export interface ICrmSettings extends Document {
   telephony: {
     callingHours: { timezone: string; days: number[]; start: string; end: string }
     attemptCapPerDay: number
+    /** Absent des réglages antérieurs au lot I : lire par `dialerSettings`. */
+    dialer?: { voicemailDetection: boolean; previewDelaySec: number; powerDelaySec: number }
   }
   roundRobinEnabled: boolean
   autoQualifyEnabled: boolean

@@ -9,6 +9,8 @@ import RecentCalls, { type RecentCall } from './RecentCalls'
 import CallBar from './softphone/CallBar'
 import { useSoftphone } from './softphone/useSoftphone'
 import type { SettledCall } from './softphone/engine'
+import DialerPanel from './softphone/DialerPanel'
+import { DIALER_MODES, useDialer, type DialerMode } from './softphone/dialer'
 
 const KIND_KEYS = {
   CALL: 'commercial.kind.call',
@@ -57,6 +59,22 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
   const saving = useRef(false)
   const completed = useRef(new Set<string>())
   const attempt = useRef<{ body: string; key: string } | null>(null)
+  // Mode d'appel (lot I), mémorisé par utilisateur dans ce navigateur.
+  const modeKey = `venio-dialer-mode:${user?._id ?? ''}`
+  const [mode, setMode] = useState<DialerMode>(() => {
+    try {
+      const stored = localStorage.getItem(modeKey) as DialerMode | null
+      return stored && DIALER_MODES.includes(stored) ? stored : 'click'
+    } catch {
+      return 'click'
+    }
+  })
+  const changeMode = (value: DialerMode) => {
+    setMode(value)
+    try {
+      localStorage.setItem(modeKey, value)
+    } catch {}
+  }
 
   useEffect(() => {
     let active = true
@@ -157,6 +175,28 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
   }
   // Après l'appel : le résultat se présélectionne d'après l'état final, et le callId part avec la fiche.
   const softphone = useSoftphone({ onSettled: (call) => settleCall(call), apiPrefix: desk.apiPrefix })
+  const openLead = leads.find((item) => item._id === selected) ?? null
+  const pendingOutcome = Boolean(openLead && draftFor(openLead).callId)
+  const dialer = useDialer({
+    mode: softphone.unavailable ? 'click' : mode,
+    config: softphone.dialer,
+    leadId: openLead?._id ?? null,
+    idle: !busy && !loading,
+    ready:
+      !busy &&
+      !loading &&
+      !softphone.unavailable &&
+      !softphone.checking &&
+      Boolean(openLead?.contactPhone) &&
+      !openLead?.callHold,
+    pendingOutcome,
+    softphone,
+    onSkip: (leadId) => void skipLead(leadId),
+  })
+  const startDialer = () => {
+    if (!openLead) open(leads[0]?._id ?? null)
+    dialer.start()
+  }
   const settleCall = (call: SettledCall) => {
     const lead = leads.find((item) => item._id === call.leadId)
     if (!lead) return
@@ -181,6 +221,10 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
       (!draft.outcome || draft.outcome === autoOutcomes[lead._id])
     if (preselect) setAutoOutcomes((current) => ({ ...current, [lead._id]: suggested }))
     changeDraft(lead, { callId: call.callId, ...(preselect ? { outcome: suggested } : {}) })
+    // Messagerie détectée (tous modes) ou appel sans réponse pendant l'enchaînement : le résultat
+    // suggéré est enregistré d'office (annulable deux minutes) et la file passe à la suivante.
+    if (preselect && (call.record?.answeredBy === 'MACHINE' || dialer.running))
+      void save(lead, { callId: call.callId, outcome: suggested })
   }
   const open = (id: string | null) => {
     if (!saving.current && !softphone.active) {
@@ -216,8 +260,8 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
       setLoading(false)
     }
   }
-  const save = async (lead: RepLead) => {
-    const draft = draftFor(lead)
+  const save = async (lead: RepLead, override: Partial<Draft> = {}) => {
+    const draft = { ...draftFor(lead), ...override }
     const outcome = settings?.outcomes.find((item) => item.value === draft.outcome)
     if (saving.current || softphone.active || !outcome || (outcome.effect === 'CALLBACK' && !draft.nextActionAt)) return
     saving.current = true
@@ -249,12 +293,38 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
         nextId = data.leads[0]?._id ?? null
       }
       setSelected(nextId)
+      if (outcome.effect === 'DO_NOT_CALL' && dialer.running) dialer.halt('OPPOSITION')
+      else if (!nextId && dialer.running) dialer.halt('EMPTY')
     } catch (err) {
       setError((err as Error).message)
+      if (dialer.running) dialer.halt('FAILED')
     } finally {
       saving.current = false
       setBusy(false)
     }
+  }
+  /** Fiche écartée par l'enchaînement (refus de garde, « Passer ») : hors de la liste, sans résultat. */
+  // Appelée aussi par le moteur au moment du refus : l'état d'appel de ce rendu peut déjà être périmé.
+  const skipLead = async (leadId: string) => {
+    if (saving.current) return
+    completed.current.add(leadId)
+    const index = leads.findIndex((item) => item._id === leadId)
+    const remaining = leads.filter((item) => item._id !== leadId)
+    setLeads(remaining)
+    let nextId = remaining[index]?._id ?? remaining[0]?._id ?? null
+    setSelected(nextId)
+    if (!nextId && cursor) {
+      try {
+        const data = await followingPage(cursor)
+        setLeads(data.leads)
+        setCursor(data.nextCursor)
+        nextId = data.leads[0]?._id ?? null
+        setSelected(nextId)
+      } catch (err) {
+        setError((err as Error).message)
+      }
+    }
+    if (!nextId) dialer.halt('EMPTY')
   }
   const undo = async () => {
     if (!saved || saving.current) return
@@ -468,6 +538,18 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
         canLiftHold={desk.canLiftHold}
         onDismiss={(callId) => setRecentCalls((current) => current.filter((item) => item.callId !== callId))}
         onApplied={reloadLead}
+      />
+      <DialerPanel
+        mode={softphone.unavailable ? 'click' : mode}
+        onMode={changeMode}
+        dialer={{ ...dialer, start: startDialer }}
+        config={softphone.dialer}
+        company={openLead?.company ?? null}
+        calling={softphone.active}
+        pendingOutcome={pendingOutcome}
+        busy={busy || loading}
+        unavailable={Boolean(softphone.unavailable)}
+        onSkip={() => openLead && void skipLead(openLead._id)}
       />
       {loading && <p role="status">{t('commercial.loading')}</p>}
       {!loading && !leads.length && <p>{t('commercial.calls.empty')}</p>}

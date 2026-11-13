@@ -119,6 +119,14 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
       },
       // Tentatives par numéro et par jour local, tous commerciaux confondus.
       attemptCapPerDay: { type: Number, default: 3, min: 1, max: 20 },
+      // Composition enchaînée et détection de messagerie (vague 4, lot I).
+      dialer: {
+        voicemailDetection: { type: Boolean, default: true },
+        // Aperçu : la fiche s'affiche, l'appel part après ce délai (0 = au clic seulement).
+        previewDelaySec: { type: Number, default: 10, min: 0, max: 120 },
+        // Power dialer : délai entre la saisie du résultat et l'appel suivant.
+        powerDelaySec: { type: Number, default: 3, min: 0, max: 60 },
+      },
     },
     roundRobinEnabled: { type: Boolean, default: true },
 

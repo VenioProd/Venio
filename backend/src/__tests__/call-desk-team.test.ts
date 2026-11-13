@@ -380,7 +380,11 @@ it('mise en relation : autre identité, auteur désactivé, sans droit d’appel
   const settings = await CrmSettings.getSettings()
   await CrmSettings.updateSettings({ telephony: { ...settings.toObject().telephony, attemptCapPerDay: 10 } } as never)
   const connect = async (from: string, callId: string) => (await voice(callId, from)).text
-  const callOf = async () => String((await launch(com, fiche._id)).body.callId)
+  // Les appels restent ouverts d'un cas à l'autre : la ligne unique (lot I) n'est pas l'objet de ce test.
+  const callOf = async () => {
+    await mongoose.connection.collection('callerlines').deleteMany({})
+    return String((await launch(com, fiche._id)).body.callId)
+  }
 
   // Un membre de l'équipe est mis en relation sur le numéro relu sur la fiche.
   const ok = await callOf()
