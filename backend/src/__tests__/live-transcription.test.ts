@@ -98,6 +98,10 @@ async function placeCall(callSid = 'CAparent1') {
   return { callId, twiml: voice.text, token }
 }
 
+/** Fin d'appel signalée par Twilio : libère la ligne de l'auteur (un appel à la fois, lot I). */
+const endCall = (callId: string, parent: string) =>
+  twilioPost(`/status?callId=${callId}`, { CallSid: `${parent}-child`, ParentCallSid: parent, CallStatus: 'completed' })
+
 /** Le flux que Twilio ouvrirait : poignée de main signée, puis `connected` et `start`. */
 async function openStream(
   start: { callId: string; token: string; callSid?: string },
@@ -228,6 +232,7 @@ it('TwiML : flux des deux voix seulement si le réglage est actif et l’appel e
   const off = await placeCall('CAoff')
   expect(off.twiml).not.toContain('<Start>')
   expect(await openLive(off.callId, cookieA).ready).toBe(204)
+  await endCall(off.callId, 'CAoff')
 
   await setLive(true)
   const on = await placeCall('CAon')
@@ -237,11 +242,14 @@ it('TwiML : flux des deux voix seulement si le réglage est actif et l’appel e
   )
   expect(on.token).not.toBe('')
   expect(on.twiml).toContain('record="record-from-answer-dual"')
+  await endCall(on.callId, 'CAon')
 
   // Traitement en Europe exigé : un point d'accès hors UE désactive le direct, sans repli.
   const euUrl = process.env.ASSEMBLYAI_STREAMING_URL
   process.env.ASSEMBLYAI_STREAMING_URL = 'wss://streaming.assemblyai.com/v3/ws'
-  expect((await placeCall('CAus')).twiml).not.toContain('<Start>')
+  const us = await placeCall('CAus')
+  expect(us.twiml).not.toContain('<Start>')
+  await endCall(us.callId, 'CAus')
   process.env.ASSEMBLYAI_STREAMING_URL = euUrl
 
   // Appel non enregistré (enregistrement coupé) : pas de direct, le prospect n'a pas été prévenu.
