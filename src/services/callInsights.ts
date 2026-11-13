@@ -120,13 +120,33 @@ export interface AnalysisResponse {
   current: Record<string, unknown>
   /** Champs que l'auteur peut accepter ; les autres reviennent à l'équipe. Absent : tous. */
   acceptableKeys?: FieldKey[]
+  /** Choix des actions `SEQUENCE` et `HANDOFF` ; absent : ces actions ne s'acceptent pas. */
+  actionChoices?: ActionChoices
+}
+
+export interface ActionChoices {
+  /** `CLOSER` : passage au closer (externe) ; `MEMBER` : réassignation au membre choisi (équipe). */
+  handoff: 'CLOSER' | 'MEMBER'
+  /** Types réservés à l'équipe dans cet espace. */
+  teamOnly: ActionType[]
+  sequences: { _id: string; name: string; status: string }[]
+  /** Séquence nommée par l'analyse, par identifiant d'action. */
+  suggestedSequences: Record<string, string>
+  members: { _id: string; name: string }[]
 }
 
 export interface ApplyInput {
   clientRequestId: string
   fields: { key: FieldKey; action: ReviewAction; value?: FieldValue }[]
   heat: { action: ReviewAction; level?: HeatLevel }
-  actions: { id: string; action: 'ACCEPT' | 'IGNORE'; label?: string; dueAt?: string | null }[]
+  actions: {
+    id: string
+    action: 'ACCEPT' | 'IGNORE'
+    label?: string
+    dueAt?: string | null
+    sequenceId?: string
+    assigneeId?: string
+  }[]
 }
 
 export const DEFAULT_API_PREFIX = '/api/commercial'

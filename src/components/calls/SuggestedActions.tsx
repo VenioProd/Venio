@@ -1,8 +1,16 @@
 import { useId } from 'react'
 import { useI18n } from '../../context/I18nContext'
 import { formatDateTime } from '../../i18n/format'
-import type { AnalysisReview, ProposedAction } from '../../services/callInsights'
-import { isActionAcceptable, MAX_ACTIONS, recordedDecision, type ActionState } from './reviewModel'
+import type { ActionChoices, AnalysisReview, ProposedAction } from '../../services/callInsights'
+import {
+  CHOICE_ACTIONS,
+  isActionAcceptable,
+  MAX_ACTIONS,
+  missingChoice,
+  recordedDecision,
+  type ActionState,
+} from './reviewModel'
+import { refusalReason } from './SuggestedActions.errors'
 import { DecisionBadge, GestureButton, ProposalTag } from './ui'
 import './callInsights.css'
 
@@ -12,6 +20,16 @@ interface SuggestedActionsProps {
   onChange: (id: string, next: ActionState) => void
   review?: AnalysisReview | null
   readOnly?: boolean
+  /** Choix des actions `SEQUENCE` et `HANDOFF` ; absent : elles se lisent sans s'accepter. */
+  choices?: ActionChoices
+}
+
+/** Ce qu'a produit une action `SEQUENCE` / `HANDOFF` acceptée (`after` de la décision enregistrée). */
+interface ChoiceOutcome {
+  sequenceName?: string
+  enrollment?: { status: 'ENROLLED' } | { status: 'REFUSED'; reason: string }
+  closingHandoff?: boolean
+  assigneeName?: string
 }
 
 /** ISO → valeur d'un `datetime-local` (heure locale). */
@@ -34,6 +52,7 @@ export default function SuggestedActions({
   onChange,
   review = null,
   readOnly = false,
+  choices,
 }: SuggestedActionsProps) {
   const { t } = useI18n()
   const id = useId()
@@ -53,12 +72,38 @@ export default function SuggestedActions({
             const recorded = recordedDecision(review, action.id)
             const dateId = `${id}-${action.id}-date`
             const labelId = `${id}-${action.id}-label`
-            const acceptable = isActionAcceptable(action)
+            const acceptable = isActionAcceptable(action, choices)
+            const withChoice = CHOICE_ACTIONS.includes(action.type)
+            const toMember = action.type === 'HANDOFF' && choices?.handoff === 'MEMBER'
+            const missing = acceptable ? missingChoice(action, current, choices) : null
+            const hintId = `${id}-${action.id}-hint`
+            const selectId = `${id}-${action.id}-choice`
+            const outcome = (recorded?.action === 'ACCEPT' ? recorded.after : null) as ChoiceOutcome | null
+            const outcomeText = !outcome
+              ? ''
+              : outcome.sequenceName
+                ? outcome.enrollment?.status === 'REFUSED'
+                  ? t('suggestedActions.recorded.refused', {
+                      name: outcome.sequenceName,
+                      reason: refusalReason(outcome.enrollment.reason, t),
+                    })
+                  : t(outcome.enrollment ? 'suggestedActions.recorded.enrolled' : 'suggestedActions.recorded.pending', {
+                      name: outcome.sequenceName,
+                    })
+                : outcome.closingHandoff
+                  ? t('suggestedActions.recorded.closer')
+                  : outcome.assigneeName !== undefined
+                    ? t('suggestedActions.recorded.member', { name: outcome.assigneeName })
+                    : ''
             return (
               <li key={action.id} className="ci-proposed ci-action">
                 <div className="ci-action-head">
                   <ProposalTag />
-                  <span className="ci-tag">{t(`callInsights.actions.type.${action.type}`)}</span>
+                  <span className="ci-tag">
+                    {toMember
+                      ? t('suggestedActions.type.HANDOFF_MEMBER')
+                      : t(`callInsights.actions.type.${action.type}`)}
+                  </span>
                   {readOnly && <DecisionBadge action={recorded?.action ?? null} />}
                 </div>
                 <p className="ci-action-label">{current.label?.trim() || action.label}</p>
@@ -67,16 +112,105 @@ export default function SuggestedActions({
                 </p>
                 {!acceptable && (
                   <p className="ci-muted" id={`${id}-${action.id}-unavailable`}>
-                    {t('callInsights.actions.notExecuted')}
+                    {choices?.teamOnly.includes(action.type)
+                      ? t('suggestedActions.teamOnly')
+                      : t('callInsights.actions.notExecuted')}
                   </p>
                 )}
                 {readOnly ? (
-                  <p className="ci-muted">
-                    {t('callInsights.actions.due')} {formatDateTime(action.dueAt) || t('callInsights.actions.noDate')}
-                  </p>
+                  withChoice ? (
+                    outcomeText && <p className="ci-muted">{outcomeText}</p>
+                  ) : (
+                    <p className="ci-muted">
+                      {t('callInsights.actions.due')} {formatDateTime(action.dueAt) || t('callInsights.actions.noDate')}
+                    </p>
+                  )
                 ) : (
                   <div className="ci-action-controls">
-                    {acceptable && (
+                    {acceptable && action.type === 'SEQUENCE' && (
+                      <>
+                        {choices!.sequences.length === 0 ? (
+                          <p className="ci-muted">{t('suggestedActions.sequence.none')}</p>
+                        ) : (
+                          <label className="ci-inline-field" htmlFor={selectId}>
+                            <span>{t('suggestedActions.sequence.field')}</span>
+                            <select
+                              id={selectId}
+                              className="portal-input"
+                              value={current.sequenceId ?? ''}
+                              aria-describedby={hintId}
+                              onChange={(event) =>
+                                onChange(action.id, {
+                                  ...current,
+                                  sequenceId: event.target.value || undefined,
+                                  // Sans choix, l'action n'est plus acceptée.
+                                  decision: event.target.value ? current.decision : null,
+                                })
+                              }
+                            >
+                              <option value="">{t('suggestedActions.sequence.placeholder')}</option>
+                              {choices!.sequences.map((sequence) => (
+                                <option key={sequence._id} value={sequence._id}>
+                                  {choices!.suggestedSequences[action.id] === sequence._id
+                                    ? t('suggestedActions.sequence.suggested', { name: sequence.name })
+                                    : sequence.status === 'DRAFT' || sequence.status === 'PAUSED'
+                                      ? t(`suggestedActions.sequence.status.${sequence.status}`, {
+                                          name: sequence.name,
+                                        })
+                                      : sequence.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+                        <p className="ci-muted" id={hintId}>
+                          {missing ? t('suggestedActions.sequence.missing') : t('suggestedActions.sequence.guards')}
+                        </p>
+                      </>
+                    )}
+                    {acceptable && action.type === 'HANDOFF' && !toMember && (
+                      <p className="ci-muted" id={hintId}>
+                        {t('suggestedActions.handoff.closer')}
+                      </p>
+                    )}
+                    {acceptable && toMember && (
+                      <>
+                        {choices!.members.length === 0 ? (
+                          <p className="ci-muted">{t('suggestedActions.handoff.none')}</p>
+                        ) : (
+                          <label className="ci-inline-field" htmlFor={selectId}>
+                            <span>{t('suggestedActions.handoff.member')}</span>
+                            <select
+                              id={selectId}
+                              className="portal-input"
+                              value={current.assigneeId ?? ''}
+                              aria-describedby={missing ? hintId : undefined}
+                              onChange={(event) =>
+                                onChange(action.id, {
+                                  ...current,
+                                  assigneeId: event.target.value || undefined,
+                                  // Sans choix, l'action n'est plus acceptée.
+                                  decision: event.target.value ? current.decision : null,
+                                })
+                              }
+                            >
+                              <option value="">{t('suggestedActions.handoff.placeholder')}</option>
+                              {choices!.members.map((member) => (
+                                <option key={member._id} value={member._id}>
+                                  {member.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+                        {missing && (
+                          <p className="ci-muted" id={hintId}>
+                            {t('suggestedActions.handoff.missing')}
+                          </p>
+                        )}
+                      </>
+                    )}
+                    {acceptable && !withChoice && (
                       <label className="ci-inline-field" htmlFor={labelId}>
                         <span>{t('callInsights.actions.labelField')}</span>
                         <input
@@ -89,7 +223,7 @@ export default function SuggestedActions({
                         />
                       </label>
                     )}
-                    {acceptable && (
+                    {acceptable && !withChoice && (
                       <label className="ci-inline-field" htmlFor={dateId}>
                         <span>{t('callInsights.actions.due')}</span>
                         <input
@@ -110,9 +244,9 @@ export default function SuggestedActions({
                     >
                       <GestureButton
                         kind="accept"
-                        pressed={acceptable && current.decision === 'ACCEPT'}
-                        disabled={!acceptable}
-                        describedBy={acceptable ? undefined : `${id}-${action.id}-unavailable`}
+                        pressed={acceptable && !missing && current.decision === 'ACCEPT'}
+                        disabled={!acceptable || Boolean(missing)}
+                        describedBy={!acceptable ? `${id}-${action.id}-unavailable` : withChoice ? hintId : undefined}
                         onClick={() =>
                           onChange(action.id, { ...current, decision: current.decision === 'ACCEPT' ? null : 'ACCEPT' })
                         }
