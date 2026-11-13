@@ -193,6 +193,7 @@ router.post(
         {
           ...repLeadPayload(req.body),
           externalRep: repId,
+          enteredByRep: true,
           assignedTo: repId,
           createdBy: repId,
         },

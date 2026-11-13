@@ -28,7 +28,10 @@ export async function setupMongo(): Promise<void> {
 export async function setupMongoReplSet(): Promise<void> {
   if (server) return
   server = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: 'wiredTiger' } })
-  await mongoose.connect(server.getUri())
+  // Mongoose tient la connexion pour morte quand `Date.now()` s'écarte de plus de
+  // deux battements du dernier reçu : un test qui fige `Date` (vi.useFakeTimers)
+  // la ferait « tomber » au premier battement reçu sous l'autre horloge.
+  await mongoose.connect(server.getUri(), { heartbeatFrequencyMS: 365 * 86_400_000 })
 }
 
 export async function teardownMongo(): Promise<void> {

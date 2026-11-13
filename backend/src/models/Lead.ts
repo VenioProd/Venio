@@ -60,6 +60,8 @@ const leadSchema = new mongoose.Schema<ILead>(
     clientAccountId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     // Commercial externe crédité du lead : son seul accès au CRM passe par ce champ.
     externalRep: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    // Saisie par un externe (fiche ou import à son nom) : réservée à l'externe jusqu'au passage au closer, comme ses listes.
+    enteredByRep: { type: Boolean, default: false },
     // Passage de main au closer ; le commercial externe garde la lecture.
     closingHandoff: {
       type: new mongoose.Schema(

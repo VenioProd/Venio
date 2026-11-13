@@ -1569,6 +1569,28 @@ html.theme-portail .pipeline-page .crm-column-over {
   text-decoration: underline;
   cursor: pointer;
 }
+.crm-hold-decision {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.crm-hold-decision-meta {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.crm-hold-decision-quote {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--critical);
+  background: var(--bg-secondary);
+  font-style: italic;
+}
+.crm-hold-decision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .crm-call-desk {
   min-width: 0;
   padding-top: 8px;
