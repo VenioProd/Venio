@@ -50,7 +50,11 @@ export default function DialerPanel(props: Props) {
   } else if (mode !== 'click') state = t('calls.dialer.state.idle')
 
   return (
-    <section className="dialer-panel" aria-label={t('calls.dialer.group')}>
+    <section
+      className="dialer-panel"
+      aria-label={t('calls.dialer.group')}
+      data-running={mode !== 'click' && dialer.running ? 'true' : undefined}
+    >
       <div className="dialer-modes" role="group" aria-label={t('calls.dialer.group')}>
         {DIALER_MODES.map((value) => (
           <button

@@ -200,8 +200,9 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
   const settleCall = (call: SettledCall) => {
     const lead = leads.find((item) => item._id === call.leadId)
     if (!lead) return
-    // Un appel décroché garde un accès à son transcript et à son analyse, le temps de la séance.
-    if (call.record?.answeredAt || call.elapsedSec > 0)
+    // Un appel décroché garde un accès à son transcript et à son analyse, le temps de la séance ;
+    // pas une messagerie, dont rien n'est transcrit.
+    if ((call.record?.answeredAt || call.elapsedSec > 0) && call.record?.answeredBy !== 'MACHINE')
       setRecentCalls((current) =>
         [
           {

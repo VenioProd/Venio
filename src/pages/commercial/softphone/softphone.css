@@ -147,6 +147,17 @@ html.theme-portail .softphone-bar .portal-button.softphone-hangup:hover:not(:dis
   background: var(--bg-secondary);
   min-width: 0;
 }
+/* Pendant l'enchaînement, l'état reste visible quand la fiche ouverte fait défiler la page. */
+.dialer-panel[data-running] {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+/* Dans le CRM de l'équipe, sous la barre collante de l'admin (56 px). */
+.crm-call-desk .dialer-panel[data-running] {
+  top: 64px;
+}
 .dialer-modes,
 .dialer-controls {
   display: flex;
@@ -175,6 +186,9 @@ html.theme-portail .softphone-bar .portal-button.softphone-hangup:hover:not(:dis
   color: var(--critical);
 }
 @media (max-width: 480px) {
+  .dialer-panel[data-running] .dialer-help {
+    display: none;
+  }
   .dialer-modes .portal-button {
     flex: 1 1 0;
     justify-content: center;
