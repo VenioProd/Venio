@@ -4,6 +4,7 @@ import { useI18n, type MessageKey } from '../../../context/I18nContext'
 import { formatDuration } from '../../../components/calls/leadCalls'
 import { FINAL_CALL_STATUSES } from '../../../services/calls'
 import type { SoftphoneController } from './useSoftphone'
+import LiveTranscript from '../../../components/calls/live/LiveTranscript'
 import './softphone.css'
 
 const KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
@@ -175,6 +176,9 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
             </>
           )}
         </div>
+      )}
+      {live && controller.callId && controller.recording.enabled && (
+        <LiveTranscript callId={controller.callId} apiPrefix={controller.apiPrefix} stopped={stop === 'stopped'} />
       )}
       {failure && (
         <p className="softphone-error" role="alert">

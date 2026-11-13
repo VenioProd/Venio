@@ -178,6 +178,11 @@ describe('enregistrement et transcription', () => {
     await patch({ callTranscription: { enabled: true, language: 'français', retentionMonths: 12 } }).expect(400)
     await patch({ callTranscription: { enabled: true, language: 'fr', retentionMonths: 37 } }).expect(400)
     await patch({ callTranscription: { enabled: true, language: 'fr', retentionMonths: 0 } }).expect(400)
+    // Transcription en direct (lot J) : facultative, absente = coupée.
+    expect(ok.body.settings.callTranscription.live).toBe(false)
+    const live = await patch({ callTranscription: { enabled: true, language: 'fr', retentionMonths: 12, live: true } })
+    expect(live.body.settings.callTranscription.live).toBe(true)
+    await patch({ callTranscription: { enabled: true, language: 'fr', retentionMonths: 12, live: 'oui' } }).expect(400)
   })
 })
 

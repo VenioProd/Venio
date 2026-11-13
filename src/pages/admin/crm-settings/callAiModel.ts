@@ -20,6 +20,8 @@ export interface TranscriptionSettings {
   enabled: boolean
   language: string
   retentionMonths: number
+  /** Transcription en direct pendant l'appel (texte éphémère), désactivée par défaut. */
+  live: boolean
 }
 export interface HeatCriterion {
   key: string
@@ -64,7 +66,12 @@ export const DEFAULT_RECORDING: RecordingSettings = {
   notice: { enabled: true, text: DEFAULT_NOTICE },
   keepAudioDays: 0,
 }
-export const DEFAULT_TRANSCRIPTION: TranscriptionSettings = { enabled: true, language: 'fr', retentionMonths: 12 }
+export const DEFAULT_TRANSCRIPTION: TranscriptionSettings = {
+  enabled: true,
+  language: 'fr',
+  retentionMonths: 12,
+  live: false,
+}
 export const DEFAULT_CRITERIA: HeatCriterion[] = [
   {
     key: 'need',
@@ -139,6 +146,7 @@ export function readTranscription(settings: CrmSettingsData): TranscriptionSetti
     enabled: bool(raw.enabled, DEFAULT_TRANSCRIPTION.enabled),
     language: str(raw.language, DEFAULT_TRANSCRIPTION.language),
     retentionMonths: num(raw.retentionMonths, DEFAULT_TRANSCRIPTION.retentionMonths),
+    live: bool(raw.live, DEFAULT_TRANSCRIPTION.live),
   }
 }
 

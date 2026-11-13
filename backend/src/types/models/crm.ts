@@ -174,7 +174,7 @@ export interface ICrmSettings extends Document {
   retentionMonths: number
   retentionPurgeEnabled: boolean
   // ── Transcription des appels (lot C) ──
-  callTranscription: { enabled: boolean; language: string; retentionMonths: number }
+  callTranscription: { enabled: boolean; language: string; retentionMonths: number; live: boolean }
   // ── Analyse d'appel (lot D) ──
   callAnalysis: ICallAnalysisSettings
   // ── Enregistrement des appels (lot F1) ──

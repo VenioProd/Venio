@@ -1,0 +1,91 @@
+.live-transcript {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+}
+.live-transcript-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+.live-transcript-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.live-transcript-status {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.live-transcript-status[data-status='LIVE'] {
+  color: var(--good);
+}
+.live-transcript-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  min-height: 32px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.live-transcript-log {
+  display: grid;
+  gap: 6px;
+  max-height: 200px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+}
+.live-transcript-line {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.live-transcript-speaker {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding-top: 1px;
+}
+.live-transcript-line[data-speaker='PROSPECT'] .live-transcript-speaker {
+  color: var(--primary-light);
+}
+.live-transcript-text {
+  overflow-wrap: anywhere;
+}
+.live-transcript-line[data-final='false'] .live-transcript-text {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+.live-transcript-empty,
+.live-transcript-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+@media (max-width: 480px) {
+  .live-transcript-line {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .live-transcript-log {
+    max-height: 160px;
+  }
+}
