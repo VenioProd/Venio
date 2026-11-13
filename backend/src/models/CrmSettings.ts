@@ -1,6 +1,7 @@
 import mongoose, { Model } from 'mongoose'
 import type { ICrmSettings } from '../types/models/index.js'
 import { DEFAULT_CALL_ANALYSIS_SETTINGS } from '../lib/callAnalysis/heat.js'
+import { DEFAULT_CALL_SCRIPT_REPORT_SETTINGS } from '../lib/callScriptReport/settings.js'
 
 export const DEFAULT_RECORDING_NOTICE =
   'Cet appel est enregistré et transcrit pour le suivi de votre demande. Vous pouvez vous y opposer à tout moment.'
@@ -319,6 +320,29 @@ const crmSettingsSchema = new mongoose.Schema<ICrmSettings, CrmSettingsModel>(
         text: { type: String, default: DEFAULT_RECORDING_NOTICE, trim: true, maxlength: 300 },
       },
       keepAudioDays: { type: Number, default: 0, min: 0, max: 180 },
+    },
+
+    // ═══════════════════════════════════════════════════════════════
+    // RAPPORT HEBDOMADAIRE DES SCRIPTS (vague 4, lot K) — contrôlé par validateScriptReportSettings
+    // ═══════════════════════════════════════════════════════════════
+    callScriptReport: {
+      enabled: { type: Boolean, default: DEFAULT_CALL_SCRIPT_REPORT_SETTINGS.enabled },
+      day: { type: Number, default: DEFAULT_CALL_SCRIPT_REPORT_SETTINGS.day, min: 0, max: 6 },
+      emailAuthors: { type: Boolean, default: DEFAULT_CALL_SCRIPT_REPORT_SETTINGS.emailAuthors },
+      recipients: { type: [String], default: [] },
+      model: { type: String, default: DEFAULT_CALL_SCRIPT_REPORT_SETTINGS.model, trim: true, maxlength: 64 },
+      maxInputTokens: {
+        type: Number,
+        default: DEFAULT_CALL_SCRIPT_REPORT_SETTINGS.maxInputTokens,
+        min: 5000,
+        max: 200000,
+      },
+      targetConversionRate: {
+        type: Number,
+        default: DEFAULT_CALL_SCRIPT_REPORT_SETTINGS.targetConversionRate,
+        min: 1,
+        max: 100,
+      },
     },
   },
   { timestamps: true },

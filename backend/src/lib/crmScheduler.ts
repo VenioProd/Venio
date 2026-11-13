@@ -1020,6 +1020,13 @@ export async function runCallPipelineJobs(now: Date = new Date()): Promise<void>
     ['callRecordings', slot(1), CALL_SLOT_LOCK_TTL_MS, () => sweepRecordings(now)],
     ['callTranscripts', slot(1), CALL_SLOT_LOCK_TTL_MS, () => transcription.sweepTranscriptions(now)],
     ['callAnalyses', slot(5), CALL_SLOT_LOCK_TTL_MS, () => analysis.sweepAnalyses(now)],
+    // Rapport hebdomadaire des scripts (lot K) : planifié le jour réglé, reprises et e-mails à chaque créneau.
+    [
+      'callScriptReports',
+      slot(15),
+      CALL_SLOT_LOCK_TTL_MS,
+      async () => (await import('./callScriptReport/index.js')).runCallScriptReports(now),
+    ],
   ]
   if (isDue(paris.minutesOfDay, 3 * 60)) {
     tasks.push(

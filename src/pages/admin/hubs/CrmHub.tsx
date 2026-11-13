@@ -16,6 +16,7 @@ const CrmBoard = lazy(() => import('../CrmBoard'))
 const ClientAccountList = lazy(() => import('../ClientAccountList'))
 const ExternalSales = lazy(() => import('../ExternalSales'))
 const TeamCallDesk = lazy(() => import('../crm-board/TeamCallDesk'))
+const ScriptReportsView = lazy(() => import('../../../components/callScriptReport/ScriptReportsView'))
 const CrmAutomations = lazy(() => import('../crm-board/automations'))
 const CrmSettings = lazy(() => import('../crm-settings'))
 const PilotageSection = lazy(() => import('../analytics/crm'))
@@ -60,6 +61,7 @@ export default function CrmHub() {
   const panels: Record<string, ReactNode> = {
     queue: <CrmBoard queue onOverdueCount={setOverdue} />,
     appels: <TeamCallDesk />,
+    scripts: <ScriptReportsView base="/api/admin/crm/script-reports" team />,
     pipeline: <CrmBoard onOverdueCount={setOverdue} />,
     pilotage: (
       <>

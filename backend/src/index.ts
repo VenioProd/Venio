@@ -42,6 +42,7 @@ import adminQuoteProposalRoutes from './routes/admin/quoteProposals.js'
 import adminCrmRoutes from './routes/admin/crm.js'
 import adminCrmExtrasRoutes from './routes/admin/crmExtras.js'
 import adminCrmSuppressionRoutes from './routes/admin/crmSuppression.js'
+import adminCallScriptReportRoutes from './routes/admin/callScriptReports.js'
 import adminCallDeskRoutes from './routes/admin/callDesk.js'
 import adminInteractionRoutes from './routes/admin/interactions.js'
 import adminNotificationRoutes from './routes/admin/notifications.js'
@@ -369,6 +370,8 @@ app.use('/api/mobile/interactions', mobileInteractionRoutes)
 app.use('/api/mobile/sales-targets', mobileSalesTargetRoutes)
 app.use('/api/admin/sales-targets', adminSalesTargetRoutes)
 app.use('/api/admin/crm/suppression', adminCrmSuppressionRoutes)
+// Rapports hebdomadaires des scripts d'appel (vague 4, lot K).
+app.use('/api/admin/crm/script-reports', adminCallScriptReportRoutes)
 app.use('/api/admin/crm', adminCrmExtrasRoutes)
 app.use('/api/admin/crm', adminCrmRoutes)
 // Poste d'appel de l'équipe : les routeurs de l'espace commercial, avec le périmètre de l'équipe.

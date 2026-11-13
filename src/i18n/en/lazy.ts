@@ -10,6 +10,7 @@ import bulk from './bulk'
 import calls from './calls'
 import changeReq from './changeReq'
 import callInsights from './callInsights'
+import callScriptReport from './callScriptReport'
 import commercial from './commercial'
 import client from './client'
 import compA from './compA'
@@ -49,6 +50,7 @@ const messages = {
   ...calls,
   ...changeReq,
   ...callInsights,
+  ...callScriptReport,
   ...commercial,
   ...client,
   ...compA,

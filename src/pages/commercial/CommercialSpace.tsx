@@ -9,6 +9,7 @@ import './CommercialSpace.css'
 const TABS: { to: string; labelKey: MessageKey; end: boolean }[] = [
   { to: '/commercial', labelKey: 'commercial.tab.leads', end: true },
   { to: '/commercial/calls', labelKey: 'commercial.calls.title', end: false },
+  { to: '/commercial/rapports-scripts', labelKey: 'callScriptReport.tab', end: false },
   { to: '/commercial/clients', labelKey: 'commercial.tab.clients', end: false },
   { to: '/commercial/commissions', labelKey: 'commercial.tab.commissions', end: false },
 ]
