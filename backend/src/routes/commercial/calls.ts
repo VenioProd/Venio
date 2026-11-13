@@ -22,6 +22,7 @@ import {
   recordingConfig,
   recordingSettings,
 } from '../../lib/telephony/recording.js'
+import { cachedAudio, dropCachedAudio } from '../../lib/recordingAudioCache.js'
 import CallTranscript from '../../models/CallTranscript.js'
 import CallAnalysis from '../../models/CallAnalysis.js'
 
@@ -35,6 +36,33 @@ import CallAnalysis from '../../models/CallAnalysis.js'
 const isDuplicate = (err: unknown, field: string) =>
   (err as { code?: number; keyPattern?: Record<string, unknown> }).code === 11000 &&
   Boolean((err as { keyPattern?: Record<string, unknown> }).keyPattern?.[field])
+
+type CallRecordingDoc = NonNullable<ICall['recording']>
+
+/** L'audio peut être relayé : prêt, non contesté, pas échu, et conservé après transcription (`keepAudioDays` > 0). */
+const isAudioHeld = (recording: CallRecordingDoc | null | undefined, keepAudioDays: number) =>
+  recording?.status === 'READY' &&
+  !recording.objection &&
+  Boolean(recording.sid) &&
+  (!recording.deleteAt || recording.deleteAt > new Date()) &&
+  keepAudioDays > 0
+
+/**
+ * Où en est l'audio d'un enregistrement prêt : lisible (`PLAYABLE`), ou gardé le temps du transcript puis
+ * effacé (`AWAITING_TRANSCRIPT`, `keepAudioDays` = 0). Absent sinon (échu, effacé, contesté, pas prêt).
+ */
+const audioState = (recording: CallRecordingDoc | null | undefined, keepAudioDays: number) => {
+  if (isAudioHeld(recording, keepAudioDays)) return 'PLAYABLE' as const
+  if (recording?.status === 'READY' && !recording.objection && !recording.deleteAt && keepAudioDays === 0)
+    return 'AWAITING_TRANSCRIPT' as const
+  return null
+}
+
+/** L'état public de l'enregistrement ; `audio` seulement quand il est prêt (les autres états se suffisent). */
+const withAudio = (call: Pick<ICall, 'recording'>, keepAudioDays: number) => ({
+  ...publicRecording(call),
+  ...(call.recording?.status === 'READY' ? { audio: audioState(call.recording, keepAudioDays) } : {}),
+})
 
 export function createCallsRoutes(scope: CallDeskScope) {
   const router = express.Router()
@@ -143,7 +171,7 @@ export function createCallsRoutes(scope: CallDeskScope) {
         durationSec: call.durationSec,
         answeredBy: call.answeredBy,
         suggestedOutcome: suggestedOutcome(call, settings.callOutcomes),
-        recording: publicRecording(call),
+        recording: withAudio(call, recordingSettings(settings).keepAudioDays),
       })
     } catch (err) {
       next(err)
@@ -194,14 +222,16 @@ export function createCallsRoutes(scope: CallDeskScope) {
       const recording = call?.recording
       const config = telephonyConfig()
       const settings = await CrmSettings.getSettings()
-      const held =
-        recording?.status === 'READY' &&
-        !recording.objection &&
-        recording.sid &&
-        (!recording.deleteAt || recording.deleteAt > new Date()) &&
-        recordingSettings(settings).keepAudioDays > 0
-      if (!call || !held || !config) throw telephonyError(404, 'NOT_FOUND')
-      const audio = await fetchProviderRecording(config, recording.sid!, recording.channels === 1 ? 1 : 2)
+      const held = isAudioHeld(recording, recordingSettings(settings).keepAudioDays)
+      if (!call || !held || !config) {
+        // Effacé, contesté ou plus conservé : rien ne doit rester en mémoire.
+        if (call) dropCachedAudio(call._id)
+        throw telephonyError(404, 'NOT_FOUND')
+      }
+      // Lu une fois chez l'opérateur, puis servi par plages depuis la mémoire (borné, vidé à l'effacement).
+      const audio = await cachedAudio(String(call._id), recording!.sid!, () =>
+        fetchProviderRecording(config, recording!.sid!, recording!.channels === 1 ? 1 : 2),
+      )
       res.set({ 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store', 'Accept-Ranges': 'bytes' })
       // Le lecteur demande des plages (Safari n'en lit pas d'autre) : une seule plage servie, sinon l'audio entier.
       const ranges = req.range(audio.length, { combine: true })
@@ -241,7 +271,7 @@ export function createCallsRoutes(scope: CallDeskScope) {
         .select('status startedAt answeredAt endedAt durationSec recording author')
         .lean()
       const ids = calls.map((call) => call._id)
-      const [transcripts, analyses, names] = await Promise.all([
+      const [transcripts, analyses, names, settings] = await Promise.all([
         CallTranscript.find({ call: { $in: ids }, author })
           .select('call status')
           .lean(),
@@ -253,7 +283,9 @@ export function createCallsRoutes(scope: CallDeskScope) {
               .select('name')
               .lean()
           : [],
+        CrmSettings.getSettings(),
       ])
+      const keepAudioDays = recordingSettings(settings).keepAudioDays
       const nameOf = new Map(names.map((user) => [String(user._id), user.name]))
       const statusOf = (rows: { call: unknown; status: string }[]) =>
         new Map(rows.map((row) => [String(row.call), row.status]))
@@ -267,7 +299,7 @@ export function createCallsRoutes(scope: CallDeskScope) {
           answeredAt: call.answeredAt,
           endedAt: call.endedAt,
           durationSec: call.durationSec,
-          recording: publicRecording(call),
+          recording: withAudio(call, keepAudioDays),
           transcriptStatus: transcriptStatus.get(String(call._id)) ?? null,
           analysisStatus: analysisStatus.get(String(call._id)) ?? null,
           ...(scope.kind === 'team'

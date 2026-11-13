@@ -5,6 +5,7 @@ import CallTranscript from '../../models/CallTranscript.js'
 import CrmSettings, { DEFAULT_RECORDING_NOTICE } from '../../models/CrmSettings.js'
 import type { ICrmSettings } from '../../types/models/index.js'
 import logger from '../logger.js'
+import { dropCachedAudio } from '../recordingAudioCache.js'
 import {
   discardTranscripts,
   onTranscriptDone,
@@ -110,6 +111,7 @@ export async function deleteRecording(call: Pick<ICall, '_id' | 'recording'>): P
     { _id: call._id, 'recording.sid': recording.sid },
     { $set: { 'recording.status': 'DELETED', 'recording.deletedAt': new Date() } },
   )
+  dropCachedAudio(call._id)
   return true
 }
 
@@ -231,6 +233,7 @@ export async function onRecordingEvent(callId: string, body: Record<string, unkn
  */
 export async function objectToRecording(callId: Types.ObjectId): Promise<ICall> {
   const now = new Date()
+  dropCachedAudio(callId)
   await Call.updateOne(
     { _id: callId, recording: null },
     { $set: { recording: { ...emptyRecording(), objection: true, objectionAt: now } } },

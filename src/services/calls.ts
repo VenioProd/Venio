@@ -22,6 +22,8 @@ export type RecordingStatus = 'NONE' | 'RECORDING' | 'STOPPED' | 'READY' | 'DELE
 export interface CallRecording {
   status: RecordingStatus
   objection: boolean
+  /** Prêt seulement : `PLAYABLE` (lisible), `AWAITING_TRANSCRIPT` (gardé le temps du transcript, puis supprimé), `null` (échu ou supprimé). Absent : lisible. */
+  audio?: 'PLAYABLE' | 'AWAITING_TRANSCRIPT' | null
 }
 
 export type CallStatus =

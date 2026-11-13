@@ -4,7 +4,7 @@ import { useI18n } from '../../context/I18nContext'
 import { formatDateTime } from '../../i18n/format'
 import CallPanel from './CallPanel'
 import CallStateChips from './CallStateChips'
-import { formatDuration, useLeadCalls, wasAnswered } from './leadCalls'
+import { formatDuration, useLeadCalls, wasAnswered, type UseLeadCalls } from './leadCalls'
 import './callInsights.css'
 
 export interface LeadCallsListProps {
@@ -22,6 +22,8 @@ export interface LeadCallsListProps {
   holdCallId?: string | null
   /** Demande d'ouverture d'un appel (bandeau de retenue) ; `nonce` permet de la répéter. */
   openRequest?: { callId: string; nonce: number } | null
+  /** Appels déjà lus par la page autour (la fiche de l'équipe les surveille même onglet fermé) : la liste ne les relit pas. */
+  source?: UseLeadCalls
 }
 
 /** Les appels d'une fiche, du plus récent au plus ancien ; ouvrir un appel décroché affiche son audio, son transcript et son analyse. */
@@ -34,9 +36,11 @@ export default function LeadCallsList({
   onApplied,
   holdCallId,
   openRequest,
+  source,
 }: LeadCallsListProps) {
   const { t } = useI18n()
-  const { calls, loading, error, reload } = useLeadCalls(leadId, apiPrefix, refreshKey)
+  const own = useLeadCalls(source ? null : leadId, apiPrefix, refreshKey)
+  const { calls, loading, error, reload } = source ?? own
   const [openId, setOpenId] = useState<string | null>(null)
   const [handled, setHandled] = useState<{ callId: string; nonce: number } | null>(null)
   const requested = openRequest && openRequest !== handled && calls.some((call) => call._id === openRequest.callId)

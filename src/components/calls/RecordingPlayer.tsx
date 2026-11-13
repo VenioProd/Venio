@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { AudioLines, MicOff, Trash2 } from 'lucide-react'
+import { AudioLines, Hourglass, MicOff, Trash2 } from 'lucide-react'
 import { useI18n } from '../../context/I18nContext'
 import { createCallsApi, type CallRecording } from '../../services/calls'
+import { recordingView } from './leadCalls'
 import './callInsights.css'
 
 /**
@@ -19,7 +20,7 @@ export default function RecordingPlayer({
 }) {
   const { t } = useI18n()
   const [unavailable, setUnavailable] = useState(false)
-  const status = recording.objection ? 'STOPPED' : recording.status
+  const status = recordingView(recording)
 
   if (status === 'NONE') return null
   if (status === 'READY' && !unavailable) {
@@ -38,7 +39,14 @@ export default function RecordingPlayer({
       </div>
     )
   }
-  const Icon = status === 'STOPPED' ? MicOff : status === 'RECORDING' ? AudioLines : Trash2
+  const Icon =
+    status === 'STOPPED'
+      ? MicOff
+      : status === 'RECORDING'
+        ? AudioLines
+        : status === 'AWAITING_TRANSCRIPT'
+          ? Hourglass
+          : Trash2
   const key = status === 'READY' ? 'DELETED' : status
   return (
     <p className="ci-recording ci-recording--note" role="status">

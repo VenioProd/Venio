@@ -139,11 +139,14 @@ const fr = {
   'callInsights.recording.STOPPED': 'arrêté à la demande du prospect',
   'callInsights.recording.READY': 'conservé',
   'callInsights.recording.DELETED': 'supprimé',
+  'callInsights.recording.AWAITING_TRANSCRIPT': 'en attente du transcript',
   'callInsights.recording.note.RECORDING': 'Enregistrement en cours.',
   'callInsights.recording.note.STOPPED':
     'Enregistrement arrêté à la demande du prospect : rien n’a été conservé et il n’y a pas de transcript.',
   'callInsights.recording.note.DELETED':
     'L’audio a été supprimé après la transcription : seul le transcript est conservé.',
+  'callInsights.recording.note.AWAITING_TRANSCRIPT':
+    'L’audio est gardé le temps du transcript, puis supprimé : il ne sera pas écoutable.',
   'callInsights.chips.recording': 'Audio',
   'callInsights.chips.transcript': 'Transcript',
   'callInsights.chips.analysis': 'Analyse',
