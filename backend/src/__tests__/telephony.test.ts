@@ -189,8 +189,14 @@ it('applique la plage horaire et le plafond par numéro et par jour', async () =
   vi.setSystemTime(TUESDAY_10H)
 
   await CrmSettings.updateSettings({ 'telephony.attemptCapPerDay': 2 } as never)
-  expect((await launch(cookieA, own._id)).status).toBe(201)
-  expect((await launch(cookieA, own._id)).status).toBe(201)
+  // Chaque tentative est raccrochée avant la suivante : un seul appel à la fois (lot I).
+  const attempt = async () => {
+    const res = await launch(cookieA, own._id)
+    if (res.status === 201) await as(cookieA).post(`/calls/${res.body.callId}/hangup`)
+    return res
+  }
+  expect((await attempt()).status).toBe(201)
+  expect((await attempt()).status).toBe(201)
   const capped = await launch(cookieA, own._id)
   expect([capped.status, capped.body.code]).toEqual([409, 'ATTEMPT_CAP_REACHED'])
   // Le plafond vaut pour le numéro, pas pour la fiche ni le commercial.
@@ -220,6 +226,7 @@ it('voice : signature vérifiée, appel relié à l’identité du jeton, numér
   expect((await voice(callId, repA, 'CAother')).text).not.toContain('<Dial')
 
   // Garde repassée à la mise en relation : un numéro opposé entre-temps est refusé.
+  await status(callId, 'completed', { CallDuration: '5' })
   const second = await lead('Beta', { contactPhone: '+33622222222' })
   const late = (await launch(cookieA, second._id)).body.callId
   await SuppressionEntry.create({ phoneNormalized: '+33622222222', reason: 'MANUAL' })

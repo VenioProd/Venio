@@ -53,8 +53,19 @@ function text(field: string, value: unknown, max: number, required: boolean): st
 
 const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/
 
+/** Réglages du dialer (lot I) : facultatifs, pour les écrans qui ne les envoient pas encore. */
+function validateDialer(value: unknown) {
+  const block = exactKeys('telephony.dialer', value, ['voicemailDetection', 'previewDelaySec', 'powerDelaySec'])
+  return {
+    voicemailDetection: boolean('telephony.dialer.voicemailDetection', block.voicemailDetection),
+    previewDelaySec: integer('telephony.dialer.previewDelaySec', block.previewDelaySec, 0, 120),
+    powerDelaySec: integer('telephony.dialer.powerDelaySec', block.powerDelaySec, 0, 60),
+  }
+}
+
 function validateTelephony(value: unknown) {
-  const block = exactKeys('telephony', value, ['callingHours', 'attemptCapPerDay'])
+  const { dialer, ...rest } = isRecord(value) ? value : { dialer: undefined }
+  const block = exactKeys('telephony', isRecord(value) ? rest : value, ['callingHours', 'attemptCapPerDay'])
   const hours = exactKeys('telephony.callingHours', block.callingHours, ['timezone', 'days', 'start', 'end'])
   const timezone = text('telephony.callingHours.timezone', hours.timezone, 64, true)
   try {
@@ -82,6 +93,7 @@ function validateTelephony(value: unknown) {
       end: end as string,
     },
     attemptCapPerDay: integer('telephony.attemptCapPerDay', block.attemptCapPerDay, 1, 20),
+    ...(dialer === undefined ? {} : { dialer: validateDialer(dialer) }),
   }
 }
 

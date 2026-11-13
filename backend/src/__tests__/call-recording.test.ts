@@ -97,6 +97,8 @@ const recEvent = (callId: string, RecordingStatus: string, extra: Record<string,
   })
 
 async function placeCall(leadExtra: object = {}, callSid = 'CAparent1') {
+  // Ces tests enchaînent des appels laissés ouverts : la ligne unique (lot I) n'est pas leur objet.
+  await mongoose.connection.collection('callerlines').deleteMany({})
   const lead = await Lead.create({ company: 'Alpha', externalRep: repA, contactPhone: '+33612345678', ...leadExtra })
   const launched = await as(cookieA).post(`/leads/${lead._id}/calls`, { clientRequestId: crypto.randomUUID() })
   const callId = String(launched.body.callId)

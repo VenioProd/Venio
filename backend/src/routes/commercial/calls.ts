@@ -16,6 +16,7 @@ import {
   telephonyError,
 } from '../../lib/telephony/index.js'
 import { fetchProviderRecording, hangupProviderCall } from '../../lib/telephony/rest.js'
+import { claimLine, confirmLine, dialerSettings, releaseLine, repointLine } from '../../lib/telephony/dialer.js'
 import {
   objectToRecording,
   publicRecording,
@@ -58,6 +59,7 @@ export function createCallsRoutes(scope: CallDeskScope) {
         callingHours: settings.telephony.callingHours,
         attemptCap: settings.telephony.attemptCapPerDay,
         recording: recordingConfig(settings),
+        dialer: dialerSettings(settings),
       })
     } catch (err) {
       next(err)
@@ -83,10 +85,13 @@ export function createCallsRoutes(scope: CallDeskScope) {
           ? await Lead.findOne({ _id: leadId, ...scope.leadFilter(req) })
           : null
         if (!lead) throw telephonyError(404, 'NOT_FOUND')
+        const callId = new mongoose.Types.ObjectId()
         const replay = async () => {
           const existing = await Call.findOne({ author: repId, clientRequestId }).select('lead').lean()
           if (!existing) return false
           if (String(existing.lead) !== leadId) throw telephonyError(409, 'IDEMPOTENCY_CONFLICT')
+          // Lancement rejoué en concurrence avec lui-même : la ligne revient à l'appel rendu (lot I).
+          await repointLine(repId, callId, existing._id)
           res.json({ callId: existing._id })
           return true
         }
@@ -99,29 +104,46 @@ export function createCallsRoutes(scope: CallDeskScope) {
           throw telephonyError(409, 'PHONE_SUPPRESSED')
         const now = new Date()
         const attemptDay = localClock(now, settings.telephony.callingHours.timezone).day
-        // Rang unique par numéro et par jour : un lancement concurrent qui prend le même rang recompte.
-        for (let tries = 0; tries < 5; tries++) {
-          const last = await Call.findOne({ to, attemptDay }).sort({ attemptNo: -1 }).select('attemptNo').lean()
-          const attemptsToday = last?.attemptNo ?? 0
-          assertCallable(lead, { now, settings, attemptsToday, scope: scope.kind })
-          try {
-            const call = await Call.create({
-              lead: lead._id,
-              author: repId,
-              to: to!,
-              from: config.callerId,
-              clientRequestId,
-              attemptDay,
-              attemptNo: attemptsToday + 1,
-              events: [{ status: 'CREATED', at: now }],
-            })
-            return res.status(201).json({ callId: call._id })
-          } catch (err) {
-            if (isDuplicate(err, 'clientRequestId') && (await replay())) return
-            if (!isDuplicate(err, 'attemptNo')) throw err
-          }
+        // Jamais deux appels à la fois pour un même utilisateur (lot I) : la ligne est réservée avant la
+        // création, libérée si le lancement échoue, et revérifiée après.
+        try {
+          await claimLine(repId, callId, now)
+        } catch (err) {
+          // Le même lancement rejoué pendant qu'il aboutit : on rend l'appel créé.
+          if (await replay()) return
+          throw err
         }
-        throw telephonyError(409, 'ATTEMPT_CAP_REACHED')
+        let created = false
+        try {
+          // Rang unique par numéro et par jour : un lancement concurrent qui prend le même rang recompte.
+          for (let tries = 0; tries < 5; tries++) {
+            const last = await Call.findOne({ to, attemptDay }).sort({ attemptNo: -1 }).select('attemptNo').lean()
+            const attemptsToday = last?.attemptNo ?? 0
+            assertCallable(lead, { now, settings, attemptsToday, scope: scope.kind })
+            try {
+              const call = await Call.create({
+                _id: callId,
+                lead: lead._id,
+                author: repId,
+                to: to!,
+                from: config.callerId,
+                clientRequestId,
+                attemptDay,
+                attemptNo: attemptsToday + 1,
+                events: [{ status: 'CREATED', at: now }],
+              })
+              created = true
+              await confirmLine(repId, call._id, now)
+              return res.status(201).json({ callId: call._id })
+            } catch (err) {
+              if (isDuplicate(err, 'clientRequestId') && (await replay())) return
+              if (!isDuplicate(err, 'attemptNo')) throw err
+            }
+          }
+          throw telephonyError(409, 'ATTEMPT_CAP_REACHED')
+        } finally {
+          if (!created) await releaseLine(repId, callId)
+        }
       } catch (err) {
         next(err)
       }

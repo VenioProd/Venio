@@ -18,7 +18,10 @@ import {
   telephonyConfig,
   userIdFromClient,
 } from '../../lib/telephony/index.js'
+import { dialerSettings } from '../../lib/telephony/dialer.js'
+import { hangupProviderCall } from '../../lib/telephony/rest.js'
 import {
+  discardVoicemailAudio,
   initialRecording,
   onRecordingEvent,
   recordingSettings,
@@ -72,9 +75,10 @@ router.post('/twilio/voice', async (req: Request, res: Response, next: NextFunct
     if (!call) return sendTwiml(res, hangupTwiml())
     // Une même requête rejouée reçoit la même réponse ; un autre appel ne peut pas reprendre ce callId.
     if (call.providerCallSid) {
+      const dial = dialerSettings(await CrmSettings.getSettings())
       return sendTwiml(
         res,
-        call.providerCallSid === callSid && call.status !== 'CANCELED' ? dialTwiml(config, call) : hangupTwiml(),
+        call.providerCallSid === callSid && call.status !== 'CANCELED' ? dialTwiml(config, call, dial) : hangupTwiml(),
       )
     }
     if (call.status !== 'CREATED') return sendTwiml(res, hangupTwiml())
@@ -117,9 +121,12 @@ router.post('/twilio/voice', async (req: Request, res: Response, next: NextFunct
     )
     if (!attached) {
       const current = await Call.findById(call._id).lean()
-      return sendTwiml(res, current?.providerCallSid === callSid ? dialTwiml(config, call) : hangupTwiml())
+      return sendTwiml(
+        res,
+        current?.providerCallSid === callSid ? dialTwiml(config, call, dialerSettings(settings)) : hangupTwiml(),
+      )
     }
-    sendTwiml(res, dialTwiml(config, attached))
+    sendTwiml(res, dialTwiml(config, attached, dialerSettings(settings)))
   } catch (err) {
     next(err)
   }
@@ -150,8 +157,13 @@ router.post('/twilio/status', async (req: Request, res: Response, next: NextFunc
         if (!call.answeredAt) set.answeredAt = new Date(at.getTime() - Math.round(duration) * 1000)
       } else if (status !== 'COMPLETED') set.durationSec = 0
     }
-    if (req.body.AnsweredBy === 'human') set.answeredBy = 'HUMAN'
-    else if (typeof req.body.AnsweredBy === 'string' && req.body.AnsweredBy.startsWith('machine'))
+    // Le verdict de la détection de messagerie (route `amd`) prime : il n'est jamais écrasé ici.
+    if (call.answeredBy === 'UNKNOWN' && req.body.AnsweredBy === 'human') set.answeredBy = 'HUMAN'
+    else if (
+      call.answeredBy === 'UNKNOWN' &&
+      typeof req.body.AnsweredBy === 'string' &&
+      req.body.AnsweredBy.startsWith('machine')
+    )
       set.answeredBy = 'MACHINE'
 
     const updated = await Call.findOneAndUpdate(
@@ -166,6 +178,48 @@ router.post('/twilio/status', async (req: Request, res: Response, next: NextFunc
     res.sendStatus(204)
   } catch (err) {
     next(err)
+  }
+})
+
+/**
+ * Verdict de la détection de messagerie (`amdStatusCallback` de `<Number>`, lot I).
+ * Un répondeur : Venio raccroche aussitôt (appel parent, ce qui coupe la
+ * branche composée), et l'audio déjà capté est effacé sans transcript ni
+ * analyse. Le navigateur lit ensuite `answeredBy: 'MACHINE'` et pose le
+ * résultat d'effet `VOICEMAIL` (`suggestedOutcome`). Rejoué, il ne change rien.
+ * La doc ne liste pas `ParentCallSid` dans ce rappel : s'il est présent, il
+ * doit désigner l'appel parent ; sinon `callId` et la signature suffisent.
+ */
+router.post('/twilio/amd', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const callId = req.query.callId
+    const answeredBy = typeof req.body.AnsweredBy === 'string' ? req.body.AnsweredBy : ''
+    const machine = answeredBy.startsWith('machine') || answeredBy === 'fax'
+    if (!mongoose.isObjectIdOrHexString(callId) || (!machine && answeredBy !== 'human')) return res.sendStatus(204)
+    const call = await Call.findById(callId).select('providerCallSid status').lean()
+    if (!call?.providerCallSid) return res.sendStatus(204)
+    if (req.body.ParentCallSid !== undefined && req.body.ParentCallSid !== call.providerCallSid)
+      return res.sendStatus(204)
+    const now = new Date()
+    const marked = await Call.updateOne(
+      { _id: call._id, answeredBy: machine ? { $ne: 'MACHINE' } : 'UNKNOWN' },
+      {
+        $set: { answeredBy: machine ? 'MACHINE' : 'HUMAN' },
+        $push: { events: { status: `AMD:${answeredBy.slice(0, 40)}`, at: now } },
+      },
+    )
+    res.sendStatus(204)
+    if (!machine || !marked.modifiedCount) return
+    const current = await Call.findById(call._id).select('status').lean()
+    if (current && !TERMINAL_CALL_STATUSES.includes(current.status)) {
+      await hangupProviderCall(telephonyConfig()!, call.providerCallSid).catch((err: Error) =>
+        logger.warn({ callId: String(call._id), detail: err.message.slice(0, 120) }, 'messagerie: raccrochage'),
+      )
+    }
+    await discardVoicemailAudio(call._id)
+  } catch (err) {
+    if (res.headersSent) logger.warn({ detail: (err as Error).message.slice(0, 120) }, 'messagerie: suite')
+    else next(err)
   }
 })
 
