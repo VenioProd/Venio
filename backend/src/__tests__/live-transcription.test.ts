@@ -238,6 +238,12 @@ it('TwiML : flux des deux voix seulement si le réglage est actif et l’appel e
   expect(on.token).not.toBe('')
   expect(on.twiml).toContain('record="record-from-answer-dual"')
 
+  // Traitement en Europe exigé : un point d'accès hors UE désactive le direct, sans repli.
+  const euUrl = process.env.ASSEMBLYAI_STREAMING_URL
+  process.env.ASSEMBLYAI_STREAMING_URL = 'wss://streaming.assemblyai.com/v3/ws'
+  expect((await placeCall('CAus')).twiml).not.toContain('<Start>')
+  process.env.ASSEMBLYAI_STREAMING_URL = euUrl
+
   // Appel non enregistré (enregistrement coupé) : pas de direct, le prospect n'a pas été prévenu.
   await CrmSettings.updateOne({}, { $set: { 'callRecording.enabled': false } })
   expect((await placeCall('CAunrecorded')).twiml).not.toContain('<Start>')

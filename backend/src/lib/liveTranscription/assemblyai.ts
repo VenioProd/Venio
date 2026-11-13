@@ -28,6 +28,25 @@ export interface ProviderStream {
 
 /** Point d'accès européen : l'audio et le texte restent dans l'UE (doc AssemblyAI, « Endpoints and data zones »). */
 const DEFAULT_URL = 'wss://streaming.eu.assemblyai.com/v3/ws'
+/**
+ * Décision du propriétaire (13 nov. 2026) : transcription traitée en Europe,
+ * sans repli hors UE, même réglable. Seul l'hôte européen est accepté ; le
+ * bouclage local ne sert qu'aux tests et au développement.
+ */
+const EU_HOSTS = ['streaming.eu.assemblyai.com']
+
+function isAllowedUrl(raw: string): boolean {
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    return false
+  }
+  if (url.search || url.hash) return false
+  if (url.protocol === 'wss:' && EU_HOSTS.includes(url.hostname)) return true
+  const loopback = url.hostname === '127.0.0.1' || url.hostname === 'localhost'
+  return loopback && process.env.NODE_ENV !== 'production'
+}
 /** Modèle en continu qui comprend le français (anglais, espagnol, français, allemand, italien, portugais). */
 const DEFAULT_MODEL = 'universal-streaming-multilingual'
 /** Audio gardé en mémoire le temps que la séance s'ouvre ; au-delà, le plus ancien part. */
@@ -37,7 +56,7 @@ export function liveProviderConfig(): LiveProviderConfig | null {
   const apiKey = process.env.ASSEMBLYAI_API_KEY ?? ''
   const url = (process.env.ASSEMBLYAI_STREAMING_URL || DEFAULT_URL).replace(/\/+$/, '')
   const model = process.env.LIVE_TRANSCRIPTION_MODEL || DEFAULT_MODEL
-  if (!apiKey || !/^wss?:\/\/[^\s?#]+$/.test(url)) return null
+  if (!apiKey || !isAllowedUrl(url)) return null
   return { url, apiKey, model }
 }
 
