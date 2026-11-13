@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useI18n } from '../../../context/I18nContext'
 import type { MessageKey } from '../../../i18n'
-import CallAiBlock, { ServerPill, numberValue, parseNumber, useBlockDraft } from './CallAiBlock'
+import CallAiBlock, { ServerPill, ToggleRow, numberValue, parseNumber, useBlockDraft } from './CallAiBlock'
 import { readTelephony, telephonyIssues, type TelephonySettings } from './callAiModel'
 import type { CallAiProps } from './types'
 
@@ -115,6 +115,46 @@ export default function TelephonySection({ settings, providers, canManage, saveB
         />
         <small>{t('crmCallAi.tel.capHelp')}</small>
       </label>
+      <div className="crm-ai-group" role="group" aria-label={t('calls.dialer.settings.title')}>
+        <ToggleRow
+          label={t('calls.dialer.settings.voicemail')}
+          help={t('calls.dialer.settings.voicemailHelp')}
+          checked={draft.dialer.voicemailDetection}
+          onChange={(voicemailDetection) => setDraft({ ...draft, dialer: { ...draft.dialer, voicemailDetection } })}
+        />
+        <div className="crm-ai-fields">
+          <label className="crm-ai-field">
+            {t('calls.dialer.settings.preview')}
+            <input
+              className="crm-settings-text-input crm-ai-short"
+              type="number"
+              min={0}
+              max={120}
+              step={1}
+              value={numberValue(draft.dialer.previewDelaySec)}
+              onChange={(e) =>
+                setDraft({ ...draft, dialer: { ...draft.dialer, previewDelaySec: parseNumber(e.target.value) } })
+              }
+            />
+            <small>{t('calls.dialer.settings.previewHelp')}</small>
+          </label>
+          <label className="crm-ai-field">
+            {t('calls.dialer.settings.power')}
+            <input
+              className="crm-settings-text-input crm-ai-short"
+              type="number"
+              min={0}
+              max={60}
+              step={1}
+              value={numberValue(draft.dialer.powerDelaySec)}
+              onChange={(e) =>
+                setDraft({ ...draft, dialer: { ...draft.dialer, powerDelaySec: parseNumber(e.target.value) } })
+              }
+            />
+            <small>{t('calls.dialer.settings.powerHelp')}</small>
+          </label>
+        </div>
+      </div>
       <p className="crm-ai-summary" aria-live="polite">
         {hours.days.length === 0
           ? t('crmCallAi.tel.summaryNever')

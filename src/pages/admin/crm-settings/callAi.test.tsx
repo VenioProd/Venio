@@ -85,6 +85,7 @@ describe('réglages CRM — appels et IA', () => {
     expect(body.telephony).toEqual({
       callingHours: { timezone: 'Europe/Paris', days: [1, 2, 3, 4, 5, 6], start: '09:00', end: '20:00' },
       attemptCapPerDay: 5,
+      dialer: { voicemailDetection: true, previewDelaySec: 10, powerDelaySec: 3 },
     })
   })
 

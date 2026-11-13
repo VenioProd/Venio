@@ -10,6 +10,8 @@ import type { CrmSettingsData } from './types'
 export interface TelephonySettings {
   callingHours: { timezone: string; days: number[]; start: string; end: string }
   attemptCapPerDay: number
+  /** Composition enchaînée et détection de messagerie (lot I). */
+  dialer: { voicemailDetection: boolean; previewDelaySec: number; powerDelaySec: number }
 }
 export interface RecordingSettings {
   enabled: boolean
@@ -58,6 +60,7 @@ export const MAX_CRITERIA = 12
 export const DEFAULT_TELEPHONY: TelephonySettings = {
   callingHours: { timezone: 'Europe/Paris', days: [1, 2, 3, 4, 5], start: '09:00', end: '20:00' },
   attemptCapPerDay: 3,
+  dialer: { voicemailDetection: true, previewDelaySec: 10, powerDelaySec: 3 },
 }
 export const DEFAULT_RECORDING: RecordingSettings = {
   enabled: true,
@@ -117,6 +120,11 @@ export function readTelephony(settings: CrmSettingsData): TelephonySettings {
       end: str(hours.end, base.callingHours.end),
     },
     attemptCapPerDay: num(raw.attemptCapPerDay, base.attemptCapPerDay),
+    dialer: {
+      voicemailDetection: bool(obj(raw.dialer).voicemailDetection, base.dialer.voicemailDetection),
+      previewDelaySec: num(obj(raw.dialer).previewDelaySec, base.dialer.previewDelaySec),
+      powerDelaySec: num(obj(raw.dialer).powerDelaySec, base.dialer.powerDelaySec),
+    },
   }
 }
 
@@ -188,6 +196,8 @@ export function telephonyIssues(value: TelephonySettings): Issue[] {
   else if (hours.end <= hours.start) issues.push({ key: 'crmCallAi.tel.err.order' })
   if (!hours.timezone || !validTimezone(hours.timezone)) issues.push({ key: 'crmCallAi.tel.err.timezone' })
   if (!isInt(value.attemptCapPerDay, 1, 20)) issues.push({ key: 'crmCallAi.tel.err.cap' })
+  if (!isInt(value.dialer.previewDelaySec, 0, 120) || !isInt(value.dialer.powerDelaySec, 0, 60))
+    issues.push({ key: 'calls.dialer.settings.err' })
   return issues
 }
 

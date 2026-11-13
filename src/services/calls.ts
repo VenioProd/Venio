@@ -14,7 +14,19 @@ export interface CallsConfig {
   attemptCap: number | null
   /** Vague 2 : l'enregistrement est actif, et l'annonce automatique est jouée ou non. */
   recording?: { enabled: boolean; notice: boolean }
+  /** Lot I : composition enchaînée et détection de messagerie (`CrmSettings.telephony.dialer`). */
+  dialer?: DialerConfig
 }
+
+export interface DialerConfig {
+  voicemailDetection: boolean
+  /** Aperçu : délai avant l'appel automatique ; 0 = au clic seulement. */
+  previewDelaySec: number
+  /** Power dialer : délai entre la saisie du résultat et l'appel suivant. */
+  powerDelaySec: number
+}
+
+export const DEFAULT_DIALER: DialerConfig = { voicemailDetection: true, previewDelaySec: 10, powerDelaySec: 3 }
 
 /** NONE : pas d'enregistrement · RECORDING : en cours · STOPPED : arrêté (opposition), rien conservé · READY : prêt · DELETED : supprimé après transcription. */
 export type RecordingStatus = 'NONE' | 'RECORDING' | 'STOPPED' | 'READY' | 'DELETED'
@@ -73,6 +85,7 @@ export const CALL_ERROR_CODES = [
   'PHONE_SUPPRESSED',
   'OUTSIDE_CALLING_HOURS',
   'ATTEMPT_CAP_REACHED',
+  'CALL_IN_PROGRESS',
 ] as const
 export type CallErrorCode = (typeof CALL_ERROR_CODES)[number]
 

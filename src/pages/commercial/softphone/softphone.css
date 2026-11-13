@@ -135,3 +135,49 @@ html.theme-portail .softphone-bar .portal-button.softphone-hangup:hover:not(:dis
     justify-self: stretch;
   }
 }
+
+/* Composition enchaînée (lot I) */
+.dialer-panel {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+  background: var(--bg-secondary);
+  min-width: 0;
+}
+.dialer-modes,
+.dialer-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.dialer-controls .portal-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dialer-help,
+.dialer-state {
+  margin: 0;
+  font-size: 14px;
+}
+.dialer-help {
+  color: var(--text-secondary);
+}
+.dialer-state {
+  flex: 1 1 220px;
+  font-weight: 600;
+}
+.dialer-state[data-stopped] {
+  color: var(--critical);
+}
+@media (max-width: 480px) {
+  .dialer-modes .portal-button {
+    flex: 1 1 0;
+    justify-content: center;
+    padding-inline: 8px;
+  }
+}

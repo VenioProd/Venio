@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useI18n } from '../../../context/I18nContext'
-import { createCallsApi, DEFAULT_CALLS_PREFIX } from '../../../services/calls'
+import { createCallsApi, DEFAULT_CALLS_PREFIX, DEFAULT_DIALER, type DialerConfig } from '../../../services/calls'
 import {
   isSoftphoneSupported,
   listMicrophones,
@@ -27,6 +27,8 @@ export interface SoftphoneController extends SoftphoneSnapshot {
   unavailable: SoftphoneFallback | null
   checking: boolean
   recording: RecordingConfig
+  /** Réglages de la composition enchaînée (lot I). */
+  dialer: DialerConfig
   microphones: { id: string; label: string }[]
   start: (leadId: string) => void
   hangup: () => void
@@ -54,6 +56,7 @@ export function useSoftphone(
   const snapshot = useSyncExternalStore(engine.subscribe, engine.getSnapshot)
   const [config, setConfig] = useState<ConfigState>('loading')
   const [recording, setRecording] = useState<RecordingConfig>({ enabled: false, notice: false })
+  const [dialer, setDialer] = useState<DialerConfig>(DEFAULT_DIALER)
   const [microphones, setMicrophones] = useState<{ id: string; label: string }[]>([])
   const supported = isSoftphoneSupported()
   const prefix = options.apiPrefix ?? DEFAULT_CALLS_PREFIX
@@ -67,6 +70,7 @@ export function useSoftphone(
         if (!current) return
         engine.configure({ edge: value.edge })
         setRecording({ enabled: Boolean(value.recording?.enabled), notice: Boolean(value.recording?.notice) })
+        if (value.dialer) setDialer(value.dialer)
         setConfig(value.enabled ? 'enabled' : 'disabled')
       })
       .catch(() => current && setConfig('error'))
@@ -143,6 +147,7 @@ export function useSoftphone(
     unavailable,
     checking: !unavailable && config === 'loading',
     recording,
+    dialer,
     microphones,
     start: useCallback((leadId: string) => void engine.start(leadId, prefix), [engine, prefix]),
     hangup: useCallback(() => engine.hangup(), [engine]),

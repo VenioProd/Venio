@@ -72,13 +72,15 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
 
   const status = last?.record?.status
   const summary = last
-    ? status && FINAL_CALL_STATUSES.includes(status) && status !== 'COMPLETED'
-      ? t(`calls.status.${status}` as MessageKey)
-      : status === 'COMPLETED'
-        ? t('calls.ended', {
-            duration: formatDuration(last.record?.durationSec ?? last.elapsedSec),
-          })
-        : t('calls.status.pending')
+    ? last.record?.answeredBy === 'MACHINE'
+      ? t('calls.status.MACHINE')
+      : status && FINAL_CALL_STATUSES.includes(status) && status !== 'COMPLETED'
+        ? t(`calls.status.${status}` as MessageKey)
+        : status === 'COMPLETED'
+          ? t('calls.ended', {
+              duration: formatDuration(last.record?.durationSec ?? last.elapsedSec),
+            })
+          : t('calls.status.pending')
     : ''
 
   return (
