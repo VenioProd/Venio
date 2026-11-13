@@ -10,6 +10,8 @@ import { logLeadActivity } from '../crmAutomations.js'
 import { applyLeadChange, LeadChangeError } from '../crmLeadService.js'
 import { repLeadFilter } from '../externalSales.js'
 import { runInTransaction } from '../transaction.js'
+import { closingHandoffPatch, logClosingHandoff, notifyClosingHandoff, resolveCloser } from '../closingHandoff.js'
+import { checkAssignee, checkSequence, completeEnrollments, notifyHandoffAssignee } from './actions.js'
 import { acceptableKeys, coerceFieldValue, currentValue, leadView, mergeList, type ApplyScope } from './fields.js'
 import { FIELD_KEYS, HEAT_LEVELS, type FieldKey } from './schema.js'
 
@@ -29,7 +31,16 @@ export interface ApplyBody {
   clientRequestId: string
   fields?: Array<{ key: string; action: Action; value?: unknown }>
   heat?: { action: Action; level?: string }
-  actions?: Array<{ id: string; action: 'ACCEPT' | 'IGNORE'; label?: string; dueAt?: string | null }>
+  actions?: Array<{
+    id: string
+    action: 'ACCEPT' | 'IGNORE'
+    label?: string
+    dueAt?: string | null
+    /** Action `SEQUENCE` : séquence choisie. */
+    sequenceId?: string
+    /** Action `HANDOFF` de l'équipe : membre à qui passer la main. */
+    assigneeId?: string
+  }>
 }
 
 interface Context {
@@ -85,10 +96,18 @@ function assertWritable(lead: ILead, ctx: Context): void {
     throw fail(409, 'LEAD_CLOSED', 'Ce lead est entre les mains de l’équipe')
 }
 
+type Handoff =
+  | { kind: 'closer'; closer: Types.ObjectId | null; recipients: Types.ObjectId[] }
+  | { kind: 'member'; assigneeId: string }
+  | null
+
 interface Plan {
   patch: Record<string, unknown>
   decisions: ICallAnalysisDecision[]
   tasks: Array<{ title: string; description: string; dueDate: Date }>
+  /** Actions `SEQUENCE` et `HANDOFF` acceptées, exécutées après le plan (lib/callAnalysis/actions.ts). */
+  sequences: Array<{ id: string; sequenceId: unknown; decision: ICallAnalysisDecision }>
+  handoff: { id: string; assigneeId: unknown; decision: ICallAnalysisDecision } | null
   accepted: number
   ignored: number
 }
@@ -97,7 +116,7 @@ interface Plan {
 function planChanges(output: NonNullable<ICallAnalysis['output']>, lead: ILead, body: ApplyBody, ctx: Context): Plan {
   const view = leadView(lead, ctx.scope)
   const allowed = acceptableKeys(ctx.scope)
-  const plan: Plan = { patch: {}, decisions: [], tasks: [], accepted: 0, ignored: 0 }
+  const plan: Plan = { patch: {}, decisions: [], tasks: [], sequences: [], handoff: null, accepted: 0, ignored: 0 }
   const decided = new Map((body.fields ?? []).map((field) => [field.key, field]))
   const qualification = { ...(view.qualification as Record<string, unknown>) }
 
@@ -169,6 +188,22 @@ function planChanges(output: NonNullable<ICallAnalysis['output']>, lead: ILead, 
     if (!decision || decision.action === 'IGNORE') {
       plan.ignored++
       plan.decisions.push({ path, action: 'IGNORE', before: null, after: null })
+      continue
+    }
+    if (proposal.type === 'SEQUENCE' || proposal.type === 'HANDOFF') {
+      // L'externe n'a pas accès aux séquences du CRM : l'inscription reste à l'équipe.
+      if (proposal.type === 'SEQUENCE' && ctx.scope === 'rep')
+        throw fail(403, 'ACTION_TEAM_ONLY', 'L’inscription à une séquence revient à l’équipe', { id: proposal.id })
+      const decisionRow: ICallAnalysisDecision = { path, action: 'ACCEPT', before: null, after: null }
+      if (proposal.type === 'SEQUENCE') {
+        if (plan.sequences.length > 0) throw fail(400, 'INVALID_BODY', 'Une seule séquence par relecture')
+        plan.sequences.push({ id: proposal.id, sequenceId: decision.sequenceId, decision: decisionRow })
+      } else {
+        if (plan.handoff) throw fail(400, 'INVALID_BODY', 'Un seul passage de main par relecture')
+        plan.handoff = { id: proposal.id, assigneeId: decision.assigneeId, decision: decisionRow }
+      }
+      plan.accepted++
+      plan.decisions.push(decisionRow)
       continue
     }
     if (!(NEXT_ACTION_TYPES as readonly string[]).includes(proposal.type))
@@ -243,16 +278,17 @@ export async function applyCallAnalysis(analysisId: Types.ObjectId | string, bod
     if (!current?.review || current.review.clientRequestId !== clientRequestId) return null
     if (current.review.requestHash !== hash)
       throw fail(409, 'IDEMPOTENCY_CONFLICT', 'Même clientRequestId, décisions différentes')
-    const lead = await Lead.findOne(leadFilter(current, ctx))
+    // Après un passage de main, la fiche peut être sortie du périmètre : le rejeu la relit par son identifiant.
+    const lead = await Lead.findById(current.lead)
     if (!lead) throw fail(404, 'NOT_FOUND', 'Lead not found')
-    return { lead, analysis: current }
+    return { lead, analysis: await completeEnrollments(current, ctx.actor) }
   }
   const replayed = await replay()
   if (replayed) return replayed
 
   const settings = await CrmSettings.getSettings()
   try {
-    return await runInTransaction(async (session: ClientSession) => {
+    const result = await runInTransaction(async (session: ClientSession) => {
       const analysis = await CallAnalysis.findById(analysisId).session(session)
       if (!analysis) throw fail(404, 'NOT_FOUND', 'Analyse introuvable')
       const lead = await Lead.findOne(leadFilter(analysis, ctx)).session(session)
@@ -265,6 +301,27 @@ export async function applyCallAnalysis(analysisId: Types.ObjectId | string, bod
       }
 
       const plan = planChanges(analysis.output, lead, body, ctx)
+      for (const item of plan.sequences) {
+        const sequence = await checkSequence(item.sequenceId, lead, session, item.id)
+        item.decision.after = { sequenceId: String(sequence._id), sequenceName: sequence.name }
+      }
+      let handoff: Handoff = null
+      if (plan.handoff && ctx.scope === 'rep') {
+        // Passage au closer : mêmes effets que « Prêt à closer » (lib/closingHandoff.ts).
+        if (lead.status === 'LOST')
+          throw fail(409, 'LEAD_NOT_OPEN', 'Seul un lead en cours peut être transmis', { id: plan.handoff.id })
+        const { closer, recipients } = await resolveCloser()
+        Object.assign(plan.patch, closingHandoffPatch(lead, ctx.actor, closer))
+        plan.handoff.decision.after = { closingHandoff: true, closer: closer ? String(closer) : null }
+        handoff = { kind: 'closer', closer, recipients }
+      } else if (plan.handoff) {
+        const assigneeId = checkAssignee(plan.handoff.assigneeId, lead, plan.handoff.id)
+        plan.patch.assignedTo = assigneeId
+        plan.handoff.decision.before = lead.assignedTo ? String(lead.assignedTo) : null
+        const assignee = await User.findById(assigneeId).select('name').session(session).lean<{ name?: string }>()
+        plan.handoff.decision.after = { assignedTo: assigneeId, assigneeName: assignee?.name ?? '' }
+        handoff = { kind: 'member', assigneeId }
+      }
       const now = new Date()
       const status = plan.accepted === 0 ? 'REJECTED' : plan.ignored === 0 ? 'APPLIED' : 'PARTIAL'
       // Garde de concurrence : seule la première relecture passe de READY à son statut final.
@@ -281,11 +338,23 @@ export async function applyCallAnalysis(analysisId: Types.ObjectId | string, bod
       if (!reviewed) throw fail(409, 'ANALYSIS_ALREADY_REVIEWED', 'Analyse déjà relue')
 
       if (plan.accepted > 0) {
+        // Le passage de main est gardé comme « Prêt à closer » : pas deux transmissions du même dossier.
+        if (handoff?.kind === 'closer') lead.$where = { closingHandoff: null }
         await applyLeadChange(
           lead,
           { ...plan.patch, lastCallAnalysisAt: now },
-          { actor: ctx.actor, source: 'analysis', settings, session, emit: false, validateAssignee: false },
+          {
+            actor: ctx.actor,
+            source: 'analysis',
+            settings,
+            session,
+            emit: false,
+            // Le membre choisi pour reprendre la fiche doit être habilité ; sans réassignation, rien à contrôler.
+            validateAssignee: handoff?.kind === 'member',
+          },
         )
+        if (handoff?.kind === 'closer')
+          await logClosingHandoff(lead._id as Types.ObjectId, handoff.closer, ctx.actor, session)
         if (plan.tasks.length > 0) {
           await PersonalTask.create(
             plan.tasks.map((task) => ({ ...task, userId: ctx.actor, leadId: lead._id })),
@@ -310,8 +379,16 @@ export async function applyCallAnalysis(analysisId: Types.ObjectId | string, bod
           session,
         )
       }
-      return { lead, analysis: reviewed }
+      return { lead, analysis: reviewed, handoff }
     })
+    // Après validation : notifications, puis inscription par le service des séquences.
+    if (result.handoff?.kind === 'closer') {
+      const rep = await User.findById(ctx.actor).select('name').lean<{ name?: string }>()
+      await notifyClosingHandoff(result.handoff.recipients, result.lead, { id: ctx.actor, name: rep?.name ?? '' })
+    } else if (result.handoff?.kind === 'member') {
+      await notifyHandoffAssignee(result.handoff.assigneeId, result.lead, ctx.actor)
+    }
+    return { lead: result.lead, analysis: await completeEnrollments(result.analysis, ctx.actor) }
   } catch (err) {
     // Double envoi concurrent du même clientRequestId : la première relecture a gagné, on la rejoue.
     if (err instanceof LeadChangeError && err.code === 'ANALYSIS_ALREADY_REVIEWED') {
