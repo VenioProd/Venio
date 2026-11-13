@@ -49,6 +49,7 @@ router.post(
   body('email').isEmail().withMessage('Email invalide'),
   body('password').isString().withMessage('Mot de passe requis'),
   body('name').trim().notEmpty().withMessage('Le nom est requis'),
+  body('isAssociate').optional().isBoolean({ strict: true }).withMessage('Statut associé invalide'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req)
@@ -103,10 +104,22 @@ router.post(
         role: nextRole,
         name,
         jobTitle: typeof req.body.jobTitle === 'string' ? req.body.jobTitle : '',
+        title: typeof req.body.title === 'string' ? req.body.title.trim() : '',
+        isAssociate: req.body.isAssociate === true,
         grantedPermissions,
         deniedPermissions,
         crmEntities,
       })
+      if (user.isAssociate) {
+        await recordAudit({
+          action: 'PERMISSION_CHANGED',
+          actor: buildActorFromReq(req),
+          entityType: 'User',
+          entityId: String(user._id),
+          before: { isAssociate: false },
+          after: { isAssociate: true },
+        })
+      }
 
       // Trigger internal user onboarding
       triggerAutomations(['onboarding.internal_user_setup'], { userId: user._id.toString(), actorId: req.user!.id })
