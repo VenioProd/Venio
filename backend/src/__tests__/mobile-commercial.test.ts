@@ -410,3 +410,15 @@ it("réserve au navigateur l'email et le mot de passe d'un compte client", async
   expect(credentials.body.code).toBe('BROWSER_SESSION_REQUIRED')
   expect((await User.findById(client._id).lean())?.email).toBe('client@test.invalid')
 })
+
+it("ouvre le poste d'appel de l'équipe à l'app native, pas l'espace de l'externe", async () => {
+  app.use('/api/admin/call-desk', (await import('../routes/admin/callDesk.js')).default)
+  app.use('/api/commercial', (await import('../routes/commercial/index.js')).default)
+  const config = await request(app).get('/api/admin/call-desk/calls/config').set('Authorization', bearer).expect(200)
+  expect(config.body).toMatchObject({ enabled: false })
+  // Sans variables Twilio : la même réponse que pour le navigateur, l'app retombe sur `tel:`.
+  const token = await request(app).post('/api/admin/call-desk/calls/token').set('Authorization', bearer).expect(503)
+  expect(token.body.code).toBe('TELEPHONY_DISABLED')
+  const closed = await request(app).get('/api/commercial/calls/config').set('Authorization', bearer).expect(403)
+  expect(closed.body.code).toBe('BROWSER_SESSION_REQUIRED')
+})

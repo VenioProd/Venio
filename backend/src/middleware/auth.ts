@@ -26,6 +26,8 @@ const BEARER_ALLOWED_PREFIXES = [
   '/api/mobile',
   '/api/notification-preferences',
   '/api/admin/crm',
+  // Poste d'appel de l'équipe (lot N) : jeton Voice, lancement par l'identifiant du lead, saisie rapide.
+  '/api/admin/call-desk',
   '/api/admin/interactions',
   '/api/admin/clients',
   '/api/admin/projects',

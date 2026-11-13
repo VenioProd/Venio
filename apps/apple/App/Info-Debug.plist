@@ -42,7 +42,12 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>Venio utilise Face ID pour déverrouiller vos données sur cet appareil.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Venio utilise le micro pour enregistrer vos notes vocales.</string>
+	<string>Venio utilise le micro pour vos notes vocales et pour les appels passés depuis l’app.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>voip</string>
+	</array>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Venio transcrit vos notes vocales sur cet appareil, sans envoi à un service de transcription.</string>
 </dict>

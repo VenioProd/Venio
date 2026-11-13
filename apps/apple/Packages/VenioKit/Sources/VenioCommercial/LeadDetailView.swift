@@ -10,6 +10,7 @@ public struct LeadDetailView: View {
     @Environment(\.venioPalette) private var palette
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.callDesk) private var callDesk
     #endif
     private var regular: Bool {
         #if os(iOS)
@@ -81,7 +82,7 @@ public struct LeadDetailView: View {
             }.venioCard()
             nextAction(lead)
             HStack(spacing: 6) {
-                action("Appeler", icon: "phone", url: lead.phoneURL).disabled(!canEdit(lead))
+                action("Appeler", icon: "phone", url: lead.phoneURL).disabled(!canEdit(lead)).accessibilityIdentifier("lead.call")
                 action("E-mail", icon: "envelope", url: lead.emailURL).disabled(!canEdit(lead))
                 editAction("Relance", icon: "clock") { showingFollowUp = true }
                     .disabled(!canEdit(lead)).accessibilityIdentifier("lead.followUp")
@@ -112,6 +113,9 @@ public struct LeadDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
                 }.accessibilityIdentifier("lead.voiceNote").disabled(store.currentUser?.permissions.contains("manage_crm") != true || lead.assignedTo != store.currentUser?.id)
             }.frame(maxWidth: .infinity, alignment: .leading).venioCard()
+            #if os(iOS)
+            if let callDesk { LeadCallsSection(desk: callDesk, leadId: lead.id) }
+            #endif
             if !lead.notes.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     VText("Note").font(.headline)
@@ -183,7 +187,10 @@ public struct LeadDetailView: View {
         Button {
             if let url {
                 #if os(iOS)
-                if title == "Appeler", let lead = store.lead(for: id) {
+                if title == "Appeler", let lead = store.lead(for: id), let callDesk, callDesk.canCall {
+                    // Appel passé par l'app : le serveur résout le numéro depuis la fiche.
+                    Task { await callDesk.start(leadId: lead.id, leadName: lead.company) }
+                } else if title == "Appeler", let lead = store.lead(for: id) {
                     store.beginCall(lead)
                     openURL(url) { accepted in if !accepted { store.cancelCall() } }
                 } else { openURL(url) }

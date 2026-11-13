@@ -30,18 +30,20 @@ public struct CommercialSpace: View {
     @Environment(CommercialStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.locale) private var locale
+    #if os(iOS)
+    @Environment(\.callDesk) private var callDesk
+    #endif
     @State private var tabRouteRevision = 0
     @State private var searchDestination: DeepLink?
     private let initialProjectID: String?
     @State private var tab: CommercialTab
-    @State private var todayPath: [String]
+    @State private var todayPath = NavigationPath()
     @State private var pipelinePath: [String]
     @Namespace private var pipelineTransition
 
     public init(initialTab: CommercialTab = .today, initialLeadID: String? = nil, initialProjectID: String? = nil) {
         self.initialProjectID = initialProjectID
         _tab = State(initialValue: initialProjectID != nil ? .projects : initialLeadID == nil ? initialTab : .pipeline)
-        _todayPath = State(initialValue: [])
         _pipelinePath = State(initialValue: initialLeadID.map { [$0] } ?? [])
     }
 
@@ -50,6 +52,20 @@ public struct CommercialSpace: View {
             NavigationStack(path: $todayPath) {
                 TodayView { todayPath.append($0) }
                     .navigationDestination(for: String.self) { LeadDetailView(id: $0) }
+                    #if os(iOS)
+                    .navigationDestination(for: CallQueueRoute.self) { _ in
+                        if let callDesk { CallQueueView(desk: callDesk) { todayPath.append($0) } }
+                    }
+                    .toolbar {
+                        if callDesk != nil, store.currentUser?.permissions.contains("manage_crm") == true {
+                            ToolbarItem(placement: .topBarLeading) {
+                                NavigationLink(value: CallQueueRoute()) {
+                                    Label { VText("File d’appels") } icon: { Image(systemName: "phone.arrow.up.right") }
+                                }.accessibilityIdentifier("today.callQueue")
+                            }
+                        }
+                    }
+                    #endif
             }.commercialQuickEntry(inHeader: true).tabItem { tabLabel(.today) }.tag(CommercialTab.today)
             if store.currentUser?.permissions.contains("view_crm") == true {
                 NavigationStack(path: $pipelinePath) {
@@ -110,6 +126,7 @@ public struct CommercialSpace: View {
         } message: { VText("La notification ne permet pas d’identifier cette fiche, ou vous n’y avez plus accès.") }
         #if os(iOS)
         .sheet(item: Binding(get: { store.callPrompt }, set: { store.callPrompt = $0 })) { CallLogView(call: $0) }
+        .modifier(CallDeskHost())
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { store.leftApplication() }
             if phase == .active { store.returnedToApplication() }
@@ -124,7 +141,7 @@ public struct CommercialSpace: View {
             #endif
             tabRouteRevision += 1
             switch link {
-            case .today: todayPath = []; tab = .today
+            case .today: todayPath = NavigationPath(); tab = .today
             case .pipeline: pipelinePath = []; tab = .pipeline
             case .figures: tab = .figures
             default: break
@@ -142,6 +159,10 @@ public struct CommercialSpace: View {
         Label { VText(item.title) } icon: { Image(systemName: item.icon).accessibilityHidden(true) }
     }
 }
+
+#if os(iOS)
+struct CallQueueRoute: Hashable {}
+#endif
 
 public struct AdminPlaceholderView: View {
     public init() {}

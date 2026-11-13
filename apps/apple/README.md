@@ -29,6 +29,10 @@ Ordre : `test1` (connexion, synchro, note en ligne), serveur coupé, `test2` (no
 
 `TEST_RUNNER_VENIO_E2E_EMAIL` (défaut `lea@venio.test`), `TEST_RUNNER_VENIO_E2E_BASE_URL` et `TEST_RUNNER_VENIO_E2E_SHOTS` (dossier de captures) sont facultatifs.
 
+### Poste d'appel
+
+Appels sortants par Twilio Voice iOS (version exacte dans `project.yml`), présentés par CallKit, sur les routes `/api/admin/call-desk` : l'app transmet le jeton et l'identifiant d'appel du serveur, jamais un numéro. Sans téléphonie côté serveur (`TELEPHONY_DISABLED`) ou micro refusé, la fiche garde le lien `tel:`. En Debug, `-VenioVoice simulated` remplace Twilio par une simulation, et `-VenioVoiceOperator <url>` la relie à un faux opérateur local qui joue les rappels signés vers le serveur. Le simulateur n'a pas d'interface d'appel et y coupe tout appel CallKit : il utilise un moteur sans CallKit, qui ne se vérifie donc que sur un iPhone. `CallDeskJourneyTests` (schéma `VenioE2E`) rejoue le parcours ; XCUITest exige le mode développeur du Mac (`DevToolsSecurity -status`).
+
 ## Session et données
 
 Les widgets lisent un instantané JSON dans l’App Group `group.paris.venio.app` (relances, CA agrégé, objectif et apparence), sans jeton ni session, vidé à la déconnexion ou au changement de compte.
