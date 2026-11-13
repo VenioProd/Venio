@@ -1,0 +1,1559 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM par objets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --bg:#0a0c0f;--card:#141a20;--card-hover:#1b242c;--raised:#202a33;--panel:#0d1115;
+  --border:rgba(224,238,247,.09);--border-soft:rgba(224,238,247,.07);--line:rgba(224,238,247,.16);
+  --tx:#e8eef3;--tx2:#9daab3;--mut:#7b8894;
+  --pri-rgb:56,189,248;--pri:rgb(var(--pri-rgb));--pri-l:rgb(125,211,252);--pri-d:#0ea5e9;--pri-fg:#06202b;
+  --accent-surface:rgba(var(--pri-rgb),.09);--accent-med:rgba(var(--pri-rgb),.14);--accent-border:rgba(var(--pri-rgb),.34);--ring:rgba(var(--pri-rgb),.55);
+  --crit:#ff8a8a;--serious:#f4a06a;--warn:#f7c268;--good:#7fdba0;
+  --r-sm:6px;--r-md:10px;--r-lg:13px;--r-pill:999px;
+  --sans:'Manrope','Cabinet Grotesk',system-ui,sans-serif;--mono:'DM Mono',ui-monospace,monospace;
+  --rail:50px;--snav:248px;--top:48px;--dock:clamp(520px,42vw,600px);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:500 12.5px/1.5 var(--sans);overflow-x:hidden}
+h1,h2,h3,h4,p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--pri-l);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--r-sm)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:400}
+.mut{color:var(--mut)}.tx2{color:var(--tx2)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+svg.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* coque */
+.app{display:grid;grid-template-columns:var(--rail) var(--snav) minmax(0,1fr);grid-template-rows:var(--top) minmax(0,1fr);height:100vh;height:100dvh}
+.rail{grid-row:1/3;grid-column:1;background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0}
+.rail a,.rail button{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--r-md);color:var(--tx2);background:none;border:0}
+.rail a:hover{background:var(--card);text-decoration:none}
+.rail a[aria-current=page]{background:var(--accent-med);color:var(--pri-l)}
+.rail .logo{width:30px;height:30px;border-radius:var(--r-md);background:var(--pri);color:var(--pri-fg);font-weight:800;font-size:15px;display:grid;place-items:center;margin-bottom:8px}
+.rail .grow{flex:1}
+.top{grid-row:1;grid-column:2/4;display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--border);background:var(--bg);min-width:0}
+.crumbs{display:flex;align-items:center;gap:6px;color:var(--mut);min-width:0;white-space:nowrap;overflow:hidden}
+.crumbs a{color:var(--tx2)}.crumbs b{color:var(--tx);font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.crumbs svg{width:12px;height:12px}
+.top .sp{flex:1}
+.cmd{display:flex;align-items:center;gap:8px;width:300px;max-width:100%;height:32px;padding:0 10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);color:var(--mut)}
+.cmd kbd,.kbd{font:400 11px var(--mono);background:var(--card-hover);color:var(--tx2);border-radius:var(--r-sm);padding:1px 6px;margin-left:auto}
+.ib{width:32px;height:32px;display:grid;place-items:center;background:none;border:0;border-radius:var(--r-md);color:var(--tx2);position:relative}
+.ib:hover{background:var(--card)}
+.ib .dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--pri)}
+.lang{display:flex;background:var(--card);border-radius:var(--r-md);padding:2px}
+.lang button{border:0;background:none;color:var(--tx2);padding:3px 8px;border-radius:var(--r-sm);font-weight:700;font-size:11.5px}
+.lang button[aria-pressed=true]{background:var(--card-hover);color:var(--tx)}
+.who{display:flex;align-items:center;gap:8px;background:none;border:0;padding:3px 6px;border-radius:var(--r-md);color:var(--tx)}
+.who:hover{background:var(--card)}
+.menu-btn{display:none}
+
+/* navigation secondaire par objets */
+.snav{grid-row:2;grid-column:2;background:var(--bg);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;padding:12px 10px 10px}
+.snav-head{display:flex;align-items:center;justify-content:space-between;padding:2px 8px 10px}
+.snav-head h2{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.snav-find{display:flex;align-items:center;gap:8px;height:32px;margin:0 2px 8px;padding:0 10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);color:var(--mut)}
+.snav-find input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--tx)}
+.snav-find:focus-within{box-shadow:0 0 0 2px var(--ring)}
+.ng{margin-top:10px}
+.ng-title{padding:4px 10px;font-size:11.5px;font-weight:600;color:var(--mut)}
+.obj{width:100%;display:flex;align-items:center;gap:9px;padding:7px 10px;border:0;background:none;color:var(--tx);border-radius:var(--r-md);font-weight:700;text-align:left;position:relative}
+.obj:hover{background:var(--card)}
+.obj .chev{margin-left:auto;transition:transform .15s;color:var(--mut)}
+.obj[aria-expanded=true] .chev{transform:rotate(90deg)}
+.obj .n{margin-left:auto;font:400 11.5px var(--mono);color:var(--mut)}
+.obj.on{color:var(--pri-l)}
+.views{list-style:none;margin:1px 0 6px;padding:0 0 0 18px;display:flex;flex-direction:column;gap:1px}
+.views[hidden]{display:none}
+.view{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:var(--r-md);color:var(--tx2);font-weight:500;position:relative;text-decoration:none!important}
+.view:hover{background:var(--card);color:var(--tx)}
+.view .n{margin-left:auto;font:400 11.5px var(--mono);color:var(--mut)}
+.view .dot{width:6px;height:6px;border-radius:50%;border:1.5px solid var(--mut);flex:none}
+.view[aria-current=page]{background:var(--accent-surface);color:var(--tx);font-weight:700}
+.view[aria-current=page] .dot{background:var(--pri);border-color:var(--pri)}
+.view[aria-current=page]::before{content:"";position:absolute;left:-8px;top:7px;bottom:7px;width:3px;border-radius:3px;background:var(--pri)}
+.snav-bottom{margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
+.snav-foot{padding:10px 10px 2px;color:var(--mut);font-size:11.5px}
+
+/* zone de contenu */
+.main{grid-row:2;grid-column:3;min-width:0;overflow:auto;position:relative}
+.main.split{display:flex;overflow:hidden}
+.main.split .list-side{flex:1;min-width:0;overflow:auto;padding:20px 22px 40px}
+.dock{flex:none;width:var(--dock);max-width:62%;overflow:auto;background:var(--panel);border-left:1px solid var(--border)}
+.page{padding:20px 24px 48px;max-width:1280px}
+.page.wide{max-width:none}
+
+/* en-tête de vue */
+.vh{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+.vh h1{font-size:26px;font-weight:800;letter-spacing:-.025em;line-height:1.15}
+.vh .sub{color:var(--tx2);margin-top:4px;max-width:70ch}
+.vh .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.vtag{display:inline-flex;align-items:center;gap:6px;color:var(--mut);font-size:11.5px;font-weight:600;margin-bottom:6px}
+.vtag svg{width:13px;height:13px}
+.tb{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tb .sp{flex:1}
+.field{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);color:var(--mut)}
+.field input{background:none;border:0;outline:0;color:var(--tx);min-width:0;width:170px}
+.field:focus-within{box-shadow:0 0 0 2px var(--ring)}
+
+/* boutons et gélules */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:7px 13px;border-radius:var(--r-md);font-weight:700;font-size:12px;border:1px solid transparent;background:var(--pri);color:var(--pri-fg);white-space:nowrap;text-decoration:none!important}
+.btn:hover{background:var(--pri-d)}
+.btn.sec{background:transparent;border-color:var(--line);color:var(--tx)}
+.btn.sec:hover{background:var(--card)}
+.btn.soft{background:var(--accent-med);border-color:var(--accent-border);color:var(--pri-l)}
+.btn.soft:hover{background:rgba(var(--pri-rgb),.2)}
+.btn.danger{background:rgba(255,138,138,.10);border-color:rgba(255,138,138,.32);color:var(--crit)}
+.btn.danger:hover{background:rgba(255,138,138,.16)}
+.btn.ghost{background:none;border-color:transparent;color:var(--tx2)}
+.btn.ghost:hover{background:var(--card);color:var(--tx)}
+.btn.sm{padding:5px 10px;font-size:11.5px;border-radius:var(--r-sm)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.icon{padding:7px;width:32px;height:32px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:var(--r-pill);border:1px solid var(--line);background:none;color:var(--tx2);font-weight:600;font-size:12px;white-space:nowrap}
+.pill:hover{background:var(--card);color:var(--tx)}
+.pill[aria-pressed=true],.pill.on{background:var(--pri);border-color:var(--pri);color:var(--pri-fg)}
+.pill.add{border-style:dashed;color:var(--mut)}
+.pill .n{font:400 11.5px var(--mono);opacity:.85}
+.seg{display:inline-flex;background:var(--card);border-radius:var(--r-md);padding:3px;gap:2px}
+.seg button,.seg a{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:var(--r-sm);border:0;background:none;color:var(--tx2);font-weight:700;font-size:12px;text-decoration:none!important}
+.seg [aria-pressed=true],.seg [aria-current=page]{background:var(--card-hover);color:var(--pri-l)}
+.seg button:hover,.seg a:hover{color:var(--tx)}
+
+/* tableau */
+.tw{border:1px solid var(--border-soft);border-radius:var(--r-lg);background:var(--card);overflow:auto;max-width:100%}
+table.tbl{border-collapse:collapse;width:100%;min-width:640px}
+.tbl th{text-align:left;font-size:11.5px;font-weight:600;color:var(--mut);padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;background:var(--card);z-index:1}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--border-soft);vertical-align:middle;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tbody tr{cursor:pointer}
+.tbl tbody tr:hover td{background:var(--card-hover)}
+.tbl tbody tr.sel td{background:var(--accent-surface)}
+.tbl tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--pri)}
+.tbl td.num,.tbl th.num{text-align:right}
+.tbl .name{font-weight:700;color:var(--tx)}
+.tbl .name small{display:block;color:var(--mut);font-weight:500;font-size:11.5px}
+.tbl tr.grp td{background:var(--bg);cursor:default;padding:8px 12px;font-weight:600;color:var(--tx);border-bottom:1px solid var(--border)}
+.tbl tr.grp:hover td{background:var(--bg)}
+.tbl td.chk,.tbl th.chk{width:34px;padding-right:0}
+input[type=checkbox]{accent-color:#38bdf8;width:15px;height:15px}
+.tfoot{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:10px 12px;color:var(--tx2);border-top:1px solid var(--border);flex-wrap:wrap}
+.sumbar{display:flex;gap:18px;flex-wrap:wrap}
+.sumbar b{font-family:var(--mono);font-weight:500;color:var(--tx)}
+.bulk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;margin-bottom:10px;background:var(--accent-surface);border:1px solid var(--accent-border);border-radius:var(--r-lg)}
+.bulk[hidden]{display:none}
+
+/* puces */
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:var(--r-pill);font-size:11.5px;font-weight:600;background:color-mix(in srgb,var(--c,#9daab3) 15%,var(--bg));color:var(--c,#9daab3);white-space:nowrap}
+.chip svg{width:12px;height:12px}
+.c-pri{--c:#7dd3fc}.c-good{--c:#7fdba0}.c-warn{--c:#f7c268}.c-crit{--c:#ff8a8a}.c-serious{--c:#f4a06a}.c-mut{--c:#9daab3}
+.sdot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--c);display:inline-block;flex:none}
+.sdot.full{background:var(--c)}
+.st{display:inline-flex;align-items:center;gap:7px;font-weight:600}
+.av{width:24px;height:24px;border-radius:50%;background:var(--pri);color:var(--pri-fg);display:inline-grid;place-items:center;font-weight:800;font-size:10.5px;flex:none}
+.av.n{background:var(--raised);color:var(--tx)}
+.av.lg{width:34px;height:34px;font-size:13px}
+.own{display:inline-flex;align-items:center;gap:7px}
+.redmark{display:inline-flex;align-items:center;gap:5px;color:var(--crit);font-weight:600}
+.redmark i{width:8px;height:8px;border-radius:50%;background:var(--crit);display:inline-block}
+
+/* cartes */
+.card{background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:16px}
+.card h3{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.card .hint{color:var(--tx2);margin-bottom:12px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{display:flex;flex-direction:column;gap:2px}
+.kpi .v{font-size:25px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.kpi .l{color:var(--mut);font-weight:600;font-size:11.5px}
+.kpi .d{color:var(--tx2);font-size:12px}
+.banner{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-radius:var(--r-lg);background:color-mix(in srgb,var(--c) 7%,var(--bg));border:1px solid color-mix(in srgb,var(--c) 26%,transparent);color:var(--tx);margin-bottom:12px}
+.banner svg{color:var(--c);margin-top:1px}
+.banner b{color:var(--c)}
+.banner .grow{flex:1;min-width:0}
+.banner .rowbtn{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:42px 20px;color:var(--tx2)}
+.empty svg{width:28px;height:28px;color:var(--mut)}
+.empty h3{font-size:17px;font-weight:800;color:var(--tx)}
+.empty p{max-width:46ch}
+.pairs{display:grid;grid-template-columns:130px minmax(0,1fr);gap:0}
+.pairs dt,.pairs dd{margin:0;padding:8px 0;border-bottom:1px solid var(--border-soft)}
+.pairs dt{color:var(--mut);font-weight:600;font-size:11.5px;padding-top:9px}
+.pairs dd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+select.sel,input.inp,textarea.inp{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:6px 10px;color:var(--tx);min-height:32px;max-width:100%}
+textarea.inp{width:100%;min-height:76px;resize:vertical}
+input.inp{width:100%}
+select.sel:focus,input.inp:focus,textarea.inp:focus{outline:0;box-shadow:0 0 0 2px var(--ring)}
+label.lab{display:block;color:var(--mut);font-weight:600;font-size:11.5px;margin-bottom:5px}
+.frm{display:grid;gap:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* onglets */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);overflow-x:auto;margin-bottom:16px;scrollbar-width:thin}
+.tabs button,.tabs a{position:relative;display:inline-flex;align-items:center;gap:7px;padding:10px 10px;color:var(--tx2);background:none;border:0;font-weight:600;white-space:nowrap;border-radius:var(--r-sm);text-decoration:none!important}
+.tabs [aria-selected=true]{color:var(--tx)}
+.tabs [aria-selected=true]::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:2px;background:var(--pri);border-radius:2px}
+.tabs .n{font:400 11.5px var(--mono);color:var(--mut)}
+
+/* fiche lead */
+.fiche{padding:18px 22px 40px}
+.fh{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.fh h2{font-size:22px;font-weight:800;letter-spacing:-.025em;line-height:1.2}
+.fh .meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px;color:var(--tx2)}
+.fh .meta .mono{color:var(--tx2)}
+.fgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;align-items:start}
+.dock .fgrid{grid-template-columns:minmax(0,1fr)}
+.section{margin-bottom:22px}
+.section>h3{font-size:15px;font-weight:800;letter-spacing:-.015em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.section>h3 .n{font:400 11.5px var(--mono);color:var(--mut)}
+.todo{display:flex;flex-direction:column;gap:8px}
+.todo .it{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--border-soft);background:var(--card);border-radius:var(--r-lg)}
+.todo .it .tt{flex:1;min-width:0}
+.todo .it .tt b{display:block}
+.todo .it .tt span{color:var(--tx2)}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft)}
+.tl time{font:400 11.5px var(--mono);color:var(--mut);padding-top:2px}
+.steps{display:flex;flex-direction:column;gap:0;counter-reset:s}
+.steps .s{display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-soft)}
+.steps .s:last-child{border-bottom:0}
+
+/* appel analysé */
+.callhead{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 14px;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg);margin-bottom:12px}
+.callhead .grow{flex:1;min-width:0}
+.player{display:flex;align-items:center;gap:10px;margin-top:10px}
+.wave{flex:1;height:26px;display:flex;align-items:center;gap:2px}
+.wave i{display:block;width:3px;background:var(--raised);border-radius:2px}
+.wave i.p{background:var(--pri)}
+.sum{padding:12px 14px;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg);color:var(--tx);font-size:13px;line-height:1.6}
+.tr{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow:auto;padding:12px 14px;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg)}
+.tr .ln{display:grid;grid-template-columns:44px 74px 1fr;gap:8px;padding:2px 0;align-items:baseline}
+.tr .ln.hl{background:var(--accent-surface);border-radius:var(--r-sm);margin:0 -6px;padding:3px 6px}
+.tr .t{font:400 11.5px var(--mono);color:var(--mut)}
+.tr .sp-a{color:var(--pri-l);font-weight:700}
+.tr .sp-b{color:var(--tx);font-weight:700}
+.prop{display:grid;grid-template-columns:1fr auto;gap:10px 14px;align-items:start;padding:12px 14px;border-bottom:1px solid var(--border-soft)}
+.prop:last-child{border-bottom:0}
+.prop .lbl{color:var(--mut);font-weight:600;font-size:11.5px}
+.prop .val{font-weight:700;font-size:13px}
+.prop .cite{grid-column:1/-1;color:var(--tx2);font-size:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.prop .acts{display:flex;gap:6px;align-items:center}
+.prop[data-state=ok] .val{color:var(--good)}
+.prop[data-state=skip] .val{color:var(--mut);text-decoration:line-through}
+.plist{border:1px solid var(--border-soft);background:var(--card);border-radius:var(--r-lg)}
+.heat{display:flex;flex-direction:column;gap:9px;padding:14px;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg)}
+.heat .row{display:grid;grid-template-columns:130px 1fr 54px;gap:10px;align-items:center}
+.bar{height:7px;border-radius:7px;background:var(--raised);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pri);border-radius:7px}
+.bar.bad i{background:var(--serious)}
+.foot-save{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;margin-top:12px;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg)}
+
+/* kanban */
+.kb{display:grid;grid-template-columns:repeat(5,minmax(228px,1fr));gap:12px;overflow-x:auto;padding-bottom:10px;align-items:start}
+.kcol{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);min-height:200px;display:flex;flex-direction:column}
+.kcol.over{background:var(--accent-surface)}
+.kcol header{padding:11px 12px 8px}
+.kcol header .t{display:flex;align-items:center;gap:8px;font-weight:700;font-size:12px}
+.kcol header .t .n{font:400 11.5px var(--mono);color:var(--mut);margin-left:auto}
+.kcol header .s{font:400 11.5px var(--mono);color:var(--tx2);margin-top:3px}
+.kcol .cards{display:flex;flex-direction:column;gap:8px;padding:4px 8px 10px;flex:1}
+.kcard{background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:11px 12px;display:flex;flex-direction:column;gap:7px;cursor:pointer;text-align:left}
+.kcard:hover{background:var(--card-hover)}
+.kcard.sel{border-color:var(--accent-border);background:var(--accent-surface)}
+.kcard .n1{font-weight:700;color:var(--tx)}
+.kcard .r{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--tx2)}
+.kcard[draggable=true]{cursor:grab}
+.kmore{padding:6px 12px 12px;color:var(--mut);font-size:11.5px}
+
+/* file d'appels */
+.deskbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.modehelp{padding:10px 14px;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg);color:var(--tx2);margin-bottom:12px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.modehelp b{color:var(--tx)}
+.qrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-soft);cursor:pointer}
+.qrow:hover{background:var(--card-hover)}
+.qrow.sel{background:var(--accent-surface);box-shadow:inset 3px 0 0 var(--pri)}
+.qrow.off{opacity:.9}
+.qgrp{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-weight:600}
+.qgrp .n{font:400 11.5px var(--mono);color:var(--mut)}
+.qrow .nm{font-weight:700;min-width:0}
+.qrow .nm small{display:block;color:var(--mut);font-weight:500;font-size:11.5px}
+.qrow .lt{font:400 11.5px var(--mono);color:var(--tx2);text-align:right}
+.callbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;background:var(--card);border:1px solid var(--accent-border);border-radius:var(--r-lg);margin-bottom:12px}
+.callbar .timer{font:500 22px var(--mono);letter-spacing:.02em}
+.callbar .grow{flex:1;min-width:0}
+.callbar .ctl{display:flex;gap:8px;flex-wrap:wrap}
+.rec{display:inline-flex;align-items:center;gap:6px;color:var(--crit);font-weight:700}
+.rec i{width:8px;height:8px;border-radius:50%;background:var(--crit);animation:blink 1.4s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.live{display:flex;flex-direction:column;gap:8px;min-height:220px;max-height:340px;overflow:auto;padding:12px 14px;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg)}
+.live .ln{display:grid;grid-template-columns:44px 76px 1fr;gap:8px;align-items:baseline}
+.live .ln.now{color:var(--tx2)}
+.callgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.result{display:grid;gap:8px}
+.result label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border-soft);background:var(--card);border-radius:var(--r-md);cursor:pointer}
+.result label:has(input:checked){border-color:var(--accent-border);background:var(--accent-surface)}
+.result label b{display:block}
+.result label span{color:var(--tx2)}
+input[type=radio]{accent-color:#38bdf8;margin-top:3px}
+
+/* graphiques */
+.cwrap{overflow-x:auto;max-width:100%}
+.chart{width:100%;min-width:620px;height:auto;display:block}
+.chart text{font:400 11px var(--mono);fill:#7b8894}
+.chart .grid line{stroke:rgba(224,238,247,.07)}
+.chart .area{fill:rgba(56,189,248,.14)}
+.chart .stroke{fill:none;stroke:#38bdf8;stroke-width:1.8;stroke-linejoin:round}
+.chart .vol{fill:rgba(56,189,248,.35)}
+.chart .vol.hi{fill:#38bdf8}
+.chart .cross line{stroke:rgba(224,238,247,.35);stroke-dasharray:3 3}
+.chart .tip rect{fill:#202a33;stroke:rgba(224,238,247,.16)}
+.chart .tip text{fill:#e8eef3}
+.chart .ref{stroke:#f7c268;stroke-dasharray:4 4;stroke-width:1.2}
+.chart .reflab{fill:#f7c268}
+.range{display:inline-flex;gap:2px;background:var(--card);border-radius:var(--r-md);padding:3px}
+.range button{border:0;background:none;color:var(--tx2);padding:4px 10px;border-radius:var(--r-sm);font:500 11.5px var(--mono)}
+.range button[aria-pressed=true]{background:var(--card-hover);color:var(--pri-l)}
+.hbar{display:grid;grid-template-columns:minmax(120px,240px) 1fr 40px;gap:12px;align-items:center;padding:7px 0}
+
+/* réglages */
+.setgrid{display:grid;grid-template-columns:240px minmax(0,1fr);gap:22px;align-items:start}
+.setgrid>*{min-width:0}
+.setnav{display:flex;flex-direction:column;gap:2px;position:sticky;top:0}
+.setnav .gt{padding:10px 10px 4px;color:var(--mut);font-weight:600;font-size:11.5px}
+.setnav a{padding:6px 10px;border-radius:var(--r-md);color:var(--tx2);font-weight:600;text-decoration:none!important;position:relative}
+.setnav a:hover{background:var(--card);color:var(--tx)}
+.setnav a[aria-current=page]{background:var(--accent-surface);color:var(--tx)}
+.setnav a[aria-current=page]::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:3px;background:var(--pri)}
+.sset{display:flex;flex-direction:column}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:13px 0;border-bottom:1px solid var(--border-soft)}
+.srow:last-child{border-bottom:0}
+.srow b{display:block}
+.srow span.d{color:var(--tx2)}
+.sw{position:relative;width:38px;height:22px;flex:none}
+.sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;width:100%;height:100%}
+.sw i{position:absolute;inset:0;background:var(--raised);border-radius:22px;transition:background .15s}
+.sw i::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:var(--tx2);transition:transform .15s}
+.sw input:checked+i{background:var(--pri)}
+.sw input:checked+i::after{transform:translateX(16px);background:var(--pri-fg)}
+.sw input:focus-visible+i{outline:2px solid var(--ring);outline-offset:2px}
+.days{display:flex;gap:6px;flex-wrap:wrap}
+.num-in{width:84px;text-align:right;font-family:var(--mono)}
+
+/* modale et toast */
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:50;padding:16px}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);width:min(540px,100%);max-height:90vh;overflow:auto;padding:20px}
+.modal h2{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-bottom:12px}
+.modal .foot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--raised);border:1px solid var(--line);border-radius:var(--r-md);padding:9px 14px;font-weight:600;z-index:60;display:none}
+#toast.show{display:block}
+.popover{position:absolute;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:8px;min-width:230px;max-height:340px;overflow:auto}
+.popover label{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:var(--r-sm);cursor:pointer}
+.popover label:hover{background:var(--card-hover)}
+.relpos{position:relative}
+
+/* accueil */
+.pin{display:flex;flex-direction:column;gap:6px;padding:14px;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg);color:var(--tx);text-decoration:none!important}
+.pin:hover{background:var(--card-hover)}
+.pin .v{font-size:25px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.pin .t{font-weight:700;display:flex;align-items:center;gap:8px}
+.pin .d{color:var(--tx2)}
+.objcard{display:flex;gap:12px;padding:14px;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--r-lg);color:var(--tx);text-decoration:none!important}
+.objcard:hover{background:var(--card-hover)}
+.objcard svg{width:20px;height:20px;color:var(--pri-l);margin-top:2px}
+.objcard b{display:block}
+.objcard span{color:var(--tx2)}
+.stack{display:flex;height:10px;border-radius:10px;overflow:hidden;gap:2px}
+.stack i{display:block;background:var(--pri);opacity:.9}
+.mini-h{font-size:17px;font-weight:800;letter-spacing:-.02em;margin:22px 0 10px}
+.chiprow{display:flex;gap:8px;flex-wrap:wrap}
+.perm{background:var(--accent-surface);border:1px dashed var(--accent-border);border-radius:var(--r-lg);padding:10px 14px;color:var(--tx2);margin-bottom:12px}
+
+/* plan */
+.plan td:first-child{font-weight:700}
+.plan td{white-space:normal;vertical-align:top}
+.plan tbody tr{cursor:default}
+
+/* adaptatif */
+@media (max-width:1100px){
+  :root{--snav:216px}
+  .main.split{display:block;overflow:auto}
+  .main.split .list-side{overflow:visible;padding:16px 16px 40px}
+  .dock{position:fixed;top:var(--top);right:0;bottom:0;left:calc(var(--rail) + var(--snav));width:auto;max-width:none;z-index:30}
+  .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .callgrid,.fgrid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:900px){
+  .app{display:block;height:auto;min-height:100vh}
+  .rail{display:none}
+  .top{position:sticky;top:0;z-index:40;padding:0 12px;height:var(--top)}
+  .menu-btn{display:grid}
+  .snav{display:none;position:fixed;top:var(--top);left:0;right:0;bottom:0;z-index:35;border:0;padding:12px 14px 24px}
+  body[data-nav=open] .snav{display:flex}
+  body[data-nav=open]{overflow:hidden}
+  .main{overflow:visible;min-height:calc(100vh - var(--top))}
+  .main.split{display:block}
+  .dock{left:0;top:var(--top)}
+  .cmd,.who span.nm,.lang,.top .hide-sm{display:none}
+  .page{padding:16px 14px 40px}
+  .vh h1{font-size:22px}
+  .g2,.g3,.g4{grid-template-columns:minmax(0,1fr)}
+  .setgrid{grid-template-columns:minmax(0,1fr)}
+  .setnav{position:static;flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:6px}
+  .setnav .gt{display:none}
+  .setnav a{white-space:nowrap}
+  .pairs{grid-template-columns:100px minmax(0,1fr)}
+  .row2{grid-template-columns:minmax(0,1fr)}
+  .kb{grid-template-columns:repeat(5,250px)}
+  .qrow{grid-template-columns:auto minmax(0,1fr) auto}
+  .qrow .lt{display:none}
+  .tl li{grid-template-columns:1fr}
+  .hbar{grid-template-columns:minmax(0,1fr) 40px}.hbar .bar{grid-column:1/3;grid-row:2}
+  .heat .row{grid-template-columns:100px 1fr 48px}
+  .tr .ln,.live .ln{grid-template-columns:40px 1fr}
+  .tr .ln>:nth-child(3),.live .ln>:nth-child(3){grid-column:1/3}
+  .fiche{padding:16px 14px 40px}
+}
+@media (pointer:coarse),(max-width:900px){
+  .pill,.btn:not(.sm){min-height:40px}.btn.sm{min-height:36px}
+  .ib{width:40px;height:40px}
+  .view,.obj{min-height:40px}
+  .seg button,.seg a{min-height:36px}
+  .tbl td,.tbl th{padding-top:11px;padding-bottom:11px}
+  input[type=checkbox]{width:20px;height:20px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body data-nav="closed">
+<div class="app" id="app">
+  <aside class="rail" aria-label="Navigation de l'administration" id="rail"></aside>
+  <header class="top" id="top"></header>
+  <nav class="snav" id="snav" aria-label="Objets du CRM"></nav>
+  <main class="main" id="main" tabindex="-1"></main>
+</div>
+<div id="dialog-root"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+(() => {
+'use strict';
+/* ───────── utilitaires ───────── */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const NB = ' ';
+const nb = t => t
+  .replace(/ ([:;?!»€%])/g, NB + '$1').replace(/« /g, '«' + NB)
+  .replace(/(\d) (h|min|s|jours?|j|appels?|€|%|mois|semaines?)(?![a-zà-ÿ])/g, '$1' + NB + '$2')
+  .replace(/(\d) (\d{3})(?!\d)/g, '$1' + NB + '$2');
+const fr = html => html.replace(/(<[^>]*>)|([^<]+)/g, (m, tag, text) => tag ? tag : nb(text));
+const eur = n => Math.round(n).toLocaleString('fr-FR').replace(/ /g, NB) + NB + '€';
+const P = {
+  home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6M18 14.4c1.9.8 3 2.6 3 5.6"/>',
+  phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  hangup: '<path d="M3 14c5-4 13-4 18 0l-2 3-4-1.5v-2.5a9 9 0 0 0-6 0V15.5L5 17z"/>',
+  building: '<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+  share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  bolt: '<path d="M13 3L5 13h6l-1 8 8-10h-6z"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+  map: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2"/>',
+  bell: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  chev: '<path d="M9 6l6 6-6 6"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  micoff: '<path d="M4 4l16 16"/><path d="M9 9v2a3 3 0 0 0 5 2M15 10V6a3 3 0 0 0-5.6-1.5M5 11a7 7 0 0 0 11 5.7M12 18v3"/>',
+  keypad: '<circle cx="6" cy="5" r="1.2"/><circle cx="12" cy="5" r="1.2"/><circle cx="18" cy="5" r="1.2"/><circle cx="6" cy="11" r="1.2"/><circle cx="12" cy="11" r="1.2"/><circle cx="18" cy="11" r="1.2"/><circle cx="6" cy="17" r="1.2"/><circle cx="12" cy="17" r="1.2"/><circle cx="18" cy="17" r="1.2"/><circle cx="12" cy="22" r="1.2"/>',
+  play: '<path d="M7 4.5v15l12-7.5z"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
+  skip: '<path d="M5 5l9 7-9 7zM18 5v14"/>',
+  cols: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/>',
+  list: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  kanban: '<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/>',
+  queue: '<path d="M4 6h10M4 12h10M4 18h6"/><path d="M17 15l4 3-4 3z"/>',
+  expand: '<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>',
+  more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  download: '<path d="M12 4v11M7 11l5 5 5-5M4 20h16"/>',
+  filter: '<path d="M4 5h16l-6 8v6l-4-2v-4z"/>',
+  star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',
+  alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.5v.1"/>',
+  info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.1"/>',
+  msg: '<path d="M4 5h16v11H9l-5 4z"/>',
+  shield: '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/>',
+  user: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>',
+  back: '<path d="M15 6l-6 6 6 6"/>',
+  edit: '<path d="M4 20l1-4L16 5l3 3L8 19z"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  flag: '<path d="M5 21V4M5 5h12l-2 4 2 4H5"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  euro: '<path d="M17 6.5a6 6 0 1 0 0 11M4 10h10M4 14h10"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c3 3.5 3 13.5 0 17M12 3.5c-3 3.5-3 13.5 0 17"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'
+};
+const ic = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || ''}</svg>`;
+const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600); };
+
+/* ───────── données de démonstration ───────── */
+const STATUS = {
+  LEAD: { label: 'Lead', c: '#9daab3', p: 0.10 },
+  QUALIFIED: { label: 'Qualifié', c: '#7dd3fc', p: 0.20 },
+  CONTACTED: { label: 'Contacté', c: '#7fdba0', p: 0.30 },
+  DEMO: { label: 'Démo', c: '#f7c268', p: 0.50 },
+  PROPOSAL: { label: 'Proposition', c: '#c9b8e8', p: 0.65 }
+};
+const ORDER = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'PROPOSAL'];
+const BASE = { LEAD: { n: 14, sum: 26500 }, QUALIFIED: { n: 9, sum: 39900 }, CONTACTED: { n: 8, sum: 33200 }, DEMO: { n: 6, sum: 38400 }, PROPOSAL: { n: 5, sum: 48400 } };
+const TOTAL = { n: 42, sum: 186400, weighted: 71250 };
+const TEAM = { Raphael: 'R', 'Alex Closer': 'A', 'Anna Externe': 'An', 'Bruno Externe': 'B' };
+const L = [
+  { id: 'dubreuil', name: 'Menuiserie Dubreuil', contact: 'Marc Dubreuil', role: 'gérant', phone: '+33 6 12 34 01 01', email: 'marc@menuiserie-dubreuil.example', status: 'CONTACTED', budget: 8000, heat: ['Chaud', 72], owner: 'Raphael', prio: 'Haute', src: 'Site', next: 'Rendez-vous jeu. 19 nov. 10 h', last: 'Aujourd’hui 10 h 07 · appel', days: 3, country: 'France', local: '10 h 42' },
+  { id: 'osteo', name: 'Cabinet Ostéo Lyon 6', contact: 'Claire Martin', role: 'ostéopathe', phone: '+33 4 78 12 34 02', email: 'claire@osteo-lyon6.example', status: 'QUALIFIED', budget: 5500, heat: ['Tiède', 48], owner: 'Raphael', prio: 'Normale', src: 'Referral', next: 'Rappel aujourd’hui', last: 'Mer. 11 nov. · appel', days: 5, country: 'France', local: '10 h 42', note: 'Décision partagée avec son associé.' },
+  { id: 'vasseur', name: 'Imprimerie Vasseur', contact: 'Julien Vasseur', role: 'dirigeant', phone: '+33 1 42 12 34 03', email: 'julien@imprimerie-vasseur.example', status: 'CONTACTED', budget: 4200, heat: ['Froid', 31], owner: 'Raphael', prio: 'Normale', src: 'Ads', next: 'Rappeler (répondeur hier)', last: 'Jeu. 12 nov. · répondeur', days: 6, country: 'France', local: '10 h 42', voicemail: true },
+  { id: 'immo', name: 'Agence Immo Rive Gauche', contact: 'Sophie Laurent', role: 'directrice', phone: '+33 1 43 12 34 04', email: 'sophie@immo-rivegauche.example', status: 'DEMO', budget: 14000, heat: ['Tiède', 55], owner: 'Raphael', prio: 'Haute', src: 'Site', next: 'Relance après démo, aujourd’hui', last: 'Lun. 9 nov. · démo', days: 4, country: 'France', local: '10 h 42' },
+  { id: 'morel', name: 'Expert-comptable Morel', contact: 'Nathalie Morel', role: 'experte-comptable', phone: '+33 1 45 12 34 05', email: 'nathalie@morel-expertise.example', status: 'PROPOSAL', budget: 22000, heat: ['Chaud', 81], owner: 'Raphael', prio: 'Urgente', src: 'Referral', next: 'Relance proposition, en retard de 2 jours', last: 'Lun. 9 nov. · proposition envoyée', days: 4, country: 'France', local: '10 h 42' },
+  { id: 'sablon', name: 'Brasserie du Sablon', contact: 'Pieter Janssens', role: 'gérant', phone: '+32 470 12 34 56', email: 'pieter@brasserie-sablon.example', status: 'LEAD', budget: 6000, heat: null, owner: 'Raphael', prio: 'Normale', src: 'Site', next: 'Premier appel', last: 'Jamais appelé', days: 2, country: 'Belgique', local: '10 h 42' },
+  { id: 'durand', name: 'Cabinet Avocats Durand', contact: 'Hélène Durand', role: 'associée', phone: '+33 1 40 12 34 07', email: 'helene@avocats-durand.example', status: 'QUALIFIED', budget: 12000, heat: ['Tiède', 52], owner: 'Alex Closer', ext: 'Anna Externe', prio: 'Haute', src: 'Referral', next: 'Prise en charge par Alex', last: 'Jeu. 12 nov. · transmis au closer', days: 1, country: 'France', local: '10 h 42' },
+  { id: 'sthonore', name: 'Boulangerie Saint-Honoré', contact: 'Aurélie Roux', role: 'gérante', phone: '+33 1 44 12 34 08', email: 'aurelie@boulangerie-sthonore.example', status: 'CONTACTED', budget: 3500, heat: ['Froid', 28], owner: 'Raphael', prio: 'Basse', src: 'Réseaux sociaux', next: 'Rappel aujourd’hui', last: 'Mar. 10 nov. · appel', days: 9, country: 'France', local: '10 h 42' },
+  { id: 'garage', name: 'Garage Lambert & Fils', contact: 'Denis Lambert', role: 'gérant', phone: '+33 4 91 12 34 09', email: 'denis@garage-lambert.example', status: 'CONTACTED', budget: 9000, heat: ['Tiède', 44], owner: 'Raphael', prio: 'Normale', src: 'Ads', next: 'En attente de décision sur l’opposition', last: 'Aujourd’hui 9 h 31 · appel', days: 7, country: 'France', local: '10 h 42' },
+  { id: 'pilates', name: 'Studio Pilates Batignolles', contact: 'Camille Perrin', role: 'fondatrice', phone: '+33 1 46 12 34 10', email: 'camille@pilates-batignolles.example', status: 'QUALIFIED', budget: 4800, heat: ['Froid', 22], owner: 'Raphael', prio: 'Normale', src: 'Réseaux sociaux', next: 'Rappel aujourd’hui', last: 'Lun. 9 nov. · appel', days: 11, country: 'France', local: '10 h 42' },
+  { id: 'auto', name: 'Auto-école Horizon', contact: 'Karim Benali', role: 'directeur', phone: '+33 2 40 12 34 11', email: 'karim@autoecole-horizon.example', status: 'LEAD', budget: 7200, heat: null, owner: 'Raphael', prio: 'Normale', src: 'Ads', next: 'Premier appel', last: 'Jamais appelé', days: 3, country: 'France', local: '10 h 42' },
+  { id: 'petale', name: 'Fleuriste Pétale', contact: 'Inès Bellegarde', role: 'gérante', phone: '+596 696 12 34 12', email: 'ines@fleuriste-petale.example', status: 'LEAD', budget: 2800, heat: null, owner: 'Raphael', prio: 'Normale', src: 'Site', next: 'Premier appel', last: 'Jamais appelé', days: 2, country: 'Martinique', local: '5 h 42', outside: true }
+];
+const byId = id => L.find(l => l.id === id);
+const INIT = Object.fromEntries(ORDER.map(s => [s, L.filter(l => l.status === s).length]));
+const INITSUM = Object.fromEntries(ORDER.map(s => [s, L.filter(l => l.status === s).reduce((a, l) => a + l.budget, 0)]));
+const stageN = s => BASE[s].n + L.filter(l => l.status === s).length - INIT[s];
+const stageSum = s => BASE[s].sum + L.filter(l => l.status === s).reduce((a, l) => a + l.budget, 0) - INITSUM[s];
+
+const S = {
+  role: 'admin',
+  cols: ['status', 'budget', 'heat', 'owner', 'next', 'last'],
+  checked: new Set(),
+  tab: { panel: 'ensemble', full: 'ensemble' },
+  mode: 'click', scope: 'mine',
+  open: { leads: true, appels: true },
+  fields: {}, actions: {},
+  validated: { dubreuil: false, durand: false, garage: false },
+  hold: 'pending',
+  call: null, callLines: [], result: 'joint',
+  expandedGroups: {},
+  settingsDirty: false, chartRange: 30,
+  ruleSim: null, seqSel: 'artisans'
+};
+const analysesPending = () => (S.validated.dubreuil ? 0 : 1) + (S.validated.durand ? 0 : 1) + (S.hold === 'confirmed' || S.validated.garage ? 0 : 1);
+const holdCount = () => (S.hold === 'pending' ? 1 : 0);
+const todoCount = () => 8 + analysesPending();
+
+/* ───────── composants de présentation ───────── */
+const stChip = k => { const s = STATUS[k]; return `<span class="st" style="--c:${s.c}"><span class="sdot"></span>${s.label}</span>`; };
+const heatChip = h => !h ? '<span class="mut">Non évaluée</span>' : `<span class="chip ${h[1] >= 70 ? 'c-serious' : h[1] >= 40 ? 'c-warn' : 'c-pri'}">${h[0]} <span class="mono">${h[1]}/100</span></span>`;
+const prioChip = p => `<span class="chip ${p === 'Urgente' ? 'c-crit' : p === 'Haute' ? 'c-warn' : 'c-mut'}">${p}</span>`;
+const initials = n => n.split(' ').map(w => w[0]).slice(0, 2).join('');
+const ownerCell = l => {
+  const o = l.owner;
+  const cls = o.includes('Externe') ? 'n' : '';
+  return `<span class="own"><span class="av ${cls}" aria-hidden="true">${initials(o)}</span>${esc(o)}${l.ext ? `<span class="mut"> · via ${esc(l.ext)}</span>` : ''}</span>`;
+};
+const nameCell = l => `<span class="name">${esc(l.name)}<small>${esc(l.contact)}${l.voicemail ? ' · <span class="redmark"><i></i>Répondeur</span>' : ''}${l.id === 'garage' && S.hold === 'pending' ? ' · <span class="chip c-crit">Retenue pour opposition</span>' : ''}</small></span>`;
+
+/* ───────── navigation ───────── */
+const NAV = [
+  { g: 'Travail', items: [
+    { id: 'leads', label: 'Leads', ic: 'users', views: [
+      { id: 'tous', label: 'Tous les leads ouverts', n: () => TOTAL.n },
+      { id: 'a-traiter', label: 'À traiter', n: todoCount },
+      { id: 'chauds', label: 'Mes leads chauds' },
+      { id: 'file', label: 'File d’appels', n: () => 38 },
+      { id: 'rappels', label: 'Rappels dus', n: () => 6 },
+      { id: 'jamais', label: 'Jamais appelés', n: () => 21 },
+      { id: 'transmis', label: 'Transmis au closer' }] },
+    { id: 'appels', label: 'Appels', ic: 'phone', views: [
+      { id: 'analyses', label: 'Analyses à valider', n: analysesPending },
+      { id: 'retenues', label: 'Retenues d’opposition', n: holdCount },
+      { id: 'jour', label: 'Appels du jour', n: () => 27 }] },
+    { id: 'comptes', label: 'Comptes', ic: 'building', views: [{ id: 'clients', label: 'Comptes clients' }] },
+    { id: 'partenaires', label: 'Partenaires', ic: 'share', views: [
+      { id: 'externes', label: 'Commerciaux externes' },
+      { id: 'listes', label: 'Listes d’appel' },
+      { id: 'commissions', label: 'Commissions' }] }] },
+  { g: 'Automatiser', items: [
+    { id: 'sequences', label: 'Séquences', ic: 'mail', views: [
+      { id: 'actives', label: 'Séquences actives' },
+      { id: 'inscriptions', label: 'Inscriptions en cours' },
+      { id: 'erreurs', label: 'Inscriptions en erreur' }] },
+    { id: 'regles', label: 'Règles', ic: 'bolt', views: [
+      { id: 'actives', label: 'Règles actives' },
+      { id: 'modeles', label: 'Modèles' },
+      { id: 'journal', label: 'Journal des exécutions' }] }] },
+  { g: 'Analyser', items: [
+    { id: 'rapports', label: 'Rapports', ic: 'chart', views: [
+      { id: 'pilotage', label: 'Pilotage' },
+      { id: 'scripts', label: 'Rapports de scripts' }] }] }
+];
+const SET_GROUPS = [
+  { id: 'qualification', label: 'Qualification et scoring', secs: [['statuts', 'Statuts'], ['qualification', 'Qualification'], ['scoring', 'Score'], ['attribution', 'Attribution automatique']] },
+  { id: 'followup', label: 'Relances et alertes', secs: [['alertes', 'Alertes et rappels'], ['escalade', 'Escalade'], ['notifications', 'Notifications'], ['doublons', 'Détection des doublons']] },
+  { id: 'calls', label: 'Appels', secs: [['appels', 'Poste d’appel']] },
+  { id: 'callsai', label: 'Téléphonie et IA', secs: [['telephonie', 'Téléphonie'], ['enregistrement', 'Enregistrement'], ['transcription', 'Transcription'], ['analyse', 'Analyse et grille de chaleur'], ['rapport-scripts', 'Rapport de scripts']] },
+  { id: 'compliance', label: 'Conformité', secs: [['opposes', 'Numéros opposés'], ['conservation', 'Conservation des données']] },
+  { id: 'reports', label: 'Rapports', secs: [['rapports', 'Envoi des rapports']] }
+];
+const secGroup = id => SET_GROUPS.find(g => g.secs.some(s => s[0] === id));
+const OBJ_LABEL = { leads: 'Leads', appels: 'Appels', comptes: 'Comptes', partenaires: 'Partenaires', sequences: 'Séquences', regles: 'Règles', rapports: 'Rapports', reglages: 'Réglages du CRM', plan: 'Plan du CRM' };
+const viewLabel = (obj, view) => { const o = NAV.flatMap(g => g.items).find(i => i.id === obj); const v = o && o.views.find(v => v.id === view); return v ? v.label : ''; };
+
+/* ───────── routeur ───────── */
+const parse = () => { const h = location.hash.replace(/^#\/?/, ''); return h ? h.split('/').map(decodeURIComponent) : []; };
+const go = h => { location.hash = h; };
+
+/* ───────── coque : rail, barre haute, navigation par objets ───────── */
+const renderRail = () => {
+  const b = (icn, label) => `<button type="button" data-act="toast" data-msg="Hors maquette : ${esc(label)}" aria-label="${esc(label)}" title="${esc(label)}">${ic(icn)}</button>`;
+  $('#rail').innerHTML = fr(`<div class="logo" aria-hidden="true">V</div>
+    ${b('grid', 'Tableau de bord')}${b('msg', 'Messagerie')}
+    <a href="#/" aria-current="page" aria-label="CRM" title="CRM">${ic('users')}</a>
+    ${b('folder', 'Projets')}${b('euro', 'Comptabilité')}${b('user', 'Équipe')}
+    <span class="grow"></span>${b('gear', 'Administration générale')}`);
+};
+const crumbs = r => {
+  const seg = r.seg, parts = [['CRM', '#/']];
+  const o = seg[0];
+  if (o === 'leads') { parts.push(['Leads', '#/leads/tous']); parts.push([r.view === 'mes-fiches' ? 'Mes fiches' : viewLabel('leads', r.view)]); if (seg[3] && byId(seg[3])) parts.push([byId(seg[3]).name]); }
+  else if (o === 'lead') { parts.push(['Leads', '#/leads/tous']); parts.push([byId(seg[1])?.name || 'Fiche']); }
+  else if (o === 'appels') { parts.push(['Appels', '#/appels/analyses']); parts.push([viewLabel('appels', r.view)]); }
+  else if (o === 'reglages') { const g = secGroup(seg[1] || 'statuts'); parts.push(['Réglages du CRM', '#/reglages/statuts']); if (g) parts.push([g.label]); }
+  else if (o === 'plan') parts.push(['Plan du CRM']);
+  else if (OBJ_LABEL[o]) { parts.push([OBJ_LABEL[o], `#/${o}/${seg[1] || ''}`]); const vl = viewLabel(o, seg[1] || (NAV.flatMap(g => g.items).find(i => i.id === o)?.views[0].id)); if (vl) parts.push([vl]); }
+  return `<nav class="crumbs" aria-label="Fil d’Ariane"><a href="#/">Admin</a>${parts.map(p => `${ic('chev')}${p[1] ? `<a href="${p[1]}">${p[0]}</a>` : `<b>${esc(p[0])}</b>`}`).join('')}</nav>`;
+};
+const renderTop = r => {
+  const ext = S.role === 'externe';
+  $('#top').innerHTML = fr(`<button type="button" class="ib menu-btn" data-act="navtoggle" aria-label="Ouvrir le menu du CRM" aria-expanded="${document.body.dataset.nav === 'open'}">${ic('menu')}</button>
+    ${crumbs(r)}<span class="sp"></span>
+    <div class="cmd hide-sm" role="search">${ic('search')}<span>Rechercher dans le CRM</span><kbd>⌘K</kbd></div>
+    <button type="button" class="pill hide-sm" data-act="role" aria-label="Changer de profil de démonstration">${ext ? 'Profil : commercial externe' : 'Profil : super admin'}</button>
+    <button type="button" class="btn sm" data-act="create">${ic('plus')} Créer</button>
+    <button type="button" class="ib" aria-label="Notifications : 3 nouvelles" data-act="toast" data-msg="Hors maquette : notifications">${ic('bell')}<span class="dot"></span></button>
+    <div class="lang hide-sm" role="group" aria-label="Langue"><button type="button" aria-pressed="true">FR</button><button type="button" aria-pressed="false" data-act="toast" data-msg="Hors maquette : version anglaise">EN</button></div>
+    <button type="button" class="who" aria-label="Compte connecté : ${ext ? 'Anna Externe' : 'Raphael'}"><span class="av">${ext ? 'An' : 'R'}</span><span class="nm">${ext ? 'Anna Externe' : 'Raphael'}</span></button>`);
+};
+const navCount = (v) => v.n ? `<span class="n">${v.n()}</span>` : '';
+const renderNav = r => {
+  const ext = S.role === 'externe';
+  const q = (S.navQ || '').toLowerCase();
+  const objs = ext
+    ? [{ g: 'Travail', items: [{ id: 'leads', label: 'Leads', ic: 'users', views: [{ id: 'mes-fiches', label: 'Mes fiches' }, { id: 'file', label: 'File d’appels' }] }] }]
+    : NAV;
+  const cur = r.seg[0] === 'lead' ? 'leads' : r.seg[0];
+  const groups = objs.map(g => {
+    const items = g.items.map(o => {
+      const vis = o.views.filter(v => !q || v.label.toLowerCase().includes(q) || o.label.toLowerCase().includes(q));
+      if (q && !vis.length) return '';
+      const on = cur === o.id;
+      const open = q ? true : (S.open[o.id] !== undefined ? S.open[o.id] : on);
+      const total = o.views.length;
+      return `<div><button type="button" class="obj ${on ? 'on' : ''}" data-act="obj" data-id="${o.id}" aria-expanded="${open}">${ic(o.ic)}<span>${o.label}</span>${ic('chev', 'chev')}</button>
+        <ul class="views" ${open ? '' : 'hidden'}>${vis.map(v => {
+          const isCur = on && (r.view === v.id);
+          return `<li><a class="view" href="#/${o.id}/${v.id}" ${isCur ? 'aria-current="page"' : ''}><span class="dot"></span><span>${v.label}</span>${navCount(v)}</a></li>`;
+        }).join('')}</ul></div>`;
+    }).join('');
+    return items ? `<div class="ng"><div class="ng-title">${g.g}</div>${items}</div>` : '';
+  }).join('');
+  const admin = ext ? '' : `<div class="snav-bottom"><div class="ng-title">Administration</div>
+    <a class="view" href="#/reglages/statuts" ${r.seg[0] === 'reglages' ? 'aria-current="page"' : ''}>${ic('gear')}<span>Réglages du CRM</span></a>
+    <a class="view" href="#/reglages/telephonie">${ic('phone')}<span>Téléphonie et IA</span></a>
+    <a class="view" href="#/reglages/opposes">${ic('shield')}<span>Numéros opposés</span></a>
+    <a class="view" href="#/plan" ${r.seg[0] === 'plan' ? 'aria-current="page"' : ''}>${ic('map')}<span>Plan du CRM</span></a></div>`;
+  const el = $('#snav');
+  if (!el.dataset.ready) {
+    el.innerHTML = `<div class="snav-head"><h2>CRM</h2><a href="#/" class="btn ghost sm" aria-label="Accueil du CRM">Accueil</a></div>
+      <label class="snav-find">${ic('search')}<span class="sr">Filtrer les objets et les vues</span><input type="search" id="navq" placeholder="Filtrer les vues" autocomplete="off"></label><div id="navlist" style="display:flex;flex-direction:column;flex:1"></div>`;
+    el.dataset.ready = '1';
+  }
+  $('#navlist').innerHTML = fr(groups + admin);
+  if (!ext) { /* les réglages ont leurs groupes en entrée de bas de navigation */ }
+};
+
+/* ───────── accueil du CRM ───────── */
+const bar5 = () => {
+  const total = ORDER.reduce((a, s) => a + stageN(s), 0);
+  return `<div class="stack" role="img" aria-label="Répartition des 42 leads ouverts par statut">${ORDER.map(s => `<i style="width:${stageN(s) / total * 100}%;opacity:${0.4 + ORDER.indexOf(s) * 0.15}" title="${STATUS[s].label}"></i>`).join('')}</div>
+  <div class="chiprow" style="margin-top:10px">${ORDER.map(s => `<span class="st" style="--c:${STATUS[s].c}"><span class="sdot full"></span>${STATUS[s].label} <span class="mono tx2">${stageN(s)}</span></span>`).join('')}</div>`;
+};
+const renderHome = () => `<div class="page">
+  <div class="vh"><div><div class="vtag">${ic('clock')} vendredi 13 novembre 2026, 10 h 42</div><h1>CRM</h1>
+    <p class="sub">Le CRM s’organise par objets. Chaque objet s’ouvre sur une table et des vues enregistrées ; le travail du jour est une vue de Leads, la file d’appels aussi.</p></div>
+    <div class="acts"><a class="btn" href="#/leads/file/file">${ic('phone')} Ouvrir la file d’appels</a><a class="btn sec" href="#/leads/a-traiter">À traiter</a></div></div>
+  <h2 class="mini-h" style="margin-top:6px">Vues épinglées</h2>
+  <div class="grid g4">
+    <a class="pin" href="#/leads/a-traiter"><span class="t">${ic('check')} À traiter</span><span class="v">${todoCount()}</span><span class="d">3 en retard, 5 du jour, ${analysesPending()} analyse${analysesPending() > 1 ? 's' : ''} d’appel à valider</span></a>
+    <a class="pin" href="#/leads/file/file"><span class="t">${ic('queue')} File d’appels</span><span class="v">38</span><span class="d">6 rappels dus, 21 jamais appelés, 11 autres</span></a>
+    <a class="pin" href="#/appels/analyses"><span class="t">${ic('mic')} Analyses à valider</span><span class="v">${analysesPending()}</span><span class="d">dont ${holdCount()} retenue${holdCount() > 1 ? 's' : ''} d’opposition à décider</span></a>
+    <a class="pin" href="#/leads/tous/kanban"><span class="t">${ic('kanban')} Pipeline ouvert</span><span class="v">${eur(TOTAL.sum)}</span><span class="d">42 leads, ${eur(TOTAL.weighted)} pondéré</span></a>
+  </div>
+  <div class="grid g2" style="margin-top:14px;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)">
+    <section class="card"><h3>Aujourd’hui</h3><p class="hint">File de Raphael, à 10 h 42.</p>
+      <div class="grid g4" style="gap:10px"><div class="kpi"><span class="v">27</span><span class="l">appels passés</span></div><div class="kpi"><span class="v">12</span><span class="l">prospects joints</span></div><div class="kpi"><span class="v">4</span><span class="l">rendez-vous pris</span></div><div class="kpi"><span class="v">33 %</span><span class="l">conversion sur joints</span></div></div>
+      <div style="margin-top:14px"><div style="display:flex;justify-content:space-between;color:var(--tx2);margin-bottom:6px"><span>Objectif de conversion : 40 %</span><span class="mono">33 %</span></div>
+      <div class="bar" role="img" aria-label="33 % de conversion, objectif 40 %"><i style="width:82.5%"></i></div></div></section>
+    <section class="card"><h3>Pipeline par statut</h3><p class="hint">Ce mois : 4 gagnés (${eur(31500)}), 3 perdus.</p>${bar5()}</section>
+  </div>
+  <h2 class="mini-h">Les objets du CRM</h2>
+  <div class="grid g3">
+    <a class="objcard" href="#/leads/tous">${ic('users')}<div><b>Leads</b><span>Table, Kanban et file d’appels. Fiche en panneau latéral.</span></div></a>
+    <a class="objcard" href="#/appels/analyses">${ic('phone')}<div><b>Appels</b><span>Appels analysés, analyses à valider, retenues d’opposition.</span></div></a>
+    <a class="objcard" href="#/comptes/clients">${ic('building')}<div><b>Comptes</b><span>Clients signés et leurs projets.</span></div></a>
+    <a class="objcard" href="#/partenaires/externes">${ic('share')}<div><b>Partenaires</b><span>Commerciaux externes, listes d’appel, commissions.</span></div></a>
+    <a class="objcard" href="#/sequences/actives">${ic('mail')}<div><b>Séquences</b><span>Enchaînements d’e-mails et inscriptions.</span></div></a>
+    <a class="objcard" href="#/regles/actives">${ic('bolt')}<div><b>Règles</b><span>Déclencheurs, actions, simulation et journal.</span></div></a>
+    <a class="objcard" href="#/rapports/pilotage">${ic('chart')}<div><b>Rapports</b><span>Pilotage commercial et rapports de scripts.</span></div></a>
+    <a class="objcard" href="#/reglages/statuts">${ic('gear')}<div><b>Réglages du CRM</b><span>Rangés en bas de la navigation, hors du travail du jour.</span></div></a>
+    <a class="objcard" href="#/plan">${ic('map')}<div><b>Plan du CRM</b><span>Où se trouve chaque fonction d’aujourd’hui.</span></div></a>
+  </div></div>`;
+
+/* ───────── Leads : colonnes, table ───────── */
+const COLS = [
+  { id: 'contact', label: 'Contact', r: l => esc(l.contact) },
+  { id: 'phone', label: 'Téléphone', r: l => `<span class="mono">${esc(l.phone)}</span>` },
+  { id: 'status', label: 'Statut', def: 1, r: l => `<select class="sel" data-chg="status" data-id="${l.id}" aria-label="Statut de ${esc(l.name)}" style="min-height:28px;padding:2px 8px">${ORDER.map(s => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${STATUS[s].label}</option>`).join('')}</select>` },
+  { id: 'prio', label: 'Priorité', r: l => prioChip(l.prio) },
+  { id: 'budget', label: 'Budget', num: 1, def: 1, r: l => `<span class="mono">${eur(l.budget)}</span>` },
+  { id: 'prob', label: 'Probabilité', num: 1, r: l => `<span class="mono">${Math.round(STATUS[l.status].p * 100)} %</span>` },
+  { id: 'weighted', label: 'Pondéré', num: 1, r: l => `<span class="mono">${eur(l.budget * STATUS[l.status].p)}</span>` },
+  { id: 'heat', label: 'Chaleur', def: 1, r: l => heatChip(l.heat) },
+  { id: 'owner', label: 'Assigné à', def: 1, r: ownerCell },
+  { id: 'next', label: 'Prochaine action', def: 1, r: l => esc(l.next) },
+  { id: 'last', label: 'Dernier échange', def: 1, r: l => `<span class="tx2">${esc(l.last)}</span>` },
+  { id: 'src', label: 'Source', r: l => esc(l.src) },
+  { id: 'days', label: 'Jours dans l’étape', num: 1, r: l => `<span class="mono">${l.days}</span>` }
+];
+const tableOf = (rows, opt = {}) => {
+  const cols = COLS.filter(c => S.cols.includes(c.id));
+  const open = opt.open;
+  const head = `<tr><th class="chk"><input type="checkbox" data-chg="checkall" aria-label="Tout sélectionner"></th><th>Entreprise</th>${cols.map(c => `<th class="${c.num ? 'num' : ''}">${c.label}</th>`).join('')}</tr>`;
+  const body = rows.map(l => `<tr class="${open === l.id ? 'sel' : ''}" data-open="${l.id}"><td class="chk"><input type="checkbox" data-chg="check" data-id="${l.id}" ${S.checked.has(l.id) ? 'checked' : ''} aria-label="Sélectionner ${esc(l.name)}"></td><td>${nameCell(l)}</td>${cols.map(c => `<td class="${c.num ? 'num' : ''}">${c.r(l)}</td>`).join('')}</tr>`).join('');
+  return `<div class="tw"><table class="tbl"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+};
+const ALLOWED = { tous: ['table', 'kanban', 'file'], chauds: ['table', 'kanban'], 'a-traiter': ['table'], file: ['file', 'table'], rappels: ['table', 'file'], jamais: ['table', 'file'], transmis: ['table'], 'mes-fiches': ['table'] };
+const DESC = {
+  tous: 'Tous les leads du pipeline, tous statuts ouverts confondus.',
+  'a-traiter': 'Le travail du jour : relances en retard, relances du jour, analyses d’appel à valider, puis la semaine et les fiches à ne pas laisser filer.',
+  chauds: 'Mes leads avec une chaleur de 70/100 ou plus.',
+  file: 'Mes fiches à appeler : rappels dus, jamais appelées, autres. Même objet que Leads, présenté en file.',
+  rappels: 'Mes fiches dont le rappel est dû aujourd’hui ou en retard.',
+  jamais: 'Mes fiches qui n’ont encore reçu aucun appel.',
+  transmis: 'Fiches des commerciaux externes transmises à un closer.',
+  'mes-fiches': 'Les fiches qui vous sont rattachées.'
+};
+const VIEW_ROWS = v => ({
+  tous: L, chauds: L.filter(l => l.heat && l.heat[1] >= 70 && l.owner === 'Raphael'),
+  rappels: ['osteo', 'morel', 'vasseur', 'immo', 'pilates', 'sthonore'].map(byId),
+  jamais: ['sablon', 'auto', 'petale'].map(byId),
+  transmis: L.filter(l => l.ext), 'mes-fiches': L.filter(l => l.ext === 'Anna Externe')
+}[v] || L);
+const PRES = { table: ['list', 'Table'], kanban: ['kanban', 'Kanban'], file: ['queue', 'File d’appels'] };
+const viewHeader = (view, pres, extra = '') => {
+  const label = view === 'mes-fiches' ? 'Mes fiches' : viewLabel('leads', view);
+  const allowed = ALLOWED[view] || ['table'];
+  const seg = allowed.length > 1 ? `<div class="seg" role="group" aria-label="Présentation">${allowed.map(p => `<a href="#/leads/${view}/${p}" ${pres === p ? 'aria-current="page"' : ''}>${ic(PRES[p][0])}${PRES[p][1]}</a>`).join('')}</div>` : '';
+  return `<div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Leads</div><h1>${label}</h1><p class="sub">${DESC[view] || ''}</p></div><div class="acts">${extra}${seg}</div></div>`;
+};
+const toolbar = (view) => `<div class="tb">
+  <label class="field">${ic('search')}<span class="sr">Rechercher dans la vue</span><input type="search" data-inp="q" value="${esc(S.q || '')}" placeholder="Rechercher un lead" autocomplete="off"></label>
+  <button type="button" class="pill" data-act="fil" data-k="moi" aria-pressed="${!!S.fil.moi}">Assigné à : moi</button>
+  <button type="button" class="pill" data-act="fil" data-k="chaud" aria-pressed="${!!S.fil.chaud}">Chaleur : chaud</button>
+  <button type="button" class="pill" data-act="fil" data-k="demo" aria-pressed="${!!S.fil.demo}">Budget : 8 000 € et plus</button>
+  <button type="button" class="pill add" data-act="toast" data-msg="Ajouter un filtre : statut, source, priorité, pays…">+ filtre</button>
+  <span class="sp"></span>
+  <div class="relpos"><button type="button" class="btn sec sm" data-act="colmenu" aria-haspopup="true" aria-expanded="${!!S.colMenu}">${ic('cols')} Colonnes</button>${S.colMenu ? `<div class="popover" style="right:0;top:36px" role="group" aria-label="Colonnes affichées">${COLS.map(c => `<label><input type="checkbox" data-chg="col" data-id="${c.id}" ${S.cols.includes(c.id) ? 'checked' : ''}> ${c.label}</label>`).join('')}</div>` : ''}</div>
+  <button type="button" class="btn sec sm" data-act="toast" data-msg="Export CSV des colonnes affichées">${ic('download')} Exporter en CSV</button></div>`;
+const bulkBar = () => `<div class="bulk" ${S.checked.size ? '' : 'hidden'} role="region" aria-label="Actions groupées"><b>${S.checked.size} sélectionné${S.checked.size > 1 ? 's' : ''}</b>
+  <button type="button" class="btn soft sm" data-act="toast" data-msg="Assigner la sélection">Assigner</button>
+  <button type="button" class="btn soft sm" data-act="toast" data-msg="Changer le statut de la sélection">Changer le statut</button>
+  <button type="button" class="btn soft sm" data-act="toast" data-msg="Inscrire la sélection à une séquence">Inscrire à une séquence</button>
+  <button type="button" class="btn sec sm" data-act="toast" data-msg="Export CSV de la sélection">Exporter la sélection</button>
+  <button type="button" class="btn danger sm" data-act="toast" data-msg="Suppression : confirmation requise (confirm: true)">Supprimer</button>
+  <button type="button" class="btn ghost sm" data-act="uncheck">Tout désélectionner</button></div>`;
+const applyFil = rows => rows.filter(l => (!S.q || (l.name + l.contact).toLowerCase().includes(S.q.toLowerCase())) && (!S.fil.moi || l.owner === 'Raphael') && (!S.fil.chaud || (l.heat && l.heat[1] >= 70)) && (!S.fil.demo || l.budget >= 8000));
+S.fil = {};
+
+const renderLeadsTable = (view, openId) => {
+  const rows = applyFil(VIEW_ROWS(view));
+  const filtered = S.q || S.fil.moi || S.fil.chaud || S.fil.demo;
+  let foot;
+  if (view === 'tous') foot = filtered ? `${rows.length} résultat${rows.length > 1 ? 's' : ''} parmi les 12 leads chargés, sur 42` : `12 leads chargés sur 42`;
+  else if (view === 'jamais') foot = `3 premiers sur 21`;
+  else foot = `${rows.length} lead${rows.length > 1 ? 's' : ''}`;
+  const sums = view === 'tous'
+    ? `<div class="sumbar" style="margin-bottom:10px"><span>Pipeline ouvert <b>${TOTAL.n}</b> leads</span><span>Total <b>${eur(TOTAL.sum)}</b></span><span>Pondéré <b>${eur(TOTAL.weighted)}</b></span><span>Gagnés ce mois <b>4 · ${eur(31500)}</b></span><span>Perdus ce mois <b>3</b></span></div>` : '';
+  const body = rows.length ? tableOf(rows, { open: openId }) : `<div class="tw"><div class="empty">${ic('search')}<h3>Aucun lead ne correspond</h3><p>Retirez un filtre ou élargissez la recherche pour retrouver des fiches.</p><button type="button" class="btn" data-act="clearfil">Effacer les filtres</button></div></div>`;
+  return `${sums}${toolbar(view)}${bulkBar()}${body}<div class="tfoot" style="border:0;padding-left:2px"><span>${foot}</span>${view === 'jamais' ? '<button type="button" class="btn sec sm" data-act="toast" data-msg="Charger les fiches suivantes">Charger la suite</button>' : '<span class="mut">Cliquer sur une ligne ouvre la fiche à droite.</span>'}</div>`;
+};
+
+/* Kanban */
+const renderKanban = (view, openId) => {
+  const rows = applyFil(VIEW_ROWS(view));
+  const cols = ORDER.map(s => {
+    const items = rows.filter(l => l.status === s);
+    const named = L.filter(l => l.status === s).length;
+    const more = view === 'tous' ? stageN(s) - named : 0;
+    return `<section class="kcol" data-drop="${s}" aria-label="${STATUS[s].label}"><header><div class="t"><span class="sdot full" style="--c:${STATUS[s].c}"></span>${STATUS[s].label}<span class="n">${view === 'tous' ? stageN(s) : items.length}</span></div><div class="s">${view === 'tous' ? eur(stageSum(s)) : eur(items.reduce((a, l) => a + l.budget, 0))}</div></header>
+      <div class="cards">${items.map(l => `<div class="kcard ${openId === l.id ? 'sel' : ''}" draggable="true" data-drag="${l.id}" data-open="${l.id}" tabindex="0" role="button" aria-label="Ouvrir ${esc(l.name)}">
+        <span class="n1">${esc(l.name)}</span><span class="r"><span>${esc(l.contact)}</span><span class="mono">${eur(l.budget)}</span></span>
+        <span class="r">${heatChip(l.heat)}<span class="av ${l.owner.includes('Externe') ? 'n' : ''}" title="${esc(l.owner)}" aria-label="Assigné à ${esc(l.owner)}">${initials(l.owner)}</span></span>
+        <span class="tx2">${esc(l.next)}</span></div>`).join('') || '<div class="kmore">Aucune fiche.</div>'}</div>
+      ${more > 0 ? `<div class="kmore">et ${more} autre${more > 1 ? 's' : ''} lead${more > 1 ? 's' : ''} dans cette colonne</div>` : ''}</section>`;
+  }).join('');
+  const sums = view === 'tous' ? `<div class="sumbar" style="margin-bottom:10px"><span>Pipeline ouvert <b>${TOTAL.n}</b> leads</span><span>Total <b>${eur(TOTAL.sum)}</b></span><span>Pondéré <b>${eur(TOTAL.weighted)}</b></span></div>` : '';
+  return `${sums}${toolbar(view)}<p class="mut" style="margin:-4px 0 10px">Glissez une carte vers une autre colonne pour changer le statut.</p><div class="kb">${cols}</div>`;
+};
+
+/* À traiter : table groupée par échéance */
+const TODO = [
+  { k: 'retard', label: 'En retard', tone: 'c-crit', rows: [['morel', 'Relance proposition', '2 jours de retard', 'Proposition'], ['vasseur', 'Rappeler après répondeur', '1 jour de retard', 'Contacté'], ['pilates', 'Rappel convenu', '1 jour de retard', 'Qualifié']] },
+  { k: 'jour', label: 'Aujourd’hui', tone: 'c-warn', rows: [['osteo', 'Rappel : décision partagée avec son associé', 'Aujourd’hui', 'Qualifié'], ['immo', 'Relance après démo', 'Aujourd’hui', 'Démo'], ['sthonore', 'Rappel convenu', 'Aujourd’hui', 'Contacté'], ['auto', 'Premier appel', 'Aujourd’hui', 'Lead'], ['sablon', 'Premier appel', 'Aujourd’hui', 'Lead']] },
+  { k: 'analyses', label: 'Analyses d’appel à valider', tone: 'c-pri', rows: [['dubreuil', 'Analyse de l’appel de 10 h 07', 'À valider', 'Contacté'], ['durand', 'Analyse de l’appel de 8 h 55', 'À valider', 'Qualifié'], ['garage', 'Retenue pour opposition à décider', 'Appel de 9 h 31', 'Contacté']] }
+];
+const MORE = [
+  { k: 'semaine', label: 'Cette semaine', n: 9, sample: [['durand', 'Prise en charge par le closer', 'Cette semaine', 'Qualifié']] },
+  { k: 'filer', label: 'À ne pas laisser filer', n: 4, sample: [['petale', 'Sans premier contact depuis sa création', 'À surveiller', 'Lead']] }
+];
+const todoDone = k => k === 'analyses';
+const renderTodoRow = (g, row, openId) => {
+  const l = byId(row[0]);
+  const isAn = g === 'analyses';
+  const gone = isAn && ((l.id === 'dubreuil' && S.validated.dubreuil) || (l.id === 'durand' && S.validated.durand) || (l.id === 'garage' && (S.hold === 'confirmed' || S.validated.garage)));
+  if (gone) return '';
+  const act = isAn
+    ? `<a class="btn soft sm" href="#/appels/${l.id === 'garage' ? 'retenues' : 'analyses'}/${l.id}">${l.id === 'garage' ? 'Décider' : 'Ouvrir l’analyse'}</a>`
+    : `<button type="button" class="btn soft sm" data-act="toast" data-msg="${esc(l.name)} : marqué comme contacté">${ic('check')} Contacté</button>
+       <button type="button" class="btn sec sm" data-act="note" data-id="${l.id}">Note</button>
+       <button type="button" class="btn sec sm" data-act="postpone" data-id="${l.id}">Reporter</button>
+       <a class="btn sm" href="#/leads/file/file/${l.id}">${ic('phone')} Appeler</a>`;
+  return `<tr class="${openId === l.id ? 'sel' : ''}" data-open="${l.id}"><td>${nameCell(l)}</td><td>${esc(row[1])}</td><td><span class="mono ${row[2].includes('retard') ? '' : 'tx2'}" ${row[2].includes('retard') ? 'style="color:var(--crit)"' : ''}>${row[2]}</span></td><td class="num"><span class="mono">${eur(l.budget)}</span></td><td style="text-align:right"><div style="display:inline-flex;gap:6px">${act}</div></td></tr>`;
+};
+const renderTodo = openId => {
+  const head = `<thead><tr><th>Élément</th><th>Raison</th><th>Échéance</th><th class="num">Budget</th><th style="text-align:right">Actions rapides</th></tr></thead>`;
+  const out = [];
+  TODO.forEach(g => {
+    const rows = g.rows.map(r => renderTodoRow(g.k, r, openId)).join('');
+    const n = g.k === 'analyses' ? analysesPending() : g.rows.length;
+    out.push(`<tr class="grp"><td colspan="5"><span class="chip ${g.tone}">${g.label}</span> <span class="mono mut" style="margin-left:6px">${n}</span></td></tr>${rows || `<tr><td colspan="5" class="mut">Plus rien à valider ici.</td></tr>`}`);
+  });
+  MORE.forEach(g => {
+    const open = S.expandedGroups[g.k];
+    out.push(`<tr class="grp"><td colspan="5"><button type="button" class="btn ghost sm" data-act="grp" data-k="${g.k}" aria-expanded="${!!open}" style="padding:2px 6px">${ic('chev')} ${g.label}</button> <span class="mono mut">${g.n}</span></td></tr>`);
+    if (open) { out.push(g.sample.map(r => renderTodoRow(g.k, r, openId)).join('')); out.push(`<tr><td colspan="5" class="mut">et ${g.n - g.sample.length} autres éléments, repliés pour garder la file lisible</td></tr>`); }
+  });
+  return `<div class="sumbar" style="margin-bottom:10px"><span>Aujourd’hui <b>${todoCount()}</b></span><span>Cette semaine <b>9</b></span><span>À ne pas laisser filer <b>4</b></span></div>
+    <div class="tb"><button type="button" class="pill on" aria-pressed="true">Tout le travail</button><button type="button" class="pill" aria-pressed="false" data-act="toast" data-msg="Filtre : relances seulement">Relances</button><button type="button" class="pill" aria-pressed="false" data-act="toast" data-msg="Filtre : analyses seulement">Analyses</button><span class="sp"></span><span class="mut">Regroupées par échéance</span></div>
+    <div class="tw"><table class="tbl">${head}<tbody>${out.join('')}</tbody></table></div>`;
+};
+
+/* ───────── appels analysés (données) ───────── */
+const CALLS = {
+  dubreuil: {
+    lead: 'dubreuil', time: '10 h 07', dur: '4 min 22', who: 'Raphael', note: 'Aujourd’hui',
+    summary: 'Menuiserie familiale, clientèle au bouche-à-oreille. Veut un site vitrine avec réalisations et demande de devis, budget autour de 8 000 €, en ligne avant le salon de l’habitat de mars. Compare avec une offre Wix Pro moins chère. Rendez-vous pris jeudi 10 h.',
+    transcript: [['00:04', 'a', 'Bonjour Marc, Raphael de Venio. Je vous rappelle suite à votre demande de site vitrine.'], ['00:12', 'b', 'Oui bonjour. On est une menuiserie familiale, les clients viennent surtout par le bouche-à-oreille.'], ['00:31', 'a', 'Qu’attendez-vous du site ?'], ['00:38', 'b', 'Montrer nos réalisations et que les gens puissent demander un devis directement.'], ['01:05', 'a', 'Vous aviez une enveloppe en tête ?'], ['01:11', 'b', 'Autour de huit mille euros. Et ce serait bien d’être en ligne avant le salon de l’habitat, en mars.'], ['01:46', 'a', 'Vous décidez seul ?'], ['01:50', 'b', 'C’est moi qui décide.'], ['02:20', 'b', 'J’ai vu une offre Wix Pro nettement moins chère, je vous le dis franchement.'], ['02:34', 'a', 'Je comprends. On regardera ensemble ce que vous obtenez de chaque côté lors d’un rendez-vous.'], ['03:40', 'a', 'Jeudi prochain à 10 h, cela vous convient ?'], ['03:46', 'b', 'Jeudi 10 h, parfait.']],
+    fields: [
+      { k: 'budget', l: 'Budget', v: '8 000 €', cite: 'Autour de huit mille euros', t: '01:11', ok: true },
+      { k: 'besoin', l: 'Besoin', v: 'Site vitrine avec réalisations et formulaire de devis', cite: 'Montrer nos réalisations et que les gens puissent demander un devis directement', t: '00:38', ok: true },
+      { k: 'echeance', l: 'Échéance', v: 'Avant le salon de l’habitat (mars)', cite: 'en ligne avant le salon de l’habitat, en mars', t: '01:11', ok: true },
+      { k: 'decideur', l: 'Décideur', v: 'Marc Dubreuil (gérant)', cite: 'C’est moi qui décide', t: '01:50', ok: true },
+      { k: 'concurrent', l: 'Concurrent', v: 'Wix Pro', cite: 'une offre Wix Pro nettement moins chère', t: '02:20', ok: true },
+      { k: 'objection', l: 'Objection', v: 'Prix plus élevé que Wix Pro', cite: 'Votre offre est plus chère que Wix Pro', t: null, ok: false }
+    ],
+    heat: [['Budget confirmé', 20, 25], ['Besoin précis', 18, 20], ['Échéance', 14, 20], ['Décideur identifié', 12, 15], ['Réactivité du prospect', 8, 20]],
+    actions: [
+      { k: 'rdv', ic: 'clock', l: 'Rendez-vous', v: 'Jeudi 19 novembre à 10 h', done: 'Rendez-vous créé et invitation envoyée' },
+      { k: 'mail', ic: 'mail', l: 'E-mail', v: '« Trois exemples de sites d’artisans », demain', done: 'E-mail programmé pour demain' },
+      { k: 'seq', ic: 'bolt', l: 'Séquence', v: 'Inscrire à « Artisans – avant rendez-vous »', done: 'Inscrit à la séquence' },
+      { k: 'main', ic: 'share', l: 'Passage de main', v: 'Passer la main à Alex pour le closing', done: 'Passage de main demandé à Alex Closer' }
+    ]
+  },
+  durand: {
+    lead: 'durand', time: '8 h 55', dur: '6 min 05', who: 'Alex Closer', note: 'Aujourd’hui',
+    summary: 'Premier échange du closer après le passage de main d’Anna Externe. Cabinet d’avocats, budget autour de 12 000 €, décision prise par l’associée.',
+    transcript: [['00:06', 'a', 'Bonjour Hélène, Alex de Venio. Anna m’a transmis votre dossier.'], ['00:15', 'b', 'Bonjour, oui, elle m’avait prévenue de votre appel.'], ['01:02', 'a', 'Quel budget avez-vous prévu pour le nouveau site du cabinet ?'], ['01:10', 'b', 'Environ douze mille euros. La décision, c’est moi qui la prends.']],
+    fields: [
+      { k: 'budget', l: 'Budget', v: '12 000 €', cite: 'Environ douze mille euros', t: '01:10', ok: true },
+      { k: 'decideur', l: 'Décideur', v: 'Hélène Durand (associée)', cite: 'La décision, c’est moi qui la prends', t: '01:10', ok: true }
+    ],
+    heat: [['Budget confirmé', 20, 25], ['Besoin précis', 10, 20], ['Échéance', 6, 20], ['Décideur identifié', 12, 15], ['Réactivité du prospect', 4, 20]],
+    actions: [{ k: 'mail', ic: 'mail', l: 'E-mail', v: 'Récapitulatif de l’échange', done: 'E-mail programmé' }]
+  },
+  garage: {
+    lead: 'garage', time: '9 h 31', dur: '1 min 48', who: 'Raphael', note: 'Aujourd’hui',
+    summary: 'Appel interrompu à la demande du prospect. Aucune information exploitable.',
+    transcript: [['00:05', 'a', 'Bonjour Denis, Raphael de Venio, je vous appelle au sujet de votre demande de site.'], ['00:20', 'b', 'Écoutez, je n’ai pas le temps pour ça.'], ['00:46', 'b', 'Ne me rappelez plus, retirez-moi de votre liste.'], ['00:52', 'a', 'C’est noté, je retire votre numéro.']],
+    fields: [], heat: [], actions: [], hold: true, holdAt: '00:46'
+  }
+};
+const CALLROWS = [
+  ['dubreuil', '10 h 07', 'Menuiserie Dubreuil', 'Raphael', '4 min 22', 'Joint · rendez-vous', 'a'],
+  ['garage', '9 h 31', 'Garage Lambert & Fils', 'Raphael', '1 min 48', 'Joint · opposition', 'h'],
+  ['durand', '8 h 55', 'Cabinet Avocats Durand', 'Alex Closer', '6 min 05', 'Joint · à rappeler', 'a'],
+  ['vasseur', 'Hier 16 h 12', 'Imprimerie Vasseur', 'Raphael', '0 min 12', 'Répondeur', '-'],
+  ['osteo', 'Mer. 11 nov. 11 h 03', 'Cabinet Ostéo Lyon 6', 'Raphael', '3 min 40', 'Joint · à rappeler', 'v']
+];
+const callState = id => { const c = CALLS[id]; if (id === 'garage') return S.hold === 'pending' ? 'hold' : S.hold === 'confirmed' ? 'gone' : S.validated.garage ? 'valid' : 'pending'; return S.validated[id] ? 'valid' : 'pending'; };
+const fs = (cid, f) => S.fields[cid + f.k] || { st: null, v: f.v };
+
+/* ───────── dialogues ───────── */
+const dlg = (title, body, foot) => {
+  $('#dialog-root').innerHTML = fr(`<div class="veil"><div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><h2>${title}</h2>${body}<div class="foot">${foot || '<button type="button" class="btn sec" data-act="dlgclose">Fermer</button>'}</div></div></div>`);
+  const f = $('#dialog-root input,#dialog-root textarea,#dialog-root select'); if (f) f.focus(); else $('#dialog-root .btn')?.focus();
+};
+const closeDlg = () => { $('#dialog-root').innerHTML = ''; };
+
+/* ───────── appel analysé (composant partagé fiche / objet Appels) ───────── */
+const renderAnalysis = (cid) => {
+  const c = CALLS[cid]; const l = byId(c.lead); const st = callState(cid);
+  if (st === 'hold') return `<div class="banner" style="--c:var(--crit)">${ic('shield')}<div class="grow"><b>Retenue pour opposition.</b> À ${c.holdAt}, le prospect dit « Ne me rappelez plus ». L’analyse reste suspendue : elle ne s’applique pas à la fiche tant que vous n’avez pas tranché.
+    <div class="rowbtn"><button type="button" class="btn danger sm" data-act="hold" data-v="confirmed">Confirmer l’opposition</button><button type="button" class="btn sec sm" data-act="hold" data-v="lifted">Lever la retenue</button></div></div></div>
+    ${trBlock(cid)}<p class="mut" style="margin-top:10px">Confirmer ajoute le numéro à la liste des numéros opposés et supprime l’analyse. Lever libère l’analyse pour validation.</p>`;
+  if (st === 'gone') return `<div class="banner" style="--c:var(--good)">${ic('check')}<div class="grow"><b>Opposition confirmée.</b> ${esc(l.phone)} figure dans les numéros opposés. L’analyse et le transcript ont été supprimés ; la fiche n’est plus appelable.</div></div>`;
+  const accepted = c.fields.filter(f => fs(cid, f).st === 'ok').length, done = c.fields.filter(f => fs(cid, f).st).length;
+  const bars = '<i class="p" style="height:9px"></i><i class="p" style="height:16px"></i><i class="p" style="height:11px"></i><i class="p" style="height:20px"></i><i class="p" style="height:13px"></i>' + [8, 15, 10, 22, 12, 18, 9, 14, 20, 11, 17, 8, 13, 19, 10, 15, 12, 21, 9, 16, 11, 14, 18, 8, 13, 17, 10, 20, 12, 15, 9, 18, 11, 14].map(h => `<i style="height:${h}px"></i>`).join('');
+  const total = c.heat.reduce((a, h) => a + h[1], 0);
+  return `<div class="callhead"><span class="av lg n" aria-hidden="true">${initials(c.who)}</span><div class="grow"><b>Appel sortant · ${c.note} ${c.time}</b><div class="tx2">${c.dur} · ${esc(c.who)} avec ${esc(l.contact)} · <span class="mono">${esc(l.phone)}</span></div></div>
+      <span class="chip ${st === 'valid' ? 'c-good' : 'c-warn'}">${ic(st === 'valid' ? 'check' : 'clock')}${st === 'valid' ? 'Analyse validée' : 'Analyse à valider'}</span>
+      <div class="player" style="flex-basis:100%"><button type="button" class="btn sec icon" aria-label="Écouter l’enregistrement" data-act="toast" data-msg="Lecture de l’enregistrement (conservé 30 jours)">${ic('play')}</button><div class="wave" aria-hidden="true">${bars}</div><span class="mono tx2">01:11 / ${c.dur.replace(' min ', ':').replace(/^(\d):/, '0$1:')}</span></div></div>
+    <p class="tx2" style="margin-bottom:12px">${ic('shield')} Aucune opposition du prospect pendant l’appel. ${S.hold === 'lifted' && cid === 'garage' ? 'Retenue levée par Raphael.' : ''}</p>
+    <div class="section"><h3>Résumé</h3><div class="sum">${esc(c.summary)}</div></div>
+    <div class="section"><h3>Transcript</h3>${trBlock(cid)}</div>
+    ${c.fields.length ? `<div class="section"><h3>Informations proposées <span class="n">${done} sur ${c.fields.length} traitées</span></h3><div class="plist">${c.fields.map(f => propRow(cid, f)).join('')}</div></div>` : ''}
+    ${c.heat.length ? `<div class="section"><h3>Chaleur par critère <span class="chip ${total >= 70 ? 'c-serious' : 'c-warn'}" style="margin-left:6px">${total >= 70 ? 'Chaud' : 'Tiède'} <span class="mono">${total}/100</span></span></h3><div class="heat">${c.heat.map(h => `<div class="row"><span>${h[0]}</span><div class="bar" role="img" aria-label="${h[0]} : ${h[1]} sur ${h[2]}"><i style="width:${h[1] / h[2] * 100}%"></i></div><span class="mono tx2" style="text-align:right">${h[1]}/${h[2]}</span></div>`).join('')}</div></div>` : ''}
+    ${c.actions.length ? `<div class="section"><h3>Actions proposées</h3><div class="todo">${c.actions.map(a => { const s = S.actions[cid + a.k]; return `<div class="it">${ic(a.ic)}<div class="tt"><b>${a.l}</b><span>${a.v}</span></div>${s === 'ok' ? `<span class="chip c-good">${ic('check')}${a.done}</span>` : s === 'skip' ? '<span class="chip c-mut">Ignorée</span>' : `<button type="button" class="btn soft sm" data-act="act" data-c="${cid}" data-k="${a.k}" data-v="ok">Accepter</button><button type="button" class="btn ghost sm" data-act="act" data-c="${cid}" data-k="${a.k}" data-v="skip">Ignorer</button>`}</div>`; }).join('')}</div></div>` : ''}
+    ${st === 'valid' ? '' : `<div class="foot-save"><span class="tx2">${accepted} information${accepted > 1 ? 's' : ''} acceptée${accepted > 1 ? 's' : ''} sur ${c.fields.length}. Valider les applique à la fiche.</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn soft" data-act="acceptall" data-c="${cid}">Accepter les citations vérifiées</button><button type="button" class="btn" data-act="validate" data-c="${cid}">${ic('check')} Valider l’analyse</button></div></div>`}`;
+};
+const trBlock = cid => { const c = CALLS[cid]; return `<div class="tr" tabindex="0" aria-label="Transcript de l’appel">${c.transcript.map(x => `<div class="ln ${S.hl === cid + x[0] ? 'hl' : ''}" id="t-${cid}-${x[0].replace(':', '')}"><span class="t">${x[0]}</span><span class="${x[1] === 'a' ? 'sp-a' : 'sp-b'}">${x[1] === 'a' ? esc(c.who) : esc(byId(c.lead).contact.split(' ')[0])}</span><span>${esc(x[2])}</span></div>`).join('')}</div>`; };
+const propRow = (cid, f) => {
+  const s = fs(cid, f);
+  return `<div class="prop" data-state="${s.st || ''}"><div><div class="lbl">${f.l}</div><div class="val">${esc(s.v)}</div></div>
+    <div class="acts">${s.st ? `<span class="chip ${s.st === 'ok' ? 'c-good' : 'c-mut'}">${s.st === 'ok' ? ic('check') + 'Accepté' : 'Ignoré'}</span><button type="button" class="btn ghost sm" data-act="fld" data-c="${cid}" data-k="${f.k}" data-v="reset">Annuler</button>` : `<button type="button" class="btn soft sm" data-act="fld" data-c="${cid}" data-k="${f.k}" data-v="ok">Accepter</button><button type="button" class="btn sec sm" data-act="fld" data-c="${cid}" data-k="${f.k}" data-v="edit">Modifier</button><button type="button" class="btn ghost sm" data-act="fld" data-c="${cid}" data-k="${f.k}" data-v="skip">Ignorer</button>`}</div>
+    <div class="cite">« ${esc(f.cite)} »${f.ok ? ` <span class="chip c-good">${ic('check')}Citation vérifiée</span> <button type="button" class="btn ghost sm" data-act="cite" data-c="${cid}" data-t="${f.t}">Voir à ${f.t}</button>` : ` <span class="chip c-warn">${ic('alert')}Citation non vérifiée : absente du transcript</span>`}</div></div>`;
+};
+
+/* ───────── fiche lead ───────── */
+const TABS = [['ensemble', 'Vue d’ensemble'], ['appels', 'Appels et analyses'], ['echanges', 'Échanges'], ['sequences', 'Séquences'], ['chaine', 'Chaîne commerciale'], ['rgpd', 'Données personnelles']];
+const props = l => {
+  const p = STATUS[l.status].p;
+  return `<dl class="pairs">
+    <dt>Statut</dt><dd><select class="sel" data-chg="status" data-id="${l.id}" aria-label="Statut">${ORDER.map(s => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${STATUS[s].label}</option>`).join('')}</select></dd>
+    <dt>Entité</dt><dd>Venio Paris</dd>
+    <dt>Chaleur</dt><dd>${heatChip(l.heat)}</dd>
+    <dt>Assigné à</dt><dd><select class="sel" data-chg="owner" data-id="${l.id}" aria-label="Assigné à">${Object.keys(TEAM).map(o => `<option ${l.owner === o ? 'selected' : ''}>${o}</option>`).join('')}</select>${l.ext ? `<span class="mut">apporté par ${esc(l.ext)}</span>` : ''}</dd>
+    <dt>Prochaine action</dt><dd>${esc(l.next)} <button type="button" class="btn ghost sm" data-act="note" data-id="${l.id}">Modifier</button></dd>
+    <dt>Budget</dt><dd class="mono">${eur(l.budget)}</dd>
+    <dt>Probabilité</dt><dd class="mono">${Math.round(p * 100)} %<span class="tx2" style="font-family:var(--sans)"> · pondéré ${eur(l.budget * p)}</span></dd>
+    <dt>Priorité</dt><dd>${prioChip(l.prio)}</dd>
+    <dt>Source</dt><dd>${esc(l.src)}</dd>
+    <dt>Contact</dt><dd>${esc(l.contact)}, ${esc(l.role)}</dd>
+    <dt>Téléphone</dt><dd><span class="mono">${esc(l.phone)}</span></dd>
+    <dt>Heure locale</dt><dd>${l.outside ? `<span class="mono">${l.local}</span> <span class="chip c-warn">${ic('clock')}Hors plage chez le prospect</span>` : `<span class="mono">${l.local}</span><span class="tx2">${l.country}</span>`}</dd>
+    <dt>E-mail</dt><dd><span class="mono" style="word-break:break-all">${esc(l.email)}</span></dd></dl>`;
+};
+const leadCalls = id => Object.keys(CALLS).filter(k => CALLS[k].lead === id);
+const renderFiche = (l, full, tab) => {
+  const isH = l.id === 'garage' && S.hold === 'pending';
+  const pend = (l.id === 'dubreuil' && !S.validated.dubreuil) || (l.id === 'durand' && !S.validated.durand);
+  const hdr = `<div class="fh"><div style="min-width:0"><h2>${esc(l.name)}</h2><div class="meta">${stChip(l.status)}${heatChip(l.heat)}<span class="mono">${eur(l.budget)}</span><span>${ownerCell(l)}</span></div></div>
+    <div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${full ? '' : `<a class="btn sec sm" href="#/lead/${l.id}">${ic('expand')} Pleine page</a><a class="btn ghost sm" href="${closeHref()}" aria-label="Fermer la fiche">${ic('x')} Fermer</a>`}</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      ${isH || l.outside ? `<button type="button" class="btn" disabled>${ic('phone')} ${isH ? 'Appels suspendus' : 'Hors plage'}</button>` : `<a class="btn" href="#/leads/file/file/${l.id}">${ic('phone')} Appeler</a>`}
+      <button type="button" class="btn soft" data-act="mail" data-id="${l.id}">${ic('mail')} Écrire</button>
+      <button type="button" class="btn sec" data-act="note" data-id="${l.id}">${ic('edit')} Consigner un échange</button>
+      <button type="button" class="btn sec" data-act="merge" data-id="${l.id}">Fusionner</button>
+      <button type="button" class="btn sec" data-act="convert" data-id="${l.id}">Convertir en client</button></div>`;
+  const tabs = `<div class="tabs" role="tablist" aria-label="Sections de la fiche">${TABS.map(t => `<button type="button" role="tab" id="tab-${t[0]}" aria-selected="${tab === t[0]}" data-act="tab" data-t="${t[0]}">${t[1]}${t[0] === 'appels' && leadCalls(l.id).length ? `<span class="n">${leadCalls(l.id).length}</span>` : ''}</button>`).join('')}</div>`;
+  const banners = `${isH ? `<div class="banner" style="--c:var(--crit)">${ic('shield')}<div class="grow"><b>Retenue pour opposition.</b> Le prospect a demandé à ne plus être rappelé à 9 h 31. Les appels sont suspendus jusqu’à votre décision.<div class="rowbtn"><a class="btn danger sm" href="#/appels/retenues/garage">Décider de la retenue</a></div></div></div>` : ''}
+    ${l.outside ? `<div class="banner" style="--c:var(--warn)">${ic('clock')}<div class="grow"><b>Hors plage chez le prospect.</b> Il est ${l.local} à Fort-de-France. Les appels sont autorisés de 9 h à 19 h, heure du prospect : prochaine plage à 14 h 00, heure de Paris.</div></div>` : ''}
+    ${l.voicemail ? `<div class="banner" style="--c:var(--crit)">${ic('flag')}<div class="grow"><b>Répondeur détecté hier.</b> La fiche porte la marque rouge jusqu’au prochain échange.</div></div>` : ''}
+    ${pend ? `<div class="banner" style="--c:var(--pri-l)">${ic('mic')}<div class="grow"><b>Une analyse d’appel attend votre validation.</b> Les informations proposées ne s’appliquent à la fiche qu’une fois validées.<div class="rowbtn"><button type="button" class="btn soft sm" data-act="tab" data-t="appels">Ouvrir l’analyse</button></div></div></div>` : ''}`;
+  let body = '';
+  if (tab === 'ensemble') {
+    const todo = l.id === 'dubreuil' ? `<div class="section"><h3>À faire maintenant <span class="n">3</span></h3><div class="todo">
+      ${S.validated.dubreuil ? '' : `<div class="it">${ic('mic')}<div class="tt"><b>Valider l’analyse de l’appel de 10 h 07</b><span>6 informations et 4 actions proposées</span></div><button type="button" class="btn soft sm" data-act="tab" data-t="appels">Ouvrir</button></div>`}
+      <div class="it">${ic('clock')}<div class="tt"><b>Rendez-vous jeudi 19 novembre à 10 h</b><span>Proposé par l’analyse, pas encore créé</span></div><button type="button" class="btn sec sm" data-act="tab" data-t="appels">Voir l’action</button></div>
+      <div class="it">${ic('mail')}<div class="tt"><b>Envoyer « trois exemples de sites d’artisans »</b><span>Demain</span></div><button type="button" class="btn sec sm" data-act="mail" data-id="${l.id}">Écrire</button></div></div></div>`
+      : `<div class="section"><h3>À faire maintenant</h3><div class="todo"><div class="it">${ic('clock')}<div class="tt"><b>${esc(l.next)}</b><span>Dernier échange : ${esc(l.last)}</span></div>${isH || l.outside ? '' : `<a class="btn soft sm" href="#/leads/file/file/${l.id}">Appeler</a>`}</div></div></div>`;
+    const tline = l.id === 'dubreuil' ? [['Aujourd’hui 10 h 07', 'Appel sortant de 4 min 22 avec Marc Dubreuil. Analyse à valider.'], ['Mer. 11 nov. 16 h 20', 'E-mail « Votre demande de site vitrine » envoyé par Raphael.'], ['Mar. 10 nov. 14 h 02', 'Lead créé depuis le formulaire du site, statut Lead.']] : [[l.last, 'Dernier échange consigné.']];
+    body = `<div class="fgrid"><div>${todo}<div class="section"><h3>Activité récente</h3><ul class="tl">${tline.map(x => `<li><time>${x[0]}</time><span>${x[1]}</span></li>`).join('')}</ul></div>
+      <div class="section"><h3>Doublons</h3><p class="tx2">${ic('check')} Aucun doublon détecté sur le nom, le téléphone et l’e-mail.</p></div></div>
+      <aside aria-label="Propriétés du lead"><div class="card" style="padding:6px 14px">${props(l)}</div></aside></div>`;
+  } else if (tab === 'appels') {
+    const cs = leadCalls(l.id);
+    body = cs.length ? cs.map(renderAnalysis).join('') : `<div class="empty">${ic('phone')}<h3>Aucun appel pour cette fiche</h3><p>Les appels passés depuis la file d’appels apparaissent ici, avec leur transcript et leur analyse.</p>${l.outside || isH ? '' : `<a class="btn" href="#/leads/file/file/${l.id}">${ic('phone')} Appeler ${esc(l.contact)}</a>`}</div>`;
+  } else if (tab === 'echanges') {
+    body = `<div class="card" style="margin-bottom:16px"><h3>Consigner un échange</h3><div class="frm"><div class="row2"><div><label class="lab" for="ech-t">Type</label><select class="sel inp" id="ech-t"><option>Appel</option><option>E-mail</option><option>Rendez-vous</option><option>Note</option></select></div><div><label class="lab" for="ech-d">Prochaine action</label><input class="inp" id="ech-d" type="text" value="${esc(l.next)}"></div></div><div><label class="lab" for="ech-n">Compte rendu</label><textarea class="inp" id="ech-n" placeholder="Ce qui s’est dit, ce qui a été décidé"></textarea></div><div><button type="button" class="btn" data-act="toast" data-msg="Échange consigné sur ${esc(l.name)}">Consigner</button></div></div></div>
+      <ul class="tl"><li><time>${l.id === 'dubreuil' ? 'Aujourd’hui 10 h 07' : esc(l.last)}</time><span>${l.id === 'dubreuil' ? 'Appel sortant, 4 min 22. Rendez-vous proposé jeudi 19 novembre à 10 h.' : 'Dernier échange consigné.'}</span></li>${l.id === 'dubreuil' ? '<li><time>Mer. 11 nov. 16 h 20</time><span>E-mail « Votre demande de site vitrine ».</span></li><li><time>Mar. 10 nov. 14 h 02</time><span>Lead créé depuis le formulaire du site.</span></li>' : ''}</ul>`;
+  } else if (tab === 'sequences') {
+    body = l.id === 'dubreuil' ? `<div class="empty">${ic('mail')}<h3>Aucune séquence en cours</h3><p>L’analyse de l’appel propose d’inscrire ${esc(l.contact)} à « Artisans – avant rendez-vous ».</p><button type="button" class="btn" data-act="toast" data-msg="Inscrit à « Artisans – avant rendez-vous »">Inscrire à la séquence</button></div>` : `<div class="empty">${ic('mail')}<h3>Aucune séquence en cours</h3><p>Inscrivez cette fiche à une séquence d’e-mails pour automatiser ses relances.</p><a class="btn sec" href="#/sequences/actives">Voir les séquences</a></div>`;
+  } else if (tab === 'chaine') {
+    const st = [['Lead créé', 'Mar. 10 nov.', 'good'], ['Premier contact', l.id === 'dubreuil' ? 'Aujourd’hui 10 h 07' : '—', l.id === 'dubreuil' ? 'good' : 'mut'], ['Rendez-vous', l.id === 'dubreuil' ? 'Jeu. 19 nov. 10 h, proposé' : 'À planifier', 'warn'], ['Devis', 'À créer après le rendez-vous', 'mut'], ['Projet', '—', 'mut'], ['Facture', '—', 'mut']];
+    body = `<p class="tx2" style="margin-bottom:10px">De la fiche à la facture : la chaîne se remplit au fil des étapes.</p><div class="card" style="padding:6px 16px"><div class="steps">${st.map(s => `<div class="s"><span class="sdot ${s[2] === 'good' ? 'full' : ''}" style="--c:var(--${s[2] === 'good' ? 'good' : s[2] === 'warn' ? 'warn' : 'mut'})"></span><b>${s[0]}</b><span class="tx2">${s[1]}</span></div>`).join('')}</div></div>`;
+  } else {
+    body = `<p class="tx2" style="margin-bottom:12px">Ce que Venio conserve sur ${esc(l.contact)} et jusqu’à quand.</p><div class="card" style="padding:6px 16px"><dl class="pairs"><dt>Données</dt><dd>Nom, société, téléphone, e-mail</dd><dt>Enregistrement</dt><dd>Annoncé en début d’appel</dd><dt>Audio conservé</dt><dd><span class="mono">jusqu’au 13 déc. 2026</span><span class="tx2">30 jours</span></dd><dt>Transcript conservé</dt><dd><span class="mono">jusqu’au 13 nov. 2027</span><span class="tx2">12 mois</span></dd><dt>Opposition</dt><dd>${l.id === 'garage' ? '<span class="chip c-crit">Retenue en attente de décision</span>' : 'Aucune'}</dd></dl></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button type="button" class="btn sec" data-act="toast" data-msg="Export des données personnelles préparé">${ic('download')} Exporter les données</button><button type="button" class="btn sec" data-act="toast" data-msg="Opposition enregistrée sur ${esc(l.name)}">Enregistrer une opposition</button><button type="button" class="btn danger" data-act="toast" data-msg="Effacement : confirmation requise">${ic('trash')} Effacer les données</button></div>`;
+  }
+  return `<div class="fiche">${hdr}${banners}${tabs}<div role="tabpanel" aria-labelledby="tab-${tab}">${body}</div></div>`;
+};
+let closeHref = () => '#/leads/tous';
+const renderFullLead = (id, tab) => {
+  const l = byId(id);
+  if (!l) return `<div class="page"><div class="empty">${ic('search')}<h3>Fiche introuvable</h3><a class="btn" href="#/leads/tous">Retour aux leads</a></div></div>`;
+  return `<div class="page wide"><a class="btn ghost sm" href="#/leads/tous" style="margin:-6px 0 6px -8px">${ic('back')} Leads</a>${renderFiche(l, true, tab).replace('class="fiche"', 'class="fiche" style="padding:0"')}</div>`;
+};
+
+/* ───────── Leads en file d'appels ───────── */
+const QUEUE = [
+  { g: 'Rappels dus', n: 6, ids: ['osteo', 'morel', 'vasseur', 'immo', 'pilates', 'sthonore'], more: 0 },
+  { g: 'Jamais appelées', n: 21, ids: ['sablon', 'auto', 'petale'], more: 18 },
+  { g: 'Autres fiches', n: 11, ids: ['garage', 'dubreuil'], more: 9 }
+];
+const WHY = { osteo: 'Rappel dû aujourd’hui · décision partagée avec son associé', morel: 'Relance en retard de 2 jours', vasseur: 'Répondeur détecté hier', immo: 'Relance après démo, aujourd’hui', pilates: 'Rappel en retard d’1 jour', sthonore: 'Rappel convenu aujourd’hui', sablon: 'Jamais appelé', auto: 'Jamais appelé', petale: 'Jamais appelé', garage: 'Retenue pour opposition : appel suspendu', dubreuil: 'Appelé ce matin à 10 h 07' };
+const CC = { France: 'FR', Belgique: 'BE', Martinique: 'MQ' };
+const MODES = { click: ['Au clic', 'Vous lancez chaque appel vous-même.'], preview: ['Aperçu', 'La fiche suivante s’ouvre ; l’appel part au clic ou après 5 s.'], power: ['Power dialer', 'Un appel à la fois : le suivant part 10 s après la saisie du résultat.'] };
+const blocked = l => l.id === 'garage' ? (S.hold === 'pending' ? 'hold' : null) : l.outside ? 'hors' : null;
+const renderQueue = (openId, only = null) => {
+  if (S.role === 'externe') return `<div class="tw"><div class="empty">${ic('queue')}<h3>Aucune fiche à appeler</h3><p>Votre fiche du moment, Cabinet Avocats Durand, a été transmise au closer Alex. Les nouvelles fiches arrivent par vos listes d’appel.</p><a class="btn sec" href="#/leads/mes-fiches">Voir mes fiches</a></div></div>`;
+  const groups = QUEUE.filter((g, i) => only === null || only === i).map(g => {
+    const rows = g.ids.map(id => {
+      const l = byId(id), b = blocked(l);
+      return `<div class="qrow ${openId === id ? 'sel' : ''} ${b ? 'off' : ''}" data-open="${id}" role="button" tabindex="0" aria-label="Ouvrir ${esc(l.name)}">
+        <span class="sdot ${l.status === 'LEAD' ? '' : 'full'}" style="--c:${STATUS[l.status].c}" title="${STATUS[l.status].label}"></span>
+        <span class="nm">${esc(l.name)}<small>${l.voicemail ? '<span class="redmark"><i></i>Répondeur</span> · ' : ''}${esc(WHY[id])}</small></span>
+        <span class="lt">${b === 'hors' ? `<span class="chip c-warn">${ic('clock')}Hors plage</span><br>` : b === 'hold' ? `<span class="chip c-crit">Retenue</span><br>` : ''}${CC[l.country]} · ${l.local}</span>
+        ${b ? `<button type="button" class="btn sec sm" disabled>${ic('phone')} Appeler</button>` : `<a class="btn sm" href="#/leads/file/file/${id}/appel">${ic('phone')} Appeler</a>`}</div>`;
+    }).join('');
+    return `<div class="qgrp"><span>${g.g}</span><span class="n">${g.n}</span></div>${rows}${g.more ? `<div class="qrow" style="cursor:default;grid-template-columns:1fr auto"><span class="mut">et ${g.more} autres fiches dans ce groupe</span><button type="button" class="btn ghost sm" data-act="toast" data-msg="Charger les fiches suivantes">Afficher la suite</button></div>` : ''}`;
+  }).join('');
+  const perim = S.scope === 'perimetre' ? `<div class="qgrp"><span>Fiches de mes externes, transmises au closer</span></div><div class="qrow" data-open="durand" role="button" tabindex="0"><span class="sdot full" style="--c:${STATUS.QUALIFIED.c}"></span><span class="nm">Cabinet Avocats Durand<small>Fiche d’Anna Externe · prise en charge par Alex Closer</small></span><span class="lt">FR · 10 h 42</span><a class="btn sec sm" href="#/lead/durand">Ouvrir</a></div>` : '';
+  return `<div class="tw">${groups}${perim}</div>`;
+};
+const renderDesk = (openId, only = null) => {
+  const ext = S.role === 'externe';
+  return `<div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Leads</div><h1>File d’appels</h1><p class="sub">${ext ? 'Vos fiches à appeler.' : DESC.file}</p></div><div class="acts"><div class="seg" role="group" aria-label="Présentation">${ALLOWED.file.map(p => `<a href="#/leads/${ext ? 'mes-fiches' : 'file'}/${p}" ${p === 'file' ? 'aria-current="page"' : ''}>${ic(PRES[p][0])}${PRES[p][1]}</a>`).join('')}</div></div></div>
+  ${ext ? '' : `<div class="card" style="margin-bottom:12px;padding:12px 16px"><div class="grid g4" style="gap:10px"><div class="kpi"><span class="v">27</span><span class="l">appels passés</span></div><div class="kpi"><span class="v">12</span><span class="l">prospects joints</span></div><div class="kpi"><span class="v">4</span><span class="l">rendez-vous pris</span></div><div class="kpi"><span class="v">33 %</span><span class="l">conversion, objectif 40 %</span></div></div></div>`}
+  <div class="deskbar"><div class="seg" role="group" aria-label="Mode d’appel">${Object.entries(MODES).map(([k, m]) => `<button type="button" data-act="mode" data-v="${k}" aria-pressed="${S.mode === k}">${m[0]}</button>`).join('')}</div>
+    ${ext ? '' : `<div class="seg" role="group" aria-label="Périmètre"><button type="button" data-act="scope" data-v="mine" aria-pressed="${S.scope === 'mine'}">Mes fiches <span class="mono">38</span></button><button type="button" data-act="scope" data-v="perimetre" aria-pressed="${S.scope === 'perimetre'}">Tout mon périmètre</button></div>`}</div>
+  <div class="modehelp"><span><b>${MODES[S.mode][0]}</b> · ${MODES[S.mode][1]}</span>${S.mode === 'click' ? '' : `<button type="button" class="btn" data-act="start">${ic('play')} Démarrer</button>`}</div>
+  <p class="mut" style="margin-bottom:10px">Messagerie détectée : raccroché et noté automatiquement, fiche marquée en rouge.</p>
+  ${renderQueue(openId, only)}`;
+};
+
+/* Panneau de la file : aperçu de la fiche, appel en cours, résultat */
+const renderCallDock = (id, step) => {
+  const l = byId(id); if (!l) return '';
+  const b = blocked(l);
+  const head = `<div class="fiche" style="padding-bottom:0"><div class="fh"><div style="min-width:0"><h2>${esc(l.name)}</h2><div class="meta">${stChip(l.status)}${heatChip(l.heat)}<span class="mono">${eur(l.budget)}</span></div></div><div class="acts" style="display:flex;gap:8px"><a class="btn sec sm" href="#/lead/${l.id}">${ic('expand')} Fiche complète</a><a class="btn ghost sm" href="#/leads/file/file" aria-label="Fermer le panneau">${ic('x')} Fermer</a></div></div></div>`;
+  if (step === 'appel') return head + renderLive(l);
+  if (step === 'resultat') return head + renderResult(l);
+  const info = `<dl class="pairs"><dt>Téléphone</dt><dd><span class="mono">${esc(l.phone)}</span></dd><dt>Pays et heure</dt><dd><span class="mono">${l.local}</span><span class="tx2">heure locale du prospect · ${l.country}</span></dd><dt>Contact</dt><dd>${esc(l.contact)}, ${esc(l.role)}</dd><dt>Pourquoi</dt><dd>${esc(WHY[l.id] || l.next)}</dd><dt>Dernier échange</dt><dd>${esc(l.last)}</dd>${l.note ? `<dt>Note</dt><dd>${esc(l.note)}</dd>` : ''}</dl>`;
+  const banner = b === 'hors' ? `<div class="banner" style="--c:var(--warn)">${ic('clock')}<div class="grow"><b>Hors plage chez le prospect.</b> Il est ${l.local} à Fort-de-France (Martinique). Les appels sont autorisés de 9 h à 19 h, heure du prospect, soit à partir de 14 h 00 à Paris.<div class="rowbtn"><button type="button" class="btn soft sm" data-act="toast" data-msg="Rappel programmé à 14 h 00 pour ${esc(l.name)}">Programmer un rappel à 14 h 00</button></div></div></div>`
+    : b === 'hold' ? `<div class="banner" style="--c:var(--crit)">${ic('shield')}<div class="grow"><b>Retenue pour opposition.</b> Cette fiche ne peut pas être appelée tant que la retenue n’est pas décidée.<div class="rowbtn"><a class="btn danger sm" href="#/appels/retenues/garage">Décider de la retenue</a></div></div></div>` : '';
+  return head + `<div class="fiche" style="padding-top:6px">${banner}${info}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">${b ? `<button type="button" class="btn" disabled>${ic('phone')} Appeler</button>` : `<a class="btn" href="#/leads/file/file/${l.id}/appel">${ic('phone')} Appeler maintenant</a>`}<button type="button" class="btn sec" data-act="skipcard" data-id="${l.id}">${ic('skip')} Passer cette fiche</button></div>
+    <p class="mut" style="margin-top:12px">Mode actuel : ${MODES[S.mode][0]}. ${MODES[S.mode][1]}</p></div>`;
+};
+const LIVE = [
+  ['a', 'Bonjour Claire, Raphael de Venio, je vous rappelle comme convenu.'],
+  ['b', 'Oui bonjour, merci d’avoir rappelé.'],
+  ['a', 'Avez-vous pu en parler avec votre associé ?'],
+  ['b', 'Pas encore en détail. On décide à deux, il faut que je lui montre vos exemples.'],
+  ['a', 'Je peux vous envoyer un récapitulatif à lui transmettre, et nous retrouver tous les trois ?'],
+  ['b', 'Oui, ça irait plus vite comme ça. Disons plutôt la semaine prochaine…']
+];
+const fmtT = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+const renderLive = l => {
+  const c = S.call || (S.call = { t0: Date.now(), muted: false, kbd: false, mic: 'Casque Jabra', opposed: false, lines: 2 });
+  const sec = Math.floor((Date.now() - c.t0) / 1000);
+  return `<div class="fiche" style="padding-top:6px">
+    <div class="callbar" role="region" aria-label="Appel en cours"><div class="grow"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>${esc(l.contact)}</b><span class="mono tx2">${esc(l.phone)}</span><span class="rec"><i></i>Enregistrement annoncé</span></div><div class="tx2">${l.country} · heure locale <span class="mono">${l.local}</span> · mode ${MODES[S.mode][0]}</div></div><span class="timer" id="timer" aria-label="Durée de l’appel">${fmtT(sec)}</span>
+      <div class="ctl" style="flex-basis:100%"><button type="button" class="btn sec sm" data-act="call" data-v="mute" aria-pressed="${c.muted}">${ic(c.muted ? 'micoff' : 'mic')} ${c.muted ? 'Muet activé' : 'Muet'}</button><button type="button" class="btn sec sm" data-act="call" data-v="kbd" aria-pressed="${c.kbd}">${ic('keypad')} Clavier</button>
+      <label class="sr" for="mic">Micro</label><select class="sel" id="mic" data-chg="mic" style="min-height:30px"><option ${c.mic === 'Casque Jabra' ? 'selected' : ''}>Casque Jabra</option><option ${c.mic === 'Micro du portable' ? 'selected' : ''}>Micro du portable</option></select>
+      <span style="flex:1"></span><button type="button" class="btn danger sm" data-act="opp">${ic('shield')} Opposition du prospect</button><button type="button" class="btn danger sm" data-act="hangup">${ic('hangup')} Raccrocher</button></div>
+      ${c.kbd ? `<div class="chiprow" style="flex-basis:100%" role="group" aria-label="Clavier numérique">${['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map(k => `<button type="button" class="pill mono" data-act="toast" data-msg="Touche ${k} envoyée">${k}</button>`).join('')}</div>` : ''}</div>
+    <div class="section"><h3>Transcription en direct <span class="chip c-pri">${ic('mic')}En cours</span></h3><div class="live" id="live" aria-live="polite">${liveHtml(c)}</div></div>
+    <div class="section"><h3>Notes pendant l’appel</h3><label class="sr" for="callnote">Notes</label><textarea class="inp" id="callnote" placeholder="Notez ce qui compte : objections, décideur, échéance">${esc(c.note || '')}</textarea></div>
+    <div class="banner" style="--c:var(--warn)">${ic('info')}<div class="grow"><b>Opposition du prospect.</b> Si la personne demande à ne plus être appelée, utilisez le bouton rouge : l’appel s’arrête et la fiche est retenue jusqu’à votre décision.</div></div></div>`;
+};
+const liveHtml = c => LIVE.slice(0, c.lines).map((x, i) => `<div class="ln"><span class="t">${fmtT(i * 7 + 3)}</span><span class="${x[0] === 'a' ? 'sp-a' : 'sp-b'}">${x[0] === 'a' ? 'Raphael' : 'Claire'}</span><span>${esc(x[1])}</span></div>`).join('') + (c.lines < LIVE.length ? '<div class="ln now"><span class="t"></span><span></span><span>…</span></div>' : '');
+const RES = [['rdv', 'Rendez-vous pris', 'Le prospect accepte un rendez-vous.'], ['joint', 'Joint, à rappeler', 'Vous avez parlé au prospect, un nouveau contact est prévu.'], ['pas-interesse', 'Joint, pas intéressé', 'La fiche sort de la file d’appels.'], ['repondeur', 'Répondeur', 'La fiche est marquée en rouge.'], ['pas-reponse', 'Pas de réponse', 'Un nouvel essai est possible dans la limite des tentatives.'], ['mauvais', 'Mauvais numéro', 'Le numéro est signalé invalide.'], ['opposition', 'Opposition du prospect', 'Le numéro est retenu puis ajouté aux numéros opposés.']];
+const renderResult = l => {
+  const c = S.call || {}; const pre = c.opposed ? 'opposition' : S.result;
+  return `<div class="fiche" style="padding-top:6px"><h3 style="font-size:17px;font-weight:800;margin-bottom:4px">Résultat de l’appel</h3><p class="tx2" style="margin-bottom:12px">Durée ${fmtT(c.end || 0)}. Le résultat est présélectionné, vous pouvez le changer.</p>
+    ${c.opposed ? `<div class="banner" style="--c:var(--crit)">${ic('shield')}<div class="grow"><b>Opposition signalée pendant l’appel.</b> La fiche sera retenue : l’analyse attend votre décision avant de s’appliquer.</div></div>` : ''}
+    <div class="result" role="radiogroup" aria-label="Résultat de l’appel">${RES.map(r => `<label><input type="radio" name="res" value="${r[0]}" data-chg="res" ${pre === r[0] ? 'checked' : ''}><span><b>${r[1]}</b><span>${r[2]}</span></span></label>`).join('')}</div>
+    <div class="frm" style="margin-top:14px"><div><label class="lab" for="rn">Note</label><textarea class="inp" id="rn" placeholder="Une phrase pour la prochaine personne qui ouvre la fiche">${esc(c.note || '')}</textarea></div><div><label class="lab" for="rd">Prochaine action</label><input class="inp" id="rd" value="Envoyer le récapitulatif, puis rendez-vous à trois la semaine prochaine"></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button type="button" class="btn" data-act="saveres" data-id="${l.id}">Enregistrer et passer à la suivante</button><a class="btn ghost" href="#/leads/file/file/${l.id}">Plus tard</a></div>
+    ${S.mode === 'power' ? '<p class="mut" style="margin-top:10px">Power dialer : le prochain appel part 10 s après l’enregistrement.</p>' : ''}</div>`;
+};
+
+/* ───────── Objet Appels ───────── */
+const renderCallsObject = (view, id) => {
+  const titles = { analyses: ['Analyses à valider', 'Les appels dont l’analyse attend un clic pour s’appliquer à la fiche.'], retenues: ['Retenues d’opposition', 'Appels où le prospect s’est opposé : à confirmer ou à lever.'], jour: ['Appels du jour', 'Les 27 appels passés aujourd’hui, du plus récent au plus ancien.'] };
+  const [t, d] = titles[view];
+  let rows = CALLROWS;
+  if (view === 'retenues') rows = rows.filter(r => r[0] === 'garage' && S.hold === 'pending');
+  if (view === 'analyses') rows = CALLROWS.filter(r => ['dubreuil', 'durand', 'garage'].includes(r[0]) && (callState(r[0]) === 'pending' || callState(r[0]) === 'hold'));
+  const head = `<div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Appels</div><h1>${t}</h1><p class="sub">${d}</p></div></div>`;
+  let tbl;
+  if (!rows.length) tbl = `<div class="tw"><div class="empty">${ic(view === 'retenues' ? 'shield' : 'check')}<h3>${view === 'retenues' ? 'Aucune retenue à décider' : 'Rien à valider'}</h3><p>${view === 'retenues' ? 'Quand un prospect s’oppose pendant un appel, la retenue apparaît ici jusqu’à votre décision.' : 'Toutes les analyses d’appel ont été validées. Les prochaines apparaîtront ici.'}</p><a class="btn" href="#/leads/a-traiter">Retour à À traiter</a></div></div>`;
+  else tbl = `<div class="tb"><label class="field">${ic('search')}<span class="sr">Rechercher un appel</span><input type="search" placeholder="Rechercher un appel" autocomplete="off"></label><button type="button" class="pill on" aria-pressed="true">Aujourd’hui</button><button type="button" class="pill add" data-act="toast" data-msg="Ajouter un filtre">+ filtre</button></div>
+    <div class="tw"><table class="tbl"><thead><tr><th>Heure</th><th>Lead</th><th>Commercial</th><th class="num">Durée</th><th>Résultat</th><th>Analyse</th></tr></thead><tbody>${rows.map(r => { const s = CALLS[r[0]] ? callState(r[0]) : 'none'; return `<tr class="${id === r[0] ? 'sel' : ''}" data-opencall="${r[0]}"><td class="mono">${r[1]}</td><td class="name">${r[2]}</td><td>${r[3]}</td><td class="num mono">${r[4]}</td><td>${r[5]}${r[0] === 'vasseur' ? ' <span class="redmark"><i></i>marque rouge</span>' : ''}</td><td>${s === 'pending' ? '<span class="chip c-warn">À valider</span>' : s === 'hold' ? '<span class="chip c-crit">Retenue</span>' : s === 'valid' ? '<span class="chip c-good">Validée</span>' : s === 'gone' ? '<span class="chip c-mut">Supprimée</span>' : '<span class="mut">Pas d’analyse</span>'}</td></tr>`; }).join('')}</tbody></table></div>
+    <div class="tfoot" style="border:0;padding-left:2px"><span>${view === 'jour' ? `${rows.length} appels affichés sur 27` : `${rows.length} appel${rows.length > 1 ? 's' : ''}`}</span><span class="mut">Cliquer sur une ligne ouvre l’appel analysé à droite.</span></div>`;
+  return head + tbl;
+};
+const renderCallDockObj = (view, id) => {
+  const c = CALLS[id]; const l = c ? byId(c.lead) : null;
+  if (!c) return `<div class="fiche"><div class="fh"><h2>Appel sans analyse</h2><a class="btn ghost sm" href="#/appels/${view}">${ic('x')} Fermer</a></div><div class="empty">${ic('mic')}<h3>Pas d’analyse pour cet appel</h3><p>Les appels très courts et les messageries ne sont pas transcrits. La marque rouge reste sur la fiche.</p><a class="btn sec" href="#/lead/${CALLROWS.find(r => r[0] === id)?.[0]}">Ouvrir la fiche</a></div></div>`;
+  return `<div class="fiche"><div class="fh"><div><h2>${esc(l.name)}</h2><div class="meta">${stChip(l.status)}${heatChip(l.heat)}<span class="mono">${eur(l.budget)}</span></div></div><div style="display:flex;gap:8px"><a class="btn sec sm" href="#/lead/${l.id}/appels">${ic('expand')} Fiche complète</a><a class="btn ghost sm" href="#/appels/${view}" aria-label="Fermer">${ic('x')} Fermer</a></div></div>${renderAnalysis(id)}</div>`;
+};
+
+/* ───────── graphique « timeline financière » ───────── */
+const CH = {};
+const chart = (id, o) => {
+  CH[id] = o;
+  const W = 760, H = 300, x0 = 64, x1 = 744, yT = 14, yB = 204, vT = 228, vB = 280;
+  const n = o.pts.length, sx = i => x0 + (n === 1 ? 0 : i * (x1 - x0) / (n - 1)), sy = v => yB - (v - o.min) / (o.max - o.min) * (yB - yT);
+  const vm = Math.max(...o.pts.map(p => p.vol), 1), bw = Math.max(3, (x1 - x0) / n * 0.6);
+  const grid = o.ticks.map(t => `<line x1="${x0}" x2="${x1}" y1="${sy(t)}" y2="${sy(t)}"/><text x="${x0 - 8}" y="${sy(t) + 4}" text-anchor="end">${o.fmtTick(t)}</text>`).join('');
+  const line = o.pts.map((p, i) => `${i ? 'L' : 'M'}${sx(i).toFixed(1)},${sy(p.v).toFixed(1)}`).join('');
+  const area = `${line}L${sx(n - 1)},${yB}L${sx(0)},${yB}Z`;
+  const vols = o.pts.map((p, i) => p.vol ? `<rect class="vol ${i === n - 1 ? 'hi' : ''}" x="${(sx(i) - bw / 2).toFixed(1)}" y="${(vB - p.vol / vm * (vB - vT)).toFixed(1)}" width="${bw.toFixed(1)}" height="${(p.vol / vm * (vB - vT)).toFixed(1)}" rx="1.5"/>` : '').join('');
+  const step = Math.ceil(n / 7);
+  const xl = o.pts.map((p, i) => (i % step === 0 || i === n - 1) ? `<text x="${sx(i)}" y="${H - 2}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">${p.short}</text>` : '').join('');
+  const ref = o.ref ? `<line class="ref" x1="${x0}" x2="${x1}" y1="${sy(o.ref.v)}" y2="${sy(o.ref.v)}"/><text class="reflab" x="${x1}" y="${sy(o.ref.v) - 5}" text-anchor="end">${o.ref.label}</text>` : '';
+  return `<div class="cwrap"><svg class="chart" id="ch-${id}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}" data-chart="${id}">
+    <g class="grid">${grid}</g>${ref}<path class="area" d="${area}"/><path class="stroke" d="${line}"/>${vols}
+    <text x="${x0 - 8}" y="${vT + 10}" text-anchor="end">${o.volLabel}</text>${xl}
+    <g class="cross" visibility="hidden"><line x1="0" x2="0" y1="${yT}" y2="${vB}"/><circle r="4" fill="#38bdf8" stroke="#0a0c0f" stroke-width="2"/></g>
+    <g class="tip" visibility="hidden"><rect rx="6" width="168" height="58"/><text x="10" y="18"></text><text x="10" y="34"></text><text x="10" y="50"></text></g></svg></div>`;
+};
+const hookCharts = () => $$('svg.chart[data-chart]').forEach(svg => {
+  const o = CH[svg.dataset.chart]; if (!o) return;
+  const cross = $('.cross', svg), tip = $('.tip', svg), n = o.pts.length, x0 = 64, x1 = 744, yT = 14, yB = 204;
+  const move = e => {
+    const r = svg.getBoundingClientRect(); const px = (e.clientX - r.left) / r.width * 760;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - x0) / (x1 - x0) * (n - 1))));
+    const p = o.pts[i], x = x0 + i * (x1 - x0) / (n - 1), y = yB - (p.v - o.min) / (o.max - o.min) * (yB - yT);
+    cross.setAttribute('visibility', 'visible'); tip.setAttribute('visibility', 'visible');
+    $('line', cross).setAttribute('x1', x); $('line', cross).setAttribute('x2', x); $('circle', cross).setAttribute('cx', x); $('circle', cross).setAttribute('cy', y);
+    const tx = x > 560 ? x - 178 : x + 10; tip.setAttribute('transform', `translate(${tx},${Math.max(8, y - 30)})`);
+    const t = $$('text', tip); t[0].textContent = p.label; t[1].textContent = o.fmtV(p.v); t[2].textContent = o.fmtVol(p.vol);
+  };
+  svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tip.setAttribute('visibility', 'hidden'); });
+});
+const PIPE = [54200, 54800, 54100, 55600, 56300, 56900, 56400, 57800, 58500, 58100, 59700, 60400, 60100, 61800, 62500, 62200, 63900, 64600, 64300, 65800, 66500, 67300, 66800, 68400, 69100, 68700, 69900, 70600, 70900, 71250];
+const NEWL = [2, 1, 0, 0, 3, 1, 2, 1, 2, 0, 0, 2, 3, 1, 2, 1, 0, 0, 2, 1, 3, 2, 1, 0, 0, 2, 1, 2, 3, 1];
+const pipeChart = range => {
+  const all = PIPE.map((v, i) => { const d = new Date(2026, 9, 16 + i); return { v, vol: NEWL[i], label: d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }), short: d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) }; });
+  const pts = all.slice(-range);
+  return chart('pipe' + range, { pts, min: range === 7 ? 66000 : 50000, max: range === 7 ? 72000 : 75000, ticks: range === 7 ? [66000, 68000, 70000, 72000] : [50000, 60000, 70000], fmtTick: t => eur(t), fmtV: v => 'Pondéré ' + eur(v), fmtVol: v => v + ' lead' + (v > 1 ? 's' : '') + ' créé' + (v > 1 ? 's' : ''), volLabel: 'Créés', aria: 'Pipeline pondéré, de 54 200 € à 71 250 €, avec les leads créés par jour' });
+};
+const actChart = () => {
+  const cum = [0, 3, 6, 9, 11, 14, 16, 18, 21, 23, 25, 27], tms = ['8 h 00', '8 h 15', '8 h 30', '8 h 45', '9 h 00', '9 h 15', '9 h 30', '9 h 45', '10 h 00', '10 h 15', '10 h 30', '10 h 42'];
+  const pts = cum.map((v, i) => ({ v, vol: i ? v - cum[i - 1] : 0, label: tms[i], short: tms[i] }));
+  return chart('act', { pts, min: 0, max: 30, ticks: [0, 10, 20, 30], fmtTick: t => t, fmtV: v => v + ' appels passés', fmtVol: v => v + ' sur la période', volLabel: 'Période', aria: 'Appels cumulés aujourd’hui : 27 à 10 h 42' });
+};
+
+/* ───────── Rapports ───────── */
+const PILTABS = [['previsions', 'Prévisions'], ['objectifs', 'Objectifs'], ['entonnoir', 'Entonnoir'], ['activite', 'Activité']];
+const renderPilotage = tab => {
+  tab = tab || 'previsions';
+  const rows = ORDER.map(s => `<tr><td>${stChip(s)}</td><td class="num mono">${BASE[s].n}</td><td class="num mono">${Math.round(STATUS[s].p * 100)} %</td><td class="num mono">${eur(BASE[s].sum)}</td><td class="num mono">${eur(BASE[s].sum * STATUS[s].p)}</td></tr>`).join('');
+  let body = '';
+  if (tab === 'previsions') body = `<div class="grid g3" style="margin-bottom:14px"><div class="card kpi"><span class="l">Pipeline pondéré</span><span class="v">${eur(TOTAL.weighted)}</span><span class="d">sur 42 leads ouverts</span></div><div class="card kpi"><span class="l">Pipeline ouvert</span><span class="v">${eur(TOTAL.sum)}</span><span class="d">budget déclaré, toutes étapes</span></div><div class="card kpi"><span class="l">Gagnés ce mois</span><span class="v">${eur(31500)}</span><span class="d">4 affaires gagnées, 3 perdues</span></div></div>
+    <section class="card"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><h3>Pipeline pondéré</h3><p class="hint" style="margin-bottom:6px">Aire : valeur pondérée. Barres : leads créés par jour. Survolez pour lire un jour.</p></div><div class="range" role="group" aria-label="Période"><button type="button" data-act="range" data-v="7" aria-pressed="${S.chartRange === 7}">7 j</button><button type="button" data-act="range" data-v="30" aria-pressed="${S.chartRange === 30}">30 j</button></div></div>${pipeChart(S.chartRange)}</section>
+    <h2 class="mini-h">Prévision par étape</h2><div class="tw"><table class="tbl" style="min-width:560px"><thead><tr><th>Étape</th><th class="num">Affaires</th><th class="num">Chance de signer</th><th class="num">Valeur</th><th class="num">Valeur pondérée</th></tr></thead><tbody>${rows}<tr><td><b>Total</b></td><td class="num mono"><b>42</b></td><td></td><td class="num mono"><b>${eur(TOTAL.sum)}</b></td><td class="num mono"><b>${eur(TOTAL.weighted)}</b></td></tr></tbody></table></div>`;
+  if (tab === 'objectifs') body = `<div class="grid g2"><section class="card"><h3>Conversion du jour</h3><p class="hint">Rendez-vous pris sur prospects joints, file de Raphael.</p><div class="kpi"><span class="v">33 %</span><span class="d">4 rendez-vous sur 12 joints, objectif 40 %</span></div><div class="bar" style="margin-top:12px" role="img" aria-label="33 % sur un objectif de 40 %"><i style="width:82.5%"></i></div></section>
+    <section class="card"><h3>Conversion de la semaine 45</h3><p class="hint">Rapport de scripts, du 2 au 8 novembre.</p><div class="kpi"><span class="v">29 %</span><span class="d">9 conversions sur 31 joints, objectif 40 %</span></div><div class="bar bad" style="margin-top:12px" role="img" aria-label="29 % sur un objectif de 40 %"><i style="width:72.5%"></i></div><p style="margin-top:12px"><a href="#/rapports/scripts">Voir le rapport de scripts</a></p></section></div>
+    <div class="banner" style="--c:var(--warn);margin-top:14px">${ic('info')}<div class="grow"><b>Sous l’objectif.</b> La conversion du jour est à 7 points de l’objectif de 40 %, celle de la semaine 45 à 11 points.</div></div>`;
+  if (tab === 'entonnoir') { const mx = Math.max(...ORDER.map(s => BASE[s].n)); body = `<section class="card"><h3>Entonnoir des 42 leads ouverts</h3><p class="hint">Nombre de leads par statut.</p>${ORDER.map(s => `<div class="hbar"><span>${stChip(s)}</span><div class="bar" role="img" aria-label="${STATUS[s].label} : ${BASE[s].n}"><i style="width:${BASE[s].n / mx * 100}%"></i></div><span class="mono" style="text-align:right">${BASE[s].n}</span></div>`).join('')}</section>
+    <div class="grid g3" style="margin-top:14px"><div class="card kpi"><span class="l">Gagnés ce mois</span><span class="v">4</span><span class="d">${eur(31500)}</span></div><div class="card kpi"><span class="l">Perdus ce mois</span><span class="v">3</span><span class="d">motif à renseigner sur chaque perte</span></div><div class="card kpi"><span class="l">Taux sur affaires conclues</span><span class="v">57 %</span><span class="d">4 gagnées sur 7 conclues</span></div></div>`; }
+  if (tab === 'activite') body = `<div class="grid g4" style="margin-bottom:14px"><div class="card kpi"><span class="l">Appels passés</span><span class="v">27</span></div><div class="card kpi"><span class="l">Prospects joints</span><span class="v">12</span></div><div class="card kpi"><span class="l">Rendez-vous pris</span><span class="v">4</span></div><div class="card kpi"><span class="l">Conversion sur joints</span><span class="v">33 %</span><span class="d">objectif 40 %</span></div></div>
+    <section class="card"><h3>Appels de la matinée</h3><p class="hint">Aire : appels cumulés. Barres : appels par quart d’heure.</p>${actChart()}</section>`;
+  return `<div class="page"><div class="vh"><div><div class="vtag">${ic('chart')} Rapport · Rapports</div><h1>Pilotage</h1><p class="sub">Prévisions, objectifs, entonnoir et activité de l’équipe commerciale.</p></div><div class="acts"><button type="button" class="btn sec" data-act="toast" data-msg="Export du pilotage">${ic('download')} Exporter</button></div></div>
+    <div class="tabs" role="tablist" aria-label="Sections du pilotage">${PILTABS.map(t => `<a role="tab" href="#/rapports/pilotage/${t[0]}" aria-selected="${tab === t[0]}">${t[1]}</a>`).join('')}</div>${body}</div>`;
+};
+const renderScripts = () => `<div class="page"><div class="vh"><div><div class="vtag">${ic('chart')} Rapport · Rapports</div><h1>Rapports de scripts</h1><p class="sub">Ce que les appels disent du script : conversion, objections, ce qui fait avancer ou perdre.</p></div><div class="acts"><div class="seg" role="group" aria-label="Semaine"><button type="button" data-act="toast" data-msg="Semaine 44 : hors maquette" aria-label="Semaine précédente">${ic('back')}</button><button type="button" aria-pressed="true">Semaine 45 · 2 au 8 novembre</button></div></div></div>
+  <div class="grid g4" style="margin-bottom:14px"><div class="card kpi"><span class="l">Appels</span><span class="v">64</span></div><div class="card kpi"><span class="l">Joints</span><span class="v">31</span></div><div class="card kpi"><span class="l">Conversions</span><span class="v">9</span></div><div class="card kpi"><span class="l">Conversion sur joints</span><span class="v">29 %</span><span class="d">objectif 40 %</span></div></div>
+  <div class="grid g2"><section class="card"><h3>Du premier appel à la conversion</h3><p class="hint">Conversion mesurée sur les joints.</p>
+    ${[['Appels', 64, 64], ['Joints', 31, 64], ['Conversions', 9, 64]].map(r => `<div class="hbar"><span>${r[0]}</span><div class="bar" role="img" aria-label="${r[0]} : ${r[1]}"><i style="width:${r[1] / r[2] * 100}%"></i></div><span class="mono" style="text-align:right">${r[1]}</span></div>`).join('')}
+    <div style="margin-top:12px"><div style="display:flex;justify-content:space-between;color:var(--tx2);margin-bottom:6px"><span>Conversion : 29 %</span><span>Objectif : 40 %</span></div><div class="bar" style="position:relative" role="img" aria-label="29 % sur un objectif de 40 %"><i style="width:29%"></i><span style="position:absolute;left:40%;top:-3px;width:2px;height:13px;background:var(--warn)"></span></div></div></section>
+  <section class="card"><h3>Objections entendues</h3><p class="hint">Chaque objection renvoie à la réponse du script.</p>
+    ${[['Prix comparé à Wix / Squarespace', 11], ['Décision partagée avec un associé', 7]].map(r => `<div class="hbar"><span>« ${r[0]} »</span><div class="bar" role="img" aria-label="${r[0]} : ${r[1]} fois"><i style="width:${r[1] / 11 * 100}%"></i></div><span class="mono" style="text-align:right">${r[1]}</span></div>`).join('')}
+    <p class="tx2" style="margin-top:10px">Ces deux objections se retrouvent sur Menuiserie Dubreuil et Cabinet Ostéo Lyon 6.</p></section></div>
+  <div class="grid g2" style="margin-top:14px"><section class="card"><h3>Ce qui fait avancer</h3><ul style="margin:0;padding-left:18px;display:grid;gap:8px"><li>Proposer un rendez-vous précis dès que le besoin est formulé.</li><li>Montrer des réalisations du même métier avant de parler du prix.</li><li>Identifier le décideur dans les deux premières minutes.</li></ul></section>
+  <section class="card"><h3>Ce qui fait perdre</h3><ul style="margin:0;padding-left:18px;display:grid;gap:8px"><li>Annoncer le prix avant d’avoir cerné le besoin.</li><li>Laisser une objection de prix sans comparer ce que chaque offre contient.</li><li>Ne pas proposer d’inclure l’associé quand la décision est partagée.</li></ul></section></div>
+  <h2 class="mini-h">Changements de script</h2><div class="card"><ul class="tl"><li><time>Mer. 4 nov.</time><span>Réponse à l’objection « Wix / Squarespace » ajoutée : comparer le contenu des offres.</span></li><li><time>Lun. 2 nov.</time><span>Question sur le décideur avancée au début de l’appel.</span></li></ul></div></div>`;
+
+/* ───────── Automatiser ───────── */
+const RULES = [
+  { id: 'demo', n: 'Relance après démo', t: 'Le statut passe à Démo', a: 'Créer une tâche de relance dans 1 jour', s: 'Active', last: 'Hier 17 h 40' },
+  { id: 'prop', n: 'Relance après proposition', t: 'Le statut passe à Proposition', a: 'Créer une tâche de relance dans 3 jours', s: 'Active', last: 'Lun. 9 nov. 15 h 12' },
+  { id: 'froid', n: 'Lead sans contact', t: 'Aucun échange depuis le seuil des réglages', a: 'Notifier l’assigné', s: 'Active', last: 'Aujourd’hui 8 h 00' },
+  { id: 'main', n: 'Passage de main au closer', t: 'Une analyse validée propose un passage de main', a: 'Assigner au closer par défaut', s: 'Brouillon', last: 'Jamais exécutée' }
+];
+const renderRules = (view, id) => {
+  if (view === 'modeles') return `<div class="page"><div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Règles</div><h1>Modèles</h1><p class="sub">Des règles prêtes à l’emploi : choisissez-en une, ajustez-la, simulez-la.</p></div></div><div class="grid g3">${[['Relance après démo', 'Crée une tâche de relance un jour après une démo.'], ['Réactivation d’un lead dormant', 'Relance les fiches sans échange depuis longtemps.'], ['Alerte lead chaud non rappelé', 'Prévient l’assigné quand une fiche chaude reste sans rappel.'], ['Fiche d’un externe transmise', 'Avertit le closer quand un externe lui passe une fiche.']].map(m => `<div class="card"><h3>${m[0]}</h3><p class="hint">${m[1]}</p><button type="button" class="btn soft sm" data-act="toast" data-msg="Brouillon créé à partir du modèle « ${m[0]} »">Utiliser ce modèle</button></div>`).join('')}</div></div>`;
+  if (view === 'journal') {
+    const J = [['Aujourd’hui 8 h 00', 'Lead sans contact', 'Boulangerie Saint-Honoré', 'Exécutée', 'Notification envoyée à Raphael'], ['Hier 17 h 40', 'Relance après démo', 'Agence Immo Rive Gauche', 'Exécutée', 'Tâche de relance créée pour aujourd’hui'], ['Hier 9 h 12', 'Lead sans contact', 'Studio Pilates Batignolles', 'Exécutée', 'Notification envoyée à Raphael'], ['Lun. 9 nov. 15 h 12', 'Relance après proposition', 'Expert-comptable Morel', 'Exécutée', 'Tâche de relance créée pour mercredi'], ['Lun. 9 nov. 11 h 30', 'Relance après démo', 'Imprimerie Vasseur', 'Ignorée', 'Condition non remplie : statut déjà Contacté'], ['Ven. 6 nov. 9 h 05', 'Lead sans contact', 'Auto-école Horizon', 'Échec', 'E-mail refusé par la messagerie du prospect']];
+    return `<div class="page"><div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Règles</div><h1>Journal des exécutions</h1><p class="sub">Ce que chaque règle a fait, et pourquoi elle n’a rien fait.</p></div></div><div class="tw"><table class="tbl"><thead><tr><th>Quand</th><th>Règle</th><th>Lead</th><th>Résultat</th><th>Détail</th></tr></thead><tbody>${J.map(j => `<tr style="cursor:default"><td class="mono">${j[0]}</td><td class="name">${j[1]}</td><td>${j[2]}</td><td><span class="chip ${j[3] === 'Exécutée' ? 'c-good' : j[3] === 'Échec' ? 'c-crit' : 'c-mut'}">${j[3]}</span></td><td class="tx2">${j[4]}</td></tr>`).join('')}</tbody></table></div></div>`;
+  }
+  const sel = RULES.find(r => r.id === id);
+  const list = `<div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Règles</div><h1>Règles actives</h1><p class="sub">Déclencheur, conditions, actions. Une règle créée par un agent reste en brouillon jusqu’à ce qu’un humain l’active.</p></div><div class="acts"><button type="button" class="btn" data-act="toast" data-msg="Nouvelle règle : choisissez un déclencheur">${ic('plus')} Nouvelle règle</button></div></div>
+    <div class="tw"><table class="tbl"><thead><tr><th>Règle</th><th>Quand</th><th>Alors</th><th>État</th><th>Dernière exécution</th></tr></thead><tbody>${RULES.map(r => `<tr class="${id === r.id ? 'sel' : ''}" data-openrule="${r.id}"><td class="name">${r.n}</td><td>${r.t}</td><td>${r.a}</td><td><span class="chip ${r.s === 'Active' ? 'c-good' : 'c-warn'}">${r.s}</span></td><td class="mono tx2">${r.last}</td></tr>`).join('')}</tbody></table></div>`;
+  return { list, sel };
+};
+const renderRuleDock = r => {
+  const sim = S.ruleSim === r.id ? `<div class="banner" style="--c:var(--good);margin-top:12px">${ic('check')}<div class="grow"><b>Simulation terminée, rien n’a été modifié.</b> Cette règle aurait touché <b style="color:var(--tx)">Agence Immo Rive Gauche</b> et <b style="color:var(--tx)">Expert-comptable Morel</b> en ce moment.</div></div>` : '';
+  return `<div class="fiche"><div class="fh"><div><h2>${r.n}</h2><div class="meta"><span class="chip ${r.s === 'Active' ? 'c-good' : 'c-warn'}">${r.s}</span><span class="tx2">Dernière exécution : ${r.last}</span></div></div><a class="btn ghost sm" href="#/regles/actives" aria-label="Fermer">${ic('x')} Fermer</a></div>
+  <div class="section"><h3>Quand</h3><div class="card"><div class="frm"><div><label class="lab" for="r-t">Déclencheur</label><select class="sel inp" id="r-t"><option>${r.t}</option><option>Le statut change</option><option>Un appel est analysé</option><option>Aucun échange depuis N jours</option></select></div><div><label class="lab" for="r-c">Condition</label><input class="inp" id="r-c" value="Le lead est assigné à un commercial"></div></div></div></div>
+  <div class="section"><h3>Alors</h3><div class="card"><div class="frm"><div><label class="lab" for="r-a">Action</label><select class="sel inp" id="r-a"><option>${r.a}</option><option>Envoyer un e-mail</option><option>Inscrire à une séquence</option><option>Notifier le closer</option></select></div></div></div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn soft" data-act="sim" data-id="${r.id}">Simuler sur les fiches actuelles</button><button type="button" class="btn" data-act="toast" data-msg="${r.s === 'Active' ? 'Règle enregistrée' : 'Règle activée par Raphael'}">${r.s === 'Active' ? 'Enregistrer' : 'Activer la règle'}</button></div>${sim}</div>`;
+};
+const SEQS = [
+  { id: 'artisans', n: 'Artisans – avant rendez-vous', steps: [['Dès l’inscription', 'Confirmation du rendez-vous'], ['2 jours avant', '« Trois exemples de sites d’artisans »'], ['La veille', 'Rappel et ordre du jour']], enrolled: [] },
+  { id: 'proposition', n: 'Relance après proposition', steps: [['3 jours après', 'Avez-vous pu lire la proposition ?'], ['7 jours après', 'Proposer un échange pour lever les questions']], enrolled: ['morel'] },
+  { id: 'reactivation', n: 'Réactivation d’un lead dormant', steps: [['Dès l’inscription', 'Un point sur votre projet de site ?']], enrolled: ['sthonore'] }
+];
+const renderSeq = (view, id) => {
+  if (view === 'erreurs') return `<div class="page"><div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Séquences</div><h1>Inscriptions en erreur</h1><p class="sub">Inscriptions bloquées : e-mail refusé, fiche en opposition, séquence désactivée.</p></div></div><div class="tw"><div class="empty">${ic('check')}<h3>Aucune inscription en erreur</h3><p>Quand un e-mail ne peut pas partir, l’inscription apparaît ici avec la raison et l’action à faire.</p><a class="btn sec" href="#/sequences/inscriptions">Voir les inscriptions en cours</a></div></div></div>`;
+  if (view === 'inscriptions') { const rows = SEQS.flatMap(s => s.enrolled.map(e => [byId(e), s])); return `<div class="page"><div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Séquences</div><h1>Inscriptions en cours</h1><p class="sub">Les fiches actuellement dans une séquence.</p></div></div><div class="tw"><table class="tbl"><thead><tr><th>Lead</th><th>Séquence</th><th>Prochaine étape</th><th></th></tr></thead><tbody>${rows.map(([l, s]) => `<tr data-open-lead="${l.id}"><td>${nameCell(l)}</td><td>${s.n}</td><td>${s.steps[0][0]} : ${s.steps[0][1]}</td><td style="text-align:right"><button type="button" class="btn sec sm" data-act="toast" data-msg="Inscription arrêtée pour ${esc(l.name)}">Arrêter</button></td></tr>`).join('')}</tbody></table></div></div>`; }
+  const sel = SEQS.find(s => s.id === id);
+  return { list: `<div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Séquences</div><h1>Séquences actives</h1><p class="sub">Des enchaînements d’e-mails qui s’arrêtent dès que le prospect répond.</p></div><div class="acts"><button type="button" class="btn" data-act="toast" data-msg="Nouvelle séquence">${ic('plus')} Nouvelle séquence</button></div></div>
+    <div class="tw"><table class="tbl"><thead><tr><th>Séquence</th><th class="num">Étapes</th><th class="num">Inscrits</th><th>Arrêt</th></tr></thead><tbody>${SEQS.map(s => `<tr class="${id === s.id ? 'sel' : ''}" data-openseq="${s.id}"><td class="name">${s.n}</td><td class="num mono">${s.steps.length}</td><td class="num mono">${s.enrolled.length}</td><td class="tx2">Réponse du prospect</td></tr>`).join('')}</tbody></table></div>`, sel };
+};
+const renderSeqDock = s => `<div class="fiche"><div class="fh"><div><h2>${s.n}</h2><div class="meta"><span class="chip c-good">Active</span><span class="tx2">${s.enrolled.length} inscrit${s.enrolled.length > 1 ? 's' : ''}</span></div></div><a class="btn ghost sm" href="#/sequences/actives" aria-label="Fermer">${ic('x')} Fermer</a></div>
+  <div class="section"><h3>Étapes</h3><div class="card" style="padding:6px 16px"><div class="steps">${s.steps.map((x, i) => `<div class="s"><span class="mono tx2">${i + 1}</span><span><b>${x[1]}</b><br><span class="tx2">${x[0]}</span></span><button type="button" class="btn ghost sm" data-act="toast" data-msg="Modifier l’étape ${i + 1}">Modifier</button></div>`).join('')}</div></div></div>
+  <div class="section"><h3>Arrêt automatique</h3><p class="tx2">La séquence s’arrête quand le prospect répond, quand un rendez-vous est annulé ou quand la fiche est retenue pour opposition.</p></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="toast" data-msg="Séquence enregistrée">Enregistrer</button><button type="button" class="btn sec" data-act="toast" data-msg="Inscrire une fiche à ${esc(s.n)}">Inscrire une fiche</button></div></div>`;
+
+/* ───────── Comptes et partenaires ───────── */
+const ACC = [['atelier', 'Atelier Rivière', 'Sandrine Rivière', '2 nov.', 9500, 'Site vitrine, en cours'], ['cave', 'Cave des Halles', 'Hugo Lemaire', '4 nov.', 6000, 'Site de vente, en cours'], ['vidal', 'Cabinet Vidal Architectes', 'Élodie Vidal', '6 nov.', 11000, 'Refonte, cadrage'], ['clinique', 'Clinique Vétérinaire du Parc', 'Dr Thomas Mercier', '11 nov.', 5000, 'Prise de rendez-vous en ligne']];
+const renderAccounts = id => {
+  const sel = ACC.find(a => a[0] === id);
+  const page = `<div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Comptes</div><h1>Comptes clients</h1><p class="sub">Les leads devenus clients, avec leur projet et leur facturation.</p></div><div class="acts"><button type="button" class="btn sec" data-act="toast" data-msg="Export CSV des comptes">${ic('download')} Exporter en CSV</button></div></div>
+    <div class="tb"><button type="button" class="pill on" aria-pressed="true">Signés ce mois</button><button type="button" class="pill add" data-act="toast" data-msg="Ajouter un filtre">+ filtre</button></div>
+    <div class="tw"><table class="tbl"><thead><tr><th>Compte</th><th>Contact</th><th>Signé le</th><th class="num">Montant signé</th><th>Projet</th></tr></thead><tbody>${ACC.map(a => `<tr class="${id === a[0] ? 'sel' : ''}" data-openacc="${a[0]}"><td class="name">${a[1]}</td><td>${a[2]}</td><td class="mono">${a[3]}</td><td class="num mono">${eur(a[4])}</td><td class="tx2">${a[5]}</td></tr>`).join('')}</tbody></table><div class="tfoot"><span>4 comptes</span><span class="sumbar"><span>Signés ce mois <b>${eur(31500)}</b></span></span></div></div>`;
+  const dock = sel ? `<div class="fiche"><div class="fh"><div><h2>${sel[1]}</h2><div class="meta"><span class="chip c-good">Client</span><span class="mono">${eur(sel[4])}</span></div></div><a class="btn ghost sm" href="#/comptes/clients" aria-label="Fermer">${ic('x')} Fermer</a></div><dl class="pairs"><dt>Contact</dt><dd>${sel[2]}</dd><dt>Signé le</dt><dd class="mono">${sel[3]} 2026</dd><dt>Projet</dt><dd>${sel[5]}</dd><dt>Montant signé</dt><dd class="mono">${eur(sel[4])}</dd></dl><div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button type="button" class="btn soft" data-act="toast" data-msg="Ouverture du projet">Ouvrir le projet</button><button type="button" class="btn sec" data-act="toast" data-msg="Ouverture de la facturation">Facturation</button></div></div>` : '';
+  return { page, dock };
+};
+const PART = {
+  externes: ['Commerciaux externes', 'Ils voient leurs fiches et leur poste d’appel, rien d’autre. Le passage au closer se fait depuis la fiche.', `<div class="tw"><table class="tbl"><thead><tr><th>Commercial</th><th>Fiches nommées</th><th class="num">Encaissé</th><th class="num">Commission, 10 % de l’encaissé</th><th>Dernière activité</th></tr></thead><tbody>
+    <tr style="cursor:default"><td><span class="own"><span class="av n">An</span><b>Anna Externe</b></span></td><td>Cabinet Avocats Durand, transmise à Alex Closer</td><td class="num mono">${eur(6000)}</td><td class="num mono">${eur(600)}</td><td class="mono tx2">Aujourd’hui 8 h 41</td></tr>
+    <tr style="cursor:default"><td><span class="own"><span class="av n">B</span><b>Bruno Externe</b></span></td><td>Aucune fiche transmise cette semaine</td><td class="num mono">${eur(4000)}</td><td class="num mono">${eur(400)}</td><td class="mono tx2">Jeu. 12 nov. 17 h 20</td></tr></tbody></table><div class="tfoot"><span>2 commerciaux externes</span><span class="sumbar"><span>Encaissé <b>${eur(10000)}</b></span><span>Commissions <b>${eur(1000)}</b></span></span></div></div>`],
+  listes: ['Listes d’appel', 'Les listes de prospects confiées aux commerciaux. Seuls les contacts professionnels sont importés.', `<div class="tb"><button type="button" class="btn" data-act="import">${ic('plus')} Importer une liste</button></div><div class="tw"><table class="tbl"><thead><tr><th>Liste</th><th>Attribuée à</th><th>Importée le</th><th>Contacts professionnels</th></tr></thead><tbody>
+    <tr style="cursor:default"><td class="name">Artisans du bâtiment, Lyon</td><td>Anna Externe</td><td class="mono">Lun. 2 nov.</td><td><span class="chip c-good">${ic('check')}Confirmés</span></td></tr>
+    <tr style="cursor:default"><td class="name">Cabinets libéraux, Paris</td><td>Bruno Externe</td><td class="mono">Mer. 4 nov.</td><td><span class="chip c-good">${ic('check')}Confirmés</span></td></tr></tbody></table></div>`],
+  commissions: ['Commissions', 'Dix pour cent de l’encaissé, versé à l’externe qui a apporté la fiche. Le closer n’est pas commissionné ici.', `<div class="tw"><table class="tbl"><thead><tr><th>Affaire</th><th>Commercial</th><th class="num">Signé</th><th class="num">Encaissé</th><th class="num">Commission, 10 %</th><th>État</th></tr></thead><tbody>
+    <tr style="cursor:default"><td class="name">Atelier Rivière</td><td>Anna Externe</td><td class="num mono">${eur(9500)}</td><td class="num mono">${eur(6000)}</td><td class="num mono">${eur(600)}</td><td><span class="chip c-warn">Encaissement partiel</span></td></tr>
+    <tr style="cursor:default"><td class="name">Cave des Halles</td><td>Bruno Externe</td><td class="num mono">${eur(6000)}</td><td class="num mono">${eur(4000)}</td><td class="num mono">${eur(400)}</td><td><span class="chip c-warn">Encaissement partiel</span></td></tr>
+    <tr style="cursor:default"><td class="name">Cabinet Avocats Durand</td><td>Anna Externe</td><td class="num mono">${eur(12000)}</td><td class="num mono">${eur(0)}</td><td class="num mono">${eur(0)}</td><td><span class="chip c-mut">Pas encore signé</span></td></tr></tbody></table><div class="tfoot"><span class="mut">Commission calculée sur l’encaissé, jamais sur le signé.</span><span class="sumbar"><span>Encaissé <b>${eur(10000)}</b></span><span>Commissions <b>${eur(1000)}</b></span></span></div></div>`]
+};
+const renderPartners = view => { const p = PART[view] || PART.externes; return `<div class="page"><div class="vh"><div><div class="vtag">${ic('star')} Vue enregistrée · Partenaires</div><h1>${p[0]}</h1><p class="sub">${p[1]}</p></div></div>${p[2]}</div>`; };
+
+/* ───────── Réglages ───────── */
+const tog = (id, on) => `<label class="sw"><span class="sr">Activer</span><input type="checkbox" ${on ? 'checked' : ''} id="${id}"><i></i></label>`;
+const num = (id, v, unit) => `<span style="display:inline-flex;gap:8px;align-items:center"><label class="sr" for="${id}">Valeur</label><input class="inp num-in" id="${id}" type="text" inputmode="numeric" value="${v}">${unit ? `<span class="tx2">${unit}</span>` : ''}</span>`;
+const sel = (id, opts, cur) => `<span><label class="sr" for="${id}">Choix</label><select class="sel" id="${id}">${opts.map(o => `<option ${o === cur ? 'selected' : ''}>${o}</option>`).join('')}</select></span>`;
+const srow = (t, d, c) => `<div class="srow"><div><b>${t}</b><span class="d">${d}</span></div><div>${c}</div></div>`;
+const SET = {
+  statuts: ['Statuts', 'Les étapes du pipeline et la chance de signer associée à chacune.', () => `<div class="tw"><table class="tbl" style="min-width:420px"><thead><tr><th>Statut</th><th class="num">Chance de signer</th></tr></thead><tbody>${ORDER.map(s => `<tr style="cursor:default"><td>${stChip(s)}</td><td class="num">${num('p-' + s, Math.round(STATUS[s].p * 100), '%')}</td></tr>`).join('')}<tr style="cursor:default"><td><span class="st" style="--c:#7fdba0"><span class="sdot full"></span>Gagné</span></td><td class="num mono">100 %</td></tr><tr style="cursor:default"><td><span class="st" style="--c:#ff8a8a"><span class="sdot full"></span>Perdu</span></td><td class="num mono">0 %</td></tr></tbody></table></div>`],
+  qualification: ['Qualification', 'Ce qui se passe quand une fiche change de statut.', () => srow('Auto-qualification', 'Qualifier automatiquement les leads dont le budget et la source sont renseignés.', tog('q1', true)) + srow('Mise à jour du dernier contact', 'Mettre à jour « Dernier contact » au passage en Contacté.', tog('q2', true)) + srow('Rappel après démo', 'Créer une action de suivi après une démo.', num('q3', 1, 'jour')) + srow('Rappel après proposition', 'Créer une action de suivi après l’envoi d’une proposition.', num('q4', 3, 'jours')) + srow('Effacer l’action à la clôture', 'Effacer la prochaine action au passage en Gagné ou Perdu.', tog('q5', true))],
+  scoring: ['Score', 'Seuils de lecture de la chaleur.', () => srow('Seuil « chaud »', 'À partir de ce score sur 100, la fiche est chaude.', num('s1', 70, '/ 100')) + srow('Seuil « tiède »', 'À partir de ce score, la fiche est tiède, en dessous elle est froide.', num('s2', 40, '/ 100')) + srow('Score automatique', 'Recalculer la chaleur après chaque appel analysé.', tog('s3', true))],
+  attribution: ['Attribution automatique', 'Qui reçoit les nouveaux leads.', () => srow('Round-robin', 'Répartir les nouveaux leads à tour de rôle entre les commerciaux.', tog('a1', false)) + srow('Closer par défaut', 'Reçoit les fiches transmises par un externe quand aucun closer n’est choisi.', sel('a2', ['Alex Closer', 'Raphael'], 'Alex Closer'))],
+  alertes: ['Alertes et rappels', 'Ce qui remonte dans À traiter et par e-mail.', () => srow('Leads froids', 'Alerter quand une fiche reste sans contact.', num('al1', 6, 'jours')) + srow('Actions en retard', 'Alerter quand la prochaine action est dépassée.', tog('al2', true)) + srow('E-mail quotidien des retards', 'Un récapitulatif envoyé chaque matin aux commerciaux.', tog('al3', true)) + srow('Leads bloqués', 'Alerter quand le statut ne change pas.', num('al4', 8, 'jours')) + srow('Rappel de proposition', 'Rappeler une proposition restée sans réponse.', num('al5', 5, 'jours'))],
+  escalade: ['Escalade', 'Quand une fiche est abandonnée trop longtemps.', () => srow('Escalade sur inactivité', 'Escalader les leads sans activité depuis N jours.', num('e1', 10, 'jours')) + srow('Action d’escalade', 'Que faire au moment d’escalader.', sel('e2', ['Notifier le closer', 'Réassigner', 'Notifier un administrateur'], 'Notifier le closer'))],
+  notifications: ['Notifications', 'Qui est prévenu, de quoi.', () => srow('E-mail à l’assignation', 'Prévenir le commercial quand un lead lui est attribué.', tog('n1', true)) + srow('Journalisation des activités', 'Garder l’historique de toutes les actions sur les leads.', tog('n2', true))],
+  doublons: ['Détection des doublons', 'Comparer une nouvelle fiche aux fiches existantes.', () => srow('À la création', 'Chercher un doublon dès la saisie d’un lead.', tog('d1', true)) + srow('Critères', 'Nom, téléphone et e-mail sont comparés.', `<div class="days"><label class="pill on" style="gap:6px"><input type="checkbox" checked> Nom</label><label class="pill on" style="gap:6px"><input type="checkbox" checked> Téléphone</label><label class="pill on" style="gap:6px"><input type="checkbox" checked> E-mail</label></div>`)],
+  appels: ['Poste d’appel', 'Comportement par défaut de la file d’appels.', () => srow('Mode par défaut', 'Au clic, Aperçu ou Power dialer.', sel('c1', ['Au clic', 'Aperçu', 'Power dialer'], 'Au clic')) + srow('Aperçu : appel automatique après', '0 pour que l’appel parte seulement au clic. De 0 à 120.', num('c2', 5, 's')) + srow('Power dialer : délai avant l’appel suivant', 'Compté après la saisie du résultat. De 0 à 60.', num('c3', 10, 's')) + srow('Détecter les messageries', 'Raccrocher aussitôt et marquer la fiche en rouge. Aucun audio de messagerie n’est gardé.', tog('c4', true))],
+  telephonie: ['Téléphonie', 'Où, quand et combien de fois on peut appeler.', () => `<div class="banner" style="--c:var(--good)">${ic('check')}<div class="grow"><b>Téléphonie configurée sur ce serveur.</b> Les appels partent depuis le navigateur.</div></div>` +
+    srow('Jours d’appel', 'Les jours où la file est ouverte.', `<div class="days">${['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'].map((d, i) => `<label class="pill ${i < 5 ? 'on' : ''}" style="gap:6px"><input type="checkbox" ${i < 5 ? 'checked' : ''} aria-label="${d}"> ${d}</label>`).join('')}</div>`) +
+    srow('Plage d’appel', 'Ces heures s’entendent dans le fuseau du prospect, déduit de son numéro. Fuseau inconnu : l’appel est refusé.', `<span style="display:inline-flex;gap:8px;align-items:center"><label class="sr" for="t1">Début</label><input class="inp num-in" id="t1" value="09:00"><span>à</span><label class="sr" for="t2">Fin</label><input class="inp num-in" id="t2" value="19:00"></span>`) +
+    srow('Tentatives sur la période', 'Par numéro, tous commerciaux confondus. Plafond atteint sans jamais joindre : fiche « non joignable ».', `<span style="display:inline-flex;gap:8px;align-items:center">${num('t3', 3, 'tentatives sur')}${num('t4', 7, 'jours')}</span>`) +
+    srow('Pays appelables', 'Royaume-Uni, Canada et États-Unis restent fermés tant que leurs règles ne sont pas validées.', `<div class="days"><span class="chip c-good">France</span><span class="chip c-good">Belgique</span><span class="chip c-good">Martinique</span><span class="chip c-mut">Royaume-Uni</span><span class="chip c-mut">Canada</span><span class="chip c-mut">États-Unis</span></div>`) +
+    srow('Mode pont', 'Le poste appelle d’abord votre portable ; les appels partent au clic seulement.', tog('t5', false))],
+  enregistrement: ['Enregistrement', 'Ce qui est enregistré et annoncé.', () => srow('Enregistrer les appels', 'Désactivé : aucun appel n’est enregistré, donc ni transcript ni analyse.', tog('r1', true)) + srow('Annoncer l’enregistrement', 'Un message automatique prévient la personne appelée en début d’appel.', tog('r2', true)) + `<div class="srow"><div><b>Texte de l’annonce</b><span class="d">Visible par le prospect au début de chaque appel.</span></div><div style="min-width:min(320px,100%)"><label class="sr" for="r3">Texte</label><textarea class="inp" id="r3">Cet appel peut être enregistré pour améliorer notre service. Vous pouvez vous y opposer à tout moment.</textarea></div></div>` + srow('Conservation de l’audio', 'L’audio reste disponible 30 jours après l’appel, puis il est supprimé. De 0 à 180 jours.', num('r4', 30, 'jours'))],
+  transcription: ['Transcription', 'Du son au texte.', () => srow('Transcrire les appels enregistrés', 'Désactivé : l’audio n’est pas envoyé au prestataire et l’analyse n’a rien à lire.', tog('tr1', true)) + srow('Prestataire', 'Service de transcription utilisé.', sel('tr2', ['Prestataire principal', 'Prestataire de secours'], 'Prestataire principal')) + srow('Langue des appels', 'Langue attendue par défaut.', sel('tr3', ['Français', 'Anglais', 'Anglais (États-Unis)'], 'Français')) + srow('Conservation des transcripts', 'Passé ce délai, le transcript est supprimé. De 1 à 36 mois.', num('tr4', 12, 'mois')) + srow('Transcription en direct', 'Affiche le texte pendant l’appel, dans le poste d’appel.', tog('tr5', true))],
+  analyse: ['Analyse et grille de chaleur', 'Comment l’IA lit un appel et le note.', () => `<p class="tx2" style="margin-bottom:6px">Cinq critères notent la chaleur d’un lead sur 100. Le total doit faire 100.</p><div class="sset">${[['Budget confirmé', 25], ['Besoin précis', 20], ['Échéance', 20], ['Décideur identifié', 15], ['Réactivité du prospect', 20]].map((c, i) => srow(c[0], 'Points maximum de ce critère.', num('h' + i, c[1], 'points'))).join('')}</div><div class="foot-save"><span>Total de la grille</span><b class="mono" id="heatTotal">100 / 100</b></div>` + srow('Informations proposées', 'L’IA ne remplit jamais la fiche seule : chaque champ attend votre accord et une citation vérifiée.', tog('an1', true))],
+  'rapport-scripts': ['Rapport de scripts', 'Le rapport hebdomadaire qui compare les appels au script.', () => srow('Objectif de conversion', 'Conversion mesurée sur les prospects joints.', num('rs1', 40, '%')) + srow('Envoi hebdomadaire', 'Le rapport part chaque lundi matin.', tog('rs2', true)) + srow('Destinataires', 'Qui reçoit le rapport.', sel('rs3', ['Raphael', 'Raphael et Alex Closer'], 'Raphael et Alex Closer'))],
+  opposes: ['Numéros opposés', 'Un numéro opposé n’est plus jamais appelé, quelle que soit la fiche.', () => `<div class="tb"><label class="field">${ic('phone')}<span class="sr">Numéro à ajouter</span><input id="opp-n" placeholder="+33 6 00 00 00 00" inputmode="tel"></label><button type="button" class="btn" data-act="addopp">${ic('plus')} Ajouter un numéro</button><button type="button" class="btn sec" data-act="toast" data-msg="Import d’une liste de numéros opposés">Importer une liste</button></div>
+    <div class="tw"><table class="tbl" style="min-width:520px" id="opp-t"><thead><tr><th>Numéro</th><th>Origine</th><th>Date</th><th></th></tr></thead><tbody>${[['+33 6 98 76 54 32', 'Opposition pendant un appel', 'Lun. 2 nov.'], ['+33 1 47 00 11 22', 'Demande par e-mail', 'Mer. 4 nov.'], ['+32 475 12 00 34', 'Opposition pendant un appel', 'Jeu. 5 nov.']].map(r => `<tr style="cursor:default"><td class="mono">${r[0]}</td><td>${r[1]}</td><td class="mono tx2">${r[2]}</td><td style="text-align:right"><button type="button" class="btn ghost sm" data-act="toast" data-msg="Retrait : confirmation requise">Retirer</button></td></tr>`).join('')}</tbody></table></div><p class="mut" style="margin-top:10px">${S.hold === 'confirmed' ? '+33 4 91 12 34 09 vient d’être ajouté après la confirmation de l’opposition de Garage Lambert & Fils.' : 'Les oppositions confirmées depuis une retenue s’ajoutent ici automatiquement.'}</p>`],
+  conservation: ['Conservation des données', 'Combien de temps Venio garde ce qu’il sait des prospects.', () => srow('Audio des appels', '30 jours. À régler dans Enregistrement.', `<a class="btn sec sm" href="#/reglages/enregistrement">Ouvrir</a>`) + srow('Transcripts', '12 mois. À régler dans Transcription.', `<a class="btn sec sm" href="#/reglages/transcription">Ouvrir</a>`) + srow('Fiches sans activité', 'Supprimer les fiches perdues après ce délai.', num('cv1', 24, 'mois'))],
+  rapports: ['Envoi des rapports', 'Les rapports envoyés par e-mail.', () => srow('Pilotage hebdomadaire', 'Résumé du pilotage envoyé chaque lundi.', tog('rp1', true)) + srow('Rapport de scripts', 'Voir Rapport de scripts dans Téléphonie et IA.', `<a class="btn sec sm" href="#/reglages/rapport-scripts">Ouvrir</a>`)]
+};
+const renderSettings = sec => {
+  sec = SET[sec] ? sec : 'statuts';
+  const [t, d, f] = SET[sec];
+  const nav = SET_GROUPS.map(g => `<div class="gt">${g.label}</div>${g.secs.map(s => `<a href="#/reglages/${s[0]}" ${s[0] === sec ? 'aria-current="page"' : ''}>${s[1]}</a>`).join('')}`).join('');
+  return `<div class="page"><div class="vh"><div><div class="vtag">${ic('gear')} Administration · Réglages du CRM</div><h1>${t}</h1><p class="sub">${d}</p></div></div>
+    <div class="setgrid"><nav class="setnav" aria-label="Sections des réglages">${nav}</nav><div id="settings"><div class="card"><div class="sset">${f()}</div></div>
+    <div class="foot-save" id="savebar" hidden><span><b>Modifications non enregistrées</b></span><div style="display:flex;gap:8px"><button type="button" class="btn sec" data-act="discard">Annuler les modifications</button><button type="button" class="btn" data-act="savesettings">Enregistrer</button></div></div></div></div></div>`;
+};
+
+/* ───────── Plan du CRM ───────── */
+const PLAN = [
+  ['À traiter (en retard, aujourd’hui, cette semaine, à ne pas laisser filer)', 'Leads › À traiter', '#/leads/a-traiter', 'Vue enregistrée de Leads, table groupée par échéance.'],
+  ['Actions rapides : contacté, note, reporter, appeler', 'Leads › À traiter', '#/leads/a-traiter', 'Boutons en bout de ligne.'],
+  ['Leads : tableau enrichi, colonnes, filtres, vues', 'Leads › Tous les leads ouverts', '#/leads/tous/table', 'Filtres en gélules, sélecteur de colonnes.'],
+  ['Leads : édition en ligne, actions groupées, export CSV', 'Leads › Tous les leads ouverts', '#/leads/tous/table', 'Statut modifiable dans la ligne, barre d’actions groupées.'],
+  ['Leads : Kanban par statut', 'Leads › présentation Kanban', '#/leads/tous/kanban', 'Même vue, autre présentation.'],
+  ['Fiche lead : statut, entité, chaleur, assignation, prochaine action', 'Leads › panneau latéral ou pleine page', '#/lead/dubreuil', 'Onglet Vue d’ensemble.'],
+  ['Fiche lead : écrire, consigner un échange', 'Leads › fiche', '#/lead/dubreuil/echanges', 'Boutons d’en-tête et onglet Échanges.'],
+  ['Fiche lead : fusionner, doublons, convertir en client', 'Leads › fiche', '#/lead/dubreuil', 'Boutons d’en-tête, bloc Doublons.'],
+  ['Fiche lead : chaîne commerciale', 'Leads › fiche', '#/lead/dubreuil/chaine', 'Onglet Chaîne commerciale.'],
+  ['Fiche lead : séquences', 'Leads › fiche', '#/lead/dubreuil/sequences', 'Onglet Séquences.'],
+  ['Fiche lead : données personnelles, RGPD', 'Leads › fiche', '#/lead/dubreuil/rgpd', 'Onglet Données personnelles.'],
+  ['Poste d’appel : file, modes Au clic, Aperçu, Power dialer', 'Leads › File d’appels', '#/leads/file/file', 'Présentation « File d’appels » de Leads.'],
+  ['Poste d’appel : barre d’appel, transcription en direct, opposition', 'Leads › File d’appels › Appeler', '#/leads/file/file/osteo/appel', 'Panneau latéral de la file.'],
+  ['Poste d’appel : résultat présélectionné, marque rouge répondeur', 'Leads › File d’appels', '#/leads/file/file/osteo/resultat', 'Étape suivant l’appel.'],
+  ['Poste d’appel : pays, heure locale, hors plage', 'Leads › File d’appels', '#/leads/file/file/petale', 'Colonne d’heure et bandeau du panneau.'],
+  ['Appel analysé : transcript, résumé, champs proposés, chaleur, actions', 'Appels › Analyses à valider', '#/appels/analyses/dubreuil', 'Même composant dans l’onglet Appels de la fiche.'],
+  ['Retenue d’opposition : confirmer ou lever', 'Appels › Retenues d’opposition', '#/appels/retenues/garage', 'Bandeau aussi sur la fiche concernée.'],
+  ['Pilotage : prévisions, objectifs, entonnoir, activité', 'Rapports › Pilotage', '#/rapports/pilotage', 'Quatre onglets.'],
+  ['Rapports de scripts', 'Rapports › Rapports de scripts', '#/rapports/scripts', 'Rapport hebdomadaire.'],
+  ['Automatisations : règles, simulation', 'Règles › Règles actives', '#/regles/actives', 'Constructeur dans le panneau.'],
+  ['Automatisations : modèles', 'Règles › Modèles', '#/regles/modeles', ''],
+  ['Automatisations : journal des exécutions', 'Règles › Journal des exécutions', '#/regles/journal', ''],
+  ['Séquences d’e-mails', 'Séquences › Séquences actives', '#/sequences/actives', 'Inscriptions en cours et en erreur dans les vues voisines.'],
+  ['Comptes clients', 'Comptes › Comptes clients', '#/comptes/clients', ''],
+  ['Partenaires : commerciaux externes', 'Partenaires › Commerciaux externes', '#/partenaires/externes', ''],
+  ['Partenaires : listes d’appel', 'Partenaires › Listes d’appel', '#/partenaires/listes', ''],
+  ['Partenaires : commissions de 10 % de l’encaissé', 'Partenaires › Commissions', '#/partenaires/commissions', ''],
+  ['Réglages : statuts, qualification, score, assignation, doublons', 'Administration › Réglages du CRM', '#/reglages/statuts', 'Groupes Qualification et scoring, Relances et alertes.'],
+  ['Réglages : alertes, escalade, notifications, rapports, conservation', 'Administration › Réglages du CRM', '#/reglages/alertes', ''],
+  ['Réglages : appels, téléphonie (pays, plage, plafonds, dialer)', 'Administration › Téléphonie et IA', '#/reglages/telephonie', ''],
+  ['Réglages : enregistrement, transcription, analyse (grille de chaleur)', 'Administration › Téléphonie et IA', '#/reglages/analyse', ''],
+  ['Réglages : rapport de scripts', 'Administration › Téléphonie et IA', '#/reglages/rapport-scripts', ''],
+  ['Numéros opposés', 'Administration › Numéros opposés', '#/reglages/opposes', 'Rangé dans Conformité.'],
+  ['Espace du commercial externe', 'Profil externe : Leads › Mes fiches et File d’appels', '#/leads/mes-fiches', 'Bascule « Profil » en haut de l’écran. Hors de cette refonte.']
+];
+const renderPlan = () => `<div class="page wide"><div class="vh"><div><div class="vtag">${ic('map')} Administration</div><h1>Plan du CRM</h1><p class="sub">Chaque fonction d’aujourd’hui et l’endroit où elle se trouve dans cette organisation par objets. Une fonction, un seul endroit.</p></div></div>
+  <div class="tw"><table class="tbl plan" style="min-width:760px"><thead><tr><th>Fonction d’aujourd’hui</th><th>Où dans cette proposition</th><th>Précision</th></tr></thead><tbody>${PLAN.map(p => `<tr><td>${p[0]}</td><td><a href="${p[2]}">${p[1]}</a></td><td class="tx2">${p[3]}</td></tr>`).join('')}</tbody></table></div></div>`;
+
+/* ───────── routeur et rendu ───────── */
+const DOCKROUTES = {};
+const mount = (html, dock) => {
+  const m = $('#main');
+  const keep = [m.scrollTop, $('.list-side', m)?.scrollTop || 0, $('.dock', m)?.scrollTop || 0];
+  const sameKey = S.routeKey === location.hash;
+  if (dock) { m.className = 'main split'; m.innerHTML = fr(`<div class="list-side">${html}</div><aside class="dock" aria-label="Détail">${dock}</aside>`); }
+  else { m.className = 'main'; m.innerHTML = fr(/^\s*<div class="page/.test(html) ? html : `<div class="page">${html}</div>`); }
+  S.routeKey = location.hash;
+  if (sameKey) { m.scrollTop = keep[0]; const ls = $('.list-side', m); if (ls) ls.scrollTop = keep[1]; const dk = $('.dock', m); if (dk) dk.scrollTop = keep[2]; }
+  else { m.scrollTop = 0; }
+};
+const renderMain = r => {
+  const seg = r.seg, o = seg[0] || '';
+  if (S.role === 'externe') {
+    const ok = (o === 'leads' && ['mes-fiches', 'file'].includes(seg[1] || '')) || (o === 'lead' && seg[1] === 'durand');
+    if (!ok) { go('/leads/mes-fiches'); return; }
+  }
+  if (o === '') return mount(renderHome());
+  if (o === 'lead') {
+    S.tab.full = TABS.some(t => t[0] === seg[2]) ? seg[2] : 'ensemble'; r.view = 'tous';
+    return mount(renderFullLead(seg[1], S.tab.full));
+  }
+  if (o === 'leads') {
+    let view = seg[1] || 'tous'; if (!ALLOWED[view]) view = 'tous'; r.view = view;
+    const allowed = ALLOWED[view]; let pres = allowed.includes(seg[2]) ? seg[2] : allowed[0];
+    const id = byId(seg[3]) ? seg[3] : null, step = seg[4];
+    const baseHref = `#/leads/${view}/${pres}`;
+    closeHref = () => baseHref;
+    if (pres === 'file') {
+      const only = view === 'rappels' ? 0 : view === 'jamais' ? 1 : null;
+      return mount(renderDesk(id, only), id ? renderCallDock(id, step) : '');
+    }
+    if (id && S.lastPanel !== id) { S.tab.panel = 'ensemble'; }
+    S.lastPanel = id;
+    let list;
+    if (view === 'a-traiter') list = viewHeader(view, pres) + renderTodo(id);
+    else if (pres === 'kanban') list = viewHeader(view, pres) + renderKanban(view, id);
+    else list = viewHeader(view, pres) + renderLeadsTable(view, id);
+    return mount(list, id ? renderFiche(byId(id), false, S.tab.panel) : '');
+  }
+  if (o === 'appels') {
+    const view = ['analyses', 'retenues', 'jour'].includes(seg[1]) ? seg[1] : 'analyses'; r.view = view;
+    const id = seg[2] && (CALLS[seg[2]] || CALLROWS.some(x => x[0] === seg[2])) ? seg[2] : null;
+    return mount(renderCallsObject(view, id), id ? renderCallDockObj(view, id) : '');
+  }
+  if (o === 'comptes') { r.view = 'clients'; const a = renderAccounts(seg[2]); return mount(a.page, a.dock); }
+  if (o === 'partenaires') { r.view = PART[seg[1]] ? seg[1] : 'externes'; return mount(renderPartners(r.view)); }
+  if (o === 'regles') {
+    r.view = ['actives', 'modeles', 'journal'].includes(seg[1]) ? seg[1] : 'actives';
+    const x = renderRules(r.view, seg[2]);
+    if (typeof x === 'string') return mount(x);
+    return mount(x.list, x.sel ? renderRuleDock(x.sel) : '');
+  }
+  if (o === 'sequences') {
+    r.view = ['actives', 'inscriptions', 'erreurs'].includes(seg[1]) ? seg[1] : 'actives';
+    const x = renderSeq(r.view, seg[2]);
+    if (typeof x === 'string') return mount(x);
+    return mount(x.list, x.sel ? renderSeqDock(x.sel) : '');
+  }
+  if (o === 'rapports') {
+    r.view = seg[1] === 'scripts' ? 'scripts' : 'pilotage';
+    return mount(r.view === 'scripts' ? renderScripts() : renderPilotage(seg[2]));
+  }
+  if (o === 'reglages') return mount(renderSettings(seg[1]));
+  if (o === 'plan') return mount(renderPlan());
+  mount(`<div class="page"><div class="empty">${ic('search')}<h3>Cette page n’existe pas</h3><a class="btn" href="#/">Retour à l’accueil du CRM</a></div></div>`);
+};
+const startLive = () => {
+  const r = parse();
+  if (r[0] === 'leads' && r[1] === 'file' && r[4] === 'appel') {
+    if (!S.call) S.call = { t0: Date.now(), muted: false, kbd: false, mic: 'Casque Jabra', opposed: false, lines: 2 };
+    S.tm = setInterval(() => {
+      const c = S.call; if (!c) return;
+      const t = $('#timer'); if (t) t.textContent = fmtT(Math.floor((Date.now() - c.t0) / 1000));
+      if (Math.floor((Date.now() - c.t0) / 3500) + 2 > c.lines && c.lines < LIVE.length) { c.lines++; const lv = $('#live'); if (lv) { lv.innerHTML = fr(liveHtml(c)); lv.scrollTop = lv.scrollHeight; } }
+    }, 1000);
+  }
+};
+const render = () => {
+  clearInterval(S.tm);
+  document.body.dataset.nav = 'closed';
+  const seg = parse(); const r = { seg, view: null };
+  closeDlg();
+  renderMain(r);
+  renderRail(); renderTop(r); renderNav(r);
+  hookCharts(); startLive();
+  if (S.refocus) { const el = $(S.refocus); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) { } } S.refocus = null; }
+};
+const openRoute = (id) => {
+  const seg = parse(), o = seg[0];
+  if (o === 'leads') { const view = ALLOWED[seg[1]] ? seg[1] : 'tous'; const pres = ALLOWED[view].includes(seg[2]) ? seg[2] : ALLOWED[view][0]; go(seg[3] === id && !seg[4] ? `/leads/${view}/${pres}` : `/leads/${view}/${pres}/${id}`); }
+  else go(`/lead/${id}`);
+};
+const nextDialable = id => {
+  const all = QUEUE.flatMap(g => g.ids).filter(x => !blocked(byId(x)));
+  const i = all.indexOf(id); return all[i + 1] || null;
+};
+const fieldDialog = (c, k) => {
+  const f = CALLS[c].fields.find(x => x.k === k);
+  dlg(`Modifier : ${f.l}`, `<label class="lab" for="edv">Valeur retenue pour la fiche</label><input class="inp" id="edv" value="${esc(fs(c, f).v)}"><p class="tx2" style="margin-top:10px">Citation : « ${esc(f.cite)} »</p>`, `<button type="button" class="btn sec" data-act="dlgclose">Annuler</button><button type="button" class="btn" data-act="fldsave" data-c="${c}" data-k="${k}">Accepter la valeur</button>`);
+};
+const act = (a) => {
+  const d = a.dataset, k = d.act;
+  const rerender = () => { render(); };
+  switch (k) {
+    case 'toast': toast(d.msg); break;
+    case 'navtoggle': document.body.dataset.nav = document.body.dataset.nav === 'open' ? 'closed' : 'open'; $('.menu-btn').setAttribute('aria-expanded', document.body.dataset.nav === 'open'); break;
+    case 'role': S.role = S.role === 'admin' ? 'externe' : 'admin'; S.navQ = ''; const q = $('#navq'); if (q) q.value = ''; go(S.role === 'externe' ? '/leads/mes-fiches' : '/'); if (location.hash === (S.role === 'externe' ? '#/leads/mes-fiches' : '#/')) render(); break;
+    case 'create': dlg('Créer', `<div class="grid" style="gap:8px">${[['Lead', 'users'], ['Compte client', 'building'], ['Règle', 'bolt'], ['Séquence', 'mail'], ['Liste d’appel', 'phone']].map(x => `<button type="button" class="btn sec" style="justify-content:flex-start" data-act="dlgok" data-msg="${x[0]} : formulaire de création">${ic(x[1])} ${x[0]}</button>`).join('')}</div>`); break;
+    case 'obj': {
+      const id = d.id; const open = S.open[id] !== undefined ? S.open[id] : parse()[0] === id;
+      S.open[id] = !open; const r = { seg: parse(), view: null };
+      const cur = parse(); renderNavOnly(); break;
+    }
+    case 'fil': S.fil[d.k] = !S.fil[d.k]; rerender(); break;
+    case 'clearfil': S.fil = {}; S.q = ''; rerender(); break;
+    case 'colmenu': S.colMenu = !S.colMenu; rerender(); break;
+    case 'uncheck': S.checked.clear(); rerender(); break;
+    case 'grp': S.expandedGroups[d.k] = !S.expandedGroups[d.k]; rerender(); break;
+    case 'range': S.chartRange = +d.v; rerender(); break;
+    case 'mode': S.mode = d.v; rerender(); break;
+    case 'scope': S.scope = d.v; rerender(); break;
+    case 'start': go('/leads/file/file/osteo/appel'); break;
+    case 'skipcard': { const n = nextDialable(d.id); toast('Fiche passée'); go(n ? `/leads/file/file/${n}` : '/leads/file/file'); break; }
+    case 'call': { const c = S.call; if (d.v === 'mute') c.muted = !c.muted; if (d.v === 'kbd') c.kbd = !c.kbd; const t = $('#timer'); const keep = c.t0; rerender(); break; }
+    case 'hangup': { const c = S.call; c.end = Math.floor((Date.now() - c.t0) / 1000); S.result = 'joint'; go('/leads/file/file/osteo/resultat'); break; }
+    case 'opp': dlg('Opposition du prospect', `<p>Claire Martin demande à ne plus être appelée.</p><p class="tx2" style="margin-top:8px">L’appel s’arrête, la fiche est retenue et l’analyse attend votre décision. Le numéro n’est ajouté aux numéros opposés qu’à votre confirmation.</p>`, `<button type="button" class="btn sec" data-act="dlgclose">Continuer l’appel</button><button type="button" class="btn danger" data-act="oppok">Raccrocher et signaler l’opposition</button>`); break;
+    case 'oppok': { const c = S.call; c.opposed = true; c.end = Math.floor((Date.now() - c.t0) / 1000); go('/leads/file/file/osteo/resultat'); break; }
+    case 'saveres': { const c = S.call || {}; const n = nextDialable(d.id); S.call = null; S.result = 'joint'; toast(c.opposed ? 'Résultat enregistré : la fiche est retenue pour opposition' : 'Résultat enregistré, fiche suivante ouverte'); go(n ? `/leads/file/file/${n}${S.mode === 'power' ? '/appel' : ''}` : '/leads/file/file'); break; }
+    case 'tab': { if (parse()[0] === 'lead') go(`/lead/${parse()[1]}/${d.t}`); else { S.tab.panel = d.t; rerender(); } break; }
+    case 'hold': S.hold = d.v; toast(d.v === 'confirmed' ? 'Opposition confirmée : le numéro est ajouté aux numéros opposés' : 'Retenue levée : l’analyse peut être validée'); rerender(); break;
+    case 'fld': if (d.v === 'edit') fieldDialog(d.c, d.k); else { const f = CALLS[d.c].fields.find(x => x.k === d.k); if (d.v === 'reset') delete S.fields[d.c + d.k]; else S.fields[d.c + d.k] = { st: d.v, v: fs(d.c, f).v }; rerender(); } break;
+    case 'fldsave': { S.fields[d.c + d.k] = { st: 'ok', v: $('#edv').value || '' }; closeDlg(); rerender(); break; }
+    case 'act': S.actions[d.c + d.k] = d.v; rerender(); break;
+    case 'acceptall': CALLS[d.c].fields.filter(f => f.ok && !fs(d.c, f).st).forEach(f => S.fields[d.c + f.k] = { st: 'ok', v: fs(d.c, f).v }); rerender(); break;
+    case 'validate': { const n = CALLS[d.c].fields.filter(f => fs(d.c, f).st === 'ok').length; S.validated[d.c] = true; toast(`Analyse validée : ${n} information${n > 1 ? 's' : ''} appliquée${n > 1 ? 's' : ''} à la fiche`); rerender(); break; }
+    case 'cite': { S.hl = d.c + d.t; rerender(); const el = $('#t-' + d.c + '-' + d.t.replace(':', '')); if (el) el.scrollIntoView({ block: 'center' }); break; }
+    case 'note': dlg('Consigner un échange', `<div class="frm"><div><label class="lab" for="nn">Compte rendu</label><textarea class="inp" id="nn" placeholder="Ce qui s’est dit, ce qui est décidé"></textarea></div><div><label class="lab" for="nd">Prochaine action</label><input class="inp" id="nd" value="${esc(byId(d.id).next)}"></div></div>`, `<button type="button" class="btn sec" data-act="dlgclose">Annuler</button><button type="button" class="btn" data-act="dlgok" data-msg="Échange consigné sur ${esc(byId(d.id).name)}">Consigner</button>`); break;
+    case 'mail': dlg(`Écrire à ${esc(byId(d.id).contact)}`, `<div class="frm"><div><label class="lab" for="mt">À</label><input class="inp" id="mt" value="${esc(byId(d.id).email)}"></div><div><label class="lab" for="ms">Objet</label><input class="inp" id="ms" value="${d.id === 'dubreuil' ? 'Trois exemples de sites d’artisans' : 'Suite à notre échange'}"></div><div><label class="lab" for="mb">Message</label><textarea class="inp" id="mb"></textarea></div></div>`, `<button type="button" class="btn sec" data-act="dlgclose">Annuler</button><button type="button" class="btn" data-act="dlgok" data-msg="E-mail envoyé à ${esc(byId(d.id).contact)}">Envoyer</button>`); break;
+    case 'merge': dlg('Fusionner une fiche', `<p class="tx2" style="margin-bottom:12px">Aucun doublon détecté pour ${esc(byId(d.id).name)}. Vous pouvez tout de même choisir une fiche à fusionner dans celle-ci : ses appels et ses échanges sont conservés.</p><label class="lab" for="mg">Fiche à fusionner</label><select class="sel inp" id="mg">${L.filter(x => x.id !== d.id).map(x => `<option>${esc(x.name)}</option>`).join('')}</select>`, `<button type="button" class="btn sec" data-act="dlgclose">Annuler</button><button type="button" class="btn danger" data-act="dlgok" data-msg="Fiches fusionnées">Fusionner</button>`); break;
+    case 'convert': dlg('Convertir en client', `<p>${esc(byId(d.id).name)} devient un compte client et un projet est créé. Le lead sort du pipeline.</p>${byId(d.id).status !== 'PROPOSAL' ? `<div class="banner" style="--c:var(--warn);margin-top:12px">${ic('alert')}<div class="grow">Cette fiche n’est pas encore au statut Proposition.</div></div>` : ''}`, `<button type="button" class="btn sec" data-act="dlgclose">Annuler</button><button type="button" class="btn" data-act="dlgok" data-msg="Compte client créé">Convertir</button>`); break;
+    case 'postpone': dlg('Reporter', `<div class="grid" style="gap:8px">${['Demain', 'Dans trois jours', 'Lundi prochain', 'Choisir une date'].map(x => `<button type="button" class="btn sec" style="justify-content:flex-start" data-act="dlgok" data-msg="Reporté : ${x.toLowerCase()}">${x}</button>`).join('')}</div>`); break;
+    case 'sim': S.ruleSim = d.id; rerender(); break;
+    case 'import': dlg('Importer une liste d’appel', `<label class="lab" for="imf">Fichier CSV</label><input class="inp" id="imf" type="file" accept=".csv"><label style="display:flex;gap:8px;margin-top:12px"><input type="checkbox" id="impro"> Je confirme que ces contacts sont des professionnels, pas des particuliers.</label>`, `<button type="button" class="btn sec" data-act="dlgclose">Annuler</button><button type="button" class="btn" data-act="dlgok" data-msg="Import lancé">Importer</button>`); break;
+    case 'addopp': { const v = $('#opp-n').value.trim(); if (!v) { toast('Saisissez un numéro'); break; } const tr = document.createElement('tr'); tr.style.cursor = 'default'; tr.innerHTML = `<td class="mono">${esc(v)}</td><td>Ajout manuel</td><td class="mono tx2">Ven. 13 nov.</td><td></td>`; $('#opp-t tbody').prepend(tr); $('#opp-n').value = ''; toast('Numéro ajouté aux numéros opposés'); break; }
+    case 'savesettings': $('#savebar').hidden = true; toast('Réglages enregistrés.'); break;
+    case 'discard': $('#savebar').hidden = true; render(); toast('Modifications annulées'); break;
+    case 'dlgclose': closeDlg(); break;
+    case 'dlgclose-veil': if (a === window.__target) closeDlg(); break;
+    case 'dlgok': closeDlg(); toast(d.msg); break;
+  }
+};
+const renderNavOnly = () => { renderNav({ seg: parse(), view: currentView() }); };
+const currentView = () => { const s = parse(); if (s[0] === 'leads') return ALLOWED[s[1]] ? s[1] : 'tous'; if (s[0] === 'lead') return 'tous'; return s[1] || null; };
+
+document.addEventListener('click', e => {
+  const t = e.target;
+  const veil = t.classList && t.classList.contains('veil'); if (veil) { closeDlg(); return; }
+  const a = t.closest('[data-act]');
+  if (a) { if (a.tagName === 'A') { /* liens avec data-act : laisser la navigation */ } act(a); return; }
+  if (t.closest('.snav a')) { document.body.dataset.nav = 'closed'; }
+  if (S.colMenu && !t.closest('.popover')) { S.colMenu = false; render(); return; }
+  if (t.closest('select,input,button,a,label,textarea')) return;
+  let r;
+  if ((r = t.closest('[data-open]'))) openRoute(r.dataset.open);
+  else if ((r = t.closest('[data-opencall]'))) go(`/appels/${currentView()}/${r.dataset.opencall}`);
+  else if ((r = t.closest('[data-openrule]'))) go(`/regles/actives/${r.dataset.openrule}`);
+  else if ((r = t.closest('[data-openseq]'))) go(`/sequences/actives/${r.dataset.openseq}`);
+  else if ((r = t.closest('[data-openacc]'))) go(`/comptes/clients/${r.dataset.openacc}`);
+  else if ((r = t.closest('[data-open-lead]'))) go(`/lead/${r.dataset['openLead']}`);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if ($('#dialog-root').innerHTML) { closeDlg(); return; } const dk = $('.dock'); if (dk) { const x = $('a[aria-label^="Fermer"]', dk); if (x) x.click(); } }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.kcard,.qrow[data-open]')) { e.preventDefault(); e.target.click(); }
+});
+document.addEventListener('change', e => {
+  const t = e.target, c = t.dataset.chg;
+  if (c === 'status') { const l = byId(t.dataset.id); l.status = t.value; toast(`${l.name} : statut ${STATUS[t.value].label}`); render(); return; }
+  if (c === 'owner') { const l = byId(t.dataset.id); l.owner = t.value; toast(`${l.name} : assigné à ${t.value}`); render(); return; }
+  if (c === 'check') { t.checked ? S.checked.add(t.dataset.id) : S.checked.delete(t.dataset.id); render(); return; }
+  if (c === 'checkall') { L.forEach(l => t.checked ? S.checked.add(l.id) : S.checked.delete(l.id)); render(); return; }
+  if (c === 'col') { const id = t.dataset.id; S.cols = t.checked ? [...S.cols, id] : S.cols.filter(x => x !== id); render(); return; }
+  if (c === 'mic') { S.call.mic = t.value; toast('Micro : ' + t.value); return; }
+  if (c === 'res') { S.result = t.value; return; }
+  if (t.closest('#settings')) $('#savebar').hidden = false;
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'navq') { S.navQ = t.value; renderNav({ seg: parse(), view: currentView() }); return; }
+  if (t.dataset.inp === 'q') { S.q = t.value; S.refocus = '[data-inp=q]'; render(); return; }
+  if (t.closest('#settings')) { const sb = $('#savebar'); if (sb) sb.hidden = false; if (/^h\d$/.test(t.id)) { const s = [0, 1, 2, 3, 4].reduce((a, i) => a + (parseInt($('#h' + i).value, 10) || 0), 0); $('#heatTotal').textContent = s + ' / 100'; $('#heatTotal').style.color = s === 100 ? '' : 'var(--crit)'; } }
+  if (t.id === 'callnote' && S.call) S.call.note = t.value;
+});
+window.addEventListener('hashchange', render);
+if (!location.hash) history.replaceState(null, '', '#/');
+render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Refonte CRM Venio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Une colonne de lecture : quatre fiches de proposition, puis le comparatif et l'avis. Charte des pages privées Venio, sombre par choix. */
+:root {
+  color-scheme: dark;
+  --bg: #07090c;
+  --surface: #0e1217;
+  --surface-2: #141a21;
+  --line: #222b35;
+  --text: #eef2f6;
+  --text-2: #b4bfca;
+  --muted: #8794a0;
+  --accent: #38bdf8;
+  --accent-ink: #04202e;
+  --good: #7fdba0;
+  --warn: #f7c268;
+  --font: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -0.02em; text-wrap: balance; }
+h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 19px; font-weight: 700; }
+.eyebrow { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.lead { color: var(--text-2); max-width: 68ch; font-size: 16px; }
+.intro { display: flex; flex-direction: column; gap: 12px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.card-head { display: flex; align-items: baseline; gap: 12px; }
+.letter { font-family: var(--mono); font-size: 13px; color: var(--accent); border: 1px solid var(--line); border-radius: 8px; padding: 2px 9px; }
+.idea { color: var(--text-2); }
+dl { margin: 0; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px 14px; font-size: 14px; }
+dt { color: var(--muted); }
+dd { margin: 0; color: var(--text-2); }
+.open {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  min-height: 44px;
+}
+.open:hover { filter: brightness(1.08); }
+.open:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.section { display: flex; flex-direction: column; gap: 14px; }
+.table-box { overflow-x: auto; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 14px; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { color: var(--muted); font-weight: 600; font-size: 13px; background: var(--surface-2); }
+tbody th { color: var(--text); font-weight: 600; width: 22%; }
+td { color: var(--text-2); }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+.reco { background: var(--surface-2); border: 1px solid var(--line); border-radius: 13px; padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+.reco p { color: var(--text-2); max-width: 72ch; }
+.reco strong { color: var(--text); }
+ul { margin: 0; padding-left: 20px; color: var(--text-2); display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; color: var(--good); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+@media (max-width: 760px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  dl { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
+  dd { margin-bottom: 8px; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="intro">
+    <p class="eyebrow">Venio · CRM · maquettes du 13 novembre 2026</p>
+    <h1>Quatre façons de réorganiser le CRM</h1>
+    <p class="lead">Aujourd'hui, le CRM range neuf onglets au même niveau : le travail du jour, le pilotage, la configuration et les référentiels s'y mélangent. Chaque proposition replace les mêmes fonctions selon une logique différente. Les quatre partagent la charte des pages privées et le même jeu de données, pour qu'on compare l'organisation et rien d'autre.</p>
+  </header>
+
+  <section class="grid" aria-label="Les quatre propositions">
+    <article class="card">
+      <div class="card-head"><span class="letter">A</span><h3>Journée</h3> <span class="pill">Recommandée</span></div>
+      <p class="idea">Le CRM suit les moments du travail. L'accueil répond à « qu'est-ce que je fais maintenant ? ».</p>
+      <dl>
+        <dt>Navigation</dt><dd>Quatre entrées : Aujourd'hui, Prospecter, Suivre, Piloter.</dd>
+        <dt>Point fort</dt><dd>La plus simple à apprendre. Le plan du jour ouvre sur l'action la plus urgente et lance la séance d'appels.</dd>
+        <dt>Risque</dt><dd>Certains rangements se discutent : les rapports de scripts sont dans Prospecter, pas dans Piloter.</dd>
+      </dl>
+      <a class="open" href="a-journee.html">Ouvrir la maquette A</a>
+    </article>
+
+    <article class="card">
+      <div class="card-head"><span class="letter">B</span><h3>Objets</h3></div>
+      <p class="idea">Le CRM s'organise par objets (leads, appels, comptes, séquences), chacun avec ses vues enregistrées.</p>
+      <dl>
+        <dt>Navigation</dt><dd>Un volet latéral d'objets et de vues avec compteurs ; la fiche s'ouvre en panneau à côté de la table.</dd>
+        <dt>Point fort</dt><dd>La plus extensible : une nouvelle demande devient une vue, pas un écran. Tables homogènes partout.</dd>
+        <dt>Risque</dt><dd>Environ vingt-cinq lignes de navigation. Un même travail apparaît à deux endroits (À traiter et Analyses à valider).</dd>
+      </dl>
+      <a class="open" href="b-objets.html">Ouvrir la maquette B</a>
+    </article>
+
+    <article class="card">
+      <div class="card-head"><span class="letter">C</span><h3>Pipeline</h3></div>
+      <p class="idea">Le pipeline est la scène permanente. La fiche s'ouvre en tiroir par-dessus, les appels se passent dans un dock en bas.</p>
+      <dl>
+        <dt>Navigation</dt><dd>Un seul écran principal avec un bandeau de pilotage toujours visible ; la configuration est dans un menu à part.</dd>
+        <dt>Point fort</dt><dd>On ne perd jamais le pipeline de vue. Appeler sans quitter l'écran en cours.</dd>
+        <dt>Risque</dt><dd>Moins adaptée à qui passe 300 appels par jour : son vrai poste est le dock, pas le Kanban. Configuration peu visible.</dd>
+      </dl>
+      <a class="open" href="c-pipeline.html">Ouvrir la maquette C</a>
+    </article>
+
+    <article class="card">
+      <div class="card-head"><span class="letter">D</span><h3>Tri</h3></div>
+      <p class="idea">Une boîte de tri à trois volets : les files, la liste, la fiche. On traite un élément, le suivant arrive.</p>
+      <dl>
+        <dt>Navigation</dt><dd>Files avec compteurs à gauche, palette de commandes ⌘K, raccourcis clavier affichés à côté des actions.</dd>
+        <dt>Point fort</dt><dd>La plus rapide pour vider une file. Tout ce qui demande une décision arrive au même endroit.</dd>
+        <dt>Risque</dt><dd>La plus longue à apprendre. Sur téléphone, les trois volets deviennent trois niveaux successifs.</dd>
+      </dl>
+      <a class="open" href="d-tri.html">Ouvrir la maquette D</a>
+    </article>
+  </section>
+
+  <section class="section">
+    <h2>Comparatif</h2>
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr><th scope="col">Critère</th><th scope="col">A · Journée</th><th scope="col">B · Objets</th><th scope="col">C · Pipeline</th><th scope="col">D · Tri</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Entrées de premier niveau</th><td>4</td><td>7 objets, plus l'administration</td><td>1 scène et 1 menu</td><td>5 files à décider, puis les modes</td></tr>
+          <tr><th scope="row">Où commence la journée</th><td>Le plan du jour</td><td>Les vues épinglées</td><td>Le Kanban filtré « À traiter »</td><td>La file « À traiter »</td></tr>
+          <tr><th scope="row">Où s'ouvre une fiche</th><td>En pleine page</td><td>En panneau latéral, ou en pleine page</td><td>En tiroir par-dessus le pipeline</td><td>Dans le volet de droite, toujours ouvert</td></tr>
+          <tr><th scope="row">Où l'on appelle</th><td>Le poste d'appel, dans Prospecter</td><td>La vue « File d'appels » des leads</td><td>Le dock en bas de l'écran</td><td>La fiche, dans le volet de droite</td></tr>
+          <tr><th scope="row">Prise en main</th><td>Immédiate</td><td>Familière si l'on connaît un CRM à vues</td><td>Immédiate</td><td>Demande d'apprendre les raccourcis</td></tr>
+          <tr><th scope="row">Sur téléphone</th><td>Bonne</td><td>Correcte, navigation dans un menu</td><td>Correcte, le Kanban défile</td><td>Trois niveaux avec retour</td></tr>
+          <tr><th scope="row">Effort de construction</th><td>Moyen : surtout de la navigation et un accueil</td><td>Élevé : vues enregistrées à généraliser</td><td>Élevé : tiroir et dock persistants</td><td>Le plus élevé : trois volets, palette, clavier</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="reco">
+    <h2>Mon avis</h2>
+    <p><strong>Partir de A « Journée »</strong>, parce que le problème est l'organisation et que c'est elle qui la règle avec le moins de concepts : quatre entrées, une fonction à un seul endroit, un accueil qui dit quoi faire.</p>
+    <p><strong>Y greffer deux idées des autres.</strong> Le dock d'appel persistant de C, pour appeler depuis n'importe quel écran. Le « traiter puis suivant » de D sur la liste du jour, pour enchaîner les relances et les validations d'analyse sans revenir en arrière.</p>
+    <p>B reste la meilleure base si le CRM doit accueillir beaucoup plus d'utilisateurs et de cas particuliers. D est la plus efficace pour un commercial qui ne fait que ça, mais c'est aussi la plus chère à construire.</p>
+  </section>
+
+  <section class="section">
+    <h2>À savoir avant de comparer</h2>
+    <ul>
+      <li>Chaque maquette contient une page « Plan du CRM » qui dit où se retrouve chaque fonction actuelle. Aucune fonction n'est supprimée.</li>
+      <li>Les chiffres principaux sont les mêmes partout : 42 leads ouverts, 186 400 €, 71 250 € pondéré, 11 éléments à traiter, 38 fiches à appeler, 33 % de conversion pour un objectif de 40 %.</li>
+      <li>Les montants des leads secondaires, les comptes clients, les commissions et les valeurs de réglages sont inventés et diffèrent d'une maquette à l'autre.</li>
+      <li>Ce sont des maquettes : les interactions principales marchent, rien n'est enregistré, et aucune ligne de l'application n'a été modifiée.</li>
+      <li>Vérifié à 1440 px et à largeur de téléphone sur quelques écrans de chaque proposition, pas sur tous.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

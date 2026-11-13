@@ -1,0 +1,1494 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM Venio Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0c0f;--card:#141a20;--hover:#1b242c;--raised:#202a33;--panel:#0d1115;
+  --border:rgba(224,238,247,.09);--hair:rgba(224,238,247,.07);--line:rgba(224,238,247,.16);
+  --t1:#e8eef3;--t2:#9daab3;--t3:#8392a0;
+  --p-rgb:56,189,248;--pl-rgb:125,211,252;--pd-rgb:14,165,233;
+  --p:rgb(var(--p-rgb));--pl:rgb(var(--pl-rgb));--pd:rgb(var(--pd-rgb));--pfg:#06202b;
+  --surf:rgba(var(--p-rgb),.09);--soft:rgba(var(--p-rgb),.14);--soft-b:rgba(var(--p-rgb),.34);--ring:rgba(var(--p-rgb),.55);
+  --crit:#ff8a8a;--serious:#f4a06a;--warn:#f7c268;--good:#7fdba0;
+  --r-sm:6px;--r-md:10px;--r-lg:13px;--rail:50px;--dock-h:56px;--top-h:52px;
+  --font:'Manrope','Cabinet Grotesk',system-ui,sans-serif;--mono:'DM Mono',ui-monospace,SFMono-Regular,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--t1);font:500 12.5px/1.5 var(--font);overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--pl);text-decoration:none}
+a:hover{text-decoration:underline}
+h1,h2,h3,h4,p{margin:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--r-sm)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+svg.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+svg.ic.sm{width:13px;height:13px}
+svg.ic.lg{width:20px;height:20px}
+
+/* coque */
+.shell{display:grid;grid-template-columns:var(--rail) minmax(0,1fr);min-height:100dvh}
+.rail{position:sticky;top:0;height:100dvh;background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0;z-index:40}
+.rail .logo{width:30px;height:30px;border-radius:50%;background:var(--p);color:var(--pfg);display:grid;place-items:center;font-weight:800;font-size:13px;margin-bottom:8px}
+.rail button,.rail a.railbtn{width:36px;height:36px;border-radius:var(--r-md);border:0;background:transparent;color:var(--t2);display:grid;place-items:center;position:relative}
+.rail button:hover,.rail a.railbtn:hover{background:var(--hover);color:var(--t1);text-decoration:none}
+.rail .on{background:var(--soft);color:var(--pl)}
+.rail .on::before{content:"";position:absolute;left:-7px;top:9px;bottom:9px;width:3px;border-radius:3px;background:var(--p)}
+.rail .spacer{flex:1}
+.main{min-width:0;padding-bottom:calc(var(--dock-h) + 16px)}
+.topbar{position:sticky;top:0;z-index:30;height:var(--top-h);background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 18px}
+.crumbs{overflow:hidden;display:flex;align-items:center;gap:6px;color:var(--t3);font-size:12px;font-weight:600;min-width:0;white-space:nowrap}
+.crumbs a{color:var(--t2)}
+.crumbs b{color:var(--t1);font-weight:700}
+.topbar .grow{flex:1}
+.cmd{display:flex;align-items:center;gap:8px;width:min(360px,34vw);height:34px;padding:0 10px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--border);color:var(--t3)}
+.cmd input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--t1)}
+.cmd:focus-within{box-shadow:0 0 0 2px var(--ring)}
+.kbd{font:500 11px var(--mono);background:var(--hover);color:var(--t2);padding:1px 6px;border-radius:var(--r-sm)}
+.iconbtn{width:34px;height:34px;border-radius:var(--r-md);border:0;background:transparent;color:var(--t2);display:grid;place-items:center;position:relative}
+.iconbtn:hover{background:var(--hover);color:var(--t1)}
+.dot{position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--p);border:2px solid var(--bg)}
+.lang{display:flex;background:var(--card);border-radius:var(--r-md);padding:2px}
+.lang button{border:0;background:transparent;color:var(--t2);font-weight:700;font-size:11.5px;padding:4px 8px;border-radius:var(--r-sm)}
+.lang .on{background:var(--hover);color:var(--t1)}
+.menubtn{display:none}
+.dockbar .show-m{display:none}
+
+/* boutons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:var(--r-md);border:1px solid var(--line);background:transparent;color:var(--t1);font-weight:700;font-size:12px;padding:7px 13px;line-height:1.2;white-space:nowrap}
+.btn:hover{background:var(--hover);text-decoration:none}
+.btn.primary{background:var(--p);border-color:var(--p);color:var(--pfg)}
+.btn.primary:hover{background:var(--pd);border-color:var(--pd)}
+.btn.soft{background:var(--soft);border-color:var(--soft-b);color:var(--pl)}
+.btn.soft:hover{background:rgba(var(--p-rgb),.2)}
+.btn.danger{background:rgba(255,138,138,.10);border-color:rgba(255,138,138,.32);color:var(--crit)}
+.btn.danger:hover{background:rgba(255,138,138,.16)}
+.btn.ghost{border-color:transparent;color:var(--t2)}
+.btn.ghost:hover{color:var(--t1)}
+.btn.sm{padding:5px 10px;font-size:11.5px;border-radius:var(--r-sm)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.good{background:rgba(127,219,160,.10);border-color:rgba(127,219,160,.32);color:var(--good)}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--t2);font-weight:600;font-size:12px;padding:5px 13px;white-space:nowrap}
+.pill:hover{background:var(--hover);color:var(--t1);text-decoration:none}
+.pill.on{background:var(--p);border-color:var(--p);color:var(--pfg)}
+.pill .cnt{font:500 11px var(--mono);opacity:.9}
+.pill.dash{border-style:dashed;color:var(--t3)}
+.seg{display:inline-flex;background:var(--card);border-radius:var(--r-md);padding:3px;gap:2px}
+.seg button,.seg a{border:0;background:transparent;color:var(--t2);font-weight:700;font-size:12px;padding:5px 11px;border-radius:var(--r-sm);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.seg .on{background:var(--hover);color:var(--t1)}
+.seg a:hover{text-decoration:none;color:var(--t1)}
+.tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;background:color-mix(in srgb,var(--c,#93a1ab) 15%,var(--bg));color:var(--c,#b4c0c8);white-space:nowrap}
+.tag.crit{--c:var(--crit)}.tag.warn{--c:var(--warn)}.tag.good{--c:var(--good)}.tag.acc{--c:var(--pl)}.tag.ser{--c:var(--serious)}
+.sdot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--pl);flex:none;display:inline-block}
+.sdot.s1{border-color:#8392a0}.sdot.s2{border-color:#9bb3c2}.sdot.s3{border-color:#7dd3fc}.sdot.s4{border-color:#4cb7ea}.sdot.s5{border-color:#38bdf8;background:rgba(56,189,248,.35)}
+.sdot.won{background:var(--good);border-color:var(--good)}.sdot.lost{background:var(--crit);border-color:var(--crit)}
+.avatar{width:22px;height:22px;border-radius:50%;background:var(--p);color:var(--pfg);font-weight:800;font-size:10px;display:inline-grid;place-items:center;flex:none}
+.avatar.alt{background:var(--raised);color:var(--t1)}
+.avatar.lg{width:34px;height:34px;font-size:12px}
+.avatar.none{background:transparent;border:1.5px dashed var(--t3);color:var(--t3)}
+
+/* en-tête de scène */
+.scene{padding:16px 18px 0;min-width:0}
+.crmhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:12px}
+.crmhead h1{font-size:26px;font-weight:800;letter-spacing:-.025em;line-height:1.1}
+.crmhead .grow{flex:1}
+.cfgbtn{position:relative}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.filters .sep{width:1px;height:20px;background:var(--border);margin:0 2px}
+.searchbox{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--border);color:var(--t3);min-width:200px}
+.searchbox input{background:transparent;border:0;outline:0;flex:1;min-width:0;color:var(--t1)}
+.searchbox:focus-within{box-shadow:0 0 0 2px var(--ring)}
+
+/* bandeau de pilotage */
+.banner{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-lg);margin-bottom:12px}
+.banner-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;align-items:center;gap:6px}
+.kpi{padding:11px 16px;min-width:0}
+.kpi .lab{color:var(--t3);font-weight:600;font-size:11.5px}
+.kpi .val{font-size:22px;font-weight:800;letter-spacing:-.03em;line-height:1.2;font-variant-numeric:tabular-nums}
+.kpi .sub{color:var(--t2);font-size:11.5px;font-variant-numeric:tabular-nums}
+.kpi + .kpi{border-left:1px solid var(--hair)}
+.meter{height:6px;border-radius:6px;background:var(--raised);position:relative;margin-top:5px;overflow:visible}
+.meter i{display:block;height:100%;border-radius:6px;background:var(--p)}
+.meter u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--t1);border-radius:2px}
+.banner-toggle{margin:0 12px}
+.unfold{border-top:1px solid var(--hair);padding:14px 16px 16px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--border)}
+.tabs a,.tabs button{border:0;background:transparent;color:var(--t2);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:var(--r-md) var(--r-md) 0 0;position:relative;white-space:nowrap}
+.tabs a:hover{text-decoration:none;color:var(--t1)}
+.tabs .on{color:var(--t1)}
+.tabs .on::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:var(--p)}
+
+/* cartes génériques */
+.panel{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-lg);padding:14px 16px;min-width:0}
+.panel h2,.panel h3{font-size:14px;font-weight:800;letter-spacing:-.01em}
+.panel .head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.panel .hint{color:var(--t3);font-size:11.5px;font-weight:600}
+.h-page{font-size:26px;font-weight:800;letter-spacing:-.025em;line-height:1.15}
+.h-sec{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.lede{color:var(--t2);max-width:68ch}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.grid32{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row.sp{justify-content:space-between}
+.muted{color:var(--t3)}
+.soft-t{color:var(--t2)}
+.sep-line{height:1px;background:var(--border);margin:10px 0}
+
+/* kanban */
+.board{display:grid;grid-template-columns:repeat(5,minmax(240px,1fr));gap:10px;overflow-x:auto;padding-bottom:8px}
+.col{background:var(--card);border-radius:var(--r-lg);padding:10px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.col-head{display:flex;align-items:center;gap:8px;padding:2px 4px 4px}
+.col-head b{font-size:12.5px;font-weight:700}
+.col-head .cnt{color:var(--t3);font:500 11.5px var(--mono)}
+.col-head .amt{margin-left:auto;font:500 11.5px var(--mono);color:var(--t2)}
+.lcard{background:var(--hover);border-radius:var(--r-md);padding:10px 11px;display:flex;flex-direction:column;gap:6px;text-align:left;border:0;width:100%;color:var(--t1)}
+.lcard:hover{background:var(--raised);text-decoration:none}
+.lcard.sel{box-shadow:inset 3px 0 0 var(--p);background:var(--surf)}
+.lcard .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.lcard .co{font-weight:700;font-size:13px;line-height:1.3}
+.lcard .ct{color:var(--t2);font-size:12px}
+.lcard .amt{font:500 12px var(--mono);white-space:nowrap}
+.lcard .flags{display:flex;flex-wrap:wrap;gap:4px}
+.lcard .foot{display:flex;align-items:center;gap:8px;color:var(--t3);font-size:11.5px;font-weight:600}
+.more{border:1px dashed var(--line);background:transparent;color:var(--t2);border-radius:var(--r-md);padding:8px;font-size:12px;font-weight:600;text-align:center}
+.more:hover{background:var(--hover);color:var(--t1)}
+.coldrop{color:var(--t3);font-size:12px;text-align:center;padding:14px 6px;border:1px dashed var(--border);border-radius:var(--r-md)}
+
+/* tableau */
+.tablewrap{background:var(--card);border-radius:var(--r-lg);overflow:auto;border:1px solid var(--hair)}
+table.tbl{border-collapse:collapse;width:100%;min-width:980px}
+table.tbl th{text-align:left;color:var(--t3);font-weight:600;font-size:11.5px;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--card);position:sticky;top:0}
+table.tbl td{padding:9px 12px;border-bottom:1px solid var(--hair);vertical-align:middle}
+table.tbl tr:last-child td{border-bottom:0}
+table.tbl tbody tr:hover td{background:var(--hover)}
+table.tbl tr.rowsel td{background:var(--surf)}
+table.tbl td.r,table.tbl th.r{text-align:right}
+table.tbl .linkcell{background:transparent;border:0;padding:0;font-weight:700;color:var(--t1);text-align:left}
+table.tbl .linkcell:hover{color:var(--pl);text-decoration:underline}
+.tbl-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;color:var(--t2);font-size:12px;border-top:1px solid var(--border);flex-wrap:wrap}
+.bulkbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--surf);border-radius:var(--r-md);margin-bottom:10px}
+.chk{width:16px;height:16px;accent-color:#38bdf8}
+.inl{background:transparent;border:1px solid transparent;border-radius:var(--r-sm);padding:3px 5px;color:var(--t1);font-weight:600;max-width:140px}
+.inl:hover{border-color:var(--line)}
+
+/* à traiter */
+.wl-group{margin-bottom:14px}
+.wl-head{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:12.5px;font-weight:700}
+.wl-head .cnt{color:var(--t3);font:500 11.5px var(--mono)}
+.wl-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.6fr) auto;gap:10px 14px;align-items:center;background:var(--card);border-radius:var(--r-md);padding:10px 14px;margin-bottom:6px}
+.wl-row.done{opacity:.45}
+.wl-row .who{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wl-row .who button{background:transparent;border:0;padding:0;text-align:left;font-weight:700;font-size:13px;color:var(--t1)}
+.wl-row .who button:hover{color:var(--pl);text-decoration:underline}
+.wl-act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.wl-note{grid-column:1/-1;display:none;gap:8px}
+.wl-note.open{display:flex}
+.wl-note input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:7px 10px}
+
+/* champs */
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field>label,.field>.lab{color:var(--t3);font-weight:600;font-size:11.5px}
+.field .help{color:var(--t3);font-size:11.5px}
+.input,.select,.textarea{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:7px 10px;color:var(--t1);width:100%;min-width:0}
+.panel .input,.panel .select,.panel .textarea,.drawer .input,.drawer .select,.drawer .textarea,.modal .input,.modal .select,.modal .textarea{background:var(--bg)}
+.input:focus,.select:focus,.textarea:focus{outline:0;box-shadow:0 0 0 2px var(--ring)}
+.textarea{resize:vertical;min-height:70px}
+.toggle{display:inline-flex;align-items:center;gap:10px;cursor:pointer}
+.toggle input{position:absolute;opacity:0;width:1px;height:1px}
+.toggle .sw{width:34px;height:20px;border-radius:999px;background:var(--raised);position:relative;flex:none;transition:background .15s}
+.toggle .sw::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--t2);transition:transform .15s,background .15s}
+.toggle input:checked + .sw{background:var(--p)}
+.toggle input:checked + .sw::after{transform:translateX(14px);background:var(--pfg)}
+.toggle input:focus-visible + .sw{outline:2px solid var(--ring);outline-offset:2px}
+.setrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,260px);gap:6px 24px;align-items:center;padding:12px 0;border-bottom:1px solid var(--hair)}
+.setrow:last-child{border-bottom:0}
+.setrow .l b{display:block;font-weight:700;font-size:12.5px}
+.setrow .l span{color:var(--t3);font-size:11.5px}
+
+/* tiroir fiche */
+.scrim{position:fixed;left:var(--rail);right:0;top:var(--top-h);bottom:0;background:rgba(0,0,0,.35);z-index:44}
+.drawer{position:fixed;right:0;top:var(--top-h);bottom:var(--dock-h);width:min(960px,calc(100vw - var(--rail) - 60px));background:var(--panel);border-left:1px solid var(--border);z-index:50;display:flex;flex-direction:column}
+.drawer-top{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.drawer-top .grow{flex:1}
+.drawer-body{flex:1;overflow:auto;padding:16px}
+.dhead{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+.dhead h1{font-size:22px;font-weight:800;letter-spacing:-.025em;line-height:1.15}
+.dhead .info{flex:1;min-width:220px}
+.props{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--hair);border-radius:var(--r-lg);margin-bottom:14px;background:var(--card)}
+.prop{padding:10px 14px;border-right:1px solid var(--hair);min-width:0}
+.prop:last-child{border-right:0}
+.prop .lab{color:var(--t3);font-weight:600;font-size:11.5px}
+.prop .v{font-weight:700;margin-top:2px}
+.dcols{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px;align-items:start}
+.stepper{display:flex;gap:4px;flex-wrap:wrap}
+.stepper button{border:1px solid var(--line);background:transparent;color:var(--t2);border-radius:999px;padding:3px 11px;font-size:11.5px;font-weight:600}
+.stepper .on{background:var(--soft);border-color:var(--soft-b);color:var(--pl)}
+.stepper .past{color:var(--t1)}
+.kvs{display:flex;flex-direction:column}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--hair);font-size:12.5px}
+.kv:last-child{border-bottom:0}
+.kv span:first-child{color:var(--t3);font-weight:600}
+.kv span:last-child{text-align:right;font-weight:600}
+.banner-alert{border-radius:var(--r-lg);padding:11px 14px;display:flex;gap:10px;align-items:flex-start;background:color-mix(in srgb,var(--c) 7%,transparent);border:1px solid color-mix(in srgb,var(--c) 26%,transparent)}
+.banner-alert.crit{--c:var(--crit)}.banner-alert.warn{--c:var(--warn)}.banner-alert.acc{--c:var(--pl)}.banner-alert.good{--c:var(--good)}
+.banner-alert .ic{color:var(--c);margin-top:2px}
+.banner-alert b{display:block}
+.banner-alert .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+
+/* analyse */
+.analysis{display:flex;flex-direction:column;gap:12px}
+.fld{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) auto;gap:6px 14px;padding:11px 0;border-bottom:1px solid var(--hair);align-items:start}
+.fld:last-child{border-bottom:0}
+.fld .name{color:var(--t3);font-weight:600;font-size:11.5px;padding-top:2px}
+.fld .prop-v{font-weight:700}
+.fld .cur{color:var(--t3);font-size:11.5px;margin-top:2px}
+.fld .quote{margin-top:6px;color:var(--t2);font-size:12px;font-style:normal;padding-left:10px;border-left:2px solid var(--line)}
+.fld .quote.unv{border-left-color:var(--warn)}
+.fld .gest{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.fld .state{font-size:11.5px;font-weight:600;margin-top:6px}
+.fld .state.ok{color:var(--good)}.fld .state.no{color:var(--t3)}.fld .state.todo{color:var(--warn)}
+.fld .edit{display:flex;gap:6px;margin-top:6px}
+.heat{display:grid;gap:8px}
+.heat-row{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) auto;gap:10px;align-items:center;font-size:12px}
+.heat-row .bar{height:6px;background:var(--raised);border-radius:6px;overflow:hidden}
+.heat-row .bar i{display:block;height:100%;background:var(--p);border-radius:6px}
+.heat-score{display:flex;align-items:baseline;gap:8px}
+.heat-score b{font-size:25px;letter-spacing:-.03em;font-weight:800}
+.act-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 12px;padding:10px 0;border-bottom:1px solid var(--hair);align-items:start}
+.act-row:last-child{border-bottom:0}
+.act-ic{width:30px;height:30px;border-radius:var(--r-md);background:var(--soft);color:var(--pl);display:grid;place-items:center}
+.applybar{position:sticky;bottom:-16px;margin:14px -16px -16px;padding:10px 16px;background:var(--panel);border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap;z-index:2}
+.applybar .grow{flex:1;min-width:200px}
+.transcript{display:flex;flex-direction:column;gap:10px;max-height:340px;overflow:auto;padding-right:6px}
+.tline{display:grid;grid-template-columns:44px 82px minmax(0,1fr);gap:8px;align-items:start}
+.tline .ts{font:400 11.5px var(--mono);color:var(--t3);padding-top:1px}
+.tline .sp{font-weight:700;font-size:11.5px}
+.tline .sp.rep{color:var(--pl)}.tline .sp.pro{color:var(--t1)}
+.tline.hit{background:var(--surf);border-radius:var(--r-sm)}
+.tline mark{background:rgba(var(--p-rgb),.28);color:var(--t1);border-radius:3px}
+
+/* dock */
+.dock{position:fixed;left:var(--rail);right:0;bottom:0;z-index:60;background:var(--panel);border-top:1px solid var(--border);display:flex;flex-direction:column;max-height:calc(100dvh - var(--top-h))}
+.dockbar{min-height:var(--dock-h);display:flex;align-items:center;gap:10px;padding:8px 16px;flex-wrap:nowrap;min-width:0}
+.dockbar .grow{flex:1;min-width:0}
+.dock-ttl{display:flex;align-items:center;gap:8px;font-weight:700;white-space:nowrap}
+.dock-st{color:var(--t2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.live-dot{width:9px;height:9px;border-radius:50%;background:var(--crit);flex:none}
+.live-dot.pulse{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.dock-panel{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);border-top:1px solid var(--border);height:min(420px,calc(100dvh - var(--top-h) - var(--dock-h)));min-height:0}
+.dock-q{border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.dock-q .qhead{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.dock-q .qlist{overflow:auto;padding:6px 8px 10px;flex:1}
+.qgrp{display:flex;align-items:center;gap:8px;padding:8px 6px 4px;font-weight:700;font-size:12px}
+.qgrp .cnt{color:var(--t3);font:500 11.5px var(--mono)}
+.qrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:center;width:100%;border:0;background:transparent;border-radius:var(--r-md);padding:7px 8px;text-align:left;color:var(--t1)}
+.qrow:hover{background:var(--hover)}
+.qrow.sel{background:var(--surf);box-shadow:inset 3px 0 0 var(--p)}
+.qrow .n{font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qrow .m{color:var(--t3);font-size:11.5px;grid-column:1/2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qrow .r{grid-row:1/3;grid-column:2;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.dock-main{overflow:auto;padding:14px 18px;min-width:0}
+.modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mode{border:1px solid var(--line);background:transparent;border-radius:var(--r-md);padding:9px 11px;text-align:left;color:var(--t2);display:flex;flex-direction:column;gap:2px}
+.mode b{color:var(--t1);font-size:12.5px}
+.mode span{font-size:11.5px;color:var(--t3)}
+.mode:hover{background:var(--hover)}
+.mode.on{background:var(--soft);border-color:var(--soft-b)}
+.mode.on b{color:var(--pl)}
+.callctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ctl{display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-md);border:1px solid var(--line);background:transparent;color:var(--t1);padding:6px 11px;font-weight:700;font-size:12px}
+.ctl:hover{background:var(--hover)}
+.ctl[aria-pressed="true"]{background:var(--soft);border-color:var(--soft-b);color:var(--pl)}
+.ctl.hang{background:var(--crit);border-color:var(--crit);color:#2a0c0c}
+.ctl.hang:hover{background:#ff9d9d}
+.ctl.opp{background:rgba(255,138,138,.10);border-color:rgba(255,138,138,.32);color:var(--crit)}
+.timer{font:500 14px var(--mono);font-variant-numeric:tabular-nums}
+.outcomes{display:flex;flex-wrap:wrap;gap:8px}
+.outcomes label{position:relative}
+.outcomes input{position:absolute;opacity:0}
+.outcomes span{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-weight:600;font-size:12px;color:var(--t2);cursor:pointer}
+.outcomes input:checked + span{background:var(--p);border-color:var(--p);color:var(--pfg)}
+.outcomes input:focus-visible + span{outline:2px solid var(--ring);outline-offset:2px}
+.mark-red{display:inline-flex;align-items:center;gap:5px;color:var(--crit);font-size:11.5px;font-weight:700}
+.mark-red i{width:8px;height:8px;border-radius:50%;background:var(--crit);display:inline-block}
+.countdown{font:500 12px var(--mono);color:var(--warn)}
+
+/* modales, toasts */
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:grid;place-items:center;padding:16px}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);width:min(520px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:18px}
+.modal h2{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.modal .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--dock-h) + 18px);background:var(--raised);border:1px solid var(--line);color:var(--t1);padding:9px 16px;border-radius:var(--r-md);font-weight:600;z-index:120;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 32px)}
+.menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:6px;min-width:260px;z-index:70}
+.menu a,.menu button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--t1);padding:8px 10px;border-radius:var(--r-md);text-align:left;font-weight:600;font-size:12.5px}
+.menu a:hover,.menu button:hover{background:var(--hover);text-decoration:none}
+.menu .mgrp{color:var(--t3);font-size:11.5px;font-weight:600;padding:8px 10px 4px}
+.menu .sepm{height:1px;background:var(--border);margin:5px 4px}
+
+/* second niveau */
+.l2{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}
+.l2nav{position:sticky;top:calc(var(--top-h) + 12px);display:flex;flex-direction:column;gap:2px}
+.l2nav .grp{color:var(--t3);font-size:11.5px;font-weight:600;padding:12px 10px 4px}
+.l2nav a{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:var(--r-md);color:var(--t2);font-weight:600;font-size:12.5px;position:relative}
+.l2nav a:hover{background:var(--hover);color:var(--t1);text-decoration:none}
+.l2nav a.on{background:var(--surf);color:var(--t1)}
+.l2nav a.on::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:3px;background:var(--p)}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--t2);font-weight:700;font-size:12px;padding:5px 10px;border-radius:var(--r-md);border:1px solid var(--line)}
+.back:hover{background:var(--hover);color:var(--t1);text-decoration:none}
+.l2tag{display:inline-flex;align-items:center;gap:6px;color:var(--t3);font-weight:600;font-size:11.5px;border:1px dashed var(--line);border-radius:999px;padding:3px 10px}
+
+/* graphique */
+.chart{width:100%;display:block;position:relative}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.chart .tip{position:absolute;pointer-events:none;background:var(--raised);border:1px solid var(--line);border-radius:var(--r-md);padding:7px 10px;font-size:11.5px;display:none;white-space:nowrap;z-index:5}
+.legend{display:flex;gap:16px;color:var(--t2);font-size:11.5px;font-weight:600;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* états vides, info */
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:30px 16px;color:var(--t2)}
+.empty .ic{width:30px;height:30px;color:var(--t3)}
+.empty p{max-width:46ch}
+.fbar{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.fbar .bar{flex:1;height:22px;background:var(--raised);border-radius:var(--r-sm);overflow:hidden}
+.fbar .bar i{display:block;height:100%;background:var(--p);opacity:.9}
+.pre{white-space:pre-wrap;font-family:var(--mono);font-size:12px;color:var(--t2)}
+.extbar{position:sticky;top:var(--top-h);z-index:29;background:var(--surf);border-bottom:1px solid var(--soft-b);padding:7px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-weight:600}
+
+/* adaptatif */
+@media (max-width:1100px){
+  .banner-row{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .kpi:nth-child(3){border-left:0}
+  .banner-toggle{margin:6px 12px 12px;justify-self:start;grid-column:1/-1}
+  .props{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .prop:nth-child(2){border-right:0}
+  .prop:nth-child(-n+2){border-bottom:1px solid var(--hair)}
+  .dcols{grid-template-columns:minmax(0,1fr)}
+  .grid32{grid-template-columns:minmax(0,1fr)}
+  .grid3{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  :root{--rail:0px}
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .rail{display:none}
+  .menubtn{display:grid}
+  .dockbar .show-m{display:inline-flex}
+  .topbar{padding:0 10px;gap:6px}
+  .cmd{display:none}
+  .crumbs .hide-m{display:none}
+  .scene{padding:12px 12px 0}
+  .crmhead h1{font-size:22px}
+  .banner-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi{padding:10px 12px}
+  .kpi .val{font-size:19px}
+  .kpi:nth-child(odd){border-left:0}
+  .kpi:nth-child(n+3){border-top:1px solid var(--hair)}
+  .grid2,.grid3{grid-template-columns:minmax(0,1fr)}
+  .l2{grid-template-columns:minmax(0,1fr)}
+  #setgrid{grid-template-columns:minmax(0,1fr)!important}
+  #setgrid>nav{flex-wrap:wrap}
+  .setrow .row{flex-wrap:wrap!important}
+  .l2nav{position:static;flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:6px}
+  .l2nav .grp{display:none}
+  .l2nav a{white-space:nowrap;border:1px solid var(--line)}
+  .l2nav a.on::before{display:none}
+  .drawer{width:100vw;left:0}
+  .drawer-body{padding:12px}
+  .drawer-top .grow{font-size:0;padding:0}
+  .applybar{margin:12px -12px -12px;padding:10px 12px}
+  .fld{grid-template-columns:minmax(0,1fr)}
+  .fld .gest{justify-content:flex-start}
+  .heat-row{grid-template-columns:minmax(0,1fr) auto}
+  .heat-row .bar{grid-column:1/-1;order:3}
+  .wl-row{grid-template-columns:minmax(0,1fr)}
+  .wl-act{justify-content:flex-start}
+  .setrow{grid-template-columns:minmax(0,1fr)}
+  .dock-panel{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);height:calc(100dvh - var(--top-h) - var(--dock-h))}
+  .dock-panel.callmode{grid-template-rows:minmax(0,1fr)}
+  .dock-panel.callmode .dock-q{display:none}
+  .dock-q{max-height:210px;border-right:0;border-bottom:1px solid var(--border)}
+  .dockbar{padding:8px 10px;gap:8px}
+  .dockbar .hide-m{display:none}
+  .modes{grid-template-columns:minmax(0,1fr)}
+  .pill,.btn,.seg button,.seg a,.ctl,.stepper button{min-height:40px}
+  .btn.sm{min-height:36px}
+  .tline{grid-template-columns:38px minmax(0,1fr)}
+  .tline .sp{grid-column:2}
+  .tline .tx{grid-column:2}
+  .tabs a,.tabs button{padding:10px 10px}
+  .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+  .filters>*{flex:none}
+  .filters .sep{display:none}
+  .kpi:nth-child(-n+3) .sub{display:none}
+  .searchbox{min-width:0;flex:1 1 100%}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="overlay"></div>
+<script>
+'use strict';
+/* ============ utilitaires ============ */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const NB = ' ', NNB = ' ';
+const num = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, NNB);
+const eur = n => num(n) + NB + '€';
+const pct = n => n + NB + '%';
+
+const PATHS = {
+  search:'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3', plus:'M12 5v14M5 12h14', bell:'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
+  x:'M18 6 6 18M6 6l12 12', check:'M20 6 9 17l-5-5', chevR:'m9 18 6-6-6-6', chevL:'m15 18-6-6 6-6', chevD:'m6 9 6 6 6-6', chevU:'m18 15-6-6-6 6',
+  sliders:'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+  phone:'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z',
+  phoneoff:'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91M2 2l20 20',
+  mic:'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3', micoff:'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3M2 2l20 20',
+  mute:'M11 5 6 9H2v6h4l5 4V5zM22 9l-6 6M16 9l6 6', keypad:'M5 4h.01M12 4h.01M19 4h.01M5 11h.01M12 11h.01M19 11h.01M5 18h.01M12 18h.01M19 18h.01',
+  mail:'M3 5h18v14H3zM3 7l9 6 9-6', cal:'M3 5h18v16H3zM16 3v4M8 3v4M3 10h18', user:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+  users:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  clock:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2', alert:'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01',
+  shield:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', info:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01',
+  kanban:'M3 3h7v18H3zM14 3h7v10h-7z', table:'M3 3h18v18H3zM3 9h18M3 15h18M9 3v18', list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  download:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3', edit:'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z',
+  bolt:'M13 2 3 14h9l-1 8 10-12h-9l1-8z', chart:'M3 3v18h18M7 14l4-4 3 3 5-6', book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5',
+  link:'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7', more:'M12 12h.01M19 12h.01M5 12h.01',
+  trash:'M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14', spark:'M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z', play:'M6 4l14 8-14 8z',
+  home:'M3 11l9-8 9 8v10H3zM9 21v-6h6v6', folder:'M3 6a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', msg:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+  wallet:'M3 7h18v12H3zM3 7l3-4h12l3 4M16 13h2', code:'m16 18 6-6-6-6M8 6l-6 6 6 6', menu:'M3 6h18M3 12h18M3 18h18', globe:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20',
+  wave:'M3 12h2M7 8v8M11 5v14M15 8v8M19 10v4', file:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6', arrowR:'M5 12h14M13 5l7 7-7 7', ext:'M7 17 17 7M7 7h10v10',
+  filter:'M3 4h18l-7 9v6l-4 2v-8z', flag:'M4 22V4M4 4h13l-2 4 2 4H4', inbox:'M22 12h-6l-2 3h-4l-2-3H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9a2 2 0 0 0-1.8-1.1H7.3a2 2 0 0 0-1.8 1.1z',
+  target:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', lock:'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', merge:'M6 3v12a3 3 0 0 0 3 3h9M18 14l4 4-4 4M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'
+};
+const ic = (n, c) => '<svg class="ic ' + (c || '') + '" viewBox="0 0 24 24" aria-hidden="true"><path d="' + PATHS[n] + '"/></svg>';
+
+/* ============ données de démonstration ============ */
+const NOW = 'vendredi 13 novembre 2026, 10 h 42';
+const STAGES = [
+  {id:'lead', label:'Lead', n:14, amt:18800, p:10, cls:'s1'},
+  {id:'qualifie', label:'Qualifié', n:9, amt:35600, p:20, cls:'s2'},
+  {id:'contacte', label:'Contacté', n:8, amt:39000, p:35, cls:'s3'},
+  {id:'demo', label:'Démo', n:6, amt:48000, p:45, cls:'s4'},
+  {id:'proposition', label:'Proposition', n:5, amt:45000, p:60, cls:'s5'}
+];
+const TOT = {n:42, amt:186400, w:71250, won:31500, wonN:4, lost:3};
+const stageOf = id => STAGES.find(s => s.id === id);
+
+const LEADS = [
+  {id:'dubreuil', co:'Menuiserie Dubreuil', ct:'Marc Dubreuil', role:'Gérant', tel:'+33 6 12 34 01 01', stage:'contacte', amt:8000, heat:'Chaud', owner:'raphael', next:'Rendez-vous jeudi 19 novembre à 10 h', tags:[['acc','Analyse à valider']], g:'analyse', todo:'Analyse de l’appel de 10 h 07 à valider'},
+  {id:'osteo', co:'Cabinet Ostéo Lyon 6', ct:'Claire Martin', role:'Ostéopathe', tel:'+33 4 72 00 12 06', stage:'qualifie', amt:9000, heat:'Tiède', owner:'raphael', next:'Rappeler : décision partagée avec son associé', tags:[['warn','Rappel dû aujourd’hui']], g:'jour', todo:'Rappel dû aujourd’hui : décision partagée avec son associé'},
+  {id:'vasseur', co:'Imprimerie Vasseur', ct:'Julien Vasseur', role:'Dirigeant', tel:'+33 6 12 34 02 02', stage:'contacte', amt:5500, heat:'Froid', owner:'raphael', next:'Rappeler après le répondeur d’hier', tags:[['crit','Répondeur détecté hier']], g:'jour', todo:'Rappeler : répondeur détecté hier'},
+  {id:'immo', co:'Agence Immo Rive Gauche', ct:'Sophie Laurent', role:'Directrice', tel:'+33 1 40 00 12 34', stage:'demo', amt:14000, heat:'Tiède', owner:'raphael', next:'Envoyer le compte rendu de démo', tags:[['acc','Analyse à valider']], g:'analyse', todo:'Analyse de l’appel d’hier à 17 h 20 à valider'},
+  {id:'morel', co:'Expert-comptable Morel', ct:'Nathalie Morel', role:'Associée', tel:'+33 1 45 00 77 31', stage:'proposition', amt:22000, heat:'Chaud', owner:'raphael', next:'Relancer sur la proposition', tags:[['crit','Relance en retard de 2 jours'],['ser','Priorité urgente']], g:'retard', todo:'Relancer sur la proposition, en retard de 2 jours'},
+  {id:'brasserie', co:'Brasserie du Sablon', ct:'Pieter Janssens', role:'Gérant', tel:'+32 470 12 34 56', stage:'lead', amt:4500, heat:'Froid', owner:'raphael', next:'Premier appel', tags:[['acc','Belgique · 10 h 42 sur place']], g:'jour', todo:'Premier appel prévu aujourd’hui', tz:{city:'Bruxelles', local:'10 h 42', ok:true}},
+  {id:'durand', co:'Cabinet Avocats Durand', ct:'Hélène Durand', role:'Avocate associée', tel:'+33 1 42 00 55 20', stage:'qualifie', amt:12000, heat:'Tiède', owner:'anna', next:'Reprise par Alex à confirmer', tags:[['acc','Transmise à Alex']], g:'jour', todo:'Confirmer la reprise par Alex (fiche d’Anna Externe)'},
+  {id:'boulangerie', co:'Boulangerie Saint-Honoré', ct:'Étienne Brun', role:'Gérant', tel:'+33 1 42 00 44 18', stage:'demo', amt:6500, heat:'Tiède', owner:'raphael', next:'Envoyer la proposition', tags:[], g:'jour', todo:'Envoyer la proposition après la démo'},
+  {id:'garage', co:'Garage Lambert & Fils', ct:'Philippe Lambert', role:'Gérant', tel:'+33 6 12 34 03 03', stage:'contacte', amt:7000, heat:'Tiède', owner:'raphael', next:'Rappeler (prévu mercredi)', tags:[['crit','En retard']], g:'retard', todo:'Rappeler, prévu mercredi'},
+  {id:'pilates', co:'Studio Pilates Batignolles', ct:'Inès Garnier', role:'Fondatrice', tel:'+33 6 12 34 04 04', stage:'contacte', amt:3500, heat:'Froid', owner:'raphael', next:'Décider de la retenue', tags:[['crit','Retenue d’opposition']], g:'analyse', todo:'Retenue d’opposition à décider avant toute analyse', hold:true},
+  {id:'autoecole', co:'Auto-école Horizon', ct:'Karim Benali', role:'Directeur', tel:'+33 1 43 00 22 09', stage:'lead', amt:3800, heat:'Froid', owner:'raphael', next:'Rappeler pour qualifier (prévu jeudi)', tags:[['crit','En retard']], g:'retard', todo:'Rappeler pour qualifier, prévu jeudi'},
+  {id:'fleuriste', co:'Fleuriste Pétale', ct:'Laure Fabre', role:'Gérante', tel:'+596 696 12 34 56', stage:'lead', amt:2500, heat:'Tiède', owner:'raphael', next:'Premier appel à 14 h (heure de Paris)', tags:[['warn','Hors plage chez le prospect']], g:'semaine', todo:'Premier appel à 14 h, heure de Paris', tz:{city:'Fort-de-France', local:'5 h 42', ok:false, from:'14 h 00'}}
+];
+const lead = id => LEADS.find(l => l.id === id);
+/* autres leads non nommés, par colonne : nombre et montant */
+const OTHERS = {lead:{n:11, amt:8000}, qualifie:{n:7, amt:14600}, contacte:{n:4, amt:15000}, demo:{n:4, amt:27500}, proposition:{n:4, amt:23000}};
+const OWNER = {raphael:['Raphael','R'], anna:['Anna Externe','A'], alex:['Alex Closer','AC'], bruno:['Bruno Externe','B']};
+const initials = o => OWNER[o][1];
+const heatTag = h => '<span class="tag ' + (h === 'Chaud' ? 'ser' : h === 'Tiède' ? 'warn' : '') + '">' + h + '</span>';
+
+/* ordre d'affichage pour passer d'une fiche à la suivante */
+const LEAD_ORDER = STAGES.flatMap(s => LEADS.filter(l => l.stage === s.id).map(l => l.id));
+
+/* ============ état ============ */
+const S = {
+  view:'kanban', ext:false, sel:new Set(), toDo:false, q:'', quick:'tous',
+  done:new Set(), noteOpen:null, postponed:{},
+  analysis:{}, analysisApplied:false, analysisRejected:false, aTab:'analyse', dTab:'appels', transQ:'',
+  holdDecision:null,
+  dock:{mode:'click', scope:'mine', sel:'osteo', call:null, wrap:null, preview:null, powerNext:null, last:null},
+  settingsOpen:{}, autoTab:'regles', rules:{r1:true, r2:true, r3:false, r4:true}, seq:{s1:true, s2:false}
+};
+const DEC_ITEMS = ['budget','need','timeline','decider','competitor','objection','heat','a_rdv','a_mail','a_seq','a_hand'];
+DEC_ITEMS.forEach(k => S.analysis[k] = 'none');
+
+/* ============ coque, routes ============ */
+function parse(){ const h = (location.hash || '').replace(/^#\/?/, '').split('?')[0]; return h ? h.split('/') : ['pipeline']; }
+const ACT = {};
+function go(h){ location.hash = h; }
+function toast(msg, icon){
+  $$('.toast').forEach(t => t.remove());
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status');
+  t.innerHTML = ic(icon || 'check', 'sm') + '<span>' + esc(msg) + '</span>';
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3200);
+}
+function shellHTML(){
+  return '<div class="shell">' +
+  '<nav class="rail" aria-label="Navigation de l’administration">' +
+    '<span class="logo" aria-hidden="true">V</span>' +
+    '<button type="button" aria-label="Tableau de bord" title="Tableau de bord" data-act="toast" data-msg="Hors périmètre de la maquette : tableau de bord">' + ic('home') + '</button>' +
+    '<a class="railbtn on" href="#/pipeline" aria-label="CRM" title="CRM" aria-current="page">' + ic('target') + '</a>' +
+    '<button type="button" aria-label="Projets" title="Projets" data-act="toast" data-msg="Hors périmètre de la maquette : projets">' + ic('folder') + '</button>' +
+    '<button type="button" aria-label="Messagerie" title="Messagerie" data-act="toast" data-msg="Hors périmètre de la maquette : messagerie">' + ic('msg') + '</button>' +
+    '<button type="button" aria-label="Comptabilité" title="Comptabilité" data-act="toast" data-msg="Hors périmètre de la maquette : comptabilité">' + ic('wallet') + '</button>' +
+    '<button type="button" aria-label="Suivi développement" title="Suivi développement" data-act="toast" data-msg="Hors périmètre de la maquette : suivi développement">' + ic('code') + '</button>' +
+    '<span class="spacer"></span>' +
+    '<button type="button" aria-label="Aide" title="Aide" data-act="toast" data-msg="Hors périmètre de la maquette : aide">' + ic('info') + '</button>' +
+  '</nav>' +
+  '<div class="main"><header class="topbar">' +
+    '<button type="button" class="iconbtn menubtn" aria-label="Ouvrir le menu de l’administration" data-act="toast" data-msg="Menu de l’administration (rail d’icônes sur grand écran)">' + ic('menu') + '</button>' +
+    '<div class="crumbs" id="crumbs"></div><span class="grow"></span>' +
+    '<label class="cmd"><span class="sr">Rechercher dans l’administration</span>' + ic('search') + '<input type="search" placeholder="Rechercher ou aller à…" data-act-input="cmd"><span class="kbd">⌘K</span></label>' +
+    '<button type="button" class="btn primary" data-act="create">' + ic('plus', 'sm') + '<span>Créer</span></button>' +
+    '<button type="button" class="iconbtn" aria-label="Notifications" data-act="toast" data-msg="3 analyses d’appel attendent votre validation"><span class="dot" aria-hidden="true"></span>' + ic('bell') + '</button>' +
+    '<div class="lang" role="group" aria-label="Langue"><button type="button" class="on" aria-pressed="true">FR</button><button type="button" aria-pressed="false" data-act="toast" data-msg="English version not part of the mock-up">EN</button></div>' +
+  '</header><div id="extbar"></div><div id="page"></div></div></div><div id="dockroot"></div>';
+}
+function setCrumbs(parts){
+  $('#crumbs').innerHTML = parts.map((p, i) => i === parts.length - 1 ? '<b>' + esc(p[0]) + '</b>' : (p[1] ? '<a href="' + p[1] + '"' + (i < parts.length - 2 && i > 0 ? ' class="hide-m"' : '') + '>' + esc(p[0]) + '</a>' : '<span class="hide-m">' + esc(p[0]) + '</span>') + ' ' + ic('chevR', 'sm')).join('').replace(/ <svg[^>]*><path[^>]*><\/svg>$/, '');
+}
+function render(){
+  const r = parse(), a = r[0], b = r[1], c = r[2];
+  let html = '', crumbs = [['Administration'], ['CRM', '#/pipeline']];
+  document.body.classList.toggle('dock-open', a === 'appels');
+  if(a === 'pipeline'){
+    if(b === 'tableau') S.view = 'tableau'; else if(b !== 'a-traiter') S.view = 'kanban';
+    html = sceneHTML(null, b === 'a-traiter');
+    crumbs.push(['Pipeline', '#/pipeline']); if(b === 'a-traiter') crumbs.push(['À traiter']); else if(b === 'tableau') crumbs.push(['Tableau']);
+  } else if(a === 'pilotage'){
+    html = sceneHTML(b || 'previsions', false); crumbs.push(['Pipeline', '#/pipeline'], ['Pilotage']);
+  } else if(a === 'lead'){
+    const l = lead(b) || lead('dubreuil');
+    html = sceneHTML(null, false) + drawerShell(l); crumbs.push(['Pipeline', '#/pipeline'], [l.co]);
+  } else if(a === 'appels'){
+    html = sceneHTML(null, false); crumbs.push(['Pipeline', '#/pipeline'], ['Poste d’appel']);
+  } else if(a === 'config'){
+    html = configPage(b, c); crumbs.push(['Configuration']);
+  } else if(a === 'ref'){
+    html = refPage(b); crumbs.push(['Référentiels'], [b === 'partenaires' ? 'Partenaires' : 'Comptes clients']);
+  } else if(a === 'plan'){
+    html = planPage(); crumbs.push(['Plan du CRM']);
+  } else { go('#/pipeline'); return; }
+  $('#page').innerHTML = html;
+  setCrumbs(crumbs);
+  $('#extbar').innerHTML = S.ext ? '<div class="extbar">' + ic('user', 'sm') + '<span>Aperçu : ce que voit Anna Externe, commerciale externe. Elle n’a que ses fiches et son poste d’appel.</span><button type="button" class="btn sm soft" data-act="ext-off">Quitter l’aperçu</button></div>' : '';
+  if(a === 'lead') fillDrawer();
+  drawCharts();
+  renderDock(a === 'appels');
+  if(a === 'lead') { const d = $('#drawer'); if(d) d.focus({preventScroll:true}); }
+  else if(!S.keepScroll) window.scrollTo(0, 0);
+  S.keepScroll = false;
+}
+
+/* ============ scène : pipeline ============ */
+function visible(){
+  return LEADS.filter(l => {
+    if(S.ext && l.owner !== 'anna') return false;
+    if(S.quick === 'mes' && l.owner !== 'raphael') return false;
+    if(S.quick === 'chauds' && l.heat !== 'Chaud') return false;
+    if(S.quick === 'archives' || S.quick === 'sansaction') return false;
+    if(S.q && !(l.co + ' ' + l.ct).toLowerCase().includes(S.q.toLowerCase())) return false;
+    return true;
+  });
+}
+const isFiltered = () => S.ext || S.quick !== 'tous' || !!S.q;
+function sceneHTML(unfoldTab, work){
+  const r = parse();
+  const base = S.view === 'tableau' ? '#/pipeline/tableau' : '#/pipeline';
+  let h = '<main class="scene" id="scene">';
+  h += '<div class="crmhead"><h1>Pipeline</h1>' +
+    '<div class="seg" role="group" aria-label="Affichage du pipeline"><a href="#/pipeline"' + (S.view === 'kanban' && !work ? ' class="on" aria-current="page"' : '') + '>' + ic('kanban', 'sm') + 'Kanban</a><a href="#/pipeline/tableau"' + (S.view === 'tableau' && !work ? ' class="on" aria-current="page"' : '') + '>' + ic('table', 'sm') + 'Tableau</a></div>' +
+    '<span class="grow"></span>' +
+    '<label class="searchbox"><span class="sr">Rechercher un lead</span>' + ic('search', 'sm') + '<input type="search" placeholder="Rechercher un lead ou un contact" value="' + esc(S.q) + '" data-act-input="q" autocomplete="off"></label>' +
+    '<button type="button" class="btn soft" data-act="new-lead">' + ic('plus', 'sm') + 'Nouveau lead</button>' +
+    (S.ext ? '' : '<div class="cfgbtn"><button type="button" class="btn ghost" id="cfgbtn" aria-haspopup="true" aria-expanded="false" data-act="cfgmenu">' + ic('sliders') + '<span>Configuration</span>' + ic('chevD', 'sm') + '</button></div>') +
+  '</div>';
+  /* filtres */
+  const q = S.quick;
+  const pill = (k, t, extra) => '<button type="button" class="pill' + (q === k && !work ? ' on' : '') + '" data-act="quick" data-k="' + k + '">' + t + (extra || '') + '</button>';
+  h += '<div class="filters" role="group" aria-label="Filtres du pipeline">' +
+    pill('tous', 'Tous', S.ext ? '' : ' <span class="cnt">' + TOT.n + '</span>') + pill('mes', 'Mes fiches') + pill('chauds', 'Chauds') + pill('sansaction', 'Sans action prévue') + pill('archives', 'Archivés') +
+    '<span class="sep" aria-hidden="true"></span>' +
+    '<a class="pill' + (work ? ' on' : '') + '" href="#/pipeline/a-traiter"' + (work ? ' aria-current="page"' : '') + '>' + ic('inbox', 'sm') + 'À traiter' + (S.ext ? '' : ' <span class="cnt">' + todoCount() + '</span>') + '</a>' +
+    '<button type="button" class="pill dash" data-act="toast" data-msg="Ajout d’un filtre : statut, entité, source, assigné…">+ filtre</button>' +
+  '</div>';
+  /* bandeau de pilotage */
+  if(!S.ext) h += bannerHTML(unfoldTab);
+  h += '<div id="boardwrap">' + boardHTML(work) + '</div>';
+  return h + '</main>';
+}
+function bannerHTML(tab){
+  const open = !!tab;
+  let h = '<section class="banner" aria-label="Pilotage commercial"><div class="banner-row">' +
+    '<div class="kpi"><div class="lab">Ouvert</div><div class="val">' + eur(TOT.amt) + '</div><div class="sub">' + TOT.n + ' leads dans le pipeline</div></div>' +
+    '<div class="kpi"><div class="lab">Pondéré</div><div class="val">' + eur(TOT.w) + '</div><div class="sub">selon la probabilité de chaque statut</div></div>' +
+    '<div class="kpi"><div class="lab">Gagné ce mois</div><div class="val">' + eur(TOT.won) + '</div><div class="sub">' + TOT.wonN + ' gagnés, ' + TOT.lost + ' perdus</div></div>' +
+    '<div class="kpi"><div class="lab">Conversion du jour</div><div class="val">' + pct(33) + ' <span class="muted" style="font-size:13px;font-weight:600;letter-spacing:0">sur' + NB + 'objectif' + NB + pct(40) + '</span></div>' +
+      '<div class="meter" role="img" aria-label="33 % de conversion aujourd’hui, objectif 40 %"><i style="width:33%"></i><u style="left:40%"></u></div><div class="sub" style="margin-top:4px">4 rendez-vous sur 12 prospects joints</div></div>' +
+    '<a class="btn soft banner-toggle" href="' + (open ? '#/pipeline' : '#/pilotage/previsions') + '" aria-expanded="' + open + '" aria-controls="unfold">' + ic(open ? 'chevU' : 'chevD', 'sm') + (open ? 'Replier' : 'Déplier le pilotage') + '</a>' +
+  '</div>';
+  if(open) h += '<div class="unfold" id="unfold">' + pilotageHTML(tab) + '</div>';
+  return h + '</section>';
+}
+function redrawBoard(){ const w = $('#boardwrap'); if(w) w.innerHTML = boardHTML(parse()[1] === 'a-traiter'); }
+
+function leadCard(l){
+  const sel = parse()[0] === 'lead' && parse()[1] === l.id;
+  return '<button type="button" class="lcard' + (sel ? ' sel' : '') + '" data-act="open-lead" data-id="' + l.id + '" aria-label="Ouvrir la fiche ' + esc(l.co) + '">' +
+    '<span class="t"><span class="co">' + esc(l.co) + '</span><span class="amt">' + eur(l.amt) + '</span></span>' +
+    '<span class="ct">' + esc(l.ct) + '</span>' +
+    (l.tags.length ? '<span class="flags">' + l.tags.slice(0, 2).map(t => '<span class="tag ' + t[0] + '">' + esc(t[1]) + '</span>').join('') + '</span>' : '') +
+    '<span class="foot"><span class="avatar' + (l.owner === 'raphael' ? '' : ' alt') + '" title="' + OWNER[l.owner][0] + '">' + initials(l.owner) + '</span>' + heatTag(l.heat) + '</span></button>';
+}
+function emptyState(icon, text, btn){
+  return '<div class="empty">' + ic(icon, 'lg') + '<p>' + text + '</p>' + (btn || '') + '</div>';
+}
+function boardHTML(work){
+  if(work) return workHTML();
+  const vis = visible(), f = isFiltered();
+  if(S.view === 'tableau') return tableHTML(vis, f);
+  if(vis.length === 0 && f){
+    return '<div class="panel">' + emptyState('search', S.quick === 'archives' ? 'Aucun lead archivé. Les leads perdus ou clos que vous archivez apparaissent ici.' : S.quick === 'sansaction' ? 'Tous les leads ont une prochaine action prévue. Rien à planifier.' : 'Aucun lead ne correspond à cette recherche.', '<button type="button" class="btn soft" data-act="reset-filters">Réinitialiser les filtres</button>') + '</div>';
+  }
+  let h = '';
+  if(f && !S.ext) h += '<p class="muted" style="margin:0 0 8px;font-weight:600">Filtre actif : les colonnes n’affichent que les fiches qui correspondent.</p>';
+  h += '<div class="board" role="list" aria-label="Pipeline par statut">';
+  STAGES.forEach(s => {
+    const ls = vis.filter(l => l.stage === s.id);
+    const o = othersOf(s), cnt = f ? ls.length : s.n, amt = f ? ls.reduce((t, l) => t + l.amt, 0) : s.amt;
+    h += '<section class="col" role="listitem" aria-label="' + s.label + '"><div class="col-head"><span class="sdot ' + s.cls + '" aria-hidden="true"></span><b>' + s.label + '</b><span class="cnt">' + cnt + '</span>' + (S.ext ? '' : '<span class="amt">' + eur(amt) + '</span>') + '</div>';
+    h += ls.length ? ls.map(leadCard).join('') : '<div class="coldrop">Aucune fiche à ce statut</div>';
+    if(!f && o.n > 0) h += '<button type="button" class="more" data-act="toast" data-msg="La maquette n’affiche que les fiches nommées">+ ' + o.n + ' autres · ' + eur(o.amt) + '</button>';
+    h += '</section>';
+  });
+  return h + '</div>';
+}
+function tableHTML(vis, f){
+  if(vis.length === 0) return '<div class="panel">' + emptyState('search', S.quick === 'archives' ? 'Aucun lead archivé. Les leads perdus ou clos que vous archivez apparaissent ici.' : S.quick === 'sansaction' ? 'Tous les leads ont une prochaine action prévue. Rien à planifier.' : 'Aucun lead ne correspond à cette recherche.', '<button type="button" class="btn soft" data-act="reset-filters">Réinitialiser les filtres</button>') + '</div>';
+  const n = S.sel.size;
+  let h = '<div class="row sp" style="margin-bottom:8px"><div class="hint muted" style="font-weight:600">Cliquez sur un statut ou une assignation pour les modifier sur place.</div><div class="row"><button type="button" class="btn sm" data-act="toast" data-msg="Colonnes : entreprise, contact, statut, montant, chaleur, assigné, prochaine action, téléphone, source…">' + ic('sliders', 'sm') + 'Colonnes</button><button type="button" class="btn sm" data-act="toast" data-msg="Export CSV préparé : ' + vis.length + ' lignes">' + ic('download', 'sm') + 'Exporter en CSV</button></div></div>';
+  if(n) h += '<div class="bulkbar" role="region" aria-label="Actions groupées"><b>' + n + ' sélectionné' + (n > 1 ? 's' : '') + '</b><button type="button" class="btn sm" data-act="bulk" data-k="assign">Assigner</button><button type="button" class="btn sm" data-act="bulk" data-k="status">Changer le statut</button><button type="button" class="btn sm" data-act="bulk" data-k="export">Exporter</button><button type="button" class="btn sm" data-act="bulk" data-k="archive">Archiver</button><button type="button" class="btn sm danger" data-act="bulk-del">Supprimer…</button><button type="button" class="btn sm ghost" data-act="bulk-clear">Tout désélectionner</button></div>';
+  h += '<div class="tablewrap"><table class="tbl"><caption class="sr">Leads du pipeline</caption><thead><tr><th scope="col"><input class="chk" type="checkbox" aria-label="Tout sélectionner" data-act="sel-all"' + (n === vis.length && n ? ' checked' : '') + '></th><th scope="col">Entreprise</th><th scope="col">Contact</th><th scope="col">Statut</th><th scope="col" class="r">Montant</th><th scope="col">Chaleur</th><th scope="col">Assigné</th><th scope="col">Prochaine action</th></tr></thead><tbody>';
+  vis.forEach(l => {
+    const on = S.sel.has(l.id);
+    h += '<tr' + (on ? ' class="rowsel"' : '') + '><td><input class="chk" type="checkbox" aria-label="Sélectionner ' + esc(l.co) + '" data-act="sel" data-id="' + l.id + '"' + (on ? ' checked' : '') + '></td>' +
+      '<td><button type="button" class="linkcell" data-act="open-lead" data-id="' + l.id + '">' + esc(l.co) + '</button>' + (l.tags[0] ? '<div style="margin-top:3px"><span class="tag ' + l.tags[0][0] + '">' + esc(l.tags[0][1]) + '</span></div>' : '') + '</td>' +
+      '<td>' + esc(l.ct) + '<div class="mono muted" style="font-size:11.5px">' + esc(l.tel) + '</div></td>' +
+      '<td><label class="sr" for="st-' + l.id + '">Statut de ' + esc(l.co) + '</label><select class="inl" id="st-' + l.id + '" data-chg="stage" data-id="' + l.id + '">' + STAGES.map(s => '<option value="' + s.id + '"' + (s.id === l.stage ? ' selected' : '') + '>' + s.label + '</option>').join('') + '</select></td>' +
+      '<td class="r mono">' + eur(l.amt) + '</td><td>' + heatTag(l.heat) + (l.id === 'dubreuil' ? ' <span class="mono muted">72/100</span>' : '') + '</td>' +
+      '<td><span class="row" style="gap:6px;flex-wrap:nowrap"><span class="avatar' + (l.owner === 'raphael' ? '' : ' alt') + '">' + initials(l.owner) + '</span>' + esc(OWNER[l.owner][0]) + '</span></td>' +
+      '<td>' + esc(l.next) + '</td></tr>';
+  });
+  h += '</tbody></table><div class="tbl-foot"><span>' + (f ? vis.length + ' leads affichés' : '12 leads affichés sur ' + TOT.n) + '</span>' + (f ? '' : '<span class="mono">' + eur(TOT.amt) + ' ouverts · ' + eur(TOT.w) + ' pondérés</span>') + '</div></div>';
+  return h;
+}
+
+/* À traiter : le même pipeline, filtré sur ce qui attend une action */
+const WL_GROUPS = [
+  {k:'retard', t:'En retard', n:3, tag:'crit'}, {k:'jour', t:'Aujourd’hui', n:5, tag:'warn'}, {k:'analyse', t:'Analyses d’appel à valider', n:3, tag:'acc'},
+  {k:'semaine', t:'Cette semaine', n:9, tag:''}, {k:'filet', t:'À ne pas laisser filer', n:4, tag:''}
+];
+function wlRow(l, g){
+  const k = g + ':' + l.id, done = S.done.has(k), post = S.postponed[k];
+  let acts = '';
+  if(g === 'analyse'){
+    acts = l.hold ? '<button type="button" class="btn sm danger" data-act="open-lead" data-id="' + l.id + '">' + ic('shield', 'sm') + 'Décider de la retenue</button>' : '<button type="button" class="btn sm soft" data-act="open-lead" data-id="' + l.id + '" data-tab="appels">' + ic('spark', 'sm') + 'Valider l’analyse</button>';
+  } else if(g === 'retard' || g === 'jour'){
+    acts = '<button type="button" class="btn sm" data-act="wl-done" data-k="' + k + '">' + ic('check', 'sm') + 'Contacté</button><button type="button" class="btn sm" data-act="wl-note" data-k="' + k + '">' + ic('edit', 'sm') + 'Note</button>' +
+      '<label class="sr" for="rp-' + k.replace(':', '-') + '">Reporter ' + esc(l.co) + '</label><select class="select btn sm" style="width:auto;padding:5px 8px" id="rp-' + k.replace(':', '-') + '" data-chg="postpone" data-k="' + k + '"><option value="">Reporter…</option><option>À demain</option><option>À lundi</option><option>À la semaine prochaine</option></select>' +
+      '<button type="button" class="btn sm primary" data-act="call-lead" data-id="' + l.id + '">' + ic('phone', 'sm') + 'Appeler</button>';
+  } else acts = '<button type="button" class="btn sm" data-act="open-lead" data-id="' + l.id + '">Ouvrir la fiche</button>';
+  return '<div class="wl-row' + (done ? ' done' : '') + '"><div class="who"><button type="button" data-act="open-lead" data-id="' + l.id + '">' + esc(l.co) + '</button><span class="row" style="gap:6px"><span class="sdot ' + stageOf(l.stage).cls + '" aria-hidden="true"></span><span class="muted">' + stageOf(l.stage).label + ' · ' + eur(l.amt) + '</span></span></div>' +
+    '<div><div>' + esc(l.todo) + '</div><div class="flags row" style="gap:4px;margin-top:3px">' + l.tags.map(t => '<span class="tag ' + t[0] + '">' + esc(t[1]) + '</span>').join('') + (post ? '<span class="tag">Reporté : ' + esc(post.toLowerCase()) + '</span>' : '') + (done ? '<span class="tag good">' + ic('check', 'sm') + 'Contact consigné</span>' : '') + '</div></div>' +
+    '<div class="wl-act">' + (done ? '' : acts) + '</div>' +
+    '<div class="wl-note' + (S.noteOpen === k ? ' open' : '') + '"><label class="sr" for="nt-' + k.replace(':', '-') + '">Note sur ' + esc(l.co) + '</label><input id="nt-' + k.replace(':', '-') + '" placeholder="Ajouter une note à la fiche"><button type="button" class="btn sm soft" data-act="wl-note-save" data-k="' + k + '">Enregistrer</button></div></div>';
+}
+function workHTML(){
+  if(S.ext) return '<div class="panel">' + emptyState('inbox', 'Rien à traiter pour le moment. Les relances de vos fiches apparaîtront ici.') + '</div>';
+  let h = '<div class="row sp" style="margin-bottom:10px"><p class="soft-t">' + todoCount() + ' éléments aujourd’hui : 3 en retard, 5 du jour et ' + pendingAn().length + ' analyses d’appel. Chaque ligne est aussi marquée sur sa carte dans le pipeline.</p><div class="row">' + (S.validated.has('pilates') ? '' : '<span class="tag crit">1 retenue d’opposition à décider</span>') + '</div></div>';
+  WL_GROUPS.forEach(g => {
+    let ls = LEADS.filter(l => l.g === g.k && !(g.k === 'analyse' && S.validated.has(l.id)));
+    if(g.k === 'analyse') g = Object.assign({}, g, {n: ls.length});
+    let more = 0;
+    if(g.k === 'semaine'){ ls = [lead('fleuriste')]; more = 8; }
+    if(g.k === 'filet'){ ls = []; more = 4; }
+    h += '<section class="wl-group" aria-label="' + g.t + '"><div class="wl-head"><span class="tag ' + g.tag + '">' + g.t + '</span><span class="cnt">' + g.n + '</span></div>';
+    if(g.k === 'semaine'){
+      h += wlRow(lead('fleuriste'), 'semaine');
+      h += '<div class="wl-row"><div class="who"><button type="button" data-act="open-lead" data-id="dubreuil">Menuiserie Dubreuil</button><span class="muted">Contacté · ' + eur(8000) + '</span></div><div>Rendez-vous jeudi 19 novembre à 10 h, avec e-mail « trois exemples de sites d’artisans » demain</div><div class="wl-act"><button type="button" class="btn sm" data-act="open-lead" data-id="dubreuil">Ouvrir la fiche</button></div></div>';
+      h += '<button type="button" class="more" style="width:100%" data-act="toast" data-msg="La maquette n’affiche que les éléments nommés">+ 7 autres éléments</button>';
+    } else if(g.k === 'filet'){
+      h += wlRow(lead('immo'), 'filet').replace(esc(lead('immo').todo), 'Démo faite, aucune suite planifiée : 14' + NNB + '000' + NB + '€ en jeu').replace('<span class="tag acc">Analyse à valider</span>', '');
+      h += wlRow(lead('durand'), 'filet').replace(esc(lead('durand').todo), 'Fiche d’Anna Externe transmise au closer : ne pas la laisser sans suite').replace('<span class="tag acc">Transmise à Alex</span>', '<span class="tag acc">Transmise à Alex</span>');
+      h += '<button type="button" class="more" style="width:100%" data-act="toast" data-msg="La maquette n’affiche que les éléments nommés">+ 2 autres éléments</button>';
+    } else h += ls.map(l => wlRow(l, g.k)).join('');
+    h += '</section>';
+  });
+  return h;
+}
+
+/* ============ pilotage (bandeau déplié) ============ */
+const SER = {
+  d:{labels:['2 nov.','3 nov.','4 nov.','5 nov.','6 nov.','9 nov.','10 nov.','11 nov.','12 nov.','13 nov.'], area:[58400,59100,60800,60200,62900,64100,66700,66700,68400,71250], vol:[12,15,11,14,12,13,16,0,14,27], unit:'jour'},
+  w:{labels:['S41','S42','S43','S44','S45','S46'], area:[49800,53400,57200,55900,62900,71250], vol:[52,57,61,55,64,70], unit:'semaine'}
+};
+S.range = 'd';
+function pilotageHTML(tab){
+  const tabs = [['previsions','Prévisions'],['objectifs','Objectifs'],['entonnoir','Entonnoir'],['activite','Activité'],['scripts','Rapports de scripts']];
+  let h = '<div class="tabs" role="tablist" aria-label="Pilotage">' + tabs.map(t => '<a role="tab" href="#/pilotage/' + t[0] + '" aria-selected="' + (t[0] === tab) + '" class="' + (t[0] === tab ? 'on' : '') + '">' + t[1] + '</a>').join('') + '</div>';
+  if(tab === 'previsions') h += tabPrev();
+  else if(tab === 'objectifs') h += tabObj();
+  else if(tab === 'entonnoir') h += tabFun();
+  else if(tab === 'activite') h += tabAct();
+  else h += tabScripts();
+  return h;
+}
+function rangeSeg(){
+  return '<div class="seg" role="group" aria-label="Période du graphique"><button type="button" data-act="range" data-k="d" class="' + (S.range === 'd' ? 'on' : '') + '" aria-pressed="' + (S.range === 'd') + '">10 jours ouvrés</button><button type="button" data-act="range" data-k="w" class="' + (S.range === 'w' ? 'on' : '') + '" aria-pressed="' + (S.range === 'w') + '">Semaines</button></div>';
+}
+function tabPrev(){
+  const rows = STAGES.map(s => '<tr><td><span class="row" style="gap:8px;flex-wrap:nowrap"><span class="sdot ' + s.cls + '" aria-hidden="true"></span>' + s.label + '</span></td><td class="r mono">' + s.n + '</td><td class="r mono">' + eur(s.amt) + '</td><td class="r mono">' + pct(s.p) + '</td><td class="r mono">' + eur(s.amt * s.p / 100) + '</td></tr>').join('');
+  return '<div class="stack"><div class="panel"><div class="head"><div><h3>Pipeline pondéré</h3><div class="hint">Valeur pondérée en euros, volume d’appels en dessous</div></div>' + rangeSeg() + '</div>' +
+    '<div class="chart" data-chart="1" data-ser="' + S.range + '" role="img" aria-label="Pipeline pondéré : 71 250 € aujourd’hui, avec le volume d’appels par ' + SER[S.range].unit + '"><div class="tip"></div></div>' +
+    '<div class="legend" style="margin-top:8px"><span><i style="background:#0ea5e9"></i>Pondéré</span><span><i style="background:rgba(125,211,252,.45)"></i>Appels par ' + SER[S.range].unit + '</span>' + (S.range === 'd' ? '<span class="muted">Le 11 novembre était férié.</span>' : '<span class="muted">S46 est en cours.</span>') + '</div></div>' +
+    '<div class="panel"><div class="head"><h3>Prévision par statut</h3><span class="hint">Probabilités réglables dans Configuration, Réglages, Statuts</span></div><div class="tablewrap" style="border:0"><table class="tbl" style="min-width:560px"><thead><tr><th scope="col">Statut</th><th scope="col" class="r">Leads</th><th scope="col" class="r">Montant</th><th scope="col" class="r">Probabilité</th><th scope="col" class="r">Pondéré</th></tr></thead><tbody>' + rows +
+    '<tr><td><b>Total ouvert</b></td><td class="r mono"><b>' + TOT.n + '</b></td><td class="r mono"><b>' + eur(TOT.amt) + '</b></td><td></td><td class="r mono"><b>' + eur(TOT.w) + '</b></td></tr></tbody></table></div></div></div>';
+}
+function tabObj(){
+  const goal = S.goal;
+  return '<div class="grid3">' +
+    '<div class="panel"><div class="head"><h3>Conversion du jour</h3><span class="tag warn">Sous l’objectif</span></div><div class="h-sec num">' + pct(33) + '</div><div class="meter" role="img" aria-label="33 % sur 40 %"><i style="width:33%"></i><u style="left:40%"></u></div><p class="soft-t" style="margin-top:8px">4 rendez-vous sur 12 prospects joints. Il en faudrait 5 pour atteindre l’objectif de ' + pct(40) + '.</p></div>' +
+    '<div class="panel"><div class="head"><h3>Conversion de la semaine 45</h3><span class="tag warn">Sous l’objectif</span></div><div class="h-sec num">' + pct(29) + '</div><div class="meter" role="img" aria-label="29 % sur 40 %"><i style="width:29%"></i><u style="left:40%"></u></div><p class="soft-t" style="margin-top:8px">9 rendez-vous sur 31 prospects joints. <a href="#/pilotage/scripts">Lire le rapport de scripts</a></p></div>' +
+    '<div class="panel"><div class="head"><h3>Chiffre d’affaires de novembre</h3></div>' + (goal ? '<div class="h-sec num">' + eur(TOT.won) + ' <span class="muted" style="font-size:13px;font-weight:600">sur ' + eur(goal) + '</span></div><div class="meter" role="img" aria-label="Avancement vers l’objectif de chiffre d’affaires"><i style="width:' + Math.min(100, Math.round(TOT.won / goal * 100)) + '%"></i></div><p class="soft-t" style="margin-top:8px">' + pct(Math.round(TOT.won / goal * 100)) + ' de l’objectif atteint avec 4 affaires gagnées.</p><button type="button" class="btn sm" style="margin-top:8px" data-act="goal">Modifier l’objectif</button>' : emptyState('target', 'Aucun objectif de chiffre d’affaires pour novembre. Gagné à ce jour : ' + eur(TOT.won) + '.', '<button type="button" class="btn primary" data-act="goal">Définir un objectif</button>')) + '</div></div>';
+}
+function tabFun(){
+  const max = 14;
+  const rows = STAGES.map(s => '<div class="fbar"><span style="width:96px;display:flex;gap:7px;align-items:center"><span class="sdot ' + s.cls + '" aria-hidden="true"></span>' + s.label + '</span><div class="bar" role="img" aria-label="' + s.n + ' leads"><i style="width:' + Math.round(s.n / max * 100) + '%"></i></div><span class="mono" style="width:30px;text-align:right">' + s.n + '</span><span class="mono soft-t" style="width:92px;text-align:right">' + eur(s.amt) + '</span></div>').join('');
+  return '<div class="grid32"><div class="panel"><div class="head"><h3>Entonnoir des leads ouverts</h3><span class="hint">' + TOT.n + ' leads, ' + eur(TOT.amt) + '</span></div>' + rows + '</div>' +
+    '<div class="stack"><div class="panel"><div class="head"><h3>Clôtures de novembre</h3></div><div class="kvs"><div class="kv"><span>Gagnés</span><span class="mono">' + TOT.wonN + ' · ' + eur(TOT.won) + '</span></div><div class="kv"><span>Perdus</span><span class="mono">' + TOT.lost + '</span></div></div><p class="soft-t" style="margin-top:8px">Les motifs de perte se saisissent au passage en « Perdu » et se lisent dans la fiche.</p></div></div></div>';
+}
+function tabAct(){
+  return '<div class="stack"><div class="grid3"><div class="panel"><div class="lab hint">Appels passés aujourd’hui</div><div class="h-sec num">27</div></div><div class="panel"><div class="lab hint">Prospects joints</div><div class="h-sec num">12</div></div><div class="panel"><div class="lab hint">Rendez-vous pris</div><div class="h-sec num">4 <span class="muted" style="font-size:13px;font-weight:600">soit ' + pct(33) + '</span></div></div></div>' +
+    '<div class="panel"><div class="head"><div><h3>Appels par jour</h3><div class="hint">Journée en cours : ' + NOW.split(', ')[1] + '</div></div></div><div class="chart" data-chart="1" data-ser="act" data-h="230" role="img" aria-label="Appels par jour sur dix jours ouvrés, 27 aujourd’hui"><div class="tip"></div></div></div></div>';
+}
+function tabScripts(){
+  const wk = S.week || 45;
+  let h = '<div class="row sp" style="margin-bottom:12px"><div class="row" role="group" aria-label="Semaines"><button type="button" class="pill' + (wk === 45 ? ' on' : '') + '" data-act="week" data-k="45">Semaine 45 · 2 au 8 novembre</button><button type="button" class="pill' + (wk === 46 ? ' on' : '') + '" data-act="week" data-k="46">Semaine 46</button></div><span class="l2tag">' + ic('users', 'sm') + 'Équipe : Raphael et Alex Closer. Les externes n’y figurent pas.</span></div>';
+  if(wk === 46) return h + '<div class="panel">' + emptyState('clock', 'Ce rapport est en préparation. Le premier de la semaine 46 arrive lundi, après une semaine d’appels transcrits.') + '</div>';
+  h += '<div class="stack"><div class="grid3"><div class="panel"><div class="hint">Conversion</div><div class="h-sec num">' + pct(29) + '</div><div class="meter"><i style="width:29%"></i><u style="left:40%"></u></div><p class="hint" style="margin-top:6px">Objectif ' + pct(40) + ' · rendez-vous obtenus sur prospects joints</p></div>' +
+    '<div class="panel"><div class="kv"><span>Appels</span><span class="mono">64</span></div><div class="kv"><span>Joints</span><span class="mono">31</span></div><div class="kv"><span>Rendez-vous</span><span class="mono">9</span></div></div>' +
+    '<div class="panel"><h3 style="margin-bottom:6px">La semaine</h3><p class="soft-t">Les prospects artisans et commerçants répondent bien à un exemple concret de site. Les professions libérales décrochent plus souvent sur la question du prix et du partage de la décision.</p></div></div>' +
+    '<div class="panel"><div class="head"><h3>Par script</h3></div><div class="tablewrap" style="border:0"><table class="tbl" style="min-width:520px"><thead><tr><th scope="col">Script</th><th scope="col" class="r">Appels</th><th scope="col" class="r">Joints</th><th scope="col" class="r">Rendez-vous</th><th scope="col" class="r">Taux</th></tr></thead><tbody><tr><td>Artisans et commerces</td><td class="r mono">40</td><td class="r mono">20</td><td class="r mono">7</td><td class="r mono">' + pct(35) + '</td></tr><tr><td>Professions libérales</td><td class="r mono">24</td><td class="r mono">11</td><td class="r mono">2</td><td class="r mono">' + pct(18) + '</td></tr><tr><td><b>Ensemble</b></td><td class="r mono"><b>64</b></td><td class="r mono"><b>31</b></td><td class="r mono"><b>9</b></td><td class="r mono"><b>' + pct(29) + '</b></td></tr></tbody></table></div></div>' +
+    '<div class="grid2"><div class="panel"><div class="head"><h3>Objections récurrentes</h3></div>' +
+      '<div class="kv" style="display:block"><div class="row sp"><b>« Prix comparé à Wix / Squarespace »</b><span class="tag">11 appels</span></div><p class="soft-t" style="margin-top:4px"><span class="muted">Réponse à essayer : </span>demander ce que l’offre moins chère ne couvre pas, par exemple les réalisations et le formulaire de devis.</p></div>' +
+      '<div class="kv" style="display:block"><div class="row sp"><b>« Décision partagée avec un associé »</b><span class="tag">7 appels</span></div><p class="soft-t" style="margin-top:4px"><span class="muted">Réponse à essayer : </span>proposer d’inviter l’associé au rendez-vous et lui envoyer avant un récapitulatif d’une page.</p></div></div>' +
+    '<div class="stack"><div class="panel"><h3 style="margin-bottom:6px">Ce qui fait avancer</h3><ul class="soft-t" style="margin:0;padding-left:18px"><li>Proposer trois exemples de sites du même métier.</li><li>Fixer le rendez-vous avant la fin de l’appel.</li></ul></div><div class="panel"><h3 style="margin-bottom:6px">Ce qui fait perdre</h3><ul class="soft-t" style="margin:0;padding-left:18px"><li>Parler du prix avant d’avoir décrit le besoin.</li><li>Laisser l’échéance floue.</li></ul></div></div></div>' +
+    '<div class="panel"><div class="head"><h3>Formulations à essayer</h3></div><div class="grid2"><div><div class="hint">Au lieu de</div><p class="soft-t">« Notre site coûte plus cher mais c’est mieux. »</p></div><div><div class="hint">Essayez</div><p>« Qu’est-ce que vous voudriez que le site fasse que votre page actuelle ne fait pas ? »</p></div></div><p class="hint" style="margin-top:8px">Pourquoi : la question déplace la comparaison du prix vers le besoin.</p><div class="sep-line"></div><p class="hint">Citations vérifiées dans vos transcripts ; noms, entreprises et numéros masqués.</p></div></div>';
+  return h;
+}
+
+/* ============ graphique « timeline financière » ============ */
+function drawCharts(){ $$('.chart[data-chart]').forEach(drawChart); }
+function drawChart(el){
+  const key = el.dataset.ser, D = SER[key === 'act' ? 'd' : key], showArea = key !== 'act';
+  const W = Math.max(280, Math.round(el.clientWidth || 600)), Ht = +(el.dataset.h || 300);
+  const padL = showArea ? 46 : 30, padR = 10, padT = 12, padB = 24, volH = showArea ? 72 : Ht - padT - padB, gap = 14;
+  const areaBot = Ht - padB - volH - gap, volTop = Ht - padB - volH, volBot = Ht - padB;
+  const n = D.labels.length, band = (W - padL - padR) / n, xs = D.labels.map((_, i) => padL + (i + .5) * band);
+  const lo = Math.floor(Math.min(...D.area) * .95 / 10000) * 10000, hi = Math.ceil(Math.max(...D.area) * 1.02 / 10000) * 10000;
+  const ay = v => areaBot - (v - lo) / (hi - lo) * (areaBot - padT);
+  const vmax = Math.max(...D.vol) * 1.08, vy = v => volBot - v / vmax * volH;
+  let s = '<svg viewBox="0 0 ' + W + ' ' + Ht + '" width="' + W + '" height="' + Ht + '" focusable="false" aria-hidden="true">';
+  if(showArea){
+    for(let v = lo; v <= hi; v += 10000){ s += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + ay(v) + '" y2="' + ay(v) + '" stroke="rgba(224,238,247,.07)"/><text x="' + (padL - 8) + '" y="' + (ay(v) + 4) + '" text-anchor="end" font-family="DM Mono" font-size="11" fill="#8392a0">' + (v / 1000) + ' k€</text>'; }
+    const pts = D.area.map((v, i) => xs[i] + ',' + ay(v)).join(' ');
+    s += '<polygon points="' + xs[0] + ',' + areaBot + ' ' + pts + ' ' + xs[n - 1] + ',' + areaBot + '" fill="rgba(56,189,248,.14)"/><polyline points="' + pts + '" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    s += '<circle cx="' + xs[n - 1] + '" cy="' + ay(D.area[n - 1]) + '" r="4" fill="#38bdf8" stroke="#141a20" stroke-width="2"/>';
+    s += '<text x="' + (xs[n - 1] - 8) + '" y="' + (ay(D.area[n - 1]) - 10) + '" text-anchor="end" font-family="DM Mono" font-size="11.5" fill="#e8eef3">' + eur(D.area[n - 1]) + '</text>';
+  } else {
+    for(let k = 0; k <= 3; k++){ const v = Math.round(vmax / 4 * k); s += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + vy(v) + '" y2="' + vy(v) + '" stroke="rgba(224,238,247,.07)"/><text x="' + (padL - 6) + '" y="' + (vy(v) + 4) + '" text-anchor="end" font-family="DM Mono" font-size="11" fill="#8392a0">' + v + '</text>'; }
+  }
+  D.vol.forEach((v, i) => { const bw = band * .6, y = vy(v); s += '<rect x="' + (xs[i] - bw / 2) + '" y="' + y + '" width="' + bw + '" height="' + Math.max(0, volBot - y) + '" rx="2" fill="rgba(125,211,252,' + (i === n - 1 ? '.7' : '.38') + ')"/>'; });
+  s += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + volBot + '" y2="' + volBot + '" stroke="rgba(224,238,247,.16)"/>';
+  const every = (W < 460 && n > 6) ? 2 : 1;
+  D.labels.forEach((l, i) => { if(i % every === (every === 2 ? (n - 1) % 2 : 0) || i === n - 1) s += '<text x="' + xs[i] + '" y="' + (Ht - 6) + '" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#8392a0">' + l + '</text>'; });
+  s += '<g class="cross" style="display:none"><line y1="' + padT + '" y2="' + volBot + '" stroke="rgba(224,238,247,.35)" stroke-dasharray="3 3"/>' + (showArea ? '<circle r="4.5" fill="#38bdf8" stroke="#141a20" stroke-width="2"/>' : '') + '</g>';
+  s += '<rect class="hit" x="' + padL + '" y="0" width="' + (W - padL - padR) + '" height="' + Ht + '" fill="transparent" style="touch-action:pan-y"/></svg>';
+  const tip = el.querySelector('.tip'); el.innerHTML = s; el.appendChild(tip);
+  const cross = el.querySelector('.cross'), hit = el.querySelector('.hit');
+  function at(ev){
+    const r = el.getBoundingClientRect(); const px = (ev.clientX - r.left) * (W / r.width);
+    const i = Math.max(0, Math.min(n - 1, Math.floor((px - padL) / band)));
+    cross.style.display = ''; cross.querySelector('line').setAttribute('x1', xs[i]); cross.querySelector('line').setAttribute('x2', xs[i]);
+    const c = cross.querySelector('circle'); if(c){ c.setAttribute('cx', xs[i]); c.setAttribute('cy', ay(D.area[i])); }
+    tip.style.display = 'block';
+    tip.innerHTML = '<b>' + D.labels[i] + (i === n - 1 ? ' (en cours)' : '') + '</b><br>' + (showArea ? 'Pondéré : <span class="mono">' + eur(D.area[i]) + '</span><br>' : '') + 'Appels : <span class="mono">' + D.vol[i] + '</span>';
+    const tw = tip.offsetWidth; let left = xs[i] * (r.width / W) + 12; if(left + tw > r.width) left = xs[i] * (r.width / W) - tw - 12; tip.style.left = Math.max(0, left) + 'px'; tip.style.top = '8px';
+  }
+  hit.addEventListener('pointermove', at); hit.addEventListener('pointerdown', at);
+  hit.addEventListener('pointerleave', () => { cross.style.display = 'none'; tip.style.display = 'none'; });
+}
+let rsz; window.addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(drawCharts, 120); });
+
+/* ============ totaux dynamiques (changer un statut recompte le pipeline) ============ */
+S.validated = new Set(); S.edits = {}; S.hit = null; S.hold = null;
+function recalc(){
+  STAGES.forEach(s => {});
+  TOT.w = STAGES.reduce((t, s) => t + s.amt * s.p / 100, 0);
+  TOT.n = STAGES.reduce((t, s) => t + s.n, 0); TOT.amt = STAGES.reduce((t, s) => t + s.amt, 0);
+}
+function moveLead(id, to){
+  const l = lead(id); if(l.stage === to) return;
+  const a = stageOf(l.stage), b = stageOf(to);
+  a.n--; a.amt -= l.amt; b.n++; b.amt += l.amt; l.stage = to; recalc();
+}
+const othersOf = s => ({n: s.n - LEADS.filter(l => l.stage === s.id).length, amt: s.amt - LEADS.filter(l => l.stage === s.id).reduce((t, l) => t + l.amt, 0)});
+const pendingAn = () => LEADS.filter(l => l.g === 'analyse' && !S.validated.has(l.id));
+const todoCount = () => 8 + pendingAn().length;
+
+/* ============ tiroir : fiche lead ============ */
+function drawerShell(l){
+  return '<div class="scrim" data-act="close-lead"></div><aside class="drawer" id="drawer" role="dialog" aria-label="Fiche de ' + esc(l.co) + '" tabindex="-1"><div class="drawer-top" id="dtop"></div><div class="drawer-body" id="dbody"></div></aside>';
+}
+function curLead(){ const r = parse(); return lead(r[1]) || lead('dubreuil'); }
+function fillDrawer(){
+  const l = curLead(), i = LEAD_ORDER.indexOf(l.id), prev = LEAD_ORDER[(i + LEAD_ORDER.length - 1) % LEAD_ORDER.length], next = LEAD_ORDER[(i + 1) % LEAD_ORDER.length];
+  $('#dtop').innerHTML = '<button type="button" class="btn sm" data-act="open-lead" data-id="' + prev + '" aria-label="Fiche précédente : ' + esc(lead(prev).co) + '">' + ic('chevL', 'sm') + 'Précédente</button>' +
+    '<button type="button" class="btn sm" data-act="open-lead" data-id="' + next + '" aria-label="Fiche suivante : ' + esc(lead(next).co) + '">Suivante' + ic('chevR', 'sm') + '</button>' +
+    '<span class="grow muted" style="font-weight:600;padding-left:6px">Le pipeline reste visible derrière : ouvrez une autre carte sans quitter la fiche.</span>' +
+    '<button type="button" class="iconbtn" aria-label="Fermer la fiche" data-act="close-lead">' + ic('x') + '</button>';
+  const b = $('#dbody'), top = b.scrollTop; b.innerHTML = drawerBody(l); b.scrollTop = top;
+}
+function redrawDrawer(){ if(parse()[0] === 'lead') fillDrawer(); }
+function drawerBody(l){
+  const st = stageOf(l.stage), closed = S.validated.has(l.id);
+  let h = '<div class="dhead"><span class="avatar lg">' + esc(l.co.split(' ').slice(0, 2).map(w => w[0]).join('')) + '</span><div class="info"><h1>' + esc(l.co) + '</h1>' +
+    '<div class="soft-t" style="margin-top:3px">' + esc(l.ct) + ' · ' + esc(l.role) + ' · <span class="mono">' + esc(l.tel) + '</span>' + (l.tz ? ' <span class="tag ' + (l.tz.ok ? 'acc' : 'warn') + '">Heure locale ' + l.tz.local + ' · ' + l.tz.city + '</span>' : '') + '</div>' +
+    '<div class="row" style="margin-top:8px;gap:6px">' + heatTag(l.heat) + l.tags.filter(t => !(l.id === 'dubreuil' && closed)).map(t => '<span class="tag ' + t[0] + '">' + esc(t[1]) + '</span>').join('') + '</div></div></div>';
+  h += '<div class="row" style="margin-bottom:12px">' + callBtn(l) + '<button type="button" class="btn" data-act="modal" data-k="mail">' + ic('mail', 'sm') + 'Écrire</button><button type="button" class="btn" data-act="modal" data-k="log">' + ic('edit', 'sm') + 'Consigner un échange</button><button type="button" class="btn" data-act="modal" data-k="convert">' + ic('users', 'sm') + 'Convertir en client</button><button type="button" class="btn ghost" data-act="modal" data-k="merge">' + ic('merge', 'sm') + 'Fusionner</button></div>';
+  h += '<div class="stepper" role="group" aria-label="Statut" style="margin-bottom:12px">' + STAGES.map(s => '<button type="button" class="' + (s.id === l.stage ? 'on' : '') + '" aria-pressed="' + (s.id === l.stage) + '" data-act="set-stage" data-id="' + l.id + '" data-k="' + s.id + '">' + s.label + '</button>').join('') +
+    '<button type="button" data-act="modal" data-k="won">Gagné</button><button type="button" data-act="modal" data-k="lost">Perdu</button></div>';
+  h += '<div class="props"><div class="prop"><div class="lab">Montant</div><div class="v mono">' + eur(l.amt) + '</div></div><div class="prop"><div class="lab">Chaleur</div><div class="v">' + l.heat + (l.id === 'dubreuil' ? ' <span class="mono muted">72/100</span>' : '') + '</div></div><div class="prop"><div class="lab">Assigné à</div><div class="v"><span class="row" style="gap:6px;flex-wrap:nowrap"><span class="avatar' + (l.owner === 'raphael' ? '' : ' alt') + '">' + initials(l.owner) + '</span>' + OWNER[l.owner][0] + '</span></div></div><div class="prop"><div class="lab">Prochaine action</div><div class="v">' + esc(l.next) + '</div></div></div>';
+  /* alertes propres à la fiche */
+  if(l.hold) h += holdBlock(l);
+  if(l.tz && !l.tz.ok) h += '<div class="banner-alert warn" style="margin-bottom:12px">' + ic('clock') + '<div><b>Hors plage chez le prospect</b><span class="soft-t">Il est ' + l.tz.local + ' à ' + l.tz.city + ' : la plage d’appel est de 9 h 00 à 19 h 00 heure du prospect. Premier appel possible à partir de ' + l.tz.from + ', heure de Paris. Le bouton d’appel reste bloqué d’ici là.</span></div></div>';
+  if(l.id === 'durand') h += '<div class="banner-alert acc" style="margin-bottom:12px">' + ic('flag') + '<div><b>Fiche d’Anna Externe, transmise au closer Alex</b><span class="soft-t">Alex a la main sur le closing. Anna garde la fiche dans son espace et sa commission de 10 % sur l’encaissé.</span></div></div>';
+  /* corps */
+  h += '<div class="dcols"><div class="stack">';
+  const tabs = [['appels','Appels et analyses'],['histo','Historique'],['seq','Séquences']];
+  h += '<div class="tabs" role="tablist" aria-label="Contenu de la fiche">' + tabs.map(t => '<button type="button" role="tab" aria-selected="' + (S.dTab === t[0]) + '" class="' + (S.dTab === t[0] ? 'on' : '') + '" data-act="dtab" data-k="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+  if(S.dTab === 'appels') h += l.id === 'dubreuil' ? analysisHTML() : otherCalls(l);
+  else if(S.dTab === 'histo') h += historyHTML(l);
+  else h += seqTab(l);
+  h += '</div>' + sideHTML(l) + '</div>';
+  return h;
+}
+function callBtn(l){
+  const blocked = (l.tz && !l.tz.ok) || (l.hold && S.hold !== 'lifted');
+  return '<button type="button" class="btn primary" data-act="call-lead" data-id="' + l.id + '"' + (blocked ? ' disabled aria-disabled="true"' : '') + '>' + ic('phone', 'sm') + 'Appeler</button>';
+}
+function holdBlock(l){
+  if(S.hold === 'confirmed') return '<div class="banner-alert crit" style="margin-bottom:12px">' + ic('shield') + '<div><b>Opposition confirmée</b><span class="soft-t">La fiche est marquée « ne pas rappeler », l’audio, le transcript et l’analyse sont effacés. Cette décision ne se défait pas.</span></div></div>';
+  if(S.hold === 'lifted') return '<div class="banner-alert good" style="margin-bottom:12px">' + ic('check') + '<div><b>Retenue levée</b><span class="soft-t">L’analyse peut maintenant être relue et validée. Le prospect reste appelable.</span></div></div>';
+  return '<div class="banner-alert crit" style="margin-bottom:12px">' + ic('shield') + '<div><b>Décision sur la retenue d’opposition</b><span class="soft-t">Pendant l’appel d’hier à 15 h 05, le prospect a dit refuser l’enregistrement. L’analyse est retenue : rien n’est écrit sur la fiche et le prospect n’est pas rappelé tant que vous n’avez pas décidé.</span>' +
+    '<p class="soft-t" style="margin-top:8px"><span class="muted">Citation relevée :</span> « Je ne veux plus qu’on m’enregistre, ni qu’on me rappelle. »</p><p class="muted" style="margin-top:2px">Retenue posée le 12 novembre, sur un appel de Raphael.</p>' +
+    '<div class="acts"><button type="button" class="btn danger" data-act="modal" data-k="hold-confirm">Confirmer l’opposition</button><button type="button" class="btn" data-act="modal" data-k="hold-lift">Lever la retenue</button></div></div></div>';
+}
+function otherCalls(l){
+  if(l.hold) return '<div class="panel">' + emptyState('lock', 'L’analyse de cet appel est retenue. Elle réapparaît ici si vous levez la retenue.') + '</div>';
+  if(l.g === 'analyse') return '<div class="panel"><div class="head"><h3>Appel d’hier à 17 h 20</h3><span class="tag acc">Analyse à valider</span></div><p class="soft-t">L’analyse est prête. Elle se lit et se valide champ par champ, exactement comme sur la fiche de la Menuiserie Dubreuil.</p><div class="row" style="margin-top:10px">' + (S.validated.has(l.id) ? '<span class="tag good">' + ic('check', 'sm') + 'Analyse validée</span>' : '<button type="button" class="btn soft" data-act="validate-other" data-id="' + l.id + '">Valider l’analyse</button>') + '</div></div>';
+  return '<div class="panel">' + emptyState('phone', 'Aucun appel analysé pour cette fiche. Appelez depuis le poste d’appel en bas de l’écran : l’appel, sa transcription et son analyse apparaîtront ici.', callBtn(l)) + '</div>';
+}
+function historyHTML(l){
+  const ev = l.id === 'dubreuil' ? [
+    ['Aujourd’hui, 10 h 07', 'Appel sortant de 4 min 22 par Raphael', 'phone'], ['Hier, 16 h 30', 'E-mail envoyé : « Votre projet de site vitrine »', 'mail'], ['Mercredi 11 novembre', 'Fiche qualifiée et assignée à Raphael', 'user'], ['Mardi 10 novembre', 'Demande de devis reçue par le formulaire du site', 'inbox']
+  ] : [['Cette semaine', 'Fiche créée et assignée à ' + OWNER[l.owner][0], 'user']];
+  return '<div class="panel">' + ev.map(e => '<div class="act-row"><span class="act-ic">' + ic(e[2], 'sm') + '</span><div><div>' + esc(e[1]) + '</div><div class="muted mono" style="font-size:11.5px">' + esc(e[0]) + '</div></div></div>').join('') + '</div>';
+}
+function seqTab(l){
+  return '<div class="panel"><div class="head"><h3>Séquences d’e-mails</h3><button type="button" class="btn sm soft" data-act="toast" data-msg="Inscription à une séquence : choisissez-la dans la liste">Inscrire à une séquence</button></div>' + (l.id === 'dubreuil' && S.analysis.a_seq === 'ACCEPT' && S.analysisApplied ? '<div class="kv"><span>Artisans – avant rendez-vous</span><span><span class="tag good">En cours</span></span></div>' : emptyState('mail', 'Aucune séquence active pour cette fiche. Un lien de désinscription est ajouté automatiquement à chaque e-mail.')) + '</div>';
+}
+function sideHTML(l){
+  const v = k => S.analysisApplied && S.analysis[k] && (S.analysis[k] === 'ACCEPT' || S.analysis[k] === 'EDIT') && l.id === 'dubreuil';
+  const val = (k, def, text) => v(k) ? esc(S.analysis[k] === 'EDIT' && S.edits[k] ? S.edits[k] : text) : def;
+  const nr = '<span class="muted">Non renseigné</span>';
+  let h = '<aside class="stack" aria-label="Informations de la fiche"><div class="panel"><div class="head"><h3>Fiche</h3><button type="button" class="btn sm ghost" data-act="toast" data-msg="Modification de la fiche en ligne">' + ic('edit', 'sm') + 'Modifier</button></div><div class="kvs">' +
+    '<div class="kv"><span>Entité</span><span>Venio Paris</span></div><div class="kv"><span>Source</span><span>' + (l.id === 'durand' ? 'Réseau d’Anna Externe' : 'Formulaire du site') + '</span></div><div class="kv"><span>Budget</span><span class="mono">' + eur(l.amt) + '</span></div>';
+  if(l.id === 'dubreuil') h += '<div class="kv"><span>Besoin</span><span>' + val('need', nr, 'Site vitrine avec réalisations et formulaire de devis') + '</span></div><div class="kv"><span>Échéance</span><span>' + val('timeline', nr, 'Avant le salon de l’habitat (mars)') + '</span></div><div class="kv"><span>Décideur</span><span>' + val('decider', nr, 'Marc Dubreuil (gérant)') + '</span></div><div class="kv"><span>Concurrent</span><span>' + val('competitor', nr, 'Wix Pro') + '</span></div>';
+  h += '</div></div>';
+  h += '<div class="panel"><div class="head"><h3>Chaîne commerciale</h3></div><div class="kvs"><div class="kv"><span>Origine</span><span>' + (l.id === 'durand' ? 'Anna Externe' : 'Site Venio') + '</span></div><div class="kv"><span>Propriétaire</span><span>' + OWNER[l.owner][0] + '</span></div><div class="kv"><span>Closer</span><span>' + (l.id === 'durand' ? 'Alex Closer' : (l.id === 'dubreuil' && S.analysisApplied && (S.analysis.a_hand === 'ACCEPT') ? 'Alex Closer' : '<span class="muted">Aucun</span>')) + '</span></div></div>' +
+    (l.owner === 'raphael' ? '<button type="button" class="btn sm" style="margin-top:8px" data-act="modal" data-k="handoff">' + ic('flag', 'sm') + 'Passer la main à Alex</button>' : '') + '</div>';
+  h += '<div class="panel"><div class="head"><h3>Doublons</h3></div><p class="soft-t">Aucun doublon détecté sur le numéro, l’e-mail ou le nom de l’entreprise.</p><button type="button" class="btn sm ghost" style="margin-top:6px" data-act="modal" data-k="merge">' + ic('merge', 'sm') + 'Fusionner avec une autre fiche</button></div>';
+  h += '<div class="panel"><div class="head"><h3>Données personnelles</h3><span class="tag good">' + ic('shield', 'sm') + 'RGPD</span></div><div class="kvs"><div class="kv"><span>Base légale</span><span>Intérêt légitime (B2B)</span></div><div class="kv"><span>Provenance</span><span>' + (l.id === 'durand' ? 'Apporteur externe' : 'Formulaire du site') + '</span></div><div class="kv"><span>Prospection e-mail</span><span>Autorisée</span></div></div><div class="row" style="margin-top:8px"><button type="button" class="btn sm" data-act="toast" data-msg="Export des données de la fiche préparé">' + ic('download', 'sm') + 'Exporter</button><button type="button" class="btn sm danger" data-act="modal" data-k="anon">Anonymiser</button></div></div></aside>';
+  return h;
+}
+
+/* ============ appel analysé ============ */
+const AF = [
+  {k:'budget', name:'Budget', val:'8 000 €', cur:'8 000 €', quote:'« autour de huit mille euros »', ts:'01:38', conf:'Confiance élevée'},
+  {k:'need', name:'Besoin', val:'Site vitrine avec réalisations et formulaire de devis', cur:null, quote:'« un site vitrine, avec nos réalisations, et que les gens puissent demander un devis directement »', ts:'00:55', conf:'Confiance élevée'},
+  {k:'timeline', name:'Échéance', val:'Avant le salon de l’habitat (mars)', cur:null, quote:'« avant le salon de l’habitat, en mars »', ts:'02:12', conf:'Confiance élevée'},
+  {k:'decider', name:'Décideur', val:'Marc Dubreuil (gérant)', cur:null, quote:'« C’est moi qui décide »', ts:'03:30', conf:'Confiance élevée'},
+  {k:'competitor', name:'Concurrent cité', val:'Wix Pro', cur:null, quote:'« J’ai vu une offre Wix Pro, c’est moins cher »', ts:'02:40', conf:'Confiance moyenne'},
+  {k:'objection', name:'Objection', val:'Prix plus élevé que Wix Pro', cur:null, quote:'« C’est quand même plus cher que Wix Pro »', unv:true, conf:'Confiance faible'}
+];
+const HEAT = [['Besoin précis', 19, 25], ['Budget annoncé', 14, 20], ['Échéance', 10, 20], ['Décideur identifié', 15, 15], ['Engagement (rendez-vous pris)', 14, 20]];
+const AA = [
+  {k:'a_rdv', type:'Rendez-vous', ic:'cal', label:'Rendez-vous jeudi 19 novembre à 10 h', why:'Le prospect a accepté le créneau proposé pendant l’appel.', due:'jeudi 19 novembre, 10 h'},
+  {k:'a_mail', type:'E-mail', ic:'mail', label:'Envoyer « trois exemples de sites d’artisans »', why:'Annoncé pendant l’appel pour préparer le rendez-vous.', due:'demain, samedi 14 novembre'},
+  {k:'a_seq', type:'Séquence', ic:'list', label:'Inscrire à la séquence « Artisans – avant rendez-vous »', why:'Préparer le rendez-vous avec des exemples et des références.', due:'sans date'},
+  {k:'a_hand', type:'Passage au closer', ic:'flag', label:'Passer la main à Alex pour le closing', why:'Alex mène les rendez-vous de closing.', due:'après le rendez-vous'}
+];
+const TR = [
+  ['00:04','rep','Bonjour, Raphael de Venio. Je vous appelle suite à votre demande sur notre site. Vous avez un instant ?'],
+  ['00:11','pro','Oui, allez-y.'],
+  ['00:19','rep','Vous êtes menuisier, c’est bien ça ? Comment vos clients vous trouvent-ils aujourd’hui ?'],
+  ['00:27','pro','Au bouche-à-oreille, surtout. On n’a presque rien en ligne, juste une vieille page.'],
+  ['00:48','rep','Qu’est-ce que vous attendez d’un nouveau site ?'],
+  ['00:55','pro','Un site vitrine, avec nos réalisations, et que les gens puissent demander un devis directement.'],
+  ['01:30','rep','Vous avez un budget en tête ?'],
+  ['01:38','pro','Autour de huit mille euros.'],
+  ['02:05','rep','Et une échéance ?'],
+  ['02:12','pro','Avant le salon de l’habitat, en mars.'],
+  ['02:40','pro','J’ai vu une offre Wix Pro, c’est moins cher.'],
+  ['03:05','rep','Avec Wix, vous aurez un modèle. Ici, vos réalisations et votre formulaire de devis sont pensés pour votre métier.'],
+  ['03:30','pro','C’est moi qui décide, de toute façon.'],
+  ['03:55','rep','Alors je vous propose un rendez-vous jeudi à 10 h pour vous montrer trois exemples de sites d’artisans.'],
+  ['04:10','pro','Jeudi 10 h, c’est bon pour moi.']
+];
+function counts(){
+  let a = 0, i = 0, p = 0; DEC_ITEMS.forEach(k => { const s = S.analysis[k]; if(s === 'ACCEPT' || s === 'EDIT') a++; else if(s === 'IGNORE') i++; else p++; });
+  return {a, i, p};
+}
+function stateLbl(k){
+  const s = S.analysis[k];
+  if(s === 'ACCEPT') return '<div class="state ok">' + ic('check', 'sm') + ' Sera appliquée</div>';
+  if(s === 'EDIT') return '<div class="state ok">' + ic('check', 'sm') + ' Sera appliquée, modifiée : ' + esc(S.edits[k] || '') + '</div>';
+  if(s === 'IGNORE') return '<div class="state no">Sera ignorée</div>';
+  return '<div class="state todo">À décider</div>';
+}
+function gest(k, label){
+  const s = S.analysis[k], ro = S.analysisApplied;
+  const b = (act, txt, on) => '<button type="button" class="btn sm' + (on ? ' soft' : '') + '" aria-pressed="' + !!on + '" data-act="dec" data-k="' + k + '" data-v="' + act + '"' + (ro ? ' disabled' : '') + ' aria-label="' + txt + ' : ' + esc(label) + '">' + txt + '</button>';
+  return '<div class="gest">' + b('ACCEPT', 'Accepter', s === 'ACCEPT') + b('EDIT', 'Modifier', s === 'EDIT') + b('IGNORE', 'Ignorer', s === 'IGNORE') + '</div>';
+}
+function analysisHTML(){
+  const c = counts();
+  if(S.analysisRejected) return '<div class="panel">' + emptyState('x', 'Analyse rejetée. Rien n’a été écrit sur la fiche.', '<button type="button" class="btn" data-act="reopen-analysis">Rouvrir l’analyse</button>') + '</div>';
+  let h = '<div class="panel analysis"><div class="head"><div><h3>Appel de ce matin, 10 h 07</h3><div class="hint"><span class="mono">4 min 22</span> · Raphael vers Marc Dubreuil · <span class="mono">+33 6 12 34 01 01</span></div></div>' +
+    (S.analysisApplied ? '<span class="tag good">' + ic('check', 'sm') + 'Analyse validée</span>' : '<span class="tag acc">Analyse à valider</span>') + '</div>';
+  h += '<div class="tabs" role="tablist" aria-label="Affichage de l’appel"><button type="button" role="tab" aria-selected="' + (S.aTab === 'analyse') + '" class="' + (S.aTab === 'analyse' ? 'on' : '') + '" data-act="atab" data-k="analyse">Analyse</button><button type="button" role="tab" aria-selected="' + (S.aTab === 'conv') + '" class="' + (S.aTab === 'conv' ? 'on' : '') + '" data-act="atab" data-k="conv">Conversation</button></div>';
+  if(S.aTab === 'conv') return h + transcriptHTML() + '</div>';
+  h += '<section aria-label="Résumé de l’appel"><h4 class="hint" style="margin-bottom:4px">Résumé de l’appel</h4><p>Menuiserie familiale, clientèle au bouche-à-oreille. Veut un site vitrine avec réalisations et demande de devis, budget autour de 8 000 €, en ligne avant le salon de l’habitat de mars. Compare avec une offre Wix Pro moins chère. Rendez-vous pris jeudi 10 h.</p></section>';
+  h += '<section aria-label="Informations proposées"><div class="head" style="margin:6px 0 2px"><h3>Informations proposées pour la fiche</h3></div><p class="hint">Rien n’est écrit sur la fiche sans votre décision.</p>';
+  AF.forEach(f => {
+    const ed = S.editing === f.k;
+    h += '<div class="fld"><div class="name">' + f.name + '</div><div><div class="prop-v">' + esc(S.analysis[f.k] === 'EDIT' && S.edits[f.k] ? S.edits[f.k] : f.val) + '</div>' +
+      '<div class="cur">' + (f.cur ? 'Actuellement enregistré : ' + f.cur : 'Actuellement enregistré : non renseigné') + ' · ' + f.conf + '</div>' +
+      '<div class="quote' + (f.unv ? ' unv' : '') + '">' + esc(f.quote) + (f.ts ? ' <button type="button" class="btn sm ghost" style="padding:2px 6px" data-act="show-quote" data-ts="' + f.ts + '">Voir dans la conversation</button>' : '') +
+        (f.unv ? '<div class="tag warn" style="margin-top:4px">' + ic('alert', 'sm') + 'Citation non vérifiée : introuvable telle quelle dans le transcript</div>' : '') + '</div>' +
+      (ed ? '<div class="edit"><label class="sr" for="ed-' + f.k + '">Valeur à enregistrer pour ' + f.name + '</label><input class="input" id="ed-' + f.k + '" value="' + esc(S.edits[f.k] || f.val) + '"><button type="button" class="btn sm primary" data-act="edit-ok" data-k="' + f.k + '">Valider la modification</button><button type="button" class="btn sm ghost" data-act="edit-no">Annuler</button></div>' : '') +
+      stateLbl(f.k) + '</div>' + gest(f.k, f.name) + '</div>';
+  });
+  h += '</section>';
+  /* chaleur */
+  const lvl = S.edits.heat || 'Chaud';
+  h += '<section aria-label="Chaleur du prospect"><div class="head" style="margin:10px 0 6px"><h3>Chaleur du prospect</h3></div><div class="fld" style="border:0"><div class="name">Niveau</div><div><div class="heat-score"><b class="num">72</b><span class="muted">sur 100</span>' + heatTag(lvl) + '</div>' +
+    '<div class="heat" style="margin-top:10px" role="list">' + HEAT.map(r => '<div class="heat-row" role="listitem"><span>' + r[0] + '</span><div class="bar"><i style="width:' + Math.round(r[1] / r[2] * 100) + '%"></i></div><span class="mono">' + r[1] + ' / ' + r[2] + ' pts</span></div>').join('') + '</div><p class="hint" style="margin-top:8px">Somme des cinq critères : 19 + 14 + 10 + 15 + 14 = 72. Seuils : froid jusqu’à 39, tiède de 40 à 64, chaud à partir de 65.</p>' + stateLbl('heat') + '</div>' +
+    '<div class="gest"><button type="button" class="btn sm' + (S.analysis.heat === 'ACCEPT' ? ' soft' : '') + '" aria-pressed="' + (S.analysis.heat === 'ACCEPT') + '" data-act="dec" data-k="heat" data-v="ACCEPT"' + (S.analysisApplied ? ' disabled' : '') + '>Accepter « Chaud »</button><label class="sr" for="heatlvl">Changer de niveau</label><select class="select" id="heatlvl" style="width:auto;padding:5px 8px" data-chg="heat"' + (S.analysisApplied ? ' disabled' : '') + '><option value="">Changer de niveau…</option><option>Froid</option><option>Tiède</option><option>Chaud</option></select><button type="button" class="btn sm' + (S.analysis.heat === 'IGNORE' ? ' soft' : '') + '" aria-pressed="' + (S.analysis.heat === 'IGNORE') + '" data-act="dec" data-k="heat" data-v="IGNORE"' + (S.analysisApplied ? ' disabled' : '') + '>Ignorer</button></div></div></section>';
+  /* actions */
+  h += '<section aria-label="Actions suivantes proposées"><div class="head" style="margin:10px 0 2px"><h3>Actions suivantes proposées</h3></div><p class="hint">Les actions acceptées sont créées à l’application de la sélection.</p>';
+  AA.forEach(a => {
+    h += '<div class="act-row"><span class="act-ic">' + ic(a.ic, 'sm') + '</span><div><div><span class="muted">' + a.type + ' · </span><b>' + esc(a.label) + '</b></div><div class="soft-t" style="font-size:12px">Pourquoi : ' + esc(a.why) + '</div><div class="muted" style="font-size:11.5px">Échéance : ' + a.due + '</div>' + stateLbl(a.k) + '</div>' +
+      '<div class="gest" style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm' + (S.analysis[a.k] === 'ACCEPT' ? ' soft' : '') + '" aria-pressed="' + (S.analysis[a.k] === 'ACCEPT') + '" data-act="dec" data-k="' + a.k + '" data-v="ACCEPT"' + (S.analysisApplied ? ' disabled' : '') + ' aria-label="Accepter l’action : ' + esc(a.label) + '">Accepter</button><button type="button" class="btn sm' + (S.analysis[a.k] === 'IGNORE' ? ' soft' : '') + '" aria-pressed="' + (S.analysis[a.k] === 'IGNORE') + '" data-act="dec" data-k="' + a.k + '" data-v="IGNORE"' + (S.analysisApplied ? ' disabled' : '') + ' aria-label="Ignorer l’action : ' + esc(a.label) + '">Ignorer</button></div></div>';
+  });
+  h += '</section>';
+  if(!S.analysisApplied){
+    h += '<div class="applybar"><div class="grow"><b>Appliquer la sélection</b><div class="muted" id="applycount">' + c.a + ' à appliquer · ' + c.i + ' ignorée' + (c.i > 1 ? 's' : '') + ' · ' + c.p + ' à décider</div><div class="muted">Ce qui n’est pas décidé sera ignoré.</div></div><button type="button" class="btn danger" data-act="modal" data-k="reject">Rejeter l’analyse</button><button type="button" class="btn primary" data-act="apply"' + (c.a === 0 ? ' disabled' : '') + '>Appliquer la sélection</button></div>';
+  } else h += '<div class="banner-alert good">' + ic('check') + '<div><b>Analyse validée</b><span class="soft-t">' + c.a + ' décision' + (c.a > 1 ? 's' : '') + ' appliquée' + (c.a > 1 ? 's' : '') + ' à la fiche. Les non décidées ont été ignorées.</span></div></div>';
+  return h + '</div>';
+}
+function transcriptHTML(){
+  const q = S.transQ.trim().toLowerCase(); let hits = 0;
+  const lines = TR.map(r => {
+    const m = q && r[2].toLowerCase().includes(q), on = S.hit === r[0]; if(m) hits++;
+    let tx = esc(r[2]); if(m) tx = tx.replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig'), '<mark>$1</mark>');
+    return '<div class="tline' + (m || on ? ' hit' : '') + '" id="tl-' + r[0].replace(':', '') + '"><span class="ts">' + r[0] + '</span><span class="sp ' + r[1] + '">' + (r[1] === 'rep' ? 'Commercial' : 'Prospect') + '</span><span class="tx">' + tx + '</span></div>';
+  }).join('');
+  return '<div class="row sp" style="margin-bottom:10px"><div class="searchbox" style="flex:1"><label class="sr" for="tq">Rechercher dans la conversation</label>' + ic('search', 'sm') + '<input id="tq" type="search" placeholder="Rechercher un mot ou une phrase" value="' + esc(S.transQ) + '" data-act-input="tq"></div><span class="hint" aria-live="polite">' + (q ? (hits ? hits + ' résultat' + (hits > 1 ? 's' : '') : 'Aucun résultat') : 'Conversation transcrite') + '</span></div><div class="transcript" role="log" aria-label="Conversation transcrite">' + lines + '</div>';
+}
+
+/* ============ poste d'appel (dock persistant) ============ */
+const Q = [
+  {k:'rappels', t:'Rappels dus', n:6, rows:['osteo','morel','vasseur','garage','autoecole','boulangerie'], more:0},
+  {k:'jamais', t:'Jamais appelées', n:21, rows:['brasserie','fleuriste'], more:19},
+  {k:'autres', t:'Autres fiches', n:11, rows:['dubreuil','immo'], more:9}
+];
+const QORDER = Q.flatMap(g => g.rows);
+const MODES = [['click','Au clic','Vous lancez chaque appel d’un clic. Rien ne part seul.'],['preview','Aperçu','La fiche s’affiche, puis l’appel part seul après 8 secondes. Vous pouvez l’annuler.'],['power','Power dialer','Les appels s’enchaînent : le suivant part 5 secondes après la saisie du résultat.']];
+const OUTCOMES = [['rdv','Rendez-vous pris'],['rappel','Joint, à rappeler'],['refus','Pas intéressé'],['repondeur','Répondeur'],['noanswer','Pas de réponse'],['wrong','Mauvais numéro'],['dnc','Ne pas rappeler']];
+const LIVE_OSTEO = [['rep','Bonjour Claire, Raphael de Venio. Je vous rappelle comme convenu. Vous avez un instant ?'],['pro','Oui, bonjour. Je voulais justement vous en reparler.'],['rep','Où en est votre réflexion sur le nouveau site du cabinet ?'],['pro','Ça me plaît, mais je dois en parler à mon associé avant de me décider.'],['rep','Bien sûr. On peut prévoir un rendez-vous à trois pour répondre à ses questions ?'],['pro','Oui, ce serait bien. Plutôt en début de semaine prochaine.'],['rep','Je vous envoie des créneaux dès cet après-midi.']];
+const LIVE_GEN = [['rep','Bonjour, Raphael de Venio. Je vous appelle au sujet de votre demande. Vous avez un instant ?'],['pro','Oui, je vous écoute.'],['rep','Pouvez-vous me décrire ce que vous attendez de votre site ?'],['pro','Surtout quelque chose de simple, qui présente bien l’activité.'],['rep','Très bien. Je vous propose un court rendez-vous pour vous montrer des exemples.']];
+const tfmt = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+S.marks = {vasseur:'repondeur'};
+function qmeta(l, g){
+  if(g === 'rappels') return l.id === 'vasseur' ? 'Rappel dû · répondeur détecté hier' : 'Rappel dû · ' + l.ct;
+  if(l.id === 'dubreuil') return 'Appelée ce matin à 10 h 07 · ' + l.ct;
+  if(g === 'jamais') return 'Jamais appelée · ' + l.ct;
+  return stageOf(l.stage).label + ' · ' + l.ct;
+}
+function queueHTML(){
+  const D = S.dock;
+  if(S.ext) return '<div class="qhead"><b>Vos fiches</b><span class="muted">Espace d’Anna Externe : seules vos fiches sont appelables.</span></div><div class="qlist" role="listbox" aria-label="File d’appels"><button type="button" class="qrow sel" role="option" aria-selected="true" data-act="qsel" data-id="durand"><span class="n">Cabinet Avocats Durand</span><span class="m">Transmise au closer Alex</span><span class="r"></span></button></div>';
+  let h = '<div class="qhead"><div class="seg" role="group" aria-label="Périmètre de la file"><button type="button" class="' + (D.scope === 'mine' ? 'on' : '') + '" aria-pressed="' + (D.scope === 'mine') + '" data-act="scope" data-k="mine">Mes fiches</button><button type="button" class="' + (D.scope === 'all' ? 'on' : '') + '" aria-pressed="' + (D.scope === 'all') + '" data-act="scope" data-k="all">Tout mon périmètre</button></div><div class="row sp"><b>38 fiches</b><span class="muted">6 rappels · 21 jamais appelées · 11 autres</span></div></div><div class="qlist" role="listbox" aria-label="File d’appels">';
+  Q.forEach(g => {
+    h += '<div class="qgrp"><span class="sdot ' + (g.k === 'rappels' ? 's5' : 's2') + '" aria-hidden="true"></span>' + g.t + '<span class="cnt">' + g.n + '</span></div>';
+    g.rows.forEach(id => {
+      const l = lead(id), sel = D.sel === id;
+      h += '<button type="button" class="qrow' + (sel ? ' sel' : '') + '" role="option" aria-selected="' + sel + '" data-act="qsel" data-id="' + id + '"><span class="n">' + esc(l.co) + '</span><span class="m">' + esc(qmeta(l, g.k)) + '</span><span class="r">' +
+        (S.marks[id] === 'repondeur' ? '<span class="mark-red"><i></i>Répondeur</span>' : '') + (l.tz ? (l.tz.ok ? '<span class="mono muted" style="font-size:11.5px">' + l.tz.local + ' sur place</span>' : '<span class="tag warn">Hors plage</span>') : '') + '</span></button>';
+    });
+    if(g.more) h += '<button type="button" class="more" style="margin:4px 6px;width:calc(100% - 12px)" data-act="toast" data-msg="La maquette n’affiche que les fiches nommées">+ ' + g.more + ' autres</button>';
+  });
+  if(D.scope === 'all') h += '<div class="qgrp"><span class="sdot s1" aria-hidden="true"></span>Fiches de l’équipe<span class="cnt">périmètre élargi</span></div><button type="button" class="qrow" role="option" aria-selected="false" data-act="qsel" data-id="durand"><span class="n">Cabinet Avocats Durand</span><span class="m">Fiche d’Anna Externe · reprise par Alex Closer</span><span class="r"></span></button>';
+  return h + '</div>';
+}
+function dockMainIdle(){
+  const D = S.dock, l = lead(D.sel), off = l.tz && !l.tz.ok, blocked = l.hold;
+  let h = '<div class="stack"><div><h3 class="h-sec" style="margin-bottom:8px">Mode d’appel</h3><div class="modes" role="radiogroup" aria-label="Mode d’appel">' + MODES.map(m => '<button type="button" class="mode' + (D.mode === m[0] ? ' on' : '') + '" role="radio" aria-checked="' + (D.mode === m[0]) + '" data-act="mode" data-k="' + m[0] + '"><b>' + m[1] + '</b><span>' + m[2] + '</span></button>').join('') + '</div></div>';
+  h += '<div class="panel" style="background:var(--card)"><div class="head"><div><h3>' + esc(l.co) + '</h3><div class="hint">' + esc(l.ct) + ' · <span class="mono">' + esc(l.tel) + '</span></div></div><div class="row">' + heatTag(l.heat) + (S.marks[l.id] === 'repondeur' ? '<span class="mark-red"><i></i>Répondeur détecté hier</span>' : '') + '</div></div>';
+  h += '<div class="kvs"><div class="kv"><span>Prochaine action</span><span>' + esc(l.next) + '</span></div><div class="kv"><span>Heure chez le prospect</span><span class="mono">' + (l.tz ? l.tz.local + ' · ' + l.tz.city : '10 h 42 · Paris') + '</span></div><div class="kv"><span>Plage d’appel</span><span>' + (off ? '<span class="tag warn">Hors plage : appel possible dès ' + l.tz.from + ', heure de Paris</span>' : '<span class="tag good">Dans la plage, 9 h 00 à 19 h 00</span>') + '</span></div></div>';
+  if(D.preview && D.preview.id === l.id) h += '<div class="banner-alert acc" style="margin-top:10px">' + ic('clock') + '<div><b>Aperçu : l’appel part dans <span class="countdown" data-count="preview">' + D.preview.left + ' s</span></b><div class="acts"><button type="button" class="btn sm primary" data-act="call-now">Appeler maintenant</button><button type="button" class="btn sm" data-act="preview-cancel">Annuler</button></div></div></div>';
+  else if(D.powerNext && D.powerNext.id === l.id) h += '<div class="banner-alert acc" style="margin-top:10px">' + ic('clock') + '<div><b>Power dialer : appel suivant dans <span class="countdown" data-count="power">' + D.powerNext.left + ' s</span></b><div class="acts"><button type="button" class="btn sm primary" data-act="call-now">Appeler maintenant</button><button type="button" class="btn sm" data-act="preview-cancel">Interrompre</button></div></div></div>';
+  else h += '<div class="row" style="margin-top:12px"><button type="button" class="btn primary" data-act="call-now"' + (off || blocked ? ' disabled aria-disabled="true"' : '') + '>' + ic('phone', 'sm') + (D.mode === 'power' ? 'Démarrer l’enchaînement' : 'Appeler') + '</button><button type="button" class="btn" data-act="open-lead" data-id="' + l.id + '">Ouvrir la fiche</button>' + (off ? '<span class="soft-t">Hors plage chez le prospect : le bouton se débloque à ' + l.tz.from + '.</span>' : '') + '</div>';
+  h += '</div><p class="hint">Plafond : trois tentatives par numéro et par jour. Les appels sont enregistrés et transcrits, avec une annonce au prospect.</p></div>';
+  return h;
+}
+function dockMainCall(){
+  const c = S.dock.call, l = lead(c.id);
+  let h = '<div class="stack"><div class="row sp"><div><h3 class="h-sec">' + esc(l.co) + '</h3><div class="hint">' + esc(l.ct) + ' · <span class="mono">' + esc(l.tel) + '</span>' + (l.tz ? ' · heure locale ' + l.tz.local : '') + '</div></div><div class="row"><span class="timer" data-timer>' + tfmt(c.t) + '</span>' + (c.opp ? '<span class="tag crit">' + ic('shield', 'sm') + 'Opposition signalée</span>' : '<span class="tag acc">' + ic('mic', 'sm') + 'Enregistrement en cours</span>') + '</div></div>' +
+    '<div class="callctl">' + callCtl() + '</div>';
+  if(c.keypad) h += '<div class="panel" style="padding:10px"><div class="row" style="gap:6px">' + '123456789*0#'.split('').map(k => '<button type="button" class="btn sm" style="width:44px" data-act="key" data-k="' + k + '" aria-label="Touche ' + k + '">' + k + '</button>').join('') + '</div><div class="mono muted" style="margin-top:6px" id="keys">Touches envoyées : ' + esc(c.keys || 'aucune') + '</div></div>';
+  h += '<div class="panel" style="background:var(--card)"><div class="head"><h3>Transcription en direct</h3>' + (c.opp ? '<span class="tag crit">Arrêtée</span>' : '<span class="tag good"><span class="live-dot pulse" style="background:var(--good);width:7px;height:7px"></span>En direct</span>') + '</div><div class="transcript" id="livetr" role="log" aria-live="polite" aria-label="Transcription en direct" style="max-height:180px">' + c.lines.map(liveLine).join('') + '</div></div></div>';
+  return h;
+}
+function liveLine(r){
+  if(r[0] === 'sys') return '<div class="banner-alert crit" style="padding:7px 10px">' + ic('shield', 'sm') + '<span>' + esc(r[1]) + '</span></div>';
+  return '<div class="tline"><span class="ts">' + r[2] + '</span><span class="sp ' + r[0] + '">' + (r[0] === 'rep' ? 'Commercial' : 'Prospect') + '</span><span class="tx">' + esc(r[1]) + '</span></div>';
+}
+function callCtl(){
+  const c = S.dock.call;
+  return '<button type="button" class="ctl" aria-pressed="' + !!c.muted + '" data-act="mute">' + ic(c.muted ? 'mute' : 'mic', 'sm') + 'Muet</button>' +
+    '<button type="button" class="ctl" aria-pressed="' + !!c.keypad + '" data-act="keypad">' + ic('keypad', 'sm') + 'Clavier</button>' +
+    '<label class="sr" for="micsel">Micro</label><select class="select" id="micsel" style="width:auto;padding:6px 10px" data-chg="mic"><option>Micro : casque USB</option><option>Micro : intégré</option></select>' +
+    '<button type="button" class="ctl opp" data-act="modal" data-k="opp"' + (c.opp ? ' disabled' : '') + '>' + ic('shield', 'sm') + 'Opposition du prospect</button>' +
+    '<button type="button" class="ctl hang" data-act="hangup">' + ic('phoneoff', 'sm') + 'Raccrocher</button>';
+}
+function dockMainWrap(){
+  const w = S.dock.wrap, l = lead(w.id);
+  let h = '<form class="stack" data-act-submit="result"><div class="row sp"><div><h3 class="h-sec">Résultat de l’appel</h3><div class="hint">' + esc(l.co) + ' · durée <span class="mono">' + tfmt(w.dur) + '</span></div></div>' + (w.opp ? '<span class="tag crit">' + ic('shield', 'sm') + 'Opposition signalée : analyse retenue</span>' : '') + (w.vm ? '<span class="mark-red"><i></i>Répondeur détecté : raccrochage automatique</span>' : '') + '</div>';
+  h += '<fieldset style="border:0;padding:0;margin:0"><legend class="lab hint" style="padding:0;margin-bottom:6px">Résultat présélectionné d’après l’appel, modifiable</legend><div class="outcomes">' + OUTCOMES.map(o => '<label><input type="radio" name="outcome" value="' + o[0] + '"' + (w.outcome === o[0] ? ' checked' : '') + ' data-chg="outcome"><span>' + o[1] + '</span></label>').join('') + '</div></fieldset>';
+  h += '<div class="grid2"><div class="field"><label for="wnote">Note pour la fiche</label><textarea class="textarea" id="wnote" placeholder="Ce qui a été dit, ce qu’il faut retenir">' + esc(w.note || '') + '</textarea></div><div class="field"><label for="wnext">Prochaine action</label><select class="select" id="wnext"><option>Rappeler en début de semaine prochaine</option><option>Envoyer un e-mail</option><option>Planifier un rendez-vous</option><option>Aucune action</option></select><div class="help">Reprise automatique dans la file : les rappels dus passent en tête.</div></div></div>';
+  h += '<div class="row"><button type="submit" class="btn primary">' + ic('check', 'sm') + 'Enregistrer le résultat</button><button type="button" class="btn ghost" data-act="open-lead" data-id="' + l.id + '">Ouvrir la fiche</button>' + (S.dock.mode === 'power' ? '<span class="soft-t">Power dialer : l’appel suivant part 5 secondes après l’enregistrement.</span>' : '') + '</div></form>';
+  return h;
+}
+function renderDock(open){
+  const D = S.dock, root = $('#dockroot'); if(!root) return;
+  const l = lead(D.sel); let bar = '';
+  if(D.call){
+    const c = D.call, cl = lead(c.id);
+    bar = '<div class="dock-ttl"><span class="live-dot pulse"></span>Appel en cours</div><div class="dock-st grow"><b>' + esc(cl.co) + '</b> · <span class="timer" data-timer>' + tfmt(c.t) + '</span> · ' + (c.opp ? 'opposition signalée' : 'enregistrement et transcription en direct') + '</div>' + (open ? '<button type="button" class="ctl hang" data-act="hangup">' + ic('phoneoff', 'sm') + 'Raccrocher</button>' : '<div class="callctl hide-m">' + callCtl() + '</div><button type="button" class="ctl hang show-m" data-act="hangup" aria-label="Raccrocher">' + ic('phoneoff', 'sm') + '</button>');
+  } else if(D.wrap){
+    bar = '<div class="dock-ttl">' + ic('phone') + 'Appel terminé</div><div class="dock-st grow">Résultat à saisir pour <b>' + esc(lead(D.wrap.id).co) + '</b></div>' + (open ? '' : '<a class="btn primary" href="#/appels/resultat">Saisir le résultat</a>');
+  } else {
+    bar = '<div class="dock-ttl">' + ic('phone') + 'Poste d’appel</div><div class="dock-st grow hide-m">' + (S.ext ? 'Vos fiches' : '38 fiches dans la file') + ' · prochain : <b>' + esc(l.co) + '</b></div>' +
+      '<div class="seg hide-m" role="group" aria-label="Mode d’appel">' + MODES.map(m => '<button type="button" class="' + (D.mode === m[0] ? 'on' : '') + '" aria-pressed="' + (D.mode === m[0]) + '" data-act="mode" data-k="' + m[0] + '">' + m[1] + '</button>').join('') + '</div>' +
+      '<button type="button" class="btn primary" data-act="call-quick">' + ic('phone', 'sm') + 'Appeler</button>';
+  }
+  bar += '<a class="btn ghost iconlink" href="' + (open ? '#/pipeline' : '#/appels') + '" aria-expanded="' + !!open + '" aria-label="' + (open ? 'Réduire le poste d’appel' : 'Ouvrir la file et le poste d’appel') + '">' + ic(open ? 'chevD' : 'chevU') + '<span class="hide-m">' + (open ? 'Réduire' : 'Ouvrir la file') + '</span></a>';
+  let panel = '';
+  if(open){
+    const mode = D.call ? 'call' : D.wrap ? 'wrap' : 'idle';
+    panel = '<div class="dock-panel' + (mode !== 'idle' ? ' callmode' : '') + '"><div class="dock-q">' + queueHTML() + '</div><div class="dock-main" id="dockmain">' + (mode === 'call' ? dockMainCall() : mode === 'wrap' ? dockMainWrap() : dockMainIdle()) + '</div></div>';
+  }
+  root.innerHTML = '<section class="dock" role="region" aria-label="Poste d’appel"><div class="dockbar">' + bar + '</div>' + panel + '</section>';
+  document.documentElement.style.setProperty('--dock-h', '56px');
+  const lt = $('#livetr'); if(lt) lt.scrollTop = lt.scrollHeight;
+}
+function blockedReason(l){
+  if(l.hold && S.hold !== 'lifted') return 'Retenue d’opposition : décidez d’abord dans la fiche.';
+  if(l.tz && !l.tz.ok) return 'Hors plage chez le prospect : il est ' + l.tz.local + ' à ' + l.tz.city + '. Appel possible dès ' + l.tz.from + ', heure de Paris.';
+  return '';
+}
+function startCall(id){
+  const l = lead(id), r = blockedReason(l);
+  if(r){ toast(r, 'alert'); return; }
+  S.dock.preview = null; S.dock.powerNext = null; S.dock.sel = id; S.dock.wrap = null;
+  S.dock.call = {id, t:0, lines:[], muted:false, keypad:false, opp:false, script:(id === 'osteo' ? LIVE_OSTEO : LIVE_GEN), idx:0, keys:''};
+  if(parse()[0] === 'appels'){ go('#/appels/en-cours'); renderDock(true); } else renderDock(false);
+  toast('Appel lancé vers ' + l.co, 'phone');
+}
+function endCall(vm){
+  const c = S.dock.call; if(!c) return;
+  S.dock.wrap = {id:c.id, dur:Math.max(c.t, vm ? 3 : 1), opp:c.opp, vm:!!vm, outcome:c.opp ? 'dnc' : vm ? 'repondeur' : 'rappel', note:c.id === 'osteo' ? 'Souhaite un rendez-vous à trois avec son associé, début de semaine prochaine.' : ''};
+  S.dock.call = null;
+  if(parse()[0] === 'appels'){ go('#/appels/resultat'); renderDock(true); } else renderDock(false);
+}
+setInterval(() => {
+  const D = S.dock;
+  if(D.call){
+    const c = D.call; c.t++;
+    if(c.id === 'vasseur' && c.t === 3){ endCall(true); toast('Répondeur détecté : appel raccroché', 'alert'); return; }
+    if(!c.opp && c.t % 2 === 0 && c.idx < c.script.length){
+      const s = c.script[c.idx++], line = [s[0], s[1], tfmt(c.t)]; c.lines.push(line);
+      const lt = $('#livetr'); if(lt){ lt.insertAdjacentHTML('beforeend', liveLine(line)); lt.scrollTop = lt.scrollHeight; }
+    }
+    $$('[data-timer]').forEach(e => e.textContent = tfmt(c.t));
+  }
+  if(D.preview){ D.preview.left--; if(D.preview.left <= 0){ const id = D.preview.id; D.preview = null; startCall(id); } else $$('[data-count="preview"]').forEach(e => e.textContent = D.preview.left + ' s'); }
+  if(D.powerNext){ D.powerNext.left--; if(D.powerNext.left <= 0){ const id = D.powerNext.id; D.powerNext = null; startCall(id); } else $$('[data-count="power"]').forEach(e => e.textContent = D.powerNext.left + ' s'); }
+}, 1000);
+
+/* ============ modales ============ */
+function modal(html){
+  $('#overlay').innerHTML = '<div class="veil" data-act="veil"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">' + html + '</div></div>';
+  const f = $('#overlay .modal input, #overlay .modal textarea, #overlay .modal select') || $('#overlay .modal .btn.primary, #overlay .modal .btn'); if(f) f.focus();
+}
+function closeModal(){ $('#overlay').innerHTML = ''; }
+const MODALS = {
+  create: () => '<h2 id="mt">Créer</h2><div class="stack" style="margin-top:10px"><button type="button" class="btn" style="justify-content:flex-start" data-act="modal" data-k="newlead">' + ic('target', 'sm') + 'Nouveau lead</button><button type="button" class="btn" style="justify-content:flex-start" data-act="close-modal" data-toast="Nouveau compte client : hors périmètre de la maquette">' + ic('users', 'sm') + 'Nouveau compte client</button><button type="button" class="btn" style="justify-content:flex-start" data-act="close-modal" data-toast="Nouvelle tâche : hors périmètre de la maquette">' + ic('check', 'sm') + 'Nouvelle tâche</button></div><div class="acts"><button type="button" class="btn" data-act="close-modal">Fermer</button></div>',
+  newlead: () => '<h2 id="mt">Nouveau lead</h2><form data-act-submit="close-modal" data-toast="Maquette : le lead n’est pas ajouté, pour garder les chiffres de la démonstration"><div class="grid2" style="margin-top:10px"><div class="field"><label for="nl1">Entreprise</label><input class="input" id="nl1" required></div><div class="field"><label for="nl2">Contact</label><input class="input" id="nl2"></div><div class="field"><label for="nl3">Téléphone</label><input class="input" id="nl3" inputmode="tel" placeholder="+33"></div><div class="field"><label for="nl4">Montant visé</label><input class="input" id="nl4" inputmode="numeric"></div><div class="field"><label for="nl5">Statut</label><select class="select" id="nl5">' + STAGES.map(s => '<option>' + s.label + '</option>').join('') + '</select></div><div class="field"><label for="nl6">Assigné à</label><select class="select" id="nl6"><option>Raphael</option><option>Alex Closer</option></select></div></div><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="submit" class="btn primary">Créer le lead</button></div></form>',
+  mail: () => '<h2 id="mt">Écrire à ' + esc(curLead().ct) + '</h2><form data-act-submit="close-modal" data-toast="E-mail envoyé et consigné sur la fiche"><div class="stack" style="margin-top:10px"><div class="field"><label for="m0">Modèle</label><select class="select" id="m0"><option>Aucun modèle</option><option>Trois exemples de sites d’artisans</option><option>Suite à notre échange</option></select></div><div class="field"><label for="m1">Objet</label><input class="input" id="m1" value="Suite à notre échange"></div><div class="field"><label for="m2">Message</label><textarea class="textarea" id="m2">Bonjour ' + esc(curLead().ct.split(' ')[0]) + ',\n\n</textarea></div></div><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="submit" class="btn primary">Envoyer</button></div></form>',
+  log: () => '<h2 id="mt">Consigner un échange</h2><form data-act-submit="close-modal" data-toast="Échange consigné sur la fiche"><div class="stack" style="margin-top:10px"><div class="outcomes" role="radiogroup" aria-label="Type d’échange">' + ['Appel','E-mail','Rendez-vous','Note'].map((t, i) => '<label><input type="radio" name="lt"' + (i === 0 ? ' checked' : '') + '><span>' + t + '</span></label>').join('') + '</div><div class="field"><label for="l1">Ce qui s’est dit</label><textarea class="textarea" id="l1"></textarea></div></div><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="submit" class="btn primary">Consigner</button></div></form>',
+  merge: () => '<h2 id="mt">Fusionner avec une autre fiche</h2><p class="soft-t" style="margin-top:6px">Les échanges, appels et séquences des deux fiches sont réunis. Aucune fiche n’est perdue : la fiche absorbée est archivée.</p><div class="field" style="margin-top:10px"><label for="mq">Chercher la fiche à absorber</label><input class="input" id="mq" type="search" data-act-input="mq" autocomplete="off"></div><div id="mres" class="stack" style="margin-top:10px"></div><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button></div>',
+  convert: () => '<h2 id="mt">Convertir en client</h2><p class="soft-t" style="margin-top:6px">Un compte client est créé à partir de la fiche ' + esc(curLead().co) + ' : contact, coordonnées et montant de ' + eur(curLead().amt) + ' sont repris.</p><label class="toggle" style="margin-top:12px"><input type="checkbox" checked><span class="sw"></span><span>Ouvrir aussi un projet pour ce compte</span></label><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="button" class="btn primary" data-act="close-modal" data-toast="Maquette : le compte client n’est pas créé, le pipeline garde ses chiffres">Créer le compte client</button></div>',
+  won: () => '<h2 id="mt">Marquer comme gagné ?</h2><p class="soft-t" style="margin-top:6px">Le lead sort du pipeline ouvert et rejoint les gagnés du mois.</p><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="button" class="btn primary" data-act="close-modal" data-toast="Maquette : la clôture n’est pas appliquée, le pipeline garde ses chiffres">Marquer gagné</button></div>',
+  lost: () => '<h2 id="mt">Marquer comme perdu</h2><div class="field" style="margin-top:10px"><label for="lr">Motif de perte</label><select class="select" id="lr"><option>Prix trop élevé</option><option>Choix d’un concurrent</option><option>Projet abandonné</option><option>Sans réponse</option></select></div><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="button" class="btn danger" data-act="close-modal" data-toast="Maquette : la clôture n’est pas appliquée, le pipeline garde ses chiffres">Marquer perdu</button></div>',
+  'hold-confirm': () => '<h2 id="mt">Confirmer l’opposition ?</h2><p class="soft-t" style="margin-top:6px">La fiche passe en « ne pas rappeler », le numéro rejoint la liste des numéros opposés, et l’audio, le transcript et l’analyse sont effacés. Cette décision ne se défait pas.</p><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="button" class="btn danger" data-act="hold" data-k="confirmed">Confirmer l’opposition</button></div>',
+  'hold-lift': () => '<h2 id="mt">Lever la retenue ?</h2><p class="soft-t" style="margin-top:6px">L’analyse redevient lisible et le prospect reste appelable. Choisissez cette option si l’analyse s’est trompée sur l’opposition.</p><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="button" class="btn primary" data-act="hold" data-k="lifted">Lever la retenue</button></div>',
+  reject: () => '<h2 id="mt">Rejeter l’analyse ?</h2><p class="soft-t" style="margin-top:6px">Rejeter toute l’analyse ? Rien ne sera écrit sur la fiche.</p><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="button" class="btn danger" data-act="reject">Oui, rejeter</button></div>',
+  handoff: () => '<h2 id="mt">Passer la main à Alex</h2><p class="soft-t" style="margin-top:6px">Alex Closer reprend le closing de ' + esc(curLead().co) + '. Vous gardez la fiche en lecture et l’historique complet.</p><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="button" class="btn primary" data-act="close-modal" data-toast="Fiche transmise à Alex Closer">Transmettre</button></div>',
+  anon: () => '<h2 id="mt">Anonymiser la fiche ?</h2><p class="soft-t" style="margin-top:6px">Les données personnelles sont effacées de façon définitive : nom, e-mail, téléphone, transcripts. Cette action ne se défait pas.</p><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="button" class="btn danger" data-act="close-modal" data-toast="Maquette : la fiche n’est pas anonymisée">Anonymiser</button></div>',
+  opp: () => '<h2 id="mt">Le prospect s’oppose à l’enregistrement ?</h2><p class="soft-t" style="margin-top:6px">L’enregistrement et la transcription s’arrêtent tout de suite. L’analyse de cet appel sera retenue jusqu’à votre décision, et le prospect ne sera pas rappelé d’ici là.</p><div class="acts"><button type="button" class="btn" data-act="close-modal">Continuer l’appel</button><button type="button" class="btn danger" data-act="opp-ok">Signaler l’opposition</button></div>',
+  goal: () => '<h2 id="mt">Objectif de chiffre d’affaires de novembre</h2><form data-act-submit="goal"><div class="field" style="margin-top:10px"><label for="gv">Montant visé, en euros</label><input class="input mono" id="gv" inputmode="numeric" required placeholder="Montant en euros"></div><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="submit" class="btn primary">Enregistrer l’objectif</button></div></form>',
+  'bulk-del': () => '<h2 id="mt">Supprimer ' + S.sel.size + ' fiche' + (S.sel.size > 1 ? 's' : '') + ' ?</h2><p class="soft-t" style="margin-top:6px">La suppression est définitive. Archiver suffit si vous voulez seulement les sortir du pipeline.</p><div class="acts"><button type="button" class="btn" data-act="close-modal">Annuler</button><button type="button" class="btn" data-act="bulk" data-k="archive">Archiver à la place</button><button type="button" class="btn danger" data-act="close-modal" data-toast="Maquette : rien n’est supprimé">Supprimer</button></div>'
+};
+
+/* ============ second niveau : configuration et référentiels ============ */
+function l2wrap(active, title, lede, content){
+  const nav = (id, href, icon, label) => '<a href="' + href + '"' + (active === id ? ' class="on" aria-current="page"' : '') + '>' + ic(icon, 'sm') + label + '</a>';
+  return '<main class="scene"><div class="row sp" style="margin-bottom:12px"><a class="back" href="' + (S.view === 'tableau' ? '#/pipeline/tableau' : '#/pipeline') + '">' + ic('chevL', 'sm') + 'Retour au pipeline</a><span class="l2tag">' + ic('sliders', 'sm') + 'Second niveau : hors de la scène de travail</span></div>' +
+    '<div class="l2"><nav class="l2nav" aria-label="Configuration et référentiels"><span class="grp">Configuration</span>' + nav('auto', '#/config/automatisations/regles', 'bolt', 'Automatisations') + nav('seq', '#/config/automatisations/sequences', 'mail', 'Séquences d’e-mails') + nav('set', '#/config/reglages/statuts', 'sliders', 'Réglages') +
+    '<span class="grp">Référentiels</span>' + nav('comptes', '#/ref/comptes', 'users', 'Comptes clients') + nav('partenaires', '#/ref/partenaires', 'link', 'Partenaires') + '<span class="grp">Repères</span>' + nav('plan', '#/plan', 'list', 'Plan du CRM') + '</nav>' +
+    '<section class="stack" style="min-width:0"><div><h1 class="h-page">' + title + '</h1><p class="lede soft-t" style="margin-top:6px">' + lede + '</p></div>' + content + '</section></div></main>';
+}
+function configPage(a, b){
+  if(a === 'reglages') return l2wrap('set', 'Réglages du CRM', 'Statuts, qualification, téléphonie et analyse par IA. Les changements s’enregistrent au fur et à mesure.', settingsHTML(b || 'statuts'));
+  const tab = b || 'regles', tabs = [['regles','Règles'],['modeles','Modèles'],['journal','Journal des exécutions'],['sequences','Séquences']];
+  let c = '<div class="tabs" role="tablist" aria-label="Automatisations">' + tabs.map(t => '<a role="tab" href="#/config/automatisations/' + t[0] + '" aria-selected="' + (t[0] === tab) + '" class="' + (t[0] === tab ? 'on' : '') + '">' + t[1] + '</a>').join('') + '</div>';
+  c += tab === 'regles' ? rulesHTML() : tab === 'modeles' ? modelsHTML() : tab === 'journal' ? journalHTML() : seqsHTML();
+  return l2wrap(tab === 'sequences' ? 'seq' : 'auto', tab === 'sequences' ? 'Séquences d’e-mails' : 'Automatisations', tab === 'sequences' ? 'Des e-mails envoyés les jours ouvrés à l’heure de Paris, avec un lien de désinscription ajouté automatiquement.' : 'Des règles qui agissent à votre place quand un lead change, reste inactif ou s’échauffe.', c);
+}
+const RULES = [
+  {id:'r1', n:'Relancer les leads inactifs', trig:'Lead inactif', cond:'statut Contacté, 7 jours sans activité', act:'Créer une tâche « Relancer {contact} » à J+1', st:'ACTIVE'},
+  {id:'r2', n:'Alerter sur un lead chaud', trig:'Score franchit un seuil', cond:'score ≥ 65', act:'Notifier le commercial', st:'ACTIVE'},
+  {id:'r3', n:'Passer la main après la démo', trig:'Changement de statut', cond:'vers Démo', act:'Notifier Alex Closer', st:'DRAFT', agent:true},
+  {id:'r4', n:'Accueillir un nouveau lead', trig:'Lead créé', cond:'toutes sources', act:'Créer une tâche et envoyer un e-mail', st:'ACTIVE'}
+];
+const SIM = {r1:['Garage Lambert & Fils','Imprimerie Vasseur'], r2:['Menuiserie Dubreuil','Expert-comptable Morel'], r3:['Agence Immo Rive Gauche'], r4:['Fleuriste Pétale']};
+function rulesHTML(){
+  return '<div class="row sp"><p class="soft-t">4 règles dont 3 actives. Une règle créée par un agent reste en brouillon : seul un administrateur du CRM l’active.</p><button type="button" class="btn primary" data-act="toast" data-msg="Éditeur de règle : déclencheur, conditions, actions">' + ic('plus', 'sm') + 'Nouvelle règle</button></div>' +
+    '<div class="stack">' + RULES.map(r => {
+      const on = r.st === 'DRAFT' ? false : S.rules[r.id];
+      return '<div class="panel"><div class="head"><div><h3>' + r.n + '</h3><div class="row" style="margin-top:4px;gap:6px"><span class="tag ' + (r.st === 'DRAFT' ? '' : on ? 'good' : 'warn') + '">' + (r.st === 'DRAFT' ? 'Brouillon' : on ? 'Active' : 'En pause') + '</span>' + (r.agent ? '<span class="tag acc">Créée par un agent</span>' : '') + '</div></div><div class="row"><button type="button" class="btn sm" data-act="sim" data-k="' + r.id + '">Simuler</button><button type="button" class="btn sm ghost" data-act="toast" data-msg="Modifier la règle">Modifier</button>' +
+      '<label class="toggle"><input type="checkbox" data-chg="rule" data-k="' + r.id + '"' + (on ? ' checked' : '') + (r.st === 'DRAFT' ? ' disabled' : '') + '><span class="sw"></span><span class="sr">Activer la règle ' + r.n + '</span></label></div></div>' +
+      '<div class="kvs"><div class="kv"><span>Quand</span><span>' + r.trig + '</span></div><div class="kv"><span>Si</span><span>' + r.cond + '</span></div><div class="kv"><span>Alors</span><span>' + r.act + '</span></div></div></div>';
+    }).join('') + '</div>';
+}
+function modelsHTML(){
+  const m = [['Relance après silence','Crée une tâche quand un lead contacté ne répond plus.','bolt'],['Alerte lead chaud','Prévient le commercial quand la chaleur dépasse le seuil.','alert'],['Accueil d’un nouveau lead','Tâche et e-mail de premier contact à la création.','mail'],['Passage au closer','Notifie le closer quand une démo est faite.','flag']];
+  return '<div class="grid2">' + m.map(x => '<div class="panel"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:12px"><span class="act-ic">' + ic(x[2], 'sm') + '</span><div style="flex:1"><h3>' + x[0] + '</h3><p class="soft-t" style="margin:4px 0 10px">' + x[1] + '</p><button type="button" class="btn sm soft" data-act="toast" data-msg="Modèle copié en brouillon : à relire avant activation">Utiliser ce modèle</button></div></div></div>').join('') + '</div>';
+}
+function journalHTML(){
+  const rows = [['Aujourd’hui, 10 h 09','Alerter sur un lead chaud','Menuiserie Dubreuil','Succès','good'],['Aujourd’hui, 08 h 00','Relancer les leads inactifs','Garage Lambert & Fils','Succès','good'],['Aujourd’hui, 08 h 00','Relancer les leads inactifs','Imprimerie Vasseur','Ignorée','' ],['Hier, 17 h 25','Alerter sur un lead chaud','Expert-comptable Morel','Succès','good'],['Hier, 16 h 10','Passer la main après la démo','Agence Immo Rive Gauche','Simulation','acc'],['Mercredi 11 novembre','Accueillir un nouveau lead','Fleuriste Pétale','Erreur : adresse e-mail absente','crit']];
+  return '<div class="panel" style="padding:0"><div class="tablewrap" style="border:0"><table class="tbl" style="min-width:680px"><caption class="sr">Journal des exécutions</caption><thead><tr><th scope="col">Quand</th><th scope="col">Règle</th><th scope="col">Lead</th><th scope="col">Résultat</th></tr></thead><tbody>' + rows.map(r => '<tr><td class="mono">' + r[0] + '</td><td>' + r[1] + '</td><td><button type="button" class="linkcell" data-act="open-lead-name" data-n="' + esc(r[2]) + '">' + r[2] + '</button></td><td><span class="tag ' + r[4] + '">' + r[3] + '</span></td></tr>').join('') + '</tbody></table></div></div>';
+}
+function seqsHTML(){
+  const sq = [{id:'s1', n:'Artisans – avant rendez-vous', st:'Active', steps:[['J+0','E-mail','Trois exemples de sites d’artisans'],['J+2','E-mail','Votre rendez-vous : ce que nous allons voir'],['J+4','Tâche','Appeler pour confirmer']], stats:[['Inscrits',12],['En cours',7],['Terminés',3],['Arrêtés',2]]},{id:'s2', n:'Relance après proposition', st:'En pause', steps:[['J+0','E-mail','Votre proposition en un coup d’œil'],['J+3','E-mail','Une question sur la proposition ?']], stats:[]}];
+  return '<div class="row sp"><p class="soft-t">Une séquence s’arrête seule si le contact répond, change de statut ou se désinscrit.</p><button type="button" class="btn primary" data-act="toast" data-msg="Éditeur de séquence : étapes, délais, conditions d’arrêt">' + ic('plus', 'sm') + 'Nouvelle séquence</button></div><div class="stack">' + sq.map(s => '<div class="panel"><div class="head"><div><h3>' + s.n + '</h3><div class="row" style="gap:6px;margin-top:4px"><span class="tag ' + (S.seq[s.id] ? 'good' : 'warn') + '">' + (S.seq[s.id] ? 'Active' : 'En pause') + '</span><span class="muted">' + s.steps.length + ' étapes · toutes les entités</span></div></div><label class="toggle"><input type="checkbox" data-chg="seq" data-k="' + s.id + '"' + (S.seq[s.id] ? ' checked' : '') + '><span class="sw"></span><span class="sr">Activer la séquence ' + s.n + '</span></label></div>' +
+    '<div class="grid2"><div>' + s.steps.map((x, i) => '<div class="act-row" style="grid-template-columns:auto minmax(0,1fr)"><span class="mono tag" style="height:fit-content">' + x[0] + '</span><div><b>' + x[2] + '</b><div class="muted">' + x[1] + '</div></div></div>').join('') + '</div>' +
+    (s.stats.length ? '<div class="kvs">' + s.stats.map(x => '<div class="kv"><span>' + x[0] + '</span><span class="mono">' + x[1] + '</span></div>').join('') + '</div>' : '<div class="muted">Aucune inscription pour le moment.</div>') + '</div></div>').join('') + '</div>';
+}
+
+/* réglages */
+const SECT = [
+  ['Pipeline', [['statuts','Statuts et probabilités'],['qualification','Qualification'],['score','Score'],['assignation','Assignation'],['doublons','Doublons']]],
+  ['Alertes', [['alertes','Alertes'],['escalade','Escalade'],['notifications','Notifications'],['rapports','Rapport hebdomadaire']]],
+  ['Appels et IA', [['appels','Appels'],['telephonie','Téléphonie'],['enregistrement','Enregistrement'],['transcription','Transcription'],['analyse','Analyse et chaleur'],['scripts','Rapport de scripts']]],
+  ['Données', [['conservation','Conservation'],['opposes','Numéros opposés']]]
+];
+function row(l, h, ctl){ return '<div class="setrow"><div class="l"><b>' + l + '</b>' + (h ? '<span>' + h + '</span>' : '') + '</div><div>' + ctl + '</div></div>'; }
+let UID = 0;
+const tg = (on, label) => { const i = 'tg' + (++UID); return '<label class="toggle" for="' + i + '"><input type="checkbox" id="' + i + '" data-chg="set"' + (on ? ' checked' : '') + '><span class="sw"></span><span class="sr">' + label + '</span></label>'; };
+const nm = (v, u, label) => { const i = 'nm' + (++UID); return '<div class="row" style="flex-wrap:nowrap;gap:8px"><label class="sr" for="' + i + '">' + label + '</label><input class="input mono" id="' + i + '" style="max-width:110px" inputmode="numeric" value="' + v + '" data-chg="set">' + (u ? '<span class="muted">' + u + '</span>' : '') + '</div>'; };
+const sl = (o, v, label) => { const i = 'sl' + (++UID); return '<label class="sr" for="' + i + '">' + label + '</label><select class="select" id="' + i + '" data-chg="set">' + o.map(x => '<option' + (x === v ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>'; };
+function settingsHTML(id){
+  UID = 0;
+  const all = SECT.flatMap(g => g[1]), cur = all.find(x => x[0] === id) || all[0];
+  const nav = '<nav class="l2nav" style="position:static" aria-label="Sections des réglages">' + SECT.map(g => '<span class="grp">' + g[0] + '</span>' + g[1].map(x => '<a href="#/config/reglages/' + x[0] + '"' + (x[0] === cur[0] ? ' class="on" aria-current="page"' : '') + '>' + x[1] + '</a>').join('')).join('') + '</nav>';
+  return '<div class="grid" style="display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:16px" id="setgrid">' + nav + '<div class="panel" style="padding:6px 16px 8px;min-width:0"><div class="head" style="padding-top:12px"><h2>' + cur[1] + '</h2><span class="hint" id="savedat">Enregistré automatiquement</span></div>' + sectionBody(cur[0]) + '</div></div>';
+}
+function sectionBody(id){
+  switch(id){
+    case 'statuts': return '<p class="soft-t" style="margin-bottom:6px">La probabilité sert à calculer le montant pondéré du bandeau de pilotage.</p>' + STAGES.map(s => row('<span class="row" style="gap:8px;flex-wrap:nowrap"><span class="sdot ' + s.cls + '"></span>' + s.label + '</span>', '', nm(s.p, '%', 'Probabilité du statut ' + s.label).replace('data-chg="set"', 'data-chg="prob" data-k="' + s.id + '"'))).join('') + row('Gagné', 'Statut terminal', '<span class="mono muted">' + pct(100) + '</span>') + row('Perdu', 'Statut terminal, motif de perte demandé', '<span class="mono muted">' + pct(0) + '</span>');
+    case 'qualification': return ['Besoin','Échéance','Décideur','Objections','Concurrents cités'].map(x => row(x, 'Champ de qualification suivi sur la fiche', tg(true, x))).join('');
+    case 'score': return row('Scoring automatique', 'Calcule un score à partir des échanges et de l’analyse des appels', tg(true, 'Scoring automatique')) + row('Seuil « chaud »', 'Un lead à ce score ou au-dessus est chaud', nm(65, 'points', 'Seuil chaud')) + row('Seuil « tiède »', 'Au-dessous, le lead est froid', nm(40, 'points', 'Seuil tiède'));
+    case 'assignation': return row('Mode d’assignation', 'Qui reçoit un nouveau lead', sl(['À tour de rôle','Au propriétaire de la source','Manuel'], 'À tour de rôle', 'Mode d’assignation')) + row('Raphael', 'Reçoit des leads', tg(true, 'Raphael')) + row('Alex Closer', 'Reçoit des leads au passage de main', tg(true, 'Alex Closer')) + row('Commerciaux externes', 'Ne voient et ne reçoivent que leurs propres fiches', '<span class="tag acc">Cloisonné</span>');
+    case 'doublons': return row('Détection de doublons', 'Compare à la création et à l’import', tg(true, 'Détection de doublons')) + row('Comparer le téléphone', '', tg(true, 'Comparer le téléphone')) + row('Comparer l’e-mail', '', tg(true, 'Comparer l’e-mail')) + row('Comparer le nom de l’entreprise', '', tg(true, 'Comparer le nom')) + row('Proposer la fusion', 'Une bannière propose de fusionner dans la fiche', tg(true, 'Proposer la fusion'));
+    case 'alertes': return row('Relances en retard', 'Prévenir le commercial', tg(true, 'Relances en retard')) + row('Lead sans action prévue', 'Prévenir après ce délai', nm(5, 'jours', 'Délai sans action')) + row('Pipeline qui stagne', 'Alerte quand un statut ne bouge plus', tg(true, 'Pipeline qui stagne'));
+    case 'escalade': return row('Escalader au responsable', 'Quand une relance reste sans suite', tg(true, 'Escalader au responsable')) + row('Délai avant escalade', '', nm(3, 'jours de retard', 'Délai avant escalade')) + row('Responsable', '', sl(['Raphael','Alex Closer'], 'Raphael', 'Responsable'));
+    case 'notifications': return ['Récapitulatif quotidien par e-mail','Analyse d’appel à valider','Retenue d’opposition à décider','Lead transmis au closer'].map(x => row(x, '', tg(true, x))).join('');
+    case 'rapports': return row('Rapport hebdomadaire du CRM', 'Résumé du pipeline envoyé chaque semaine', tg(true, 'Rapport hebdomadaire')) + row('Jour d’envoi', '', sl(['Lundi','Vendredi'], 'Lundi', 'Jour d’envoi')) + row('Destinataires', '', '<span class="tag">Raphael</span> <span class="tag">Alex Closer</span>');
+    case 'appels': return row('Résultats qui comptent comme « joint »', 'Rendez-vous pris, joint à rappeler, pas intéressé', tg(true, 'Résultats joints')) + row('Prospects à joindre pour la conversion', 'Objectif de conversion sur joints', nm(40, '%', 'Objectif de conversion')) + '<div class="head" style="margin:14px 0 0"><h3>Composition enchaînée</h3></div>' + row('Aperçu : appel automatique après', '0 pour un appel seulement au clic. De 0 à 120.', nm(8, 'secondes', 'Délai de l’aperçu')) + row('Power dialer : délai avant l’appel suivant', 'Compté après la saisie du résultat. De 0 à 60.', nm(5, 'secondes', 'Délai du power dialer')) + row('Détecter les messageries et raccrocher aussitôt', 'Une marque rouge signale le répondeur sur la fiche', tg(true, 'Détecter les messageries')) + '<div class="head" style="margin:14px 0 4px"><h3>Script d’appel</h3></div><div class="field" style="padding-bottom:12px"><label for="scr">Trame affichée pendant l’appel</label><textarea class="textarea" id="scr" data-chg="set">Présentation, contexte de la demande, besoin, budget, échéance, décideur, proposition de rendez-vous.</textarea></div>';
+    case 'telephonie': return '<div class="row" style="padding:10px 0"><span class="tag good">' + ic('check', 'sm') + 'Téléphonie configurée sur ce serveur</span></div>' +
+      row('Jours d’appel', '', '<div class="row" role="group" aria-label="Jours d’appel" style="gap:6px">' + ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map((d, i) => '<button type="button" class="pill' + (i < 5 ? ' on' : '') + '" style="padding:3px 9px" aria-pressed="' + (i < 5) + '" data-act="toast" data-msg="Jour d’appel modifié">' + d + '</button>').join('') + '</div>') +
+      row('Plage d’appel', 'Ces heures s’entendent dans le fuseau du prospect, déduit de son numéro. Fuseau inconnu : l’appel est refusé.', '<div class="row" style="flex-wrap:nowrap"><label class="sr" for="h1">Début</label><input class="input mono" id="h1" value="09:00" style="max-width:90px" data-chg="set"><span class="muted">à</span><label class="sr" for="h2">Fin</label><input class="input mono" id="h2" value="19:00" style="max-width:90px" data-chg="set"></div>') +
+      row('Tentatives par numéro et par jour', 'Plafond au-delà duquel le numéro est refusé', nm(3, '', 'Tentatives par jour')) + row('Tentatives sur la période', 'Par numéro, tous commerciaux confondus. Plafond atteint sans avoir jamais joint personne : la fiche passe « non joignable ».', '<div class="row" style="flex-wrap:nowrap"><label class="sr" for="w1">Période en jours</label><input class="input mono" id="w1" value="7" style="max-width:70px" data-chg="set"><span class="muted">jours,</span><label class="sr" for="w2">Tentatives au plus</label><input class="input mono" id="w2" value="6" style="max-width:70px" data-chg="set"><span class="muted">au plus</span></div>') +
+      '<div class="head" style="margin:14px 0 4px"><h3>Pays appelables</h3></div><p class="hint" style="margin-bottom:6px">Royaume-Uni, Canada et États-Unis restent fermés tant que leurs règles ne sont pas validées par un avocat.</p><div class="tablewrap" style="border:0"><table class="tbl" style="min-width:520px"><thead><tr><th scope="col">Pays</th><th scope="col">Autorisé</th><th scope="col">Numéro par défaut</th></tr></thead><tbody>' +
+      [['France, outre-mer compris','Union européenne',true,true],['Belgique','Union européenne',true,true],['Luxembourg','Union européenne',true,true],['Suisse','Hors Union européenne',true,false],['Royaume-Uni','Hors Union européenne',false,false],['Canada','Hors Union européenne',false,false],['États-Unis','Hors Union européenne',false,false]].map((c, i) => '<tr><td>' + c[0] + '<div class="muted" style="font-size:11.5px">' + c[1] + '</div></td><td><label class="toggle"><input type="checkbox" data-chg="set"' + (c[2] ? ' checked' : '') + '><span class="sw"></span><span class="sr">Autoriser ' + c[0] + '</span></label></td><td><input class="chk" type="checkbox" aria-label="Présenter le numéro par défaut pour ' + c[0] + '" data-chg="set"' + (c[3] ? ' checked' : '') + '></td></tr>').join('') + '</tbody></table></div>' +
+      '<p class="soft-t" style="padding:10px 0">En résumé : appels du lundi au vendredi, de 9 h 00 à 19 h 00 heure du prospect, trois par numéro et par jour, six sur sept jours.</p>';
+    case 'enregistrement': return row('Enregistrer les appels', 'Désactivé : aucun appel n’est enregistré, donc ni transcript ni analyse.', tg(true, 'Enregistrer les appels')) + row('Annoncer l’enregistrement', 'Un message automatique prévient la personne appelée en début d’appel.', tg(true, 'Annoncer l’enregistrement')) + '<div class="field" style="padding:12px 0"><label for="ann">Texte de l’annonce</label><textarea class="textarea" id="ann" data-chg="set">Cet appel peut être enregistré pour améliorer notre accompagnement. Dites-le-nous si vous vous y opposez.</textarea><div class="help"><span class="mono">104 / 300</span> caractères · <button type="button" class="btn sm ghost" data-act="toast" data-msg="Texte par défaut rétabli">Rétablir le texte par défaut</button></div></div>' + row('Conservation de l’audio', 'Zéro : l’audio est supprimé dès que le transcript est obtenu. De 0 à 180.', nm(30, 'jours', 'Conservation de l’audio'));
+    case 'transcription': return '<div class="row" style="padding:10px 0"><span class="tag good">' + ic('check', 'sm') + 'Prestataire de transcription prêt</span></div>' + row('Transcrire les appels enregistrés', 'Désactivé : l’audio n’est pas envoyé au prestataire et l’analyse n’a rien à lire.', tg(true, 'Transcrire les appels')) + row('Langue des appels', '', sl(['Français','Anglais','Néerlandais'], 'Français', 'Langue des appels')) + row('Conservation des transcripts', 'Passé ce délai, le transcript est supprimé. De 1 à 36.', nm(12, 'mois', 'Conservation des transcripts')) + row('Transcription en direct pendant l’appel', 'Affichée dans le poste d’appel, arrêtée dès qu’un prospect s’oppose.', tg(true, 'Transcription en direct'));
+    case 'analyse': return '<div class="row" style="padding:10px 0"><span class="tag good">' + ic('check', 'sm') + 'Service d’analyse prêt</span></div>' + row('Analyser les appels transcrits', 'Désactivé : les transcripts restent lisibles, mais aucune proposition n’est générée.', tg(true, 'Analyser les appels')) + row('Conservation des analyses', 'De 1 à 12.', nm(6, 'mois', 'Conservation des analyses')) +
+      '<div class="head" style="margin:14px 0 4px"><h3>Chaleur du prospect : grille d’évaluation</h3></div><div class="tablewrap" style="border:0"><table class="tbl" style="min-width:520px"><thead><tr><th scope="col">Critère</th><th scope="col" class="r">Points maximum</th></tr></thead><tbody>' + HEAT.map(h => '<tr><td>' + h[0] + '</td><td class="r mono">' + h[2] + '</td></tr>').join('') + '<tr><td><b>Total</b></td><td class="r mono"><b>100</b></td></tr></tbody></table></div><div class="row" style="padding:12px 0"><button type="button" class="btn sm" data-act="toast" data-msg="Critère ajouté à la grille">' + ic('plus', 'sm') + 'Ajouter un critère</button></div>' +
+      row('Seuil « tiède »', 'Score à partir duquel un prospect est tiède', nm(40, 'points', 'Seuil tiède')) + row('Seuil « chaud »', 'Score à partir duquel un prospect est chaud', nm(65, 'points', 'Seuil chaud'));
+    case 'scripts': return row('Rapport hebdomadaire des scripts', 'Analyse par IA des appels transcrits de la semaine écoulée, pour chaque auteur.', tg(true, 'Rapport des scripts')) + row('Jour de préparation', '', sl(['Lundi','Mardi'], 'Lundi', 'Jour de préparation')) + row('Objectif de conversion', 'Rendez-vous obtenus sur prospects joints', nm(40, '%', 'Objectif de conversion du rapport')) + row('Appels des commerciaux externes', 'Exclus du rapport', '<span class="tag">Exclus</span>');
+    case 'conservation': return row('Fiches inactives', 'Durée avant anonymisation proposée', nm(24, 'mois', 'Durée de conservation des fiches')) + row('Anonymisation automatique', 'Sinon, une demande de validation apparaît dans À traiter', tg(false, 'Anonymisation automatique')) + row('Historique des échanges', 'Conservé avec la fiche', '<span class="tag good">Aligné sur la fiche</span>');
+    case 'opposes': {
+      const rows = [['+33 6 12 34 99 01','Opposition pendant un appel','Opposition confirmée'],['+33 1 45 00 99 02','Demande reçue par e-mail','Ajout manuel'],['+32 470 99 99 03','Opposition pendant un appel','Opposition confirmée']];
+      if(S.hold === 'confirmed') rows.unshift(['+33 6 12 34 04 04','Studio Pilates Batignolles','Opposition confirmée aujourd’hui']);
+      return '<p class="soft-t" style="margin-bottom:8px">Ces numéros ne sont jamais composés, quel que soit le commercial. L’appel est refusé à l’avance.</p><div class="row" style="margin-bottom:10px"><div class="seg" role="group" aria-label="Type de liste"><button type="button" class="on" aria-pressed="true">Numéros</button><button type="button" aria-pressed="false" data-act="toast" data-msg="Liste des e-mails supprimés">E-mails</button></div><label class="searchbox" style="flex:1"><span class="sr">Rechercher un numéro</span>' + ic('search', 'sm') + '<input type="search" placeholder="Rechercher un numéro"></label></div><div class="tablewrap" style="border:0"><table class="tbl" style="min-width:560px"><thead><tr><th scope="col">Numéro</th><th scope="col">Origine</th><th scope="col">Motif</th><th scope="col"><span class="sr">Action</span></th></tr></thead><tbody>' + rows.map(r => '<tr><td class="mono">' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td class="r"><button type="button" class="btn sm ghost" aria-label="Retirer le numéro ' + r[0] + '" data-act="toast" data-msg="Maquette : le numéro n’est pas retiré">Retirer</button></td></tr>').join('') + '</tbody></table></div><div class="row" style="padding:12px 0"><label class="sr" for="addnum">Numéro à ajouter</label><input class="input mono" id="addnum" style="max-width:220px" inputmode="tel" placeholder="+33"><button type="button" class="btn soft" data-act="toast" data-msg="Maquette : le numéro n’est pas ajouté">Ajouter à la liste</button></div>';
+    }
+  }
+  return '';
+}
+
+/* référentiels */
+function refPage(k){
+  if(k === 'partenaires') return l2wrap('partenaires', 'Partenaires', 'Les commerciaux externes : leurs listes d’appel, les passages au closer et leur commission de 10 % sur l’encaissé.',
+    '<div class="grid3"><div class="panel"><div class="hint">Fiches ouvertes</div><div class="h-sec num">14</div></div><div class="panel"><div class="hint">Encaissé en novembre</div><div class="h-sec num">' + eur(9000) + '</div></div><div class="panel"><div class="hint">Commissions de 10 % à régler</div><div class="h-sec num">' + eur(900) + '</div></div></div>' +
+    '<div class="panel" style="padding:0"><div class="row sp" style="padding:12px 16px"><h3>Commerciaux externes</h3><div class="row"><button type="button" class="btn sm" data-act="ext-on">' + ic('user', 'sm') + 'Voir l’espace d’Anna</button><button type="button" class="btn sm soft" data-act="toast" data-msg="Invitation envoyée par e-mail">' + ic('plus', 'sm') + 'Inviter un partenaire</button></div></div><div class="tablewrap" style="border:0"><table class="tbl" style="min-width:760px"><caption class="sr">Commerciaux externes</caption><thead><tr><th scope="col">Partenaire</th><th scope="col">Liste d’appel</th><th scope="col" class="r">Fiches ouvertes</th><th scope="col" class="r">Passages au closer</th><th scope="col" class="r">Encaissé</th><th scope="col" class="r">Commission 10 %</th></tr></thead><tbody>' +
+    '<tr><td><span class="row" style="gap:8px;flex-wrap:nowrap"><span class="avatar alt">A</span>Anna Externe</span></td><td>Cabinets et professions libérales</td><td class="r mono">8</td><td class="r mono">1</td><td class="r mono">' + eur(5000) + '</td><td class="r mono">' + eur(500) + '</td></tr>' +
+    '<tr><td><span class="row" style="gap:8px;flex-wrap:nowrap"><span class="avatar alt">B</span>Bruno Externe</span></td><td>Commerces de proximité</td><td class="r mono">6</td><td class="r mono">0</td><td class="r mono">' + eur(4000) + '</td><td class="r mono">' + eur(400) + '</td></tr>' +
+    '<tr><td><b>Total</b></td><td></td><td class="r mono"><b>14</b></td><td class="r mono"><b>1</b></td><td class="r mono"><b>' + eur(9000) + '</b></td><td class="r mono"><b>' + eur(900) + '</b></td></tr></tbody></table></div></div>' +
+    '<div class="grid2"><div class="panel"><div class="head"><h3>Passage au closer</h3></div><div class="act-row" style="grid-template-columns:auto minmax(0,1fr)"><span class="act-ic">' + ic('flag', 'sm') + '</span><div><b>Cabinet Avocats Durand</b><div class="muted">Fiche d’Anna Externe, ' + eur(12000) + ', transmise à Alex Closer</div></div></div><p class="soft-t" style="margin-top:8px">Le partenaire garde sa commission quand le closer signe.</p></div>' +
+    '<div class="panel"><div class="head"><h3>Commissions de novembre</h3><span class="tag warn">À régler</span></div><p class="soft-t">Calculées à 10 % de l’encaissé, jamais du signé. Elles se règlent depuis la comptabilité.</p><button type="button" class="btn sm" style="margin-top:10px" data-act="toast" data-msg="Relevé de commissions exporté">' + ic('download', 'sm') + 'Exporter le relevé</button></div></div>');
+  return l2wrap('comptes', 'Comptes clients', 'Les entreprises devenues clientes. Un lead gagné y arrive par « Convertir en client » depuis sa fiche.',
+    '<div class="filters"><button type="button" class="pill on" aria-pressed="true">Signés en novembre <span class="cnt">4</span></button><button type="button" class="pill" data-act="toast" data-msg="Tous les comptes : hors périmètre de la maquette">Tous les comptes</button><button type="button" class="pill" data-act="toast" data-msg="Comptes avec facture en attente">Facture en attente</button></div>' +
+    '<div class="panel" style="padding:0"><div class="tablewrap" style="border:0"><table class="tbl" style="min-width:760px"><caption class="sr">Comptes signés en novembre</caption><thead><tr><th scope="col">Compte</th><th scope="col">Origine</th><th scope="col">Signé le</th><th scope="col" class="r">Montant signé</th><th scope="col" class="r">Encaissé</th></tr></thead><tbody>' +
+    [['Cabinet Dentaire Saint-Antoine','Raphael','3 nov.',12000,6000],['Librairie Le Marque-Page','Anna Externe','5 nov.',9500,5000],['Électricité Garnier','Raphael','9 nov.',6000,6000],['Cave Montmartre','Bruno Externe','12 nov.',4000,4000]].map(r => '<tr><td><button type="button" class="linkcell" data-act="toast" data-msg="Fiche du compte client : projets, devis, factures">' + r[0] + '</button></td><td>' + r[1] + '</td><td class="mono">' + r[2] + '</td><td class="r mono">' + eur(r[3]) + '</td><td class="r mono">' + eur(r[4]) + '</td></tr>').join('') +
+    '<tr><td><b>Total des 4 comptes</b></td><td></td><td></td><td class="r mono"><b>' + eur(31500) + '</b></td><td class="r mono"><b>' + eur(21000) + '</b></td></tr></tbody></table></div></div>');
+}
+
+/* ============ plan du CRM ============ */
+function planPage(){
+  const R = [
+    ['Onglet « À traiter » : en retard, aujourd’hui, cette semaine, à ne pas laisser filer ; contacté, note, reporter, appeler', 'Filtre « À traiter » du pipeline, groupes et boutons identiques', '#/pipeline/a-traiter', 'Scène'],
+    ['À traiter : analyses d’appel à valider', 'Même filtre, groupe « Analyses d’appel » ; badge sur la carte', '#/pipeline/a-traiter', 'Scène'],
+    ['À traiter : retenues d’opposition à décider', 'Même groupe ; la fiche retenue s’ouvre dans le tiroir', '#/lead/pilates', 'Scène'],
+    ['Onglet « Appels » : poste d’appel, file, modes Au clic / Aperçu / Power dialer', 'Dock d’appel en bas de chaque écran, panneau « file »', '#/appels', 'Scène'],
+    ['Barre d’appel : raccrocher, muet, clavier, micro, opposition ; transcription en direct', 'Dock, appel en cours', '#/appels/en-cours', 'Scène'],
+    ['Résultat présélectionné, marque rouge répondeur, pays et heure locale, « hors plage »', 'Dock (saisie du résultat, file) et fiche du lead concerné', '#/appels/resultat', 'Scène'],
+    ['Onglet « Leads » : tableau enrichi, colonnes, filtres, vues, édition en ligne, actions groupées, export CSV', 'Pipeline, bascule « Tableau »', '#/pipeline/tableau', 'Scène'],
+    ['Onglet « Leads » : Kanban par statut', 'Pipeline, vue « Kanban » par défaut', '#/pipeline', 'Scène'],
+    ['Fiche lead : statut, entité, chaleur, assignation, prochaine action', 'Tiroir de fiche par-dessus le pipeline', '#/lead/dubreuil', 'Scène'],
+    ['Fiche lead : écrire, consigner un échange, fusionner, doublons, convertir en client', 'Tiroir, barre d’actions et colonne de droite', '#/lead/dubreuil', 'Scène'],
+    ['Fiche lead : chaîne commerciale, séquences, données personnelles (RGPD)', 'Tiroir, colonne de droite et onglet « Séquences »', '#/lead/dubreuil', 'Scène'],
+    ['Appel analysé : transcript à deux voix, résumé, champs proposés, chaleur par critère, actions proposées', 'Tiroir, onglet « Appels et analyses »', '#/lead/dubreuil', 'Scène'],
+    ['Appel analysé : retenue d’opposition (confirmer / lever)', 'Tiroir de la fiche retenue', '#/lead/pilates', 'Scène'],
+    ['Onglet « Pilotage » : prévisions, objectifs, entonnoir, activité', 'Bandeau de pilotage, une fois déplié', '#/pilotage/previsions', 'Scène'],
+    ['Onglet « Rapports de scripts » : conversion contre objectif, objections, ce qui fait avancer ou perdre, formulations', 'Bandeau déplié, onglet « Rapports de scripts »', '#/pilotage/scripts', 'Scène'],
+    ['Onglet « Automatisations » : règles, simulation, modèles, journal', 'Configuration, Automatisations', '#/config/automatisations/regles', 'Configuration'],
+    ['Séquences d’e-mails', 'Configuration, Séquences d’e-mails', '#/config/automatisations/sequences', 'Configuration'],
+    ['Onglet « Comptes clients »', 'Référentiels, Comptes clients', '#/ref/comptes', 'Référentiel'],
+    ['Onglet « Partenaires » : listes d’appel, passage au closer, commissions de 10 %', 'Référentiels, Partenaires', '#/ref/partenaires', 'Référentiel'],
+    ['Réglages : statuts, qualification, score, assignation, doublons', 'Configuration, Réglages, groupe « Pipeline »', '#/config/reglages/statuts', 'Configuration'],
+    ['Réglages : alertes, escalade, notifications, rapports', 'Configuration, Réglages, groupe « Alertes »', '#/config/reglages/alertes', 'Configuration'],
+    ['Réglages : appels, téléphonie (pays, plage, plafonds, dialer)', 'Configuration, Réglages, groupe « Appels et IA »', '#/config/reglages/telephonie', 'Configuration'],
+    ['Réglages : enregistrement, transcription, analyse et grille de chaleur', 'Configuration, Réglages, groupe « Appels et IA »', '#/config/reglages/analyse', 'Configuration'],
+    ['Réglages : rapport de scripts', 'Configuration, Réglages, groupe « Appels et IA »', '#/config/reglages/scripts', 'Configuration'],
+    ['Réglages : conservation, numéros opposés', 'Configuration, Réglages, groupe « Données »', '#/config/reglages/opposes', 'Configuration'],
+    ['Espace du commercial externe', 'Même scène, limitée à ses fiches et à son poste d’appel', '#ext', 'Scène']
+  ];
+  const lvl = {Scène:'acc', Configuration:'', Référentiel:''};
+  return '<main class="scene"><div class="row sp" style="margin-bottom:12px"><a class="back" href="#/pipeline">' + ic('chevL', 'sm') + 'Retour au pipeline</a><button type="button" class="btn soft" data-act="ext-on">' + ic('user', 'sm') + 'Voir comme un commercial externe</button></div>' +
+    '<h1 class="h-page">Plan du CRM</h1><p class="lede soft-t" style="margin:6px 0 14px">Neuf onglets à plat deviennent une scène unique, le pipeline, et un second niveau discret. Chaque fonction d’aujourd’hui a un seul endroit, listé ici.</p>' +
+    '<div class="grid3" style="margin-bottom:14px"><div class="panel"><span class="tag acc">Scène</span><h3 style="margin:8px 0 4px">Pipeline</h3><p class="soft-t">Kanban ou tableau, bandeau de pilotage, filtre « À traiter », fiche en tiroir, dock d’appel. Tout le travail quotidien, sans changer d’écran.</p></div><div class="panel"><span class="tag">Configuration</span><h3 style="margin:8px 0 4px">Automatisations, séquences, réglages</h3><p class="soft-t">Ce qu’on change rarement. Un menu discret en haut à droite de la scène, jamais dans la barre de travail.</p></div><div class="panel"><span class="tag">Référentiel</span><h3 style="margin:8px 0 4px">Comptes clients, partenaires</h3><p class="soft-t">Les listes de référence qui existent en dehors d’un lead. Même second niveau.</p></div></div>' +
+    '<div class="panel" style="padding:0"><div class="tablewrap" style="border:0"><table class="tbl" style="min-width:880px"><caption class="sr">Où se trouve chaque fonction d’aujourd’hui</caption><thead><tr><th scope="col">Fonction d’aujourd’hui</th><th scope="col">Où elle se trouve ici</th><th scope="col">Niveau</th><th scope="col"><span class="sr">Accès</span></th></tr></thead><tbody>' +
+    R.map(r => '<tr><td>' + esc(r[0]) + '</td><td class="soft-t">' + esc(r[1]) + '</td><td><span class="tag ' + lvl[r[3]] + '">' + r[3] + '</span></td><td class="r">' + (r[2] === '#ext' ? '<button type="button" class="btn sm" data-act="ext-on">Voir l’aperçu</button>' : '<a class="btn sm" href="' + r[2] + '" aria-label="Aller à : ' + esc(r[1]) + '">Ouvrir</a>') + '</td></tr>').join('') + '</tbody></table></div></div></main>';
+}
+
+/* ============ interactions ============ */
+function refreshScene(){
+  const sc = $('#scene'); if(!sc) return;
+  const r = parse(); sc.outerHTML = sceneHTML(r[0] === 'pilotage' ? (r[1] || 'previsions') : null, r[0] === 'pipeline' && r[1] === 'a-traiter'); drawCharts();
+}
+function closeMenus(){ $$('.menu').forEach(m => m.remove()); const b = $('#cfgbtn'); if(b) b.setAttribute('aria-expanded', 'false'); }
+function openLead(id, tab){ if(tab) S.dTab = tab; else if(parse()[1] !== id) { S.dTab = 'appels'; S.aTab = 'analyse'; } go('#/lead/' + id); }
+Object.assign(ACT, {
+  toast: b => toast(b.dataset.msg),
+  create: () => modal(MODALS.create()),
+  'new-lead': () => modal(MODALS.newlead()),
+  modal: b => { modal(MODALS[b.dataset.k]()); },
+  'close-modal': b => { closeModal(); if(b.dataset.toast) toast(b.dataset.toast); },
+  veil: (b, e) => { if(e.target === b) closeModal(); },
+  'open-lead': b => openLead(b.dataset.id, b.dataset.tab),
+  'open-lead-name': b => { const l = LEADS.find(x => x.co === b.dataset.n); if(l) openLead(l.id); },
+  'close-lead': () => go(S.view === 'tableau' ? '#/pipeline/tableau' : '#/pipeline'),
+  quick: b => { S.quick = b.dataset.k; S.keepScroll = true; if(parse()[1] === 'a-traiter') go(S.view === 'tableau' ? '#/pipeline/tableau' : '#/pipeline'); else { redrawFilters(); } },
+  'reset-filters': () => { S.quick = 'tous'; S.q = ''; const i = $('.searchbox input'); if(i) i.value = ''; redrawFilters(); },
+  cfgmenu: b => {
+    const ex = $('.menu'); if(ex){ closeMenus(); return; }
+    b.setAttribute('aria-expanded', 'true');
+    b.parentNode.insertAdjacentHTML('beforeend', '<div class="menu" role="menu"><div class="mgrp">Configuration</div><a role="menuitem" href="#/config/automatisations/regles">' + ic('bolt', 'sm') + 'Automatisations</a><a role="menuitem" href="#/config/automatisations/sequences">' + ic('mail', 'sm') + 'Séquences d’e-mails</a><a role="menuitem" href="#/config/reglages/statuts">' + ic('sliders', 'sm') + 'Réglages</a><div class="mgrp">Référentiels</div><a role="menuitem" href="#/ref/comptes">' + ic('users', 'sm') + 'Comptes clients</a><a role="menuitem" href="#/ref/partenaires">' + ic('link', 'sm') + 'Partenaires</a><div class="sepm"></div><a role="menuitem" href="#/plan">' + ic('list', 'sm') + 'Plan du CRM</a></div>');
+  },
+  range: b => { S.range = b.dataset.k; S.keepScroll = true; refreshScene(); },
+  week: b => { S.week = +b.dataset.k; S.keepScroll = true; refreshScene(); },
+  goal: () => modal(MODALS.goal()),
+  sel: b => { b.checked ? S.sel.add(b.dataset.id) : S.sel.delete(b.dataset.id); redrawBoard(); },
+  'sel-all': b => { S.sel = b.checked ? new Set(visible().map(l => l.id)) : new Set(); redrawBoard(); },
+  'bulk-clear': () => { S.sel.clear(); redrawBoard(); },
+  bulk: b => { closeModal(); const n = S.sel.size, k = b.dataset.k; toast(({assign:'Assignation proposée pour ', status:'Changement de statut proposé pour ', export:'Export CSV prêt : ', archive:'Maquette : archivage simulé pour '})[k] + n + ' fiche' + (n > 1 ? 's' : '')); if(k === 'archive' || k === 'export') { S.sel.clear(); redrawBoard(); } },
+  'bulk-del': () => modal(MODALS['bulk-del']()),
+  'set-stage': b => { moveLead(b.dataset.id, b.dataset.k); toast('Statut : ' + stageOf(b.dataset.k).label + '. Les compteurs du pipeline sont recalculés.'); S.keepScroll = true; refreshScene(); redrawDrawer(); },
+  dtab: b => { S.dTab = b.dataset.k; redrawDrawer(); },
+  atab: b => { S.aTab = b.dataset.k; if(b.dataset.k === 'analyse') S.hit = null; redrawDrawer(); },
+  'show-quote': b => { S.aTab = 'conv'; S.hit = b.dataset.ts; S.transQ = ''; redrawDrawer(); const t = $('#tl-' + b.dataset.ts.replace(':', '')); if(t) t.scrollIntoView({block:'center'}); },
+  dec: b => {
+    const k = b.dataset.k, v = b.dataset.v;
+    if(v === 'EDIT'){ S.editing = S.editing === k ? null : k; }
+    else { S.analysis[k] = S.analysis[k] === v ? 'none' : v; S.editing = null; if(k === 'heat' && v !== 'EDIT') delete S.edits.heat; }
+    redrawDrawer();
+  },
+  'edit-ok': b => { const k = b.dataset.k, i = $('#ed-' + k); S.edits[k] = i.value.trim() || AF.find(f => f.k === k).val; S.analysis[k] = 'EDIT'; S.editing = null; redrawDrawer(); },
+  'edit-no': () => { S.editing = null; redrawDrawer(); },
+  apply: () => {
+    const c = counts(); S.analysisApplied = true; S.validated.add('dubreuil'); lead('dubreuil').tags = [];
+    if(S.analysis.heat === 'EDIT' && S.edits.heat) lead('dubreuil').heat = S.edits.heat;
+    toast('Analyse validée : ' + c.a + ' décision' + (c.a > 1 ? 's' : '') + ' appliquée' + (c.a > 1 ? 's' : '') + ' à la fiche', 'check'); S.keepScroll = true; refreshScene(); redrawDrawer();
+  },
+  reject: () => { closeModal(); S.analysisRejected = true; S.validated.add('dubreuil'); lead('dubreuil').tags = []; S.keepScroll = true; refreshScene(); redrawDrawer(); toast('Analyse rejetée : rien n’a été écrit sur la fiche'); },
+  'reopen-analysis': () => { S.analysisRejected = false; S.validated.delete('dubreuil'); lead('dubreuil').tags = [['acc', 'Analyse à valider']]; S.keepScroll = true; refreshScene(); redrawDrawer(); },
+  'validate-other': b => { S.validated.add(b.dataset.id); lead(b.dataset.id).tags = lead(b.dataset.id).tags.filter(t => t[1] !== 'Analyse à valider'); S.keepScroll = true; refreshScene(); redrawDrawer(); toast('Analyse validée'); },
+  hold: b => { S.hold = b.dataset.k; S.validated.add('pilates'); closeModal(); const l = lead('pilates'); l.tags = b.dataset.k === 'confirmed' ? [['crit', 'Ne pas rappeler']] : []; l.next = b.dataset.k === 'confirmed' ? 'Ne pas rappeler' : 'Rappeler'; S.keepScroll = true; refreshScene(); redrawDrawer(); toast(b.dataset.k === 'confirmed' ? 'Opposition confirmée : numéro ajouté aux numéros opposés' : 'Retenue levée', 'shield'); },
+  'wl-done': b => { S.done.add(b.dataset.k); redrawBoard(); toast('Contact consigné sur la fiche'); },
+  'wl-note': b => { S.noteOpen = S.noteOpen === b.dataset.k ? null : b.dataset.k; redrawBoard(); const i = $('.wl-note.open input'); if(i) i.focus(); },
+  'wl-note-save': b => { S.noteOpen = null; redrawBoard(); toast('Note ajoutée à la fiche'); },
+  sim: b => { const r = RULES.find(x => x.id === b.dataset.k); modal('<h2 id="mt">Simulation : ' + r.n + '</h2><p class="soft-t" style="margin-top:6px">Rien n’est exécuté. Avec les données d’aujourd’hui, la règle se déclencherait sur :</p><ul style="margin:10px 0 0;padding-left:18px">' + SIM[r.id].map(x => '<li>' + x + '</li>').join('') + '</ul><div class="acts"><button type="button" class="btn primary" data-act="close-modal">Fermer</button></div>'); },
+  'ext-on': () => { S.ext = true; S.dock.sel = 'durand'; S.quick = 'tous'; S.q = ''; go('#/pipeline'); render(); },
+  'ext-off': () => { S.ext = false; S.dock.sel = 'osteo'; render(); },
+  /* poste d'appel */
+  'call-lead': b => { const id = b.dataset.id; S.dock.sel = id; startCall(id); },
+  'call-quick': () => callSel(),
+  'call-now': () => callSel(true),
+  'preview-cancel': () => { S.dock.preview = null; S.dock.powerNext = null; renderDock(parse()[0] === 'appels'); },
+  scope: b => { S.dock.scope = b.dataset.k; renderDock(true); },
+  mode: b => { S.dock.mode = b.dataset.k; S.dock.preview = null; renderDock(parse()[0] === 'appels'); },
+  qsel: b => {
+    S.dock.sel = b.dataset.id; S.dock.preview = null;
+    const l = lead(b.dataset.id);
+    if(S.dock.mode === 'preview' && !blockedReason(l)) S.dock.preview = {id:l.id, left:8};
+    renderDock(true);
+  },
+  mute: () => { S.dock.call.muted = !S.dock.call.muted; renderDock(parse()[0] === 'appels'); },
+  keypad: () => { S.dock.call.keypad = !S.dock.call.keypad; renderDock(parse()[0] === 'appels'); },
+  key: b => { const c = S.dock.call; c.keys = (c.keys || '') + b.dataset.k; const e = $('#keys'); if(e) e.textContent = 'Touches envoyées : ' + c.keys; },
+  'opp-ok': () => { const c = S.dock.call; closeModal(); if(!c) return; c.opp = true; c.lines.push(['sys', 'Le prospect s’oppose à l’enregistrement : enregistrement et transcription arrêtés, analyse retenue jusqu’à votre décision.']); renderDock(parse()[0] === 'appels'); toast('Opposition signalée : enregistrement arrêté', 'shield'); },
+  hangup: () => endCall(false)
+});
+function callSel(force){
+  const id = S.dock.sel, l = lead(id);
+  if(!force && S.dock.mode === 'preview' && !blockedReason(l)){ S.dock.preview = {id, left:8}; renderDock(parse()[0] === 'appels'); return; }
+  startCall(id);
+}
+function redrawFilters(){ S.keepScroll = true; refreshScene(); const i = $('.searchbox input'); if(i) i.value = S.q; }
+
+document.addEventListener('click', e => {
+  const m = e.target.closest('.menu, #cfgbtn'); if(!m) closeMenus();
+  const b = e.target.closest('[data-act]'); if(!b) return;
+  if(b.tagName === 'INPUT' && b.type === 'checkbox'){ ACT[b.dataset.act] && ACT[b.dataset.act](b, e); return; }
+  const f = ACT[b.dataset.act]; if(f){ if(b.tagName === 'A' && b.getAttribute('href') === '#') e.preventDefault(); f(b, e); }
+});
+document.addEventListener('input', e => {
+  const t = e.target, k = t.dataset.actInput;
+  if(k === 'q'){ S.q = t.value; redrawBoard(); }
+  else if(k === 'tq'){ S.transQ = t.value; const p = t.selectionStart; redrawDrawer(); const i = $('#tq'); if(i){ i.focus(); i.setSelectionRange(p, p); } }
+  else if(k === 'mq'){ const q = t.value.trim().toLowerCase(), cur = parse()[1], r = $('#mres'); r.innerHTML = q ? LEADS.filter(l => l.id !== cur && (l.co + l.ct).toLowerCase().includes(q)).map(l => '<button type="button" class="btn" style="justify-content:flex-start" data-act="close-modal" data-toast="Maquette : les fiches ne sont pas fusionnées">' + esc(l.co) + ' <span class="muted">· ' + esc(l.ct) + '</span></button>').join('') || '<p class="muted">Aucune fiche trouvée.</p>' : ''; }
+  else if(t.id === 'wnote' && S.dock.wrap) S.dock.wrap.note = t.value;
+});
+document.addEventListener('change', e => {
+  const t = e.target, k = t.dataset.chg; if(!k) return;
+  if(k === 'stage'){ moveLead(t.dataset.id, t.value); toast('Statut modifié : ' + stageOf(t.value).label + '. Compteurs recalculés.'); S.keepScroll = true; refreshScene(); }
+  else if(k === 'postpone'){ if(t.value){ S.postponed[t.dataset.k] = t.value; redrawBoard(); toast('Relance reportée : ' + t.value.toLowerCase()); } }
+  else if(k === 'heat'){ if(t.value){ S.analysis.heat = 'EDIT'; S.edits.heat = t.value; redrawDrawer(); } }
+  else if(k === 'outcome' && S.dock.wrap) S.dock.wrap.outcome = t.value;
+  else if(k === 'mic') toast('Micro changé : ' + t.value.replace('Micro : ', ''));
+  else if(k === 'rule'){ S.rules[t.dataset.k] = t.checked; toast(t.checked ? 'Règle activée' : 'Règle mise en pause'); configRefresh(); }
+  else if(k === 'seq'){ S.seq[t.dataset.k] = t.checked; toast(t.checked ? 'Séquence activée' : 'Séquence mise en pause'); configRefresh(); }
+  else if(k === 'prob'){ const s = stageOf(t.dataset.k), v = Math.max(0, Math.min(100, parseInt(t.value, 10) || 0)); s.p = v; t.value = v; recalc(); const e2 = $('#savedat'); if(e2) e2.textContent = 'Enregistré : le montant pondéré est recalculé'; toast('Probabilité enregistrée : pondéré ' + eur(TOT.w)); }
+  else if(k === 'set'){ const e2 = $('#savedat'); if(e2) e2.textContent = 'Enregistré à l’instant'; toast('Réglage enregistré'); }
+});
+function configRefresh(){ const y = window.scrollY; S.keepScroll = true; const r = parse(); $('#page').innerHTML = configPage(r[1], r[2]); window.scrollTo(0, y); }
+document.addEventListener('submit', e => {
+  const f = e.target.closest('[data-act-submit]'); if(!f) return; e.preventDefault();
+  const k = f.dataset.actSubmit;
+  if(k === 'close-modal'){ closeModal(); if(f.dataset.toast) toast(f.dataset.toast); }
+  else if(k === 'goal'){ const v = parseInt($('#gv').value.replace(/\D/g, ''), 10); if(v > 0){ S.goal = v; closeModal(); S.keepScroll = true; refreshScene(); toast('Objectif enregistré : ' + eur(v)); } }
+  else if(k === 'result'){
+    const w = S.dock.wrap, l = lead(w.id), o = OUTCOMES.find(x => x[0] === w.outcome);
+    if(w.outcome === 'repondeur') S.marks[w.id] = 'repondeur';
+    const idx = QORDER.indexOf(w.id), next = QORDER[(idx + 1) % QORDER.length];
+    S.dock.wrap = null; S.dock.sel = next;
+    if(S.dock.mode === 'power' && !blockedReason(lead(next))) S.dock.powerNext = {id:next, left:5};
+    toast('Résultat enregistré : ' + o[1] + (w.opp ? '. Analyse retenue jusqu’à décision' : ''), 'check');
+    go('#/appels');
+    renderDock(true);
+  }
+});
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if($('#overlay').firstChild){ closeModal(); return; }
+  if($('.menu')){ closeMenus(); return; }
+  if(parse()[0] === 'lead') ACT['close-lead']();
+});
+window.addEventListener('hashchange', () => render());
+
+/* ============ démarrage ============ */
+$('#root').innerHTML = shellHTML();
+(function(){
+  /* états d'appel pilotés par l'URL */
+  const orig = render;
+  render = function(){
+    const r = parse();
+    if(r[0] === 'appels'){
+      if(r[1] === 'en-cours' && !S.dock.call){ if(S.dock.wrap) { go('#/appels/resultat'); return; } const id = S.dock.sel, why = blockedReason(lead(id)); if(why){ S.dock.sel = 'osteo'; } S.dock.preview = null; S.dock.call = {id:S.dock.sel, t:0, lines:[], muted:false, keypad:false, opp:false, script:(S.dock.sel === 'osteo' ? LIVE_OSTEO : LIVE_GEN), idx:0, keys:''}; }
+      if(r[1] === 'resultat' && !S.dock.wrap && !S.dock.call){ S.dock.wrap = {id:S.dock.sel, dur:243, opp:false, vm:false, outcome:'rappel', note:S.dock.sel === 'osteo' ? 'Souhaite un rendez-vous à trois avec son associé, début de semaine prochaine.' : ''}; }
+    }
+    return orig();
+  };
+  render();
+})();
+</script>
+</body>
+</html>
