@@ -14,6 +14,7 @@ import { ensureSequenceIndexes } from './crmSequences.js'
 import { ensureProjectSheetIndexes, seedProjectSheets } from './projectSheetSeed.js'
 import { ensureAuthHardeningIndexes } from './auth/passwordReset.js'
 import { ensurePhoneSuppressionIndexes } from './callGuards.js'
+import { EXTERNAL_SALES_ROLE } from './externalSales.js'
 
 interface Outcome {
   created: number
@@ -127,6 +128,19 @@ export async function addFormSourceToRule(dryRun = false): Promise<number> {
   return res.modifiedCount
 }
 
+/**
+ * Fiches saisies par un externe avant `enteredByRep` : créées par un compte
+ * externe (lui ou un prédécesseur sur la fiche), toujours détenues par un
+ * externe. Elles quittent les vues de l'équipe jusqu'au passage au closer.
+ */
+async function markRepEnteredLeads(dryRun: boolean) {
+  const reps = await User.distinct('_id', { role: EXTERNAL_SALES_ROLE })
+  const filter = { createdBy: { $in: reps }, externalRep: { $ne: null }, enteredByRep: { $ne: true } }
+  return dryRun
+    ? Lead.countDocuments(filter)
+    : (await Lead.updateMany(filter, { $set: { enteredByRep: true } }, { timestamps: false })).modifiedCount
+}
+
 async function seedRules(dryRun: boolean) {
   if (!dryRun) return seedCrmRules()
   const keys = SEED_RULES.map((rule) => rule.systemKey)
@@ -183,4 +197,5 @@ export const migrations: Record<string, (dryRun: boolean) => Promise<unknown>> =
   },
   '013': ensureAuthHardeningIndexes,
   '014': ensurePhoneSuppressionIndexes,
+  '015': markRepEnteredLeads,
 }

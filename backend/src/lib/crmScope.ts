@@ -168,9 +168,19 @@ export async function readableProposalFilter(
   return { $or: [onProject, onLead] }
 }
 
-/** Un lead de liste d'appel détenu par un externe rejoint l'équipe dès que closingHandoff est posé, même sans closer nominatif. */
+/**
+ * Un lead d'externe tiré de ses listes d'appel ou saisi par lui (`enteredByRep`)
+ * reste à lui seul ; il rejoint l'équipe dès que closingHandoff est posé, même
+ * sans closer nominatif.
+ */
 export function teamLeadFilter(): Record<string, unknown> {
-  return { $or: [{ callList: { $in: ['', null] } }, { externalRep: null }, { closingHandoff: { $ne: null } }] }
+  return {
+    $or: [
+      { callList: { $in: ['', null] }, enteredByRep: { $ne: true } },
+      { externalRep: null },
+      { closingHandoff: { $ne: null } },
+    ],
+  }
 }
 
 export function canReassignLead(

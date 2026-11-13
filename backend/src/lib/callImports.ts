@@ -164,6 +164,8 @@ export async function importCallLeads(input: {
           project,
           entity: entityFromProject(project),
           externalRep: input.externalRep,
+          // Import fait par l'externe lui-même, même sans nom de liste : il reste à lui.
+          enteredByRep: input.actorId === input.externalRep,
           assignedTo: input.externalRep,
           createdBy: input.actorId ?? null,
         })

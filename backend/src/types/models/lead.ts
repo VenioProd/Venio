@@ -49,6 +49,8 @@ export interface ILead extends Document {
   statusChangedAt: Date | null
   clientAccountId: Types.ObjectId | null
   externalRep: Types.ObjectId | null
+  /** Saisie par un externe : hors de l'équipe jusqu'au passage au closer (`teamLeadFilter`). */
+  enteredByRep: boolean
   closingHandoff: { at: Date; to: Types.ObjectId | null; by: Types.ObjectId; repNotes?: string } | null
   score: number | null
   lostReason: string
