@@ -7,13 +7,13 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Venio utilise le micro pour enregistrer vos notes vocales."
+            "value": "Venio utilise le micro pour vos notes vocales et pour les appels passés depuis l’app."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Venio uses the microphone to record your voice notes."
+            "value": "Venio uses the microphone for your voice notes and for calls made from the app."
           }
         }
       }

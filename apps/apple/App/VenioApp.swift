@@ -16,6 +16,7 @@ import AppKit
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var watch = WatchBridge()
     @State private var meetings = MeetingActivityController()
+    @State private var callDesk: CallDesk?
     #else
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     #endif
@@ -58,6 +59,9 @@ import AppKit
                 mockAPI = mock
                 _mockStore = State(initialValue: CommercialStore(api: mock, clock: clock))
                 _session = State(initialValue: nil)
+                #if os(iOS)
+                _callDesk = State(initialValue: Self.mockCallDesk())
+                #endif
             } else {
                 let container = try ModelContainer(for: SyncedRecord.self, SyncCursor.self, PendingWrite.self,
                     configurations: ModelConfiguration("VenioSync-" + (configuration.baseURL.scheme ?? "") + "-" + (configuration.baseURL.host ?? "") + "-" + String(configuration.baseURL.port ?? (configuration.baseURL.scheme == "http" ? 80 : 443))))
@@ -67,6 +71,10 @@ import AppKit
                     deviceInfo: Self.deviceInfo(), dataStore: store)
                 let api = LiveVenioAPI(session: auth, store: store)
                 _session = State(initialValue: SessionModel(api: api, themes: manager))
+                #if os(iOS)
+                _callDesk = State(initialValue: CallDesk(api: LiveCallDeskAPI(session: auth), engine: Self.voiceEngine(Self.voiceMedia()),
+                                                         webBaseURL: configuration.baseURL))
+                #endif
                 mockAPI = nil
                 _mockStore = State(initialValue: nil)
             }
@@ -89,6 +97,37 @@ import AppKit
             osVersion: ProcessInfo.processInfo.operatingSystemVersionString, appVersion: version)
         #endif
     }
+    #if os(iOS)
+    /// Twilio Voice ; en Debug, `-VenioVoice simulated` simule l'opérateur (`-VenioVoiceOperator <url>` : faux Twilio local).
+    private static func voiceMedia() -> any VoiceMedia {
+        #if DEBUG
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: "VenioVoice") == "simulated" {
+            return SimulatedVoiceMedia(operatorURL: defaults.string(forKey: "VenioVoiceOperator").flatMap(URL.init(string:)))
+        }
+        #endif
+        return TwilioVoiceMedia()
+    }
+    private static func voiceEngine(_ media: any VoiceMedia) -> any VoiceEngine {
+        #if targetEnvironment(simulator)
+        return DirectVoiceEngine(media: media)
+        #else
+        return CallKitVoiceEngine(media: media)
+        #endif
+    }
+    private static func mockCallDesk() -> CallDesk {
+        let queue = [
+            CallQueueLead(id: "lead-calder", company: "Maison Calder", contactName: "Claire Calder", status: "PROPOSAL", lastCallOutcome: "VOICEMAIL"),
+            CallQueueLead(id: "lead-ferrand", company: "Cabinet Ferrand Avocats", contactName: "Sophie Ferrand", status: "CONTACTED"),
+            CallQueueLead(id: "lead-halles", company: "Brasserie Les Halles", contactName: "Julien Roux", status: "QUALIFIED", lastCallOutcome: "NO_ANSWER"),
+        ]
+        #if DEBUG
+        return CallDesk(api: MockCallDeskAPI(queue: queue), engine: voiceEngine(SimulatedVoiceMedia(operatorURL: nil)))
+        #else
+        return CallDesk(api: MockCallDeskAPI(enabled: false, queue: queue), engine: nil)
+        #endif
+    }
+    #endif
     private var currentStore: CommercialStore? { session?.commercial ?? mockStore }
     private var currentAPI: (any VenioAPI)? {
         if let session { return session.api }
@@ -103,6 +142,9 @@ import AppKit
                     else if let mockStore { RootView(store: mockStore, initialTab: initialTab, initialLeadID: initialLeadID, initialProjectID: initialProjectID, initialAdminSection: initialAdminSection, initialAdminItemID: initialAdminItemID) }
                     else { StorageUnavailableView() }
                 }
+                #if os(iOS)
+                .environment(\.callDesk, callDesk)
+                #endif
                 .venioAppLock(lock)
                 .onChange(of: currentStore.map(ObjectIdentifier.init), initial: true) { _, _ in
                     if let store = currentStore { IntentBridge.connect(store: store, session: session) }
@@ -125,6 +167,9 @@ import AppKit
                 .task {
                     session?.onDisconnect = {
                         try? ShareInboxStore().clearContext()
+                        #if os(iOS)
+                        callDesk?.reset()
+                        #endif
                         delegate.push.disconnected()
                         IntentBridge.connect(store: nil, session: nil)
                         #if os(iOS)

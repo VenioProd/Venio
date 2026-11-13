@@ -11,6 +11,10 @@ options:
 packages:
   VenioKit:
     path: Packages/VenioKit
+  # Appels sortants (lot N) : version exacte, mise à jour volontaire seulement.
+  TwilioVoice:
+    url: https://github.com/twilio/twilio-voice-ios
+    exactVersion: 6.13.8
 configFiles:
   Debug: Config/Version.xcconfig
   Release: Config/Version.xcconfig
@@ -43,7 +47,8 @@ targets:
           - CFBundleURLName: paris.venio.app
             CFBundleURLSchemes: [venio]
         NSFaceIDUsageDescription: Venio utilise Face ID pour déverrouiller vos données sur cet appareil.
-        NSMicrophoneUsageDescription: Venio utilise le micro pour enregistrer vos notes vocales.
+        NSMicrophoneUsageDescription: Venio utilise le micro pour vos notes vocales et pour les appels passés depuis l’app.
+        UIBackgroundModes: [audio, voip]
         NSSpeechRecognitionUsageDescription: Venio transcrit vos notes vocales sur cet appareil, sans envoi à un service de transcription.
         NSCameraUsageDescription: Venio utilise la caméra pour lire les cartes de visite et scanner les documents de vos projets.
     settings:
@@ -69,6 +74,9 @@ targets:
         product: VenioCommercial
       - package: VenioKit
         product: VenioAdmin
+      - package: TwilioVoice
+        product: TwilioVoice
+        platformFilter: iOS
       - target: VenioWatch
         platformFilter: iOS
         embed: true
