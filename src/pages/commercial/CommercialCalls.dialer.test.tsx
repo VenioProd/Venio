@@ -95,7 +95,7 @@ const renderCalls = () =>
       <CommercialCalls />
     </MemoryRouter>,
   )
-const lastCall = () => sdk.calls.at(-1) as EventEmitter & { disconnect: () => void }
+const lastCall = () => sdk.calls[sdk.calls.length - 1] as EventEmitter & { disconnect: () => void }
 
 describe('CommercialCalls — composition enchaînée', () => {
   beforeEach(() => {
@@ -139,7 +139,7 @@ describe('CommercialCalls — composition enchaînée', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1))
     expect(outcomes()[0]!.body).toMatchObject({ callId: 'call-lead1', outcome: 'NRP' })
     await waitFor(() => expect(sdk.calls).toHaveLength(2))
-    expect(launches().at(-1)!.path).toBe('/api/commercial/leads/lead2/calls')
+    expect(launches()[launches().length - 1]!.path).toBe('/api/commercial/leads/lead2/calls')
 
     // Décroché par un humain : rien ne part avant la saisie du résultat.
     records['call-lead2'] = {
