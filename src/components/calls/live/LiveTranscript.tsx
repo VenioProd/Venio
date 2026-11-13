@@ -21,7 +21,9 @@ export type LiveSource = Pick<EventSource, 'addEventListener' | 'close'> & {
 }
 export type LiveSourceFactory = (url: string) => LiveSource
 
-const defaultFactory: LiveSourceFactory = (url) => new EventSource(url)
+/** `null` sans `EventSource` (vieux navigateur, jsdom) : le volet ne s'affiche pas. */
+const defaultFactory: LiveSourceFactory | null =
+  typeof EventSource === 'undefined' ? null : (url) => new EventSource(url)
 /** Au-delà, l'écran ne garde que les derniers tours (le serveur fait de même). */
 const MAX_SEGMENTS = 400
 
@@ -40,7 +42,12 @@ interface Props {
  * (le serveur répond 204 et le flux se ferme). Le texte est effacé à la fin de
  * l'appel, à l'opposition, et au démontage : il n'est gardé nulle part.
  */
-export default function LiveTranscript({ callId, apiPrefix, stopped = false, source = defaultFactory }: Props) {
+export default function LiveTranscript({
+  callId,
+  apiPrefix,
+  stopped = false,
+  source = defaultFactory ?? undefined,
+}: Props) {
   const { t } = useI18n()
   const url = `${apiPrefix}/calls/${encodeURIComponent(callId)}/live`
   // L'état appartient à un flux : un autre appel repart d'un volet vide, sans réinitialisation dans l'effet.
@@ -55,7 +62,7 @@ export default function LiveTranscript({ callId, apiPrefix, stopped = false, sou
   const follow = useRef(true)
 
   useEffect(() => {
-    if (stopped) return
+    if (stopped || !source) return
     const stream = source(url)
     const update = (change: (current: { status: Status; segments: LiveSegment[] }) => Partial<typeof view>) =>
       setView((previous) => {
@@ -94,7 +101,7 @@ export default function LiveTranscript({ callId, apiPrefix, stopped = false, sou
   }, [segments, open])
 
   // Opposition : le texte disparaît tout de suite ; le démontage du flux suit.
-  if (stopped || status === 'OFF') return null
+  if (stopped || !source || status === 'OFF') return null
 
   return (
     <section className="live-transcript" aria-label={t('liveTranscript.title')}>
