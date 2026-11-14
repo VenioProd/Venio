@@ -17,15 +17,18 @@ function meterScale(rate: number, target: number | null): number {
  * rendez-vous pris et conversion sur joints face à l'objectif des réglages.
  * `desk` : libellés courts, pour la carte « Aujourd'hui » du poste d'appel.
  * `refreshKey` : relit la séance quand il change (un résultat consigné ou annulé).
+ * `apiPrefix` : routeur d'appels à lire (équipe par défaut, `/api/commercial` pour l'externe).
  */
 export default function CallSessionCard({
   desk = false,
   refreshKey,
   footer,
+  apiPrefix,
 }: {
   desk?: boolean
   refreshKey?: string | number
   footer?: ReactNode
+  apiPrefix?: string
 }) {
   const { t } = useI18n()
   const [session, setSession] = useState<CallSession | null>(null)
@@ -34,7 +37,7 @@ export default function CallSessionCard({
 
   useEffect(() => {
     let active = true
-    fetchCallSession()
+    fetchCallSession(apiPrefix)
       .then((data) => {
         if (!active) return
         setSession(data)
@@ -44,7 +47,7 @@ export default function CallSessionCard({
     return () => {
       active = false
     }
-  }, [refreshKey, attempt])
+  }, [refreshKey, attempt, apiPrefix])
 
   const id = desk ? 'crm-session-desk' : 'crm-session-today'
   const head = (

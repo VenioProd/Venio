@@ -47,6 +47,8 @@ beforeEach(() => {
     if (path === `${PREFIX}/calls/config`) return { enabled: false }
     if (path === `${PREFIX}/session`)
       return { day: '2026-11-14', calls: 5, reached: 2, meetings: 1, conversionRate: 50, targetConversionRate: 40 }
+    if (path === '/api/commercial/session')
+      return { day: '2026-11-14', calls: 7, reached: 4, meetings: 1, conversionRate: 25, targetConversionRate: 40 }
     if (path.startsWith(`${PREFIX}/calls/queue`)) {
       const never = path.includes('category=never')
       return {
@@ -86,11 +88,14 @@ describe('Catégories de la file et séance du poste d’appel', () => {
     expect(within(today).getByRole('img', { name: '50 % de conversion, objectif 40 %' })).toBeInTheDocument()
   })
 
-  it('commercial externe : ni gélules de catégorie, ni séance', async () => {
+  it('commercial externe : sa séance du jour, lue sur son routeur, sans gélules de catégorie', async () => {
     renderDesk(commercialDesk)
     await screen.findByText('Atelier Rita')
     expect(screen.queryByRole('group', { name: 'Catégorie de la file' })).toBeNull()
-    expect(screen.queryByRole('region', { name: 'Aujourd’hui' })).toBeNull()
+    const today = screen.getByRole('region', { name: 'Aujourd’hui' })
+    expect(await within(today).findByText('7')).toBeInTheDocument()
+    expect(within(today).getByRole('img', { name: '25 % de conversion, objectif 40 %' })).toBeInTheDocument()
+    expect(requests).toContain('/api/commercial/session')
     expect(requests.some((path) => path.startsWith(PREFIX))).toBe(false)
   })
 })

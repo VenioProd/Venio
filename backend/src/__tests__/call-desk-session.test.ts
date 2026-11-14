@@ -4,17 +4,19 @@ import request from 'supertest'
 import { setupMongo, teardownMongo, clearDb } from './helpers/mongoTestEnv.js'
 import { createSession } from '../lib/session.js'
 import adminCallDeskRoutes from '../routes/admin/callDesk.js'
+import commercialRoutes from '../routes/commercial/index.js'
 import Interaction from '../models/Interaction.js'
 import Lead from '../models/Lead.js'
 import User from '../models/User.js'
 
 /**
- * Séance du jour (`GET /api/admin/call-desk/session`) et catégories de la file
+ * Séance du jour (`GET /api/admin/call-desk/session`, `GET /api/commercial/session`) et catégories de la file
  * (`GET /calls/queue?category=`, `counts`) du poste d'appel de l'équipe.
  */
 const app = express()
 app.use(express.json())
 app.use('/api/admin/call-desk', adminCallDeskRoutes)
+app.use('/api/commercial', commercialRoutes)
 app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
   res.status(err.status || 500).json({ error: err.message })
 })
@@ -128,6 +130,32 @@ it('séance : ses appels du jour de Paris, sur son périmètre, et rien d’autr
   expect((await get(stagiaire, '/session')).body).toMatchObject({ calls: 0, reached: 0, conversionRate: null })
   // Le routeur de l'équipe reste fermé à l'externe.
   expect((await get(rep, '/session')).status).toBe(403)
+})
+
+it('séance du commercial externe : ses appels du jour sur ses fiches, transmises comprises', async () => {
+  const listed = await repListLead('Auto-école Horizon')
+  const handed = await repListLead('Cabinet Durand')
+  await handOff(handed)
+  await logged(rep, listed, 'NO_ANSWER', '2026-11-14T08:00:00+01:00')
+  await logged(rep, listed, 'CALLBACK', '2026-11-14T08:10:00+01:00')
+  await logged(rep, handed, 'MEETING_BOOKED', '2026-11-14T08:30:00+01:00')
+  // Hors séance : la veille, l'appel du closer sur la fiche transmise, un appel à lui sur une fiche de l'équipe.
+  await logged(rep, listed, 'MEETING_BOOKED', '2026-11-13T18:00:00+01:00')
+  await logged(admin, handed, 'MEETING_BOOKED', '2026-11-14T09:00:00+01:00')
+  await logged(rep, await teamLead(admin, 'Menuiserie Dubreuil'), 'MEETING_BOOKED', '2026-11-14T09:10:00+01:00')
+
+  const res = await request(app).get('/api/commercial/session').set('Cookie', rep.cookie)
+  expect(res.status).toBe(200)
+  expect(res.body).toEqual({
+    day: '2026-11-14',
+    calls: 3,
+    reached: 2,
+    meetings: 1,
+    conversionRate: 50,
+    targetConversionRate: 40,
+  })
+  // L'espace du commercial reste fermé à l'équipe.
+  expect((await request(app).get('/api/commercial/session').set('Cookie', admin.cookie)).status).toBe(403)
 })
 
 it('file : catégories et compteurs sur le même périmètre et les mêmes filtres, ordre inchangé', async () => {

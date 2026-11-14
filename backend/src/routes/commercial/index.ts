@@ -29,6 +29,7 @@ import callsRoutes from './calls.js'
 import callTranscriptRoutes from './callTranscripts.js'
 import callAnalysisRoutes from './callAnalysis.js'
 import scriptReportRoutes from './scriptReports.js'
+import { createCallDeskSessionRoutes } from '../admin/callDeskSession.js'
 import { toRepLead } from '../../lib/repLeadView.js'
 import {
   closingHandoffPatch,
@@ -52,6 +53,7 @@ router.use(callsRoutes)
 router.use(callTranscriptRoutes)
 router.use(callAnalysisRoutes)
 router.use(scriptReportRoutes)
+router.use(createCallDeskSessionRoutes(repCallScope))
 
 // Le closing (devis, signature) revient à l'équipe : l'externe s'arrête avant.
 const REP_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO', 'LOST']

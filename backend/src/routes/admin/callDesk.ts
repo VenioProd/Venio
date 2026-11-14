@@ -10,7 +10,7 @@ import { createCallAnalysisRoutes } from '../commercial/callAnalysis.js'
 import callHoldRoutes from './callHold.js'
 import callDeskPendingRoutes from './callDeskPending.js'
 import callDeskLeadSignalsRoutes from './callDeskLeadSignals.js'
-import callDeskSessionRoutes from './callDeskSession.js'
+import { createCallDeskSessionRoutes } from './callDeskSession.js'
 
 /**
  * Poste d'appel de l'équipe interne : les routeurs de l'espace commercial,
@@ -36,6 +36,6 @@ router.use(createCallAnalysisRoutes(teamCallScope))
 router.use(callHoldRoutes)
 router.use(callDeskPendingRoutes)
 router.use(callDeskLeadSignalsRoutes)
-router.use(callDeskSessionRoutes)
+router.use(createCallDeskSessionRoutes(teamCallScope))
 
 export default router

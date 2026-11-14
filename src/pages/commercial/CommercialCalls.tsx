@@ -525,7 +525,7 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
           {t('crmProspect.scopeAllText')}
         </CrmBanner>
       )}
-      {team && <CallSessionCard desk refreshKey={saved?.interactionId ?? ''} />}
+      <CallSessionCard desk apiPrefix={desk.apiPrefix} refreshKey={saved?.interactionId ?? ''} />
       {!team && <p className="commercial-muted commercial-call-shortcuts">{t('commercial.calls.shortcuts')}</p>}
       {settings && desk.allowImport && (
         <CallLeadImport
