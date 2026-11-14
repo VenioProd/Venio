@@ -1,8 +1,10 @@
 import { STATUS_MAP } from './crm-board/constants'
-import PageHeader from '../../components/admin/ui/PageHeader'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import CustomSelect from '../../components/admin/CustomSelect'
+import { CrmEmpty, CrmPageHead, CrmSectionHead } from '../../components/admin/crm-ui'
+import { Avatar } from './crm-board/rich/chips'
 import { useI18n } from '../../context/I18nContext'
 import { formatDateTime, formatNumber, formatPercent } from '../../i18n/format'
 import {
@@ -18,6 +20,7 @@ import {
 import '../espace-client/ClientPortal.css'
 import './AdminPortal.css'
 import '../commercial/CommercialSpace.css'
+import './crm-board/suivre.css'
 
 type Tab = 'leads' | 'commissions' | 'journal'
 type RepDetail = Awaited<ReturnType<typeof externalSalesAdminApi.rep>>
@@ -118,23 +121,25 @@ const ExternalSales = () => {
   ]
 
   return (
-    <div className="portal-container pilotage-page external-sales-page">
-      <PageHeader
-        eyebrow={t('adminOps.pilotage.zone.commercial')}
-        title={t('commercial.admin.title')}
+    <div className="crm-suivre-stack external-sales-page">
+      <CrmPageHead
+        title={t('shell.hub.crm.partenaires')}
+        lede={
+          <>
+            {t('commercial.admin.ruleBefore', { rate: formatNumber(rateBp / 100) })}{' '}
+            <Link className="crm-suivre-lede-link" to="/admin/crm/piloter/reglages">
+              {t('commercial.admin.ruleLink')}
+            </Link>
+            .
+          </>
+        }
         actions={
-          <Link className="portal-button" to="/admin/comptes-admin/nouveau">
+          <Link className="crm-ui-btn crm-ui-btn--primary crm-ui-btn--big" to="/admin/comptes-admin/nouveau">
+            <Plus aria-hidden="true" />
             {t('commercial.admin.invite')}
           </Link>
         }
       />
-      <p className="commercial-muted">
-        {t('commercial.admin.ruleBefore', { rate: formatNumber(rateBp / 100) })}{' '}
-        <Link className="commercial-link" to="/admin/crm/piloter/reglages">
-          {t('commercial.admin.ruleLink')}
-        </Link>
-        .
-      </p>
 
       {error && <div className="admin-error">{error}</div>}
       {info && <div className="admin-success">{info}</div>}
@@ -142,74 +147,78 @@ const ExternalSales = () => {
       {!reps ? (
         <div className="admin-loading">{t('commercial.loading')}</div>
       ) : reps.length === 0 ? (
-        <div className="admin-empty-state">
-          <p className="admin-empty-state-text">{t('commercial.admin.empty')}</p>
-        </div>
+        <section className="crm-ui-card">
+          <CrmEmpty title={t('commercial.admin.empty')} />
+        </section>
       ) : (
-        <div className="admin-table-wrapper" style={{ marginTop: 24 }}>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>{t('commercial.admin.colRep')}</th>
-                <th className="commercial-amount">{t('commercial.admin.colLeads')}</th>
-                <th className="commercial-amount">{t('commercial.admin.colHandedOff')}</th>
-                <th className="commercial-amount">{t('commercial.admin.colConversion')}</th>
-                <th className="commercial-amount">{t('commercial.admin.colCollected')}</th>
-                <th className="commercial-amount">{t('commercial.admin.colDue')}</th>
-                <th className="commercial-amount">{t('commercial.admin.colPaid')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reps.map((rep) => (
-                <tr
-                  key={rep._id}
-                  onClick={() => setSelectedId(rep._id)}
-                  style={{
-                    cursor: 'pointer',
-                    outline: rep._id === selectedId ? '1px solid var(--accent-border-strong)' : 'none',
-                  }}
-                >
-                  <td>
-                    <button type="button" className="commercial-link" onClick={() => setSelectedId(rep._id)}>
-                      {rep.name}
-                    </button>
-                    <div className="commercial-muted">
-                      {rep.email}
-                      {!rep.isActive && ` · ${t('commercial.admin.inactive')}`}
-                    </div>
-                  </td>
-                  <td className="commercial-amount">{rep.leads}</td>
-                  <td className="commercial-amount">{rep.handedOff}</td>
-                  <td className="commercial-amount">
-                    {formatPercent(rep.conversionRate, { maximumFractionDigits: 0 })}{' '}
-                    <span className="commercial-muted">({rep.won})</span>
-                  </td>
-                  <td className="commercial-amount">{formatCents(rep.collectedHtCents)}</td>
-                  <td className="commercial-amount">{formatCents(rep.dueCents)}</td>
-                  <td className="commercial-amount">{formatCents(rep.paidCents)}</td>
+        <section className="crm-ui-card crm-ui-card--flush" aria-labelledby="partners-team">
+          <CrmSectionHead id="partners-team" title={t('crmSuivre.partners.team')} count={reps.length} />
+          <div className="crm-suivre-tablewrap">
+            <table className="crm-suivre-table">
+              <thead>
+                <tr>
+                  <th>{t('commercial.admin.colRep')}</th>
+                  <th className="is-num">{t('commercial.admin.colLeads')}</th>
+                  <th className="is-num">{t('commercial.admin.colHandedOff')}</th>
+                  <th className="is-num">{t('commercial.admin.colConversion')}</th>
+                  <th className="is-num">{t('commercial.admin.colCollected')}</th>
+                  <th className="is-num">{t('commercial.admin.colDue')}</th>
+                  <th className="is-num">{t('commercial.admin.colPaid')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {reps.map((rep) => (
+                  <tr
+                    key={rep._id}
+                    onClick={() => setSelectedId(rep._id)}
+                    className={rep._id === selectedId ? 'is-selected' : undefined}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td>
+                      <span className="crm-suivre-owner">
+                        <Avatar name={rep.name} />
+                        <button
+                          type="button"
+                          className="crm-suivre-name"
+                          aria-pressed={rep._id === selectedId}
+                          onClick={() => setSelectedId(rep._id)}
+                        >
+                          {rep.name}
+                        </button>
+                      </span>
+                      <div className="crm-suivre-sub">
+                        {rep.email}
+                        {!rep.isActive && ` · ${t('commercial.admin.inactive')}`}
+                      </div>
+                    </td>
+                    <td className="is-num">{rep.leads}</td>
+                    <td className="is-num">{rep.handedOff}</td>
+                    <td className="is-num">
+                      {formatPercent(rep.conversionRate, { maximumFractionDigits: 0 })}{' '}
+                      <span className="crm-suivre-dim">({rep.won})</span>
+                    </td>
+                    <td className="is-num">{formatCents(rep.collectedHtCents)}</td>
+                    <td className="is-num">{formatCents(rep.dueCents)}</td>
+                    <td className="is-num">{formatCents(rep.paidCents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
 
       {detail && (
-        <div className="portal-card" style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0 }}>{detail.rep.name}</h2>
-            <Link className="portal-button secondary" to={`/admin/comptes-admin/${detail.rep._id}`}>
+        <section className="crm-ui-card crm-suivre-detail" aria-label={t('crmSuivre.partners.detailAria')}>
+          <div className="crm-suivre-detail__head">
+            <h2>{detail.rep.name}</h2>
+            <Link className="crm-ui-btn" to={`/admin/comptes-admin/${detail.rep._id}`}>
               {t('commercial.admin.manageAccount')}
             </Link>
           </div>
-          <div className="admin-tabs">
+          <div className="crm-suivre-seg" role="group" aria-label={t('crmSuivre.partners.detailAria')}>
             {tabs.map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                className={`admin-tab${tab === key ? ' active' : ''}`}
-                onClick={() => setTab(key)}
-              >
+              <button key={key} type="button" aria-pressed={tab === key} onClick={() => setTab(key)}>
                 {label}
               </button>
             ))}
@@ -217,7 +226,7 @@ const ExternalSales = () => {
 
           {tab === 'leads' && (
             <>
-              <div className="commercial-toolbar">
+              <div className="crm-suivre-toolrow">
                 <CustomSelect
                   className="commercial-select"
                   value={target}
@@ -226,7 +235,7 @@ const ExternalSales = () => {
                 />
                 <button
                   type="button"
-                  className="portal-button"
+                  className="crm-ui-btn crm-ui-btn--primary"
                   disabled={busy || !target || checkedLeads.length === 0}
                   onClick={() => reassign('selection')}
                 >
@@ -234,7 +243,7 @@ const ExternalSales = () => {
                 </button>
                 <button
                   type="button"
-                  className="portal-button secondary"
+                  className="crm-ui-btn"
                   disabled={busy || !target || detail.leads.length === 0}
                   onClick={() => {
                     const question = t('commercial.admin.reassignAllConfirm', {
@@ -257,24 +266,24 @@ const ExternalSales = () => {
 
           {tab === 'commissions' && (
             <>
-              <div className="commercial-stats">
-                <div className="commercial-stat">
-                  <span className="commercial-muted">{t('commercial.admin.colCollected')}</span>
-                  <span className="commercial-stat-value">{formatCents(detail.totals.collectedHtCents)}</span>
+              <div className="crm-suivre-figures">
+                <div>
+                  <span>{t('commercial.admin.colCollected')}</span>
+                  <b>{formatCents(detail.totals.collectedHtCents)}</b>
                 </div>
-                <div className="commercial-stat">
-                  <span className="commercial-muted">{t('commercial.admin.colDue')}</span>
-                  <span className="commercial-stat-value">{formatCents(detail.totals.dueCents)}</span>
+                <div>
+                  <span>{t('commercial.admin.colDue')}</span>
+                  <b>{formatCents(detail.totals.dueCents)}</b>
                 </div>
-                <div className="commercial-stat">
-                  <span className="commercial-muted">{t('commercial.admin.colPaid')}</span>
-                  <span className="commercial-stat-value">{formatCents(detail.totals.paidCents)}</span>
+                <div>
+                  <span>{t('commercial.admin.colPaid')}</span>
+                  <b>{formatCents(detail.totals.paidCents)}</b>
                 </div>
               </div>
-              <div className="commercial-toolbar">
+              <div className="crm-suivre-toolrow">
                 <button
                   type="button"
-                  className="portal-button"
+                  className="crm-ui-btn crm-ui-btn--primary"
                   disabled={busy || checkedCommissions.length === 0}
                   onClick={() => markPaid('selection')}
                 >
@@ -282,7 +291,7 @@ const ExternalSales = () => {
                 </button>
                 <button
                   type="button"
-                  className="portal-button secondary"
+                  className="crm-ui-btn"
                   disabled={busy || detail.totals.dueCents === 0}
                   onClick={() => {
                     const question = t('commercial.admin.markAllConfirm', {
@@ -303,11 +312,13 @@ const ExternalSales = () => {
           )}
 
           {tab === 'journal' && (
-            <ul className="commercial-timeline">
-              {activity.length === 0 && <li className="commercial-muted">{t('commercial.admin.noActivity')}</li>}
+            <ul className="crm-suivre-feed">
+              {activity.length === 0 && <li className="crm-suivre-dim">{t('commercial.admin.noActivity')}</li>}
               {activity.map((item) => (
                 <li key={item._id}>
-                  <strong>{item.leadId?.company ?? t('commercial.admin.deletedLead')}</strong> · {item.label}
+                  <span>
+                    <strong>{item.leadId?.company ?? t('commercial.admin.deletedLead')}</strong> · {item.label}
+                  </span>
                   <small>
                     {formatDateTime(item.createdAt)}
                     {item.actorId && ` · ${item.actorId.name}`}
@@ -316,7 +327,7 @@ const ExternalSales = () => {
               ))}
             </ul>
           )}
-        </div>
+        </section>
       )}
     </div>
   )
@@ -332,10 +343,10 @@ function LeadsTable({
   onToggle: (id: string) => void
 }) {
   const { t } = useI18n()
-  if (leads.length === 0) return <p className="commercial-muted">{t('commercial.admin.noLeads')}</p>
+  if (leads.length === 0) return <p className="crm-suivre-dim">{t('commercial.admin.noLeads')}</p>
   return (
-    <div className="admin-table-wrapper">
-      <table className="admin-table">
+    <div className="crm-suivre-tablewrap">
+      <table className="crm-suivre-table">
         <thead>
           <tr>
             <th aria-label={t('commercial.admin.selection')} />
@@ -357,22 +368,21 @@ function LeadsTable({
                 />
               </td>
               <td>
-                <Link className="commercial-link" to={`/admin/crm/leads/${lead._id}`}>
+                <Link className="crm-suivre-name" to={`/admin/crm/leads/${lead._id}`}>
                   {lead.company}
                 </Link>
-                {lead.contactName && <div className="commercial-muted">{lead.contactName}</div>}
+                {lead.contactName && <div className="crm-suivre-sub">{lead.contactName}</div>}
               </td>
               <td>
                 <span
-                  className="commercial-status-chip"
-                  style={
-                    { '--status-color': STATUS_MAP[lead.status]?.color || 'var(--text-muted)' } as React.CSSProperties
-                  }
+                  className="crm-ui-chip"
+                  style={{ '--crm-ui-tone': STATUS_MAP[lead.status]?.color || 'var(--text-muted)' } as CSSProperties}
                 >
+                  <span className="crm-ui-dot" aria-hidden="true" />
                   {t(STATUS_LABEL_KEYS[lead.status])}
                 </span>
                 {lead.closingHandoff && (
-                  <div className="commercial-muted">
+                  <div className="crm-suivre-sub">
                     {t('commercial.admin.handedOffOn', { date: formatDay(lead.closingHandoff.at) })}
                   </div>
                 )}
@@ -397,17 +407,17 @@ function CommissionsTable({
   onToggle: (id: string) => void
 }) {
   const { t } = useI18n()
-  if (commissions.length === 0) return <p className="commercial-muted">{t('commercial.admin.noCommissions')}</p>
+  if (commissions.length === 0) return <p className="crm-suivre-dim">{t('commercial.admin.noCommissions')}</p>
   return (
-    <div className="admin-table-wrapper">
-      <table className="admin-table">
+    <div className="crm-suivre-tablewrap">
+      <table className="crm-suivre-table">
         <thead>
           <tr>
             <th aria-label={t('commercial.admin.selection')} />
             <th>{t('commercial.admin.colDate')}</th>
             <th>{t('commercial.admin.colInvoice')}</th>
-            <th className="commercial-amount">{t('commercial.admin.colCollected')}</th>
-            <th className="commercial-amount">{t('commercial.admin.colAmount')}</th>
+            <th className="is-num">{t('commercial.admin.colCollected')}</th>
+            <th className="is-num">{t('commercial.admin.colAmount')}</th>
             <th>{t('commercial.admin.colStatus')}</th>
           </tr>
         </thead>
@@ -427,13 +437,13 @@ function CommissionsTable({
               <td>{formatDay(line.receivedAt)}</td>
               <td>
                 {line.client?.companyName || line.client?.name}
-                <div className="commercial-muted">
+                <div className="crm-suivre-sub">
                   {line.invoice?.number}
                   {line.kind === 'REFUND' && ` · ${t('commercial.commissions.refund')}`}
                 </div>
               </td>
-              <td className="commercial-amount">{formatCents(line.baseHtCents)}</td>
-              <td className="commercial-amount">{formatCents(line.amountCents)}</td>
+              <td className="is-num">{formatCents(line.baseHtCents)}</td>
+              <td className="is-num">{formatCents(line.amountCents)}</td>
               <td>
                 {line.status === 'PAID'
                   ? line.paidBy

@@ -1,4 +1,4 @@
-import PageHeader from '../../../components/admin/ui/PageHeader'
+import { Columns3, Table2 } from 'lucide-react'
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../../../lib/api'
@@ -23,6 +23,7 @@ import '../AdminPortal.css'
 import './crm.css'
 
 import PipelineColumnComponent from './PipelineColumn'
+import PipelineHead from './PipelineHead'
 import RichLeadTable from './rich/RichLeadTable'
 import LeadFormPanel from './LeadFormPanel'
 import LeadDetailPage from './LeadDetailPage'
@@ -92,7 +93,6 @@ const CrmBoard = ({
       window.removeEventListener('resize', measure)
     }
   }, [viewMode, mobile, linkedLeadId])
-  const exportRich = useRef<(() => void) | null>(null)
   const setParam = useCallback(
     (key: string, value: string) =>
       setSearchParams(
@@ -513,6 +513,42 @@ const CrmBoard = ({
     </label>
   )
 
+  const headActions = (
+    <>
+      <div className="crm-suivre-seg" role="group" aria-label={t('crmSuivre.pipeline.viewAria')}>
+        <button
+          type="button"
+          onClick={() => changeViewMode('liste')}
+          title={t('crmRich.view.enrichedTable')}
+          aria-pressed={viewMode === 'liste'}
+          aria-label={t('crmRich.view.enrichedTable')}
+        >
+          <Table2 aria-hidden="true" />
+          <span>{t('crmSuivre.pipeline.viewTable')}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => changeViewMode('kanban')}
+          title={t('crm.page.viewKanban')}
+          aria-pressed={viewMode === 'kanban'}
+          aria-label={t('crm.page.viewKanban')}
+        >
+          <Columns3 aria-hidden="true" />
+          <span>{t('crmSuivre.pipeline.viewKanban')}</span>
+        </button>
+      </div>
+      {canManageCrm && (
+        <button
+          type="button"
+          className="crm-ui-btn crm-ui-btn--primary crm-ui-btn--big"
+          onClick={() => setShowForm((v) => !v)}
+        >
+          {showForm ? t('crm.page.hideForm') : t('crm.page.newLead')}
+        </button>
+      )}
+    </>
+  )
+
   return (
     <CrmThresholdsContext.Provider value={worklist?.thresholds ?? DEFAULT_WORKLIST_THRESHOLDS}>
       <div
@@ -532,95 +568,7 @@ const CrmBoard = ({
 
         {!linkedLeadId && (
           <>
-            <PageHeader
-              eyebrow={t('adminOps.pilotage.zone.commercial')}
-              title={t(queue ? 'shell.hub.crm.queue' : 'shell.hub.crm.pipeline')}
-              subtitle={t('crm.page.subtitleLeads')}
-              actions={
-                <div className="admin-actions portal-actions-reveal" style={{ gap: 8 }}>
-                  {/* View toggle */}
-                  {!queue && (
-                    <div className="crm-view-toggle">
-                      <button
-                        className={`crm-view-btn ${viewMode === 'liste' ? 'active' : ''}`}
-                        onClick={() => changeViewMode('liste')}
-                        title={t('crmRich.view.enrichedTable')}
-                        aria-pressed={viewMode === 'liste'}
-                        aria-label={t('crmRich.view.enrichedTable')}
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <line x1="8" y1="6" x2="21" y2="6" />
-                          <line x1="8" y1="12" x2="21" y2="12" />
-                          <line x1="8" y1="18" x2="21" y2="18" />
-                          <line x1="3" y1="6" x2="3.01" y2="6" />
-                          <line x1="3" y1="12" x2="3.01" y2="12" />
-                          <line x1="3" y1="18" x2="3.01" y2="18" />
-                        </svg>
-                        <span className="crm-view-label">{t('crmRich.view.enrichedTable')}</span>
-                      </button>
-                      <button
-                        className={`crm-view-btn ${viewMode === 'kanban' ? 'active' : ''}`}
-                        onClick={() => changeViewMode('kanban')}
-                        title={t('crm.page.viewKanban')}
-                        aria-pressed={viewMode === 'kanban'}
-                        aria-label={t('crm.page.viewKanban')}
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect x="2" y="3" width="6" height="18" rx="1" />
-                          <rect x="9" y="3" width="6" height="12" rx="1" />
-                          <rect x="16" y="3" width="6" height="15" rx="1" />
-                        </svg>
-                        <span className="crm-view-label">{t('crm.page.viewKanban')}</span>
-                      </button>
-                    </div>
-                  )}
-                  {!queue && (
-                    <button
-                      className="portal-button secondary portal-action-link"
-                      type="button"
-                      title={t('crm.page.exportCsv')}
-                      onClick={() => exportRich.current?.()}
-                      disabled={viewMode !== 'liste'}
-                    >
-                      <span className="portal-action-icon" aria-hidden>
-                        <svg
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          fill="none"
-                          stroke="currentColor"
-                        >
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="7 10 12 15 17 10" />
-                          <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                      </span>
-                      <span className="portal-action-label">{t('crm.page.exportCsv')}</span>
-                    </button>
-                  )}
-                  {canManageCrm && (
-                    <button className="portal-button" onClick={() => setShowForm((v) => !v)}>
-                      {showForm ? t('crm.page.hideForm') : t('crm.page.newLead')}
-                    </button>
-                  )}
-                </div>
-              }
-            />
+            {viewMode === 'file' && <PipelineHead actions={headActions} />}
 
             {showForm && canManageCrm && (
               <Dialog
@@ -643,7 +591,7 @@ const CrmBoard = ({
 
             {/* Main content area */}
             <div
-              className="portal-card crm-board-content"
+              className={`${viewMode === 'file' ? 'portal-card ' : ''}crm-board-content`}
               style={{
                 marginTop: 12,
                 padding: viewMode !== 'file' ? 0 : undefined,
@@ -680,13 +628,15 @@ const CrmBoard = ({
                   onCall={canManageCrm ? (lead) => openDetail(lead, { call: true }) : undefined}
                 />
               ) : loading && allLeads.length === 0 ? (
-                <div className="admin-loading" style={{ padding: 32 }}>
-                  {t('crm.page.loadingPipeline')}
-                </div>
+                <>
+                  <PipelineHead actions={headActions} />
+                  <div className="admin-loading" style={{ padding: 32 }}>
+                    {t('crm.page.loadingPipeline')}
+                  </div>
+                </>
               ) : (
                 <RichLeadTable
                   leads={entityLeads}
-                  exportRef={exportRich}
                   updatedLead={expandedLead}
                   admins={admins}
                   adminsById={adminsById}
@@ -699,26 +649,30 @@ const CrmBoard = ({
                   entityFilter={entityFilterControl}
                   project={filterProject}
                   onProjectChange={setFilterProject}
+                  headActions={headActions}
                   renderBoard={
                     viewMode === 'kanban'
                       ? (leads) => (
-                          <div className="crm-board">
-                            {columns.map((column) => (
-                              <PipelineColumnComponent
-                                key={column.status}
-                                column={{ ...column, leads: leads.filter((lead) => lead.status === column.status) }}
-                                admins={admins}
-                                adminsById={adminsById}
-                                canManageCrm={canManageCrm}
-                                converting={converting}
-                                onUpdateLead={handleUpdateLead}
-                                onConvertToClient={handleConvertToClient}
-                                onDrop={handleDrop}
-                                onDragStart={handleDragStart}
-                                onOpenDetail={openDetail}
-                              />
-                            ))}
-                          </div>
+                          <>
+                            {canManageCrm && <p className="crm-suivre-hint">{t('crmSuivre.kanban.hint')}</p>}
+                            <div className="crm-board" role="group" aria-label={t('crmSuivre.kanban.columnsAria')}>
+                              {columns.map((column) => (
+                                <PipelineColumnComponent
+                                  key={column.status}
+                                  column={{ ...column, leads: leads.filter((lead) => lead.status === column.status) }}
+                                  admins={admins}
+                                  adminsById={adminsById}
+                                  canManageCrm={canManageCrm}
+                                  converting={converting}
+                                  onUpdateLead={handleUpdateLead}
+                                  onConvertToClient={handleConvertToClient}
+                                  onDrop={handleDrop}
+                                  onDragStart={handleDragStart}
+                                  onOpenDetail={openDetail}
+                                />
+                              ))}
+                            </div>
+                          </>
                         )
                       : undefined
                   }

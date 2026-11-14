@@ -15,6 +15,10 @@ import {
   leadEntity,
 } from './constants'
 import { useCrmThresholds } from './thresholdsContext'
+import { CrmChip, type CrmTone } from '../../../components/admin/crm-ui'
+import { Avatar, HandoffChip, HeatChip, HoldChip } from './rich/chips'
+
+const ALERT_TONE: Record<string, CrmTone> = { cold: 'blue', overdue: 'red', stale: 'amber' }
 
 interface LeadCardProps {
   lead: Lead
@@ -135,17 +139,23 @@ const LeadCard: React.FC<LeadCardProps> = ({
           document.body,
         )}
       <p className="crm-card-meta">{lead.contactName || t('crm.card.contactMissing')}</p>
-      {alerts.length > 0 && (
+      <div className="crm-card-row crm-card-figures">
+        {lead.budget != null ? (
+          <span className="crm-card-amount">{formatMoney(lead.budget, 'EUR', { maximumFractionDigits: 0 })}</span>
+        ) : (
+          <span />
+        )}
+        <HeatChip lead={lead} />
+      </div>
+      {(alerts.length > 0 || lead.callHold || lead.closingHandoff) && (
         <div className="crm-card-alerts">
+          {lead.callHold && <HoldChip short />}
           {alerts.map((alert) => (
-            <span
-              key={alert.type}
-              className="crm-alert-badge"
-              style={{ '--alert-color': alert.color } as React.CSSProperties}
-            >
+            <CrmChip key={alert.type} tone={ALERT_TONE[alert.type] ?? 'grey'}>
               {alert.label}
-            </span>
+            </CrmChip>
           ))}
+          {lead.closingHandoff && <HandoffChip />}
         </div>
       )}
       <div className="crm-card-row">
@@ -171,11 +181,9 @@ const LeadCard: React.FC<LeadCardProps> = ({
           </span>
         )}
         {lead.source && <span className="crm-badge">{labelOfValue(t, SOURCE_LABEL_KEYS, lead.source)}</span>}
-        {lead.budget != null && (
-          <span className="crm-card-amount">{formatMoney(lead.budget, 'EUR', { maximumFractionDigits: 0 })}</span>
-        )}
       </div>
-      <div className="crm-card-row crm-card-assignee" style={{ marginTop: 8 }}>
+      <div className="crm-card-row crm-card-assignee">
+        {canManageCrm && assigned && <Avatar name={assigned.name} />}
         {canManageCrm && (
           <CustomSelect
             value={lead.assignedTo || ''}
@@ -186,14 +194,15 @@ const LeadCard: React.FC<LeadCardProps> = ({
             ]}
           />
         )}
-        {(assigned || !canManageCrm) && (
-          <span className="crm-card-meta" style={{ margin: 0 }}>
+        {!canManageCrm && (
+          <span className="crm-card-owner">
+            {assigned && <Avatar name={assigned.name} />}
             {assigned ? assigned.name : t('crm.common.unassigned')}
           </span>
         )}
       </div>
       {lead.nextActionAt && (
-        <p className="crm-card-meta" style={{ marginTop: 8 }}>
+        <p className="crm-card-meta crm-card-next">
           {t('crm.card.nextAction', { date: formatDate(lead.nextActionAt) })}
         </p>
       )}

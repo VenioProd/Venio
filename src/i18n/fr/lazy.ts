@@ -43,6 +43,7 @@ import crmPilot from './crmPilot'
 import crmLead from './crmLead'
 import crmToday from './crmToday'
 import crmProspect from './crmProspect'
+import crmSuivre from './crmSuivre'
 import portfolio from './portfolio'
 import projectSheets from './projectSheets'
 import security from './security'
@@ -92,6 +93,7 @@ const messages = {
   ...crmLead,
   ...crmToday,
   ...crmProspect,
+  ...crmSuivre,
   ...portfolio,
   ...projectSheets,
   ...security,

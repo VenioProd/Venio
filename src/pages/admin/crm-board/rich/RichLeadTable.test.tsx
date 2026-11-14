@@ -84,6 +84,29 @@ describe('<RichLeadTable />', () => {
     expect(props.onOpenLead).toHaveBeenCalledWith(expect.objectContaining({ _id: 'b' }))
   })
 
+  it('range les indicateurs en bandeau et pose des puces sur la relance en retard, la retenue et le closer', () => {
+    const past = new Date(Date.now() - 3 * 86_400_000).toISOString()
+    setup({
+      project: '',
+      leads: [
+        { ...leads[0], nextActionAt: past, nextActionLabel: 'Relancer' },
+        { ...leads[1], callHold: { at: past, reason: 'OPT_OUT_DETECTED' } },
+        { ...leads[2], closingHandoff: { at: past } },
+      ],
+    })
+    const strip = screen.getByRole('region', { name: 'Indicateurs du pipeline' })
+    expect(within(strip).getByText('2')).toBeInTheDocument()
+    expect(within(strip).getByText('leads ouverts')).toBeInTheDocument()
+    expect(screen.getByText('Relance en retard de 3 jours')).toBeInTheDocument()
+    expect(screen.getByText('Retenue pour opposition à décider')).toBeInTheDocument()
+    expect(screen.getByText('Transmise au closer')).toBeInTheDocument()
+    const pills = screen.getByRole('group', { name: 'Vues enregistrées' })
+    expect(within(pills).getByRole('button', { name: 'Tous les leads' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(within(pills).getByRole('button', { name: 'Relances en retard' }))
+    expect(within(pills).getByRole('button', { name: 'Relances en retard' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(pills).getByRole('button', { name: 'Tous les leads' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('ajoute une colonne depuis le panneau et mémorise le choix', () => {
     setup()
     expect(screen.queryByRole('columnheader', { name: /Secteur/ })).toBeNull()
@@ -125,7 +148,9 @@ describe('<RichLeadTable />', () => {
     expect(params.get('dir')).toBe('asc')
     expect(params.get('mode')).toBe('liste')
     expect(params.get('project')).toBe('ARROW')
-    fireEvent.change(screen.getByRole('combobox', { name: 'Vues enregistrées' }), { target: { value: 'hot' } })
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Vues enregistrées' })).getByRole('button', { name: 'Leads chauds' }),
+    )
     const hot = new URLSearchParams(screen.getByTestId('url').textContent!)
     expect(hot.get('q')).toBeNull()
     expect(hot.get('project')).toBeNull()
@@ -200,7 +225,9 @@ it('charge les archivés et restaure une ligne sans exposer les leads actifs', a
     return { items: [] }
   })
   setup()
-  fireEvent.change(screen.getByRole('combobox', { name: 'Vues enregistrées' }), { target: { value: 'archived' } })
+  fireEvent.click(
+    within(screen.getByRole('group', { name: 'Vues enregistrées' })).getByRole('button', { name: 'Archivés' }),
+  )
   expect(await screen.findByText('Ancien lead')).toBeInTheDocument()
   expect(screen.queryByText('Atelier Pivoine')).not.toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Restaurer' }))
