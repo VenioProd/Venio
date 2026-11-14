@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { ChartLine, Phone, SquareKanban, Sun } from 'lucide-react'
 import { lazyWithRetry as lazy } from '../../../lib/lazyWithRetry'
@@ -23,6 +23,7 @@ import { CrmTitleSlot } from '../../../components/admin/crm-ui/crmTitleSlot'
 import '../../../components/admin/ui/AdminHub.css'
 import '../crm-board/crm.css'
 import { fetchRuns } from '../crm-board/automations/api'
+import { TEAM_CALL_DESK_PREFIX } from '../crm-board/teamDeskApi'
 
 const CrmBoard = lazy(() => import('../CrmBoard'))
 const ClientAccountList = lazy(() => import('../ClientAccountList'))
@@ -55,6 +56,8 @@ export default function CrmHub() {
   const location = useLocation()
   const [counts, setCounts] = useState<WorklistResponse['counts']>()
   const [pending, setPending] = useState<number>()
+  // Analyses d'appel à valider : « Aujourd'hui » les compte dans ce qui est à traiter.
+  const [analyses, setAnalyses] = useState<number>()
   // Nombre de `CrmPageHead` posés par l'écran courant (voir crmTitleSlot).
   const [screenTitles, setScreenTitles] = useState(0)
   const titleSlot = useMemo(
@@ -67,6 +70,25 @@ export default function CrmHub() {
     [],
   )
   const canView = hasPermission(user, PERMISSIONS.VIEW_CRM)
+  const canManage = hasPermission(user, PERMISSIONS.MANAGE_CRM)
+  // Référence stable : CrmBoard la met dans les dépendances de son chargement. L'écran « Aujourd'hui »
+  // y joint le nombre d'analyses à valider.
+  const onWorklistCounts = useCallback((next: WorklistResponse['counts'], nextAnalyses?: number) => {
+    setCounts(next)
+    if (nextAnalyses !== undefined) setAnalyses(nextAnalyses)
+  }, [])
+  useEffect(() => {
+    if (!canManage) return
+    let active = true
+    apiFetch<{ analysesTotal?: number }>(`${TEAM_CALL_DESK_PREFIX}/pending`)
+      .then((data) => {
+        if (active && typeof data.analysesTotal === 'number') setAnalyses(data.analysesTotal)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [canManage])
   useEffect(() => {
     if (!canView) return
     let active = true
@@ -103,7 +125,7 @@ export default function CrmHub() {
     }
   }
 
-  const todayCount = counts ? counts.overdue + counts.today : undefined
+  const todayCount = counts ? counts.overdue + counts.today + (canManage ? (analyses ?? 0) : 0) : undefined
   const tabCount = (id: CrmTabId): number | undefined => {
     if (!counts && id !== 'automatisations') return undefined
     switch (id) {
@@ -119,9 +141,6 @@ export default function CrmHub() {
         return undefined
     }
   }
-  // Référence stable : CrmBoard la met dans les dépendances de son chargement.
-  const onWorklistCounts = setCounts
-
   const currentMoment = tab?.moment as CrmMomentId | undefined
   const moments = CRM_MOMENTS.flatMap((moment) => {
     const first = crmTabsOf(moment.id, visible)[0]

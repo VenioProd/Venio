@@ -32,11 +32,13 @@ const lead = (id: string, extra: Partial<Lead> = {}): Lead => ({
 let groups: WorklistGroups
 let pending: unknown
 let lostReasons: string[]
+let session: unknown
 const empty: WorklistGroups = { overdue: [], today: [], upcoming: [], drifting: [] }
 
 beforeEach(() => {
   auth.role = 'SUPER_ADMIN'
   lostReasons = []
+  session = { day: '2026-11-14', calls: 0, reached: 0, meetings: 0, conversionRate: null, targetConversionRate: 40 }
   groups = {
     overdue: [
       lead('morel', { company: 'Expert-comptable Morel', nextActionAt: daysFromNow(-2), priority: 'URGENTE' }),
@@ -93,6 +95,9 @@ beforeEach(() => {
         lostReasons,
       }
     if (path === '/api/admin/call-desk/pending') return pending
+    if (path === '/api/admin/call-desk/session') return session
+    if (path === '/api/admin/call-desk/calls/queue?limit=1')
+      return { leads: [], nextCursor: null, counts: { all: 38, callback: 6, never: 21, other: 11 } }
     if (path === '/api/admin/call-desk/leads/horizon/call-hold' && !options?.method)
       return {
         hold: {
@@ -296,5 +301,67 @@ describe('Branchement', () => {
     )
     expect(await screen.findByRole('heading', { level: 1, name: 'Cette semaine' })).toBeInTheDocument()
     await act(async () => {})
+  })
+})
+
+describe('Séance et rendez-vous', () => {
+  it('montre la séance du jour face à l’objectif, et la file à reprendre', async () => {
+    session = { day: '2026-11-14', calls: 27, reached: 12, meetings: 4, conversionRate: 33, targetConversionRate: 40 }
+    mount(DAY)
+    const card = await screen.findByRole('region', { name: /Votre séance/ })
+    await within(card).findByText('27')
+    expect(within(card).getByText('appels passés')).toBeInTheDocument()
+    expect(within(card).getByText('prospects joints')).toBeInTheDocument()
+    expect(within(card).getByRole('img', { name: '33 % de conversion, objectif 40 %' })).toBeInTheDocument()
+    expect(within(card).getByText('Objectif 40 %')).toBeInTheDocument()
+    expect(await within(card).findByRole('link', { name: 'Reprendre la séance, 38 fiches' })).toHaveAttribute(
+      'href',
+      '/admin/crm/prospecter/poste',
+    )
+    expect(within(card).getByText('6 rappels dus, 21 fiches jamais appelées, 11 autres.')).toBeInTheDocument()
+  })
+
+  it('range les rendez-vous du jour à part et liste ceux de la semaine', async () => {
+    groups.today = [
+      ...groups.today,
+      lead('dubreuil', { company: 'Menuiserie Dubreuil', nextActionAt: daysFromNow(0, 23), nextActionType: 'MEETING' }),
+    ]
+    groups.upcoming = [
+      ...groups.upcoming,
+      lead('durand', {
+        company: 'Cabinet Durand',
+        nextActionAt: daysFromNow(3, 10),
+        nextActionType: 'MEETING',
+        nextActionLabel: 'Présenter la maquette',
+      }),
+    ]
+    const onCounts = vi.fn()
+    mount(DAY, '/admin/crm/aujourdhui', onCounts)
+    const meetings = await screen.findByRole('region', { name: /Rendez-vous du jour/ })
+    expect(within(meetings).getByRole('link', { name: 'Menuiserie Dubreuil' })).toBeInTheDocument()
+    // Toujours une ligne de la file, avec ses actions.
+    expect(within(meetings).getByRole('button', { name: /^Fait/ })).toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: /La journée/ })).queryByText('Menuiserie Dubreuil')).toBeNull()
+    // Le rendez-vous reste « du jour » dans ce qui est à traiter.
+    expect(screen.getByRole('img', { name: '2 en retard, 2 du jour, 2 analyses à valider' })).toBeInTheDocument()
+
+    const upcoming = screen.getByRole('region', { name: /À venir/ })
+    expect(within(upcoming).getByRole('link', { name: 'Cabinet Durand, Présenter la maquette' })).toHaveAttribute(
+      'href',
+      '/admin/crm/leads/durand?from=queue',
+    )
+    expect(within(upcoming).queryByText(/Brasserie du Sablon/)).toBeNull()
+    // La coque reçoit aussi les analyses à valider.
+    await waitFor(() =>
+      expect(onCounts).toHaveBeenLastCalledWith({ overdue: 2, today: 2, upcoming: 2, drifting: 1 }, 2),
+    )
+  })
+
+  it('sans gestion du CRM : pas de séance lue', async () => {
+    auth.role = 'STAGIAIRE'
+    mount(DAY)
+    await screen.findByText('Garage Lambert')
+    expect(screen.queryByRole('region', { name: /Votre séance/ })).toBeNull()
+    expect(vi.mocked(apiFetch)).not.toHaveBeenCalledWith('/api/admin/call-desk/session')
   })
 })
