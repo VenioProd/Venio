@@ -1,0 +1,185 @@
+/*
+ * Textes des scripts d'appel : volet « Les scripts » de Scripts et rapport et panneau du poste d'appel.
+ * Pièges : --bg-card est quasi transparent (fonds pleins : --bg-secondary) ; aucun calque flottant.
+ */
+.cs-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.cs-card * {
+  min-width: 0;
+}
+.cs-muted {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.cs-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: var(--text-secondary);
+}
+.cs-state p {
+  margin: 0;
+}
+.cs-error {
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  background: var(--critical-surface);
+  border: 1px solid var(--critical);
+  border-radius: var(--r-md);
+  font-size: 14px;
+}
+
+/* ── Liste : un script par ligne, texte déplié dessous ── */
+.cs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cs-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.cs-item:last-child {
+  border-bottom: 0;
+}
+.cs-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.cs-toggle,
+.cs-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.cs-toggle {
+  flex: 1 1 140px;
+  min-height: 32px;
+}
+.cs-toggle:focus-visible,
+.cs-panel-head:focus-visible,
+.cs-body:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.cs-tag {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.cs-chevron {
+  flex: none;
+  color: var(--text-secondary);
+  transform: rotate(-90deg);
+  transition: transform 0.15s ease;
+}
+[aria-expanded='true'] > .cs-chevron {
+  transform: none;
+}
+.cs-meta {
+  flex-basis: 100%;
+  color: var(--text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* ── Texte : brut, retours à la ligne conservés, jamais interprété ── */
+.cs-body {
+  max-height: 320px;
+  padding: 12px;
+  overflow: auto;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── Formulaire ── */
+.cs-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cs-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.cs-form .portal-input {
+  margin: 0;
+}
+.cs-textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+.cs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── Panneau du poste d'appel : sous le sélecteur de script, pleine largeur de la grille ── */
+.cs-panel {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--r-md);
+}
+.cs-panel-head {
+  flex-wrap: wrap;
+  min-height: 32px;
+  width: 100%;
+}
+.cs-panel-tag {
+  font-weight: 600;
+}
+.cs-panel-title {
+  flex: 1 1 100%;
+  padding-left: 24px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.cs-panel .cs-body {
+  max-height: 40vh;
+}
+
+@media (max-width: 720px) {
+  .cs-toggle,
+  .cs-panel-head {
+    min-height: 40px;
+  }
+}

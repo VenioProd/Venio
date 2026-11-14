@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ComponentProps } from 'react'
 import { FileText } from 'lucide-react'
 import CrmBanner from '../admin/crm-ui/CrmBanner'
 import CrmChip, { type CrmTone } from '../admin/crm-ui/CrmChip'
 import CrmEmpty from '../admin/crm-ui/CrmEmpty'
 import CrmPageHead from '../admin/crm-ui/CrmPageHead'
+import CrmSidePanel, { CrmWithPanel } from '../admin/crm-ui/CrmSidePanel'
+import { useAuth } from '../../context/AuthContext'
 import { useI18n } from '../../context/I18nContext'
+import { hasPermission, PERMISSIONS } from '../../lib/permissions'
 import type { MessageKey } from '../../i18n'
 import {
   getScriptReport,
@@ -12,6 +15,8 @@ import {
   type ScriptReport,
   type ScriptReportRow,
 } from '../../services/callScriptReports'
+import { REP_CALL_DESK, TEAM_CALL_DESK } from '../../services/callScripts'
+import ScriptTexts from './ScriptTexts'
 import './scriptReports.css'
 
 const STATUS_TONE: Record<ScriptReport['status'], CrmTone> = {
@@ -24,7 +29,9 @@ const STATUS_TONE: Record<ScriptReport['status'], CrmTone> = {
 /**
  * Rapports hebdomadaires des scripts : historique des semaines et rapport ouvert.
  * Le même écran sert l'externe (ses rapports) et l'équipe (les siens, ou ceux de
- * toute l'équipe pour un administrateur du CRM, filtrables par membre).
+ * toute l'équipe pour un administrateur du CRM, filtrables par membre). Le volet
+ * « Les scripts » en montre les textes : modifiables par l'équipe avec `MANAGE_CRM`,
+ * en lecture seule pour l'externe.
  */
 export default function ScriptReportsView({ base, team = false }: { base: string; team?: boolean }) {
   const { t, locale } = useI18n()
@@ -78,6 +85,17 @@ export default function ScriptReportsView({ base, team = false }: { base: string
   const weekLabel = (row: ScriptReportRow) =>
     t('callScriptReport.week', { week: row.weekKey.split('-W')[1] ?? row.weekKey })
 
+  const shown = report && report._id === selected ? report : null
+  const scriptCalls = shown && {
+    week: shown.weekKey.split('-W')[1] ?? shown.weekKey,
+    byTag: Object.fromEntries(shown.stats.byScript.map((row) => [row.tag, row.calls])),
+  }
+  const scripts = team ? (
+    <TeamScriptTexts calls={scriptCalls || undefined} />
+  ) : (
+    <ScriptTexts base={REP_CALL_DESK} canEdit={false} level={3} calls={scriptCalls || undefined} />
+  )
+
   const authorFilter = team && canSeeTeam && authors.length > 1 && (
     <label className="sr-filter">
       <span className={team ? 'crm-ui-sr-only' : undefined}>{t('callScriptReport.author')}</span>
@@ -92,22 +110,8 @@ export default function ScriptReportsView({ base, team = false }: { base: string
     </label>
   )
 
-  return (
-    <section className="script-reports" aria-labelledby="script-reports-title">
-      {team ? (
-        <CrmPageHead
-          titleId="script-reports-title"
-          title={t('crmProspect.scripts.title')}
-          lede={t('callScriptReport.introTeam')}
-          actions={authorFilter || undefined}
-        />
-      ) : (
-        <header className="sr-head">
-          <h2 id="script-reports-title">{t('callScriptReport.title')}</h2>
-          <p className="sr-muted">{t('callScriptReport.intro')}</p>
-        </header>
-      )}
-
+  const content = (
+    <>
       {error ? (
         <div className="sr-state sr-state--error" role="alert">
           <p>{t('callScriptReport.loadError')}</p>
@@ -168,7 +172,44 @@ export default function ScriptReportsView({ base, team = false }: { base: string
           </div>
         </div>
       )}
+    </>
+  )
+
+  return (
+    <section className="script-reports" aria-labelledby="script-reports-title">
+      {team ? (
+        <CrmPageHead
+          titleId="script-reports-title"
+          title={t('crmProspect.scripts.title')}
+          lede={t('callScriptReport.introTeam')}
+          actions={authorFilter || undefined}
+        />
+      ) : (
+        <header className="sr-head">
+          <h2 id="script-reports-title">{t('callScriptReport.title')}</h2>
+          <p className="sr-muted">{t('callScriptReport.intro')}</p>
+        </header>
+      )}
+
+      {team ? (
+        <CrmWithPanel panel={<CrmSidePanel label={t('crmScripts.title')}>{scripts}</CrmSidePanel>}>
+          {content}
+        </CrmWithPanel>
+      ) : (
+        <>
+          {content}
+          {scripts}
+        </>
+      )}
     </section>
+  )
+}
+
+/** Volet de l'équipe : l'écriture est ouverte à `MANAGE_CRM`, que le serveur exige aussi. */
+function TeamScriptTexts({ calls }: { calls?: ComponentProps<typeof ScriptTexts>['calls'] }) {
+  const { user } = useAuth()
+  return (
+    <ScriptTexts base={TEAM_CALL_DESK} canEdit={hasPermission(user, PERMISSIONS.MANAGE_CRM)} level={2} calls={calls} />
   )
 }
 
