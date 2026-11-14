@@ -2,7 +2,7 @@ import { apiFetch } from '../../../lib/api'
 import { fetchTimeline } from '../../../services/interactions'
 import type { CallSettings, RepInteraction, RepLead } from '../../../services/externalSales'
 import type { Lead } from '../../../types/crm.types'
-import type { CallDeskApi } from '../../commercial/callDesk'
+import type { CallDeskApi, QueueCounts } from '../../commercial/callDesk'
 
 /** Routeur d'appels de l'équipe : mêmes chemins et mêmes formes que `/api/commercial` (contrat, « Vague 3 »). */
 export const TEAM_CALL_DESK_PREFIX = '/api/admin/call-desk'
@@ -35,13 +35,14 @@ export const teamDesk: CallDeskApi = {
   canLiftHold: true,
   settings: () => apiFetch<CallSettings>(`${TEAM_CALL_DESK_PREFIX}/calls/settings`),
   filters: () => apiFetch<{ lists: string[]; projects: string[] }>(`${TEAM_CALL_DESK_PREFIX}/calls/filters`),
-  queue: ({ cursor, callList, project, mine }) => {
+  queue: ({ cursor, callList, project, mine, category }) => {
     const query = new URLSearchParams()
     if (cursor) query.set('cursor', cursor)
     if (callList) query.set('callList', callList)
     if (project) query.set('project', project)
     if (mine !== undefined) query.set('mine', mine ? '1' : '0')
-    return apiFetch<{ leads: RepLead[]; nextCursor: string | null }>(
+    if (category) query.set('category', category)
+    return apiFetch<{ leads: RepLead[]; nextCursor: string | null; counts?: QueueCounts }>(
       `${TEAM_CALL_DESK_PREFIX}/calls/queue${query.size ? `?${query}` : ''}`,
     )
   },

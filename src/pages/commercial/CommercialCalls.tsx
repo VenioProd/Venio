@@ -19,7 +19,8 @@ import DialerPanel from './softphone/DialerPanel'
 import ProspectCallCheck, { HARD_BLOCKS } from './callCountries/ProspectCallCheck'
 import { DIALER_MODES, useDialer, type DialerMode } from './softphone/dialer'
 import CallSessionCard from '../admin/crm-today/CallSessionCard'
-import { QUEUE_CATEGORIES, fetchTeamQueue, type QueueCategory, type QueueCounts } from '../admin/crm-today/callSession'
+import { QUEUE_CATEGORIES, type QueueCategory, type QueueCounts } from '../admin/crm-today/callSession'
+import CallScriptPanel from '../../components/callScriptReport/CallScriptPanel'
 
 const CATEGORY_KEYS = {
   '': 'crmSession.cat.all',
@@ -123,7 +124,8 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
   useEffect(() => {
     let active = true
     const params = { callList, project, ...(desk.mineToggle ? { mine } : {}) }
-    ;(desk.team && category ? fetchTeamQueue({ ...params, category }) : desk.queue(params))
+    desk
+      .queue({ ...params, ...(desk.team && category ? { category } : {}) })
       .then((data) => {
         if (active) {
           setLeads(data.leads)
@@ -285,7 +287,7 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
     let page: RepLead[] = []
     do {
       const params: CallQueueParams = { callList, project, cursor: next, ...(desk.mineToggle ? { mine } : {}) }
-      const data = await (desk.team && category ? fetchTeamQueue({ ...params, category }) : desk.queue(params))
+      const data = await desk.queue({ ...params, ...(desk.team && category ? { category } : {}) })
       page = data.leads.filter((item) => !completed.current.has(item._id))
       next = data.nextCursor
     } while (!page.length && next)
@@ -949,6 +951,7 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
                               ))}
                             </select>
                           </label>
+                          <CallScriptPanel apiPrefix={desk.apiPrefix} tag={draft.scriptTag} />
                           {desk.allowScriptTags && (
                             <label>
                               {t('commercial.calls.addScript')}

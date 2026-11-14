@@ -12,6 +12,8 @@ export interface CallQueueParams {
   project?: string
   /** Équipe seulement : `true` = mes fiches, `false` = tout mon périmètre. */
   mine?: boolean
+  /** Équipe seulement : rappels dus, fiches jamais appelées ou les autres. */
+  category?: 'callback' | 'never' | 'other'
 }
 
 /** Équipe seulement : fiches de la file par catégorie (`counts` de la première page). */
