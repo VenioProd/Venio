@@ -28,6 +28,9 @@ import {
 
 const OPEN_STATUSES = ['LEAD', 'QUALIFIED', 'CONTACTED', 'DEMO']
 
+/** Catégories de la file (`?category=`), par rang de tri : 0 rappels dus, 1 jamais appelées, 2-3 les autres. */
+const QUEUE_CATEGORIES: Record<string, number[]> = { callback: [0], never: [1], other: [2, 3] }
+
 /**
  * File d'appel, résultat rapide et son annulation. Le périmètre (externe ou
  * équipe) est injecté : voir `lib/callDeskScope.ts`.
@@ -124,11 +127,13 @@ export function createCallDeskRoutes(scope: CallDeskScope) {
       }
       if (typeof req.query.callList === 'string' && req.query.callList) filter.callList = req.query.callList
       if (typeof req.query.project === 'string' && req.query.project) filter.project = req.query.project
+      const category = typeof req.query.category === 'string' ? req.query.category : ''
+      if (category && !QUEUE_CATEGORIES[category]) throw callError(400, 'Catégorie invalide')
       const settings = await CrmSettings.getSettings()
       const voicemailOutcomes = settings.callOutcomes
         .filter((item) => item.effect === 'VOICEMAIL')
         .map((item) => item.value)
-      const items = await Lead.aggregate([
+      const ranked = [
         { $match: filter },
         // Un numéro opposé sort de la file quel que soit le commercial ou la fiche qui le porte.
         ...suppressedPhoneStages(settings.callDefaultRegion),
@@ -147,6 +152,15 @@ export function createCallDeskRoutes(scope: CallDeskScope) {
             queueTime: { $toLong: { $ifNull: ['$nextActionAt', { $ifNull: ['$lastCallAt', '$createdAt'] }] } },
           },
         },
+      ]
+      // Compteurs par catégorie (équipe, première page) : même file, mêmes filtres, sans la catégorie.
+      const countsPromise =
+        scope.kind === 'team' && !cursor
+          ? Lead.aggregate<{ _id: number; n: number }>([...ranked, { $group: { _id: '$queueBucket', n: { $sum: 1 } } }])
+          : null
+      const items = await Lead.aggregate([
+        ...ranked,
+        ...(category ? [{ $match: { queueBucket: { $in: QUEUE_CATEGORIES[category] } } }] : []),
         ...(cursor
           ? [
               {
@@ -175,6 +189,17 @@ export function createCallDeskRoutes(scope: CallDeskScope) {
               JSON.stringify({ bucket: last.queueBucket, time: last.queueTime, id: String(last._id), asOf }),
             ).toString('base64url')
           : null
+      let counts: Record<'all' | 'callback' | 'never' | 'other', number> | undefined
+      if (countsPromise) {
+        const byBucket = new Map((await countsPromise).map((row) => [row._id, row.n]))
+        const sum = (buckets: number[]) => buckets.reduce((total, bucket) => total + (byBucket.get(bucket) ?? 0), 0)
+        counts = {
+          all: sum([0, 1, 2, 3]),
+          callback: sum(QUEUE_CATEGORIES.callback!),
+          never: sum(QUEUE_CATEGORIES.never!),
+          other: sum(QUEUE_CATEGORIES.other!),
+        }
+      }
       // Lot P : pays, fuseaux et ce qui empêche d'appeler maintenant (le lancement repasse la garde exacte).
       const now = new Date()
       res.json({
@@ -186,6 +211,7 @@ export function createCallDeskRoutes(scope: CallDeskScope) {
           }
         }),
         nextCursor,
+        ...(counts ? { counts } : {}),
       })
     } catch (err) {
       next(err)
