@@ -99,16 +99,13 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
   const [confirm, setConfirm] = useState<'archive' | 'delete' | null>(null)
   // Relit les appels après un appel passé ici ; relit la fiche quand une analyse l'a modifiée.
   const [callsRefresh, setCallsRefresh] = useState(0)
-  const [openCall, setOpenCall] = useState<{ callId: string; nonce: number } | null>(null)
+  // Arrivée depuis « Aujourd'hui » sur une analyse à valider (`?analyse=<id de l'appel>`) : l'onglet Appels,
+  // ouvert par défaut, se déplie sur cet appel.
+  const [openCall, setOpenCall] = useState<{ callId: string; nonce: number } | null>(() => {
+    const callId = new URLSearchParams(location.search).get('analyse')
+    return callId ? { callId, nonce: 0 } : null
+  })
   const [holdDecision, setHoldDecision] = useState(false)
-
-  // Arrivée depuis « Aujourd'hui » sur une analyse à valider (`?analyse=<id de l'appel>`) : l'onglet Appels s'ouvre sur cet appel.
-  const analysedCallId = new URLSearchParams(location.search).get('analyse')
-  useEffect(() => {
-    if (!analysedCallId) return
-    setTab('calls')
-    setOpenCall({ callId: analysedCallId, nonce: Date.now() })
-  }, [analysedCallId, lead._id])
 
   // L'écran d'origine : la file de travail (`from`) ou le pipeline. Le retour lui-même est géré par la page parente.
   const originTab = CRM_QUEUE_ORIGINS[new URLSearchParams(location.search).get('from') ?? ''] ?? 'pipeline'
