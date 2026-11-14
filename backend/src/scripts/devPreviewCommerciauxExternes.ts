@@ -16,8 +16,9 @@ const mem = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine
 process.env.MONGODB_URI = mem.getUri('venio')
 process.env.JWT_SECRET = 'dev-preview-secret-key-not-for-prod'
 process.env.NODE_ENV = 'development'
-process.env.CORS_ORIGIN = 'http://localhost:5501'
-process.env.PORT = '3000'
+// Ports surchargeables pour lancer plusieurs démos côte à côte (PORT et CORS_ORIGIN déjà posés sont gardés).
+process.env.CORS_ORIGIN ??= 'http://localhost:5501'
+process.env.PORT ??= '3000'
 process.env.SUPER_ADMIN_EMAIL = 'contact@venio.paris'
 process.env.SUPER_ADMIN_PASSWORD = 'Preview1234!'
 process.env.SUPER_ADMIN_NAME = 'Raphael'
