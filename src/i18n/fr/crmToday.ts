@@ -25,12 +25,12 @@ const crmToday = {
   'crmToday.now.clearText': 'Lancez la séance d’appels pour avancer sur la file.',
   'crmToday.now.clearTextReadOnly': 'Rien n’attend dans la file pour aujourd’hui.',
 
-  'crmToday.mix.total': '{count, plural, one {1 à traiter aujourd’hui} other {# à traiter aujourd’hui}}',
+  'crmToday.mix.total': '{count, plural, one {# à traiter aujourd’hui} other {# à traiter aujourd’hui}}',
   'crmToday.mix.outside': 'Hors liste : {week} cette semaine, {keep} à ne pas laisser filer',
   'crmToday.mix.aria': '{late} en retard, {today} du jour, {analyses} analyses à valider',
   'crmToday.mix.late': '{count} en retard',
   'crmToday.mix.today': '{count} du jour',
-  'crmToday.mix.analyses': '{count, plural, one {1 analyse à valider} other {# analyses à valider}}',
+  'crmToday.mix.analyses': '{count, plural, one {# analyse à valider} other {# analyses à valider}}',
 
   'crmToday.section.late': 'En retard',
   'crmToday.section.day': 'La journée',
@@ -79,11 +79,11 @@ const crmToday = {
   'crmToday.analysis.open': 'Ouvrir l’analyse',
   'crmToday.analysis.openAria': 'Ouvrir l’analyse de l’appel avec {company}',
   'crmToday.analysis.more':
-    '{count, plural, one {1 autre analyse attend, dans la fiche de chaque lead.} other {# autres analyses attendent, dans la fiche de chaque lead.}}',
+    '{count, plural, one {# autre analyse attend, dans la fiche de chaque lead.} other {# autres analyses attendent, dans la fiche de chaque lead.}}',
   'crmToday.duration': '{minutes} min {seconds}',
   'crmToday.durationShort': '{seconds} s',
 
-  'crmToday.holds.count': '{count, plural, one {1 retenue d’opposition} other {# retenues d’opposition}}',
+  'crmToday.holds.count': '{count, plural, one {# retenue d’opposition} other {# retenues d’opposition}}',
   'crmToday.holds.intro': 'Ces fiches ne seront pas rappelées tant que vous n’avez pas confirmé ou levé l’opposition.',
   'crmToday.holds.meta': 'Retenue posée le {date}, sur un appel de {author}',
   'crmToday.holds.metaNoAuthor': 'Retenue posée le {date}',
@@ -91,7 +91,7 @@ const crmToday = {
   'crmToday.holds.decideAria': 'Décider de la retenue sur {company}',
   'crmToday.holds.hide': 'Masquer',
   'crmToday.holds.openLead': 'Voir la fiche',
-  'crmToday.holds.more': '{count, plural, one {1 autre retenue attend.} other {# autres retenues attendent.}}',
+  'crmToday.holds.more': '{count, plural, one {# autre retenue attend.} other {# autres retenues attendent.}}',
   'crmToday.holds.decided': 'Décision enregistrée pour {company}.',
 
   'crmToday.pendingError': 'Les analyses et les retenues n’ont pas pu être chargées.',
