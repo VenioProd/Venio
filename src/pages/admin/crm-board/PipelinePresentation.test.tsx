@@ -73,8 +73,9 @@ describe('présentation du pipeline Système', () => {
     )
     expect(screen.getByRole('heading', { name: 'Atelier Lumière' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: 'Historique' }))
     expect(screen.getByText('Interaction timeline')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('tab', { name: 'Chaîne commerciale' }))
-    expect(screen.getByText('Revenue chain')).toBeInTheDocument()
+    // La chaîne commerciale est dans le panneau de droite, toujours visible.
+    expect(screen.getByRole('region', { name: 'Chaîne commerciale' })).toHaveTextContent('Revenue chain')
   })
 })

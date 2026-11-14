@@ -1230,12 +1230,6 @@ html.theme-portail .pipeline-page .crm-card:hover {
   border: 0;
   cursor: pointer;
 }
-.crm-detail-duplicates {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
 @media (width > 767px) {
   .crm-table-page {
     min-height: calc(100dvh - var(--crm-board-top, 56px) - var(--crm-board-bottom, 0px));
@@ -1301,94 +1295,6 @@ html.theme-portail .pipeline-page .crm-card:hover {
   }
 }
 
-.crm-detail-header {
-  position: sticky;
-  top: 56px;
-  z-index: 20;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-}
-.crm-detail-header h1 {
-  margin: 0;
-  font-size: 22px;
-  overflow-wrap: anywhere;
-}
-.crm-detail-summary,
-.crm-detail-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-.crm-detail-summary {
-  flex: 1 1 100%;
-  color: var(--text-secondary);
-}
-.crm-detail-next-action {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-.crm-detail-summary input {
-  width: 220px;
-  max-width: 100%;
-  margin: 0;
-}
-.crm-detail-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 20px;
-  padding: 20px 0;
-  align-items: stretch;
-}
-.crm-detail-fields,
-.crm-detail-journal {
-  min-width: 0;
-}
-.crm-detail-journal {
-  padding: 16px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--r-lg);
-  background: var(--bg-secondary);
-}
-.crm-detail-journal h2 {
-  margin: 0 0 12px;
-  font-size: 16px;
-}
-.crm-detail-tabs {
-  display: flex;
-  overflow-x: auto;
-  gap: 4px;
-  margin-top: 16px;
-  border-bottom: 1px solid var(--border-color);
-}
-.crm-detail-tabs button {
-  flex: none;
-  min-height: 40px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  font: inherit;
-  cursor: pointer;
-}
-.crm-detail-tabs button[aria-selected='true'] {
-  background: var(--bg-card-hover);
-  color: var(--text-primary);
-  box-shadow: inset 0 -2px var(--primary);
-}
-.crm-detail-menu,
 .crm-card-menu {
   z-index: 1200;
   display: flex;
@@ -1485,22 +1391,7 @@ html.theme-portail .pipeline-page .crm-column-over {
   border-radius: var(--r-pill);
   background: var(--primary);
 }
-@media (max-width: 1023px) {
-  .crm-detail-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .crm-detail-journal {
-    grid-row: 1;
-  }
-}
 @media (max-width: 767px) {
-  .crm-detail-header {
-    top: 52px;
-    padding: 12px;
-  }
-  .crm-detail-actions {
-    width: 100%;
-  }
   .crm-board {
     grid-auto-columns: 260px;
     gap: 12px;
@@ -1520,12 +1411,6 @@ html.theme-portail .pipeline-page .crm-column-over {
   background: none;
 }
 
-/* Fiche lead : sous 1024 px l'en-tête collant occuperait plus de la moitié de l'écran. */
-@media (max-width: 1023px) {
-  .crm-detail-header {
-    position: static;
-  }
-}
 .crm-column.crm-column-collapsed {
   min-width: 0;
   width: 72px;
@@ -1549,47 +1434,6 @@ html.theme-portail .pipeline-page .crm-column-over {
 .crm-detail-callbar {
   margin-top: 12px;
   min-width: 0;
-}
-.crm-detail-hold {
-  margin: 12px 0;
-  padding: 12px 14px;
-  border: 2px solid var(--critical);
-  border-radius: var(--r-lg);
-  background: var(--critical-surface);
-  color: var(--text-primary);
-  font-size: 14px;
-  overflow-wrap: anywhere;
-}
-.crm-detail-hold-link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--primary-light);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-}
-.crm-hold-decision {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-}
-.crm-hold-decision-meta {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-.crm-hold-decision-quote {
-  margin: 0;
-  padding: 8px 12px;
-  border-left: 3px solid var(--critical);
-  background: var(--bg-secondary);
-  font-style: italic;
-}
-.crm-hold-decision-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 .crm-call-desk {
   min-width: 0;

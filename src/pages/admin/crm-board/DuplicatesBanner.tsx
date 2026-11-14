@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react'
+import { GitMerge } from 'lucide-react'
+import { CrmBanner } from '../../../components/admin/crm-ui'
 import { useI18n } from '../../../context/I18nContext'
+import './lead/lead.css'
 import { STATUS_MAP } from './constants'
 import {
   DUPLICATE_DEBOUNCE_MS,
@@ -45,38 +48,32 @@ const DuplicatesBanner: React.FC<DuplicateQuery & { onMerge?: () => void }> = ({
 
   if (duplicates.length === 0) return null
   return (
-    <div
-      className="crm-duplicates-banner"
+    <CrmBanner
+      tone="amber"
       role="status"
-      style={{
-        margin: '12px 0',
-        padding: '10px 14px',
-        borderRadius: 8,
-        border: '1px solid var(--warning)',
-        background: 'color-mix(in srgb, var(--warning) 10%, transparent)',
-      }}
+      icon={<GitMerge />}
+      title={t('crm.duplicates.title', { count: duplicates.length })}
+      actions={
+        onMerge && (
+          <button type="button" className="crm-ui-btn crm-ui-btn--sm" onClick={onMerge}>
+            {t('crm.merge.open')}
+          </button>
+        )
+      }
     >
-      <strong>{t('crm.duplicates.title', { count: duplicates.length })}</strong>
-      {onMerge && (
-        <button type="button" className="portal-button secondary" onClick={onMerge}>
-          {t('crm.merge.open')}
-        </button>
-      )}
-      <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+      <span className="crm-lead-dup">
         {duplicates.map((d) => (
-          <li key={d._id}>
+          <span key={d._id} className="crm-lead-dup__row">
             {d.company}
             {d.contactName ? ` — ${d.contactName}` : ''}
             {d.contactEmail ? ` · ${d.contactEmail}` : ''}
             {d.contactPhone ? ` · ${d.contactPhone}` : ''}
             {` (${statusLabel(d.status)}${d.archivedAt ? `, ${t('crm.duplicates.archived')}` : ''})`}
-          </li>
+          </span>
         ))}
-      </ul>
-      <p style={{ margin: '6px 0 0', fontSize: 13, opacity: 0.8 }}>
-        {t(onMerge ? 'crm.duplicates.hintExisting' : 'crm.duplicates.hint')}
-      </p>
-    </div>
+        <span className="crm-lead-dup__hint">{t(onMerge ? 'crm.duplicates.hintExisting' : 'crm.duplicates.hint')}</span>
+      </span>
+    </CrmBanner>
   )
 }
 

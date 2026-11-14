@@ -129,6 +129,8 @@ export default function TranscriptView({
         </p>
       )}
 
+      {quoteRanges && <p className="ci-muted">{t('crmLead.transcript.legend')}</p>}
+
       {segments.length === 0 ? (
         <p className="ci-muted">{t('callInsights.transcript.empty')}</p>
       ) : (
@@ -151,34 +153,36 @@ export default function TranscriptView({
                 data-segment={position}
                 data-active-hit={hasActive ? 'true' : undefined}
               >
-                <p className="ci-line-head">
-                  {segment.speaker === 'REP' ? <Headset size={14} aria-hidden /> : <User size={14} aria-hidden />}
-                  <strong>{speakerLabel}</strong>
-                  <time className="ci-time" dateTime={`PT${Math.floor(segment.startMs / 1000)}S`}>
-                    {formatOffset(segment.startMs)}
-                  </time>
-                </p>
-                <p className="ci-line-text">
-                  {parts.map((part, partIndex) =>
-                    part.flag === 0 ? (
-                      <Fragment key={partIndex}>{part.text}</Fragment>
-                    ) : (
-                      <mark
-                        key={partIndex}
-                        className={[
-                          part.flag & QUOTE ? 'ci-mark-quote' : '',
-                          part.flag & HIT ? 'ci-mark-hit' : '',
-                          part.flag & ACTIVE ? 'ci-mark-active' : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                        data-active-hit={part.flag & ACTIVE ? 'true' : undefined}
-                      >
-                        {part.text}
-                      </mark>
-                    ),
-                  )}
-                </p>
+                <time className="ci-time" dateTime={`PT${Math.floor(segment.startMs / 1000)}S`}>
+                  {formatOffset(segment.startMs)}
+                </time>
+                <div className="ci-bubble">
+                  <p className="ci-line-head">
+                    {segment.speaker === 'REP' ? <Headset size={14} aria-hidden /> : <User size={14} aria-hidden />}
+                    <strong>{speakerLabel}</strong>
+                  </p>
+                  <p className="ci-line-text">
+                    {parts.map((part, partIndex) =>
+                      part.flag === 0 ? (
+                        <Fragment key={partIndex}>{part.text}</Fragment>
+                      ) : (
+                        <mark
+                          key={partIndex}
+                          className={[
+                            part.flag & QUOTE ? 'ci-mark-quote' : '',
+                            part.flag & HIT ? 'ci-mark-hit' : '',
+                            part.flag & ACTIVE ? 'ci-mark-active' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          data-active-hit={part.flag & ACTIVE ? 'true' : undefined}
+                        >
+                          {part.text}
+                        </mark>
+                      ),
+                    )}
+                  </p>
+                </div>
               </li>
             )
           })}

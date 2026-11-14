@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { PhoneOff } from 'lucide-react'
 import ConfirmModal from '../ConfirmModal'
+import { CrmBanner } from '../admin/crm-ui'
 import { useI18n } from '../../context/I18nContext'
 import { apiErrorCode } from '../../services/callInsights'
 import { QuoteLine } from './ui'
@@ -42,58 +43,65 @@ export default function OptOutAlert({ quote, onQuote, held = false, onConfirm, o
   }
 
   return (
-    <div className="ci-optout" role="alert">
-      <PhoneOff size={20} aria-hidden />
-      <div>
-        <strong>{t('callInsights.optOut.title')}</strong>
-        {!done && <p>{t('callInsights.optOut.body')}</p>}
-        {quote && <QuoteLine quote={quote} onQuote={onQuote} />}
-        {done === 'CONFIRM' ? (
-          <p className="ci-optout-state" role="status">
-            {t('callInsights.optOut.confirmed')}
-          </p>
-        ) : done === 'DISMISS' ? (
-          <p className="ci-optout-state" role="status">
-            {t('callInsights.optOut.lifted')}
-          </p>
-        ) : held ? (
-          <>
-            <p className="ci-optout-state">{t('callInsights.optOut.held')}</p>
-            {(onConfirm || onLift) && (
-              <div className="ci-gestures">
-                {onConfirm && (
-                  <button
-                    type="button"
-                    className="portal-button"
-                    disabled={busy}
-                    onClick={() => void run('CONFIRM', onConfirm)}
-                  >
-                    {t('callInsights.optOut.confirm')}
-                  </button>
+    <>
+      <CrmBanner
+        tone="red"
+        role="alert"
+        icon={<PhoneOff />}
+        title={t('callInsights.optOut.title')}
+        actions={
+          <div className="ci-optout-body">
+            {quote && <QuoteLine quote={quote} onQuote={onQuote} />}
+            {done === 'CONFIRM' ? (
+              <p className="ci-optout-state" role="status">
+                {t('callInsights.optOut.confirmed')}
+              </p>
+            ) : done === 'DISMISS' ? (
+              <p className="ci-optout-state" role="status">
+                {t('callInsights.optOut.lifted')}
+              </p>
+            ) : held ? (
+              <>
+                <p className="ci-optout-state">{t('callInsights.optOut.held')}</p>
+                {(onConfirm || onLift) && (
+                  <div className="ci-gestures">
+                    {onConfirm && (
+                      <button
+                        type="button"
+                        className="crm-ui-btn crm-ui-btn--danger crm-ui-btn--sm"
+                        disabled={busy}
+                        onClick={() => void run('CONFIRM', onConfirm)}
+                      >
+                        {t('callInsights.optOut.confirm')}
+                      </button>
+                    )}
+                    {onLift && (
+                      <button
+                        type="button"
+                        className="crm-ui-btn crm-ui-btn--sm"
+                        disabled={busy}
+                        onClick={() => setLiftOpen(true)}
+                      >
+                        {t('callInsights.optOut.lift')}
+                      </button>
+                    )}
+                  </div>
                 )}
-                {onLift && (
-                  <button
-                    type="button"
-                    className="portal-button secondary"
-                    disabled={busy}
-                    onClick={() => setLiftOpen(true)}
-                  >
-                    {t('callInsights.optOut.lift')}
-                  </button>
-                )}
-              </div>
+                {onConfirm && !onLift && <p className="ci-muted">{t('callInsights.optOut.teamLifts')}</p>}
+              </>
+            ) : (
+              <p className="ci-muted">{t('callInsights.optOut.settled')}</p>
             )}
-            {onConfirm && !onLift && <p className="ci-muted">{t('callInsights.optOut.teamLifts')}</p>}
-          </>
-        ) : (
-          <p className="ci-muted">{t('callInsights.optOut.settled')}</p>
-        )}
-        {error && (
-          <p className="ci-error" role="alert">
-            {error}
-          </p>
-        )}
-      </div>
+            {error && (
+              <p className="ci-error" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
+        }
+      >
+        {!done && t('callInsights.optOut.body')}
+      </CrmBanner>
       {onLift &&
         createPortal(
           <ConfirmModal
@@ -111,6 +119,6 @@ export default function OptOutAlert({ quote, onQuote, held = false, onConfirm, o
           />,
           document.body,
         )}
-    </div>
+    </>
   )
 }

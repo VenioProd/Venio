@@ -78,9 +78,10 @@ it('ouvre la fiche depuis la table et revient avec la vue, les filtres et le dé
   await waitFor(() => expect(screen.getByLabelText('URL')).toHaveTextContent('/admin/crm/leads/a?'))
   expect(await screen.findByRole('heading', { name: 'Atelier' })).toBeInTheDocument()
   expect(screen.queryByRole('dialog')).toBeNull()
+  fireEvent.click(screen.getByRole('tab', { name: 'Historique' }))
   expect(screen.getByText('Journal conservé')).toBeInTheDocument()
   expect(document.querySelector('.rich-table')).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Retour aux leads' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Retour : Pipeline' }))
   await screen.findByText('Atelier', { selector: '.rich-co b' })
   const url = screen.getByLabelText('URL').textContent!
   expect(url).toMatch(/^\/admin\/crm\/suivre\/pipeline\?/)

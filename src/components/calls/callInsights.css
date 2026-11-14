@@ -1,5 +1,7 @@
-/* Écrans d'analyse d'appel. Pièges : App.css pose `isolation: isolate` sur tout élément (aucun calque flottant ici),
-   --bg-card est quasi transparent (fonds collants : --bg-secondary). */
+/* Écrans d'analyse d'appel (refonte « Journée », lot 5 ; maquette a-journee.html, vue #/lead/dubreuil).
+   Partagé avec l'espace du commercial externe : mise en page seulement, aucun comportement.
+   Pièges : App.css pose `isolation: isolate` sur tout élément (aucun calque flottant ici),
+   --bg-card est quasi transparent (fonds collants : --bg-secondary). Boutons et puces : classes `crm-ui-`. */
 .call-insights {
   container-type: inline-size;
   display: flex;
@@ -44,11 +46,11 @@
 }
 .call-insights :is(button, input, select, textarea, [tabindex]):focus-visible,
 .ci-link:focus-visible {
-  outline: 2px solid var(--primary-light);
+  outline: 2px solid var(--accent-ring);
   outline-offset: 2px;
 }
 
-/* ── États ─────────────────────────────────────────────── */
+/* ── États (attente, échec, relance) ───────────────────── */
 .ci-state {
   display: flex;
   flex-direction: column;
@@ -69,7 +71,7 @@
 }
 .ci-state--error {
   border-style: solid;
-  border-color: var(--critical);
+  border-color: color-mix(in srgb, var(--critical) 45%, transparent);
   background: var(--critical-surface);
   color: var(--text-primary);
 }
@@ -99,10 +101,34 @@
   }
 }
 
-/* ── Mise en page : deux colonnes en large, onglets en étroit ─ */
+/* ── Onglets Analyse / Conversation ────────────────────── */
 .ci-tabs {
-  display: none;
+  display: flex;
   gap: 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+.ci-tab {
+  position: relative;
+  min-height: 38px;
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+}
+.ci-tab:hover,
+.ci-tab[aria-selected='true'] {
+  color: var(--text-primary);
+}
+.ci-tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  inset: auto 8px 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: var(--r-hair);
 }
 .ci-layout {
   display: grid;
@@ -110,49 +136,30 @@
   gap: 20px;
   align-items: start;
 }
-@container (min-width: 880px) {
-  .ci-layout {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  }
-  .ci-layout > .ci-panel:nth-child(2) {
-    position: sticky;
-    top: 12px;
-  }
-}
-@container (max-width: 879px) {
-  .ci-tabs {
-    display: flex;
-  }
-  .ci-panel[data-active='false'] {
-    display: none;
-  }
+.ci-panel[data-active='false'] {
+  display: none;
 }
 
-/* ── Alerte d'opposition ───────────────────────────────── */
-.ci-optout {
+/* ── Alerte d'opposition (bandeau rouge, `CrmBanner`) ──── */
+.ci-optout-body {
   display: flex;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 2px solid var(--critical);
-  border-radius: var(--r-lg);
-  background: var(--critical-surface);
-  color: var(--text-primary);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
 }
-.ci-optout > svg {
-  flex: none;
-  color: var(--critical);
-  margin-top: 2px;
+.ci-optout-body p {
+  margin: 0;
 }
-.ci-optout p {
-  margin: 4px 0 0;
-  font-size: 14px;
+.ci-optout-state {
+  font-weight: 600;
 }
 
 /* ── Cartes ─────────────────────────────────────────────── */
 .ci-review {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 .ci-card {
   display: flex;
@@ -165,27 +172,34 @@
 }
 .ci-card-head,
 .ci-field-head,
-.ci-action-head,
-.ci-criterion-head {
+.ci-action-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 8px 12px;
 }
 .ci-card h3,
 .ci-field h4 {
   margin: 0;
 }
 .ci-card h3 {
-  font-size: 15px;
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 .ci-field h4 {
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 700;
 }
 .ci-summary {
   margin: 0;
-  line-height: 1.55;
+  padding: 12px 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  background: var(--bg-secondary);
+  border-radius: var(--r-md);
   overflow-wrap: anywhere;
 }
 .ci-status {
@@ -195,14 +209,21 @@
   margin: 0;
   padding: 10px 14px;
   border-radius: var(--r-lg);
-  border: 1px solid var(--good);
+  border: 1px solid color-mix(in srgb, var(--good) 35%, transparent);
   background: var(--good-surface);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ci-status > svg {
+  flex: none;
+  color: var(--good);
 }
 .ci-status--rejected {
   border-color: var(--border-color);
-  background: var(--bg-card);
+  background: var(--bg-secondary);
+}
+.ci-status--rejected > svg {
+  color: var(--text-muted);
 }
 
 /* ── Étiquettes ────────────────────────────────────────── */
@@ -210,11 +231,11 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
+  padding: 2px 9px;
   border: 1px solid var(--border-color);
   border-radius: var(--r-pill);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
 }
 .ci-tag--proposal {
@@ -222,17 +243,8 @@
   border-color: var(--accent-border-strong);
   color: var(--primary-light);
 }
-.ci-tag--accept,
-.ci-tag--edit {
-  border-color: var(--good);
-  background: var(--good-surface);
-}
-.ci-tag--ignore {
-  text-decoration: line-through;
-  color: var(--text-secondary);
-}
 
-/* ── Champ : valeur actuelle contre valeur proposée ───── */
+/* ── Informations proposées : une ligne par champ ─────── */
 .ci-fields,
 .ci-criteria,
 .ci-action-list {
@@ -241,18 +253,34 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 .ci-field {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr);
+  gap: 10px 14px;
+  align-items: start;
+  padding: 14px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.ci-field:first-child {
+  padding-top: 4px;
+  border-top: 0;
+}
+.ci-field-head {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 6px;
+}
+.ci-field > .ci-field-main,
+.ci-field > .ci-gestures,
+.ci-field > .ci-edit {
+  grid-column: 2;
+}
+.ci-field-main {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border-color);
-}
-.ci-field:first-child {
-  padding-top: 0;
-  border-top: 0;
 }
 .ci-compare {
   display: grid;
@@ -263,9 +291,9 @@
 .ci-proposed {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: var(--r-md, 10px);
+  gap: 4px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
   overflow-wrap: anywhere;
 }
 .ci-current {
@@ -285,8 +313,8 @@
   font-weight: 600;
 }
 .ci-value {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
 }
 .ci-edited {
   font-size: 13px;
@@ -326,7 +354,7 @@
   margin: 0;
   padding-left: 10px;
   border-left: 3px solid var(--border-color);
-  font-size: 13px;
+  font-size: 12.5px;
   font-style: italic;
   color: var(--text-secondary);
   overflow-wrap: anywhere;
@@ -340,8 +368,8 @@
   gap: 8px;
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid var(--warning);
-  border-radius: var(--r-md, 10px);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+  border-radius: var(--r-md);
   background: var(--warning-surface);
   font-size: 13px;
 }
@@ -353,13 +381,13 @@
 .ci-notice {
   margin: 0;
   padding: 8px 12px;
-  border: 1px solid var(--warning);
-  border-radius: var(--r-md, 10px);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+  border-radius: var(--r-md);
   background: var(--warning-surface);
   font-size: 13px;
 }
 
-/* ── Gestes ────────────────────────────────────────────── */
+/* ── Gestes (accepter, modifier, ignorer) ──────────────── */
 .ci-gestures {
   display: flex;
   flex-wrap: wrap;
@@ -367,16 +395,13 @@
   gap: 8px;
 }
 .ci-gesture {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
+  min-height: 32px;
 }
-.call-insights .portal-button.secondary.ci-gesture[aria-pressed='true'] {
-  border: 2px solid var(--primary-light);
-  background: var(--accent-surface-strong);
+.call-insights .ci-gesture[aria-pressed='true'] {
   color: var(--text-primary);
-  font-weight: 700;
+  background: var(--accent-surface-strong);
+  border-color: var(--primary-light);
+  box-shadow: inset 0 0 0 1px var(--primary-light);
 }
 .call-insights .ci-gesture--ignore[aria-pressed='true'] {
   text-decoration: line-through;
@@ -403,17 +428,18 @@
 }
 .ci-edit {
   padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--r-md, 10px);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--r-md);
+  background: var(--bg-secondary);
 }
 
-/* ── Chaleur ───────────────────────────────────────────── */
+/* ── Chaleur par critère ───────────────────────────────── */
 .ci-heat-level {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
 }
 .ci-flames {
   display: inline-flex;
@@ -439,8 +465,7 @@
   gap: 6px;
 }
 .ci-score-value {
-  font-size: 26px;
-  font-weight: 800;
+  font: 800 24px var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 .ci-score-max {
@@ -450,36 +475,73 @@
 .ci-score-bar {
   display: block;
   flex: 1 1 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--border-color);
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--surface-raised);
   overflow: hidden;
+}
+.ci-score-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  border-radius: var(--r-pill);
+}
+.ci-criteria {
+  gap: 4px;
+}
+.ci-criteria li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+}
+.ci-criterion-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 130px) minmax(0, 1fr) 64px;
+  align-items: center;
+  gap: 10px;
+}
+.ci-criterion-label {
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 .ci-criteria .ci-score-bar {
   flex: none;
   width: 100%;
 }
-.ci-score-bar > span {
-  display: block;
-  height: 100%;
-  background: var(--primary-light);
-}
-.ci-criteria li {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.ci-criterion-head {
-  font-size: 14px;
-}
 .ci-points {
+  color: var(--text-secondary);
+  font: 12px var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  text-align: right;
   white-space: nowrap;
 }
 
 /* ── Actions proposées ─────────────────────────────────── */
+.ci-action-list > li + li {
+  border-top: 1px solid var(--line-soft);
+}
 .ci-action {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+}
+.ci-action:first-child {
+  padding-top: 2px;
+}
+.ci-action-ico {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: var(--text-secondary);
+  background: var(--surface-raised);
+  border-radius: var(--r-md);
+}
+.ci-action-body {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 .ci-action-head {
@@ -487,10 +549,10 @@
 }
 .ci-action-label {
   margin: 0;
-  font-weight: 600;
+  font-weight: 700;
   overflow-wrap: anywhere;
 }
-.ci-action p {
+.ci-action-body p {
   margin: 0;
 }
 .ci-action-controls {
@@ -499,29 +561,21 @@
   gap: 10px;
 }
 
-/* ── Barre d'application ───────────────────────────────── */
-.ci-apply {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
+/* ── Barre de validation collante (`CrmStickyBar`) ─────── */
+.ci-review .crm-ui-sticky-bar {
+  margin-top: 2px;
+}
+.ci-review .crm-ui-sticky-bar__message {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px 16px;
-  border: 1px solid var(--accent-border-strong);
-  border-radius: var(--r-lg);
-  background: var(--bg-secondary);
-  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.18);
-}
-.ci-apply p {
-  margin: 0;
+  gap: 2px;
 }
 .ci-apply-count {
-  font-size: 14px;
-  font-weight: 600;
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
-/* ── Transcript ────────────────────────────────────────── */
+/* ── Transcript à deux voix ────────────────────────────── */
 .ci-transcript {
   display: flex;
   flex-direction: column;
@@ -552,30 +606,34 @@
 .ci-lines {
   list-style: none;
   margin: 0;
-  padding: 0 4px 0 0;
+  padding: 0 6px 0 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   max-height: 70vh;
   overflow-y: auto;
 }
 .ci-line {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 92%;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+}
+.ci-time {
+  padding-top: 8px;
+  color: var(--text-muted);
+  font: 11.5px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.ci-bubble {
+  max-width: 78ch;
   padding: 8px 12px;
   border: 1px solid var(--border-color);
-  border-radius: var(--r-md, 10px);
+  border-radius: var(--r-md);
+  background: var(--bg-secondary);
 }
-.ci-line--prospect {
-  align-self: flex-start;
-  border-left: 4px solid var(--text-primary);
-}
-.ci-line--rep {
-  align-self: flex-end;
-  border-right: 4px double var(--primary-light);
-  background: var(--accent-soft);
+.ci-line--rep .ci-bubble {
+  background: var(--accent-surface);
+  border-color: var(--accent-border);
 }
 .ci-line p {
   margin: 0;
@@ -584,20 +642,21 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-bottom: 2px;
+  color: var(--text-muted);
   font-size: 12px;
 }
-.ci-time {
-  margin-left: auto;
+.ci-line-head strong {
   color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
 }
 .ci-line-text {
-  line-height: 1.5;
+  line-height: 1.55;
   overflow-wrap: anywhere;
 }
 .ci-line mark {
   color: inherit;
-  border-radius: 2px;
+  border-radius: 3px;
+  padding: 0 2px;
 }
 .ci-mark-quote {
   background: var(--accent-surface-strong);
@@ -609,26 +668,44 @@
 }
 .ci-mark-active {
   background: var(--warning);
-  color: #111;
+  color: var(--bg-primary);
   outline: 0;
 }
 
-/* ── Mobile ────────────────────────────────────────────── */
-@container (max-width: 600px) {
-  .ci-compare {
+/* ── Étroit : une colonne, gestes à pleine largeur ─────── */
+@container (max-width: 640px) {
+  .ci-field {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ci-line {
-    max-width: 100%;
+  .ci-field > .ci-field-main,
+  .ci-field > .ci-gestures,
+  .ci-field > .ci-edit {
+    grid-column: 1;
+  }
+  .ci-field-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .ci-compare {
+    grid-template-columns: minmax(0, 1fr);
   }
   .ci-gesture {
     flex: 1 1 auto;
     justify-content: center;
+    min-height: 40px;
   }
-  .ci-gestures > .portal-button {
-    flex: 1 1 auto;
+  .ci-line {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 6px;
   }
-  .ci-apply .ci-gestures > .portal-button {
+  .ci-criterion-row {
+    grid-template-columns: minmax(70px, 100px) minmax(0, 1fr) 56px;
+  }
+  .ci-review .crm-ui-sticky-bar__actions {
+    width: 100%;
+  }
+  .ci-review .crm-ui-sticky-bar__actions > .crm-ui-btn {
     flex: 1 1 0;
   }
 }
@@ -637,19 +714,21 @@
 .ci-lead-calls {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
 }
 .ci-lead-calls h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 .ci-lead-call-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 .ci-lead-call {
   min-width: 0;
@@ -674,23 +753,32 @@ button.ci-lead-call-head {
   cursor: pointer;
   border-radius: var(--r-lg);
 }
+button.ci-lead-call-head:hover {
+  background: var(--bg-card-hover);
+}
 button.ci-lead-call-head:focus-visible {
-  outline: 2px solid var(--primary-light);
+  outline: 2px solid var(--accent-ring);
   outline-offset: 2px;
 }
 .ci-lead-call-when {
   display: grid;
-  min-width: 96px;
+  min-width: 112px;
+}
+.ci-lead-call-when .ci-muted {
+  font: 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 .ci-lead-call-body {
-  padding: 0 14px 14px;
+  padding: 4px 14px 14px;
   min-width: 0;
+  border-top: 1px solid var(--line-soft);
 }
 .ci-call-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
+  padding-top: 12px;
 }
 .ci-chips {
   display: flex;
@@ -700,22 +788,6 @@ button.ci-lead-call-head:focus-visible {
   padding: 0;
   list-style: none;
 }
-.ci-chip {
-  padding: 2px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  white-space: nowrap;
-}
-.ci-chip--ok {
-  border-color: var(--accent-border-strong);
-  color: var(--text-primary);
-}
-.ci-chip--bad {
-  border-color: var(--critical);
-  color: var(--critical);
-}
 .ci-recording {
   display: flex;
   flex-wrap: wrap;
@@ -724,7 +796,7 @@ button.ci-lead-call-head:focus-visible {
   margin: 0;
   padding: 10px 12px;
   border: 1px solid var(--border-color);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   background: var(--bg-secondary);
   font-size: 13px;
   color: var(--text-secondary);
@@ -733,7 +805,7 @@ button.ci-lead-call-head:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
 }
 .ci-recording audio {
@@ -746,7 +818,4 @@ button.ci-lead-call-head:focus-visible {
 }
 .ci-team-only {
   margin: 0;
-}
-.ci-optout-state {
-  font-weight: 600;
 }

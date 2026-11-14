@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Phone } from 'lucide-react'
+import { CrmEmpty } from '../admin/crm-ui'
 import { useI18n } from '../../context/I18nContext'
 import { formatDateTime } from '../../i18n/format'
 import CallPanel from './CallPanel'
@@ -69,7 +70,11 @@ export default function LeadCallsList({
           </button>
         </p>
       )}
-      {!loading && !error && calls.length === 0 && <p className="ci-muted">{t('callInsights.leadCalls.empty')}</p>}
+      {!loading && !error && calls.length === 0 && (
+        <div className="crm-ui-card">
+          <CrmEmpty icon={<Phone size={28} />} title={t('callInsights.leadCalls.empty')} />
+        </div>
+      )}
       <ul className="ci-lead-call-list">
         {calls.map((call) => {
           const open = openId === call._id
