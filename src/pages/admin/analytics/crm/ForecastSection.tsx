@@ -6,7 +6,7 @@ import { fetchForecast, fetchPilotage } from '../../../../services/pilotage'
 import type { ForecastResponse } from '../../../../types/pilotage.types'
 import type { AdminUser } from '../../../../types/crm.types'
 import { CRM_ENTITIES } from '../../crm-board/constants'
-import { CrmSectionHead } from '../../../../components/admin/crm-ui'
+import { CrmPageHead, CrmSectionHead } from '../../../../components/admin/crm-ui'
 import FinancialChart from '../../../../components/dashboard/FinancialChart'
 import ForecastBars from './ForecastBars'
 import GoalsManager from './GoalsManager'
@@ -21,7 +21,8 @@ const HORIZONS = [3, 6, 12]
  * montants sont des budgets de leads (EUR) ; la définition du pondéré est unique
  * et vit côté serveur (lib/crmRevenue.ts).
  */
-const ForecastSection: React.FC = () => {
+/** `head` : la section ouvre la page « Prévisions et objectifs » et en porte le titre. */
+const ForecastSection: React.FC<{ head?: boolean }> = ({ head = false }) => {
   const { t } = useI18n()
   const { user } = useAuth()
   const administers = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN'
@@ -83,9 +84,10 @@ const ForecastSection: React.FC = () => {
   return (
     <section
       className="pilotage-section forecast-section crm-pilot-screen"
-      style={{ marginTop: 24 }}
+      style={head ? undefined : { marginTop: 24 }}
       aria-labelledby="crm-forecast-title"
     >
+      {head && <CrmPageHead title={t('crmPilot.fc.title')} lede={t('crmPilot.fc.lede')} />}
       <div className="crm-pilot-toolbar">
         <div className="crm-pilot-toolbar__text">
           <h2 id="crm-forecast-title" className="crm-pilot-toolbar__title">

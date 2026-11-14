@@ -160,8 +160,8 @@ export default function CrmHub() {
       case 'previsions':
         return (
           <>
-            <PilotageSection crmEntities={user?.crmEntities} />
-            <ForecastSection />
+            <ForecastSection head />
+            <PilotageSection crmEntities={user?.crmEntities} head={false} />
           </>
         )
       case 'automatisations':

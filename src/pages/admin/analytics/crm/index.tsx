@@ -22,7 +22,8 @@ import './crmPilotScreen.css'
  * leads créés dans la période : c'est la seule façon de dire quelque chose d'un
  * taux de passage.
  */
-const PilotageSection: React.FC<{ crmEntities?: string[] }> = ({ crmEntities }) => {
+/** `head={false}` : la section suit les prévisions, qui portent alors le titre de la page. */
+const PilotageSection: React.FC<{ crmEntities?: string[]; head?: boolean }> = ({ crmEntities, head = true }) => {
   const { t } = useI18n()
   const [period, setPeriod] = useState<PilotagePeriod>('90d')
   // Entité du groupe ('' : tout le périmètre de l'utilisateur).
@@ -62,8 +63,8 @@ const PilotageSection: React.FC<{ crmEntities?: string[] }> = ({ crmEntities }) 
   }, [admins, t])
 
   return (
-    <div className="pilotage-section crm-pilot-screen">
-      <CrmPageHead title={t('crmPilot.fc.title')} lede={t('crmPilot.fc.lede')} />
+    <div className="pilotage-section crm-pilot-screen" style={head ? undefined : { marginTop: 24 }}>
+      {head && <CrmPageHead title={t('crmPilot.fc.title')} lede={t('crmPilot.fc.lede')} />}
 
       <section className="crm-pilot-toolbar" aria-labelledby="crm-pilot-cohort">
         <div className="crm-pilot-toolbar__text">
