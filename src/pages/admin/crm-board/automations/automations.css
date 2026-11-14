@@ -401,7 +401,7 @@
 }
 .crm-auto-run-h {
   display: grid;
-  grid-template-columns: 110px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.6fr) 130px;
+  grid-template-columns: 136px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.6fr) 130px;
   gap: 12px;
   align-items: start;
   width: 100%;
