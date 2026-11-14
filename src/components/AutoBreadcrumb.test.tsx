@@ -15,11 +15,32 @@ describe('AutoBreadcrumb', () => {
     expect(screen.getByText('Paramètres')).toBeInTheDocument()
 
     rerender(
-      <MemoryRouter key="crm" initialEntries={['/admin/crm/pilotage']}>
+      <MemoryRouter key="crm" initialEntries={['/admin/crm/piloter/previsions']}>
         <AutoBreadcrumb />
       </MemoryRouter>,
     )
-    expect(screen.getByRole('link', { name: 'CRM' })).toHaveAttribute('href', '/admin/crm')
-    expect(screen.getByText('Pilotage')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'CRM' })).toHaveAttribute('href', '/admin/crm/aujourdhui')
+    expect(screen.getByRole('link', { name: 'Piloter' })).toHaveAttribute('href', '/admin/crm/piloter')
+    expect(screen.getByText('Prévisions et objectifs')).toBeInTheDocument()
+  })
+
+  it('range la fiche d’un lead sous l’onglet qui l’a ouverte', () => {
+    const lead = '/admin/crm/leads/0123456789abcdef01234567'
+    const { rerender } = render(
+      <MemoryRouter initialEntries={[lead]}>
+        <AutoBreadcrumb />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('link', { name: 'Suivre' })).toHaveAttribute('href', '/admin/crm/suivre')
+    expect(screen.getByRole('link', { name: 'Pipeline' })).toHaveAttribute('href', '/admin/crm/suivre/pipeline')
+    expect(screen.getByText('Détail')).toBeInTheDocument()
+
+    rerender(
+      <MemoryRouter key="semaine" initialEntries={[`${lead}?from=semaine`]}>
+        <AutoBreadcrumb />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('link', { name: 'Aujourd’hui' })).toHaveAttribute('href', '/admin/crm/aujourdhui')
+    expect(screen.getByRole('link', { name: 'Cette semaine' })).toHaveAttribute('href', '/admin/crm/aujourdhui/semaine')
   })
 })

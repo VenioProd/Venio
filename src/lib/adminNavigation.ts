@@ -1,5 +1,6 @@
 import { ADMIN_MODULE_PATHS } from './adminHubRoutes'
-import { ADMIN_HUBS, canAccessHubModule } from './adminHubs'
+import { ADMIN_HUBS, canAccessHubTab, type AdminHubDefinition } from './adminHubs'
+import { CRM_MOMENTS, CRM_PLAN_PATH } from './crmNavigation'
 import type { User, UserRole } from '../types/auth.types'
 import { hasPermission, PERMISSIONS } from './permissions'
 import { getVisibleNavigation, NAVIGATION } from './rbac'
@@ -273,7 +274,7 @@ const PALETTE_ACTIONS: PaletteActionDefinition[] = [
   {
     id: 'create-lead',
     labelKey: 'shell.paletteAction.createLead',
-    to: '/admin/crm',
+    to: '/admin/crm/suivre/pipeline',
     permission: PERMISSIONS.MANAGE_CRM,
     destination: 'crm',
   },
@@ -319,16 +320,32 @@ export function getCommandPaletteItems(user: User | null): AdminCommandPaletteIt
   }))
 
   const tabs: AdminCommandPaletteItem[] = Object.entries(ADMIN_HUBS).flatMap(([hubId, hub]) =>
-    hub.tabs
-      .filter((tab) => tab.modules.some((module) => canAccessHubModule(user, module)))
-      .map((tab) => ({
-        kind: 'tab' as const,
-        id: `${hubId}-${tab.id}`,
-        label: `${translate(hub.titleKey)} · ${translate(tab.labelKey)}`,
-        to: tab.to,
-        zone: getNavigationZone({ id: tab.modules[0] }),
-      })),
+    (hub.tabs as readonly AdminHubDefinition['tabs'][number][])
+      .filter((tab) => canAccessHubTab(user, tab))
+      .map((tab) => {
+        // CRM : « CRM · Suivre · Pipeline », le moment lève l'ambiguïté (« Aujourd'hui » deux fois).
+        const moment = CRM_MOMENTS.find((entry) => entry.id === tab.moment)
+        return {
+          kind: 'tab' as const,
+          id: `${hubId}-${tab.id}`,
+          label: [hub.titleKey, moment?.labelKey, tab.labelKey]
+            .filter((key): key is MessageKey => !!key)
+            .map((key) => translate(key))
+            .join(' · '),
+          to: tab.to,
+          zone: getNavigationZone({ id: tab.modules[0] }),
+        }
+      }),
   )
+  const crmTabs = tabs.filter((tab) => tab.id.startsWith('crm-'))
+  if (crmTabs.length > 0)
+    tabs.splice(tabs.indexOf(crmTabs[crmTabs.length - 1]) + 1, 0, {
+      kind: 'tab',
+      id: 'crm-plan',
+      label: `${translate(ADMIN_HUBS.crm.titleKey)} · ${translate('shell.crm.plan')}`,
+      to: CRM_PLAN_PATH,
+      zone: crmTabs[0].zone,
+    })
 
   return [...modules, ...tabs, ...actions]
 }

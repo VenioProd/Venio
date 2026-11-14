@@ -59,9 +59,11 @@ beforeEach(() => {
 })
 it('ouvre la fiche depuis la table et revient avec la vue, les filtres et le défilement', async () => {
   render(
-    <MemoryRouter initialEntries={['/admin/crm?mode=liste&project=ARROW&entity=ARROW&q=Atelier&owner=admin']}>
+    <MemoryRouter
+      initialEntries={['/admin/crm/suivre/pipeline?mode=liste&project=ARROW&entity=ARROW&q=Atelier&owner=admin']}
+    >
       <Routes>
-        <Route path="/admin/crm" element={<CrmBoard />} />
+        <Route path="/admin/crm/suivre/pipeline" element={<CrmBoard />} />
         <Route path="/admin/crm/leads/:leadId" element={<CrmBoard />} />
       </Routes>
       <Location />
@@ -81,6 +83,7 @@ it('ouvre la fiche depuis la table et revient avec la vue, les filtres et le dé
   fireEvent.click(screen.getByRole('button', { name: 'Retour aux leads' }))
   await screen.findByText('Atelier', { selector: '.rich-co b' })
   const url = screen.getByLabelText('URL').textContent!
+  expect(url).toMatch(/^\/admin\/crm\/suivre\/pipeline\?/)
   for (const filter of ['mode=liste', 'project=ARROW', 'entity=ARROW', 'q=Atelier', 'owner=admin', 'rows=200'])
     expect(url).toContain(filter)
   await waitFor(() => expect(document.querySelector('.rich-table-wrap')?.scrollTop).toBe(180))

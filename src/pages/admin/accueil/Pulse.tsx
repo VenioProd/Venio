@@ -51,7 +51,7 @@ export default function Pulse({ loading, dashboard, portfolio, tickets, kpis, ca
       label: t('home.pulse.pipeline'),
       value: money(dashboard.pipelineValue),
       sub: t('home.pulse.pipelineSub'),
-      to: '/admin/crm',
+      to: '/admin/crm/suivre/pipeline',
     })
   if (dashboard && dashboard.totalRevenue !== null)
     cards.push({

@@ -164,7 +164,7 @@ export default function CrmSettings() {
         eyebrow={t('adminOps.pilotage.zone.commercial')}
         title={t('crm.settings.title')}
         actions={
-          <Link to="/admin/crm" className="portal-button secondary">
+          <Link to="/admin/crm/suivre/pipeline" className="portal-button secondary">
             <svg
               width="16"
               height="16"

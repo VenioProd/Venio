@@ -471,7 +471,7 @@ export default function AdminDashboard() {
       data.hotLeads.length > 0 && {
         label: t('adminAccess.dashboard.crmFollowUps'),
         count: data.hotLeads.length,
-        to: '/admin/crm',
+        to: '/admin/crm/suivre/pipeline',
         tone: 'warning' as const,
         source: 'CRM',
         owner: t('adminAccess.dashboard.ownerSales'),
@@ -568,7 +568,7 @@ export default function AdminDashboard() {
             <Kpi
               label={t('adminAccess.dashboard.kpiPipeline')}
               value={formatMoney(data.pipelineValue)}
-              to="/admin/crm"
+              to="/admin/crm/suivre/pipeline"
               tone="orange"
               source="CRM"
               owner={t('adminAccess.dashboard.ownerSales')}
@@ -684,7 +684,7 @@ export default function AdminDashboard() {
                           {t('adminAccess.dashboard.shortcutMessages')}
                         </Link>
                       )}
-                      <Link to="/admin/crm">
+                      <Link to="/admin/crm/aujourdhui">
                         <CircleDollarSign size={15} />
                         CRM
                       </Link>

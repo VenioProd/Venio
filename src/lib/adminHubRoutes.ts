@@ -1,10 +1,10 @@
+// Les anciennes adresses du CRM sont dans `CRM_LEGACY_ROUTES` (src/lib/crmNavigation.ts).
 export const LEGACY_ADMIN_LIST_ROUTES: Readonly<Record<string, string>> = {
-  '/admin/crm/settings': '/admin/crm/reglages',
   '/admin/dashboard': '/admin/analytics/business',
   '/admin/centre-activite': '/admin/inbox/activite',
   '/admin/messages': '/admin/inbox/conversations',
-  '/admin/comptes-clients': '/admin/crm/comptes',
-  '/admin/commerciaux-externes': '/admin/crm/partenaires',
+  '/admin/comptes-clients': '/admin/crm/suivre/comptes',
+  '/admin/commerciaux-externes': '/admin/crm/suivre/partenaires',
   '/admin/gestion': '/admin/projets/clients',
   '/admin/stagiaires': '/admin/equipe/membres',
   '/admin/emails': '/admin/inbox/envoi-groupe',
@@ -26,7 +26,7 @@ export const LEGACY_ADMIN_LIST_ROUTES: Readonly<Record<string, string>> = {
   '/admin/health': '/admin/systeme/sante',
   '/admin/webhooks': '/admin/systeme/integrations',
   '/admin/projects': '/admin/projets/clients',
-  '/admin/arrow-prospection': '/admin/crm?project=ARROW',
+  '/admin/arrow-prospection': '/admin/crm/suivre/pipeline?project=ARROW',
 }
 
 export const ADMIN_MODULE_PATHS: Readonly<Record<string, string>> = {
@@ -36,9 +36,9 @@ export const ADMIN_MODULE_PATHS: Readonly<Record<string, string>> = {
   dashboard: '/admin/analytics/business',
   analytics: '/admin/analytics/projets',
   reports: '/admin/analytics/rapports',
-  crm: '/admin/crm',
-  clients: '/admin/crm/comptes',
-  'external-sales': '/admin/crm/partenaires',
+  crm: '/admin/crm/aujourdhui',
+  clients: '/admin/crm/suivre/comptes',
+  'external-sales': '/admin/crm/suivre/partenaires',
   projects: '/admin/projets/clients',
   'internal-projects': '/admin/projets/internes',
   subsidiaries: '/admin/projets/plateformes',

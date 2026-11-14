@@ -100,6 +100,8 @@ beforeEach(() => {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
 })
 
+// Le CRM a sa propre navigation en moments (liens, pas d'onglets) : voir
+// crm-board/CrmNavigation.test.tsx et hubs/CrmRedirects.test.tsx.
 const cases = [
   {
     hub: 'inbox',
@@ -116,14 +118,6 @@ const cases = [
     visible: ['Business'],
     grant: [],
     deny: ['view_projects'],
-  },
-  {
-    hub: 'crm',
-    legacy: '/admin/comptes-clients',
-    to: '/admin/crm/comptes',
-    visible: ['Comptes clients'],
-    grant: ['manage_clients'],
-    deny: ['view_crm', 'manage_external_sales'],
   },
   {
     hub: 'projets',
@@ -224,16 +218,21 @@ describe.each(cases)('Routage du hub $hub', ({ hub, legacy, to, visible, grant, 
 describe('Compatibilité des URL admin', () => {
   it.each(Object.entries(LEGACY_ADMIN_LIST_ROUTES))('%s → %s, query string conservée', async (old, destination) => {
     mount(`${old}?q=deux+termes&project=p1#section`)
-    await screen.findByRole('tablist')
-    expect(screen.getByLabelText('URL')).toHaveTextContent(
-      `${destination.split('?')[0]}?q=deux+termes&project=p1#section`,
+    await waitFor(() =>
+      expect(screen.getByLabelText('URL')).toHaveTextContent(
+        `${destination.split('?')[0]}?q=deux+termes&project=p1#section`,
+      ),
     )
+    if (!destination.startsWith('/admin/crm')) await screen.findByRole('tablist')
   })
 
   it('conserve le filtre Arrow par défaut de son ancienne URL', async () => {
     mount('/admin/arrow-prospection?q=client#selection')
-    await screen.findByRole('tablist')
-    expect(screen.getByLabelText('URL')).toHaveTextContent('/admin/crm?q=client&project=ARROW#selection')
+    await waitFor(() =>
+      expect(screen.getByLabelText('URL')).toHaveTextContent(
+        '/admin/crm/suivre/pipeline?q=client&project=ARROW#selection',
+      ),
+    )
   })
 
   it('remplace l’entrée historique au lieu de créer une boucle au retour arrière', async () => {
@@ -266,11 +265,11 @@ describe('Compatibilité des URL admin', () => {
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 
-  it('garde les onglets du CRM sur la fiche d’un lead', async () => {
+  it('garde la navigation du CRM sur la fiche d’un lead', async () => {
     mount('/admin/crm/leads/l1')
     expect(await screen.findByText('Page CrmBoard')).toBeInTheDocument()
     expect(screen.getByLabelText('URL')).toHaveTextContent('/admin/crm/leads/l1')
-    expect(screen.getByRole('tablist')).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Sections de Suivre' })).toBeInTheDocument()
   })
 
   it.each(['/admin', '/admin/mon-espace'])(

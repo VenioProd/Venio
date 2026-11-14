@@ -1,5 +1,6 @@
 import type { MessageKey } from '../i18n'
 import type { User } from '../types/auth.types'
+import { hasPermission } from './permissions'
 import { isNavigationItemVisible, NAVIGATION } from './rbac'
 
 type ModuleId = (typeof NAVIGATION)[number]['id']
@@ -7,12 +8,29 @@ export interface AdminHubDefinition {
   titleKey: MessageKey
   eyebrowKey: MessageKey
   subtitleKey: MessageKey
-  tabs: readonly { id: string; labelKey: MessageKey; to: string; modules: readonly ModuleId[]; permission?: string }[]
+  tabs: readonly {
+    id: string
+    labelKey: MessageKey
+    to: string
+    modules: readonly ModuleId[]
+    /** Remplace le contrôle par module quand il est présent (même règle que l'écran). */
+    permission?: string
+    /** CRM seulement : moment du travail auquel appartient l'onglet. */
+    moment?: string
+  }[]
 }
 
 export function canAccessHubModule(user: User | null, module: ModuleId): boolean {
   const item = NAVIGATION.find((entry) => entry.id === module)
   return !!user && !!item && isNavigationItemVisible(item, user)
+}
+
+/** Règle d'accès d'un onglet : sa permission propre si elle existe, sinon l'un de ses modules. */
+export function canAccessHubTab(
+  user: User | null,
+  tab: { modules: readonly ModuleId[]; permission?: string },
+): boolean {
+  return tab.permission ? hasPermission(user, tab.permission) : tab.modules.some((m) => canAccessHubModule(user, m))
 }
 
 export const ADMIN_HUBS = {
@@ -76,41 +94,86 @@ export const ADMIN_HUBS = {
     titleKey: 'shell.hub.crm.title',
     eyebrowKey: 'shell.hub.crm.eyebrow',
     subtitleKey: 'shell.hub.crm.subtitle',
+    // Quatre moments du travail (voir CRM_MOMENTS), chacun avec ses sous-onglets.
+    // Les permissions et modules sont ceux de l'onglet que chaque écran remplace.
     tabs: [
-      { id: 'queue', labelKey: 'shell.hub.crm.queue', to: '/admin/crm/a-traiter', modules: ['crm'] },
       {
-        id: 'appels',
-        labelKey: 'shell.hub.crm.calls',
-        to: '/admin/crm/appels',
+        id: 'jour',
+        moment: 'aujourdhui',
+        labelKey: 'shell.crm.tab.jour',
+        to: '/admin/crm/aujourdhui',
+        modules: ['crm'],
+      },
+      {
+        id: 'semaine',
+        moment: 'aujourdhui',
+        labelKey: 'shell.crm.tab.semaine',
+        to: '/admin/crm/aujourdhui/semaine',
+        modules: ['crm'],
+      },
+      {
+        id: 'filer',
+        moment: 'aujourdhui',
+        labelKey: 'shell.crm.tab.filer',
+        to: '/admin/crm/aujourdhui/filer',
+        modules: ['crm'],
+      },
+      {
+        id: 'poste',
+        moment: 'prospecter',
+        labelKey: 'shell.crm.tab.poste',
+        to: '/admin/crm/prospecter/poste',
         modules: ['crm'],
         permission: 'manage_crm',
       },
-      { id: 'pipeline', labelKey: 'shell.hub.crm.pipeline', to: '/admin/crm', modules: ['crm'] },
-      { id: 'pilotage', labelKey: 'shell.hub.crm.pilotage', to: '/admin/crm/pilotage', modules: ['crm'] },
       {
         id: 'scripts',
-        labelKey: 'callScriptReport.tab',
-        to: '/admin/crm/rapports-scripts',
+        moment: 'prospecter',
+        labelKey: 'shell.crm.tab.scripts',
+        to: '/admin/crm/prospecter/scripts',
         modules: ['crm'],
         permission: 'manage_crm',
       },
       {
-        id: 'automatisations',
-        labelKey: 'shell.hub.crm.automatisations',
-        to: '/admin/crm/automatisations',
+        id: 'pipeline',
+        moment: 'suivre',
+        labelKey: 'shell.crm.tab.pipeline',
+        to: '/admin/crm/suivre/pipeline',
         modules: ['crm'],
       },
-      { id: 'comptes', labelKey: 'shell.hub.crm.comptes', to: '/admin/crm/comptes', modules: ['clients'] },
+      {
+        id: 'comptes',
+        moment: 'suivre',
+        labelKey: 'shell.hub.crm.comptes',
+        to: '/admin/crm/suivre/comptes',
+        modules: ['clients'],
+      },
       {
         id: 'partenaires',
+        moment: 'suivre',
         labelKey: 'shell.hub.crm.partenaires',
-        to: '/admin/crm/partenaires',
+        to: '/admin/crm/suivre/partenaires',
         modules: ['external-sales'],
       },
       {
+        id: 'previsions',
+        moment: 'piloter',
+        labelKey: 'shell.crm.tab.previsions',
+        to: '/admin/crm/piloter/previsions',
+        modules: ['crm'],
+      },
+      {
+        id: 'automatisations',
+        moment: 'piloter',
+        labelKey: 'shell.hub.crm.automatisations',
+        to: '/admin/crm/piloter/automatisations',
+        modules: ['crm'],
+      },
+      {
         id: 'reglages',
+        moment: 'piloter',
         labelKey: 'shell.hub.crm.settings',
-        to: '/admin/crm/reglages',
+        to: '/admin/crm/piloter/reglages',
         modules: ['crm'],
         permission: 'manage_crm',
       },

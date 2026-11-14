@@ -339,7 +339,7 @@ const ClientAccountDetail = () => {
                   </button>
                 )}
               </div>
-              <Link className="portal-button secondary" to="/admin/crm/comptes">
+              <Link className="portal-button secondary" to="/admin/crm/suivre/comptes">
                 {t('adminAccess.clientDetail.breadcrumbList')}
               </Link>
             </>

@@ -9,7 +9,15 @@ import { useI18n } from '../../../context/I18nContext'
 import { translate } from '../../../i18n'
 import { hasPermission, PERMISSIONS } from '../../../lib/permissions'
 import ConfirmModal from '../../../components/ConfirmModal'
-import type { Lead, LeadFormData, PipelineColumn, AdminUser, WorklistResponse } from '../../../types/crm.types'
+import type {
+  Lead,
+  LeadFormData,
+  PipelineColumn,
+  AdminUser,
+  WorklistGroupKey,
+  WorklistResponse,
+} from '../../../types/crm.types'
+import { CRM_PATHS, CRM_QUEUE_ORIGINS, crmQueueOrigin, resolveCrmTab } from '../../../lib/crmNavigation'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 import './crm.css'
@@ -33,7 +41,17 @@ import {
   EMPTY_FORM,
 } from './constants'
 
-const CrmBoard = ({ queue = false, onOverdueCount }: { queue?: boolean; onOverdueCount?: (count: number) => void }) => {
+const CrmBoard = ({
+  queue = false,
+  worklistGroups,
+  onWorklistCounts,
+}: {
+  queue?: boolean
+  /** File seulement : groupes montrés (sous-onglets d'« Aujourd'hui »). Tous par défaut. */
+  worklistGroups?: readonly WorklistGroupKey[]
+  /** Compteurs de la file, remontés à la coque après chaque chargement. */
+  onWorklistCounts?: (counts: WorklistResponse['counts']) => void
+}) => {
   const { user } = useAuth()
   const { t } = useI18n()
   const canManageCrm = hasPermission(user, PERMISSIONS.MANAGE_CRM)
@@ -149,13 +167,13 @@ const CrmBoard = ({ queue = false, onOverdueCount }: { queue?: boolean; onOverdu
     try {
       const data = await apiFetch<WorklistResponse>('/api/admin/crm/worklist')
       setWorklist(data)
-      onOverdueCount?.(data.groups.overdue.length)
+      if (data.counts) onWorklistCounts?.(data.counts)
     } catch (err: unknown) {
       setError((err as Error).message || translate('crm.error.loadWorklist'))
     } finally {
       setWorklistLoading(false)
     }
-  }, [onOverdueCount])
+  }, [onWorklistCounts])
 
   const load = async () => {
     if (!columns.length) setLoading(true)
@@ -169,7 +187,7 @@ const CrmBoard = ({ queue = false, onOverdueCount }: { queue?: boolean; onOverdu
       setColumns(pipelineRes.columns || [])
       setAdmins(adminRes.users || [])
       setWorklist(worklistRes)
-      onOverdueCount?.(worklistRes.groups.overdue.length)
+      if (worklistRes.counts) onWorklistCounts?.(worklistRes.counts)
     } catch (err: unknown) {
       setError((err as Error).message || t('crm.error.load'))
     } finally {
@@ -247,7 +265,9 @@ const CrmBoard = ({ queue = false, onOverdueCount }: { queue?: boolean; onOverdu
   const navigate = useNavigate()
   const location = useLocation()
   const backParams = new URLSearchParams(location.search)
-  const returnTo = backParams.get('from') === 'queue' ? '/admin/crm/a-traiter' : '/admin/crm'
+  // `from` dit quel écran de la file a ouvert la fiche ; sans lui, retour au pipeline.
+  const queueTab = CRM_QUEUE_ORIGINS[backParams.get('from') ?? '']
+  const returnTo = queueTab ? CRM_PATHS[queueTab] : CRM_PATHS.pipeline
   backParams.delete('from')
   const callRequested = backParams.get('appel') === '1'
   backParams.delete('appel')
@@ -262,7 +282,10 @@ const CrmBoard = ({ queue = false, onOverdueCount }: { queue?: boolean; onOverdu
     boardRef.current?.querySelectorAll<HTMLElement>('.crm-column').forEach((column) => {
       params.set(`columnScroll_${column.dataset.status}`, String(Math.round(column.scrollTop)))
     })
-    if (queue || requestedMode === 'file') params.set('from', 'queue')
+    if (queue || requestedMode === 'file') {
+      const current = resolveCrmTab(location.pathname)
+      params.set('from', (current && crmQueueOrigin(current.id)) || 'queue')
+    }
     setSearchParams(new URLSearchParams(params), { replace: true })
     setExpandedLead(lead)
     // `appel=1` ne vaut que pour la fiche : il n'entre pas dans l'adresse de la liste.
@@ -463,12 +486,13 @@ const CrmBoard = ({ queue = false, onOverdueCount }: { queue?: boolean; onOverdu
   }
 
   const keepLead = (lead: Lead) => (!filterProject || lead.project === filterProject) && matchesEntity(lead)
+  const shownGroup = (key: WorklistGroupKey) => !worklistGroups || worklistGroups.includes(key)
   const projectGroups = worklist
     ? {
-        overdue: worklist.groups.overdue.filter(keepLead),
-        today: worklist.groups.today.filter(keepLead),
-        upcoming: worklist.groups.upcoming.filter(keepLead),
-        drifting: worklist.groups.drifting.filter(keepLead),
+        overdue: shownGroup('overdue') ? worklist.groups.overdue.filter(keepLead) : [],
+        today: shownGroup('today') ? worklist.groups.today.filter(keepLead) : [],
+        upcoming: shownGroup('upcoming') ? worklist.groups.upcoming.filter(keepLead) : [],
+        drifting: shownGroup('drifting') ? worklist.groups.drifting.filter(keepLead) : [],
       }
     : null
 

@@ -55,7 +55,7 @@ describe('VENIO-99 — navigation et cockpit RBAC', () => {
       getVisibleAdminNavigation({ ...comptable, grantedPermissions: ['manage_external_sales'] }).find(
         (item) => item.id === 'crm',
       )?.screen,
-    ).toBe('/admin/crm/partenaires')
+    ).toBe('/admin/crm/suivre/partenaires')
     expect(
       getVisibleAdminNavigation({
         ...comptable,

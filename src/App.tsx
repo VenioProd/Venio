@@ -19,7 +19,9 @@ import StickyCta from './components/conversion/StickyCta'
 import './App.css'
 import { ADMIN_HUBS } from './lib/adminHubs'
 import { LEGACY_ADMIN_LIST_ROUTES } from './lib/adminHubRoutes'
+import { CRM_LEGACY_ROUTES, CRM_MOMENTS, CRM_PLAN_PATH } from './lib/crmNavigation'
 import LegacyAdminRedirect from './components/admin/LegacyAdminRedirect'
+import CrmRootRedirect from './components/admin/CrmRootRedirect'
 
 function ThemeSync() {
   const { user } = useAuth()
@@ -174,8 +176,14 @@ function AppShell() {
 
   const previousPath = useRef(location.pathname)
   useEffect(() => {
-    const hubOf = (path: string) =>
-      Object.entries(ADMIN_HUBS).find(([, hub]) => hub.tabs.some((tab) => tab.to === path))?.[0]
+    // Un moment du CRM compte comme un hub : changer de moment remonte en haut de page.
+    const hubOf = (path: string) => {
+      for (const [id, hub] of Object.entries(ADMIN_HUBS)) {
+        const tab = (hub.tabs as readonly { to: string; moment?: string }[]).find((entry) => entry.to === path)
+        if (tab) return tab.moment ? `${id}:${tab.moment}` : id
+      }
+      return undefined
+    }
     const previousHub = hubOf(previousPath.current)
     const nextHub = hubOf(location.pathname)
     if (!previousHub || previousHub !== nextHub) window.scrollTo(0, 0)
@@ -341,8 +349,19 @@ function AppShell() {
                     {ADMIN_HUBS.analytics.tabs.map((tab) => (
                       <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<AnalyticsHub />} />
                     ))}
-                    {ADMIN_HUBS.crm.tabs.map((tab) => (
-                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<CrmHub />} />
+                    {/* CRM en quatre moments : chaque sous-onglet accepte des sous-chemins
+                        (`/*`) que son écran peut lire sans retoucher ce routage. */}
+                    <Route path="crm" element={<CrmRootRedirect />} />
+                    {ADMIN_HUBS.crm.tabs.flatMap((tab) => [
+                      <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<CrmHub />} />,
+                      <Route key={`${tab.to}/*`} path={`${tab.to.slice('/admin/'.length)}/*`} element={<CrmHub />} />,
+                    ])}
+                    {CRM_MOMENTS.map((moment) => (
+                      <Route key={moment.to} path={moment.to.slice('/admin/'.length)} element={<CrmHub />} />
+                    ))}
+                    <Route path={CRM_PLAN_PATH.slice('/admin/'.length)} element={<CrmHub />} />
+                    {Object.entries(CRM_LEGACY_ROUTES).map(([path, to]) => (
+                      <Route key={path} path={path.slice('/admin/'.length)} element={<LegacyAdminRedirect to={to} />} />
                     ))}
                     {ADMIN_HUBS.projets.tabs.map((tab) => (
                       <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<ProjetsHub />} />
@@ -367,11 +386,6 @@ function AppShell() {
                       <Route key={tab.to} path={tab.to.slice('/admin/'.length)} element={<SystemeHub />} />
                     ))}
                     <Route path="systeme" element={<SystemeHub />} />
-                    <Route
-                      path="crm/sequences"
-                      element={<LegacyAdminRedirect to="/admin/crm/automatisations?section=sequences" />}
-                    />
-                    <Route path="crm/pipeline" element={<LegacyAdminRedirect to="/admin/crm" />} />
                     <Route path="profil" element={<AdminProfile />} />
                     <Route path="securite" element={<AccountSecurity />} />
                     <Route path="mon-releve" element={<MyAccountingStatement />} />

@@ -189,13 +189,13 @@ const SuperAdminDashboard = () => {
         label: t('adminOps.superDash.alertCrm'),
         count: data.alerts.overdueLeads,
         severity: 'serious',
-        to: '/admin/crm',
+        to: '/admin/crm/suivre/pipeline',
       },
       {
         label: t('adminOps.superDash.alertColdLeads'),
         count: data.alerts.coldLeads,
         severity: 'warning',
-        to: '/admin/crm',
+        to: '/admin/crm/suivre/pipeline',
       },
       {
         label: t('adminOps.superDash.alertStaleProjects'),
@@ -287,14 +287,14 @@ const SuperAdminDashboard = () => {
               accentColor={ACCENT}
               accentRgb={ACCENT_RGB}
               delta={data.kpis.pipeline.delta}
-              to="/admin/crm"
+              to="/admin/crm/suivre/pipeline"
             />
             <DashKpiCard
               label={t('adminOps.superDash.kpiHotLeads')}
               value={data.kpis.hotLeads.value}
               accentColor={STATUS.warning}
               accentRgb={WARNING_RGB}
-              to="/admin/crm"
+              to="/admin/crm/suivre/pipeline"
             />
             <DashKpiCard
               label={t('adminOps.superDash.kpiActiveProjects')}
@@ -374,7 +374,7 @@ const SuperAdminDashboard = () => {
                 value={data.team.clients}
                 accentColor={ACCENT}
                 accentRgb={ACCENT_RGB}
-                to="/admin/crm/comptes"
+                to="/admin/crm/suivre/comptes"
               />
               <DashKpiCard
                 label={t('adminOps.superDash.admins')}

@@ -29,6 +29,7 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8')
 export const PORTAL_STYLESHEETS = [
   'src/components/admin/ui/AdminHub.css',
   'src/components/admin/ui/BulkActionBar.css',
+  'src/components/admin/crm-ui/crm-ui.css',
   'src/components/AdminCommandPalette.css',
   'src/components/AdminShell.css',
   'src/components/AdminSystemTokens.css',

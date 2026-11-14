@@ -66,7 +66,7 @@ export default function Analytics() {
           qui a le droit de les consulter. */}
       {canViewCrm && (
         <p>
-          <Link to="/admin/crm/pilotage">{t('crmRich.analytics.moved')}</Link>
+          <Link to="/admin/crm/piloter/previsions">{t('crmRich.analytics.moved')}</Link>
         </p>
       )}
 

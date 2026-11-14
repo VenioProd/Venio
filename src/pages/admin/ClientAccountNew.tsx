@@ -145,7 +145,7 @@ const ClientAccountNew = () => {
           eyebrow={t('adminOps.pilotage.zone.commercial')}
           title={t('adminAccess.clientNew.createdTitle')}
           actions={
-            <Link className="portal-button secondary" to="/admin/crm/comptes">
+            <Link className="portal-button secondary" to="/admin/crm/suivre/comptes">
               {t('adminAccess.clientNew.breadcrumbList')}
             </Link>
           }
@@ -210,7 +210,7 @@ const ClientAccountNew = () => {
               </Link>
               <Link
                 className="portal-button secondary"
-                to="/admin/crm/comptes"
+                to="/admin/crm/suivre/comptes"
                 style={{ textAlign: 'center', flex: 1 }}
               >
                 {t('adminAccess.clientNew.backToList')}
@@ -228,7 +228,7 @@ const ClientAccountNew = () => {
         eyebrow={t('adminOps.pilotage.zone.commercial')}
         title={t('adminAccess.clientNew.title')}
         actions={
-          <Link className="portal-button secondary" to="/admin/crm/comptes">
+          <Link className="portal-button secondary" to="/admin/crm/suivre/comptes">
             {t('adminAccess.clientNew.breadcrumbList')}
           </Link>
         }
@@ -385,7 +385,7 @@ const ClientAccountNew = () => {
             <button className="portal-button" type="submit" disabled={loading}>
               {loading ? t('adminAccess.clientNew.creating') : t('adminAccess.clientNew.create')}
             </button>
-            <Link className="portal-button secondary" to="/admin/crm/comptes">
+            <Link className="portal-button secondary" to="/admin/crm/suivre/comptes">
               {t('common.cancel')}
             </Link>
           </div>

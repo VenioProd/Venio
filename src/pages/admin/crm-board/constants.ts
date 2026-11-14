@@ -147,7 +147,7 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24
 const daysSince = (value: string) => Math.floor((Date.now() - new Date(value).getTime()) / MS_PER_DAY)
 
 // Badges d'alerte d'un lead, selon les seuils configurés dans
-// /admin/crm/settings — et non selon des constantes en dur.
+// /admin/crm/piloter/reglages — et non selon des constantes en dur.
 export const getLeadAlerts = (
   lead: Lead,
   thresholds: WorklistThresholds = DEFAULT_WORKLIST_THRESHOLDS,

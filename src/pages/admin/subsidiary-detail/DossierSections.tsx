@@ -215,7 +215,10 @@ export default function DossierSections({
       >
         {crmRows(sub.hotProspects || [], false)}
         {sub.leadProject && (
-          <Link className="dossier-button" to={`/admin/crm?project=${encodeURIComponent(sub.leadProject)}`}>
+          <Link
+            className="dossier-button"
+            to={`/admin/crm/suivre/pipeline?project=${encodeURIComponent(sub.leadProject)}`}
+          >
             {tr('seeCrm')}
           </Link>
         )}

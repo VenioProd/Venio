@@ -130,7 +130,7 @@ const ExternalSales = () => {
       />
       <p className="commercial-muted">
         {t('commercial.admin.ruleBefore', { rate: formatNumber(rateBp / 100) })}{' '}
-        <Link className="commercial-link" to="/admin/crm/settings">
+        <Link className="commercial-link" to="/admin/crm/piloter/reglages">
           {t('commercial.admin.ruleLink')}
         </Link>
         .

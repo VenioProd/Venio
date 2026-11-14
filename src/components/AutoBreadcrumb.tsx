@@ -2,6 +2,7 @@ import { useLocation, Link } from 'react-router-dom'
 import { useI18n } from '../context/I18nContext'
 import type { MessageKey } from '../i18n'
 import { ADMIN_HUBS } from '../lib/adminHubs'
+import { CRM_HOME_PATH, CRM_MOMENTS, CRM_PLAN_PATH, resolveCrmTab } from '../lib/crmNavigation'
 import './Breadcrumb.css'
 
 /**
@@ -35,7 +36,7 @@ const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   fiches: { labelKey: 'shell.breadcrumb.projectSheets', to: '/admin/projets/fiches' },
   'comptes-clients': { labelKey: 'shell.breadcrumb.clientAccounts', to: '/admin/comptes-clients' },
   'comptes-admin': { labelKey: 'shell.breadcrumb.adminAccounts', to: '/admin/comptes-admin' },
-  crm: { labelKey: 'shell.breadcrumb.crm', to: '/admin/crm' },
+  crm: { labelKey: 'shell.breadcrumb.crm', to: CRM_HOME_PATH },
   comptabilite: { labelKey: 'shell.breadcrumb.accounting', to: '/admin/comptabilite' },
   ecritures: { labelKey: 'shell.breadcrumb.entries', to: '/admin/comptabilite/ecritures' },
   'grand-livre': { labelKey: 'shell.breadcrumb.generalLedger', to: '/admin/comptabilite/grand-livre' },
@@ -77,12 +78,33 @@ const SEGMENT_LABELS: Record<string, SegmentMapping> = {
   nouvelle: { labelKey: 'shell.breadcrumb.newFeminine', to: null },
 }
 
-const HUB_LABELS: Record<string, MessageKey> = Object.fromEntries(
-  Object.entries(ADMIN_HUBS).flatMap(([id, hub]) => [
+const HUB_LABELS: Record<string, MessageKey> = Object.fromEntries([
+  ...Object.entries(ADMIN_HUBS).flatMap(([id, hub]) => [
     ...hub.tabs.map((tab) => [tab.to, tab.labelKey]),
     [`/admin/${id}`, hub.titleKey],
   ]),
-)
+  ...CRM_MOMENTS.map((moment) => [moment.to, moment.labelKey]),
+  [CRM_PLAN_PATH, 'shell.crm.plan'],
+])
+
+/** Liens de miettes qui ne pointent pas sur leur propre chemin. */
+const CRUMB_TARGETS: Record<string, string> = {
+  // `/admin/crm` redirige vers le pipeline (anciens liens) : la miette « CRM » mène à son accueil.
+  '/admin/crm': CRM_HOME_PATH,
+}
+
+/**
+ * La fiche d'un lead se range sous l'onglet qui l'a ouverte (pipeline par
+ * défaut, file de travail avec `from=queue|semaine|filer`).
+ */
+function crumbSegments(pathname: string, search: string): string[] {
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments[0] === 'admin' && segments[1] === 'crm' && segments[2] === 'leads' && segments.length > 3) {
+    const tab = resolveCrmTab(pathname, search)
+    if (tab) return [...tab.to.split('/').filter(Boolean), ...segments.slice(3)]
+  }
+  return segments
+}
 
 function isObjectIdLike(segment: string): boolean {
   return /^[a-f0-9]{24}$/i.test(segment)
@@ -104,7 +126,7 @@ export interface AutoBreadcrumbProps {
 const AutoBreadcrumb = ({ extra = [] }: AutoBreadcrumbProps) => {
   const { t } = useI18n()
   const location = useLocation()
-  const segments = location.pathname.split('/').filter(Boolean)
+  const segments = crumbSegments(location.pathname, location.search)
 
   if (segments.length === 0 || segments[0] !== 'admin') return null
 
@@ -125,7 +147,7 @@ const AutoBreadcrumb = ({ extra = [] }: AutoBreadcrumbProps) => {
     const hubLabel = HUB_LABELS[path]
     const mapping = SEGMENT_LABELS[seg]
     if (hubLabel) {
-      crumbs.push({ label: t(hubLabel), to: path })
+      crumbs.push({ label: t(hubLabel), to: CRUMB_TARGETS[path] ?? path })
     } else if (mapping) {
       crumbs.push({ label: t(mapping.labelKey), to: mapping.to || path })
     } else {
