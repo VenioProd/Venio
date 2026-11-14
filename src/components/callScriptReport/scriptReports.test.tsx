@@ -6,12 +6,14 @@ import ScriptReportsView from './ScriptReportsView'
 import { scriptReportFixtures } from './scriptReports.fixtures'
 
 vi.mock('../../lib/api', async () => ({ ...(await vi.importActual<object>('../../lib/api')), apiFetch: vi.fn() }))
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: { _id: 'admin1', name: 'Admin' } }) }))
 
 const [ready, skipped] = scriptReportFixtures as [ScriptReport, ScriptReport]
 
 beforeEach(() => {
   vi.mocked(apiFetch).mockReset()
   vi.mocked(apiFetch).mockImplementation((async (path: string) => {
+    if (path.endsWith('/calls/scripts')) return { scripts: [] }
     if (path === '/api/commercial/script-reports') return { reports: [ready, skipped] }
     const found = [ready, skipped].find((r) => path.endsWith(`/${r._id}`))
     return { report: found }
@@ -31,13 +33,14 @@ it('ouvre la dernière semaine : conversion face à l’objectif, citations vér
 })
 
 it('aucun rapport : un état vide explicite', async () => {
-  vi.mocked(apiFetch).mockResolvedValue({ reports: [] })
+  vi.mocked(apiFetch).mockResolvedValue({ reports: [], scripts: [] })
   render(<ScriptReportsView base="/api/commercial/script-reports" />)
   expect(await screen.findByText(/Aucun rapport pour l’instant/)).toBeTruthy()
 })
 
 it('écran de l’équipe : titre de page « Scripts et rapport », semaines en gélules, filtre par membre', async () => {
   vi.mocked(apiFetch).mockImplementation((async (path: string) => {
+    if (path.endsWith('/calls/scripts')) return { scripts: [] }
     if (path.startsWith('/api/admin/crm/script-reports?') || path === '/api/admin/crm/script-reports')
       return {
         reports: [ready, { ...skipped, author: { _id: 'u2', name: 'Alex' } }],
