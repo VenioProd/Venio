@@ -198,8 +198,9 @@ describe('Navigation du CRM en quatre moments', () => {
     expect(screen.queryByRole('link', { current: 'page' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Retour au CRM' })).toHaveAttribute('href', '/admin/crm/aujourdhui')
     const table = screen.getByRole('table')
-    expect(within(table).getAllByRole('row')).toHaveLength(10)
-    expect(within(table).getByRole('link', { name: 'Poste d’appel' })).toHaveAttribute(
+    // Une ligne par fonction d'avant (onglets et leurs fonctions), plus l'en-tête.
+    expect(within(table).getAllByRole('row')).toHaveLength(13)
+    expect(within(table).getByRole('link', { name: 'Prospecter, Poste d’appel' })).toHaveAttribute(
       'href',
       '/admin/crm/prospecter/poste',
     )

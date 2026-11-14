@@ -36,9 +36,9 @@ beforeEach(() => {
   })
 })
 
-const renderPage = () =>
+const renderPage = (section = 'opposes') =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/admin/crm/piloter/reglages/${section}`]}>
       <CrmSettings />
     </MemoryRouter>,
   )

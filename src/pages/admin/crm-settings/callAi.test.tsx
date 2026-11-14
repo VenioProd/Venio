@@ -30,9 +30,9 @@ beforeEach(() => {
   })
 })
 
-const renderPage = () =>
+const renderPage = (section = 'telephonie') =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/admin/crm/piloter/reglages/${section}`]}>
       <CrmSettings />
     </MemoryRouter>,
   )
@@ -67,13 +67,13 @@ describe('grille de chaleur : contrôles', () => {
 
 describe('réglages CRM — appels et IA', () => {
   it('dit si la téléphonie est configurée sur ce serveur', async () => {
-    renderPage()
+    renderPage('telephonie')
     expect(await screen.findByText('Téléphonie non configurée sur ce serveur')).toBeInTheDocument()
     expect(screen.getByText(/désactivés tant que l’opérateur n’est pas branché/)).toBeInTheDocument()
   })
 
   it('téléphonie : résume la plage et enregistre le bloc en entier', async () => {
-    renderPage()
+    renderPage('telephonie')
     const tel = await block(/^Téléphonie$/)
     // Lot P : plage dans le fuseau du prospect, 2 par jour, 6 sur 14 jours, UE ouverte.
     expect(
@@ -106,7 +106,7 @@ describe('réglages CRM — appels et IA', () => {
   })
 
   it('téléphonie : une plage inversée est refusée avant l’envoi', async () => {
-    renderPage()
+    renderPage('telephonie')
     const tel = await block(/^Téléphonie$/)
     fireEvent.change(tel.getByLabelText('Fin de la plage'), { target: { value: '08:00' } })
     expect(await tel.findByText('L’heure de fin doit être après l’heure de début.')).toBeInTheDocument()
@@ -115,7 +115,7 @@ describe('réglages CRM — appels et IA', () => {
   })
 
   it('enregistrement : rappelle que zéro veut dire « supprimé dès le transcript obtenu »', async () => {
-    renderPage()
+    renderPage('enregistrement')
     const rec = await block(/^Enregistrement$/)
     expect(rec.getByText(/Zéro : l’audio est supprimé dès que le transcript est obtenu/)).toBeInTheDocument()
     fireEvent.change(rec.getByLabelText(/^Conservation de l’audio \(jours\)/), { target: { value: '30' } })
@@ -128,7 +128,7 @@ describe('réglages CRM — appels et IA', () => {
   })
 
   it('analyse : une grille incohérente est refusée par l’écran, puis corrigée et envoyée entière', async () => {
-    renderPage()
+    renderPage('analyse')
     const an = await block(/^Analyse$/)
     expect(an.getByText('Total atteignable : 95 points sur 100')).toBeInTheDocument()
     expect(an.getByText('Perte maximale : -20 points')).toBeInTheDocument()
@@ -162,7 +162,7 @@ describe('réglages CRM — appels et IA', () => {
   })
 
   it('analyse : retirer un critère, en ajouter un, rétablir la grille de départ', async () => {
-    renderPage()
+    renderPage('analyse')
     const an = await block(/^Analyse$/)
     fireEvent.click(an.getByRole('button', { name: 'Supprimer le critère 6' }))
     expect(an.queryByText('Critère 6')).toBeNull()
@@ -171,7 +171,7 @@ describe('réglages CRM — appels et IA', () => {
 
   it('analyse : le refus du serveur s’affiche à côté du bloc', async () => {
     refuse = 'callAnalysis.heatGrid : grille refusée'
-    renderPage()
+    renderPage('analyse')
     const an = await block(/^Analyse$/)
     fireEvent.change(an.getByLabelText(/^Conservation des analyses \(mois\)/), { target: { value: '6' } })
     fireEvent.click(an.getByRole('button', { name: 'Enregistrer' }))
@@ -180,7 +180,7 @@ describe('réglages CRM — appels et IA', () => {
 
   it('MANAGER : lecture seule, aucun bouton d’enregistrement ni PATCH', async () => {
     auth.role = 'MANAGER'
-    renderPage()
+    renderPage('telephonie')
     const tel = await block(/^Téléphonie$/)
     expect(tel.queryByRole('button', { name: 'Enregistrer' })).toBeNull()
     expect(tel.getByLabelText('lun.')).toBeDisabled()

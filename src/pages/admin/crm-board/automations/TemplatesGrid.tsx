@@ -146,7 +146,7 @@ export default function TemplatesGrid({
           <p>{t.summary}</p>
           <button
             type="button"
-            className="portal-button secondary crm-auto-btn crm-auto-btn--ghost crm-auto-btn--sm"
+            className="crm-ui-btn crm-ui-btn--soft crm-ui-btn--sm crm-auto-btn"
             disabled={!canAdminister}
             title={canAdminister ? undefined : tt('crmAuto.adminOnly')}
             onClick={() => onUse(t)}

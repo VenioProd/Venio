@@ -112,7 +112,7 @@ describe('onglet Automatisations', () => {
       </MemoryRouter>,
     )
     await screen.findByText('Relance après 7 jours')
-    fireEvent.click(screen.getByRole('tab', { name: 'Journal d’exécution' }))
+    fireEvent.click(screen.getByRole('link', { name: 'Journal' }))
     expect(await screen.findByText('Lead a')).toBeInTheDocument()
     expect(screen.getByText('Lead b')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Erreurs/ }))
@@ -176,7 +176,7 @@ describe('onglet Automatisations', () => {
       </MemoryRouter>,
     )
     await screen.findByText('Relance après 7 jours')
-    fireEvent.click(screen.getByRole('tab', { name: 'Journal d’exécution' }))
+    fireEvent.click(screen.getByRole('link', { name: 'Journal' }))
     fireEvent.click(await screen.findByText('Lead p'))
     expect(screen.getByRole('button', { name: 'Approuver et envoyer' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Refuser' })).toBeDisabled()
@@ -193,7 +193,7 @@ describe('onglet Automatisations', () => {
       </MemoryRouter>,
     )
     await screen.findByText('Relance après 7 jours')
-    fireEvent.click(screen.getByRole('tab', { name: 'Modèles' }))
+    fireEvent.click(screen.getByRole('link', { name: 'Modèles' }))
     for (const b of screen.getAllByRole('button', { name: /^Utiliser le modèle/ })) expect(b).toBeDisabled()
     unmount()
     auth.role = 'SUPER_ADMIN'

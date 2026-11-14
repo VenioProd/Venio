@@ -16,6 +16,9 @@ interface FinancialChartProps {
   height?: number
   timeline?: boolean
   formatValue?: (value: number) => string
+  /** Libellés de l'infobulle ; par défaut ceux des échéances attendues du tableau de bord. */
+  valueName?: string
+  volumeName?: string
 }
 
 const FinancialChart = ({
@@ -26,6 +29,8 @@ const FinancialChart = ({
   height = 220,
   timeline = false,
   formatValue,
+  valueName,
+  volumeName,
 }: FinancialChartProps) => {
   const { t } = useI18n()
   const accent = timeline ? '#0ea5e9' : ACCENT
@@ -68,10 +73,11 @@ const FinancialChart = ({
           <Tooltip
             cursor={{ stroke: withAlpha(accent, 0.4), strokeDasharray: '3 3' }}
             formatter={(value, name) => {
-              if (name === 'volume') return [value, timeline ? t('shared.dash.chartExpectedItems') : name]
+              if (name === 'volume')
+                return [value, volumeName ?? (timeline ? t('shared.dash.chartExpectedItems') : name)]
               return [
                 formatValue ? formatValue(Number(value)) : value,
-                timeline ? t('shared.dash.chartExpectedTtc') : name,
+                valueName ?? (timeline ? t('shared.dash.chartExpectedTtc') : name),
               ]
             }}
             contentStyle={{

@@ -1,0 +1,103 @@
+/*
+ * Réglages du CRM : navigation de sections (refonte « Journée », lot 4).
+ * Classes préfixées `crm-set-`. Jetons du portail seulement.
+ */
+.crm-set-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  min-width: 0;
+}
+.crm-set-body {
+  min-width: 0;
+}
+.crm-set-body > .crm-settings-section,
+.crm-set-body .crm-settings-section {
+  margin: 0;
+}
+/* Les blocs d'appel et d'IA se rangent sur une colonne : une section à la fois. */
+.crm-set-body .crm-ai-block {
+  width: 100%;
+}
+
+.crm-set-nav {
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.crm-set-nav__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.crm-set-nav h3 {
+  margin: 0;
+  padding: 12px 10px 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.crm-set-nav__group:first-child h3 {
+  padding-top: 0;
+}
+.crm-set-nav a {
+  display: block;
+  padding: 7px 10px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--r-md);
+}
+.crm-set-nav a:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+.crm-set-nav a:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: -2px;
+}
+.crm-set-nav a[aria-current='page'] {
+  color: var(--text-primary);
+  background: var(--accent-surface);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+/* Menu de sections : remplace la navigation sous 1100 px. */
+.crm-set-jump {
+  display: none;
+}
+.crm-set-jump select {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 10px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+}
+.crm-set-jump select:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.crm-set-intro {
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1100px) {
+  .crm-set-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .crm-set-nav {
+    display: none;
+  }
+  .crm-set-jump {
+    display: block;
+  }
+}

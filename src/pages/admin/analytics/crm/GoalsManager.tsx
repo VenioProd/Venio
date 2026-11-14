@@ -75,7 +75,7 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ from, months, admins, onCha
 
   return (
     <div className="forecast-goals">
-      <h4 className="pilotage-subtitle">{t('adminTech.forecast.goalsTitle')}</h4>
+      <h3 className="pilotage-subtitle">{t('adminTech.forecast.goalsTitle')}</h3>
       <p className="pilotage-subtext">{t('adminTech.forecast.goalsSubtext')}</p>
       {error && <div className="admin-error">{error}</div>}
 
