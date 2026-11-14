@@ -581,6 +581,18 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+/* Tablette : en-tête, bandeau et filtres prennent presque tout l'écran ; le plateau garde sa
+   hauteur propre et la page défile, au lieu d'écraser le tableau ou le Kanban à quelques pixels. */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .pipeline-page.crm-table-page .crm-board-content {
+    max-height: none;
+  }
+  .pipeline-page .crm-board,
+  .pipeline-page .rich-table-wrap {
+    flex: none;
+    height: min(75dvh, 640px);
+  }
+}
 @media (max-width: 720px) {
   .crm-suivre-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
