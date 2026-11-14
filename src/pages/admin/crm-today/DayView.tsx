@@ -2,12 +2,14 @@ import React, { useRef, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { CircleCheck, Clock, Inbox, Phone, Sparkles } from 'lucide-react'
 import { useI18n } from '../../../context/I18nContext'
-import { CrmEmpty, CrmNowBanner, CrmSidePanel, CrmWithPanel } from '../../../components/admin/crm-ui'
+import { formatDate } from '../../../i18n/format'
+import { CrmEmpty, CrmNowBanner, CrmSectionHead, CrmSidePanel, CrmWithPanel } from '../../../components/admin/crm-ui'
 import type { Lead, WorklistGroups } from '../../../types/crm.types'
 import WorklistSection, { type WorklistListProps } from '../crm-board/worklist/WorklistSection'
 import { useRowFocus } from '../crm-board/worklist/useRowFocus'
 import { calendarDaysAgo, clockLabel, describeDue } from '../crm-board/worklist/helpers'
 import { AnalysesSection, HoldsCard, callLabel } from './PendingSections'
+import CallSessionCard, { QueueResume } from './CallSessionCard'
 import type { PendingAnalysis, PendingHold, PendingResponse } from './useTodayData'
 
 interface DayViewProps extends WorklistListProps {
@@ -27,11 +29,16 @@ interface DayViewProps extends WorklistListProps {
 }
 
 const callable = (lead: Lead) => Boolean(lead.contactPhone && !lead.callHold)
+/** Une prochaine action de type rendez-vous. */
+const isMeeting = (lead: Lead) => lead.nextActionType === 'MEETING'
+/** Au-delà, la carte « À venir » renvoie à « Cette semaine ». */
+const UPCOMING_LIMIT = 5
 
 /**
  * « Aujourd'hui » : bandeau de la prochaine action, répartition du jour, puis
- * en retard, analyses à valider et la journée heure par heure ; à droite, les
- * retenues d'opposition à décider.
+ * en retard, analyses à valider, rendez-vous du jour et la journée heure par
+ * heure ; à droite, la séance d'appels, les retenues d'opposition à décider et
+ * les rendez-vous à venir.
  */
 export default function DayView({
   groups,
@@ -55,11 +62,13 @@ export default function DayView({
   const containerRef = useRef<HTMLDivElement>(null)
   const fallbackRef = useRef<HTMLDivElement>(null)
   const late = groups.overdue
-  const today = groups.today
+  const meetings = groups.today.filter(isMeeting)
+  const today = groups.today.filter((lead) => !isMeeting(lead))
+  const upcomingMeetings = groups.upcoming.filter(isMeeting)
   const analyses = pending?.analyses ?? []
   const analysesTotal = pending?.analysesTotal ?? 0
   const holds = pending?.holds ?? []
-  const rows = [...late, ...today]
+  const rows = [...late, ...meetings, ...today]
   const { track, announcement } = useRowFocus(rows, containerRef, fallbackRef)
   const handlers = {
     onPatch: (id: string, patch: Record<string, unknown>) => track(id, () => onPatch(id, patch)),
@@ -67,7 +76,8 @@ export default function DayView({
       track(id, () => onLogContact(id, payload)),
     onAddNote: (id: string, text: string) => track(id, () => onAddNote(id, text)),
   }
-  const total = late.length + today.length + analysesTotal
+  const dueToday = groups.today.length
+  const total = late.length + dueToday + analysesTotal
   const canManage = rowProps.canManageCrm
 
   // Bandeau : l'analyse la plus récente d'abord (l'appel est frais), puis le plus gros retard.
@@ -154,10 +164,10 @@ export default function DayView({
       <div
         className="crm-today-mix__bar"
         role="img"
-        aria-label={t('crmToday.mix.aria', { late: late.length, today: today.length, analyses: analysesTotal })}
+        aria-label={t('crmToday.mix.aria', { late: late.length, today: dueToday, analyses: analysesTotal })}
       >
         {late.length > 0 && <span data-tone="red" style={{ width: share(late.length) }} />}
-        {today.length > 0 && <span data-tone="blue" style={{ width: share(today.length) }} />}
+        {dueToday > 0 && <span data-tone="blue" style={{ width: share(dueToday) }} />}
         {analysesTotal > 0 && <span data-tone="grey" style={{ width: share(analysesTotal) }} />}
       </div>
       <ul className="crm-today-mix__legend" aria-hidden="true">
@@ -167,7 +177,7 @@ export default function DayView({
         </li>
         <li>
           <span className="crm-ui-dot" data-tone="blue" />
-          {t('crmToday.mix.today', { count: today.length })}
+          {t('crmToday.mix.today', { count: dueToday })}
         </li>
         {canManage && (
           <li>
@@ -212,6 +222,17 @@ export default function DayView({
               analysisHref={analysisHref}
             />
           )}
+          {meetings.length > 0 && (
+            <WorklistSection
+              id="crm-today-meetings"
+              group="today"
+              title={t('crmSession.meetings.section')}
+              tone="blue"
+              leads={meetings}
+              {...rowProps}
+              {...handlers}
+            />
+          )}
           <WorklistSection
             id="crm-today-day"
             group="today"
@@ -229,6 +250,36 @@ export default function DayView({
     </div>
   )
 
+  const upcomingCard = (
+    <section className="crm-ui-card" aria-labelledby="crm-today-upcoming">
+      <CrmSectionHead
+        id="crm-today-upcoming"
+        title={t('crmSession.upcoming.title')}
+        sub={t('crmSession.upcoming.sub')}
+      />
+      {upcomingMeetings.length ? (
+        <ul className="crm-session-upcoming">
+          {upcomingMeetings.slice(0, UPCOMING_LIMIT).map((lead) => (
+            <li key={lead._id}>
+              <b>
+                {t('crmSession.upcoming.when', {
+                  date: formatDate(lead.nextActionAt!, { weekday: 'long', day: 'numeric', month: 'long' }),
+                  time: clockLabel(lead.nextActionAt!),
+                })}
+              </b>
+              <Link to={leadHref(lead._id)}>
+                {lead.company}
+                {lead.nextActionLabel ? `, ${lead.nextActionLabel}` : ''}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="crm-session-muted">{t('crmSession.upcoming.empty')}</p>
+      )}
+    </section>
+  )
+
   return (
     <div className="crm-today-stack" ref={containerRef}>
       <p className="crm-ui-sr-only" role="status" aria-live="polite">
@@ -238,10 +289,11 @@ export default function DayView({
         {banner}
       </div>
       {!nothing && mix}
-      {holds.length > 0 ? (
-        <CrmWithPanel
-          panel={
-            <CrmSidePanel label={t('crmToday.section.aside')}>
+      <CrmWithPanel
+        panel={
+          <CrmSidePanel label={t('crmSession.aside')}>
+            {canManage && <CallSessionCard footer={<QueueResume />} />}
+            {holds.length > 0 && (
               <HoldsCard
                 holds={holds}
                 total={pending?.holdsTotal ?? holds.length}
@@ -251,14 +303,13 @@ export default function DayView({
                   onHoldDecided(hold)
                 }}
               />
-            </CrmSidePanel>
-          }
-        >
-          {main}
-        </CrmWithPanel>
-      ) : (
-        main
-      )}
+            )}
+            {upcomingCard}
+          </CrmSidePanel>
+        }
+      >
+        {main}
+      </CrmWithPanel>
     </div>
   )
 }

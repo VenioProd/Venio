@@ -14,6 +14,14 @@ export interface CallQueueParams {
   mine?: boolean
 }
 
+/** Équipe seulement : fiches de la file par catégorie (`counts` de la première page). */
+export interface QueueCounts {
+  all: number
+  callback: number
+  never: number
+  other: number
+}
+
 /**
  * Ce que la file d'appels demande à son serveur. Le commercial externe et l'équipe partagent le même écran
  * (`CallDesk` dans `CommercialCalls.tsx`) ; seuls les routes et quelques droits changent.
@@ -33,7 +41,7 @@ export interface CallDeskApi {
   canLiftHold: boolean
   settings: () => Promise<CallSettings>
   filters: () => Promise<{ lists: string[]; projects: string[] }>
-  queue: (params: CallQueueParams) => Promise<{ leads: RepLead[]; nextCursor: string | null }>
+  queue: (params: CallQueueParams) => Promise<{ leads: RepLead[]; nextCursor: string | null; counts?: QueueCounts }>
   quickCall: (leadId: string, input: CallDraft) => Promise<{ interactionId: string }>
   undoQuickCall: (leadId: string, interactionId: string) => Promise<{ lead: RepLead }>
   addScriptTag: (tag: string) => Promise<{ scriptTags: string[] }>

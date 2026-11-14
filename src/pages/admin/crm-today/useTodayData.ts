@@ -42,7 +42,8 @@ export function useTodayData({
   onWorklistCounts,
 }: {
   canManageCrm: boolean
-  onWorklistCounts?: (counts: WorklistResponse['counts']) => void
+  /** Compteurs de la file, et le nombre d'analyses à valider dès qu'il est connu (moment « Aujourd'hui » de la coque). */
+  onWorklistCounts?: (counts: WorklistResponse['counts'], analyses?: number) => void
 }) {
   const [worklist, setWorklist] = useState<WorklistResponse | null>(null)
   const [admins, setAdmins] = useState<AdminUser[]>([])
@@ -55,12 +56,18 @@ export function useTodayData({
   useEffect(() => {
     countsRef.current = onWorklistCounts
   })
+  const lastCounts = useRef<WorklistResponse['counts'] | null>(null)
+  const lastAnalyses = useRef<number | undefined>(undefined)
 
   const loadWorklist = useCallback(async () => {
     try {
       const data = await apiFetch<WorklistResponse>('/api/admin/crm/worklist')
       setWorklist(data)
-      if (data.counts) countsRef.current?.(data.counts)
+      if (data.counts) {
+        lastCounts.current = data.counts
+        if (lastAnalyses.current === undefined) countsRef.current?.(data.counts)
+        else countsRef.current?.(data.counts, lastAnalyses.current)
+      }
     } catch (err: unknown) {
       setError((err as Error).message || translate('crm.error.loadWorklist'))
     }
@@ -69,8 +76,11 @@ export function useTodayData({
   const loadPending = useCallback(async () => {
     if (!canManageCrm) return
     try {
-      setPending(await apiFetch<PendingResponse>(`${TEAM_CALL_DESK_PREFIX}/pending`))
+      const data = await apiFetch<PendingResponse>(`${TEAM_CALL_DESK_PREFIX}/pending`)
+      setPending(data)
       setPendingError(false)
+      lastAnalyses.current = data.analysesTotal
+      if (lastCounts.current) countsRef.current?.(lastCounts.current, data.analysesTotal)
     } catch {
       setPendingError(true)
     }

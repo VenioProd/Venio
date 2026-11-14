@@ -11,6 +11,7 @@ import LossPanel from './LossPanel'
 import PerformanceTable from './PerformanceTable'
 import CoverageNotice from './CoverageNotice'
 import PipelinePanel from './PipelinePanel'
+import CallActivityPanel from './CallActivityPanel'
 import { PILOTAGE_PERIODS, displayKey } from './constants'
 import { CRM_ENTITIES } from '../../crm-board/constants'
 import { CrmPageHead } from '../../../../components/admin/crm-ui'
@@ -130,6 +131,8 @@ const PilotageSection: React.FC<{ crmEntities?: string[]; head?: boolean }> = ({
             </h3>
             <PipelinePanel pipeline={data.pipeline} revenue={data.revenue} />
           </section>
+
+          <CallActivityPanel entity={entity} />
 
           <section className="crm-ui-card pilotage-block pilotage-block-wide" aria-labelledby="crm-pilot-losses">
             <h3 id="crm-pilot-losses" className="pilotage-subtitle">

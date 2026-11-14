@@ -54,7 +54,7 @@ export default function CrmToday({
   onWorklistCounts,
 }: {
   worklistGroups?: readonly WorklistGroupKey[]
-  onWorklistCounts?: (counts: WorklistResponse['counts']) => void
+  onWorklistCounts?: (counts: WorklistResponse['counts'], analyses?: number) => void
 }) {
   const { user } = useAuth()
   const { t } = useI18n()

@@ -7,7 +7,7 @@ import CrmPageHead from '../../components/admin/crm-ui/CrmPageHead'
 import { useAuth } from '../../context/AuthContext'
 import { useI18n, type MessageKey } from '../../context/I18nContext'
 import { formatDay, type CallSettings, type RepLead, type RepInteraction } from '../../services/externalSales'
-import { commercialDesk, type CallDeskApi } from './callDesk'
+import { commercialDesk, type CallDeskApi, type CallQueueParams } from './callDesk'
 import CallFilterGroup from './CallFilterGroup'
 import CallLeadImport from './CallLeadImport'
 import './CommercialSpace.css'
@@ -18,6 +18,15 @@ import type { SettledCall } from './softphone/engine'
 import DialerPanel from './softphone/DialerPanel'
 import ProspectCallCheck, { HARD_BLOCKS } from './callCountries/ProspectCallCheck'
 import { DIALER_MODES, useDialer, type DialerMode } from './softphone/dialer'
+import CallSessionCard from '../admin/crm-today/CallSessionCard'
+import { QUEUE_CATEGORIES, fetchTeamQueue, type QueueCategory, type QueueCounts } from '../admin/crm-today/callSession'
+
+const CATEGORY_KEYS = {
+  '': 'crmSession.cat.all',
+  callback: 'crmSession.cat.callback',
+  never: 'crmSession.cat.never',
+  other: 'crmSession.cat.other',
+} as const
 
 const KIND_KEYS = {
   CALL: 'commercial.kind.call',
@@ -54,6 +63,9 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
   const [callList, setCallList] = useState('')
   const [project, setProject] = useState('')
   const [mine, setMine] = useState(true)
+  // Équipe : catégorie de la file et compteurs par catégorie (première page).
+  const [category, setCategory] = useState<QueueCategory | ''>('')
+  const [queueCounts, setQueueCounts] = useState<QueueCounts | null>(null)
   const [leads, setLeads] = useState<RepLead[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
@@ -110,12 +122,13 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
 
   useEffect(() => {
     let active = true
-    desk
-      .queue({ callList, project, ...(desk.mineToggle ? { mine } : {}) })
+    const params = { callList, project, ...(desk.mineToggle ? { mine } : {}) }
+    ;(desk.team && category ? fetchTeamQueue({ ...params, category }) : desk.queue(params))
       .then((data) => {
         if (active) {
           setLeads(data.leads)
           setCursor(data.nextCursor)
+          if (desk.team) setQueueCounts(data.counts ?? null)
         }
       })
       .catch((err: Error) => {
@@ -127,7 +140,7 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
     return () => {
       active = false
     }
-  }, [desk, callList, project, mine, refresh])
+  }, [desk, callList, project, mine, category, refresh])
 
   useEffect(() => {
     if (selected) noteRef.current?.focus()
@@ -271,7 +284,8 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
     let next: string | null = start
     let page: RepLead[] = []
     do {
-      const data = await desk.queue({ callList, project, cursor: next, ...(desk.mineToggle ? { mine } : {}) })
+      const params: CallQueueParams = { callList, project, cursor: next, ...(desk.mineToggle ? { mine } : {}) }
+      const data = await (desk.team && category ? fetchTeamQueue({ ...params, category }) : desk.queue(params))
       page = data.leads.filter((item) => !completed.current.has(item._id))
       next = data.nextCursor
     } while (!page.length && next)
@@ -509,6 +523,7 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
           {t('crmProspect.scopeAllText')}
         </CrmBanner>
       )}
+      {team && <CallSessionCard desk refreshKey={saved?.interactionId ?? ''} />}
       {!team && <p className="commercial-muted commercial-call-shortcuts">{t('commercial.calls.shortcuts')}</p>}
       {settings && desk.allowImport && (
         <CallLeadImport
@@ -543,6 +558,29 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
         {team && <legend className="crm-ui-sr-only">{t('crmProspect.filters')}</legend>}
         {team ? (
           <>
+            <div className="crm-desk-pills crm-session-cats" role="group" aria-label={t('crmSession.cat.label')}>
+              {(['', ...QUEUE_CATEGORIES] as const).map((item) => (
+                <button
+                  type="button"
+                  key={item || '__all'}
+                  className="crm-desk-pill"
+                  aria-pressed={category === item}
+                  onClick={() => {
+                    if (category === item) return
+                    resetQueue()
+                    setCategory(item)
+                  }}
+                >
+                  {t(CATEGORY_KEYS[item])}
+                  {queueCounts && (
+                    <>
+                      {' '}
+                      <span className="crm-session-count">{queueCounts[item || 'all']}</span>
+                    </>
+                  )}
+                </button>
+              ))}
+            </div>
             <CallFilterGroup
               label={t('commercial.calls.list')}
               allLabel={t('commercial.calls.allLists')}

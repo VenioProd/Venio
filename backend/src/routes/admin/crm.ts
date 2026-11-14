@@ -66,6 +66,7 @@ import CrmGoal from '../../models/CrmGoal.js'
 import Project from '../../models/Project.js'
 import BillingDocument from '../../models/BillingDocument.js'
 import QuoteProposal from '../../models/QuoteProposal.js'
+import crmCallActivityRoutes from './crmCallActivity.js'
 import {
   assessCoverage,
   buildFunnel,
@@ -80,6 +81,7 @@ const router = express.Router()
 
 router.use(auth)
 router.use(requireAdmin)
+router.use(crmCallActivityRoutes)
 
 // Un identifiant de lead mal formé est une erreur de requête (400), pas une erreur serveur (500).
 router.param('id', (_req: Request, res: Response, next: NextFunction, id: string) => {

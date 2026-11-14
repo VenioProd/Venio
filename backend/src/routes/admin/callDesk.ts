@@ -10,6 +10,7 @@ import { createCallAnalysisRoutes } from '../commercial/callAnalysis.js'
 import callHoldRoutes from './callHold.js'
 import callDeskPendingRoutes from './callDeskPending.js'
 import callDeskLeadSignalsRoutes from './callDeskLeadSignals.js'
+import callDeskSessionRoutes from './callDeskSession.js'
 
 /**
  * Poste d'appel de l'équipe interne : les routeurs de l'espace commercial,
@@ -21,6 +22,7 @@ import callDeskLeadSignalsRoutes from './callDeskLeadSignals.js'
  * `GET /pending` (`callDeskPending.ts`) liste ce qui attend une décision, sur
  * ces deux mêmes périmètres. `callDeskLeadSignals.ts` dit, pour les fiches du
  * pipeline, lesquelles ont une analyse à valider ou un dernier appel au répondeur.
+ * `GET /session` (`callDeskSession.ts`) compte les appels du jour de l'utilisateur.
  */
 const router = express.Router()
 
@@ -34,5 +36,6 @@ router.use(createCallAnalysisRoutes(teamCallScope))
 router.use(callHoldRoutes)
 router.use(callDeskPendingRoutes)
 router.use(callDeskLeadSignalsRoutes)
+router.use(callDeskSessionRoutes)
 
 export default router

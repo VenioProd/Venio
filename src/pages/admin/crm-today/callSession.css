@@ -1,0 +1,234 @@
+/* Séance d'appels du jour, rendez-vous à venir et activité d'appels (lot A des fonctionnalités manquantes). */
+
+.crm-session__nums {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+.crm-session__nums > div {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 8px;
+  background: var(--surface-raised);
+  border-radius: var(--r-md);
+}
+.crm-session__nums dd {
+  margin: 0;
+  color: var(--text-primary);
+  font: 500 24px/1 var(--font-mono);
+  letter-spacing: -0.03em;
+}
+.crm-session__nums dt {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+.crm-session__conversion-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.crm-session__conversion-top b {
+  color: var(--text-primary);
+  font: 500 18px var(--font-mono);
+  letter-spacing: -0.03em;
+}
+.crm-session__meter {
+  position: relative;
+  height: 8px;
+  margin: 8px 0;
+  background: var(--surface-raised);
+  border-radius: var(--r-pill);
+}
+.crm-session__meter i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  max-width: 100%;
+  background: var(--primary);
+  border-radius: var(--r-pill);
+}
+.crm-session__meter u {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--text-primary);
+  border-radius: var(--r-pill);
+}
+.crm-session__caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.crm-session__footer {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.crm-session__footer .crm-ui-btn {
+  justify-content: center;
+  width: 100%;
+}
+.crm-session__footer p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Poste d'appel : une rangée sur grand écran. */
+.crm-session--desk {
+  margin: 0 0 14px;
+}
+@media (min-width: 900px) {
+  .crm-session--desk {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+  }
+  .crm-session--desk .crm-ui-section-head {
+    margin: 0;
+  }
+  .crm-session--desk .crm-session__nums {
+    margin: 0;
+  }
+}
+
+/* Gélules de catégorie de la file : une rangée à elles, au-dessus des filtres ; le compteur. */
+.crm-session-cats {
+  flex: 1 0 100%;
+}
+.crm-session-count {
+  margin-left: 2px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+/* Rendez-vous à venir. */
+.crm-session-upcoming {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.crm-session-upcoming li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.crm-session-upcoming b {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.crm-session-upcoming a {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.crm-session-upcoming a:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.crm-session-muted {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+/* Activité d'appels du pilotage. */
+.crm-session-activity__nums {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 4px 0 14px;
+}
+.crm-session-activity__nums div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+}
+.crm-session-activity__nums dd {
+  margin: 0;
+  color: var(--text-primary);
+  font: 500 22px/1 var(--font-mono);
+  letter-spacing: -0.03em;
+}
+.crm-session-activity__nums dt {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.crm-session-activity__chart {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  align-items: end;
+  gap: 4px;
+  height: 120px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--border-color);
+}
+.crm-session-activity__chart li {
+  position: relative;
+  height: 100%;
+}
+.crm-session-activity__bar {
+  position: absolute;
+  inset: auto 0 0;
+  background: color-mix(in srgb, var(--primary) 38%, transparent);
+  border-radius: var(--r-hair) var(--r-hair) 0 0;
+}
+.crm-session-activity__bar > span {
+  position: absolute;
+  inset: auto 0 0;
+  background: var(--primary);
+  border-radius: var(--r-hair) var(--r-hair) 0 0;
+}
+.crm-session-activity__axis {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font: 11px var(--font-mono);
+  text-align: center;
+}
+.crm-session-activity__axis span:nth-child(odd) {
+  visibility: hidden;
+}
+.crm-session-activity__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  list-style: none;
+}
+.crm-session-activity__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.crm-session-activity__swatch {
+  width: 10px;
+  height: 10px;
+  background: var(--primary);
+  border-radius: var(--r-hair);
+}
+.crm-session-activity__swatch--soft {
+  background: color-mix(in srgb, var(--primary) 38%, transparent);
+}

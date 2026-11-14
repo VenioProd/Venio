@@ -46,6 +46,7 @@ export const PORTAL_STYLESHEETS = [
   'src/pages/admin/crm-board/lead/lead.css',
   'src/pages/admin/crm-board/call-dock/callDock.css',
   'src/pages/admin/crm-today/crm-today.css',
+  'src/pages/admin/crm-today/callSession.css',
   'src/pages/admin/OrganisationSysteme.css',
   'src/pages/admin/subsidiary-detail/Dossier.css',
   'src/pages/admin/Messaging.css',
