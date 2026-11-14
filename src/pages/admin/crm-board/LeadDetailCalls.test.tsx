@@ -72,9 +72,15 @@ const baseLead: Lead = {
   closingHandoff: { at: '2026-11-11T12:00:00.000Z' },
 }
 
-function mount(props: { canManageCrm: boolean; lead?: Lead; focusCall?: boolean; onLeadChange?: () => void }) {
+function mount(props: {
+  canManageCrm: boolean
+  lead?: Lead
+  focusCall?: boolean
+  onLeadChange?: () => void
+  search?: string
+}) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/admin/crm/leads/lead1${props.search ?? ''}`]}>
       <LeadDetailPage
         lead={props.lead ?? baseLead}
         admins={[]}
@@ -116,6 +122,11 @@ describe('Fiche du lead de l’équipe — appels', () => {
     expect(screen.getByRole('button', { name: 'Appeler depuis le navigateur' })).toBeInTheDocument()
     expect(document.querySelector('a[href^="tel:"]')).toBeNull()
     expect(requests.map((item) => item.path)).toContain(`${PREFIX}/calls/config`)
+  })
+
+  it('ouvre l’appel analysé quand la fiche arrive d’« Aujourd’hui » avec ?analyse=', async () => {
+    mount({ canManageCrm: true, search: '?from=queue&analyse=call-ext' })
+    await waitFor(() => expect(sentToTeam('/calls/call-ext/analysis')).toBeDefined())
   })
 
   it('ne montre ni barre ni lien d’appel sans la permission d’appeler, et ne lit pas la téléphonie', async () => {
