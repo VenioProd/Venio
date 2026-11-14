@@ -1,11 +1,11 @@
-import nodemailer from 'nodemailer'
+import { createTransport, type Transporter } from 'nodemailer'
 
 export interface EmailResult {
   sent: boolean
   error?: string
 }
 
-export function getTransporter(): nodemailer.Transporter | null {
+export function getTransporter(): Transporter | null {
   const host = process.env.SMTP_HOST || 'smtp.ionos.com'
   const port = parseInt(process.env.SMTP_PORT || '587', 10)
   const user = process.env.SMTP_USER
@@ -13,7 +13,7 @@ export function getTransporter(): nodemailer.Transporter | null {
   if (!user || !pass) {
     return null
   }
-  return nodemailer.createTransport({
+  return createTransport({
     host,
     port,
     secure: port === 465,
