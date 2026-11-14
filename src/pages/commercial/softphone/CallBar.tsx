@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { Circle, Grid3x3, Mic, MicOff, Phone, PhoneOff } from 'lucide-react'
 import { useI18n, type MessageKey } from '../../../context/I18nContext'
 import { formatDuration } from '../../../components/calls/leadCalls'
 import { FINAL_CALL_STATUSES } from '../../../services/calls'
 import type { SoftphoneController } from './useSoftphone'
+import { SharedSoftphoneContext } from './shared'
 import LiveTranscript from '../../../components/calls/live/LiveTranscript'
 import './softphone.css'
 
 const KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
 
-function useElapsed(since: number | null) {
+export function useElapsed(since: number | null) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (since === null) return
@@ -47,6 +48,12 @@ export default function CallBar({ controller, leadId, phone, suggestion, disable
   const stop = mine ? controller.recordingStop : 'idle'
   // Mode pont (lot P) : le son passe par le portable, ni muet ni clavier ici.
   const bridged = mine ? controller.bridge : controller.bridgeMode
+  // Sous un softphone partagé, la barre qui montre l'appel en cours rend le dock inutile.
+  const show = useContext(SharedSoftphoneContext)?.show
+  useEffect(
+    () => (show && inCall && !controller.unavailable ? show() : undefined),
+    [show, inCall, controller.unavailable],
+  )
 
   if (controller.unavailable) {
     return (

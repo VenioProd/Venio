@@ -6,7 +6,7 @@ import { TEAM_CALL_DESK_PREFIX } from './teamDeskApi'
 
 /**
  * Barre d'appel de la fiche d'un lead de l'équipe (routeur `/api/admin/call-desk`). Monté seulement pour qui a
- * le droit d'appeler : le montage lit la configuration de la téléphonie.
+ * le droit d'appeler ; dans la coque du CRM, elle consomme le softphone partagé (voir `call-dock/`).
  * `focusOnReady` (fiche ouverte depuis la file de travail) met l'appel à portée de clavier, sans jamais composer.
  */
 export default function LeadCallBar({
@@ -18,7 +18,11 @@ export default function LeadCallBar({
   focusOnReady?: boolean
   onSettled?: () => void
 }) {
-  const controller = useSoftphone({ apiPrefix: TEAM_CALL_DESK_PREFIX, onSettled })
+  const controller = useSoftphone({
+    apiPrefix: TEAM_CALL_DESK_PREFIX,
+    onSettled,
+    lead: (id) => (id === lead._id ? lead : null),
+  })
   const wrapper = useRef<HTMLDivElement>(null)
   const focused = useRef(false)
   useEffect(() => {
