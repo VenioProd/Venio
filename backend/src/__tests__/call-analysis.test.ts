@@ -16,6 +16,8 @@ import CallAnalysis from '../models/CallAnalysis.js'
 import PersonalTask from '../models/PersonalTask.js'
 import UserIdempotencyKey from '../models/UserIdempotencyKey.js'
 import SyncTombstone from '../models/SyncTombstone.js'
+import SuppressionEntry from '../models/SuppressionEntry.js'
+import { isPhoneSuppressed } from '../lib/callGuards.js'
 import { analyzeCall, purgeAnalyses, resolveCallHold } from '../lib/callAnalysis/index.js'
 import { applyCallAnalysis } from '../lib/callAnalysis/apply.js'
 import {
@@ -114,6 +116,7 @@ beforeAll(async () => {
     PersonalTask.init(),
     UserIdempotencyKey.init(),
     SyncTombstone.init(),
+    SuppressionEntry.init(),
   ])
   fake = http.createServer((req, res) => {
     let raw = ''
@@ -325,6 +328,22 @@ it('opposition : la fiche sort de la file, tracé ; l’externe confirme, seule 
   const confirmed = await post(`/calls/${secondCall}/analysis/opt-out`, { action: 'CONFIRM' })
   expect(confirmed.status).toBe(200)
   expect(confirmed.body.lead).toMatchObject({ doNotCall: true, callHold: null })
+})
+
+it('opposition confirmée : le numéro rejoint la liste d’opposition, une seule fois', async () => {
+  const first = await newLead()
+  const twin = await newLead({ company: 'Alpha bis' })
+  replies.push(reply(modelOutput({ optOut: { detected: true, quote: null } })))
+  const { callId } = await analyzed(first)
+  replies.push(reply(modelOutput({ optOut: { detected: true, quote: null } })))
+  const { callId: twinCall } = await analyzed(twin)
+
+  expect((await post(`/calls/${callId}/analysis/opt-out`, { action: 'CONFIRM' })).status).toBe(200)
+  expect(await isPhoneSuppressed('+33612345678', 'FR')).toBe(true)
+  expect((await post(`/calls/${twinCall}/analysis/opt-out`, { action: 'CONFIRM' })).status).toBe(200)
+  expect(await SuppressionEntry.find({ phoneNormalized: { $exists: true } }).lean()).toMatchObject([
+    { phoneNormalized: '+33612345678', reason: 'OPPOSITION', leadId: first._id },
+  ])
 })
 
 it('apply : transaction, historique complet, idempotent sur clientRequestId', async () => {

@@ -50,12 +50,18 @@ function createLiveTranscriptRoutes(scope: CallDeskScope, guards: RequestHandler
         if (!res.writableEnded) res.end()
       }
       req.on('close', finish)
-      unsubscribe = subscribeLive(id, (event: LiveEvent) => {
-        if (res.writableEnded) return
-        const data = event.type === 'segment' ? event.segment : event.type === 'state' ? { status: event.status } : {}
-        res.write(`event: ${event.type}\ndata: ${JSON.stringify(data)}\n\n`)
-        if (event.type === 'state' && event.status === 'ENDED') finish()
-      })
+      // Fiche réattribuée ou sortie du périmètre pendant l'appel : le flux se ferme au contrôle suivant.
+      const stillAllowed = async () => Boolean(await Lead.exists({ _id: call.lead, ...scope.leadFilter(req) }))
+      unsubscribe = subscribeLive(
+        id,
+        (event: LiveEvent) => {
+          if (res.writableEnded) return
+          const data = event.type === 'segment' ? event.segment : event.type === 'state' ? { status: event.status } : {}
+          res.write(`event: ${event.type}\ndata: ${JSON.stringify(data)}\n\n`)
+          if (event.type === 'state' && event.status === 'ENDED') finish()
+        },
+        stillAllowed,
+      )
     } catch (err) {
       next(err)
     }

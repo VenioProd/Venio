@@ -38,6 +38,8 @@ export interface CrmExtrasAdapters {
   fail: (res: Response, status: number, code: string, message: string) => void
   actor: (req: Request) => Promise<{ id: string | null; isSuper: boolean }>
   leadScope: (req: Request) => Record<string, unknown>
+  /** Périmètre de l'export CSV, celui de la liste qu'il exporte. Par défaut : `leadScope`. */
+  exportScope?: (req: Request) => Record<string, unknown>
   /** Périmètre d'écriture : plus étroit que la lecture (le commercial ne modifie que ses leads). */
   writeScope: (req: Request) => Record<string, unknown>
   /** Entités du groupe permises (`null` : toutes) ; sert au filtre `?entity=`, en plus de `leadScope`. */
@@ -331,7 +333,7 @@ export function createCrmExtrasRouter(a: CrmExtrasAdapters): express.Router {
       if (columns.length === 0)
         return a.fail(res, 400, 'VALIDATION_ERROR', `columns : ${Object.keys(EXPORT_COLUMNS).join(', ')}`)
       const filter: Record<string, unknown> = {
-        ...a.leadScope(req),
+        ...(a.exportScope ?? a.leadScope)(req),
         archivedAt: req.query.archived === 'true' ? { $ne: null } : null,
       }
       if (typeof req.query.status === 'string' && STATUSES.includes(req.query.status)) filter.status = req.query.status

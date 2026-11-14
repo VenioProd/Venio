@@ -6,6 +6,7 @@ import PersonalTask from '../../models/PersonalTask.js'
 import User from '../../models/User.js'
 import type { ILead } from '../../types/models/index.js'
 import { computeRequestHash } from '../agent/idempotency.js'
+import { addPhoneSuppression } from '../callGuards.js'
 import { logLeadActivity } from '../crmAutomations.js'
 import { applyLeadChange, LeadChangeError } from '../crmLeadService.js'
 import { repLeadFilter } from '../externalSales.js'
@@ -417,7 +418,7 @@ export async function rejectCallAnalysis(analysisId: Types.ObjectId | string, ct
 
 /**
  * Décision humaine sur une opposition détectée. Confirmer inscrit `doNotCall`
- * (protecteur : l'externe le peut, comme avec le résultat « Ne plus appeler ») ;
+ * et le numéro dans la liste d'opposition (protecteur : l'externe le peut, comme avec le résultat « Ne plus appeler ») ;
  * lever l'opposition remet la fiche dans la file et reste à l'équipe.
  */
 export async function resolveCallHold(
@@ -445,6 +446,15 @@ export async function resolveCallHold(
       action === 'CONFIRM' ? { callHold: null, doNotCall: true, nextActionAt: null } : { callHold: null },
       { actor: ctx.actor, source: 'analysis', session, emit: false, validateAssignee: false },
     )
+    // L'opposition vaut pour le numéro, pas seulement pour cette fiche (comme « Ne plus appeler »).
+    if (action === 'CONFIRM')
+      await addPhoneSuppression(String(lead.contactPhone ?? ''), {
+        reason: 'OPPOSITION',
+        createdBy: ctx.actor,
+        leadId: lead._id as Types.ObjectId,
+        region: (await CrmSettings.getSettings()).callDefaultRegion,
+        session,
+      })
     await logLeadActivity(
       lead._id as Types.ObjectId,
       action === 'CONFIRM' ? 'CALL_OPT_OUT_CONFIRMED' : 'CALL_OPT_OUT_DISMISSED',

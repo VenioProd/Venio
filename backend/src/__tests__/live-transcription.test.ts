@@ -68,6 +68,7 @@ let provider: WebSocketServer
 let providerSessions: ProviderSession[]
 
 let repA: string
+let repB: string
 let cookieA: string
 let cookieB: string
 
@@ -222,8 +223,9 @@ beforeEach(async () => {
     { name: 'Bruno', email: 'bruno@live.test', passwordHash: 'unused', role: 'COMMERCIAL_EXTERNE' },
   ])
   repA = String(users[0]!._id)
+  repB = String(users[1]!._id)
   cookieA = `venio_session=${(await createSession(repA)).token}`
-  cookieB = `venio_session=${(await createSession(String(users[1]!._id))).token}`
+  cookieB = `venio_session=${(await createSession(repB)).token}`
 })
 afterEach(() => {
   stopAllLiveSessions()
@@ -373,4 +375,23 @@ it('opposition en cours d’appel : flux, séances et texte coupés aussitôt, a
   expect(stopTwilioStream).toHaveBeenCalledWith(expect.objectContaining({ accountSid: 'ACtest' }), 'CAparent1', 'MZ1')
   expect(getLiveSession(callId)).toBeUndefined()
   expect(await openLive(callId, cookieA).ready).toBe(204)
+})
+
+it('fiche réattribuée pendant l’appel : le flux de l’ancien commercial est effacé et fermé, la séance continue', async () => {
+  await setLive(true)
+  const { callId, token } = await placeCall()
+  const live = openLive(callId, cookieA)
+  expect(await live.ready).toBe(200)
+  await openStream({ callId, token })
+  await vi.waitFor(() => expect(getLiveSession(callId)?.status).toBe('WAITING'), WAIT)
+
+  const call = await Call.findById(callId).lean()
+  await Lead.updateOne({ _id: call!.lead }, { externalRep: repB })
+  await vi.waitFor(() => expect(live.isEnded()).toBe(true), WAIT)
+  expect(live.events.slice(-2)).toEqual([
+    { event: 'clear', data: {} },
+    { event: 'state', data: { status: 'ENDED' } },
+  ])
+  expect(getLiveSession(callId)).toBeDefined()
+  expect(await openLive(callId, cookieA).ready).toBe(404)
 })

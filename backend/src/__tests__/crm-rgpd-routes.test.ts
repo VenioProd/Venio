@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import request from 'supertest'
 import express, { type Express, type NextFunction, type Request, type Response } from 'express'
+import mongoose from 'mongoose'
 import { clearDb, setupMongo, teardownMongo } from './helpers/mongoTestEnv.js'
 import { asReqUser, resetCrmSettings, seedTeam, type Team, type TeamMember } from './crm-routes-helpers.js'
 
@@ -148,6 +149,66 @@ describe('droits des personnes : export et anonymisation', () => {
     expect((audit?.metadata as { entityId?: string }).entityId).toBe(String(lead._id))
   })
 
+  it('hors super-admin, le contenu des appels d’un externe sur une fiche non transmise est retiré et compté', async () => {
+    const { default: CallTranscript } = await import('../models/CallTranscript.js')
+    const { default: CallAnalysis } = await import('../models/CallAnalysis.js')
+    const lead = await makeLead({ externalRep: team.externe.id, enteredByRep: true })
+    const purgeAt = new Date(Date.now() + 86400_000)
+    const calls: Record<string, string> = {}
+    for (const author of [team.externe.id, team.admin.id]) {
+      const call = new mongoose.Types.ObjectId()
+      calls[author] = String(call)
+      await CallTranscript.create({
+        call,
+        lead: lead._id,
+        author,
+        language: 'fr',
+        channels: 2,
+        status: 'DONE',
+        segments: [{ speaker: 'PROSPECT', startMs: 0, endMs: 1000, text: 'Nous sommes un restaurant' }],
+        purgeAt,
+      })
+      await CallAnalysis.create({
+        call,
+        lead: lead._id,
+        author,
+        status: 'APPLIED',
+        output: { summary: 'Restaurant' },
+        review: { by: author, at: new Date(), decisions: [{ key: 'sector', action: 'ACCEPT' }] },
+        callDate: new Date(),
+        purgeAt,
+      })
+    }
+    const exported = async () => {
+      const body = (await request(app).get(`/api/admin/crm/leads/${lead._id}/personal-data`).expect(200)).body
+      const of = (rows: Array<Record<string, any>>, author: string) => rows.find((row) => row.call === calls[author])!
+      return {
+        withheld: body.withheld,
+        rep: [of(body.callTranscripts, team.externe.id), of(body.callAnalyses, team.externe.id)],
+        team: [of(body.callTranscripts, team.admin.id), of(body.callAnalyses, team.admin.id)],
+      }
+    }
+
+    as(team.admin)
+    const partial = await exported()
+    expect(partial.withheld).toEqual({ callTranscripts: 1, callAnalyses: 1 })
+    expect(partial.rep[0]).toMatchObject({ status: 'DONE', segments: [] })
+    expect(partial.rep[1]).toMatchObject({ status: 'APPLIED', output: null, review: { decisions: [] } })
+    expect(partial.team[0].segments).toHaveLength(1)
+    expect(partial.team[1].output).toEqual({ summary: 'Restaurant' })
+
+    as(team.superAdmin)
+    const full = await exported()
+    expect(full.withheld).toEqual({ callTranscripts: 0, callAnalyses: 0 })
+    expect(full.rep[0].segments).toHaveLength(1)
+    expect(full.rep[1].review.decisions).toHaveLength(1)
+
+    // Transmise au closer : l'équipe lit ces appels, l'export aussi.
+    await Lead.updateOne({ _id: lead._id }, { closingHandoff: { at: new Date(), by: team.externe.id } })
+    as(team.admin)
+    expect((await exported()).withheld).toEqual({ callTranscripts: 0, callAnalyses: 0 })
+  })
+
   it('un ADMIN anonymise (une fois), l’acte est journalisé ; un lead inconnu rend 404', async () => {
     const lead = await makeLead({ contactPhone: '0601020304', notes: 'Ana, 3 enfants' })
     as(team.admin)
@@ -203,6 +264,21 @@ describe('export CSV : audit et plafond', () => {
       filters: { status: 'DEMO', archived: false },
     })
     expect(audit?.createdAt).toBeInstanceOf(Date)
+  })
+
+  it('exporte la liste du CRM : sans les fiches d’un externe non transmises au closer', async () => {
+    await makeLead({ company: 'Fiche équipe' })
+    await makeLead({ company: 'Fiche réservée', externalRep: team.externe.id, enteredByRep: true })
+    await makeLead({
+      company: 'Fiche transmise',
+      externalRep: team.externe.id,
+      enteredByRep: true,
+      closingHandoff: { at: new Date(), by: team.externe.id },
+    })
+    const res = await request(app).get('/api/admin/crm/leads/export?columns=company').expect(200)
+    expect(res.text).toContain('Fiche équipe')
+    expect(res.text).toContain('Fiche transmise')
+    expect(res.text).not.toContain('Fiche réservée')
   })
 
   it('signale le plafond de 5000 lignes par X-Export-Truncated', async () => {

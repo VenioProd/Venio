@@ -53,9 +53,23 @@ const MAX_SESSION_MS = 65 * 60_000
 
 const sessions = new Map<string, LiveSession>()
 const listeners = new Map<string, Set<Listener>>()
+/** Droit de chaque abonné, relu au contrôle périodique de la séance. */
+const accessChecks = new WeakMap<Listener, () => Promise<boolean>>()
 
 function emit(callId: string, event: LiveEvent) {
   for (const listener of listeners.get(callId) ?? []) listener(event)
+}
+
+/** L'abonné qui n'a plus la fiche ne reçoit plus rien : texte effacé, flux fermé. Une erreur de relecture vaut refus. */
+async function recheckSubscribers(callId: string) {
+  for (const listener of [...(listeners.get(callId) ?? [])]) {
+    const allowed = accessChecks.get(listener)
+    if (!allowed || (await allowed().catch(() => false))) continue
+    const set = listeners.get(callId)
+    if (!set?.delete(listener)) continue
+    listener({ type: 'clear' })
+    listener({ type: 'state', status: 'ENDED' })
+  }
 }
 
 /** Jeton qui lie un flux à son appel : `<Parameter>` n'est pas couvert par la signature de Twilio. */
@@ -144,7 +158,7 @@ class LiveSession {
     return [...this.segments.values()].sort((a, b) => a.at - b.at)
   }
 
-  /** Relit l'appel : décroche → séances ouvertes ; opposition ou fin → arrêt. */
+  /** Relit l'appel : décroche → séances ouvertes ; opposition ou fin → arrêt. Puis le droit de chaque abonné. */
   async check() {
     if (this.ended) return
     try {
@@ -153,6 +167,7 @@ class LiveSession {
       if (!call || call.recording?.objection) return this.stop('OBJECTION')
       if (isTerminal(call.status)) return this.stop('ENDED')
       if (!this.answered && call.status === 'IN_PROGRESS') this.answer()
+      await recheckSubscribers(this.callId)
     } catch (err) {
       logger.warn({ callId: this.callId, detail: (err as Error).message.slice(0, 120) }, 'direct: relecture')
     }
@@ -259,12 +274,14 @@ export function stopLiveTranscription(callId: string, reason: LiveStopReason = '
 
 /**
  * Abonne le navigateur de l'auteur au texte d'un appel. L'état et le texte
- * courant partent tout de suite. Retourne le désabonnement.
+ * courant partent tout de suite. `allowed` est relu à chaque contrôle de la
+ * séance : faux, l'abonné est retiré. Retourne le désabonnement.
  */
-export function subscribeLive(callId: string, listener: Listener): () => void {
+export function subscribeLive(callId: string, listener: Listener, allowed?: () => Promise<boolean>): () => void {
   let set = listeners.get(callId)
   if (!set) listeners.set(callId, (set = new Set()))
   set.add(listener)
+  if (allowed) accessChecks.set(listener, allowed)
   const session = sessions.get(callId)
   listener({ type: 'state', status: session?.status ?? 'WAITING' })
   for (const segment of session?.snapshot() ?? []) listener({ type: 'segment', segment })
