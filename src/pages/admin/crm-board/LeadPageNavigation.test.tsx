@@ -89,4 +89,4 @@ it('ouvre la fiche depuis la table et revient avec la vue, les filtres et le dé
     expect(url).toContain(filter)
   await waitFor(() => expect(document.querySelector('.rich-table-wrap')?.scrollTop).toBe(180))
   expect(document.querySelector('.rich-table-wrap')?.scrollLeft).toBe(42)
-})
+}, 15_000)

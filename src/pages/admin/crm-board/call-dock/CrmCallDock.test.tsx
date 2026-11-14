@@ -116,8 +116,14 @@ function renderCrm(store: CallDockStore) {
 const dock = () => screen.queryByRole('region', { name: 'Appel téléphonique en cours' })
 const hangups = () => requests.filter((item) => item.path.endsWith('/calls/call1/hangup'))
 
+// La ligne de la file, et non le bouton « Retirer l'appel … » des appels récents, qui porte aussi le nom de la fiche.
+const deskRow = async () =>
+  (await screen.findAllByRole('button', { name: /Atelier Alpha/ })).find(
+    (button) => button.getAttribute('aria-controls') === 'call-lead1',
+  )!
+
 async function callFromDesk() {
-  fireEvent.click(await screen.findByRole('button', { name: /Atelier Alpha/ }))
+  fireEvent.click(await deskRow())
   fireEvent.click(await screen.findByRole('button', { name: 'Appeler depuis le navigateur' }))
   await waitFor(() => expect(sdk.connect).toHaveBeenCalledWith({ params: { callId: 'call1' } }))
   ;(sdk.call as EventEmitter).emit('accept')
@@ -125,7 +131,7 @@ async function callFromDesk() {
 }
 
 async function saveFromDesk() {
-  fireEvent.click(await screen.findByRole('button', { name: /Atelier Alpha/ }))
+  fireEvent.click(await deskRow())
   await waitFor(() =>
     expect(screen.getByRole('button', { name: /^Pas de réponse/ })).toHaveAttribute('aria-pressed', 'true'),
   )
@@ -185,7 +191,7 @@ describe('Dock d’appel du CRM', () => {
 
     // Au poste, la ligne appelée est repliée : le dock reprend la main.
     fireEvent.click(screen.getByRole('link', { name: 'Aller au poste' }))
-    await screen.findByRole('button', { name: /Atelier Alpha/ })
+    await deskRow()
     expect(confirm).not.toHaveBeenCalled()
     expect(hangups()).toHaveLength(0)
     expect(sdk.devices).toBe(1)
@@ -224,7 +230,7 @@ describe('Dock d’appel du CRM', () => {
     expect(dock()).toBeNull()
 
     fireEvent.click(screen.getByRole('link', { name: 'Aller au poste' }))
-    fireEvent.click(await screen.findByRole('button', { name: /Atelier Alpha/ }))
+    fireEvent.click(await deskRow())
     expect(await screen.findByRole('button', { name: /^Pas de réponse/ })).toHaveAttribute('aria-pressed', 'false')
     expect(dock()).toBeNull()
   })
