@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FileText } from 'lucide-react'
+import CrmBanner from '../admin/crm-ui/CrmBanner'
+import CrmChip, { type CrmTone } from '../admin/crm-ui/CrmChip'
+import CrmEmpty from '../admin/crm-ui/CrmEmpty'
+import CrmPageHead from '../admin/crm-ui/CrmPageHead'
 import { useI18n } from '../../context/I18nContext'
 import type { MessageKey } from '../../i18n'
 import {
@@ -8,6 +13,13 @@ import {
   type ScriptReportRow,
 } from '../../services/callScriptReports'
 import './scriptReports.css'
+
+const STATUS_TONE: Record<ScriptReport['status'], CrmTone> = {
+  READY: 'green',
+  PENDING: 'amber',
+  SKIPPED: 'blue',
+  FAILED: 'red',
+}
 
 /**
  * Rapports hebdomadaires des scripts : historique des semaines et rapport ouvert.
@@ -66,25 +78,34 @@ export default function ScriptReportsView({ base, team = false }: { base: string
   const weekLabel = (row: ScriptReportRow) =>
     t('callScriptReport.week', { week: row.weekKey.split('-W')[1] ?? row.weekKey })
 
+  const authorFilter = team && canSeeTeam && authors.length > 1 && (
+    <label className="sr-filter">
+      <span className={team ? 'crm-ui-sr-only' : undefined}>{t('callScriptReport.author')}</span>
+      <select value={author} onChange={(e) => setAuthor(e.target.value)}>
+        <option value="">{t('callScriptReport.allAuthors')}</option>
+        {authors.map((a) => (
+          <option key={a._id} value={a._id}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+
   return (
     <section className="script-reports" aria-labelledby="script-reports-title">
-      <header className="sr-head">
-        <h2 id="script-reports-title">{t('callScriptReport.title')}</h2>
-        <p className="sr-muted">{t(team ? 'callScriptReport.introTeam' : 'callScriptReport.intro')}</p>
-      </header>
-
-      {team && canSeeTeam && authors.length > 1 && (
-        <label className="sr-filter">
-          {t('callScriptReport.author')}
-          <select value={author} onChange={(e) => setAuthor(e.target.value)}>
-            <option value="">{t('callScriptReport.allAuthors')}</option>
-            {authors.map((a) => (
-              <option key={a._id} value={a._id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-        </label>
+      {team ? (
+        <CrmPageHead
+          titleId="script-reports-title"
+          title={t('crmProspect.scripts.title')}
+          lede={t('callScriptReport.introTeam')}
+          actions={authorFilter || undefined}
+        />
+      ) : (
+        <header className="sr-head">
+          <h2 id="script-reports-title">{t('callScriptReport.title')}</h2>
+          <p className="sr-muted">{t('callScriptReport.intro')}</p>
+        </header>
       )}
 
       {error ? (
@@ -99,7 +120,11 @@ export default function ScriptReportsView({ base, team = false }: { base: string
           {t('callScriptReport.loading')}
         </p>
       ) : rows.length === 0 ? (
-        <p className="sr-state">{t('callScriptReport.empty')}</p>
+        <div className="crm-ui-card">
+          <CrmEmpty icon={<FileText />} title={t('crmProspect.scripts.emptyTitle')}>
+            {t('callScriptReport.empty')}
+          </CrmEmpty>
+        </div>
       ) : (
         <div className="sr-layout">
           <nav className="sr-weeks" aria-label={t('callScriptReport.weeks')}>
@@ -119,12 +144,10 @@ export default function ScriptReportsView({ base, team = false }: { base: string
                       )}
                     </span>
                     <span className="sr-muted">{range(row)}</span>
-                    <span className="sr-week-meta">
-                      <span className={`sr-badge sr-badge--${row.status.toLowerCase()}`}>
-                        {t(`callScriptReport.status.${row.status}` as MessageKey)}
-                      </span>
-                      {row.stats.conversionRate !== null && <strong>{row.stats.conversionRate} %</strong>}
-                    </span>
+                    <CrmChip tone={STATUS_TONE[row.status]}>
+                      {t(`callScriptReport.status.${row.status}` as MessageKey)}
+                    </CrmChip>
+                    {row.stats.conversionRate !== null && <strong>{row.stats.conversionRate} %</strong>}
                   </button>
                 </li>
               ))}
@@ -140,7 +163,7 @@ export default function ScriptReportsView({ base, team = false }: { base: string
                 {t('callScriptReport.loading')}
               </p>
             ) : (
-              <ReportDetail report={report} title={`${weekLabel(report)} · ${range(report)}`} when={when} />
+              <ReportDetail report={report} title={`${weekLabel(report)} · ${range(report)}`} when={when} team={team} />
             )}
           </div>
         </div>
@@ -149,7 +172,20 @@ export default function ScriptReportsView({ base, team = false }: { base: string
   )
 }
 
-function ReportDetail({ report, title, when }: { report: ScriptReport; title: string; when: Intl.DateTimeFormat }) {
+function ReportDetail({
+  report,
+  title,
+  when,
+  team,
+}: {
+  report: ScriptReport
+  title: string
+  when: Intl.DateTimeFormat
+  team: boolean
+}) {
+  // Sous le h1 de l'écran de l'équipe, le rapport est un h2 ; sous le h2 de l'espace externe, un h3.
+  const Title = team ? 'h2' : 'h3'
+  const Block = team ? 'h3' : 'h4'
   const { t } = useI18n()
   const { stats, output } = report
   const rate = stats.conversionRate
@@ -158,13 +194,13 @@ function ReportDetail({ report, title, when }: { report: ScriptReport; title: st
   return (
     <article className="sr-report">
       <header className="sr-report-head">
-        <h3>
+        <Title>
           {title}
           {report.author && !report.own && <span className="sr-muted"> · {report.author.name}</span>}
-        </h3>
-        <span className={`sr-badge sr-badge--${report.status.toLowerCase()}`}>
+        </Title>
+        <CrmChip tone={STATUS_TONE[report.status]}>
           {t(`callScriptReport.status.${report.status}` as MessageKey)}
-        </span>
+        </CrmChip>
       </header>
 
       <div className="sr-kpis">
@@ -205,7 +241,7 @@ function ReportDetail({ report, title, when }: { report: ScriptReport; title: st
 
       {stats.byScript.length > 0 && (
         <section className="sr-block">
-          <h4>{t('callScriptReport.byScript')}</h4>
+          <Block>{t('callScriptReport.byScript')}</Block>
           <div className="sr-table-wrap">
             <table className="sr-table">
               <thead>
@@ -233,29 +269,35 @@ function ReportDetail({ report, title, when }: { report: ScriptReport; title: st
         </section>
       )}
 
-      {report.status === 'PENDING' && <p className="sr-state">{t('callScriptReport.pending')}</p>}
+      {report.status === 'PENDING' && (
+        <CrmBanner tone="amber" title={t('callScriptReport.status.PENDING')}>
+          {t('callScriptReport.pending')}
+        </CrmBanner>
+      )}
       {report.status === 'SKIPPED' && report.skipReason && (
-        <p className="sr-state">{t(`callScriptReport.skipped.${report.skipReason}` as MessageKey)}</p>
+        <CrmBanner tone="blue" title={t('callScriptReport.status.SKIPPED')}>
+          {t(`callScriptReport.skipped.${report.skipReason}` as MessageKey)}
+        </CrmBanner>
       )}
       {report.status === 'FAILED' && (
-        <p className="sr-state sr-state--error">
+        <CrmBanner tone="red" role="alert" title={t('callScriptReport.status.FAILED')}>
           {t('callScriptReport.failed')}{' '}
           {report.retryable &&
             report.nextRetryAt &&
             t('callScriptReport.failedRetry', { date: when.format(new Date(report.nextRetryAt)) })}
-        </p>
+        </CrmBanner>
       )}
 
       {output && (
         <>
           <section className="sr-block">
-            <h4>{t('callScriptReport.summary')}</h4>
+            <Block>{t('callScriptReport.summary')}</Block>
             <p>{output.summary}</p>
             <p>{output.conversionReading}</p>
           </section>
 
           <section className="sr-block">
-            <h4>{t('callScriptReport.objections')}</h4>
+            <Block>{t('callScriptReport.objections')}</Block>
             {output.objections.length === 0 ? (
               <p className="sr-muted">{t('callScriptReport.none')}</p>
             ) : (
@@ -264,7 +306,7 @@ function ReportDetail({ report, title, when }: { report: ScriptReport; title: st
                   <li key={i}>
                     <div className="sr-objection-head">
                       <strong>{o.label}</strong>
-                      <span className="sr-count">{t('callScriptReport.occurrences', { count: o.occurrences })}</span>
+                      <CrmChip tone="amber">{t('callScriptReport.occurrences', { count: o.occurrences })}</CrmChip>
                     </div>
                     {o.quotes.map((q, j) => (
                       <blockquote key={j}>« {q} »</blockquote>
@@ -279,12 +321,12 @@ function ReportDetail({ report, title, when }: { report: ScriptReport; title: st
           </section>
 
           <div className="sr-moments">
-            <Moments title={t('callScriptReport.advancing')} items={output.advancing} tone="good" />
-            <Moments title={t('callScriptReport.losing')} items={output.losing} tone="bad" />
+            <Moments title={t('callScriptReport.advancing')} items={output.advancing} tone="good" team={team} />
+            <Moments title={t('callScriptReport.losing')} items={output.losing} tone="bad" team={team} />
           </div>
 
           <section className="sr-block">
-            <h4>{t('callScriptReport.changes')}</h4>
+            <Block>{t('callScriptReport.changes')}</Block>
             {output.scriptChanges.length === 0 ? (
               <p className="sr-muted">{t('callScriptReport.none')}</p>
             ) : (
@@ -333,15 +375,18 @@ function Moments({
   title,
   items,
   tone,
+  team,
 }: {
   title: string
   items: Array<{ label: string; quote: string | null }>
   tone: 'good' | 'bad'
+  team: boolean
 }) {
   const { t } = useI18n()
+  const Block = team ? 'h3' : 'h4'
   return (
     <section className={`sr-block sr-block--${tone}`}>
-      <h4>{title}</h4>
+      <Block>{title}</Block>
       {items.length === 0 ? (
         <p className="sr-muted">{t('callScriptReport.none')}</p>
       ) : (

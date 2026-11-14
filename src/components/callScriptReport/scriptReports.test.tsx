@@ -35,3 +35,20 @@ it('aucun rapport : un état vide explicite', async () => {
   render(<ScriptReportsView base="/api/commercial/script-reports" />)
   expect(await screen.findByText(/Aucun rapport pour l’instant/)).toBeTruthy()
 })
+
+it('écran de l’équipe : titre de page « Scripts et rapport », semaines en gélules, filtre par membre', async () => {
+  vi.mocked(apiFetch).mockImplementation((async (path: string) => {
+    if (path.startsWith('/api/admin/crm/script-reports?') || path === '/api/admin/crm/script-reports')
+      return {
+        reports: [ready, { ...skipped, author: { _id: 'u2', name: 'Alex' } }],
+        canSeeTeam: true,
+      }
+    const found = [ready, skipped].find((r) => path.endsWith(`/${r._id}`))
+    return { report: found }
+  }) as typeof apiFetch)
+  render(<ScriptReportsView base="/api/admin/crm/script-reports" team />)
+  expect(await screen.findByRole('heading', { level: 1, name: 'Scripts et rapport' })).toBeTruthy()
+  expect(await screen.findByRole('heading', { level: 2, name: /Semaine 46/ })).toBeTruthy()
+  expect(screen.getByLabelText('Membre')).toBeTruthy()
+  expect(screen.getByRole('button', { name: /Semaine 45/ })).toBeTruthy()
+})

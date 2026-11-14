@@ -1,8 +1,14 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import { Inbox, Keyboard, RefreshCw, ShieldAlert, Users } from 'lucide-react'
+import CrmBanner from '../../components/admin/crm-ui/CrmBanner'
+import CrmChip from '../../components/admin/crm-ui/CrmChip'
+import CrmEmpty from '../../components/admin/crm-ui/CrmEmpty'
+import CrmPageHead from '../../components/admin/crm-ui/CrmPageHead'
 import { useAuth } from '../../context/AuthContext'
 import { useI18n, type MessageKey } from '../../context/I18nContext'
 import { formatDay, type CallSettings, type RepLead, type RepInteraction } from '../../services/externalSales'
 import { commercialDesk, type CallDeskApi } from './callDesk'
+import CallFilterGroup from './CallFilterGroup'
 import CallLeadImport from './CallLeadImport'
 import './CommercialSpace.css'
 import RecentCalls, { type RecentCall } from './RecentCalls'
@@ -21,6 +27,14 @@ const KIND_KEYS = {
 } as const
 
 type Draft = { note: string; outcome: string; scriptTag: string; nextActionAt: string; callId?: string }
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]!.toUpperCase())
+    .join('')
+
 function localDate(value: string | null) {
   if (!value) return ''
   const date = new Date(value)
@@ -451,13 +465,47 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
       open(leads[Math.max(0, Math.min(leads.length - 1, next))]?._id ?? null)
     }
   }
+  const outcomeEffect = (value: string | null | undefined) =>
+    settings?.outcomes.find((item) => item.value === value)?.effect
   const outcomeLabel = (value: string | null | undefined) =>
     settings?.outcomes.find((item) => item.value === value)?.[locale] ?? value ?? '—'
 
+  const team = desk.team
+  const busyNow = busy || loading || softphone.active
+  const scopeToggle = desk.mineToggle && (
+    <div className="commercial-scope crm-desk-seg" role="group" aria-label={t('commercial.calls.scope')}>
+      {([true, false] as const).map((value) => (
+        <button
+          type="button"
+          key={String(value)}
+          className={team ? undefined : `portal-button${mine === value ? '' : ' secondary'}`}
+          aria-pressed={mine === value}
+          disabled={team ? busyNow : undefined}
+          onClick={() => {
+            if (mine === value) return
+            resetQueue()
+            setMine(value)
+          }}
+        >
+          {t(value ? 'commercial.calls.scopeMine' : 'commercial.calls.scopeAll')}
+        </button>
+      ))}
+    </div>
+  )
+
   return (
-    <div onKeyDown={keyboard}>
-      {desk.team ? <h2>{t('commercial.calls.title')}</h2> : <h1>{t('commercial.calls.title')}</h1>}
-      <p className="commercial-muted commercial-call-shortcuts">{t('commercial.calls.shortcuts')}</p>
+    <div onKeyDown={keyboard} className={team ? 'crm-desk' : undefined}>
+      {team ? (
+        <CrmPageHead title={t('crmProspect.title')} lede={t('crmProspect.lede')} actions={scopeToggle} />
+      ) : (
+        <h1>{t('commercial.calls.title')}</h1>
+      )}
+      {team && !mine && (
+        <CrmBanner tone="blue" icon={<Users />} title={t('crmProspect.scopeAllTitle')}>
+          {t('crmProspect.scopeAllText')}
+        </CrmBanner>
+      )}
+      {!team && <p className="commercial-muted commercial-call-shortcuts">{t('commercial.calls.shortcuts')}</p>}
       {settings && desk.allowImport && (
         <CallLeadImport
           region={settings.defaultRegion}
@@ -466,89 +514,147 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
           onDone={refreshQueue}
         />
       )}
+      {team && (
+        <DialerPanel
+          mode={softphone.unavailable || softphone.bridgeMode ? 'click' : mode}
+          onMode={changeMode}
+          dialer={{ ...dialer, start: startDialer }}
+          config={softphone.dialer}
+          company={openLead?.company ?? null}
+          calling={softphone.active}
+          pendingOutcome={pendingOutcome}
+          busy={busy || loading}
+          unavailable={Boolean(softphone.unavailable) || softphone.bridgeMode}
+          unavailableWhy={softphone.bridgeMode ? 'bridge' : 'phone'}
+          cards
+          onSkip={() => openLead && void skipLead(openLead._id)}
+        />
+      )}
+      {team && (
+        <p className="commercial-muted commercial-call-shortcuts crm-desk-hint">
+          <Keyboard size={14} aria-hidden="true" /> {t('commercial.calls.shortcuts')}
+        </p>
+      )}
       <fieldset className="commercial-toolbar commercial-call-filters" disabled={busy || loading || softphone.active}>
-        <label>
-          {t('commercial.calls.list')}
-          <select
-            className="portal-input"
-            value={callList}
-            onChange={(event) => {
-              resetQueue()
-              setCallList(event.target.value)
-            }}
-          >
-            {[
-              { value: '', label: t('commercial.calls.allLists') },
-              ...filters.lists.map((value) => ({ value, label: value })),
-            ].map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {t('commercial.calls.project')}
-          <select
-            className="portal-input"
-            value={project}
-            onChange={(event) => {
-              resetQueue()
-              setProject(event.target.value)
-            }}
-          >
-            {[
-              { value: '', label: t('commercial.calls.allProjects') },
-              ...filters.projects.map((value) => ({ value, label: value })),
-            ].map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {desk.mineToggle && (
-          <div className="commercial-scope" role="group" aria-label={t('commercial.calls.scope')}>
-            {([true, false] as const).map((value) => (
-              <button
-                type="button"
-                key={String(value)}
-                className={`portal-button${mine === value ? '' : ' secondary'}`}
-                aria-pressed={mine === value}
-                onClick={() => {
-                  if (mine === value) return
+        {team && <legend className="crm-ui-sr-only">{t('crmProspect.filters')}</legend>}
+        {team ? (
+          <>
+            <CallFilterGroup
+              label={t('commercial.calls.list')}
+              allLabel={t('commercial.calls.allLists')}
+              values={filters.lists}
+              value={callList}
+              onChange={(value) => {
+                resetQueue()
+                setCallList(value)
+              }}
+            />
+            <CallFilterGroup
+              label={t('commercial.calls.project')}
+              allLabel={t('commercial.calls.allProjects')}
+              values={filters.projects}
+              value={project}
+              onChange={(value) => {
+                resetQueue()
+                setProject(value)
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <label>
+              {t('commercial.calls.list')}
+              <select
+                className="portal-input"
+                value={callList}
+                onChange={(event) => {
                   resetQueue()
-                  setMine(value)
+                  setCallList(event.target.value)
                 }}
               >
-                {t(value ? 'commercial.calls.scopeMine' : 'commercial.calls.scopeAll')}
-              </button>
-            ))}
-          </div>
+                {[
+                  { value: '', label: t('commercial.calls.allLists') },
+                  ...filters.lists.map((value) => ({ value, label: value })),
+                ].map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t('commercial.calls.project')}
+              <select
+                className="portal-input"
+                value={project}
+                onChange={(event) => {
+                  resetQueue()
+                  setProject(event.target.value)
+                }}
+              >
+                {[
+                  { value: '', label: t('commercial.calls.allProjects') },
+                  ...filters.projects.map((value) => ({ value, label: value })),
+                ].map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {scopeToggle}
+          </>
         )}
         <button type="button" className="portal-button secondary" onClick={refreshQueue}>
-          {t('commercial.calls.refresh')}
+          {team ? (
+            <>
+              <RefreshCw size={14} aria-hidden="true" /> {t('commercial.calls.refresh')}
+            </>
+          ) : (
+            t('commercial.calls.refresh')
+          )}
         </button>
       </fieldset>
-      {error && (
-        <div role="alert" className="admin-error">
-          {error}
-        </div>
-      )}
-      {saved && (
-        <div role="status" className="admin-success">
-          {t('commercial.calls.saved')} —{' '}
-          <button
-            type="button"
-            className="portal-button secondary"
-            onClick={() => void undo()}
-            disabled={busy}
-            aria-keyshortcuts="Alt+Z"
-          >
-            {t('commercial.calls.undo')}
-          </button>
-        </div>
-      )}
+      {error &&
+        (team ? (
+          <CrmBanner tone="red" role="alert" icon={<ShieldAlert />} title={error} />
+        ) : (
+          <div role="alert" className="admin-error">
+            {error}
+          </div>
+        ))}
+      {saved &&
+        (team ? (
+          <CrmBanner
+            tone="green"
+            role="status"
+            title={t('commercial.calls.saved')}
+            actions={
+              <button
+                type="button"
+                className="crm-ui-btn crm-ui-btn--sm"
+                onClick={() => void undo()}
+                disabled={busy}
+                aria-keyshortcuts="Alt+Z"
+              >
+                {t('commercial.calls.undo')}
+              </button>
+            }
+          />
+        ) : (
+          <div role="status" className="admin-success">
+            {t('commercial.calls.saved')} —{' '}
+            <button
+              type="button"
+              className="portal-button secondary"
+              onClick={() => void undo()}
+              disabled={busy}
+              aria-keyshortcuts="Alt+Z"
+            >
+              {t('commercial.calls.undo')}
+            </button>
+          </div>
+        ))}
       <RecentCalls
         items={recentCalls}
         apiPrefix={desk.apiPrefix}
@@ -556,279 +662,336 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
         onDismiss={(callId) => setRecentCalls((current) => current.filter((item) => item.callId !== callId))}
         onApplied={reloadLead}
       />
-      <DialerPanel
-        mode={softphone.unavailable || softphone.bridgeMode ? 'click' : mode}
-        onMode={changeMode}
-        dialer={{ ...dialer, start: startDialer }}
-        config={softphone.dialer}
-        company={openLead?.company ?? null}
-        calling={softphone.active}
-        pendingOutcome={pendingOutcome}
-        busy={busy || loading}
-        unavailable={Boolean(softphone.unavailable) || softphone.bridgeMode}
-        onSkip={() => openLead && void skipLead(openLead._id)}
-      />
+      {!team && (
+        <DialerPanel
+          mode={softphone.unavailable || softphone.bridgeMode ? 'click' : mode}
+          onMode={changeMode}
+          dialer={{ ...dialer, start: startDialer }}
+          config={softphone.dialer}
+          company={openLead?.company ?? null}
+          calling={softphone.active}
+          pendingOutcome={pendingOutcome}
+          busy={busy || loading}
+          unavailable={Boolean(softphone.unavailable) || softphone.bridgeMode}
+          onSkip={() => openLead && void skipLead(openLead._id)}
+        />
+      )}
       {loading && <p role="status">{t('commercial.loading')}</p>}
-      {!loading && !leads.length && <p>{t('commercial.calls.empty')}</p>}
-      <div className="commercial-call-columns" aria-hidden="true">
-        <span>{t('commercial.field.company')}</span>
-        <span>{t('commercial.field.phone')}</span>
-        <span>{t('commercial.calls.outcome')}</span>
-        <span>{t('commercial.field.nextAction')}</span>
-      </div>
-      <div className="commercial-call-grid" aria-busy={busy || loading}>
-        {leads.map((lead) => {
-          const expanded = selected === lead._id
-          const draft = draftFor(lead)
-          const callback = settings?.outcomes.find((item) => item.value === draft.outcome)?.effect === 'CALLBACK'
-          return (
-            <Fragment key={lead._id}>
-              <button
-                type="button"
-                className={`commercial-call-row${settings?.outcomes.find((item) => item.value === lead.lastCallOutcome)?.effect === 'VOICEMAIL' ? ' voicemail' : ''}${expanded ? ' selected' : ''}`}
-                aria-expanded={expanded}
-                aria-controls={`call-${lead._id}`}
-                disabled={busy || loading || softphone.active}
-                onClick={() => open(expanded ? null : lead._id)}
-              >
-                <span data-label={t('commercial.field.company')}>
-                  <strong>{lead.company}</strong>
-                  <small>{lead.contactName || '—'}</small>
-                  {lead.callHold && <em className="commercial-hold-tag">{t('commercial.hold.tag')}</em>}
-                </span>
-                <span data-label={t('commercial.field.phone')}>
-                  {lead.contactPhone || '—'}
-                  <ProspectCallCheck check={lead.callCheck} unreachable={Boolean(lead.callUnreachableAt)} />
-                </span>
-                <span data-label={t('commercial.calls.outcome')}>{outcomeLabel(lead.lastCallOutcome)}</span>
-                <span data-label={t('commercial.field.nextAction')}>{formatDay(lead.nextActionAt)}</span>
-              </button>
-              {expanded && (
-                <form
-                  id={`call-${lead._id}`}
-                  className="portal-card commercial-call-editor"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    void save(lead)
-                  }}
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === 'Enter' &&
-                      (event.target as HTMLElement).tagName !== 'SELECT' &&
-                      !event.shiftKey &&
-                      !event.nativeEvent.isComposing &&
-                      (event.target as HTMLElement).tagName !== 'A' &&
-                      !(event.target as HTMLElement).closest('.softphone-bar') &&
-                      !(event.target as HTMLElement).closest('[role="listbox"]')
-                    ) {
-                      event.preventDefault()
-                      void save(lead)
-                    }
-                  }}
-                >
-                  <fieldset disabled={busy || loading}>
-                    {lead.callCheck?.block === 'NOT_BUSINESS_CONTACT' && desk.confirmBusinessContact && (
-                      <div className="call-check-confirm">
-                        <p>{t('callCountries.confirmProHelp')}</p>
-                        <button
-                          type="button"
-                          className="portal-button secondary"
-                          onClick={() => void confirmBusinessContact(lead)}
-                        >
-                          {t('callCountries.confirmPro')}
-                        </button>
-                      </div>
-                    )}
-                    <CallBar
-                      controller={softphone}
-                      leadId={lead._id}
-                      phone={lead.contactPhone}
-                      disabled={busy}
-                      blocked={
-                        lead.callCheck?.block && HARD_BLOCKS.includes(lead.callCheck.block)
-                          ? t(`callCountries.block.${lead.callCheck.block}` as MessageKey)
-                          : null
-                      }
-                      held={Boolean(lead.callHold)}
-                      suggestion={
-                        draft.callId && draft.outcome && draft.outcome === autoOutcomes[lead._id]
-                          ? outcomeLabel(draft.outcome)
-                          : null
-                      }
-                    />
-                    {lead.callHold && (
-                      <p className="commercial-hold" role="status">
-                        <strong>{t('commercial.hold.title')}</strong>{' '}
-                        {t(desk.team ? 'commercial.hold.bodyTeam' : 'commercial.hold.body')}
-                      </p>
-                    )}
-                    <div className="commercial-toolbar">
-                      <span>{lead.contactName}</span>
-                      {lead.contactEmail && (
-                        <a className="commercial-link" href={`mailto:${lead.contactEmail}`}>
-                          {lead.contactEmail}
-                        </a>
+      {!loading &&
+        !leads.length &&
+        (team ? (
+          <div className="crm-ui-card">
+            <CrmEmpty icon={<Inbox />} title={t('commercial.calls.empty')}>
+              {t('crmProspect.emptyHint')}
+            </CrmEmpty>
+          </div>
+        ) : (
+          <p>{t('commercial.calls.empty')}</p>
+        ))}
+      {(!team || leads.length > 0) && (
+        <div
+          className={team ? 'crm-ui-card crm-ui-card--flush crm-desk-list' : undefined}
+          role={team ? 'region' : undefined}
+          aria-label={team ? t('crmProspect.listAria') : undefined}
+        >
+          <div className="commercial-call-columns" aria-hidden="true">
+            <span>{t('commercial.field.company')}</span>
+            <span>{t('commercial.field.phone')}</span>
+            <span>{t('commercial.calls.outcome')}</span>
+            <span>{t('commercial.field.nextAction')}</span>
+          </div>
+          <div className="commercial-call-grid" aria-busy={busy || loading}>
+            {leads.map((lead) => {
+              const expanded = selected === lead._id
+              const draft = draftFor(lead)
+              const callback = settings?.outcomes.find((item) => item.value === draft.outcome)?.effect === 'CALLBACK'
+              return (
+                <Fragment key={lead._id}>
+                  <button
+                    type="button"
+                    className={`commercial-call-row${outcomeEffect(lead.lastCallOutcome) === 'VOICEMAIL' ? ' voicemail' : ''}${expanded ? ' selected' : ''}`}
+                    aria-expanded={expanded}
+                    aria-controls={`call-${lead._id}`}
+                    disabled={busy || loading || softphone.active}
+                    onClick={() => open(expanded ? null : lead._id)}
+                  >
+                    <span data-label={t('commercial.field.company')}>
+                      {team && (
+                        <span className="crm-desk-avatar" aria-hidden="true">
+                          {initials(lead.company)}
+                        </span>
                       )}
-                      <span className="commercial-muted">
-                        {lead.callList} {lead.project} {lead.source}
-                      </span>
-                    </div>
-                    {Object.keys(lead.extraInfo).length > 0 && (
-                      <ul className="commercial-call-extra">
-                        {Object.entries(lead.extraInfo).map(([key, value]) => (
-                          <li key={key}>
-                            {key} :{' '}
-                            {/^https?:\/\//i.test(value) ? (
-                              <a className="commercial-link" href={value} target="_blank" rel="noopener noreferrer">
-                                {value}
-                              </a>
-                            ) : (
-                              value
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <section aria-label={t('commercial.calls.history')}>
-                      <h3>{t('commercial.calls.history')}</h3>
-                      {historyLoading && <p role="status">{t('commercial.loading')}</p>}
-                      {historyError && <p role="alert">{historyError}</p>}
-                      {!historyLoading && !historyError && !history[lead._id]?.length && (
-                        <p>{t('commercial.calls.noHistory')}</p>
+                      <strong>{lead.company}</strong>
+                      <small>{lead.contactName || '—'}</small>
+                      {team ? (
+                        <>
+                          {lead.callHold && (
+                            <CrmChip tone="red" icon={<ShieldAlert />}>
+                              {t('commercial.hold.tag')}
+                            </CrmChip>
+                          )}
+                          {outcomeEffect(lead.lastCallOutcome) === 'VOICEMAIL' && (
+                            <CrmChip tone="red">{t('crmProspect.chip.voicemail')}</CrmChip>
+                          )}
+                        </>
+                      ) : (
+                        lead.callHold && <em className="commercial-hold-tag">{t('commercial.hold.tag')}</em>
                       )}
-                      <ul>
-                        {history[lead._id]?.map((item) => (
-                          <li key={item._id}>
-                            {new Date(item.occurredAt).toLocaleString(locale)} · {t(KIND_KEYS[item.kind])} ·{' '}
-                            {outcomeLabel(item.outcome)} · {item.scriptTag || '—'}
-                            <p className="commercial-call-notes">{item.body}</p>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                    {lead.notes && <p className="commercial-call-notes">{lead.notes}</p>}
-                    <label>
-                      {t('commercial.field.notes')}
-                      <textarea
-                        ref={noteRef}
-                        className="portal-input"
-                        rows={3}
-                        maxLength={20000}
-                        value={draft.note}
-                        onChange={(event) => changeDraft(lead, { note: event.target.value })}
+                    </span>
+                    <span data-label={t('commercial.field.phone')}>
+                      {lead.contactPhone || '—'}
+                      <ProspectCallCheck
+                        check={lead.callCheck}
+                        unreachable={Boolean(lead.callUnreachableAt)}
+                        variant={team ? 'chips' : 'plain'}
                       />
-                    </label>
-                    <div className="commercial-call-outcomes" role="group" aria-label={t('commercial.calls.outcome')}>
-                      {settings?.outcomes.map((outcome, index) => (
-                        <button
-                          type="button"
-                          className={`portal-button${draft.outcome === outcome.value ? '' : ' secondary'}`}
-                          key={outcome.value}
-                          aria-pressed={draft.outcome === outcome.value}
-                          aria-keyshortcuts={index < 9 ? `Alt+${index + 1}` : undefined}
-                          onClick={() => changeDraft(lead, { outcome: outcome.value })}
-                        >
-                          {outcome[locale]}
-                          {index < 9 && <kbd>Alt+{index + 1}</kbd>}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="commercial-form-grid">
-                      <label>
-                        {t('commercial.calls.script')}
-                        <select
-                          className="portal-input"
-                          value={draft.scriptTag}
-                          onChange={(event) => changeDraft(lead, { scriptTag: event.target.value })}
-                        >
-                          {[
-                            { value: '', label: '—' },
-                            ...(settings?.scriptTags ?? []).map((value) => ({ value, label: value })),
-                          ].map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      {desk.allowScriptTags && (
-                        <label>
-                          {t('commercial.calls.addScript')}
-                          <input
-                            className="portal-input"
-                            maxLength={60}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter') {
-                                event.preventDefault()
-                                event.stopPropagation()
-                                void addScript()
-                              }
-                            }}
-                            value={newScript}
-                            onChange={(event) => setNewScript(event.target.value)}
-                          />
-                          <button
-                            type="button"
-                            className="portal-button secondary"
-                            disabled={!newScript.trim() || (settings?.scriptTags.length ?? 0) >= 30}
-                            onClick={() => void addScript()}
-                          >
-                            {t('commercial.calls.addScript')}
-                          </button>
-                        </label>
-                      )}
-                      <label>
-                        {t('commercial.field.nextAction')}
-                        {callback ? ' *' : ''}
-                        <input
-                          className="portal-input"
-                          type="datetime-local"
-                          required={callback}
-                          value={draft.nextActionAt}
-                          onChange={(event) => changeDraft(lead, { nextActionAt: event.target.value })}
-                        />
-                      </label>
-                    </div>
-                    {callback && (
-                      <div className="commercial-toolbar">
-                        <button
-                          type="button"
-                          className="portal-button secondary"
-                          onClick={() => quickDate(lead, 'hour')}
-                        >
-                          {t('commercial.calls.plusHour')}
-                        </button>
-                        <button
-                          type="button"
-                          className="portal-button secondary"
-                          onClick={() => quickDate(lead, 'tomorrow')}
-                        >
-                          {t('commercial.calls.tomorrow')}
-                        </button>
-                        <button
-                          type="button"
-                          className="portal-button secondary"
-                          onClick={() => quickDate(lead, 'days')}
-                        >
-                          {t('commercial.calls.plusDays')}
-                        </button>
-                      </div>
-                    )}
-                    <button
-                      type="submit"
-                      className="portal-button"
-                      disabled={!draft.outcome || (callback && !draft.nextActionAt) || softphone.active}
+                    </span>
+                    <span data-label={t('commercial.calls.outcome')}>{outcomeLabel(lead.lastCallOutcome)}</span>
+                    <span data-label={t('commercial.field.nextAction')}>{formatDay(lead.nextActionAt)}</span>
+                  </button>
+                  {expanded && (
+                    <form
+                      id={`call-${lead._id}`}
+                      className="portal-card commercial-call-editor"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        void save(lead)
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === 'Enter' &&
+                          (event.target as HTMLElement).tagName !== 'SELECT' &&
+                          !event.shiftKey &&
+                          !event.nativeEvent.isComposing &&
+                          (event.target as HTMLElement).tagName !== 'A' &&
+                          !(event.target as HTMLElement).closest('.softphone-bar') &&
+                          !(event.target as HTMLElement).closest('[role="listbox"]')
+                        ) {
+                          event.preventDefault()
+                          void save(lead)
+                        }
+                      }}
                     >
-                      {t('commercial.calls.saveNext')}
-                    </button>
-                    {softphone.active && <p className="commercial-muted">{t('calls.hangupFirst')}</p>}
-                  </fieldset>
-                </form>
-              )}
-            </Fragment>
-          )
-        })}
-      </div>
+                      <fieldset disabled={busy || loading}>
+                        {lead.callCheck?.block === 'NOT_BUSINESS_CONTACT' && desk.confirmBusinessContact && (
+                          <div className="call-check-confirm">
+                            <p>{t('callCountries.confirmProHelp')}</p>
+                            <button
+                              type="button"
+                              className="portal-button secondary"
+                              onClick={() => void confirmBusinessContact(lead)}
+                            >
+                              {t('callCountries.confirmPro')}
+                            </button>
+                          </div>
+                        )}
+                        <CallBar
+                          controller={softphone}
+                          leadId={lead._id}
+                          phone={lead.contactPhone}
+                          disabled={busy}
+                          blocked={
+                            lead.callCheck?.block && HARD_BLOCKS.includes(lead.callCheck.block)
+                              ? t(`callCountries.block.${lead.callCheck.block}` as MessageKey)
+                              : null
+                          }
+                          held={Boolean(lead.callHold)}
+                          suggestion={
+                            draft.callId && draft.outcome && draft.outcome === autoOutcomes[lead._id]
+                              ? outcomeLabel(draft.outcome)
+                              : null
+                          }
+                        />
+                        {lead.callHold && (
+                          <p className="commercial-hold" role="status">
+                            <strong>{t('commercial.hold.title')}</strong>{' '}
+                            {t(desk.team ? 'commercial.hold.bodyTeam' : 'commercial.hold.body')}
+                          </p>
+                        )}
+                        <div className="commercial-toolbar">
+                          <span>{lead.contactName}</span>
+                          {lead.contactEmail && (
+                            <a className="commercial-link" href={`mailto:${lead.contactEmail}`}>
+                              {lead.contactEmail}
+                            </a>
+                          )}
+                          <span className="commercial-muted">
+                            {lead.callList} {lead.project} {lead.source}
+                          </span>
+                        </div>
+                        {Object.keys(lead.extraInfo).length > 0 && (
+                          <ul className="commercial-call-extra">
+                            {Object.entries(lead.extraInfo).map(([key, value]) => (
+                              <li key={key}>
+                                {key} :{' '}
+                                {/^https?:\/\//i.test(value) ? (
+                                  <a className="commercial-link" href={value} target="_blank" rel="noopener noreferrer">
+                                    {value}
+                                  </a>
+                                ) : (
+                                  value
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <section aria-label={t('commercial.calls.history')}>
+                          <h3>{t('commercial.calls.history')}</h3>
+                          {historyLoading && <p role="status">{t('commercial.loading')}</p>}
+                          {historyError && <p role="alert">{historyError}</p>}
+                          {!historyLoading && !historyError && !history[lead._id]?.length && (
+                            <p>{t('commercial.calls.noHistory')}</p>
+                          )}
+                          <ul>
+                            {history[lead._id]?.map((item) => (
+                              <li key={item._id}>
+                                {new Date(item.occurredAt).toLocaleString(locale)} · {t(KIND_KEYS[item.kind])} ·{' '}
+                                {outcomeLabel(item.outcome)} · {item.scriptTag || '—'}
+                                <p className="commercial-call-notes">{item.body}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        </section>
+                        {lead.notes && <p className="commercial-call-notes">{lead.notes}</p>}
+                        <label>
+                          {t('commercial.field.notes')}
+                          <textarea
+                            ref={noteRef}
+                            className="portal-input"
+                            rows={3}
+                            maxLength={20000}
+                            value={draft.note}
+                            onChange={(event) => changeDraft(lead, { note: event.target.value })}
+                          />
+                        </label>
+                        <div
+                          className="commercial-call-outcomes"
+                          role="group"
+                          aria-label={t('commercial.calls.outcome')}
+                        >
+                          {settings?.outcomes.map((outcome, index) => (
+                            <button
+                              type="button"
+                              className={`portal-button${draft.outcome === outcome.value ? '' : ' secondary'}`}
+                              key={outcome.value}
+                              aria-pressed={draft.outcome === outcome.value}
+                              aria-keyshortcuts={index < 9 ? `Alt+${index + 1}` : undefined}
+                              onClick={() => changeDraft(lead, { outcome: outcome.value })}
+                            >
+                              {outcome[locale]}
+                              {team &&
+                                draft.callId &&
+                                draft.outcome === outcome.value &&
+                                autoOutcomes[lead._id] === outcome.value && (
+                                  <span className="crm-desk-preselected">{t('crmProspect.preselected')}</span>
+                                )}
+                              {index < 9 && <kbd>Alt+{index + 1}</kbd>}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="commercial-form-grid">
+                          <label>
+                            {t('commercial.calls.script')}
+                            <select
+                              className="portal-input"
+                              value={draft.scriptTag}
+                              onChange={(event) => changeDraft(lead, { scriptTag: event.target.value })}
+                            >
+                              {[
+                                { value: '', label: '—' },
+                                ...(settings?.scriptTags ?? []).map((value) => ({ value, label: value })),
+                              ].map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          {desk.allowScriptTags && (
+                            <label>
+                              {t('commercial.calls.addScript')}
+                              <input
+                                className="portal-input"
+                                maxLength={60}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter') {
+                                    event.preventDefault()
+                                    event.stopPropagation()
+                                    void addScript()
+                                  }
+                                }}
+                                value={newScript}
+                                onChange={(event) => setNewScript(event.target.value)}
+                              />
+                              <button
+                                type="button"
+                                className="portal-button secondary"
+                                disabled={!newScript.trim() || (settings?.scriptTags.length ?? 0) >= 30}
+                                onClick={() => void addScript()}
+                              >
+                                {t('commercial.calls.addScript')}
+                              </button>
+                            </label>
+                          )}
+                          <label>
+                            {t('commercial.field.nextAction')}
+                            {callback ? ' *' : ''}
+                            <input
+                              className="portal-input"
+                              type="datetime-local"
+                              required={callback}
+                              value={draft.nextActionAt}
+                              onChange={(event) => changeDraft(lead, { nextActionAt: event.target.value })}
+                            />
+                          </label>
+                        </div>
+                        {callback && (
+                          <div className="commercial-toolbar">
+                            <button
+                              type="button"
+                              className="portal-button secondary"
+                              onClick={() => quickDate(lead, 'hour')}
+                            >
+                              {t('commercial.calls.plusHour')}
+                            </button>
+                            <button
+                              type="button"
+                              className="portal-button secondary"
+                              onClick={() => quickDate(lead, 'tomorrow')}
+                            >
+                              {t('commercial.calls.tomorrow')}
+                            </button>
+                            <button
+                              type="button"
+                              className="portal-button secondary"
+                              onClick={() => quickDate(lead, 'days')}
+                            >
+                              {t('commercial.calls.plusDays')}
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          type="submit"
+                          className="portal-button"
+                          disabled={!draft.outcome || (callback && !draft.nextActionAt) || softphone.active}
+                        >
+                          {t('commercial.calls.saveNext')}
+                        </button>
+                        {softphone.active && <p className="commercial-muted">{t('calls.hangupFirst')}</p>}
+                      </fieldset>
+                    </form>
+                  )}
+                </Fragment>
+              )
+            })}
+          </div>
+          {team && leads.length > 0 && (
+            <p className="crm-desk-summary">
+              {t(cursor ? 'crmProspect.shownMore' : 'crmProspect.shown', { count: leads.length })}
+            </p>
+          )}
+        </div>
+      )}
       {cursor && (
         <button
           type="button"

@@ -20,21 +20,32 @@ interface Props {
   /** Le poste ne peut pas appeler depuis le navigateur (repli `tel:`) : seul le mode « au clic » reste. */
   unavailable: boolean
   onSkip: () => void
+  /** CRM de l'équipe : le choix du mode en trois cartes (refonte), au lieu des boutons de l'espace externe. */
+  cards?: boolean
+  /** Pourquoi les autres modes sont indisponibles (cartes seulement). */
+  unavailableWhy?: 'phone' | 'bridge'
 }
 
 /** Choix du mode d'appel et état de l'enchaînement, au-dessus de la file. */
 export default function DialerPanel(props: Props) {
   const { mode, onMode, dialer, config, company, calling, pendingOutcome, busy, unavailable, onSkip } = props
+  const { cards = false, unavailableWhy = 'phone' } = props
   const { t } = useI18n()
   const name = company ?? '—'
-  const help =
-    mode === 'click'
+  const helpFor = (value: DialerMode) =>
+    value === 'click'
       ? t('calls.dialer.help.click')
-      : mode === 'preview'
+      : value === 'preview'
         ? config.previewDelaySec > 0
           ? t('calls.dialer.help.preview', { delay: config.previewDelaySec })
           : t('calls.dialer.help.previewClick')
         : t('calls.dialer.help.power', { delay: config.powerDelaySec })
+  const help = helpFor(mode)
+  const changeMode = (value: DialerMode) => {
+    if (value === mode) return
+    if (dialer.running) dialer.pause()
+    onMode(value)
+  }
 
   let state = ''
   if (dialer.running) {
@@ -55,28 +66,62 @@ export default function DialerPanel(props: Props) {
       aria-label={t('calls.dialer.group')}
       data-running={mode !== 'click' && dialer.running ? 'true' : undefined}
     >
-      <div className="dialer-modes" role="group" aria-label={t('calls.dialer.group')}>
-        {DIALER_MODES.map((value) => (
-          <button
-            type="button"
-            key={value}
-            className={`portal-button${mode === value ? '' : ' secondary'}`}
-            aria-pressed={mode === value}
-            disabled={calling || (unavailable && value !== 'click')}
-            onClick={() => {
-              if (value === mode) return
-              if (dialer.running) dialer.pause()
-              onMode(value)
-            }}
-          >
-            {t(`calls.dialer.mode.${value}` as MessageKey)}
-          </button>
-        ))}
-      </div>
-      <p className="dialer-help">
-        {help}
-        {mode !== 'click' && config.voicemailDetection ? ` ${t('calls.dialer.help.voicemail')}` : ''}
-      </p>
+      {cards ? (
+        <fieldset className="crm-desk-modes" disabled={calling}>
+          <legend className="crm-ui-sr-only">{t('calls.dialer.group')}</legend>
+          {DIALER_MODES.map((value) => {
+            const blocked = unavailable && value !== 'click'
+            return (
+              <label key={value} className="crm-desk-mode" data-blocked={blocked ? 'true' : undefined}>
+                <input
+                  type="radio"
+                  name="dialer-mode"
+                  value={value}
+                  checked={mode === value}
+                  disabled={blocked}
+                  onChange={() => changeMode(value)}
+                />
+                <span className="crm-desk-mode__text">
+                  <b>{t(`calls.dialer.mode.${value}` as MessageKey)}</b>
+                  <span>
+                    {blocked
+                      ? t(
+                          unavailableWhy === 'bridge'
+                            ? 'crmProspect.mode.unavailableBridge'
+                            : 'crmProspect.mode.unavailablePhone',
+                        )
+                      : helpFor(value)}
+                  </span>
+                </span>
+              </label>
+            )
+          })}
+        </fieldset>
+      ) : (
+        <div className="dialer-modes" role="group" aria-label={t('calls.dialer.group')}>
+          {DIALER_MODES.map((value) => (
+            <button
+              type="button"
+              key={value}
+              className={`portal-button${mode === value ? '' : ' secondary'}`}
+              aria-pressed={mode === value}
+              disabled={calling || (unavailable && value !== 'click')}
+              onClick={() => changeMode(value)}
+            >
+              {t(`calls.dialer.mode.${value}` as MessageKey)}
+            </button>
+          ))}
+        </div>
+      )}
+      {cards ? (
+        mode !== 'click' &&
+        config.voicemailDetection && <p className="dialer-help">{t('calls.dialer.help.voicemail')}</p>
+      ) : (
+        <p className="dialer-help">
+          {help}
+          {mode !== 'click' && config.voicemailDetection ? ` ${t('calls.dialer.help.voicemail')}` : ''}
+        </p>
+      )}
       {mode !== 'click' && (
         <div className="dialer-controls">
           {dialer.running ? (

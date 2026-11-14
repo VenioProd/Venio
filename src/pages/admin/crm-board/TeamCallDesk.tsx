@@ -1,6 +1,7 @@
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
 import './crm.css'
+import './teamCallDesk.css'
 import { CallDesk } from '../../commercial/CommercialCalls'
 import { teamDesk } from './teamDeskApi'
 
