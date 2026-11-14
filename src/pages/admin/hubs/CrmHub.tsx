@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState, type ReactNode } from 'react'
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { ChartLine, Phone, SquareKanban, Sun } from 'lucide-react'
 import { lazyWithRetry as lazy } from '../../../lib/lazyWithRetry'
@@ -19,6 +19,7 @@ import { useI18n } from '../../../context/I18nContext'
 import { apiFetch } from '../../../lib/api'
 import type { WorklistGroupKey, WorklistResponse } from '../../../types/crm.types'
 import { CrmMomentNav, CrmPageHead, CrmSubtabs } from '../../../components/admin/crm-ui'
+import { CrmTitleSlot } from '../../../components/admin/crm-ui/crmTitleSlot'
 import '../../../components/admin/ui/AdminHub.css'
 import '../crm-board/crm.css'
 import { fetchRuns } from '../crm-board/automations/api'
@@ -54,6 +55,17 @@ export default function CrmHub() {
   const location = useLocation()
   const [counts, setCounts] = useState<WorklistResponse['counts']>()
   const [pending, setPending] = useState<number>()
+  // Nombre de `CrmPageHead` posés par l'écran courant (voir crmTitleSlot).
+  const [screenTitles, setScreenTitles] = useState(0)
+  const titleSlot = useMemo(
+    () => ({
+      register: () => {
+        setScreenTitles((count) => count + 1)
+        return () => setScreenTitles((count) => count - 1)
+      },
+    }),
+    [],
+  )
   const canView = hasPermission(user, PERMISSIONS.VIEW_CRM)
   useEffect(() => {
     if (!canView) return
@@ -185,12 +197,15 @@ export default function CrmHub() {
       )}
       <section className="admin-hub-panel" data-hub-tab={tab?.id ?? 'plan'}>
         {/* Les écrans montés tels quels ont leur titre masqué dans un panneau de hub
-            (AdminPortal.css, `.admin-hub-panel .pilotage-page`…) : la coque le porte. */}
-        {tab && !isLead && <CrmPageHead title={t(tab.labelKey)} />}
-        <Suspense fallback={loadingFallback}>
-          {/* La fiche d'un lead reste montée par le pipeline, quel que soit l'onglet mis en avant. */}
-          {tab ? panel(isLead ? 'pipeline' : tab.id) : <CrmPlan visibleTabs={visible} />}
-        </Suspense>
+            (AdminPortal.css, `.admin-hub-panel .pilotage-page`…) : la coque le porte,
+            jusqu'à ce que l'écran pose son propre CrmPageHead. */}
+        {tab && !isLead && screenTitles === 0 && <CrmPageHead shell title={t(tab.labelKey)} />}
+        <CrmTitleSlot.Provider value={titleSlot}>
+          <Suspense fallback={loadingFallback}>
+            {/* La fiche d'un lead reste montée par le pipeline, quel que soit l'onglet mis en avant. */}
+            {tab ? panel(isLead ? 'pipeline' : tab.id) : <CrmPlan visibleTabs={visible} />}
+          </Suspense>
+        </CrmTitleSlot.Provider>
       </section>
     </div>
   )

@@ -20,7 +20,18 @@ vi.mock('../CrmBoard', () => ({
     <p>{queue ? `File ${worklistGroups?.join('+')}` : 'Pipeline des leads'}</p>
   ),
 }))
-vi.mock('../crm-settings', () => ({ default: () => <p>Réglages chargés</p> }))
+// Un écran refait pose son propre en-tête : la coque doit alors retirer le sien.
+vi.mock('../crm-settings', async () => {
+  const { CrmPageHead } = await import('../../../components/admin/crm-ui')
+  return {
+    default: () => (
+      <>
+        <CrmPageHead title="Réglages du CRM" lede="Les règles de fonctionnement" />
+        <p>Réglages chargés</p>
+      </>
+    ),
+  }
+})
 vi.mock('./automations', () => ({ default: () => <p>Automatisations chargées</p> }))
 vi.mock('./TeamCallDesk', () => ({ default: () => <p>File d’appels chargée</p> }))
 
@@ -103,9 +114,17 @@ describe('Navigation du CRM en quatre moments', () => {
     const first = mount('/admin/crm/prospecter/poste')
     expect(await screen.findByRole('heading', { level: 1, name: 'Poste d’appel' })).toBeInTheDocument()
     first.unmount()
-    mount('/admin/crm/leads/l1')
+    const second = mount('/admin/crm/leads/l1')
     await screen.findByText(/Pipeline des leads/)
     expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
+    second.unmount()
+    mount('/admin/crm/piloter/reglages')
+    await screen.findByText('Réglages chargés')
+    await waitFor(() =>
+      expect(screen.getAllByRole('heading', { level: 1 }).map((heading) => heading.textContent)).toEqual([
+        'Réglages du CRM',
+      ]),
+    )
   })
 
   it('affiche les compteurs réels de la file, et aucun quand la donnée manque', async () => {
