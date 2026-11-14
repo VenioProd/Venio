@@ -1,0 +1,350 @@
+/*
+ * Fiche lead (refonte « Journée », lot 5 ; maquette docs/crm/maquettes-refonte/a-journee.html, vue #/lead/…).
+ * Classes préfixées `crm-lead` ; les composants communs viennent de `components/admin/crm-ui`.
+ * Pièges : `--bg-card` est translucide (fonds flottants : `--bg-secondary`), `src/App.css` isole chaque élément
+ * (le menu est portalisé dans `body`).
+ */
+.crm-lead {
+  min-width: 0;
+  max-width: 100%;
+}
+.crm-lead > * + * {
+  margin-top: 14px;
+}
+.crm-lead-back {
+  margin: 0 0 10px;
+}
+.crm-lead-mono {
+  font: 12.5px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.crm-lead-dim {
+  color: var(--text-muted);
+}
+
+/* ── En-tête ──────────────────────────────────────────────────────── */
+.crm-lead-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.crm-lead-id {
+  display: flex;
+  flex: 1 1 340px;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.crm-lead-id > div {
+  min-width: 0;
+}
+.crm-lead-avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--primary-fg);
+  font-size: 15px;
+  font-weight: 800;
+  background: var(--primary);
+  border-radius: 50%;
+}
+.crm-lead-head h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.crm-lead-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 4px 0 0;
+  color: var(--text-muted);
+}
+.crm-lead-sub > span + span::before {
+  content: '·';
+  margin-right: 10px;
+}
+.crm-lead-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Menu « Autres actions » (portalisé) ──────────────────────────── */
+.crm-lead-menu {
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  max-width: calc(100vw - 16px);
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--overlay-shadow);
+}
+.crm-lead-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+}
+.crm-lead-menu__item:hover,
+.crm-lead-menu__item:focus-visible {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+.crm-lead-menu__item:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: -2px;
+}
+.crm-lead-menu__item[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.crm-lead-menu__item--danger {
+  color: var(--critical);
+}
+.crm-lead-menu__item--sep {
+  margin-top: 4px;
+  border-top: 1px solid var(--border-color);
+  border-radius: var(--r-sm);
+}
+
+/* ── Bandeaux ─────────────────────────────────────────────────────── */
+.crm-lead-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.crm-lead-banners:not(:has(> :not(:empty))) {
+  display: none;
+}
+.crm-lead-banners > :empty {
+  display: none;
+}
+.crm-lead-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 8px 14px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+}
+.crm-lead-notice button {
+  min-width: 32px;
+  min-height: 32px;
+  color: inherit;
+  font-size: 18px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+.crm-lead-dup {
+  display: block;
+}
+.crm-lead-dup__row,
+.crm-lead-dup__hint {
+  display: block;
+}
+.crm-lead-dup__hint {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ── Prochaine action ─────────────────────────────────────────────── */
+.crm-lead-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+}
+.crm-lead-next > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--primary-light);
+}
+.crm-lead-next__label {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.crm-lead-next__fields {
+  display: flex;
+  flex: 1 1 360px;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.crm-lead-next__fields .portal-input {
+  flex: 1 1 200px;
+  min-width: 0;
+  margin: 0;
+}
+.crm-lead-next__fields input[type='datetime-local'] {
+  flex: 0 1 220px;
+}
+.crm-lead-next__value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ── Barre d'appel (hébergée ici, rendue par le lot téléphonie) ──── */
+.crm-lead-call {
+  min-width: 0;
+}
+.crm-lead-call .crm-detail-callbar {
+  margin-top: 0;
+}
+/* « Téléphonie non activée » et autres avis de la barre : lus comme les bandeaux de la fiche. */
+.crm-lead-call .softphone-notice {
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--warning) 8%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
+  border-radius: var(--r-lg);
+}
+
+/* ── Onglets et panneaux ──────────────────────────────────────────── */
+.crm-lead-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border-color);
+  scrollbar-width: thin;
+}
+.crm-lead-tabs button {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+}
+.crm-lead-tabs button:hover,
+.crm-lead-tabs button[aria-selected='true'] {
+  color: var(--text-primary);
+}
+.crm-lead-tabs button[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  inset: auto 8px 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: var(--r-hair);
+}
+.crm-lead-tabs button:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: -2px;
+}
+.crm-lead-panel {
+  min-width: 0;
+}
+.crm-lead-journal {
+  min-width: 0;
+}
+.crm-lead-journal:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+/* ── Panneau « Fiche » ────────────────────────────────────────────── */
+.crm-lead-select {
+  min-width: 150px;
+  max-width: 100%;
+}
+.crm-lead-project {
+  display: inline-block;
+  padding: 2px 10px;
+  color: var(--crm-lead-project);
+  font-size: 12px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--crm-lead-project) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--crm-lead-project) 30%, transparent);
+  border-radius: var(--r-pill);
+}
+
+/* ── Retenue : décision sur la citation (dans le bandeau) ─────────── */
+.crm-hold-decision {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.crm-hold-decision-meta {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.crm-hold-decision-quote {
+  margin: 0;
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  font-style: italic;
+  line-height: 1.6;
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--critical);
+  border-radius: var(--r-md);
+}
+.crm-hold-decision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 767px) {
+  /* La barre de validation d'analyse se pose au-dessus de la barre de navigation mobile. */
+  .crm-lead .ci-review .crm-ui-sticky-bar {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (max-width: 720px) {
+  .crm-lead-head h1 {
+    font-size: 22px;
+  }
+  .crm-lead-actions {
+    width: 100%;
+  }
+  .crm-lead-next__fields input[type='datetime-local'] {
+    flex: 1 1 200px;
+  }
+}

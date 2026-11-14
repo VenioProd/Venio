@@ -5,6 +5,7 @@ import { apiFetch } from '../../../lib/api'
 import { useI18n } from '../../../context/I18nContext'
 import { formatDateTime } from '../../../i18n/format'
 import { TEAM_CALL_DESK_PREFIX } from './teamDeskApi'
+import './lead/lead.css'
 
 interface HoldView {
   at: string
@@ -79,14 +80,19 @@ const CallHoldDecision: React.FC<{ leadId: string; onDecided: () => void }> = ({
           <div className="crm-hold-decision-actions">
             <button
               type="button"
-              className="portal-button secondary"
+              className="crm-ui-btn crm-ui-btn--danger crm-ui-btn--sm"
+              disabled={busy}
+              onClick={() => setConfirm('CONFIRM')}
+            >
+              {t('callHold.confirm')}
+            </button>
+            <button
+              type="button"
+              className="crm-ui-btn crm-ui-btn--sm"
               disabled={busy}
               onClick={() => setConfirm('DISMISS')}
             >
               {t('callHold.dismiss')}
-            </button>
-            <button type="button" className="portal-button" disabled={busy} onClick={() => setConfirm('CONFIRM')}>
-              {t('callHold.confirm')}
             </button>
           </div>
         </>

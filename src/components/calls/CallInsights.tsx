@@ -176,7 +176,7 @@ export default function CallInsights({
       <div className={`call-insights ${className}`.trim()}>
         <div className="ci-state ci-state--error" role="alert">
           <p>{t('callInsights.loadError')}</p>
-          <button type="button" className="portal-button secondary" onClick={() => void refresh()}>
+          <button type="button" className="crm-ui-btn" onClick={() => void refresh()}>
             {t('callInsights.retry')}
           </button>
         </div>
@@ -216,7 +216,7 @@ export default function CallInsights({
         <div className="ci-state">
           <p>{t('callInsights.noAnalysis')}</p>
           {!readOnly && (
-            <button type="button" className="portal-button secondary" disabled={retrying} onClick={() => void retry()}>
+            <button type="button" className="crm-ui-btn" disabled={retrying} onClick={() => void retry()}>
               {t('callInsights.analysis.start')}
             </button>
           )}
@@ -240,7 +240,7 @@ export default function CallInsights({
         <div className="ci-state ci-state--error">
           <p role="alert">{t('callInsights.analysisFailed')}</p>
           {!readOnly && (
-            <button type="button" className="portal-button secondary" disabled={retrying} onClick={() => void retry()}>
+            <button type="button" className="crm-ui-btn" disabled={retrying} onClick={() => void retry()}>
               {retrying ? t('callInsights.analysis.retrying') : t('callInsights.analysis.retry')}
             </button>
           )}
@@ -299,7 +299,7 @@ export default function CallInsights({
             id={`ci-tab-${name}`}
             aria-selected={tab === name}
             aria-controls={`ci-panel-${name}`}
-            className={`admin-tab ${tab === name ? 'active' : ''}`}
+            className="ci-tab"
             onClick={() => setTab(name)}
           >
             {t(`callInsights.tabs.${name}`)}

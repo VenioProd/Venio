@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
+import { AlertTriangle, Check, CheckCircle2, XCircle } from 'lucide-react'
 import { useI18n } from '../../context/I18nContext'
 import { formatDateTime } from '../../i18n/format'
 import {
@@ -29,6 +29,7 @@ import {
   type FieldDecision,
   type ReviewState,
 } from './reviewModel'
+import { CrmChip, CrmStickyBar } from '../admin/crm-ui'
 import { ConfidenceMeter, DecisionBadge, GestureButton, ProposalTag, QuoteLine } from './ui'
 import './callInsights.css'
 
@@ -143,66 +144,70 @@ function FieldRow({
         {settled ? (
           <DecisionBadge action={recorded?.action ?? null} />
         ) : (
-          <span className={`ci-tag ${decision ? `ci-tag--${decision.action.toLowerCase()}` : ''}`}>
+          <CrmChip tone={decision ? (decision.action === 'IGNORE' ? 'grey' : 'green') : 'amber'}>
             {t(decision ? `callInsights.state.${decision.action}` : 'callInsights.state.none')}
-          </span>
+          </CrmChip>
         )}
       </div>
 
-      <div className="ci-compare">
-        {settled && (recorded?.action === 'ACCEPT' || recorded?.action === 'EDIT') ? (
-          <div className="ci-current">
-            <span className="ci-compare-label">{t('callInsights.recorded')}</span>
-            <span className="ci-value">{shownProposed}</span>
-            {recorded.action === 'EDIT' && (
-              <span className="ci-muted">
-                {t('callInsights.original', { value: displayValue(field.key, field.value) || t('callInsights.empty') })}
-              </span>
-            )}
-          </div>
-        ) : (
-          <>
-            {!settled && (
-              <div className="ci-current">
-                <span className="ci-compare-label">{t('callInsights.current')}</span>
-                {isEmptyValue(current) ? (
-                  <span className="ci-muted">{t('callInsights.empty')}</span>
-                ) : (
-                  <span className="ci-value">{displayValue(field.key, current)}</span>
-                )}
-              </div>
-            )}
-            <div className="ci-proposed">
-              <span className="ci-compare-label">
-                <ProposalTag />
-                <ConfidenceMeter level={field.confidence} />
-              </span>
-              <span className="ci-value">
-                {shownProposed || <span className="ci-muted">{t('callInsights.empty')}</span>}
-              </span>
-              {decision?.action === 'EDIT' && !editing && (
-                <span className="ci-edited">
-                  {t('callInsights.edited', { value: displayValue(field.key, decision.value) })}
+      <div className="ci-field-main">
+        <div className="ci-compare">
+          {settled && (recorded?.action === 'ACCEPT' || recorded?.action === 'EDIT') ? (
+            <div className="ci-current">
+              <span className="ci-compare-label">{t('callInsights.recorded')}</span>
+              <span className="ci-value">{shownProposed}</span>
+              {recorded.action === 'EDIT' && (
+                <span className="ci-muted">
+                  {t('callInsights.original', {
+                    value: displayValue(field.key, field.value) || t('callInsights.empty'),
+                  })}
                 </span>
               )}
             </div>
-          </>
+          ) : (
+            <>
+              {!settled && (
+                <div className="ci-current">
+                  <span className="ci-compare-label">{t('callInsights.current')}</span>
+                  {isEmptyValue(current) ? (
+                    <span className="ci-muted">{t('callInsights.empty')}</span>
+                  ) : (
+                    <span className="ci-value">{displayValue(field.key, current)}</span>
+                  )}
+                </div>
+              )}
+              <div className="ci-proposed">
+                <span className="ci-compare-label">
+                  <ProposalTag />
+                  <ConfidenceMeter level={field.confidence} />
+                </span>
+                <span className="ci-value">
+                  {shownProposed || <span className="ci-muted">{t('callInsights.empty')}</span>}
+                </span>
+                {decision?.action === 'EDIT' && !editing && (
+                  <span className="ci-edited">
+                    {t('callInsights.edited', { value: displayValue(field.key, decision.value) })}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        <QuoteLine quote={field.quote} onQuote={onQuote} verified={field.quoteVerified} />
+        {blocked && (
+          <p className="ci-warning" id={`${id}-unverified`}>
+            <AlertTriangle size={14} aria-hidden />
+            {t('callInsights.field.unverified')}
+          </p>
+        )}
+
+        {teamOnly && !settled && (
+          <p className="ci-muted ci-team-only" id={`${id}-team`}>
+            {t('callInsights.field.teamOnly')}
+          </p>
         )}
       </div>
-
-      <QuoteLine quote={field.quote} onQuote={onQuote} verified={field.quoteVerified} />
-      {blocked && (
-        <p className="ci-warning" id={`${id}-unverified`}>
-          <AlertTriangle size={14} aria-hidden />
-          {t('callInsights.field.unverified')}
-        </p>
-      )}
-
-      {teamOnly && !settled && (
-        <p className="ci-muted ci-team-only" id={`${id}-team`}>
-          {t('callInsights.field.teamOnly')}
-        </p>
-      )}
 
       {!settled && !teamOnly && (
         <div className="ci-gestures" role="group" aria-label={t('callInsights.field.gestures', { field: label })}>
@@ -379,6 +384,14 @@ export default function AnalysisReviewPanel({
       <section className="ci-card" aria-labelledby="ci-fields-title">
         <header className="ci-card-head">
           <h3 id="ci-fields-title">{t('callInsights.fields.title')}</h3>
+          {!viewOnly && output.fields.length > 0 && (
+            <span className="ci-muted">
+              {t('crmLead.review.count', {
+                done: output.fields.filter((field) => state.fields[field.key]).length,
+                total: output.fields.length,
+              })}
+            </span>
+          )}
         </header>
         {!viewOnly && <p className="ci-muted">{t('callInsights.fields.intro')}</p>}
         {output.fields.length === 0 ? (
@@ -429,61 +442,61 @@ export default function AnalysisReviewPanel({
       />
 
       {!viewOnly && (
-        <div className="ci-apply" role="region" aria-label={t('callInsights.apply.title')}>
-          <p className="ci-apply-count" aria-live="polite">
+        <CrmStickyBar
+          label={t('callInsights.apply.title')}
+          actions={
+            confirmReject ? (
+              <div className="ci-gestures" role="group" aria-label={t('callInsights.reject.confirmTitle')}>
+                <span>{t('callInsights.reject.confirmMessage')}</span>
+                <button
+                  type="button"
+                  className="crm-ui-btn crm-ui-btn--danger"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      await onReject()
+                      setConfirmReject(false)
+                    }, 'callInsights.error.reject')
+                  }
+                >
+                  {t('callInsights.reject.confirm')}
+                </button>
+                <button type="button" className="crm-ui-btn" disabled={busy} onClick={() => setConfirmReject(false)}>
+                  {t('callInsights.cancel')}
+                </button>
+              </div>
+            ) : (
+              <>
+                <button type="button" className="crm-ui-btn" disabled={busy} onClick={() => setConfirmReject(true)}>
+                  {t('callInsights.reject.button')}
+                </button>
+                <button
+                  type="button"
+                  className="crm-ui-btn crm-ui-btn--primary"
+                  disabled={busy || !decided}
+                  onClick={apply}
+                >
+                  <Check aria-hidden />
+                  {busy ? t('callInsights.apply.sending') : t('callInsights.apply.button')}
+                </button>
+              </>
+            )
+          }
+        >
+          <span className="ci-apply-count" aria-live="polite">
             {t('callInsights.apply.count', {
               accepted: counts.accepted,
               ignored: counts.ignored,
               pending: counts.pending,
             })}
-          </p>
-          {counts.pending > 0 && decided && <p className="ci-muted">{t('callInsights.apply.pendingNote')}</p>}
+          </span>
+          {counts.pending > 0 && decided && <span className="ci-muted">{t('callInsights.apply.pendingNote')}</span>}
           {error && (
-            <p className="ci-error" role="alert">
+            <span className="ci-error" role="alert">
               {error}
-            </p>
+            </span>
           )}
-          {confirmReject ? (
-            <div className="ci-gestures" role="group" aria-label={t('callInsights.reject.confirmTitle')}>
-              <span>{t('callInsights.reject.confirmMessage')}</span>
-              <button
-                type="button"
-                className="portal-button"
-                disabled={busy}
-                onClick={() =>
-                  void run(async () => {
-                    await onReject()
-                    setConfirmReject(false)
-                  }, 'callInsights.error.reject')
-                }
-              >
-                {t('callInsights.reject.confirm')}
-              </button>
-              <button
-                type="button"
-                className="portal-button secondary"
-                disabled={busy}
-                onClick={() => setConfirmReject(false)}
-              >
-                {t('callInsights.cancel')}
-              </button>
-            </div>
-          ) : (
-            <div className="ci-gestures">
-              <button type="button" className="portal-button" disabled={busy || !decided} onClick={apply}>
-                {busy ? t('callInsights.apply.sending') : t('callInsights.apply.button')}
-              </button>
-              <button
-                type="button"
-                className="portal-button secondary"
-                disabled={busy}
-                onClick={() => setConfirmReject(true)}
-              >
-                {t('callInsights.reject.button')}
-              </button>
-            </div>
-          )}
-        </div>
+        </CrmStickyBar>
       )}
     </div>
   )

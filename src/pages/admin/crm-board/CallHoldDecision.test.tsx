@@ -79,17 +79,23 @@ describe('Retenue sur la fiche d’un externe non transmise', () => {
     expect(requests.some((item) => item.path.includes('/calls/call-ext'))).toBe(false)
 
     fireEvent.click(screen.getByRole('button', { name: 'Lever la retenue' }))
-    expect(requests.find((item) => item.method === 'POST')).toBeUndefined()
+    expect(requests.find((item) => item.method === 'POST' && item.path === HOLD)).toBeUndefined()
     expect(await screen.findByText(/reviendra dans la file d’appel/)).toBeInTheDocument()
     fireEvent.click(document.querySelector<HTMLButtonElement>('.confirm-modal__btn--confirm')!)
-    await waitFor(() => expect(requests.find((item) => item.method === 'POST')?.body).toEqual({ action: 'DISMISS' }))
-    expect(requests.find((item) => item.method === 'POST')!.headers.get('Idempotency-Key')).toMatch(/^[0-9a-f-]{36}$/)
+    await waitFor(() =>
+      expect(requests.find((item) => item.method === 'POST' && item.path === HOLD)?.body).toEqual({
+        action: 'DISMISS',
+      }),
+    )
+    expect(
+      requests.find((item) => item.method === 'POST' && item.path === HOLD)!.headers.get('Idempotency-Key'),
+    ).toMatch(/^[0-9a-f-]{36}$/)
     await waitFor(() => expect(onLeadChange).toHaveBeenCalled())
   })
 
   it('sans droit d’écriture, ni décision ni lecture de la citation', () => {
     mount(false)
-    expect(screen.getByText('Fiche retenue.', { selector: 'strong' })).toBeInTheDocument()
+    expect(screen.getByText('Fiche retenue pour opposition', { selector: 'strong' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Décider de la retenue' })).not.toBeInTheDocument()
     expect(requests.some((item) => item.path === HOLD)).toBe(false)
   })

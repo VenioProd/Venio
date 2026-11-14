@@ -116,17 +116,17 @@ export default function HeatBreakdown({
       <ul className="ci-criteria">
         {heat.criteria.map((criterion) => (
           <li key={criterion.key}>
-            <div className="ci-criterion-head">
-              <span>{criterion.label}</span>
+            <div className="ci-criterion-row">
+              <span className="ci-criterion-label">{criterion.label}</span>
+              <span className="ci-score-bar" aria-hidden>
+                <span
+                  style={{ width: `${criterion.max ? Math.min(100, (criterion.points / criterion.max) * 100) : 0}%` }}
+                />
+              </span>
               <span className="ci-points">
                 {t('callInsights.heat.points', { points: criterion.points, max: criterion.max })}
               </span>
             </div>
-            <span className="ci-score-bar" aria-hidden>
-              <span
-                style={{ width: `${criterion.max ? Math.min(100, (criterion.points / criterion.max) * 100) : 0}%` }}
-              />
-            </span>
             {criterion.quote && <QuoteLine quote={criterion.quote} onQuote={onQuote} />}
           </li>
         ))}

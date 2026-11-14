@@ -156,10 +156,12 @@ describe('fiche lead : Fusionner dans…', () => {
   it("le bouton n'apparaît qu'avec manage_crm", () => {
     mockApi({ '/api/admin/crm/check-duplicate': { duplicates: [], enabled: true } })
     const { unmount } = renderModal()
-    expect(screen.getByRole('button', { name: 'Fusionner dans…' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Autres actions' }))
+    expect(screen.getByRole('menuitem', { name: 'Fusionner dans…' })).toBeTruthy()
     unmount()
     renderModal({ canManageCrm: false })
-    expect(screen.queryByRole('button', { name: 'Fusionner dans…' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Autres actions' }))
+    expect(screen.queryByRole('menuitem', { name: 'Fusionner dans…' })).toBeNull()
   })
 
   it('propose les doublons probables, demande confirmation, puis fusionne dans la cible choisie', async () => {
@@ -169,7 +171,8 @@ describe('fiche lead : Fusionner dans…', () => {
       '/api/admin/crm/leads/dup1/merge': { lead: { _id: 'dup1' } },
     })
     renderModal({ onMerged })
-    fireEvent.click(screen.getByRole('button', { name: 'Fusionner dans…' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Autres actions' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Fusionner dans…' }))
 
     // La requête de suggestions exclut le lead lui-même.
     await waitFor(() => expect(calls('/api/admin/crm/check-duplicate')).toHaveLength(1))
@@ -193,7 +196,8 @@ describe('fiche lead : Fusionner dans…', () => {
   it('la recherche libre trouve un lead du tableau, jamais le lead lui-même', async () => {
     mockApi({ '/api/admin/crm/check-duplicate': { duplicates: [], enabled: true } })
     renderModal()
-    fireEvent.click(screen.getByRole('button', { name: 'Fusionner dans…' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Autres actions' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Fusionner dans…' }))
     fireEvent.change(await screen.findByPlaceholderText(/Rechercher un lead/), { target: { value: 'globex' } })
     expect(screen.getByRole('button', { name: /Globex/ })).toBeTruthy()
     fireEvent.change(screen.getByPlaceholderText(/Rechercher un lead/), { target: { value: 'a@acme.fr' } })

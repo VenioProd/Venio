@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Check, Pencil, Quote, Sparkles, X } from 'lucide-react'
+import { CrmChip } from '../admin/crm-ui'
 import { useI18n } from '../../context/I18nContext'
 import type { Confidence, ReviewAction } from '../../services/callInsights'
 
@@ -23,7 +24,7 @@ export function GestureButton({
   return (
     <button
       type="button"
-      className={`portal-button secondary ci-gesture ci-gesture--${kind}`}
+      className={`crm-ui-btn crm-ui-btn--sm ci-gesture ci-gesture--${kind}`}
       aria-pressed={pressed}
       aria-describedby={describedBy}
       disabled={disabled}
@@ -89,12 +90,11 @@ export function QuoteLine({
 /** Résultat d'une décision déjà enregistrée (analyse validée). */
 export function DecisionBadge({ action }: { action: ReviewAction | null }) {
   const { t } = useI18n()
-  if (!action) return <span className="ci-tag">{t('callInsights.decision.none')}</span>
+  if (!action) return <CrmChip tone="grey">{t('callInsights.decision.none')}</CrmChip>
   const Icon = action === 'IGNORE' ? X : action === 'EDIT' ? Pencil : Check
   return (
-    <span className={`ci-tag ci-tag--${action.toLowerCase()}`}>
-      <Icon size={12} aria-hidden />
+    <CrmChip tone={action === 'IGNORE' ? 'grey' : 'green'} icon={<Icon size={13} />}>
       {t(`callInsights.decision.${action}`)}
-    </span>
+    </CrmChip>
   )
 }

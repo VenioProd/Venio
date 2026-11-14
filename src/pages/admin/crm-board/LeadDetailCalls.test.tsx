@@ -172,7 +172,7 @@ describe('Fiche du lead de l’équipe — appels', () => {
       canManageCrm: true,
       lead: { ...baseLead, callHold: { at: '2026-11-12T10:07:00.000Z', reason: 'OPT_OUT' } },
     })
-    expect(screen.getByText('Fiche retenue.', { selector: 'strong' })).toBeInTheDocument()
+    expect(screen.getByText('Fiche retenue pour opposition', { selector: 'strong' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Appeler depuis le navigateur' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir les appels' }))

@@ -1,37 +1,31 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useLocation } from 'react-router-dom'
+import { ArrowLeft, Flag, Mail, NotebookPen, Phone, ShieldAlert, Handshake, Archive } from 'lucide-react'
 import ConfirmModal from '../../../components/ConfirmModal'
 import './crm.css'
-import { Link } from 'react-router-dom'
+import './lead/lead.css'
 import { apiFetch } from '../../../lib/api'
 import LeadCallsList from '../../../components/calls/LeadCallsList'
 import { useLeadCalls } from '../../../components/calls/leadCalls'
 import LeadCallBar from './LeadCallBar'
 import CallHoldDecision from './CallHoldDecision'
 import { TEAM_CALL_DESK_PREFIX } from './teamDeskApi'
-import CustomSelect from '../../../components/admin/CustomSelect'
 import { useI18n } from '../../../context/I18nContext'
 import InteractionTimeline from '../../../components/admin/InteractionTimeline'
-import RevenueChain from '../../../components/admin/RevenueChain'
+import { CrmBanner, CrmChip, CrmSectionHead, CrmWithPanel } from '../../../components/admin/crm-ui'
+import { CRM_QUEUE_ORIGINS } from '../../../lib/crmNavigation'
 import LeadEnrichedPanel from './rich/LeadEnrichedPanel'
 import DuplicatesBanner from './DuplicatesBanner'
 import MergeLeadDialog from './MergeLeadDialog'
 import LeadPrivacyPanel from './LeadPrivacyPanel'
 import LeadSequencesPanel from './sequences/LeadSequencesPanel'
+import LeadFichePanel from './lead/LeadFichePanel'
+import LeadMoreMenu, { type LeadMenuItem } from './lead/LeadMoreMenu'
 import { formatDateTime } from '../../../i18n/format'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
-import {
-  CRM_ENTITIES,
-  CRM_STATUSES,
-  CRM_TEMPERATURES,
-  ENTITY_MAP,
-  leadEntity,
-  PROJECT_MAP,
-  SERVICE_TYPE_LABEL_KEYS,
-  TEMPERATURE_MAP,
-  labelOfValue,
-} from './constants'
+import type { MessageKey } from '../../../i18n'
 
 interface LeadDetailPageProps {
   lead: Lead
@@ -51,6 +45,34 @@ interface LeadDetailPageProps {
   focusCall?: boolean
 }
 
+type TabKey = 'calls' | 'history' | 'sequences' | 'details' | 'privacy'
+const TABS: readonly (readonly [TabKey, MessageKey])[] = [
+  ['calls', 'crm.detail.calls'],
+  ['history', 'crmLead.tab.history'],
+  ['sequences', 'crm.detail.sequences'],
+  ['details', 'crm.detail.details'],
+  ['privacy', 'crm.detail.privacy'],
+]
+
+/** Initiales de la pastille : deux premières lettres de mots du nom de la société. */
+const initialsOf = (name: string) =>
+  name
+    .split(/[\s\-'’]+/)
+    .filter((word) => /^\p{L}/u.test(word))
+    .slice(0, 2)
+    .map((word) => word[0]!.toUpperCase())
+    .join('') || '?'
+
+/** État de la prochaine action d'après sa date seule : rien n'est calculé qui ne soit sur la fiche. */
+function nextActionState(at?: string | null): 'overdue' | 'today' | 'planned' | null {
+  if (!at) return null
+  const date = new Date(at)
+  if (Number.isNaN(date.getTime())) return null
+  const now = new Date()
+  if (date.toDateString() === now.toDateString()) return date.getTime() < now.getTime() ? 'overdue' : 'today'
+  return date.getTime() < now.getTime() ? 'overdue' : 'planned'
+}
+
 const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
   lead,
   admins,
@@ -66,56 +88,24 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
   focusCall = false,
 }) => {
   const { t } = useI18n()
+  const location = useLocation()
   const [merging, setMerging] = useState(false)
   const [notice, setNotice] = useState('')
-  const timelineRef = useRef<HTMLDivElement>(null)
-  const [tab, setTab] = useState('details')
-  const [more, setMore] = useState(false)
+  const timelineRef = useRef<HTMLElement>(null)
+  const callRef = useRef<HTMLDivElement>(null)
+  const [tab, setTab] = useState<TabKey>('calls')
+  const composerRequest = useRef<{ email: boolean } | null>(null)
+  const [composerNonce, setComposerNonce] = useState(0)
   const [confirm, setConfirm] = useState<'archive' | 'delete' | null>(null)
   // Relit les appels après un appel passé ici ; relit la fiche quand une analyse l'a modifiée.
   const [callsRefresh, setCallsRefresh] = useState(0)
   const [openCall, setOpenCall] = useState<{ callId: string; nonce: number } | null>(null)
   const [holdDecision, setHoldDecision] = useState(false)
-  const moreRef = useRef<HTMLButtonElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const [menuPos, setMenuPos] = useState<React.CSSProperties>({})
-  const tabs = [
-    ['details', 'crm.detail.details'],
-    ['revenue', 'crm.detail.revenueChain'],
-    ['calls', 'crm.detail.calls'],
-    ['sequences', 'crm.detail.sequences'],
-    ['privacy', 'crm.detail.privacy'],
-  ] as const
-  useEffect(() => {
-    if (!more) return
-    const position = () => {
-      const rect = moreRef.current?.getBoundingClientRect()
-      if (rect)
-        setMenuPos({ position: 'fixed', top: rect.bottom + 6, right: Math.max(8, window.innerWidth - rect.right) })
-    }
-    const close = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node) && !moreRef.current?.contains(event.target as Node))
-        setMore(false)
-    }
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setMore(false)
-        moreRef.current?.focus()
-      }
-    }
-    position()
-    menuRef.current?.querySelector('button')?.focus()
-    window.addEventListener('resize', position)
-    window.addEventListener('scroll', position, true)
-    document.addEventListener('mousedown', close)
-    document.addEventListener('keydown', key)
-    return () => {
-      window.removeEventListener('resize', position)
-      window.removeEventListener('scroll', position, true)
-      document.removeEventListener('mousedown', close)
-      document.removeEventListener('keydown', key)
-    }
-  }, [more])
+
+  // L'écran d'origine : la file de travail (`from`) ou le pipeline. Le retour lui-même est géré par la page parente.
+  const originTab = CRM_QUEUE_ORIGINS[new URLSearchParams(location.search).get('from') ?? ''] ?? 'pipeline'
+  const originLabel = t(`shell.crm.tab.${originTab}` as MessageKey)
+
   const reloadLead = () => {
     apiFetch<{ lead: Lead }>(`/api/admin/crm/leads/${lead._id}`)
       .then((data) => onLeadChange(() => data.lead))
@@ -141,7 +131,18 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
     // reloadLead ne dépend que de la fiche, déjà dans les dépendances.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadCalls.calls, leadCalls.loading, leadCalls.error, lead._id])
+
+  // « Écrire » et « Consigner un échange » ouvrent l'onglet Historique, où se trouve le journal, puis y mettent le focus.
   const focusComposer = (email: boolean) => {
+    setTab('history')
+    composerRequest.current = { email }
+    setComposerNonce((value) => value + 1)
+  }
+  useEffect(() => {
+    const request = composerRequest.current
+    if (!request || tab !== 'history') return
+    const { email } = request
+    composerRequest.current = null
     const timeline = timelineRef.current
     if (email && !timeline?.querySelector('.interaction-email-composer'))
       timeline?.querySelector<HTMLButtonElement>('.interaction-toolbar button')?.click()
@@ -152,198 +153,175 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
       composer?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
       composer?.querySelector<HTMLElement>('textarea, input, button')?.focus({ preventScroll: true })
     })
+  }, [composerNonce, tab])
+
+  /** « Appeler » met la barre d'appel de la fiche à portée de clavier ; l'appel lui-même se lance depuis cette barre. */
+  const focusCallBar = () => {
+    const target = callRef.current?.querySelector<HTMLElement>(
+      '.softphone-row button:not(:disabled), .softphone-row a[href]',
+    )
+    callRef.current?.scrollIntoView?.({ block: 'center' })
+    target?.focus({ preventScroll: true })
   }
+
+  const copyContact = () => {
+    const text = [
+      lead.contactName && `${t('crm.detail.copyContact')} ${lead.contactName}`,
+      lead.contactEmail && `${t('crm.detail.copyEmail')} ${lead.contactEmail}`,
+      lead.contactPhone && `${t('crm.detail.copyPhone')} ${lead.contactPhone}`,
+      lead.company && `${t('crm.detail.copyCompany')} ${lead.company}`,
+    ]
+      .filter(Boolean)
+      .join('\n')
+    if (!text) return
+    navigator.clipboard
+      .writeText(text)
+      .then(() => setNotice(t('crm.detail.copied')))
+      .catch(() => setNotice(t('crm.detail.copyFailed')))
+  }
+
+  const menuItems: LeadMenuItem[] = [
+    ...(canManageCrm && onMerged
+      ? [{ key: 'merge', label: t('crm.merge.open'), onSelect: () => setMerging(true) }]
+      : []),
+    ...(canManageCrm
+      ? [
+          {
+            key: 'contacted',
+            label: t('crmLead.menu.contacted'),
+            onSelect: () => {
+              const isEarlyStage = lead.status === 'LEAD' || lead.status === 'QUALIFIED'
+              void onUpdateLead(lead._id, {
+                lastContactAt: new Date().toISOString(),
+                ...(isEarlyStage ? { status: 'CONTACTED' } : {}),
+              })
+            },
+          },
+        ]
+      : []),
+    { key: 'copy', label: t('crmLead.menu.copy'), onSelect: copyContact },
+    { key: 'privacy', label: t('crmLead.menu.privacy'), onSelect: () => setTab('privacy') },
+    ...(lead.status === 'WON'
+      ? [
+          lead.clientAccountId
+            ? {
+                key: 'client',
+                label: t('crmLead.menu.client'),
+                to: `/admin/comptes-clients/${lead.clientAccountId}`,
+                onSelect: onClose,
+              }
+            : {
+                key: 'convert',
+                label: converting === lead._id ? t('crm.common.converting') : t('crmLead.menu.convert'),
+                disabled: converting === lead._id,
+                onSelect: () => {
+                  void (async () => {
+                    await onConvertToClient(lead)
+                    onClose()
+                  })()
+                },
+              },
+        ]
+      : []),
+    ...(canManageCrm
+      ? [
+          {
+            key: 'archive',
+            label: t(lead.archivedAt ? 'crmRich.bulk.restore' : 'crmRich.bulk.archive'),
+            separated: true,
+            onSelect: () => setConfirm('archive'),
+          },
+          ...(onDeleteLead
+            ? [
+                {
+                  key: 'delete',
+                  label: t('crmRich.bulk.delete'),
+                  tone: 'danger' as const,
+                  onSelect: () => setConfirm('delete'),
+                },
+              ]
+            : []),
+        ]
+      : []),
+  ]
+
+  const nextState = nextActionState(lead.nextActionAt)
+  const externalHeld = Boolean(lead.externalRep && !lead.closingHandoff)
+  const callable = canManageCrm && Boolean(lead.contactPhone)
+  const toValidate = leadCalls.calls.some((call) => call.analysisStatus === 'READY')
+
   return (
-    <section className="crm-detail-page" aria-labelledby="crm-detail-title">
-      <header className="crm-detail-header">
-        <button type="button" className="portal-button secondary" onClick={onClose}>
-          {t('crm.detail.back')}
+    <section className="crm-lead" aria-labelledby="crm-detail-title">
+      <p className="crm-lead-back">
+        <button
+          type="button"
+          className="crm-ui-btn crm-ui-btn--ghost crm-ui-btn--sm"
+          aria-label={t('crmLead.back', { to: originLabel })}
+          onClick={onClose}
+        >
+          <ArrowLeft aria-hidden="true" /> {originLabel}
         </button>
-        <h1 id="crm-detail-title">{lead.company}</h1>
-        <div className="crm-detail-summary">
-          <span>{t(CRM_STATUSES.find((status) => status.key === lead.status)?.labelKey || 'crm.status.lead')}</span>
-          <span>{admins.find((admin) => admin._id === lead.assignedTo)?.name || t('crm.common.unassigned')}</span>
-          <fieldset className="crm-detail-next-action">
-            <legend>{t('crm.col.nextAction')}</legend>
-            {canManageCrm ? (
-              <>
-                <input
-                  className="portal-input"
-                  aria-label={t('crm.detail.nextActionLabel')}
-                  key={`${lead._id}:${lead.nextActionLabel ?? ''}`}
-                  defaultValue={lead.nextActionLabel ?? ''}
-                  maxLength={200}
-                  onBlur={(event) => {
-                    if (event.target.value !== (lead.nextActionLabel ?? ''))
-                      void onUpdateLead(lead._id, { nextActionLabel: event.target.value })
-                  }}
-                />
-                <input
-                  type="datetime-local"
-                  className="portal-input"
-                  aria-label={t('crm.detail.nextActionDate')}
-                  value={toDateTimeLocal(lead.nextActionAt) || ''}
-                  onChange={(event) =>
-                    onLeadChange((prev) =>
-                      prev
-                        ? { ...prev, nextActionAt: event.target.value ? fromDateTimeLocal(event.target.value) : null }
-                        : prev,
-                    )
-                  }
-                  onBlur={(event) =>
-                    void onUpdateLead(lead._id, {
-                      nextActionAt: event.target.value ? fromDateTimeLocal(event.target.value) : null,
-                    })
-                  }
-                />
-              </>
-            ) : (
-              <span>
-                {lead.nextActionLabel || '—'} · {lead.nextActionAt ? formatDateTime(lead.nextActionAt) : '—'}
-              </span>
-            )}
-          </fieldset>
+      </p>
+
+      <header className="crm-lead-head">
+        <div className="crm-lead-id">
+          <span className="crm-lead-avatar" aria-hidden="true">
+            {initialsOf(lead.company)}
+          </span>
+          <div>
+            <h1 id="crm-detail-title">{lead.company}</h1>
+            <p className="crm-lead-sub">
+              {lead.contactName && <span>{lead.contactName}</span>}
+              {lead.contactPhone && <span className="crm-lead-mono">{lead.contactPhone}</span>}
+              {!lead.contactName && !lead.contactPhone && <span>—</span>}
+            </p>
+          </div>
         </div>
-        {canManageCrm && (
-          <div className="crm-detail-actions">
-            <button type="button" className="portal-button" onClick={() => focusComposer(true)}>
-              {t('crm.detail.write')}
+        <div className="crm-lead-actions">
+          {callable && (
+            <button type="button" className="crm-ui-btn crm-ui-btn--primary" onClick={focusCallBar}>
+              <Phone aria-hidden="true" /> {t('crmLead.call')}
             </button>
-            <button type="button" className="portal-button secondary" onClick={() => focusComposer(false)}>
-              {t('crm.detail.log')}
-            </button>
-            {onMerged && (
-              <button type="button" className="portal-button secondary" onClick={() => setMerging(true)}>
-                {t('crm.merge.open')}
+          )}
+          {canManageCrm && (
+            <>
+              <button type="button" className="crm-ui-btn" onClick={() => focusComposer(true)}>
+                <Mail aria-hidden="true" /> {t('crm.detail.write')}
               </button>
-            )}
-            <button
-              type="button"
-              ref={moreRef}
-              className="portal-button secondary"
-              aria-label={t('crm.detail.more')}
-              aria-expanded={more}
-              aria-controls={more ? 'crm-detail-more' : undefined}
-              onClick={() => setMore(!more)}
-            >
-              …
-            </button>
-          </div>
-        )}
+              <button type="button" className="crm-ui-btn" onClick={() => focusComposer(false)}>
+                <NotebookPen aria-hidden="true" /> {t('crm.detail.log')}
+              </button>
+            </>
+          )}
+          <LeadMoreMenu label={t('crm.detail.more')} items={menuItems} />
+        </div>
       </header>
-      <div className="crm-detail-layout">
-        <div className="crm-detail-fields">
-          <div className="crm-modal-info">
-            <p>
-              <strong>{t('crm.detail.contact')}</strong> {lead.contactName || '—'}
-            </p>
-            <p>
-              <strong>{t('crm.detail.email')}</strong> {lead.contactEmail || '—'}
-            </p>
-            <p>
-              <strong>{t('crm.detail.phone')}</strong> {lead.contactPhone || '—'}
-            </p>
-            <p>
-              <strong>{t('crm.detail.service')}</strong>{' '}
-              {labelOfValue(t, SERVICE_TYPE_LABEL_KEYS, lead.serviceType) || '—'}
-            </p>
-            {lead.project !== leadEntity(lead) && (
-              <p>
-                <strong>{t('crm.detail.project')}</strong>{' '}
-                {PROJECT_MAP[lead.project || ''] ? (
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      padding: '2px 10px',
-                      borderRadius: 'var(--r-pill)',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: PROJECT_MAP[lead.project || ''].color,
-                      background: `color-mix(in srgb, ${PROJECT_MAP[lead.project || ''].color} 12%, transparent)`,
-                      border: `1px solid color-mix(in srgb, ${PROJECT_MAP[lead.project || ''].color} 30%, transparent)`,
-                    }}
-                  >
-                    {t(PROJECT_MAP[lead.project || ''].labelKey)}
-                  </span>
-                ) : (
-                  '—'
-                )}
-              </p>
-            )}
-            <p>
-              <strong>{t('crm.detail.entity')}</strong> {t(ENTITY_MAP[leadEntity(lead)]!.labelKey)}
-            </p>
-            <p>
-              <strong>{t('crm.detail.temperature')}</strong>{' '}
-              {TEMPERATURE_MAP[lead.leadTemperature || '']
-                ? t(TEMPERATURE_MAP[lead.leadTemperature || ''].labelKey)
-                : lead.leadTemperature}
-            </p>
-          </div>
 
-          {/* Actions rapides : contact */}
-          <div className="crm-modal-quick-actions">
-            <span className="crm-modal-quick-label">{t('crm.detail.quickContact')}</span>
-            <div className="crm-modal-quick-btns">
-              {lead.contactEmail && (
-                <button
-                  type="button"
-                  className="portal-button secondary crm-modal-quick-btn"
-                  onClick={() => focusComposer(true)}
-                >
-                  {t('crm.detail.sendEmail')}
-                </button>
-              )}
-              <button
-                type="button"
-                className="portal-button secondary crm-modal-quick-btn"
-                onClick={() => {
-                  const text = [
-                    lead.contactName && `${t('crm.detail.copyContact')} ${lead.contactName}`,
-                    lead.contactEmail && `${t('crm.detail.copyEmail')} ${lead.contactEmail}`,
-                    lead.contactPhone && `${t('crm.detail.copyPhone')} ${lead.contactPhone}`,
-                    lead.company && `${t('crm.detail.copyCompany')} ${lead.company}`,
-                  ]
-                    .filter(Boolean)
-                    .join('\n')
-                  if (text) {
-                    navigator.clipboard
-                      .writeText(text)
-                      .then(() => setNotice(t('crm.detail.copied')))
-                      .catch(() => setNotice(t('crm.detail.copyFailed')))
-                  }
-                }}
-              >
-                {t('crm.detail.copyInfo')}
-              </button>
-            </div>
-            {canManageCrm && lead.contactPhone && (
-              <LeadCallBar
-                lead={lead}
-                focusOnReady={focusCall}
-                onSettled={() => setCallsRefresh((value) => value + 1)}
-              />
-            )}
-          </div>
-
-          {lead.callHold && (
-            <div className="crm-detail-hold" role="status">
-              {/* Fiche d'un externe non transmise : ses appels restent fermés, la décision se prend sur la citation. */}
-              <strong>{t('commercial.hold.title')}</strong>{' '}
-              {t(lead.externalRep && !lead.closingHandoff ? 'callHold.body' : 'commercial.hold.bodyTeam')}{' '}
-              {lead.externalRep && !lead.closingHandoff ? (
+      <div className="crm-lead-banners">
+        {lead.callHold && (
+          <CrmBanner
+            tone="red"
+            role="status"
+            icon={<ShieldAlert />}
+            title={t('crmLead.hold.title')}
+            actions={
+              externalHeld ? (
                 canManageCrm &&
                 (holdDecision ? (
                   <CallHoldDecision leadId={lead._id} onDecided={reloadLead} />
                 ) : (
-                  <button type="button" className="crm-detail-hold-link" onClick={() => setHoldDecision(true)}>
+                  <button
+                    type="button"
+                    className="crm-ui-btn crm-ui-btn--danger crm-ui-btn--sm"
+                    onClick={() => setHoldDecision(true)}
+                  >
                     {t('callHold.open')}
                   </button>
                 ))
               ) : (
                 <button
                   type="button"
-                  className="crm-detail-hold-link"
+                  className="crm-ui-btn crm-ui-btn--sm"
                   onClick={() => {
                     setTab('calls')
                     if (lead.callHold?.call) setOpenCall({ callId: lead.callHold.call, nonce: Date.now() })
@@ -351,234 +329,178 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
                 >
                   {t('crm.detail.holdOpen')}
                 </button>
-              )}
-            </div>
-          )}
+              )
+            }
+          >
+            {t(externalHeld ? 'callHold.body' : 'commercial.hold.bodyTeam')}
+          </CrmBanner>
+        )}
+        {lead.closingHandoff && (
+          <CrmBanner tone="blue" icon={<Handshake />} title={t('crmLead.handoff.title')}>
+            {t('crmLead.handoff.body', { date: formatDateTime(lead.closingHandoff.at) })}
+          </CrmBanner>
+        )}
+        {lead.archivedAt && (
+          <CrmBanner tone="grey" icon={<Archive />} title={t('crmLead.archived.title')}>
+            {t('crmLead.archived.body')}
+          </CrmBanner>
+        )}
+        <DuplicatesBanner
+          company={lead.company}
+          contactEmail={lead.contactEmail}
+          contactPhone={lead.contactPhone}
+          excludeId={lead._id}
+          onMerge={canManageCrm && onMerged ? () => setMerging(true) : undefined}
+        />
+        {notice && (
+          <p className="crm-lead-notice" role="status">
+            {notice}
+            <button type="button" onClick={() => setNotice('')} aria-label={t('common.close')}>
+              ×
+            </button>
+          </p>
+        )}
+      </div>
 
-          {notice && (
-            <p className="rich-notice" role="status">
-              {notice}
-              <button type="button" onClick={() => setNotice('')} aria-label={t('common.close')}>
-                ×
-              </button>
-            </p>
-          )}
-
-          <div className="crm-detail-duplicates">
-            <DuplicatesBanner
-              company={lead.company}
-              contactEmail={lead.contactEmail}
-              contactPhone={lead.contactPhone}
-              excludeId={lead._id}
-              onMerge={canManageCrm && onMerged ? () => setMerging(true) : undefined}
+      <section className="crm-lead-next" aria-labelledby="crm-lead-next-title">
+        <Flag aria-hidden="true" />
+        <h2 id="crm-lead-next-title" className="crm-lead-next__label">
+          {t('crm.col.nextAction')}
+        </h2>
+        {canManageCrm ? (
+          <div className="crm-lead-next__fields">
+            <input
+              className="portal-input"
+              aria-label={t('crm.detail.nextActionLabel')}
+              key={`${lead._id}:${lead.nextActionLabel ?? ''}`}
+              defaultValue={lead.nextActionLabel ?? ''}
+              maxLength={200}
+              onBlur={(event) => {
+                if (event.target.value !== (lead.nextActionLabel ?? ''))
+                  void onUpdateLead(lead._id, { nextActionLabel: event.target.value })
+              }}
+            />
+            <input
+              type="datetime-local"
+              className="portal-input"
+              aria-label={t('crm.detail.nextActionDate')}
+              value={toDateTimeLocal(lead.nextActionAt) || ''}
+              onChange={(event) =>
+                onLeadChange((prev) =>
+                  prev
+                    ? { ...prev, nextActionAt: event.target.value ? fromDateTimeLocal(event.target.value) : null }
+                    : prev,
+                )
+              }
+              onBlur={(event) =>
+                void onUpdateLead(lead._id, {
+                  nextActionAt: event.target.value ? fromDateTimeLocal(event.target.value) : null,
+                })
+              }
             />
           </div>
+        ) : (
+          <b className="crm-lead-next__value">
+            {lead.nextActionLabel || '—'} · {lead.nextActionAt ? formatDateTime(lead.nextActionAt) : '—'}
+          </b>
+        )}
+        {lead.callHold ? (
+          <CrmChip tone="red">{t('crmLead.next.held')}</CrmChip>
+        ) : nextState ? (
+          <CrmChip tone={nextState === 'overdue' ? 'red' : nextState === 'today' ? 'amber' : 'grey'}>
+            {t(`crmLead.next.${nextState}` as MessageKey)}
+          </CrmChip>
+        ) : null}
+      </section>
 
-          {/* Actions rapides : statut, chaleur, assignation, prochaine action */}
-          {canManageCrm && (
-            <div className="crm-modal-quick-actions crm-modal-quick-fields">
-              <span className="crm-modal-quick-label">{t('crm.detail.editLead')}</span>
-              <div className="crm-modal-quick-grid">
-                <div className="crm-modal-quick-field">
-                  <label>{t('crm.detail.status')}</label>
-                  <CustomSelect
-                    value={lead.status || 'LEAD'}
-                    onChange={(v) => {
-                      onUpdateLead(lead._id, { status: v })
-                    }}
-                    options={CRM_STATUSES.map((s) => ({ value: s.key, label: t(s.labelKey) }))}
-                  />
-                </div>
-                <div className="crm-modal-quick-field">
-                  <label>{t('crm.col.entity')}</label>
-                  <CustomSelect
-                    value={leadEntity(lead)}
-                    onChange={(v) => {
-                      onUpdateLead(lead._id, { entity: v })
-                    }}
-                    options={CRM_ENTITIES.map((e) => ({ value: e.key, label: t(e.labelKey) }))}
-                  />
-                </div>
-                <div className="crm-modal-quick-field">
-                  <label>{t('crm.col.temperature')}</label>
-                  <CustomSelect
-                    value={lead.leadTemperature || 'TIEDE'}
-                    onChange={(v) => {
-                      onUpdateLead(lead._id, { leadTemperature: v })
-                    }}
-                    options={CRM_TEMPERATURES.map((tp) => ({ value: tp.key, label: t(tp.labelKey) }))}
-                  />
-                </div>
-                <div className="crm-modal-quick-field">
-                  <label>{t('crm.detail.assignedTo')}</label>
-                  <CustomSelect
-                    value={lead.assignedTo || ''}
-                    onChange={(v) => {
-                      const val = v || null
-                      onUpdateLead(lead._id, { assignedTo: val })
-                    }}
-                    options={[
-                      { value: '', label: t('crm.common.unassigned') },
-                      ...admins
-                        .filter((a) => ['SUPER_ADMIN', 'ADMIN'].includes(a.role))
-                        .map((admin) => ({ value: admin._id, label: admin.name })),
-                    ]}
-                  />
-                </div>
-              </div>
-              <div className="crm-modal-quick-btns" style={{ marginTop: 8 }}>
-                <button
-                  type="button"
-                  className="portal-button secondary"
-                  onClick={async () => {
-                    const now = new Date().toISOString()
-                    const isEarlyStage = lead.status === 'LEAD' || lead.status === 'QUALIFIED'
-                    await onUpdateLead(lead._id, {
-                      lastContactAt: now,
-                      ...(isEarlyStage ? { status: 'CONTACTED' } : {}),
-                    })
-                  }}
-                >
-                  {t('crm.detail.markContacted')}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Convertir en client (si WON) */}
-          {lead.status === 'WON' && (
-            <div className="crm-modal-quick-actions">
-              {lead.clientAccountId ? (
-                <Link
-                  to={`/admin/comptes-clients/${lead.clientAccountId}`}
-                  className="portal-button"
-
-                  onClick={onClose}
-                >
-                  {t('crm.detail.viewClient')}
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  className="portal-button"
-
-                  disabled={converting === lead._id}
-                  onClick={async () => {
-                    await onConvertToClient(lead)
-                    onClose()
-                  }}
-                >
-                  {converting === lead._id ? t('crm.common.converting') : t('crm.detail.convert')}
-                </button>
-              )}
-            </div>
-          )}
-
-          <div className="crm-detail-tabs" role="tablist" aria-label={t('crm.detail.sections')}>
-            {tabs.map(([key, label], index) => (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                id={`crm-tab-${key}`}
-                aria-controls={`crm-panel-${key}`}
-                aria-selected={tab === key}
-                tabIndex={tab === key ? 0 : -1}
-                onClick={() => setTab(key)}
-                onKeyDown={(event) => {
-                  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-                  event.preventDefault()
-                  const next =
-                    event.key === 'Home'
-                      ? 0
-                      : event.key === 'End'
-                        ? tabs.length - 1
-                        : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
-                  setTab(tabs[next][0])
-                  document.getElementById(`crm-tab-${tabs[next][0]}`)?.focus()
-                }}
-              >
-                {t(label)}
-              </button>
-            ))}
-          </div>
-          <div role="tabpanel" id={`crm-panel-${tab}`} aria-labelledby={`crm-tab-${tab}`}>
-            {tab === 'details' && (
-              <LeadEnrichedPanel
-                lead={lead}
-                canManageCrm={canManageCrm}
-                onUpdateLead={onUpdateLead}
-                onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
-              />
-            )}
-            {tab === 'privacy' && (
-              <LeadPrivacyPanel
-                lead={lead}
-                canManageCrm={canManageCrm}
-                onUpdateLead={onUpdateLead}
-                onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
-              />
-            )}
-            {tab === 'calls' && (
-              <LeadCallsList
-                leadId={lead._id}
-                apiPrefix={TEAM_CALL_DESK_PREFIX}
-                refreshKey={callsRefresh}
-                readOnly={!canManageCrm}
-                canLiftHold={canManageCrm}
-                onApplied={reloadLead}
-                holdCallId={lead.callHold?.call ?? null}
-                openRequest={openCall}
-                source={leadCalls}
-              />
-            )}
-            {tab === 'sequences' && <LeadSequencesPanel leadId={lead._id} canManageCrm={canManageCrm} />}
-            {tab === 'revenue' && <RevenueChain leadId={lead._id} canManage={canManageCrm} />}
-          </div>
+      {callable && (
+        <div ref={callRef} className="crm-lead-call">
+          <LeadCallBar lead={lead} focusOnReady={focusCall} onSettled={() => setCallsRefresh((value) => value + 1)} />
         </div>
-        <aside
-          className="crm-detail-journal"
-          ref={timelineRef}
-          tabIndex={-1}
-          aria-label={t('crm.detail.interactionLog')}
-        >
-          <h2>{t('crm.detail.interactionLog')}</h2>
-          <InteractionTimeline
-            subjectType="LEAD"
-            subjectId={lead._id}
-            canWrite={canManageCrm}
-            legacyNote={lead.interactionNotes || undefined}
-          />
-        </aside>
-      </div>
-      {more &&
-        createPortal(
-          <div ref={menuRef} id="crm-detail-more" className="crm-detail-menu" style={menuPos}>
+      )}
+
+      <CrmWithPanel
+        panel={<LeadFichePanel lead={lead} admins={admins} canManageCrm={canManageCrm} onUpdateLead={onUpdateLead} />}
+      >
+        <div className="crm-lead-tabs" role="tablist" aria-label={t('crm.detail.sections')}>
+          {TABS.map(([key, label], index) => (
             <button
+              key={key}
               type="button"
-              className="portal-button secondary"
-              onClick={() => {
-                setMore(false)
-                setConfirm('archive')
+              role="tab"
+              id={`crm-tab-${key}`}
+              aria-controls={`crm-panel-${key}`}
+              aria-selected={tab === key}
+              tabIndex={tab === key ? 0 : -1}
+              onClick={() => setTab(key)}
+              onKeyDown={(event) => {
+                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+                event.preventDefault()
+                const next =
+                  event.key === 'Home'
+                    ? 0
+                    : event.key === 'End'
+                      ? TABS.length - 1
+                      : (index + (event.key === 'ArrowRight' ? 1 : -1) + TABS.length) % TABS.length
+                setTab(TABS[next]![0])
+                document.getElementById(`crm-tab-${TABS[next]![0]}`)?.focus()
               }}
             >
-              {t(lead.archivedAt ? 'crmRich.bulk.restore' : 'crmRich.bulk.archive')}
+              {t(label)}
+              {key === 'calls' && toValidate && <CrmChip tone="amber">{t('crmLead.tab.toValidate')}</CrmChip>}
             </button>
-            {onDeleteLead && (
-              <button
-                type="button"
-                className="portal-button secondary"
-                onClick={() => {
-                  setMore(false)
-                  setConfirm('delete')
-                }}
-              >
-                {t('crmRich.bulk.delete')}
-              </button>
-            )}
-          </div>,
-          document.body,
-        )}
+          ))}
+        </div>
+        <div role="tabpanel" id={`crm-panel-${tab}`} aria-labelledby={`crm-tab-${tab}`} className="crm-lead-panel">
+          {tab === 'details' && (
+            <LeadEnrichedPanel
+              lead={lead}
+              canManageCrm={canManageCrm}
+              onUpdateLead={onUpdateLead}
+              onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
+            />
+          )}
+          {tab === 'privacy' && (
+            <LeadPrivacyPanel
+              lead={lead}
+              canManageCrm={canManageCrm}
+              onUpdateLead={onUpdateLead}
+              onLocalChange={(patch) => onLeadChange((prev) => (prev ? { ...prev, ...patch } : prev))}
+            />
+          )}
+          {tab === 'calls' && (
+            <LeadCallsList
+              leadId={lead._id}
+              apiPrefix={TEAM_CALL_DESK_PREFIX}
+              refreshKey={callsRefresh}
+              readOnly={!canManageCrm}
+              canLiftHold={canManageCrm}
+              onApplied={reloadLead}
+              holdCallId={lead.callHold?.call ?? null}
+              openRequest={openCall}
+              source={leadCalls}
+            />
+          )}
+          {tab === 'sequences' && <LeadSequencesPanel leadId={lead._id} canManageCrm={canManageCrm} />}
+          {tab === 'history' && (
+            <section
+              className="crm-ui-card crm-lead-journal"
+              ref={timelineRef}
+              tabIndex={-1}
+              aria-label={t('crm.detail.interactionLog')}
+            >
+              <CrmSectionHead title={t('crm.detail.interactionLog')} />
+              <InteractionTimeline
+                subjectType="LEAD"
+                subjectId={lead._id}
+                canWrite={canManageCrm}
+                legacyNote={lead.interactionNotes || undefined}
+              />
+            </section>
+          )}
+        </div>
+      </CrmWithPanel>
+
       {createPortal(
         <ConfirmModal
           isOpen={confirm !== null}
