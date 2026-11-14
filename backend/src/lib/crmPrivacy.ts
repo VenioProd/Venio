@@ -15,6 +15,8 @@ import CrmSettings from '../models/CrmSettings.js'
 import Call from '../models/Call.js'
 import CallTranscript from '../models/CallTranscript.js'
 import CallAnalysis from '../models/CallAnalysis.js'
+import User from '../models/User.js'
+import { EXTERNAL_SALES_ROLE } from './externalSales.js'
 import { logLeadActivity } from './crmAutomations.js'
 
 /**
@@ -436,8 +438,16 @@ export async function anonymizeLead(
 
 // ───────────────────────── Export (droit d'accès) ─────────────────────────
 
-/** Tout ce que le CRM détient sur la personne d'un lead, en JSON. */
-export async function buildPersonalDataExport(leadId: Types.ObjectId | string) {
+/**
+ * Tout ce que le CRM détient sur la personne d'un lead, en JSON.
+ * `withholdExternalCalls` : le contenu des appels d'un commercial externe sur une
+ * fiche non transmise au closer (segments, sortie d'analyse, décisions de
+ * relecture) lui reste réservé ; il est retiré et compté dans `withheld`.
+ */
+export async function buildPersonalDataExport(
+  leadId: Types.ObjectId | string,
+  opts: { withholdExternalCalls?: boolean } = {},
+) {
   const lead = await Lead.findById(leadId).lean()
   if (!lead) return null
   const email = normalizeEmail(lead.contactEmail)
@@ -469,14 +479,33 @@ export async function buildPersonalDataExport(leadId: Types.ObjectId | string) {
       .sort({ createdAt: 1 })
       .lean(),
     CallTranscript.find({ lead: lead._id })
-      .select('call status language segments durationSec createdAt')
+      .select('call author status language segments durationSec createdAt')
       .sort({ createdAt: 1 })
       .lean(),
     CallAnalysis.find({ lead: lead._id })
-      .select('call status model output review.at review.decisions createdAt')
+      .select('call author status model output review.at review.decisions createdAt')
       .sort({ createdAt: 1 })
       .lean(),
   ])
+  const withheldAuthors = new Set<string>()
+  if (opts.withholdExternalCalls && !lead.closingHandoff) {
+    const authors = [...callTranscripts, ...callAnalyses].map((row) => row.author)
+    const reps = await User.find({ _id: { $in: authors }, role: EXTERNAL_SALES_ROLE })
+      .select('_id')
+      .lean()
+    for (const rep of reps) withheldAuthors.add(String(rep._id))
+  }
+  const withheld = { callTranscripts: 0, callAnalyses: 0 }
+  const transcripts = callTranscripts.map(({ author, ...row }) => {
+    if (!withheldAuthors.has(String(author))) return row
+    withheld.callTranscripts += 1
+    return { ...row, segments: [] }
+  })
+  const analyses = callAnalyses.map(({ author, ...row }) => {
+    if (!withheldAuthors.has(String(author))) return row
+    withheld.callAnalyses += 1
+    return { ...row, output: null, review: row.review ? { ...row.review, decisions: [] } : row.review }
+  })
   return {
     format: 'venio-crm-personal-data/v1',
     exportedAt: new Date().toISOString(),
@@ -488,8 +517,9 @@ export async function buildPersonalDataExport(leadId: Types.ObjectId | string) {
     suppression: suppression ?? null,
     sequenceEnrollments,
     calls,
-    callTranscripts,
-    callAnalyses,
+    callTranscripts: transcripts,
+    callAnalyses: analyses,
+    withheld,
   }
 }
 

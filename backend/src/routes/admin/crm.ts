@@ -453,7 +453,10 @@ router.get(
     try {
       const lead = await loadLeadForDataRights(req, res)
       if (!lead) return undefined
-      const data = await buildPersonalDataExport(lead._id)
+      // Seul le super-admin reçoit le contenu des appels d'un externe sur une fiche non transmise.
+      const data = await buildPersonalDataExport(lead._id, {
+        withholdExternalCalls: req.user!.role !== 'SUPER_ADMIN',
+      })
       if (!data) return res.status(404).json({ error: 'Lead not found' })
       await recordAudit({
         action: 'CRM_LEAD_PERSONAL_DATA_EXPORT',
