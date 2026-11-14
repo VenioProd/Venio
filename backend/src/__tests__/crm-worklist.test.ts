@@ -44,10 +44,9 @@ describe('buildWorklist — classement par échéance', () => {
   })
 
   it('place une échéance du jour dans "today", quelle que soit l\'heure', () => {
-    const thisMorning = new Date(NOW)
-    thisMorning.setHours(0, 1, 0, 0)
-    const tonight = new Date(NOW)
-    tonight.setHours(23, 59, 0, 0)
+    // La journée est celle de Paris, pas celle de la machine : heures écrites avec leur décalage (été, UTC+2).
+    const thisMorning = new Date('2026-08-26T00:01:00+02:00')
+    const tonight = new Date('2026-08-26T23:59:00+02:00')
 
     const groups = buildWorklist(
       [lead({ _id: 'a', nextActionAt: thisMorning }), lead({ _id: 'b', nextActionAt: tonight })],
