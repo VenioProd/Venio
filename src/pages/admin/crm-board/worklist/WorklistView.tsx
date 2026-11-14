@@ -1,7 +1,10 @@
-import React from 'react'
+import React, { useRef } from 'react'
+import { Inbox } from 'lucide-react'
 import { useI18n } from '../../../../context/I18nContext'
-import type { AdminUser, Lead, WorklistGroups, WorklistThresholds } from '../../../../types/crm.types'
-import WorklistRow from './WorklistRow'
+import { CrmEmpty, type CrmTone } from '../../../../components/admin/crm-ui'
+import type { AdminUser, Lead, WorklistGroupKey, WorklistGroups, WorklistThresholds } from '../../../../types/crm.types'
+import WorklistSection from './WorklistSection'
+import { useRowFocus } from './useRowFocus'
 import { WORKLIST_GROUPS, type WorklistFollowUp } from './helpers'
 
 interface WorklistViewProps {
@@ -19,69 +22,56 @@ interface WorklistViewProps {
   onCall?: (lead: Lead) => void
 }
 
-const WorklistView: React.FC<WorklistViewProps> = ({
-  groups,
-  thresholds,
-  followUp,
-  adminsById,
-  canManageCrm,
-  loading,
-  busyLeadId,
-  onPatch,
-  onLogContact,
-  onAddNote,
-  onOpenDetail,
-  onCall,
-}) => {
+const GROUP_TONE: Record<WorklistGroupKey, CrmTone> = {
+  overdue: 'red',
+  today: 'blue',
+  upcoming: 'grey',
+  drifting: 'amber',
+}
+
+/** File de travail complète, groupe par groupe (vue « file » du pipeline). */
+const WorklistView: React.FC<WorklistViewProps> = ({ groups, loading, onPatch, onLogContact, onAddNote, ...rest }) => {
   const { t } = useI18n()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const emptyRef = useRef<HTMLDivElement>(null)
+  const filled = groups ? WORKLIST_GROUPS.filter((group) => groups[group.key].length > 0) : []
+  const rows = filled.flatMap((group) => groups![group.key])
+  const { track, announcement } = useRowFocus(rows, containerRef, emptyRef)
+
   if (loading && !groups) {
     return <div className="admin-loading">{t('crm.worklist.loading')}</div>
   }
 
   if (!groups) return null
 
-  const filled = WORKLIST_GROUPS.filter((group) => groups[group.key].length > 0)
-
-  if (filled.length === 0) {
-    return (
-      <div className="crm-worklist-empty">
-        <p className="crm-worklist-empty-title">{t('crm.worklist.emptyTitle')}</p>
-        <p className="crm-worklist-empty-hint">{t('crm.worklist.emptyHint')}</p>
-      </div>
-    )
-  }
-
   return (
-    <div className="crm-worklist" aria-busy={loading}>
-      {filled.map((group) => (
-        <section key={group.key} className={`crm-worklist-group crm-worklist-group-${group.key}`}>
-          <header className="crm-worklist-group-header">
-            <h3>
-              {t(group.labelKey)}
-              <span className="crm-worklist-group-count">{groups[group.key].length}</span>
-            </h3>
-            <span className="crm-worklist-group-hint">{t(group.hintKey)}</span>
-          </header>
-          <ul className="crm-worklist-rows">
-            {groups[group.key].map((lead) => (
-              <WorklistRow
-                key={lead._id}
-                lead={lead}
-                assignee={adminsById[lead.assignedTo || '']}
-                thresholds={thresholds}
-                followUp={followUp}
-                canManageCrm={canManageCrm}
-                busy={busyLeadId === lead._id}
-                onPatch={onPatch}
-                onLogContact={onLogContact}
-                onAddNote={onAddNote}
-                onOpenDetail={onOpenDetail}
-                onCall={onCall}
-              />
-            ))}
-          </ul>
-        </section>
-      ))}
+    <div className="crm-today-stack" aria-busy={loading} ref={containerRef}>
+      <p className="crm-ui-sr-only" role="status" aria-live="polite">
+        {announcement}
+      </p>
+      {filled.length === 0 ? (
+        <div ref={emptyRef} tabIndex={-1} className="crm-today-focus-target">
+          <CrmEmpty icon={<Inbox />} title={t('crm.worklist.emptyTitle')}>
+            {t('crm.worklist.emptyHint')}
+          </CrmEmpty>
+        </div>
+      ) : (
+        filled.map((group) => (
+          <WorklistSection
+            key={group.key}
+            id={`crm-worklist-${group.key}`}
+            group={group.key}
+            title={t(group.labelKey)}
+            sub={t(group.hintKey)}
+            tone={GROUP_TONE[group.key]}
+            leads={groups[group.key]}
+            onPatch={(id, patch) => track(id, () => onPatch(id, patch))}
+            onLogContact={(id, payload) => track(id, () => onLogContact(id, payload))}
+            onAddNote={(id, text) => track(id, () => onAddNote(id, text))}
+            {...rest}
+          />
+        ))
+      )}
     </div>
   )
 }

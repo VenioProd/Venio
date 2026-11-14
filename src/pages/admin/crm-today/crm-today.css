@@ -1,0 +1,308 @@
+/*
+ * Moment « Aujourd'hui » du CRM (lot 1 de la refonte, maquette docs/crm/maquettes-refonte/a-journee.html).
+ * Classes préfixées `crm-today-` ; les composants partagés gardent leurs classes `crm-ui-`.
+ * Charte du portail : jetons seulement, aucune capitale forcée, aucun angle vif.
+ */
+
+.crm-today {
+  min-width: 0;
+}
+
+.crm-today-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.crm-today-focus-target:focus {
+  outline: none;
+}
+.crm-today-focus-target:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-md);
+}
+
+/* ── Filtres de la file ───────────────────────────────────────────── */
+.crm-today-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 14px;
+  margin: -6px 0 14px;
+}
+.crm-today-filters label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.crm-today-filters select,
+.crm-today-status {
+  min-height: 30px;
+  max-width: 100%;
+  padding: 4px 8px;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+}
+.crm-today-filters select:focus-visible,
+.crm-today-status:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+
+/* ── Barre de répartition ─────────────────────────────────────────── */
+.crm-today-mix__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.crm-today-mix__total {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.crm-today-mix__outside {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.crm-today-mix__bar {
+  display: flex;
+  gap: 3px;
+  height: 8px;
+  margin: 12px 0 10px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  border-radius: var(--r-pill);
+}
+.crm-today-mix__bar > span {
+  min-width: 4px;
+  border-radius: var(--r-pill);
+}
+.crm-today-mix__bar > [data-tone='red'] {
+  background: var(--critical);
+}
+.crm-today-mix__bar > [data-tone='blue'] {
+  background: var(--primary);
+}
+.crm-today-mix__bar > [data-tone='grey'] {
+  background: var(--text-muted);
+}
+.crm-today-mix__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  list-style: none;
+}
+.crm-today-mix__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Lignes de la file ────────────────────────────────────────────── */
+.crm-today-row__name {
+  padding: 0;
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: var(--r-hair);
+}
+.crm-today-row__name:hover {
+  color: var(--primary-light);
+}
+.crm-today-row__name:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.crm-today-row .crm-ui-row__lead svg,
+.crm-today-spark {
+  width: 15px;
+  height: 15px;
+  color: var(--primary-light);
+}
+.crm-today-row__panel {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.crm-today-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+}
+.crm-today-panel__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.crm-today-panel__fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.crm-today-panel__grow {
+  flex: 1 1 240px;
+}
+.crm-today-panel__fields .portal-input {
+  max-width: 100%;
+}
+.crm-today-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.crm-today-panel__hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Ligne « 10 h 42, maintenant » de la journée. */
+.crm-today-now-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 18px;
+  color: var(--primary-light);
+  font: 12px var(--font-mono);
+}
+.crm-today-now-line::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+}
+.crm-today-now-line::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--accent-border);
+}
+
+.crm-today-more {
+  margin: 0;
+  padding: 10px 18px 14px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.crm-today-empty-inline {
+  margin: 0;
+  padding: 6px 18px 16px;
+  color: var(--text-muted);
+}
+
+/* ── Retenues d'opposition ────────────────────────────────────────── */
+.crm-today-holds {
+  border-color: color-mix(in srgb, var(--critical) 28%, var(--border-color));
+}
+.crm-today-holds__intro {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+}
+.crm-today-holds__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.crm-today-holds__item + .crm-today-holds__item {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+.crm-today-holds__name {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.crm-today-holds__meta {
+  margin: 2px 0 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.crm-today-holds__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.crm-today-holds__decision {
+  margin-top: 10px;
+}
+.crm-today-holds .crm-hold-decision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.crm-today-holds .crm-hold-decision-quote {
+  margin: 8px 0;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--critical);
+  border-radius: var(--r-sm);
+}
+.crm-today-holds .crm-hold-decision-meta {
+  margin: 4px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Tablette : les actions passent sous la ligne, le nom garde sa largeur. */
+@media (min-width: 721px) and (max-width: 1100px) {
+  .crm-today-row {
+    grid-template-columns: 62px minmax(0, 1fr);
+  }
+  .crm-today-row > .crm-ui-row__actions {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .crm-today-filters {
+    justify-content: flex-start;
+    margin-top: 0;
+  }
+  .crm-today-mix__outside {
+    margin-left: 0;
+  }
+  .crm-today-row .crm-ui-row__lead:empty,
+  .crm-ui-row__lead:has(> .crm-today-spark) {
+    display: none;
+  }
+  .crm-today-status {
+    min-height: 34px;
+  }
+  .crm-today-panel__actions .crm-ui-btn {
+    flex: 1 1 auto;
+  }
+}

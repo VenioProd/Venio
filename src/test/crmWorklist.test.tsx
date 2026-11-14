@@ -62,8 +62,8 @@ describe('WorklistView — rendu', () => {
 
   it('masque les actions à qui ne peut pas gérer le CRM', () => {
     renderView({ ...emptyGroups, today: [makeLead({ _id: 'a' })] }, false)
-    expect(screen.queryByRole('button', { name: 'Reporter' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Contacté' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Reporter/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Fait/ })).not.toBeInTheDocument()
   })
 })
 
@@ -71,7 +71,7 @@ describe('WorklistView — actions', () => {
   it('reporte une relance à demain', async () => {
     renderView({ ...emptyGroups, overdue: [makeLead({ _id: 'a', nextActionAt: '2026-08-01T09:00:00.000Z' })] })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Reporter' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Reporter/ }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'Demain' }))
 
     await waitFor(() => expect(handlers.onPatch).toHaveBeenCalledTimes(1))
@@ -87,7 +87,7 @@ describe('WorklistView — actions', () => {
   it('enregistre un contact avec sa note', async () => {
     renderView({ ...emptyGroups, today: [makeLead({ _id: 'a' })] })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Contacté' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Fait/ }))
     fireEvent.change(screen.getByPlaceholderText("Ce qui s'est dit…"), {
       target: { value: 'Rappelé, intéressé' },
     })
@@ -103,7 +103,7 @@ describe('WorklistView — actions', () => {
   it('ajoute une note seule', async () => {
     renderView({ ...emptyGroups, drifting: [makeLead({ _id: 'a' })] })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Note' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Note/ }))
     fireEvent.change(screen.getByPlaceholderText("Ce qui s'est dit…"), { target: { value: 'Relancé par mail' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
 
@@ -114,7 +114,7 @@ describe('WorklistView — actions', () => {
     handlers.onAddNote.mockResolvedValueOnce(false)
     renderView({ ...emptyGroups, today: [makeLead({ _id: 'a' })] })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Note' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Note/ }))
     fireEvent.change(screen.getByPlaceholderText("Ce qui s'est dit…"), { target: { value: 'À ne pas perdre' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
 
@@ -155,7 +155,7 @@ describe('WorklistView — appel', () => {
     expect(screen.queryByRole('form')).not.toBeInTheDocument()
 
     // Le panneau existant continue de s'ouvrir et de consigner le contact.
-    fireEvent.click(screen.getByRole('button', { name: 'Contacté' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Fait/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     await waitFor(() => expect(handlers.onLogContact).toHaveBeenCalledTimes(1))
   })
