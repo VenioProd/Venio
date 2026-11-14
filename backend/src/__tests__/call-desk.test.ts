@@ -139,6 +139,18 @@ it('enregistre note, script, durée, relance et statut une seule fois', async ()
   expect((await post(`/leads/${item._id}/quick-call`, quick('NO_ANSWER', { scriptTag: 'SCRIPT_A' }))).status).toBe(409)
 })
 
+it('refuse l’annulation à l’externe une fois la fiche transmise au closer', async () => {
+  const item = await lead('Alpha')
+  const done = await post(`/leads/${item._id}/quick-call`, quick('NO_ANSWER'))
+  expect(done.status).toBe(201)
+  await Lead.updateOne({ _id: item._id }, { closingHandoff: { at: new Date(), by: repA }, status: 'PROPOSAL' })
+  const undo = await post(`/leads/${item._id}/quick-call/${done.body.interactionId}/undo`, {})
+  expect(undo.status).toBe(409)
+  expect(undo.body.code).toBe('LEAD_HANDED_OFF')
+  expect(await Interaction.countDocuments({ subjectId: item._id })).toBe(1)
+  expect(await Lead.findById(item._id).lean()).toMatchObject({ status: 'PROPOSAL', lastCallOutcome: 'NO_ANSWER' })
+})
+
 it('ordonne la file par curseur et exclut refus, mauvais numéros, relances futures et closing', async () => {
   const past = new Date(Date.now() - 86400_000)
   const list = { callList: 'Salon', project: 'VENIO' }

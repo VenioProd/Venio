@@ -12,7 +12,7 @@ import { callError, importCallLeads, mappedCsv, normalizePhone, parseLeadCsv } f
 import { computeRequestHash } from '../../lib/agent/idempotency.js'
 import { validateCallSettings } from '../../lib/callSettings.js'
 import { runInTransaction } from '../../lib/transaction.js'
-import { applyLeadChange } from '../../lib/crmLeadService.js'
+import { applyLeadChange, isLeadChangeError, LeadChangeError } from '../../lib/crmLeadService.js'
 import { stopSequencesOnLeadChange } from '../../lib/crmSequences.js'
 import { emitLeadChanges, fireLeadEvent } from '../../lib/crmRules.js'
 import type { ILead } from '../../types/models/index.js'
@@ -422,6 +422,9 @@ export function createCallDeskRoutes(scope: CallDeskScope) {
       const restored = await runInTransaction(async (session) => {
         const lead = await Lead.findOne({ _id: id, ...scope.leadFilter(req) }).session(session)
         if (!lead) throw callError(404, 'Lead not found')
+        // Transmise au closer : lecture seule pour l'externe, même pour défaire son dernier résultat.
+        if (scope.kind === 'rep' && lead.closingHandoff)
+          throw new LeadChangeError(409, 'LEAD_HANDED_OFF', 'Dossier transmis pour closing : il est en lecture seule')
         const interaction = await Interaction.findOne({
           _id: interactionId,
           subjectType: 'LEAD',
@@ -468,6 +471,7 @@ export function createCallDeskRoutes(scope: CallDeskScope) {
       })
       res.json({ lead: toRepLead(restored) })
     } catch (err) {
+      if (isLeadChangeError(err)) return res.status(err.status).json({ error: err.message, code: err.code })
       next(err)
     }
   })
