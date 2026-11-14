@@ -1,0 +1,592 @@
+/*
+ * Moment « Suivre » du CRM (lot 3 de la refonte, maquette docs/crm/maquettes-refonte/a-journee.html) :
+ * pipeline (tableau et Kanban), comptes clients, partenaires.
+ * Préfixe `crm-suivre-` pour ce qui est nouveau ; les règles de colonne et de carte du Kanban
+ * (`.crm-column`, `.crm-card`…) gardent leurs noms et sont reprises sous `.pipeline-page`.
+ * Pièges : `--bg-card` est translucide (3 %), d'où `--bg-secondary` sous les fonds collants ou flottants.
+ */
+
+.crm-suivre-dim {
+  color: var(--text-muted);
+}
+
+/* ── Avatar et responsable ────────────────────────────────────────── */
+.crm-suivre-avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  background: var(--surface-raised);
+  border-radius: 50%;
+}
+.crm-suivre-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.crm-suivre-owner__name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Bascule Tableau / Kanban ─────────────────────────────────────── */
+.crm-suivre-seg {
+  display: inline-flex;
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+}
+.crm-suivre-seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+}
+.crm-suivre-seg button svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.crm-suivre-seg button:hover {
+  color: var(--text-primary);
+}
+.crm-suivre-seg button[aria-pressed='true'] {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+.crm-suivre-seg button:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+
+/* ── Indicateurs du pipeline ──────────────────────────────────────── */
+.crm-suivre-stats {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  background: var(--border-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+}
+.crm-suivre-stats > div {
+  min-width: 0;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+}
+.crm-suivre-stats b {
+  display: block;
+  color: var(--text-primary);
+  font: 500 22px/1.1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.crm-suivre-stats span {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+/* ── Barre d'outils : recherche, vues rapides, filtres ───────────── */
+.crm-board-content,
+.rich-wrap,
+.rich-wrap .rich-controls,
+.crm-suivre-toolbar {
+  min-width: 0;
+}
+.rich-wrap .rich-controls {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 10px;
+}
+.crm-suivre-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.crm-suivre-search {
+  position: relative;
+  flex: 1 1 220px;
+  max-width: 340px;
+}
+.crm-suivre-search > svg {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+.crm-suivre-search input,
+.crm-suivre-field {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 12px 0 32px;
+  color: var(--text-primary);
+  font: inherit;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+}
+.crm-suivre-search input:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+.crm-suivre-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.crm-suivre-pill {
+  padding: 5px 13px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-pill);
+}
+.crm-suivre-pill:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+.crm-suivre-pill[aria-pressed='true'] {
+  color: var(--primary-fg);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.crm-suivre-pill--dashed {
+  color: var(--text-muted);
+  border-style: dashed;
+}
+.crm-suivre-pill:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.rich-wrap .rich-controls .rich-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.rich-wrap .rich-filters select {
+  max-width: 160px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-pill);
+}
+.rich-wrap .rich-filters select:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+.rich-wrap .rich-filters select option {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+.rich-wrap .rich-filters .crm-entity-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.crm-suivre-hint {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ── Tableau du pipeline ──────────────────────────────────────────── */
+.rich-table .rich-inline-select {
+  min-height: 30px;
+  padding: 3px 8px;
+  font-size: 12px;
+  background: transparent;
+  border-color: transparent;
+}
+.rich-table .rich-inline-select:hover {
+  border-color: var(--line-strong);
+}
+.rich-table .rich-inline-select option {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+.rich-table .rich-inline-select--status {
+  padding: 3px 10px;
+  color: var(--crm-ui-tone, var(--text-secondary));
+  font-weight: 700;
+  background: color-mix(in srgb, var(--crm-ui-tone, var(--text-secondary)) 14%, var(--bg-secondary));
+  border-radius: var(--r-pill);
+}
+
+/* ── Kanban ───────────────────────────────────────────────────────── */
+.pipeline-page .crm-board {
+  grid-auto-columns: minmax(250px, 1fr);
+}
+.pipeline-page .crm-column {
+  padding: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+}
+.pipeline-page .crm-column-header {
+  padding: 2px 4px 6px;
+}
+.crm-column-sub {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 0 4px 10px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+.crm-column-sub span:last-child {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.pipeline-page .crm-card {
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--bg-card);
+  box-shadow: none;
+}
+.pipeline-page .crm-card-meta {
+  margin: 0 0 8px;
+}
+.pipeline-page .crm-card-figures {
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.pipeline-page .crm-card-amount {
+  margin-left: 0;
+  font-size: 13px;
+}
+.pipeline-page .crm-card-alerts {
+  margin-bottom: 8px;
+}
+.pipeline-page .crm-card-assignee {
+  margin-top: 8px;
+}
+.crm-card-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.pipeline-page .crm-card-next {
+  margin: 6px 0 0;
+}
+
+/* ── Tableaux des comptes clients et des partenaires ──────────────── */
+.crm-suivre-tablewrap {
+  position: relative;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.crm-suivre-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+.crm-suivre-table th {
+  padding: 9px 12px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-color);
+}
+.crm-suivre-table td {
+  padding: 10px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+}
+.crm-suivre-table tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+.crm-suivre-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.crm-suivre-table th.is-num,
+.crm-suivre-table td.is-num {
+  text-align: right;
+}
+.crm-suivre-table td.is-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.crm-suivre-table tfoot td {
+  color: var(--text-secondary);
+  font-weight: 700;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 0;
+}
+.crm-suivre-table .crm-suivre-name {
+  color: var(--text-primary);
+  font-weight: 700;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.crm-suivre-table .crm-suivre-name:hover {
+  color: var(--primary-light);
+}
+.crm-suivre-table .crm-suivre-name:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+.crm-suivre-table tr.is-selected {
+  background: var(--accent-surface);
+}
+.crm-suivre-sub {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.crm-suivre-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.crm-suivre-note {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+}
+.crm-suivre-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+}
+.crm-suivre-pager p {
+  margin: 0;
+}
+.crm-suivre-pager div {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Comptes clients : cartes ─────────────────────────────────────── */
+.crm-suivre-accounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+.crm-suivre-account {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px;
+  color: var(--text-primary);
+  text-decoration: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--crm-ui-tone, var(--text-muted));
+  border-radius: var(--r-lg);
+}
+.crm-suivre-account:hover {
+  background: var(--bg-card-hover);
+}
+.crm-suivre-account:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.crm-suivre-account h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.crm-suivre-account p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.crm-suivre-account__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* ── Partenaires ──────────────────────────────────────────────────── */
+.crm-suivre-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.crm-suivre-detail > .crm-suivre-seg {
+  align-self: flex-start;
+}
+.crm-suivre-detail__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.crm-suivre-detail__head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.crm-suivre-toolrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.crm-suivre-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  background: var(--border-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+}
+.crm-suivre-figures > div {
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+}
+.crm-suivre-figures span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+.crm-suivre-figures b {
+  display: block;
+  margin-top: 4px;
+  font: 500 20px/1.1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.crm-suivre-feed {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.crm-suivre-feed li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.crm-suivre-feed li:last-child {
+  border-bottom: 0;
+}
+.crm-suivre-feed small {
+  color: var(--text-muted);
+}
+.crm-suivre-lede-link {
+  color: var(--primary-light);
+  font-weight: 700;
+}
+
+/* ── Adaptatif ────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .crm-suivre-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .crm-suivre-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .crm-suivre-stats b {
+    font-size: 18px;
+  }
+  .crm-suivre-search {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+  .crm-suivre-pills {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .crm-suivre-toolbar > .rich-grow {
+    display: none;
+  }
+  .rich-wrap .rich-filters select {
+    flex: 1 1 calc(50% - 4px);
+    max-width: none;
+    height: 36px;
+  }
+  .crm-suivre-seg button {
+    min-height: 34px;
+  }
+  .crm-suivre-pill {
+    min-height: 34px;
+  }
+}
+
+/* Une puce longue (« Retenue pour opposition à décider ») reste lisible dans la cellule « Prochaine action ». */
+.rich-table .rich-co.rich-ellipsis {
+  max-width: 280px;
+}
+.rich-table .rich-co .crm-ui-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

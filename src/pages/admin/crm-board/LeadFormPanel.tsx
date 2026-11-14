@@ -292,10 +292,10 @@ const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
             />
           </label>
           <div className="crm-inline-actions crm-form-panel-actions" style={{ marginTop: 12 }}>
-            <button className="portal-button" type="submit" disabled={!canManageCrm}>
+            <button className="crm-ui-btn crm-ui-btn--primary" type="submit" disabled={!canManageCrm}>
               {t('crm.form.create')}
             </button>
-            <button className="portal-button secondary" type="button" onClick={() => onFormChange({ ...EMPTY_FORM })}>
+            <button className="crm-ui-btn" type="button" onClick={() => onFormChange({ ...EMPTY_FORM })}>
               {t('crm.form.reset')}
             </button>
           </div>

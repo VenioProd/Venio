@@ -3,6 +3,7 @@ import LeadCard from './LeadCard'
 import { useI18n } from '../../../context/I18nContext'
 import { formatMoney } from '../../../i18n/format'
 import { STATUS_MAP } from './constants'
+import { STATUS_PROBABILITY, weightedOf } from './rich/columns'
 import type { Lead, PipelineColumn as PipelineColumnType, AdminUser } from '../../../types/crm.types'
 
 interface PipelineColumnProps {
@@ -38,11 +39,22 @@ const PipelineColumn: React.FC<PipelineColumnProps> = ({
   const status = STATUS_MAP[column.status]
   const total = (column.leads || []).reduce((sum, lead) => sum + (lead.budget ?? 0), 0)
   const amount = formatMoney(total, 'EUR', { maximumFractionDigits: 0 })
+  const open = !collapsible
+  const weighted = formatMoney(
+    (column.leads || []).reduce((sum, lead) => sum + weightedOf(lead), 0),
+    'EUR',
+    { maximumFractionDigits: 0 },
+  )
 
   return (
     <div
       className={`crm-column ${over ? 'crm-column-over' : ''} ${collapsed ? 'crm-column-collapsed' : ''}`}
       data-status={column.status}
+      role="group"
+      aria-label={t('crmSuivre.kanban.columnAria', {
+        status: status ? t(status.labelKey) : column.status,
+        count: column.leads?.length || 0,
+      })}
       onDragOver={(event) => {
         if (!canManageCrm) return
         event.preventDefault()
@@ -86,6 +98,12 @@ const PipelineColumn: React.FC<PipelineColumnProps> = ({
           {amount}
         </span>
       </div>
+      {open && (
+        <p className="crm-column-sub">
+          <span>{t('crmSuivre.kanban.weighting', { percent: STATUS_PROBABILITY[column.status] ?? 0 })}</span>
+          <span>{t('crmSuivre.kanban.weighted', { amount: weighted })}</span>
+        </p>
+      )}
       {!collapsed && !column.leads?.length && (
         <p className="crm-column-empty">{t('adminOps.pilotage.pipeline.empty')}</p>
       )}

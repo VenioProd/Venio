@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import type { AdminUser, Lead } from '../../../../types/crm.types'
 import { CRM_PRIORITIES, PRIORITY_MAP, PROJECT_MAP, STATUS_MAP, TEMPERATURE_MAP } from '../constants'
+import { HandoffChip, HeatChip, HoldChip, LateChip, OwnerCell, StatusChip } from './chips'
+import { CrmChip } from '../../../../components/admin/crm-ui'
 import { translate, type MessageKey, type MessageParams } from '../../../../i18n'
 import { formatDate, formatMoney } from '../../../../i18n/format'
 
@@ -71,6 +73,7 @@ export const RICH_COLUMNS: RichColumn[] = [
       <span className="rich-co">
         <b>{l.company}</b>
         <span>{l.contactName || l.contactEmail || '—'}</span>
+        {l.closingHandoff && <HandoffChip />}
       </span>
     ),
     csv: (l) => l.company,
@@ -80,15 +83,7 @@ export const RICH_COLUMNS: RichColumn[] = [
     labelKey: 'crmRich.col.status',
     group: 'pipeline',
     sortValue: (l) => Object.keys(STATUS_PROBABILITY).indexOf(l.status),
-    render: (l, { t }) => {
-      const s = STATUS_MAP[l.status]
-      return (
-        <span className="rich-pill" style={{ ['--c' as string]: s?.color ?? 'var(--sy-dim)' }}>
-          <i />
-          {s ? t(s.labelKey) : l.status}
-        </span>
-      )
-    },
+    render: (l) => <StatusChip status={l.status} />,
     csv: (l, { t }) => (STATUS_MAP[l.status] ? t(STATUS_MAP[l.status].labelKey) : l.status),
   },
   {
@@ -135,14 +130,9 @@ export const RICH_COLUMNS: RichColumn[] = [
     sortValue: (l, { adminsById }) => adminsById[l.assignedTo || '']?.name || 'zzz',
     render: (l, { adminsById }) =>
       l.assignedTo && adminsById[l.assignedTo] ? (
-        <span className="rich-ellipsis" title={adminsById[l.assignedTo].name}>
-          {adminsById[l.assignedTo].name}
-        </span>
+        <OwnerCell name={adminsById[l.assignedTo].name} />
       ) : (
-        <span className="rich-pill rich-pill--warn">
-          <i />
-          {translate('crmRich.unassigned')}
-        </span>
+        <CrmChip tone="amber">{translate('crmRich.unassigned')}</CrmChip>
       ),
     csv: (l, { adminsById }) => adminsById[l.assignedTo || '']?.name || '',
   },
@@ -211,18 +201,28 @@ export const RICH_COLUMNS: RichColumn[] = [
     labelKey: 'crmRich.col.nextAction',
     group: 'activity',
     sortValue: (l) => l.nextActionAt || '9',
-    render: (l, { now }) =>
-      l.nextActionAt || l.nextActionLabel ? (
+    render: (l, { now }) => {
+      if (!l.nextActionAt && !l.nextActionLabel && !l.callHold) return dash
+      const late = isLate(l, now)
+      return (
         <span
           className="rich-co rich-ellipsis"
           title={[l.nextActionLabel, shortDate(l.nextActionAt)].filter(Boolean).join(' — ')}
         >
-          <b>{l.nextActionLabel || translate('crmRich.todo')}</b>
-          <span className={isLate(l, now) ? 'rich-late' : ''}>{shortDate(l.nextActionAt)}</span>
+          {l.callHold ? (
+            <HoldChip />
+          ) : late && l.nextActionAt ? (
+            <LateChip nextActionAt={l.nextActionAt} now={now} />
+          ) : null}
+          {(l.nextActionAt || l.nextActionLabel) && (
+            <>
+              <b>{l.nextActionLabel || translate('crmRich.todo')}</b>
+              <span>{shortDate(l.nextActionAt)}</span>
+            </>
+          )}
         </span>
-      ) : (
-        dash
-      ),
+      )
+    },
     csv: (l) => [l.nextActionLabel, l.nextActionAt?.slice(0, 10)].filter(Boolean).join(' — '),
   },
   {
@@ -230,18 +230,7 @@ export const RICH_COLUMNS: RichColumn[] = [
     labelKey: 'crmRich.col.leadTemperature',
     group: 'qualification',
     sortValue: (l) => TEMP_ORDER.indexOf(l.leadTemperature || 'TIEDE'),
-    render: (l, { t }) => {
-      const idx = TEMP_ORDER.indexOf(l.leadTemperature || 'TIEDE')
-      const opt = TEMPERATURE_MAP[l.leadTemperature || 'TIEDE']
-      return (
-        <span className="rich-temp" title={opt ? t(opt.labelKey) : ''}>
-          {[0, 1, 2, 3].map((i) => (
-            <i key={i} className={i <= idx ? 'on' : ''} style={{ ['--c' as string]: opt?.color }} />
-          ))}
-          {opt ? t(opt.labelKey) : ''}
-        </span>
-      )
-    },
+    render: (l) => <HeatChip lead={l} />,
     csv: (l, { t }) =>
       TEMPERATURE_MAP[l.leadTemperature || ''] ? t(TEMPERATURE_MAP[l.leadTemperature || ''].labelKey) : '',
   },
