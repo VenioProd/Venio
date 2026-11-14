@@ -314,6 +314,29 @@ it('audio relayé par plages : une seule lecture chez l’opérateur, cache vid�
   expect((await as(cookieB).get(`/calls/${callId}/recording`)).status).toBe(404)
 })
 
+it('opposition pendant la lecture chez l’opérateur : la lecture en attente répond 404, rien n’est servi', async () => {
+  await CrmSettings.updateSettings({
+    callRecording: { enabled: true, notice: { enabled: false, text: '' }, keepAudioDays: 30 },
+  } as never)
+  const { callId } = await placeCall()
+  await recEvent(callId, 'completed')
+  await processing(callId)
+  let release!: (audio: Buffer) => void
+  vi.mocked(fetchProviderRecording)
+    .mockClear()
+    .mockImplementationOnce(() => new Promise<Buffer>((resolve) => (release = resolve)))
+
+  const pending = as(cookieA)
+    .get(`/calls/${callId}/recording`)
+    .then((res) => res)
+  await vi.waitFor(() => expect(fetchProviderRecording).toHaveBeenCalledTimes(1))
+  await as(cookieA).post(`/calls/${callId}/recording/stop`).expect(200)
+  release(Buffer.from('ID3-audio'))
+  const res = await pending
+  expect(res.status).toBe(404)
+  expect(res.headers['content-type']).not.toContain('audio')
+})
+
 it('relais refusé quand l’audio n’est pas conservé ; retry crée l’analyse manquante pour l’auteur seulement', async () => {
   const { lead, callId } = await placeCall()
   await recEvent(callId, 'completed')

@@ -398,6 +398,16 @@ export function createCallsRoutes(scope: CallDeskScope) {
       const audio = await cachedAudio(String(call._id), recording!.sid!, () =>
         fetchProviderRecording(config, recording!.sid!, recording!.channels === 1 ? 1 : 2),
       )
+      // Effacé, contesté ou sorti du périmètre pendant la lecture : relu avant d'envoyer quoi que ce soit.
+      const current = await findCall(req)
+      if (
+        !current ||
+        current.recording?.sid !== recording!.sid ||
+        !isAudioHeld(current.recording, recordingSettings(settings).keepAudioDays)
+      ) {
+        dropCachedAudio(call._id)
+        throw telephonyError(404, 'NOT_FOUND')
+      }
       res.set({ 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store', 'Accept-Ranges': 'bytes' })
       // Le lecteur demande des plages (Safari n'en lit pas d'autre) : une seule plage servie, sinon l'audio entier.
       const ranges = req.range(audio.length, { combine: true })
