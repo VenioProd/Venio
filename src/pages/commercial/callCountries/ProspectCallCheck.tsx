@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { AlertTriangle, Clock, ShieldAlert } from 'lucide-react'
+import CrmChip, { type CrmTone } from '../../../components/admin/crm-ui/CrmChip'
 import { useI18n, type MessageKey } from '../../../context/I18nContext'
 import type { CallBlock, CallCheck } from '../../../services/externalSales'
 import './callCountries.css'
@@ -29,6 +31,14 @@ export function countryName(code: string | null | undefined, locale: string): st
   }
 }
 
+const BLOCK_TONE: Record<CallBlock, CrmTone> = {
+  OUTSIDE_CALLING_HOURS: 'amber',
+  NOT_BUSINESS_CONTACT: 'amber',
+  TIMEZONE_UNKNOWN: 'amber',
+  COUNTRY_NOT_ALLOWED: 'red',
+  LEAD_NOT_CALLABLE: 'red',
+}
+
 const clock = (now: Date, timeZone: string, locale: string) =>
   new Intl.DateTimeFormat(locale, { timeZone, hour: '2-digit', minute: '2-digit' }).format(now)
 
@@ -36,11 +46,53 @@ const clock = (now: Date, timeZone: string, locale: string) =>
  * Pays et heure locale du prospect dans une ligne de la file (lot P), et ce qui
  * empêche de l'appeler maintenant. Plusieurs fuseaux possibles : toutes les heures.
  */
-export default function ProspectCallCheck({ check, unreachable }: { check?: CallCheck; unreachable?: boolean }) {
+export default function ProspectCallCheck({
+  check,
+  unreachable,
+  variant = 'plain',
+}: {
+  check?: CallCheck
+  unreachable?: boolean
+  /** `chips` : puces d'état du CRM de l'équipe (refonte) ; `plain` : le rendu de l'espace du commercial externe. */
+  variant?: 'plain' | 'chips'
+}) {
   const { t, locale } = useI18n()
   const now = useMinute()
   if (!check && !unreachable) return null
   const times = [...new Set((check?.timeZones ?? []).map((zone) => clock(now, zone, locale)))]
+  const timeLabel =
+    times.length > 1
+      ? t('callCountries.localTimeSeveral', { times: times.join(', ') })
+      : times.length === 1
+        ? t('callCountries.localTime', { time: times[0]! })
+        : undefined
+  if (variant === 'chips') {
+    const block = check?.block
+    return (
+      <span className="crm-desk-check">
+        {check?.country && (
+          <span className="crm-desk-cc" title={countryName(check.country, locale)}>
+            {check.country}
+          </span>
+        )}
+        {times.length > 0 && (
+          <time className="crm-desk-localtime" aria-label={timeLabel}>
+            {times.join(' / ')}
+          </time>
+        )}
+        {unreachable && (
+          <CrmChip tone="red" icon={<ShieldAlert />}>
+            {t('callCountries.unreachable')}
+          </CrmChip>
+        )}
+        {block && (
+          <CrmChip tone={BLOCK_TONE[block]} icon={block === 'OUTSIDE_CALLING_HOURS' ? <Clock /> : <AlertTriangle />}>
+            {t(`callCountries.block.${block}` as MessageKey)}
+          </CrmChip>
+        )}
+      </span>
+    )
+  }
   return (
     <span className="call-check">
       {check?.country && (
@@ -49,14 +101,7 @@ export default function ProspectCallCheck({ check, unreachable }: { check?: Call
         </span>
       )}
       {times.length > 0 && (
-        <time
-          className="call-check-time"
-          aria-label={
-            times.length > 1
-              ? t('callCountries.localTimeSeveral', { times: times.join(', ') })
-              : t('callCountries.localTime', { time: times[0]! })
-          }
-        >
+        <time className="call-check-time" aria-label={timeLabel}>
           {times.join(' / ')}
         </time>
       )}

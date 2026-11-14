@@ -1,0 +1,526 @@
+/*
+ * Poste d'appel de l'équipe (refonte « Journée », lot 2). Habillage seulement : la grille d'appels, la fiche
+ * express en accordéon et les raccourcis clavier sont ceux de l'espace du commercial (`CallDesk`).
+ * Tout est limité à `.crm-call-desk` : l'espace `/commercial` garde sa présentation.
+ * Pièges : `--bg-card` est translucide (3 %), `--bg-secondary` sous tout élément collant ; pas de calque flottant.
+ */
+
+/* ── Périmètre (« Mes fiches / Tout mon périmètre ») ─────────────── */
+.crm-call-desk .crm-desk-seg {
+  display: inline-flex;
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+}
+.crm-call-desk .crm-desk-seg button {
+  min-height: 30px;
+  padding: 5px 12px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+}
+.crm-call-desk .crm-desk-seg button:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+.crm-call-desk .crm-desk-seg button[aria-pressed='true'] {
+  color: var(--text-primary);
+  background: var(--accent-medium);
+}
+.crm-call-desk .crm-desk-seg button:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+.crm-call-desk .crm-desk-seg button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ── Choix du mode : trois cartes ────────────────────────────────── */
+.crm-call-desk .dialer-panel {
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.crm-call-desk .crm-desk-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.crm-call-desk .crm-desk-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px;
+  cursor: pointer;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+}
+.crm-call-desk .crm-desk-mode:hover {
+  background: var(--bg-card-hover);
+}
+.crm-call-desk .crm-desk-mode:has(input:checked) {
+  background: var(--accent-surface);
+  border-color: var(--accent-border);
+}
+.crm-call-desk .crm-desk-mode:has(input:focus-visible) {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.crm-call-desk .crm-desk-mode input {
+  flex: none;
+  margin: 3px 0 0;
+  accent-color: var(--primary);
+}
+.crm-call-desk .crm-desk-mode__text {
+  display: block;
+  min-width: 0;
+}
+.crm-call-desk .crm-desk-mode__text b {
+  display: block;
+  font-size: 13px;
+}
+.crm-call-desk .crm-desk-mode__text span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+.crm-call-desk .crm-desk-mode[data-blocked='true'] {
+  cursor: not-allowed;
+}
+.crm-call-desk .crm-desk-mode[data-blocked='true'] b {
+  color: var(--text-secondary);
+}
+.crm-call-desk .dialer-help {
+  font-size: 13px;
+}
+/* Pendant l'enchaînement, le panneau reste collé sous la barre de l'admin : cartes réduites au titre. */
+.crm-call-desk .dialer-panel[data-running] {
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--r-lg);
+}
+.crm-call-desk .dialer-panel[data-running] .crm-desk-modes {
+  grid-template-columns: repeat(3, auto);
+  justify-content: start;
+}
+.crm-call-desk .dialer-panel[data-running] .crm-desk-mode {
+  padding: 6px 12px;
+}
+.crm-call-desk .dialer-panel[data-running] .crm-desk-mode__text span {
+  display: none;
+}
+
+/* ── Aide des raccourcis et filtres en gélules ───────────────────── */
+.crm-call-desk .crm-desk-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+.crm-call-desk .crm-desk-hint svg {
+  flex: none;
+}
+.crm-call-desk .commercial-call-filters {
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 0 12px;
+}
+.crm-call-desk .crm-desk-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.crm-call-desk .crm-desk-pill {
+  min-height: 30px;
+  padding: 5px 13px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-pill);
+}
+.crm-call-desk .crm-desk-pill:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+.crm-call-desk .crm-desk-pill[aria-pressed='true'] {
+  color: var(--primary-fg);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.crm-call-desk .crm-desk-pill:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.crm-call-desk .crm-desk-pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.crm-call-desk .crm-desk-select {
+  flex: 0 1 220px;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.crm-call-desk .commercial-call-filters > .portal-button {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.crm-call-desk .crm-ui-banner {
+  margin: 0 0 12px;
+}
+
+/* ── La file : une carte, des lignes ─────────────────────────────── */
+.crm-call-desk .crm-desk-list {
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.crm-call-desk .crm-desk-list .commercial-call-columns,
+.crm-call-desk .commercial-call-row {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+.crm-call-desk .crm-desk-list .commercial-call-columns {
+  padding: 10px 20px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+.crm-call-desk .commercial-call-grid {
+  gap: 0;
+}
+.crm-call-desk .commercial-call-row {
+  padding: 12px 20px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-hair);
+}
+.crm-call-desk .commercial-call-row + .commercial-call-row,
+.crm-call-desk .commercial-call-editor + .commercial-call-row {
+  border-top: 1px solid var(--border-color);
+}
+.crm-call-desk .commercial-call-row:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+}
+.crm-call-desk .commercial-call-row.voicemail {
+  background: transparent;
+  border-left: 0;
+}
+.crm-call-desk .commercial-call-row.selected {
+  background: var(--accent-surface);
+  outline: 0;
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+.crm-call-desk .commercial-call-row:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: -2px;
+}
+.crm-call-desk .commercial-call-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.crm-call-desk .commercial-call-row > span:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+}
+.crm-call-desk .commercial-call-row small {
+  display: inline;
+  margin: 0;
+}
+.crm-call-desk .crm-desk-avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--surface-raised);
+  border-radius: 50%;
+}
+.crm-call-desk .commercial-call-row > span:nth-child(2) {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.crm-call-desk .crm-desk-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  font-family: var(--font-body);
+}
+.crm-call-desk .crm-desk-cc {
+  padding: 1px 5px;
+  color: var(--text-secondary);
+  font: 11px var(--font-mono);
+  background: var(--surface-raised);
+  border-radius: var(--r-sm);
+}
+.crm-call-desk .crm-desk-localtime {
+  color: var(--text-secondary);
+  font: 11.5px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.crm-call-desk .crm-desk-summary {
+  margin: 0;
+  padding: 12px 20px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+}
+
+/* ── Fiche express (accordéon) et saisie du résultat ─────────────── */
+.crm-call-desk .commercial-call-grid form.portal-card.commercial-call-editor {
+  padding: 16px 20px 20px;
+  background: color-mix(in srgb, var(--primary) 4%, var(--bg-secondary));
+  border: 0;
+  border-top: 1px solid var(--border-color);
+  border-radius: var(--r-hair);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+.crm-call-desk .commercial-call-editor fieldset {
+  gap: 16px;
+  margin: 0;
+}
+.crm-call-desk .commercial-call-editor h3 {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.crm-call-desk .commercial-call-editor label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.crm-call-desk .commercial-call-editor section ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.crm-call-desk .commercial-call-editor section li {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  font-size: 13px;
+}
+.crm-call-desk .commercial-call-editor section li p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+}
+.crm-call-desk .commercial-call-extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.crm-call-desk .commercial-call-outcomes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+}
+.crm-call-desk .commercial-call-outcomes button.portal-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+  min-height: 40px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  box-shadow: none;
+}
+.crm-call-desk .commercial-call-outcomes button.portal-button:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+}
+.crm-call-desk .commercial-call-outcomes button.portal-button[aria-pressed='true'] {
+  background: var(--accent-surface);
+  border-color: var(--accent-border);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
+}
+.crm-call-desk .commercial-call-outcomes kbd {
+  margin-left: auto;
+  padding: 1px 5px;
+  color: var(--text-muted);
+  font: 11px var(--font-mono);
+  opacity: 1;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-sm);
+}
+.crm-call-desk .crm-desk-preselected {
+  padding: 1px 8px;
+  color: var(--primary-light);
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--accent-medium);
+  border-radius: var(--r-pill);
+}
+.crm-call-desk .commercial-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: start;
+}
+.crm-call-desk .commercial-hold {
+  margin: 0;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--critical) 7%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--critical) 30%, transparent);
+  border-radius: var(--r-lg);
+}
+.crm-call-desk .call-check-confirm {
+  margin: 0;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--warning) 7%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
+  border-radius: var(--r-lg);
+}
+
+/* ── Barre d'appel pendant un appel ──────────────────────────────── */
+.crm-call-desk .softphone-bar {
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border-color: var(--accent-border);
+}
+.crm-call-desk .softphone-timer {
+  font: 500 22px var(--font-mono);
+  letter-spacing: -0.02em;
+}
+.crm-call-desk .softphone-state,
+.crm-call-desk .softphone-notice {
+  font-size: 13px;
+}
+.crm-call-desk .softphone-recording {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.crm-call-desk .softphone-recording-state {
+  flex-wrap: wrap;
+  color: var(--critical);
+  font-weight: 700;
+}
+.crm-call-desk .softphone-recording[data-state='stopped'] .softphone-recording-state {
+  color: var(--text-secondary);
+}
+.crm-call-desk .portal-button.softphone-objection,
+html.theme-portail .crm-call-desk .portal-button.softphone-objection {
+  margin-left: auto;
+  color: var(--critical);
+  background: var(--critical-surface);
+  border: 1px solid color-mix(in srgb, var(--critical) 35%, transparent);
+  box-shadow: none;
+}
+.crm-call-desk .softphone-keypad {
+  grid-template-columns: repeat(3, 48px);
+}
+.crm-call-desk .softphone-keypad .portal-button {
+  padding: 8px 0;
+  font: 500 15px var(--font-mono);
+}
+.crm-call-desk .softphone-microphone {
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: start;
+  gap: 8px;
+}
+
+/* ── Appels de la séance ─────────────────────────────────────────── */
+.crm-call-desk .recent-calls {
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+}
+.crm-call-desk .recent-calls h2 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* ── Adaptatif ───────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .crm-call-desk .crm-desk-modes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .crm-call-desk .dialer-panel[data-running] .crm-desk-modes {
+    grid-template-columns: repeat(3, auto);
+  }
+}
+@media (max-width: 760px) {
+  .crm-call-desk .crm-desk-check .crm-ui-chip {
+    white-space: normal;
+  }
+  .crm-call-desk .commercial-call-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px 14px;
+  }
+  .crm-call-desk .commercial-call-grid form.portal-card.commercial-call-editor {
+    padding: 14px;
+  }
+  .crm-call-desk .commercial-call-filters > .portal-button {
+    margin-left: 0;
+  }
+  .crm-call-desk .crm-desk-seg button {
+    min-height: 40px;
+  }
+  .crm-call-desk .crm-desk-pill {
+    min-height: 36px;
+  }
+  .crm-call-desk .dialer-panel[data-running] .crm-desk-modes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .crm-call-desk .dialer-panel[data-running] .crm-desk-mode {
+    padding: 6px 8px;
+  }
+}
+@media (hover: none), (any-pointer: coarse) {
+  .crm-call-desk .commercial-call-outcomes kbd {
+    display: none;
+  }
+}

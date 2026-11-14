@@ -1,8 +1,9 @@
+/* Transcription en direct (refonte « Journée », lot 2) : un volet de bulles, vous à gauche teintée, le prospect en neutre. */
 .live-transcript {
   display: grid;
-  gap: 6px;
+  gap: 10px;
   min-width: 0;
-  padding: 8px 10px;
+  padding: 14px 16px;
   border: 1px solid var(--border-color);
   border-radius: var(--r-lg);
 }
@@ -17,15 +18,21 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.02em;
 }
 .live-transcript-status {
-  font-size: 12px;
+  padding: 2px 9px;
   color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--text-secondary) 12%, var(--bg-secondary));
+  border-radius: var(--r-pill);
 }
 .live-transcript-status[data-status='LIVE'] {
   color: var(--good);
+  background: color-mix(in srgb, var(--good) 14%, var(--bg-secondary));
 }
 .live-transcript-toggle {
   display: inline-flex;
@@ -41,28 +48,43 @@
   font-size: 12px;
   cursor: pointer;
 }
+.live-transcript-toggle:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
 .live-transcript-log {
-  display: grid;
-  gap: 6px;
-  max-height: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
   margin: 0;
-  padding: 0;
+  padding: 0 6px 0 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   list-style: none;
 }
+.live-transcript-log:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
 .live-transcript-line {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  gap: 8px;
+  gap: 1px;
+  max-width: 78ch;
+  padding: 8px 12px;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.45;
+  background: color-mix(in srgb, var(--text-primary) 6%, var(--bg-secondary));
+  border-radius: var(--r-md);
+}
+.live-transcript-line[data-speaker='REP'] {
+  background: var(--accent-surface);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
 }
 .live-transcript-speaker {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 700;
   color: var(--text-secondary);
-  padding-top: 1px;
 }
 .live-transcript-line[data-speaker='PROSPECT'] .live-transcript-speaker {
   color: var(--primary-light);
@@ -81,11 +103,10 @@
   color: var(--text-secondary);
 }
 @media (max-width: 480px) {
-  .live-transcript-line {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
+  .live-transcript {
+    padding: 12px;
   }
   .live-transcript-log {
-    max-height: 160px;
+    max-height: 200px;
   }
 }

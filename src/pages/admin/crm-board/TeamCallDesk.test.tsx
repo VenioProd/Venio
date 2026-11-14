@@ -47,13 +47,20 @@ const settings = {
 }
 const requests: { path: string; method: string; body: unknown }[] = []
 
-function installApi() {
+function installApi(
+  overrides: {
+    leads?: unknown[]
+    filters?: { lists: string[]; projects: string[] }
+    settings?: typeof settings
+    telephony?: boolean
+  } = {},
+) {
   vi.mocked(apiFetch).mockImplementation((async (path: string, options?: RequestInit) => {
     const method = options?.method ?? 'GET'
     requests.push({ path, method, body: options?.body ? JSON.parse(String(options.body)) : undefined })
-    if (path === `${PREFIX}/calls/settings`) return settings
-    if (path === `${PREFIX}/calls/filters`) return { lists: [], projects: [] }
-    if (path.startsWith(`${PREFIX}/calls/queue`)) return { leads: [lead], nextCursor: null }
+    if (path === `${PREFIX}/calls/settings`) return overrides.settings ?? settings
+    if (path === `${PREFIX}/calls/filters`) return overrides.filters ?? { lists: [], projects: [] }
+    if (path.startsWith(`${PREFIX}/calls/queue`)) return { leads: overrides.leads ?? [lead], nextCursor: null }
     if (path === '/api/admin/interactions/LEAD/lead1/timeline?limit=5')
       return {
         entries: [
@@ -70,7 +77,7 @@ function installApi() {
         ],
       }
     if (path === `${PREFIX}/calls/config`)
-      return { enabled: true, callerId: '+33100000000', callingHours: null, attemptCap: 3 }
+      return { enabled: overrides.telephony ?? true, callerId: '+33100000000', callingHours: null, attemptCap: 3 }
     if (path === `${PREFIX}/calls/token`)
       return { token: 'jwt', identity: 'admin1', expiresAt: new Date(Date.now() + 600_000).toISOString() }
     if (path === `${PREFIX}/leads/lead1/calls`) return method === 'POST' ? { callId: 'call1' } : { calls: [] }
@@ -125,7 +132,7 @@ describe('File d’appels de l’équipe', () => {
       expect.arrayContaining([`${PREFIX}/calls/settings`, `${PREFIX}/calls/filters`]),
     )
     expect(requests.some((item) => item.path.startsWith('/api/commercial'))).toBe(false)
-    expect(screen.getByRole('heading', { level: 2, name: 'Appels' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Poste d’appel' })).toBeInTheDocument()
     expect(screen.queryByText(/Importer/i)).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Atelier Alpha/ }))
     await screen.findByRole('group', { name: 'Appel téléphonique' })
@@ -182,5 +189,87 @@ describe('File d’appels de l’équipe', () => {
       callId: 'call1',
       outcome: 'NRP',
     })
+  })
+  it('présente le choix du mode en trois cartes (boutons radio), « Au clic » par défaut', async () => {
+    renderDesk()
+    await screen.findByRole('button', { name: /Atelier Alpha/ })
+    const modes = screen.getByRole('group', { name: 'Mode d’appel' })
+    expect(within(modes).getByRole('radio', { name: /Au clic/ })).toBeChecked()
+    expect(within(modes).getByRole('radio', { name: /Au clic/ })).toBeEnabled()
+    expect(within(modes).getByRole('radio', { name: /Aperçu/ })).toBeEnabled()
+    expect(within(modes).getByRole('radio', { name: /Power dialer/ })).toBeEnabled()
+  })
+
+  it('téléphonie non configurée : seule la carte « Au clic » reste active, les autres disent pourquoi', async () => {
+    installApi({ telephony: false })
+    renderDesk()
+    await screen.findByRole('button', { name: /Atelier Alpha/ })
+    const modes = screen.getByRole('group', { name: 'Mode d’appel' })
+    await waitFor(() => expect(within(modes).getByRole('radio', { name: /Power dialer/ })).toBeDisabled())
+    expect(within(modes).getByRole('radio', { name: /Aperçu/ })).toBeDisabled()
+    expect(within(modes).getByRole('radio', { name: /Au clic/ })).toBeEnabled()
+    expect(
+      within(modes).getAllByText(/Indisponible : les appels depuis le navigateur ne sont pas actifs/),
+    ).toHaveLength(2)
+  })
+
+  it('met les filtres en gélules et relit la file avec la liste choisie', async () => {
+    installApi({ filters: { lists: ['Salon', 'Novembre'], projects: ['VENIO'] } })
+    renderDesk()
+    await screen.findByRole('button', { name: /Atelier Alpha/ })
+    const lists = screen.getByRole('group', { name: 'Liste' })
+    expect(within(lists).getByRole('button', { name: 'Toutes les listes' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(within(lists).getByRole('button', { name: 'Salon' }))
+    await waitFor(() => expect(lastQueuePath()).toContain('callList=Salon'))
+    expect(within(lists).getByRole('button', { name: 'Salon' })).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      within(screen.getByRole('group', { name: 'Projet' })).getByRole('button', { name: 'VENIO' }),
+    ).toBeInTheDocument()
+  })
+
+  it('montre les puces d’état de la ligne : répondeur, hors plage chez le prospect, pays et heure locale, fiche retenue', async () => {
+    installApi({
+      settings: {
+        ...settings,
+        outcomes: [
+          ...settings.outcomes,
+          {
+            value: 'VM',
+            fr: 'Messagerie',
+            en: 'Voicemail',
+            effect: 'VOICEMAIL',
+            reached: false,
+            retryAfterMinutes: null,
+          },
+        ],
+      },
+      leads: [
+        {
+          ...lead,
+          lastCallOutcome: 'VM',
+          callHold: { at: '2026-11-10T09:00:00.000Z', reason: 'OPT_OUT' },
+          callCheck: { country: 'GP', timeZones: ['America/Guadeloupe'], block: 'OUTSIDE_CALLING_HOURS' },
+        },
+      ],
+    })
+    renderDesk()
+    const row = await screen.findByRole('button', { name: /Atelier Alpha/ })
+    expect(within(row).getByText('GP')).toBeInTheDocument()
+    expect(within(row).getByText('Répondeur au dernier appel')).toBeInTheDocument()
+    expect(within(row).getByText('Hors plage chez le prospect')).toBeInTheDocument()
+    expect(within(row).getByText('Retenue')).toBeInTheDocument()
+    expect(row.querySelector('time')).not.toBeNull()
+  })
+
+  it('garde les raccourcis de la grille : Alt+chiffre choisit le résultat, Entrée enregistre', async () => {
+    renderDesk()
+    fireEvent.click(await screen.findByRole('button', { name: /Atelier Alpha/ }))
+    const notes = await screen.findByRole('textbox', { name: /Notes/ })
+    fireEvent.keyDown(notes, { altKey: true, code: 'Digit2', key: '2' })
+    expect(screen.getByRole('button', { name: /^Rendez-vous/ })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.keyDown(notes, { key: 'Enter' })
+    await waitFor(() =>
+      expect(requests.find((item) => item.path.endsWith('/quick-call'))?.body).toMatchObject({ outcome: 'RDV' }),
+    )
   })
 })
