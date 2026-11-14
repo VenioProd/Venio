@@ -789,4 +789,16 @@ const CrmBoard = ({
   )
 }
 
-export default CrmBoard
+// ── Lot 1 de la refonte : la file de travail (`queue`, sous-onglets d'« Aujourd'hui ») est l'écran `crm-today`.
+// Composant distinct plutôt qu'un retour anticipé : passer d'« Aujourd'hui » au pipeline remonte l'écran
+// au lieu de réutiliser ses hooks. Le mode `?mode=file` du pipeline reste celui de CrmBoard.
+import CrmToday from '../crm-today'
+
+const CrmBoardEntry = (props: React.ComponentProps<typeof CrmBoard>) =>
+  props.queue ? (
+    <CrmToday worklistGroups={props.worklistGroups} onWorklistCounts={props.onWorklistCounts} />
+  ) : (
+    <CrmBoard {...props} />
+  )
+
+export default CrmBoardEntry

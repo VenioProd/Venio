@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom'
 import React, { useEffect, useRef, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { useI18n } from '../../../../context/I18nContext'
 import type { MessageKey } from '../../../../i18n'
 
@@ -21,10 +22,12 @@ const PRESETS: { labelKey: MessageKey; days: number }[] = [
 
 interface PostponeMenuProps {
   disabled?: boolean
+  /** Nom accessible du bouton, qui commence par son libellé visible (« Reporter la relance de … »). */
+  ariaLabel?: string
   onPostpone: (date: Date) => void
 }
 
-const PostponeMenu: React.FC<PostponeMenuProps> = ({ disabled, onPostpone }) => {
+const PostponeMenu: React.FC<PostponeMenuProps> = ({ disabled, ariaLabel, onPostpone }) => {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -76,13 +79,15 @@ const PostponeMenu: React.FC<PostponeMenuProps> = ({ disabled, onPostpone }) => 
     <div className="crm-worklist-postpone" ref={containerRef}>
       <button
         type="button"
-        className="portal-button secondary crm-worklist-action"
+        className="crm-ui-btn crm-ui-btn--ghost crm-ui-btn--sm"
         disabled={disabled}
+        aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
       >
         {t('crm.postpone.button')}
+        <ChevronDown aria-hidden="true" />
       </button>
       {open &&
         createPortal(

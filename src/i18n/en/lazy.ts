@@ -39,6 +39,7 @@ import crmCallAi from './crmCallAi'
 import callHold from './callHold'
 import crmSeq from './crmSeq'
 import crmPlan from './crmPlan'
+import crmToday from './crmToday'
 import portfolio from './portfolio'
 import projectSheets from './projectSheets'
 import security from './security'
@@ -84,6 +85,7 @@ const messages = {
   ...callHold,
   ...crmSeq,
   ...crmPlan,
+  ...crmToday,
   ...portfolio,
   ...projectSheets,
   ...security,
