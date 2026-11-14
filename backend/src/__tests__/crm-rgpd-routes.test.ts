@@ -266,6 +266,21 @@ describe('export CSV : audit et plafond', () => {
     expect(audit?.createdAt).toBeInstanceOf(Date)
   })
 
+  it('exporte la liste du CRM : sans les fiches d’un externe non transmises au closer', async () => {
+    await makeLead({ company: 'Fiche équipe' })
+    await makeLead({ company: 'Fiche réservée', externalRep: team.externe.id, enteredByRep: true })
+    await makeLead({
+      company: 'Fiche transmise',
+      externalRep: team.externe.id,
+      enteredByRep: true,
+      closingHandoff: { at: new Date(), by: team.externe.id },
+    })
+    const res = await request(app).get('/api/admin/crm/leads/export?columns=company').expect(200)
+    expect(res.text).toContain('Fiche équipe')
+    expect(res.text).toContain('Fiche transmise')
+    expect(res.text).not.toContain('Fiche réservée')
+  })
+
   it('signale le plafond de 5000 lignes par X-Export-Truncated', async () => {
     const now = new Date()
     await Lead.collection.insertMany(
