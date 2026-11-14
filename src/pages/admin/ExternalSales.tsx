@@ -1,9 +1,17 @@
 import { STATUS_MAP } from './crm-board/constants'
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Handshake, Plus } from 'lucide-react'
 import CustomSelect from '../../components/admin/CustomSelect'
-import { CrmEmpty, CrmPageHead, CrmSectionHead } from '../../components/admin/crm-ui'
+import {
+  CrmBanner,
+  CrmEmpty,
+  CrmPageHead,
+  CrmPanelCard,
+  CrmSectionHead,
+  CrmSidePanel,
+  CrmWithPanel,
+} from '../../components/admin/crm-ui'
 import { Avatar } from './crm-board/rich/chips'
 import { useI18n } from '../../context/I18nContext'
 import { formatDateTime, formatNumber, formatPercent } from '../../i18n/format'
@@ -144,192 +152,251 @@ const ExternalSales = () => {
       {error && <div className="admin-error">{error}</div>}
       {info && <div className="admin-success">{info}</div>}
 
-      {!reps ? (
-        <div className="admin-loading">{t('commercial.loading')}</div>
-      ) : reps.length === 0 ? (
-        <section className="crm-ui-card">
-          <CrmEmpty title={t('commercial.admin.empty')} />
-        </section>
-      ) : (
-        <section className="crm-ui-card crm-ui-card--flush" aria-labelledby="partners-team">
-          <CrmSectionHead id="partners-team" title={t('crmSuivre.partners.team')} count={reps.length} />
-          <div className="crm-suivre-tablewrap">
-            <table className="crm-suivre-table">
-              <thead>
-                <tr>
-                  <th>{t('commercial.admin.colRep')}</th>
-                  <th className="is-num">{t('commercial.admin.colLeads')}</th>
-                  <th className="is-num">{t('commercial.admin.colHandedOff')}</th>
-                  <th className="is-num">{t('commercial.admin.colConversion')}</th>
-                  <th className="is-num">{t('commercial.admin.colCollected')}</th>
-                  <th className="is-num">{t('commercial.admin.colDue')}</th>
-                  <th className="is-num">{t('commercial.admin.colPaid')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reps.map((rep) => (
-                  <tr
-                    key={rep._id}
-                    onClick={() => setSelectedId(rep._id)}
-                    className={rep._id === selectedId ? 'is-selected' : undefined}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td>
-                      <span className="crm-suivre-owner">
-                        <Avatar name={rep.name} />
-                        <button
-                          type="button"
-                          className="crm-suivre-name"
-                          aria-pressed={rep._id === selectedId}
-                          onClick={() => setSelectedId(rep._id)}
-                        >
-                          {rep.name}
-                        </button>
-                      </span>
-                      <div className="crm-suivre-sub">
-                        {rep.email}
-                        {!rep.isActive && ` · ${t('commercial.admin.inactive')}`}
-                      </div>
-                    </td>
-                    <td className="is-num">{rep.leads}</td>
-                    <td className="is-num">{rep.handedOff}</td>
-                    <td className="is-num">
-                      {formatPercent(rep.conversionRate, { maximumFractionDigits: 0 })}{' '}
-                      <span className="crm-suivre-dim">({rep.won})</span>
-                    </td>
-                    <td className="is-num">{formatCents(rep.collectedHtCents)}</td>
-                    <td className="is-num">{formatCents(rep.dueCents)}</td>
-                    <td className="is-num">{formatCents(rep.paidCents)}</td>
+      <CrmWithPanel
+        panel={
+          <CrmSidePanel label={t('crmSuivre.partners.asideAria')}>
+            <CrmBanner tone="blue" icon={<Handshake />} title={t('crmSuivre.partners.handoffTitle')}>
+              {t('crmSuivre.partners.handoffBody')}
+            </CrmBanner>
+            <CrmPanelCard title={t('crmSuivre.partners.commissionTitle')} id="partners-commission">
+              <p className="crm-suivre-panel-text">
+                {t('crmSuivre.partners.commissionBody', { rate: formatNumber(rateBp / 100) })}
+              </p>
+            </CrmPanelCard>
+          </CrmSidePanel>
+        }
+      >
+        {!reps ? (
+          <div className="admin-loading">{t('commercial.loading')}</div>
+        ) : reps.length === 0 ? (
+          <section className="crm-ui-card">
+            <CrmEmpty title={t('commercial.admin.empty')} />
+          </section>
+        ) : (
+          <section className="crm-ui-card crm-ui-card--flush" aria-labelledby="partners-team">
+            <CrmSectionHead id="partners-team" title={t('crmSuivre.partners.team')} count={reps.length} />
+            <div className="crm-suivre-tablewrap">
+              <table className="crm-suivre-table">
+                <thead>
+                  <tr>
+                    <th>{t('commercial.admin.colRep')}</th>
+                    <th className="is-num">{t('commercial.admin.colLeads')}</th>
+                    <th className="is-num">{t('commercial.admin.colHandedOff')}</th>
+                    <th className="is-num">{t('commercial.admin.colConversion')}</th>
+                    <th className="is-num">{t('commercial.admin.colCollected')}</th>
+                    <th className="is-num">{t('commercial.admin.colDue')}</th>
+                    <th className="is-num">{t('commercial.admin.colPaid')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
+                </thead>
+                <tbody>
+                  {reps.map((rep) => (
+                    <tr
+                      key={rep._id}
+                      onClick={() => setSelectedId(rep._id)}
+                      className={rep._id === selectedId ? 'is-selected' : undefined}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td>
+                        <span className="crm-suivre-owner">
+                          <Avatar name={rep.name} />
+                          <button
+                            type="button"
+                            className="crm-suivre-name"
+                            aria-pressed={rep._id === selectedId}
+                            onClick={() => setSelectedId(rep._id)}
+                          >
+                            {rep.name}
+                          </button>
+                        </span>
+                        <div className="crm-suivre-sub">
+                          {rep.email}
+                          {!rep.isActive && ` · ${t('commercial.admin.inactive')}`}
+                        </div>
+                      </td>
+                      <td className="is-num">{rep.leads}</td>
+                      <td className="is-num">{rep.handedOff}</td>
+                      <td className="is-num">
+                        {formatPercent(rep.conversionRate, { maximumFractionDigits: 0 })}{' '}
+                        <span className="crm-suivre-dim">({rep.won})</span>
+                      </td>
+                      <td className="is-num">{formatCents(rep.collectedHtCents)}</td>
+                      <td className="is-num">{formatCents(rep.dueCents)}</td>
+                      <td className="is-num">{formatCents(rep.paidCents)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
-      {detail && (
-        <section className="crm-ui-card crm-suivre-detail" aria-label={t('crmSuivre.partners.detailAria')}>
-          <div className="crm-suivre-detail__head">
-            <h2>{detail.rep.name}</h2>
-            <Link className="crm-ui-btn" to={`/admin/comptes-admin/${detail.rep._id}`}>
-              {t('commercial.admin.manageAccount')}
-            </Link>
-          </div>
-          <div className="crm-suivre-seg" role="group" aria-label={t('crmSuivre.partners.detailAria')}>
-            {tabs.map(([key, label]) => (
-              <button key={key} type="button" aria-pressed={tab === key} onClick={() => setTab(key)}>
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {tab === 'leads' && (
-            <>
-              <div className="crm-suivre-toolrow">
-                <CustomSelect
-                  className="commercial-select"
-                  value={target}
-                  onChange={setTarget}
-                  options={targetOptions}
-                />
-                <button
-                  type="button"
-                  className="crm-ui-btn crm-ui-btn--primary"
-                  disabled={busy || !target || checkedLeads.length === 0}
-                  onClick={() => reassign('selection')}
-                >
-                  {t('commercial.admin.reassignSelection', { count: checkedLeads.length })}
+        {detail && (
+          <section className="crm-ui-card crm-suivre-detail" aria-label={t('crmSuivre.partners.detailAria')}>
+            <div className="crm-suivre-detail__head">
+              <h2>{detail.rep.name}</h2>
+              <Link className="crm-ui-btn" to={`/admin/comptes-admin/${detail.rep._id}`}>
+                {t('commercial.admin.manageAccount')}
+              </Link>
+            </div>
+            <CallLists leads={detail.leads} />
+            <div className="crm-suivre-seg" role="group" aria-label={t('crmSuivre.partners.detailAria')}>
+              {tabs.map(([key, label]) => (
+                <button key={key} type="button" aria-pressed={tab === key} onClick={() => setTab(key)}>
+                  {label}
                 </button>
-                <button
-                  type="button"
-                  className="crm-ui-btn"
-                  disabled={busy || !target || detail.leads.length === 0}
-                  onClick={() => {
-                    const question = t('commercial.admin.reassignAllConfirm', {
-                      count: detail.leads.length,
-                      name: detail.rep.name,
-                    })
-                    if (window.confirm(question)) reassign('all')
-                  }}
-                >
-                  {t('commercial.admin.reassignAll')}
-                </button>
-              </div>
-              <LeadsTable
-                leads={detail.leads}
-                checked={checkedLeads}
-                onToggle={(id) => setCheckedLeads(toggle(checkedLeads, id))}
-              />
-            </>
-          )}
-
-          {tab === 'commissions' && (
-            <>
-              <div className="crm-suivre-figures">
-                <div>
-                  <span>{t('commercial.admin.colCollected')}</span>
-                  <b>{formatCents(detail.totals.collectedHtCents)}</b>
-                </div>
-                <div>
-                  <span>{t('commercial.admin.colDue')}</span>
-                  <b>{formatCents(detail.totals.dueCents)}</b>
-                </div>
-                <div>
-                  <span>{t('commercial.admin.colPaid')}</span>
-                  <b>{formatCents(detail.totals.paidCents)}</b>
-                </div>
-              </div>
-              <div className="crm-suivre-toolrow">
-                <button
-                  type="button"
-                  className="crm-ui-btn crm-ui-btn--primary"
-                  disabled={busy || checkedCommissions.length === 0}
-                  onClick={() => markPaid('selection')}
-                >
-                  {t('commercial.admin.markSelection', { count: checkedCommissions.length })}
-                </button>
-                <button
-                  type="button"
-                  className="crm-ui-btn"
-                  disabled={busy || detail.totals.dueCents === 0}
-                  onClick={() => {
-                    const question = t('commercial.admin.markAllConfirm', {
-                      amount: formatCents(detail.totals.dueCents),
-                    })
-                    if (window.confirm(question)) markPaid('all')
-                  }}
-                >
-                  {t('commercial.admin.markAll')}
-                </button>
-              </div>
-              <CommissionsTable
-                commissions={detail.commissions}
-                checked={checkedCommissions}
-                onToggle={(id) => setCheckedCommissions(toggle(checkedCommissions, id))}
-              />
-            </>
-          )}
-
-          {tab === 'journal' && (
-            <ul className="crm-suivre-feed">
-              {activity.length === 0 && <li className="crm-suivre-dim">{t('commercial.admin.noActivity')}</li>}
-              {activity.map((item) => (
-                <li key={item._id}>
-                  <span>
-                    <strong>{item.leadId?.company ?? t('commercial.admin.deletedLead')}</strong> · {item.label}
-                  </span>
-                  <small>
-                    {formatDateTime(item.createdAt)}
-                    {item.actorId && ` · ${item.actorId.name}`}
-                  </small>
-                </li>
               ))}
-            </ul>
-          )}
-        </section>
-      )}
+            </div>
+
+            {tab === 'leads' && (
+              <>
+                <div className="crm-suivre-toolrow">
+                  <CustomSelect
+                    className="commercial-select"
+                    value={target}
+                    onChange={setTarget}
+                    options={targetOptions}
+                  />
+                  <button
+                    type="button"
+                    className="crm-ui-btn crm-ui-btn--primary"
+                    disabled={busy || !target || checkedLeads.length === 0}
+                    onClick={() => reassign('selection')}
+                  >
+                    {t('commercial.admin.reassignSelection', { count: checkedLeads.length })}
+                  </button>
+                  <button
+                    type="button"
+                    className="crm-ui-btn"
+                    disabled={busy || !target || detail.leads.length === 0}
+                    onClick={() => {
+                      const question = t('commercial.admin.reassignAllConfirm', {
+                        count: detail.leads.length,
+                        name: detail.rep.name,
+                      })
+                      if (window.confirm(question)) reassign('all')
+                    }}
+                  >
+                    {t('commercial.admin.reassignAll')}
+                  </button>
+                </div>
+                <LeadsTable
+                  leads={detail.leads}
+                  checked={checkedLeads}
+                  onToggle={(id) => setCheckedLeads(toggle(checkedLeads, id))}
+                />
+              </>
+            )}
+
+            {tab === 'commissions' && (
+              <>
+                <div className="crm-suivre-figures">
+                  <div>
+                    <span>{t('commercial.admin.colCollected')}</span>
+                    <b>{formatCents(detail.totals.collectedHtCents)}</b>
+                  </div>
+                  <div>
+                    <span>{t('commercial.admin.colDue')}</span>
+                    <b>{formatCents(detail.totals.dueCents)}</b>
+                  </div>
+                  <div>
+                    <span>{t('commercial.admin.colPaid')}</span>
+                    <b>{formatCents(detail.totals.paidCents)}</b>
+                  </div>
+                </div>
+                <div className="crm-suivre-toolrow">
+                  <button
+                    type="button"
+                    className="crm-ui-btn crm-ui-btn--primary"
+                    disabled={busy || checkedCommissions.length === 0}
+                    onClick={() => markPaid('selection')}
+                  >
+                    {t('commercial.admin.markSelection', { count: checkedCommissions.length })}
+                  </button>
+                  <button
+                    type="button"
+                    className="crm-ui-btn"
+                    disabled={busy || detail.totals.dueCents === 0}
+                    onClick={() => {
+                      const question = t('commercial.admin.markAllConfirm', {
+                        amount: formatCents(detail.totals.dueCents),
+                      })
+                      if (window.confirm(question)) markPaid('all')
+                    }}
+                  >
+                    {t('commercial.admin.markAll')}
+                  </button>
+                </div>
+                <CommissionsTable
+                  commissions={detail.commissions}
+                  checked={checkedCommissions}
+                  onToggle={(id) => setCheckedCommissions(toggle(checkedCommissions, id))}
+                />
+              </>
+            )}
+
+            {tab === 'journal' && (
+              <ul className="crm-suivre-feed">
+                {activity.length === 0 && <li className="crm-suivre-dim">{t('commercial.admin.noActivity')}</li>}
+                {activity.map((item) => (
+                  <li key={item._id}>
+                    <span>
+                      <strong>{item.leadId?.company ?? t('commercial.admin.deletedLead')}</strong> · {item.label}
+                    </span>
+                    <small>
+                      {formatDateTime(item.createdAt)}
+                      {item.actorId && ` · ${item.actorId.name}`}
+                    </small>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+      </CrmWithPanel>
     </div>
+  )
+}
+
+/** Listes d'appel du commercial, tirées de ses fiches : nombre de fiches et de fiches transmises au closer. */
+function CallLists({ leads }: { leads: ExternalRepLead[] }) {
+  const { t } = useI18n()
+  const lists = new Map<string, { leads: number; handedOff: number }>()
+  for (const lead of leads) {
+    const row = lists.get(lead.callList ?? '') ?? { leads: 0, handedOff: 0 }
+    row.leads += 1
+    if (lead.closingHandoff) row.handedOff += 1
+    lists.set(lead.callList ?? '', row)
+  }
+  // Les listes par nom, les fiches hors liste en dernier.
+  const rows = [...lists].sort(([a], [b]) => (a ? (b ? a.localeCompare(b) : -1) : 1))
+  return (
+    <section aria-labelledby="partners-lists">
+      <CrmSectionHead id="partners-lists" title={t('crmSuivre.partners.lists')} count={rows.length} compact level={3} />
+      {rows.length === 0 ? (
+        <p className="crm-suivre-dim">{t('crmSuivre.partners.noLists')}</p>
+      ) : (
+        <div className="crm-suivre-tablewrap">
+          <table className="crm-suivre-table">
+            <thead>
+              <tr>
+                <th>{t('crmSuivre.partners.listName')}</th>
+                <th className="is-num">{t('crmSuivre.partners.listLeads')}</th>
+                <th className="is-num">{t('crmSuivre.partners.listHandedOff')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(([name, row]) => (
+                <tr key={name || '-'}>
+                  <td>{name || <span className="crm-suivre-dim">{t('crmSuivre.partners.noList')}</span>}</td>
+                  <td className="is-num">{row.leads}</td>
+                  <td className="is-num">{row.handedOff}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   )
 }
 

@@ -61,8 +61,9 @@ const CrmBoard = ({
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
   const [searchParams, setSearchParams] = useSearchParams()
-  const { leadId: linkedLeadId } = useParams()
-  const requestedMode = searchParams.get('mode')
+  // `/suivre/pipeline/kanban` est l'adresse propre du Kanban ; `?mode=` reste lu et l'emporte.
+  const { leadId: linkedLeadId, '*': subPath } = useParams()
+  const requestedMode = searchParams.get('mode') ?? (subPath === 'kanban' ? 'kanban' : null)
   const [mobile, setMobile] = useState(window.innerWidth < 768)
   useEffect(() => {
     const resize = () => setMobile(window.innerWidth < 768)
@@ -200,6 +201,15 @@ const CrmBoard = ({
   }, [])
 
   const changeViewMode = (mode: string) => {
+    if (subPath === 'kanban') {
+      const params = new URLSearchParams(searchParams)
+      params.set('mode', mode)
+      navigate(
+        { pathname: location.pathname.replace(/\/kanban\/?$/, ''), search: `?${params}`, hash: location.hash },
+        { replace: true },
+      )
+      return
+    }
     setSearchParams(
       (params) => {
         params.set('mode', mode)
@@ -208,6 +218,15 @@ const CrmBoard = ({
       { replace: true },
     )
   }
+  // Colonnes du Kanban dépliées au-delà de leurs premières cartes : dans l'adresse, pour le retour depuis une fiche.
+  const openColumns = (searchParams.get('kanbanOpen') ?? '').split(',').filter(Boolean)
+  const toggleColumn = (status: string) =>
+    setParam(
+      'kanbanOpen',
+      (openColumns.includes(status) ? openColumns.filter((item) => item !== status) : [...openColumns, status]).join(
+        ',',
+      ),
+    )
 
   // Une action de la file verrouille sa ligne, puis recharge la file seule :
   // traiter dix relances ne doit pas déclencher dix rechargements du board.
@@ -275,6 +294,8 @@ const CrmBoard = ({
   const openDetail = (lead: Lead, options: { call?: boolean } = {}) => {
     const params = new URLSearchParams(searchParams)
     params.delete('appel')
+    // Ouvert depuis l'adresse `/kanban` : le retour, qui revient au pipeline, garde le Kanban.
+    if (viewMode === 'kanban') params.set('mode', 'kanban')
     params.set('scroll', String(Math.round(window.scrollY)))
     params.set('tableScroll', String(Math.round(boardRef.current?.querySelector('.rich-table-wrap')?.scrollTop || 0)))
     params.set('boardX', String(Math.round(boardRef.current?.querySelector('.crm-board')?.scrollLeft || 0)))
@@ -669,6 +690,8 @@ const CrmBoard = ({
                                   onDrop={handleDrop}
                                   onDragStart={handleDragStart}
                                   onOpenDetail={openDetail}
+                                  expanded={openColumns.includes(column.status)}
+                                  onToggleExpanded={() => toggleColumn(column.status)}
                                 />
                               ))}
                             </div>

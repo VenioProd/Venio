@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import type { AdminUser, Lead } from '../../../../types/crm.types'
 import { CRM_PRIORITIES, PRIORITY_MAP, PROJECT_MAP, STATUS_MAP, TEMPERATURE_MAP } from '../constants'
-import { HandoffChip, HeatChip, HoldChip, LateChip, OwnerCell, StatusChip } from './chips'
+import { AnalysisChip, HandoffChip, HeatChip, HoldChip, LateChip, OwnerCell, StatusChip, VoicemailChip } from './chips'
+import type { LeadSignals } from './api'
 import { CrmChip } from '../../../../components/admin/crm-ui'
 import { translate, type MessageKey, type MessageParams } from '../../../../i18n'
 import { formatDate, formatMoney } from '../../../../i18n/format'
@@ -12,6 +13,8 @@ export interface ColumnContext {
   t: Translate
   adminsById: Record<string, AdminUser>
   now: Date
+  /** Signaux d'appel des fiches affichées, lus après la liste. */
+  signals?: LeadSignals
 }
 
 export interface RichColumn {
@@ -69,11 +72,13 @@ export const RICH_COLUMNS: RichColumn[] = [
     group: 'identity',
     locked: true,
     sortValue: (l) => l.company.toLowerCase(),
-    render: (l) => (
+    render: (l, { signals }) => (
       <span className="rich-co">
         <b>{l.company}</b>
         <span>{l.contactName || l.contactEmail || '—'}</span>
         {l.closingHandoff && <HandoffChip />}
+        {signals?.analysisReady.has(l._id) && <AnalysisChip />}
+        {signals?.voicemail.has(l._id) && <VoicemailChip />}
       </span>
     ),
     csv: (l) => l.company,

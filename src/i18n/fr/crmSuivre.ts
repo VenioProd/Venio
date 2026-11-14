@@ -10,8 +10,6 @@ const crmSuivre = {
   'crmSuivre.stat.count': 'leads ouverts',
   'crmSuivre.stat.open': 'montant total',
   'crmSuivre.stat.weighted': 'pondéré',
-  'crmSuivre.stat.won': 'gagné',
-  'crmSuivre.stat.wonHint': '{count, plural, =0 {aucun deal} one {# deal} other {# deals}}',
   'crmSuivre.stat.idle': 'sans activité depuis 7 j',
   'crmSuivre.stat.late': 'relances en retard',
   'crmSuivre.stat.lateNone': 'tout est à jour',
@@ -37,6 +35,31 @@ const crmSuivre = {
   'crmSuivre.accounts.viewAria': 'Affichage des comptes',
   'crmSuivre.partners.team': 'Équipe externe',
   'crmSuivre.partners.detailAria': 'Détail du commercial',
+  'crmSuivre.stat.wonMonth': '{count, plural, one {# gagné} other {# gagnés}}',
+  'crmSuivre.stat.wonMonthHint': 'ce mois, {amount}, et {lost, plural, one {# perdu} other {# perdus}}',
+  'crmSuivre.view.mine': 'Mes fiches',
+  'crmSuivre.view.unassigned': 'Sans propriétaire',
+  'crmSuivre.chip.analysis': 'Analyse à valider',
+  'crmSuivre.chip.voicemail': 'Répondeur au dernier appel',
+  'crmSuivre.kanban.more': '+ {count, plural, one {# autre lead} other {# autres leads}}, {amount}',
+  'crmSuivre.kanban.less': 'Réduire la colonne',
+  'crmSuivre.callCheck.aria': 'Pays et heure locale du prospect',
+  'crmSuivre.callCheck.outsideTitle': 'Hors plage chez le prospect',
+  'crmSuivre.callCheck.outsideBody':
+    'Il est {time} chez le prospect ({country}), en dehors de la plage d’appel des réglages du CRM : l’appel sera refusé jusqu’à sa réouverture.',
+  'crmSuivre.partners.lists': 'Listes d’appel',
+  'crmSuivre.partners.listName': 'Liste',
+  'crmSuivre.partners.listLeads': 'Fiches',
+  'crmSuivre.partners.listHandedOff': 'Transmises au closer',
+  'crmSuivre.partners.noList': 'Fiches hors liste',
+  'crmSuivre.partners.noLists': 'Aucune fiche pour ce commercial.',
+  'crmSuivre.partners.asideAria': 'Règles des commerciaux externes',
+  'crmSuivre.partners.handoffTitle': 'Passage au closer',
+  'crmSuivre.partners.handoffBody':
+    'Le commercial externe transmet au closer une fiche en cours. Elle est assignée au closer désigné dans les réglages du CRM, ou, à défaut, reste sans responsable et les super-administrateurs sont prévenus. L’externe la garde en lecture seule et ne l’appelle plus ; l’équipe l’appelle et lit les appels qu’il y a passés.',
+  'crmSuivre.partners.commissionTitle': 'Commission',
+  'crmSuivre.partners.commissionBody':
+    '{rate} % du HT encaissé des clients nés de la conversion de ses fiches. Un remboursement reprend la commission au même taux. Les commissions dues sont marquées versées depuis l’onglet Commissions.',
 }
 
 export default crmSuivre

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { AlertTriangle, Handshake, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, Handshake, ShieldAlert, Sparkles, Voicemail } from 'lucide-react'
 import { CrmChip, type CrmTone } from '../../../../components/admin/crm-ui'
 import { useI18n } from '../../../../context/I18nContext'
 import type { Lead } from '../../../../types/crm.types'
@@ -66,6 +66,26 @@ export function HandoffChip() {
   return (
     <CrmChip tone="blue" icon={<Handshake size={13} />}>
       {t('crmSuivre.chip.handoff')}
+    </CrmChip>
+  )
+}
+
+/** Analyse d'appel prête, que l'utilisateur peut valider. */
+export function AnalysisChip() {
+  const { t } = useI18n()
+  return (
+    <CrmChip tone="amber" icon={<Sparkles size={13} />}>
+      {t('crmSuivre.chip.analysis')}
+    </CrmChip>
+  )
+}
+
+/** Dernier résultat d'appel : le répondeur. */
+export function VoicemailChip() {
+  const { t } = useI18n()
+  return (
+    <CrmChip tone="red" icon={<Voicemail size={13} />}>
+      {t('crmSuivre.chip.voicemail')}
     </CrmChip>
   )
 }

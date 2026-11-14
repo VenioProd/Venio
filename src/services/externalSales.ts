@@ -257,6 +257,8 @@ export interface ExternalRepLead {
   company: string
   contactName: string
   status: RepLeadStatus
+  /** Liste d'appel d'où vient la fiche ; vide pour une fiche saisie à la main. */
+  callList?: string
   closingHandoff: { at: string } | null
   assignedTo: { _id: string; name: string } | null
   updatedAt: string

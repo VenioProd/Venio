@@ -1,5 +1,5 @@
 import type { MessageKey } from '../../../i18n'
-import { CRM_PATHS, type CrmTabId } from '../../../lib/crmNavigation'
+import { CRM_KANBAN_PATH, CRM_PATHS, type CrmTabId } from '../../../lib/crmNavigation'
 import { settingsSectionPath } from '../crm-settings/sections'
 
 /**
@@ -45,7 +45,7 @@ export const PLAN_ROWS: readonly PlanRow[] = [
     link('queue.filer', CRM_PATHS.filer, 'filer'),
   ]),
   row('table', [link('table', `${CRM_PATHS.pipeline}?mode=liste`, 'pipeline')]),
-  row('kanban', [link('kanban', `${CRM_PATHS.pipeline}?mode=kanban`, 'pipeline')]),
+  row('kanban', [link('kanban', CRM_KANBAN_PATH, 'pipeline')]),
   row('lead', [link('lead', CRM_PATHS.pipeline, 'pipeline')]),
   row('desk', [link('desk', CRM_PATHS.poste, 'poste')]),
   row('analysis', [

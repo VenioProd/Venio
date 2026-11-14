@@ -31,6 +31,9 @@ export const CRM_PATHS = {
   lead: (leadId: string) => `/admin/crm/leads/${leadId}`,
 }
 
+/** Adresse propre du Kanban (sous-chemin du pipeline) ; `?mode=kanban` reste lu. */
+export const CRM_KANBAN_PATH = `${CRM_PATHS.pipeline}/kanban`
+
 /**
  * Anciennes adresses du CRM → nouvel écran. La requête et l'ancre sont
  * conservées par `LegacyAdminRedirect` ; une requête par défaut (`?section=`)

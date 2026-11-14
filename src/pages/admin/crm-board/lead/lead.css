@@ -235,6 +235,29 @@
   border-radius: var(--r-lg);
 }
 
+/* Pays, heure locale et blocage d'appel du prospect (même rendu que la file du poste d'appel). */
+.crm-lead-callcheck {
+  min-width: 0;
+}
+.crm-lead-callcheck .crm-desk-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.crm-lead-callcheck .crm-desk-cc {
+  padding: 1px 5px;
+  color: var(--text-secondary);
+  font: 11px var(--font-mono);
+  background: var(--surface-raised);
+  border-radius: var(--r-sm);
+}
+.crm-lead-callcheck .crm-desk-localtime {
+  color: var(--text-secondary);
+  font: 11.5px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Onglets et panneaux ──────────────────────────────────────────── */
 .crm-lead-tabs {
   display: flex;

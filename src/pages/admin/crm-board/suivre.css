@@ -163,6 +163,9 @@
   gap: 8px;
 }
 .crm-suivre-pill {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
   padding: 5px 13px;
   color: var(--text-secondary);
   font: inherit;
@@ -182,6 +185,11 @@
   color: var(--primary-fg);
   background: var(--primary);
   border-color: var(--primary);
+}
+.crm-suivre-pill__n {
+  font: 11.5px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
 }
 .crm-suivre-pill--dashed {
   color: var(--text-muted);
@@ -280,6 +288,27 @@
 .crm-column-sub span:last-child {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+.crm-column-more {
+  display: block;
+  width: 100%;
+  padding: 9px;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11.5px;
+  text-align: center;
+  cursor: pointer;
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--r-md);
+}
+.crm-column-more:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+.crm-column-more:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
 }
 .pipeline-page .crm-card {
   padding: 12px;
@@ -393,6 +422,12 @@
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+}
+.crm-suivre-panel-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
 }
 .crm-suivre-note {
   margin: 10px 0 0;
