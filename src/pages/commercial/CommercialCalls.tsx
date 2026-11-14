@@ -189,7 +189,11 @@ export function CallDesk({ desk }: { desk: CallDeskApi }) {
     storeDraft(lead._id, draft)
   }
   // Après l'appel : le résultat se présélectionne d'après l'état final, et le callId part avec la fiche.
-  const softphone = useSoftphone({ onSettled: (call) => settleCall(call), apiPrefix: desk.apiPrefix })
+  const softphone = useSoftphone({
+    onSettled: (call) => settleCall(call),
+    apiPrefix: desk.apiPrefix,
+    lead: (id) => leads.find((item) => item._id === id),
+  })
   const openLead = leads.find((item) => item._id === selected) ?? null
   const pendingOutcome = Boolean(openLead && draftFor(openLead).callId)
   const dialer = useDialer({

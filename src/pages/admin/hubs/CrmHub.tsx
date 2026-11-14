@@ -23,6 +23,7 @@ import { CrmTitleSlot } from '../../../components/admin/crm-ui/crmTitleSlot'
 import '../../../components/admin/ui/AdminHub.css'
 import '../crm-board/crm.css'
 import { fetchRuns } from '../crm-board/automations/api'
+import CrmCallProvider from '../crm-board/call-dock/CrmCallProvider'
 
 const CrmBoard = lazy(() => import('../CrmBoard'))
 const ClientAccountList = lazy(() => import('../ClientAccountList'))
@@ -49,7 +50,16 @@ const QUEUE_GROUPS: Partial<Record<CrmTabId, WorklistGroupKey[]>> = {
   filer: ['drifting'],
 }
 
+/** Le softphone de l'équipe enveloppe toute la coque : un appel survit au changement d'écran du CRM. */
 export default function CrmHub() {
+  return (
+    <CrmCallProvider>
+      <CrmHubScreen />
+    </CrmCallProvider>
+  )
+}
+
+function CrmHubScreen() {
   const { user, loading } = useAuth()
   const { t } = useI18n()
   const location = useLocation()

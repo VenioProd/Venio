@@ -1,0 +1,92 @@
+/* Dock d'appel du CRM : portalisé dans body, posé contre le menu latéral, au-dessus de la barre mobile. */
+.crm-call-dock {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 248px;
+  z-index: var(--z-topbar);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  min-height: 60px;
+  padding: 10px 32px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--line-strong);
+  box-shadow: var(--overlay-shadow);
+}
+body:has(.admin-shell[data-collapsed='true']) .crm-call-dock {
+  left: 64px;
+}
+.crm-call-dock__what {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.crm-call-dock__what strong {
+  font-size: 13px;
+}
+.crm-call-dock__sub {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.crm-call-dock__sub b {
+  overflow: hidden;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+}
+.crm-call-dock__timer {
+  font: 600 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.crm-call-dock__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.crm-call-dock .crm-ui-btn[aria-pressed='true'] {
+  color: var(--primary-light);
+  background: var(--accent-medium);
+  border-color: var(--accent-border);
+}
+
+/* Le contenu de la page ne passe pas sous le dock. */
+body:has(.crm-call-dock) .admin-shell-main {
+  padding-bottom: 120px;
+}
+
+@media (max-width: 1023px) {
+  .crm-call-dock,
+  body:has(.admin-shell[data-collapsed='true']) .crm-call-dock {
+    left: 64px;
+    padding: 10px 24px;
+  }
+}
+@media (max-width: 767px) {
+  .crm-call-dock,
+  body:has(.admin-shell[data-collapsed='true']) .crm-call-dock {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    padding: 8px 16px;
+  }
+  body:has(.crm-call-dock) .admin-shell-main {
+    padding-bottom: calc(200px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (max-width: 720px) {
+  .crm-call-dock .crm-call-dock__label {
+    display: none;
+  }
+  .crm-call-dock__actions .crm-ui-btn {
+    min-height: 40px;
+  }
+}
