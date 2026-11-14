@@ -1,0 +1,206 @@
+/*
+ * Prévisions et objectifs, moment « Piloter » du CRM (refonte « Journée », lot 4).
+ * Classes préfixées `crm-pilot-` ; s'appuie sur les cartes de `crm-ui` et sur
+ * PilotageSection.css pour les tableaux et les barres. Jetons du portail seulement.
+ */
+.crm-pilot-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.crm-pilot-screen > * {
+  min-width: 0;
+}
+
+/* Barre d'outils d'un bloc : titre à gauche, entité et période en gélules à droite. */
+.crm-pilot-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+.crm-pilot-toolbar__text {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.crm-pilot-toolbar__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.crm-pilot-screen .pilotage-subtext {
+  max-width: 64ch;
+  font-size: 13px;
+}
+
+/* Gélules : une seule période à la fois (aria-pressed). */
+.crm-pilot-screen .pilotage-periods {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.crm-pilot-screen .pilotage-periods button {
+  min-height: 32px;
+  padding: 5px 13px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+.crm-pilot-screen .pilotage-periods button:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+  border-color: var(--border-color);
+}
+.crm-pilot-screen .pilotage-periods button[aria-pressed='true'] {
+  color: var(--primary-fg);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.crm-pilot-screen .pilotage-periods button:focus-visible,
+.crm-pilot-screen .pilotage-entity select:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.crm-pilot-screen .pilotage-entity select {
+  min-height: 32px;
+  padding: 4px 9px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+}
+
+/* Tuiles de chiffres. */
+.crm-pilot-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  background: var(--border-color);
+  border-radius: var(--r-lg);
+}
+.crm-pilot-tiles > div {
+  min-width: 0;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+}
+.crm-pilot-tiles b {
+  display: block;
+  overflow: hidden;
+  font: 500 22px/1.1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  text-overflow: ellipsis;
+}
+.crm-pilot-tiles span {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Graphique et panneau d'objectifs côte à côte, puis empilés sous 1100 px. */
+.crm-pilot-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+  gap: 16px;
+}
+.crm-pilot-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.crm-pilot-chart {
+  min-width: 0;
+}
+.crm-pilot-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.crm-pilot-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Barre gagné + pondéré. */
+.crm-pilot-mix {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  margin: 4px 0 8px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  border-radius: var(--r-pill);
+}
+.crm-pilot-mix > i {
+  display: block;
+  min-width: 2px;
+}
+.crm-pilot-mix > i[data-tone='green'] {
+  background: var(--good);
+}
+.crm-pilot-mix > i[data-tone='blue'] {
+  background: var(--primary);
+}
+
+/* Cartes : l'entonnoir, la vitesse, les pertes et les tableaux sont dans des cartes `crm-ui-card`. */
+.crm-pilot-screen .pilotage-block {
+  padding: 16px;
+  /* Les tableaux du bloc défilent dans leur carte plutôt que d'être rognés sur mobile. */
+  overflow-x: auto;
+}
+.crm-pilot-screen .pilotage-subtitle {
+  margin: 0 0 12px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.crm-pilot-screen .pilotage-grid {
+  gap: 16px;
+}
+.crm-pilot-screen .crm-ui-card--flush .pilotage-table th,
+.crm-pilot-screen .crm-ui-card--flush .pilotage-table td {
+  padding-inline: 18px;
+}
+.crm-pilot-card-note {
+  margin: 0;
+  padding: 8px 18px 14px;
+}
+.crm-pilot-screen .forecast-goals {
+  margin-top: 0;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-lg);
+}
+.crm-pilot-screen .forecast-bars {
+  margin-top: 0;
+}
+
+@media (max-width: 1100px) {
+  .crm-pilot-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .crm-pilot-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .crm-pilot-tiles b {
+    font-size: 18px;
+  }
+  .crm-pilot-toolbar {
+    align-items: stretch;
+  }
+}

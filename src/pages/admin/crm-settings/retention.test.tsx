@@ -23,9 +23,9 @@ const patches = () =>
     .filter(([, opts]) => (opts as RequestInit | undefined)?.method === 'PATCH')
     .map(([, opts]) => JSON.parse(String((opts as RequestInit).body)))
 
-const renderPage = () =>
+const renderPage = (section = 'conservation') =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/admin/crm/piloter/reglages/${section}`]}>
       <CrmSettings />
     </MemoryRouter>,
   )

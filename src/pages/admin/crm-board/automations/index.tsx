@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import CrmSequences from '../sequences'
 import { useAuth } from '../../../../context/AuthContext'
 import { useI18n } from '../../../../context/I18nContext'
 import { canAdministerCrm } from '../../../../lib/crmAccess'
+import { CrmPageHead, CrmSubtabs } from '../../../../components/admin/crm-ui'
 import type { MessageKey } from '../../../../i18n'
 import Dialog from './Dialog'
 import RuleBuilder from './RuleBuilder'
@@ -11,18 +12,17 @@ import RulesPanel from './RulesPanel'
 import RunsJournal, { type JournalFilter } from './RunsJournal'
 import TemplatesGrid from './TemplatesGrid'
 import { createRule, deleteRule, fetchRules, fetchRuns, setRuleStatus } from './api'
-import { handleTabKeys } from './tabKeys'
 import { draftFromRule, emptyDraft, type CrmRule, type CrmRuleRun, type RuleDraft } from './types'
 import './automations.css'
 
 type Section = 'regles' | 'sequences' | 'journal' | 'modeles'
+/** Ordre de la maquette : les règles, leurs modèles, les séquences, puis la trace de ce qui s'est exécuté. */
 const SECTIONS: Array<{ key: Section; labelKey: MessageKey }> = [
-  { key: 'regles', labelKey: 'crmAuto.tab.rules' },
-  { key: 'sequences', labelKey: 'crmSeq.section' },
-  { key: 'journal', labelKey: 'crmAuto.tab.journal' },
-  { key: 'modeles', labelKey: 'crmAuto.tab.templates' },
+  { key: 'regles', labelKey: 'crmPilot.auto.section.regles' },
+  { key: 'modeles', labelKey: 'crmPilot.auto.section.modeles' },
+  { key: 'sequences', labelKey: 'crmPilot.auto.section.sequences' },
+  { key: 'journal', labelKey: 'crmPilot.auto.section.journal' },
 ]
-const tabId = (i: number) => `crm-auto-tab-${SECTIONS[i].key}`
 
 interface BuilderState {
   rule: CrmRule | null
@@ -43,6 +43,7 @@ export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (c
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [params, setParams] = useSearchParams()
+  const location = useLocation()
   const section = SECTIONS.find((item) => item.key === params.get('section'))?.key ?? 'regles'
   const setSection = (value: Section) =>
     setParams(
@@ -52,6 +53,12 @@ export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (c
       },
       { replace: true },
     )
+  // Chaque section est un lien (`?section=`) qui garde les autres paramètres de l'adresse.
+  const sectionLink = (value: Section) => {
+    const next = new URLSearchParams(params)
+    next.set('section', value)
+    return `${location.pathname}?${next.toString()}`
+  }
   const [filter, setFilter] = useState<JournalFilter>('all')
   const [version, setVersion] = useState(0)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -187,6 +194,22 @@ export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (c
 
   return (
     <div className="crm-auto">
+      <CrmPageHead
+        title={t('crmPilot.auto.title')}
+        lede={t('crmPilot.auto.lede')}
+        actions={
+          <button
+            type="button"
+            id="crm-auto-new"
+            className="crm-ui-btn crm-ui-btn--primary"
+            disabled={!canAdminister}
+            title={canAdminister ? undefined : t('crmAuto.adminOnly')}
+            onClick={() => setBuilder({ rule: null, draft: emptyDraft() })}
+          >
+            {t('crmAuto.newRule')}
+          </button>
+        }
+      />
       <p className="crm-auto-sr" role="status" aria-live="polite">
         {message}
       </p>
@@ -239,37 +262,18 @@ export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (c
         </div>
       )}
 
-      <div className="crm-auto-top">
-        <div className="crm-auto-sub" role="tablist" aria-label={t('crmAuto.section')}>
-          {SECTIONS.map((s, i) => (
-            <button
-              key={s.key}
-              id={tabId(i)}
-              type="button"
-              role="tab"
-              aria-selected={section === s.key}
-              aria-controls={`crm-auto-panel-${s.key}`}
-              tabIndex={section === s.key ? 0 : -1}
-              onClick={() => setSection(s.key)}
-              onKeyDown={(e) => handleTabKeys(e, i, SECTIONS.length, (n) => setSection(SECTIONS[n].key), tabId)}
-            >
-              {t(s.labelKey)}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          id="crm-auto-new"
-          className="portal-button crm-auto-btn crm-auto-btn--primary crm-auto-btn--sm"
-          disabled={!canAdminister}
-          title={canAdminister ? undefined : t('crmAuto.adminOnly')}
-          onClick={() => setBuilder({ rule: null, draft: emptyDraft() })}
-        >
-          {t('crmAuto.newRule')}
-        </button>
-      </div>
+      <CrmSubtabs
+        label={t('crmPilot.auto.sectionsAria')}
+        tabs={SECTIONS.map((item) => ({
+          id: item.key,
+          label: t(item.labelKey),
+          to: sectionLink(item.key),
+          count: item.key === 'regles' && !loading ? rules.length : undefined,
+          current: section === item.key,
+        }))}
+      />
 
-      <div role="tabpanel" id="crm-auto-panel-regles" aria-labelledby={tabId(0)} hidden={section !== 'regles'}>
+      <div id="crm-auto-panel-regles" hidden={section !== 'regles'}>
         {section === 'regles' &&
           (loading ? (
             <p className="crm-auto-empty crm-auto-glass" role="status">
@@ -292,10 +296,10 @@ export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (c
             />
           ))}
       </div>
-      <div role="tabpanel" id="crm-auto-panel-sequences" aria-labelledby={tabId(1)} hidden={section !== 'sequences'}>
+      <div id="crm-auto-panel-sequences" hidden={section !== 'sequences'}>
         {section === 'sequences' && <CrmSequences />}
       </div>
-      <div role="tabpanel" id="crm-auto-panel-journal" aria-labelledby={tabId(2)} hidden={section !== 'journal'}>
+      <div id="crm-auto-panel-journal" hidden={section !== 'journal'}>
         {section === 'journal' && (
           <RunsJournal
             canAdminister={canAdminister}
@@ -310,7 +314,7 @@ export default function CrmAutomations({ onPendingCount }: { onPendingCount?: (c
           />
         )}
       </div>
-      <div role="tabpanel" id="crm-auto-panel-modeles" aria-labelledby={tabId(3)} hidden={section !== 'modeles'}>
+      <div id="crm-auto-panel-modeles" hidden={section !== 'modeles'}>
         {section === 'modeles' && <TemplatesGrid canAdminister={canAdminister} onUse={applyTemplate} />}
       </div>
       {recentTotal > 0 && section === 'regles' && (

@@ -1,7 +1,7 @@
-import PageHeader from '../../../components/admin/ui/PageHeader'
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { Link } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { CrmPageHead } from '../../../components/admin/crm-ui'
 import { apiFetch } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useI18n } from '../../../context/I18nContext'
@@ -27,11 +27,18 @@ import TranscriptionSection from './TranscriptionSection'
 import AnalysisSection from './AnalysisSection'
 import ScriptReportSection from './ScriptReportSection'
 import type { Providers } from './callAiModel'
+import SettingsNav from './SettingsNav'
+import { settingsSectionOf, type SettingsSectionId } from './sections'
 import '../../espace-client/ClientPortal.css'
 import '../AdminPortal.css'
+import './crmSettingsNav.css'
+
+/** Sections qui reprennent l'introduction commune des réglages d'appel et d'IA. */
+const AI_INTRO_SECTIONS: readonly SettingsSectionId[] = ['telephonie', 'enregistrement', 'transcription', 'analyse']
 
 export default function CrmSettings() {
   const { user } = useAuth()
+  const location = useLocation()
   const { t } = useI18n()
   const canManage = canAdministerCrm(user)
 
@@ -158,29 +165,30 @@ export default function CrmSettings() {
   const sectionProps = { settings, canManage, updateSetting }
   const callAiProps = { settings, providers, canManage, saveBlock }
 
+  const views: Record<SettingsSectionId, ReactNode> = {
+    statuts: <StatusSection {...sectionProps} />,
+    qualification: <QualificationSection {...sectionProps} />,
+    score: <ScoringSection {...sectionProps} updateNestedSetting={updateNestedSetting} />,
+    assignation: <AssignmentSection {...sectionProps} admins={admins} />,
+    doublons: <DuplicatesSection {...sectionProps} />,
+    alertes: <AlertsSection {...sectionProps} />,
+    escalade: <EscalationSection {...sectionProps} admins={admins} />,
+    notifications: <NotificationsSection {...sectionProps} />,
+    rapports: <ReportsSection {...sectionProps} handleRecipientsChange={handleRecipientsChange} />,
+    appels: <CallsSection {...sectionProps} updateSettings={updateSettings} />,
+    telephonie: <TelephonySection {...callAiProps} />,
+    enregistrement: <RecordingSection {...callAiProps} />,
+    transcription: <TranscriptionSection {...callAiProps} />,
+    analyse: <AnalysisSection {...callAiProps} />,
+    scripts: <ScriptReportSection {...callAiProps} />,
+    conservation: <RetentionSection {...sectionProps} />,
+    opposes: <SuppressionSection canManage={canManage} />,
+  }
+  const section = settingsSectionOf(location.pathname)
+
   return (
     <div className="portal-container crm-page-container pilotage-page crm-settings-page">
-      <PageHeader
-        eyebrow={t('adminOps.pilotage.zone.commercial')}
-        title={t('crm.settings.title')}
-        actions={
-          <Link to="/admin/crm/suivre/pipeline" className="portal-button secondary">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            {t('crm.settings.backToCrm')}
-          </Link>
-        }
-      />
+      <CrmPageHead title={t('crm.settings.title')} lede={t('crmPilot.set.lede')} />
 
       {message &&
         createPortal(
@@ -196,54 +204,12 @@ export default function CrmSettings() {
         </div>
       )}
 
-      <nav className="crm-settings-summary" aria-label={t('crm.settings.summary')}>
-        {(['qualification', 'followup', 'callsAi', 'calls', 'compliance', 'reports'] as const).map((group) => (
-          <a key={group} href={`#crm-settings-${group}`}>
-            {t(`crm.settings.group.${group}`)}
-          </a>
-        ))}
-      </nav>
-      <div className="crm-settings-grid">
-        <section id="crm-settings-qualification" className="crm-settings-group">
-          <h2>{t('crm.settings.group.qualification')}</h2>
-          <AssignmentSection {...sectionProps} admins={admins} />
-          <QualificationSection {...sectionProps} />
-          <StatusSection {...sectionProps} />
-          <ScoringSection {...sectionProps} updateNestedSetting={updateNestedSetting} />
-          <DuplicatesSection {...sectionProps} />
-        </section>
-        <section id="crm-settings-followup" className="crm-settings-group">
-          <h2>{t('crm.settings.group.followup')}</h2>
-          <NotificationsSection {...sectionProps} />
-          <AlertsSection {...sectionProps} />
-          <EscalationSection {...sectionProps} admins={admins} />
-        </section>
-        <section id="crm-settings-callsAi" className="crm-settings-group">
-          <h2>{t('crm.settings.group.callsAi')}</h2>
-          <p className="crm-ai-intro">{t('crmCallAi.intro')}</p>
-          <div className="crm-ai-columns">
-            <TelephonySection {...callAiProps} />
-            <div className="crm-ai-stack">
-              <RecordingSection {...callAiProps} />
-              <TranscriptionSection {...callAiProps} />
-            </div>
-          </div>
-          <AnalysisSection {...callAiProps} />
-        </section>
-        <section id="crm-settings-calls" className="crm-settings-group">
-          <h2>{t('crm.settings.group.calls')}</h2>
-          <CallsSection {...sectionProps} updateSettings={updateSettings} />
-        </section>
-        <section id="crm-settings-compliance" className="crm-settings-group">
-          <h2>{t('crm.settings.group.compliance')}</h2>
-          <RetentionSection {...sectionProps} />
-          <SuppressionSection canManage={canManage} />
-        </section>
-        <section id="crm-settings-reports" className="crm-settings-group">
-          <h2>{t('crm.settings.group.reports')}</h2>
-          <ReportsSection {...sectionProps} handleRecipientsChange={handleRecipientsChange} />
-          <ScriptReportSection {...callAiProps} />
-        </section>
+      <div className="crm-set-layout">
+        <SettingsNav current={section} />
+        <div className="crm-set-body" id="crm-set-body">
+          {AI_INTRO_SECTIONS.includes(section) && <p className="crm-ai-intro crm-set-intro">{t('crmCallAi.intro')}</p>}
+          {views[section]}
+        </div>
       </div>
 
       {saving &&

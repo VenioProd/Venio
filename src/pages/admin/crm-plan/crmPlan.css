@@ -1,0 +1,35 @@
+/*
+ * « Où est quoi ? » (refonte « Journée », lot 4). Complète `crm-ui-plan-*` du lot 0.
+ * Classes préfixées `crm-plan-`. Jetons du portail seulement.
+ */
+.crm-plan {
+  min-width: 0;
+}
+.crm-plan-detail {
+  display: block;
+  max-width: 62ch;
+  margin-top: 3px;
+  color: var(--text-secondary);
+}
+.crm-plan-moment-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  color: var(--primary-light);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--accent-surface);
+  border-radius: var(--r-pill);
+}
+.crm-plan-external {
+  margin-top: 16px;
+}
+.crm-plan-external p {
+  max-width: 80ch;
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+}
+.crm-ui-plan-table td:nth-child(2) {
+  line-height: 1.9;
+}
