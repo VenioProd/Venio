@@ -3,6 +3,7 @@ import auth from '../../middleware/auth.js'
 import { requireAdmin } from '../../middleware/role.js'
 import { teamCallScope } from '../../lib/callDeskScope.js'
 import { createCallDeskRoutes } from '../commercial/callDesk.js'
+import { createCallScriptRoutes } from '../commercial/callScripts.js'
 import { createCallsRoutes } from '../commercial/calls.js'
 import { createCallTranscriptRoutes } from '../commercial/callTranscripts.js'
 import { createCallAnalysisRoutes } from '../commercial/callAnalysis.js'
@@ -24,6 +25,7 @@ const router = express.Router()
 router.use(auth)
 router.use(requireAdmin)
 router.use(createCallDeskRoutes(teamCallScope))
+router.use(createCallScriptRoutes(teamCallScope))
 router.use(createCallsRoutes(teamCallScope))
 router.use(createCallTranscriptRoutes(teamCallScope))
 router.use(createCallAnalysisRoutes(teamCallScope))

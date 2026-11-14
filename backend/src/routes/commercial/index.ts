@@ -23,6 +23,8 @@ import {
   repLeadFilter,
 } from '../../lib/externalSales.js'
 import callDeskRoutes from './callDesk.js'
+import { createCallScriptRoutes } from './callScripts.js'
+import { repCallScope } from '../../lib/callDeskScope.js'
 import callsRoutes from './calls.js'
 import callTranscriptRoutes from './callTranscripts.js'
 import callAnalysisRoutes from './callAnalysis.js'
@@ -45,6 +47,7 @@ const router = express.Router()
 router.use(auth)
 router.use(requireRole(EXTERNAL_SALES_ROLE))
 router.use(callDeskRoutes)
+router.use(createCallScriptRoutes(repCallScope))
 router.use(callsRoutes)
 router.use(callTranscriptRoutes)
 router.use(callAnalysisRoutes)
