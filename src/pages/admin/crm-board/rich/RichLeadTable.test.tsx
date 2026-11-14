@@ -101,10 +101,10 @@ describe('<RichLeadTable />', () => {
     expect(screen.getByText('Retenue pour opposition à décider')).toBeInTheDocument()
     expect(screen.getByText('Transmise au closer')).toBeInTheDocument()
     const pills = screen.getByRole('group', { name: 'Vues enregistrées' })
-    expect(within(pills).getByRole('button', { name: 'Tous les leads' })).toHaveAttribute('aria-pressed', 'true')
-    fireEvent.click(within(pills).getByRole('button', { name: 'Relances en retard' }))
-    expect(within(pills).getByRole('button', { name: 'Relances en retard' })).toHaveAttribute('aria-pressed', 'true')
-    expect(within(pills).getByRole('button', { name: 'Tous les leads' })).toHaveAttribute('aria-pressed', 'false')
+    expect(within(pills).getByRole('button', { name: /^Tous les leads/ })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(within(pills).getByRole('button', { name: /^Relances en retard/ }))
+    expect(within(pills).getByRole('button', { name: /^Relances en retard/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(pills).getByRole('button', { name: /^Tous les leads/ })).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('ajoute une colonne depuis le panneau et mémorise le choix', () => {
@@ -149,7 +149,7 @@ describe('<RichLeadTable />', () => {
     expect(params.get('mode')).toBe('liste')
     expect(params.get('project')).toBe('ARROW')
     fireEvent.click(
-      within(screen.getByRole('group', { name: 'Vues enregistrées' })).getByRole('button', { name: 'Leads chauds' }),
+      within(screen.getByRole('group', { name: 'Vues enregistrées' })).getByRole('button', { name: /^Leads chauds/ }),
     )
     const hot = new URLSearchParams(screen.getByTestId('url').textContent!)
     expect(hot.get('q')).toBeNull()

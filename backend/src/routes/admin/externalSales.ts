@@ -91,7 +91,7 @@ router.get('/reps/:id', async (req: Request, res: Response, next: NextFunction) 
     if (!rep) return res.status(404).json({ error: 'Commercial introuvable' })
     const [leads, commissions, totals] = await Promise.all([
       Lead.find({ externalRep: rep._id })
-        .select('company contactName status closingHandoff assignedTo clientAccountId updatedAt createdAt')
+        .select('company contactName status callList closingHandoff assignedTo clientAccountId updatedAt createdAt')
         .populate('assignedTo', 'name')
         .sort({ updatedAt: -1 })
         .lean(),

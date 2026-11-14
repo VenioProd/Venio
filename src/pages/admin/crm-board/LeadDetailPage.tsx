@@ -22,6 +22,8 @@ import LeadPrivacyPanel from './LeadPrivacyPanel'
 import LeadSequencesPanel from './sequences/LeadSequencesPanel'
 import LeadFichePanel from './lead/LeadFichePanel'
 import LeadMoreMenu, { type LeadMenuItem } from './lead/LeadMoreMenu'
+import { LeadCallCheckRow, LeadOutsideHoursBanner } from './lead/LeadCallCheck'
+import { useLeadCallCheck } from './lead/useLeadCallCheck'
 import { formatDateTime } from '../../../i18n/format'
 import { fromDateTimeLocal, toDateTimeLocal } from '../../../lib/formatUtils'
 import type { Lead, AdminUser } from '../../../types/crm.types'
@@ -254,6 +256,7 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
   const externalHeld = Boolean(lead.externalRep && !lead.closingHandoff)
   const callable = canManageCrm && Boolean(lead.contactPhone)
   const toValidate = leadCalls.calls.some((call) => call.analysisStatus === 'READY')
+  const callCheck = useLeadCallCheck(lead._id, lead.contactPhone)
 
   return (
     <section className="crm-lead" aria-labelledby="crm-detail-title">
@@ -340,6 +343,7 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
             {t(externalHeld ? 'callHold.body' : 'commercial.hold.bodyTeam')}
           </CrmBanner>
         )}
+        <LeadOutsideHoursBanner check={callCheck} />
         {lead.closingHandoff && (
           <CrmBanner tone="blue" icon={<Handshake />} title={t('crmLead.handoff.title')}>
             {t('crmLead.handoff.body', { date: formatDateTime(lead.closingHandoff.at) })}
@@ -418,6 +422,7 @@ const LeadDetailPage: React.FC<LeadDetailPageProps> = ({
         ) : null}
       </section>
 
+      <LeadCallCheckRow check={callCheck} />
       {callable && (
         <div ref={callRef} className="crm-lead-call">
           <LeadCallBar lead={lead} focusOnReady={focusCall} onSettled={() => setCallsRefresh((value) => value + 1)} />

@@ -47,10 +47,12 @@ import {
   bulkLeads,
   createView,
   deleteView,
+  fetchLeadSignals,
   listViews,
   updateView,
   type BulkAction,
   type CrmView,
+  type LeadSignals,
   type RichFilters,
 } from './api'
 import './rich.css'
@@ -83,12 +85,28 @@ interface Sort {
 
 const COLUMNS_STORAGE = 'venio.crm.columns.v1'
 
-const BUILTIN_VIEWS: Array<{ id: string; nameKey: MessageKey; filters: RichFilters }> = [
-  { id: 'all', nameKey: 'crmRich.view.all', filters: {} },
-  { id: 'hot', nameKey: 'crmRich.view.hot', filters: { temperature: 'HOT' } },
-  { id: 'late', nameKey: 'crmRich.view.late', filters: { late: true } },
-  { id: 'big', nameKey: 'crmRich.view.big', filters: { big: true } },
-]
+type BuiltinView = { id: string; nameKey: MessageKey; filters: RichFilters }
+
+/** Vues rapides ; « Mes fiches » seulement quand l'utilisateur est connu. */
+function builtinViewsFor(currentUserId?: string): BuiltinView[] {
+  return [
+    { id: 'all', nameKey: 'crmRich.view.all', filters: {} },
+    ...(currentUserId
+      ? [{ id: 'mine', nameKey: 'crmSuivre.view.mine' as MessageKey, filters: { owner: currentUserId } }]
+      : []),
+    { id: 'hot', nameKey: 'crmRich.view.hot', filters: { temperature: 'HOT' } },
+    { id: 'late', nameKey: 'crmRich.view.late', filters: { late: true } },
+    { id: 'big', nameKey: 'crmRich.view.big', filters: { big: true } },
+    { id: 'unassigned', nameKey: 'crmSuivre.view.unassigned', filters: { owner: 'none' } },
+  ]
+}
+
+const PARIS_MONTH = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit' })
+/** Passée à ce statut dans le mois de Paris en cours (`statusChangedAt`, comme les prévisions du serveur). */
+const closedThisMonth = (lead: Lead, status: 'WON' | 'LOST', now: Date) =>
+  lead.status === status &&
+  Boolean(lead.statusChangedAt) &&
+  PARIS_MONTH.format(new Date(lead.statusChangedAt!)) === PARIS_MONTH.format(now)
 
 function loadStoredColumns(): string[] {
   try {
@@ -145,7 +163,12 @@ export default function RichLeadTable({
 }: Props) {
   const { t } = useI18n()
   const now = useMemo(() => new Date(), [leads])
-  const ctx: ColumnContext = useMemo(() => ({ t: t as ColumnContext['t'], adminsById, now }), [t, adminsById, now])
+  const builtinViews = useMemo(() => builtinViewsFor(currentUserId), [currentUserId])
+  const [signals, setSignals] = useState<LeadSignals | undefined>()
+  const ctx: ColumnContext = useMemo(
+    () => ({ t: t as ColumnContext['t'], adminsById, now, signals }),
+    [t, adminsById, now, signals],
+  )
 
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = useMemo(() => {
@@ -378,6 +401,22 @@ export default function RichLeadTable({
     return () => cancelAnimationFrame(frame)
   }, [archiveLoading, rows.length])
 
+  // Signaux d'appel des seules lignes affichées du tableau, relus quand elles changent.
+  const pageRows = renderBoard ? [] : rows.length > 200 ? rows.slice(0, rowLimit) : rows
+  const pageIds = pageRows.map((lead) => lead._id).join(',')
+  useEffect(() => {
+    if (!pageIds) return
+    let active = true
+    fetchLeadSignals(pageIds.split(','))
+      .then((next) => {
+        if (active) setSignals(next)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [pageIds])
+
   const mobileKeys = ['company', 'status', 'nextAction', 'assignedTo']
   const shown = columns.map((k) => COLUMN_MAP[k]).filter(Boolean)
   const mobileShown = [...shown, ...mobileKeys.filter((key) => !columns.includes(key)).map((key) => COLUMN_MAP[key])]
@@ -385,10 +424,14 @@ export default function RichLeadTable({
   const totals = {
     open: open.reduce((s, l) => s + (l.budget ?? 0), 0),
     weighted: open.reduce((s, l) => s + weightedOf(l), 0),
-    won: visible.filter((l) => l.status === 'WON').reduce((s, l) => s + (l.budget ?? 0), 0),
     idle: open.filter((l) => (daysSince(lastActivityOf(l), now) ?? 0) >= 7).length,
     late: open.filter((l) => isLate(l, now)).length,
   }
+  const wonThisMonth = visible.filter((l) => closedThisMonth(l, 'WON', now))
+  const lostThisMonth = visible.filter((l) => closedThisMonth(l, 'LOST', now)).length
+  // Nombre de fiches d'une vue : le même filtre sur la même liste (le pipeline charge tout son périmètre).
+  const countOf = (viewFilters: RichFilters) =>
+    leads.filter((l) => (!entity || leadEntity(l) === entity) && matches(l, viewFilters, now)).length
 
   const sources = useMemo(() => [...new Set(leads.map((l) => l.source).filter(Boolean) as string[])].sort(), [leads])
   const allOn = rows.length > 0 && rows.every((l) => selected.has(l._id))
@@ -404,7 +447,7 @@ export default function RichLeadTable({
     }
   }
   const applyBuiltin = (id: string) => {
-    const v = BUILTIN_VIEWS.find((x) => x.id === id)
+    const v = builtinViews.find((x) => x.id === id)
     setBuiltin(id)
     setActiveView(null)
     setFilters({ ...(v?.filters ?? {}), project: v?.filters.project ?? '' }, undefined, id === 'archived')
@@ -544,8 +587,11 @@ export default function RichLeadTable({
           [formatEuro(totals.open), t('crmSuivre.stat.open')],
           [formatEuro(totals.weighted), t('crmSuivre.stat.weighted')],
           [
-            formatEuro(totals.won),
-            `${t('crmSuivre.stat.won')}, ${t('crmSuivre.stat.wonHint', { count: visible.filter((l) => l.status === 'WON').length })}`,
+            t('crmSuivre.stat.wonMonth', { count: wonThisMonth.length }),
+            t('crmSuivre.stat.wonMonthHint', {
+              amount: formatEuro(wonThisMonth.reduce((s, l) => s + (l.budget ?? 0), 0)),
+              lost: lostThisMonth,
+            }),
           ],
           [String(totals.idle), t('crmSuivre.stat.idle')],
           [String(totals.late), totals.late ? t('crmSuivre.stat.late') : t('crmSuivre.stat.lateNone')],
@@ -571,13 +617,20 @@ export default function RichLeadTable({
           </label>
           <div className="crm-suivre-pills" role="group" aria-label={t('crmRich.views.aria')}>
             {[
-              ...BUILTIN_VIEWS.map((view) => ({
+              ...builtinViews.map((view) => ({
                 id: view.id,
                 label: t(view.nameKey),
+                count: countOf(view.filters) as number | null,
                 apply: () => applyBuiltin(view.id),
               })),
-              { id: 'archived', label: t('crmRich.view.archived'), apply: () => applyBuiltin('archived') },
-              ...views.map((view) => ({ id: view._id, label: view.name, apply: () => applySaved(view) })),
+              // Les fiches archivées ne sont lues qu'à l'ouverture de leur vue : pas de compte ici.
+              { id: 'archived', label: t('crmRich.view.archived'), count: null, apply: () => applyBuiltin('archived') },
+              ...views.map((view) => ({
+                id: view._id,
+                label: view.name,
+                count: countOf(view.filters),
+                apply: () => applySaved(view),
+              })),
             ].map((view) => (
               <button
                 key={view.id}
@@ -587,6 +640,7 @@ export default function RichLeadTable({
                 onClick={view.apply}
               >
                 {view.label}
+                {view.count !== null && <span className="crm-suivre-pill__n">{view.count}</span>}
               </button>
             ))}
             <button

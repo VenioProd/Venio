@@ -1,4 +1,5 @@
 import { apiFetch } from '../../../../lib/api'
+import type { CallCheck } from '../../../../services/externalSales'
 
 const BASE = '/api/admin/crm'
 
@@ -74,3 +75,32 @@ export const fetchLeadTasks = (id: string) =>
 export const fetchLeadDocuments = (id: string) => apiFetch<LeadDocuments>(`${BASE}/leads/${id}/documents`)
 export const fetchLeadRuns = (id: string) =>
   apiFetch<{ runs: LeadRun[] }>(`${BASE}/leads/${id}/timeline`).then((r) => r.runs)
+
+/** Fiches du pipeline qui portent une analyse d'appel à valider, ou dont le dernier appel est tombé sur le répondeur. */
+export interface LeadSignals {
+  analysisReady: Set<string>
+  voicemail: Set<string>
+}
+
+const SIGNALS_BATCH = 100
+
+/** Signaux d'appel des fiches affichées (le serveur en lit 100 au plus par requête). */
+export async function fetchLeadSignals(ids: string[]): Promise<LeadSignals> {
+  const batches: string[][] = []
+  for (let index = 0; index < ids.length; index += SIGNALS_BATCH) batches.push(ids.slice(index, index + SIGNALS_BATCH))
+  const pages = await Promise.all(
+    batches.map((batch) =>
+      apiFetch<{ analysisReady?: string[]; voicemail?: string[] }>(
+        `/api/admin/call-desk/lead-signals?ids=${batch.join(',')}`,
+      ),
+    ),
+  )
+  return {
+    analysisReady: new Set(pages.flatMap((page) => page.analysisReady ?? [])),
+    voicemail: new Set(pages.flatMap((page) => page.voicemail ?? [])),
+  }
+}
+
+/** Pays, fuseaux et blocage d'appel du moment pour une fiche de l'équipe. */
+export const fetchLeadCallCheck = (id: string) =>
+  apiFetch<{ callCheck: CallCheck }>(`/api/admin/call-desk/leads/${id}/call-check`).then((r) => r.callCheck)

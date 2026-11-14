@@ -17,7 +17,13 @@ interface PipelineColumnProps {
   onDrop: (event: React.DragEvent<HTMLDivElement>, status: string) => void
   onOpenDetail: (lead: Lead) => void
   onDragStart: (event: React.DragEvent<HTMLDivElement>, leadId: string) => void
+  /** Colonne dépliée au-delà de ses premières cartes (tenu par l'adresse, pour le retour depuis une fiche). */
+  expanded?: boolean
+  onToggleExpanded?: () => void
 }
+
+/** Cartes montrées avant le bouton « + n autres ». */
+export const KANBAN_PREVIEW = 8
 
 const PipelineColumn: React.FC<PipelineColumnProps> = ({
   column,
@@ -30,6 +36,8 @@ const PipelineColumn: React.FC<PipelineColumnProps> = ({
   onDrop,
   onDragStart,
   onOpenDetail,
+  expanded = false,
+  onToggleExpanded,
 }) => {
   const { t } = useI18n()
   const [over, setOver] = useState(false)
@@ -40,6 +48,9 @@ const PipelineColumn: React.FC<PipelineColumnProps> = ({
   const total = (column.leads || []).reduce((sum, lead) => sum + (lead.budget ?? 0), 0)
   const amount = formatMoney(total, 'EUR', { maximumFractionDigits: 0 })
   const open = !collapsible
+  const leads = column.leads || []
+  const hidden = expanded || !onToggleExpanded ? [] : leads.slice(KANBAN_PREVIEW)
+  const shown = hidden.length ? leads.slice(0, KANBAN_PREVIEW) : leads
   const weighted = formatMoney(
     (column.leads || []).reduce((sum, lead) => sum + weightedOf(lead), 0),
     'EUR',
@@ -108,7 +119,7 @@ const PipelineColumn: React.FC<PipelineColumnProps> = ({
         <p className="crm-column-empty">{t('adminOps.pilotage.pipeline.empty')}</p>
       )}
       {!collapsed &&
-        (column.leads || []).map((lead, index) => (
+        shown.map((lead, index) => (
           <React.Fragment key={lead._id}>
             {over && dropIndex === index && <div className="crm-drop-marker" aria-hidden="true" />}
             <LeadCard
@@ -124,8 +135,20 @@ const PipelineColumn: React.FC<PipelineColumnProps> = ({
             />
           </React.Fragment>
         ))}
-      {over && (collapsed || dropIndex === column.leads.length) && (
-        <div className="crm-drop-marker" aria-hidden="true" />
+      {over && (collapsed || dropIndex >= shown.length) && <div className="crm-drop-marker" aria-hidden="true" />}
+      {!collapsed && onToggleExpanded && (hidden.length > 0 || (expanded && leads.length > KANBAN_PREVIEW)) && (
+        <button type="button" className="crm-column-more" aria-expanded={expanded} onClick={onToggleExpanded}>
+          {expanded
+            ? t('crmSuivre.kanban.less')
+            : t('crmSuivre.kanban.more', {
+                count: hidden.length,
+                amount: formatMoney(
+                  hidden.reduce((sum, lead) => sum + (lead.budget ?? 0), 0),
+                  'EUR',
+                  { maximumFractionDigits: 0 },
+                ),
+              })}
+        </button>
       )}
     </div>
   )
